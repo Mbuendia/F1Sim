@@ -317,10 +317,11 @@ export class RaceSimulation {
       const carBasePerf = car.team.carPerformance;
       const baseLapSpeed = 1.0 / RaceSimulation.BASE_LAP_TIME_SEC;
 
+      // Ritmo efectivo incorporando la velocidad del compuesto
       const effectivePace = 
         carBasePerf * 
         (0.92 + 0.08 * driverSkillMultiplier) * 
-        tireResult.gripMultiplier * 
+        tireResult.speedMultiplier * 
         fuelResult.weightAdvantageMultiplier * 
         enginePerf.speedFactor * 
         drsEval.speedBoostMultiplier * 
@@ -334,15 +335,24 @@ export class RaceSimulation {
         targetSpeedLapPerSec *= 0.85;
       }
 
+      // ── DECISIÓN DE ADELANTAMIENTO CON VENTAJA DE NEUMÁTICOS ──
       const minSafeSpacing = 0.0030;
       const canOvertakeHere = this.isOvertakingAllowedZone(normalizedT);
-      const rareCornerOvertakeChance = Math.random() < 0.00005 && tireResult.gripMultiplier > 1.05;
+      
+      // Ventaja de agarre de neumáticos sobre el coche de delante
+      let tireDeltaAdvantage = 0;
+      if (carAhead) {
+        tireDeltaAdvantage = (tireResult.gripMultiplier - (carAhead.tires.health / 100)) * 0.05;
+      }
+
+      const hasOvertakePace = (effectivePace + tireDeltaAdvantage) > 1.002;
+      const rareCornerOvertakeChance = Math.random() < 0.00008 && tireResult.gripMultiplier > 1.04;
 
       if (carAhead && !carAhead.pitStop.isPitting && !car.isBlueFlagged && carAhead.status !== 'finished') {
         const deltaProgress = carAhead.progress - car.progress;
 
         if (deltaProgress > 0 && deltaProgress < minSafeSpacing) {
-          if ((canOvertakeHere || rareCornerOvertakeChance) && effectivePace > 1.001) {
+          if ((canOvertakeHere || rareCornerOvertakeChance) && hasOvertakePace) {
             car.isOvertaking = true;
             car.targetLateralOffset = car.id % 2 === 0 ? 0.55 : -0.55;
           } else {
@@ -459,7 +469,6 @@ export class RaceSimulation {
       else if (kmh < 275) gearVal = 6;
       else if (kmh < 315) gearVal = 7;
 
-      // RPM en enteros limpios realistas de F1 (8.000 a 13.500 RPM)
       const baseRpm = 9500 + (kmh / 350) * 3500;
       const finalRpm = Math.min(13500, Math.max(8000, Math.round(baseRpm)));
 

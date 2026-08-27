@@ -5,7 +5,9 @@ import {
   Timer, 
   History, 
   TrendingDown, 
-  Gauge
+  Gauge,
+  Fuel,
+  Wind
 } from 'lucide-react';
 import { animate } from 'animejs';
 
@@ -56,7 +58,7 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
 
   if (!activeCar) return null;
 
-  const { driver, team, sectors, pitStop, stats, telemetry, tires, currentPosition, lapHistory, lastLapTime, bestLapTime } = activeCar;
+  const { driver, team, sectors, pitStop, stats, telemetry, tires, currentPosition, lapHistory, bestLapTime, fuelKg } = activeCar;
 
   // ── 1. ESTILOS DE SECTORES ──
   const getSectorStyle = (
@@ -79,7 +81,7 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
   const s2Style = getSectorStyle(sectors.s2, sectors.personalBestS2, overallBestS2);
   const s3Style = getSectorStyle(sectors.s3, sectors.personalBestS3, overallBestS3);
 
-  // ── 2. CÁLCULO DE GRÁFICA DE DEGRADACIÓN Y PREVISIÓN FIJA (1 a 66 vueltas) ──
+  // ── 2. GRÁFICA DE DEGRADACIÓN Y PREVISIÓN FIJA (1 a 66 vueltas) ──
   const chartW = 320;
   const chartH = 95;
   const padLeft = 26;
@@ -93,21 +95,17 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
   const getX = (lap: number) => padLeft + (Math.min(totalLaps, Math.max(0, lap)) / totalLaps) * innerW;
   const getY = (health: number) => padTop + (1 - Math.min(100, Math.max(0, health)) / 100) * innerH;
 
-  // Stints del monoplaza
   const stints = pitStop.stints && pitStop.stints.length > 0
     ? pitStop.stints
     : [{ stintNumber: 1, compound: tires.compound, startLap: 0, endLap: 24, expectedLaps: 24 }];
 
   const currentStint = stints[stints.length - 1];
-
-  // Línea fija teórica de previsión del stint actual (de startLap al 100% a startLap + expectedLaps al 0%)
   const expectedEndLap = currentStint.startLap + currentStint.expectedLaps;
   const stintStartPoint = { x: getX(currentStint.startLap), y: getY(100) };
   const stintExpectedEndPoint = { x: getX(expectedEndLap), y: getY(0) };
 
   const currentCompoundColor = tires.compound === 'soft' ? '#e10600' : (tires.compound === 'medium' ? '#ffd700' : '#ffffff');
 
-  // Puntos reales históricos
   const historyPoints = lapHistory.map(h => ({
     x: getX(h.lap),
     y: getY(h.tireHealth !== undefined ? h.tireHealth : 100),
@@ -115,20 +113,24 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
     health: h.tireHealth !== undefined ? h.tireHealth : 100
   }));
 
-  // Punto actual en pista
   const currentLapFloat = activeCar.currentLap + activeCar.trackT;
   const currentPoint = {
     x: getX(currentLapFloat),
     y: getY(tires.health)
   };
 
-  // Estado térmico de frenos
   const getBrakeStatus = (temp: number) => {
     if (temp > 650) return { label: 'SOBRECALENTADOS 🔴', className: styles.statusHot };
     if (temp < 250) return { label: 'FRÍOS 🟡', className: styles.statusCold };
     return { label: 'ÓPTIMOS 🟢', className: styles.statusOptimal };
   };
   const brakeStatus = getBrakeStatus(stats.brakeTempCelsius);
+
+  // Cálculos no redundantes de aerodinámica, frenada y gasolina
+  const brakeBiasFront = 56.5;
+  const tirePressurePsi = (22.5 + (tires.tempCelsius - 85) * 0.05).toFixed(1);
+  const fuelLapsLeft = Math.max(0, Math.floor(fuelKg / telemetry.fuelPerLap));
+  const downforceLevel = team.aerodynamics > 0.90 ? 'ALTA (High Downforce)' : 'MEDIA (Medium DF)';
 
   return (
     <div ref={panelRef} className={styles.container}>
@@ -181,11 +183,9 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
 
         <div className={styles.chartContainer}>
           <svg className={styles.chartSvg} viewBox={`0 0 ${chartW} ${chartH}`}>
-            {/* Ejes */}
             <line x1={padLeft} y1={padTop} x2={padLeft} y2={chartH - padBottom} stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
             <line x1={padLeft} y1={chartH - padBottom} x2={chartW - padRight} y2={chartH - padBottom} stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
 
-            {/* Marcas de vuelta */}
             {[0, 20, 40, 66].map(l => (
               <g key={l}>
                 <line x1={getX(l)} y1={chartH - padBottom} x2={getX(l)} y2={chartH - padBottom + 4} stroke="rgba(255,255,255,0.3)" strokeWidth="1" />
@@ -193,15 +193,13 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
               </g>
             ))}
 
-            {/* Marcas de salud */}
             <text x={padLeft - 4} y={getY(100) + 3} fill="#64748b" fontSize="8" fontFamily="Orbitron" textAnchor="end">100%</text>
             <text x={padLeft - 4} y={getY(50) + 3} fill="#64748b" fontSize="8" fontFamily="Orbitron" textAnchor="end">50%</text>
             <text x={padLeft - 4} y={getY(0) + 3} fill="#64748b" fontSize="8" fontFamily="Orbitron" textAnchor="end">0%</text>
 
-            {/* Línea horizontal de desgaste crítico 20% */}
             <line x1={padLeft} y1={getY(20)} x2={chartW - padRight} y2={getY(20)} stroke="#ef4444" strokeWidth="0.8" strokeDasharray="3,3" opacity="0.5" />
 
-            {/* 1. LÍNEA FIJA DE PREVISIÓN TEÓRICA (PUNTITOS AMARILLOS/BLANCOS/ROJOS) */}
+            {/* Línea fija teórica de previsión de stint */}
             <line 
               x1={stintStartPoint.x} 
               y1={stintStartPoint.y} 
@@ -213,7 +211,7 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
               opacity="0.85" 
             />
 
-            {/* 2. LÍNEA SÓLIDA REAL DEGRADADA VUELTA A VUELTA */}
+            {/* Línea sólida real */}
             {historyPoints.map((p, i) => {
               if (i === 0) return null;
               const prev = historyPoints[i - 1];
@@ -223,7 +221,6 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
               );
             })}
 
-            {/* Conexión con punto actual */}
             {historyPoints.length > 0 && (
               <line 
                 x1={historyPoints[historyPoints.length - 1].x} 
@@ -235,14 +232,13 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
               />
             )}
 
-            {/* Punto actual */}
             <circle cx={currentPoint.x} cy={currentPoint.y} r="4.5" fill={currentCompoundColor} stroke="#000000" strokeWidth="1.5" />
           </svg>
 
           <div className={styles.chartLegend}>
             <div className={styles.legendItem}>
               <span className={styles.legendDot} style={{ backgroundColor: '#e10600' }} />
-              <span>Blandos (~16v)</span>
+              <span>Blandos (~15v)</span>
             </div>
             <div className={styles.legendItem}>
               <span className={styles.legendDot} style={{ backgroundColor: '#ffd700' }} />
@@ -250,7 +246,7 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
             </div>
             <div className={styles.legendItem}>
               <span className={styles.legendDot} style={{ backgroundColor: '#ffffff' }} />
-              <span>Duros (~36v)</span>
+              <span>Duros (~38v)</span>
             </div>
           </div>
 
@@ -260,22 +256,28 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
         </div>
       </div>
 
-      {/* ── 3. TELEMETRÍA TÉRMICA & MECÁNICA ── */}
+      {/* ── 3. TELEMETRÍA AVANZADA NO REDUNDANTE (FRENADA, MOTOR, COMBUSTIBLE & AERO) ── */}
       <div className={styles.sectionCard}>
         <div className={styles.cardHeader}>
           <Gauge size={14} color="#38bdf8" />
-          <span>FRENOS, MOTOR & NEUMÁTICOS</span>
+          <span>BALANCE MECÁNICO & DINÁMICA DE COCHE</span>
         </div>
 
         <div className={styles.telemetryGrid}>
           <div className={styles.telemetryMiniBox}>
-            <span className={styles.miniBoxLabel}>Temp. Frenos</span>
+            <span className={styles.miniBoxLabel}>Temp. Discos Freno</span>
             <span className={styles.miniBoxVal}>{stats.brakeTempCelsius}°C</span>
             <span className={brakeStatus.className}>{brakeStatus.label}</span>
           </div>
 
           <div className={styles.telemetryMiniBox}>
-            <span className={styles.miniBoxLabel}>Temp. Motor</span>
+            <span className={styles.miniBoxLabel}>Brake Bias (Reparto)</span>
+            <span className={styles.miniBoxVal}>{brakeBiasFront}% F</span>
+            <span style={{ fontSize: '9px', color: '#94a3b8' }}>{(100 - brakeBiasFront).toFixed(1)}% Trasero</span>
+          </div>
+
+          <div className={styles.telemetryMiniBox}>
+            <span className={styles.miniBoxLabel}>Temp. Motor V6</span>
             <span className={styles.miniBoxVal}>{stats.engineTempCelsius}°C</span>
             <span className={stats.engineTempCelsius > 115 ? styles.statusHot : styles.statusOptimal}>
               {stats.engineTempCelsius > 115 ? 'ALERTA 🔴' : 'CORRECTA 🟢'}
@@ -283,17 +285,30 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
           </div>
 
           <div className={styles.telemetryMiniBox}>
-            <span className={styles.miniBoxLabel}>Vida Neumáticos</span>
-            <span className={styles.miniBoxVal} style={{ color: tires.health < 25 ? '#ef4444' : '#22c55e' }}>
-              {Math.round(tires.health)}%
-            </span>
-            <span style={{ fontSize: '9px', color: '#94a3b8' }}>{tires.compound.toUpperCase()} ({tires.lapsOnTire} vtas)</span>
+            <span className={styles.miniBoxLabel}>Presión Neumáticos</span>
+            <span className={styles.miniBoxVal}>{tirePressurePsi} PSI</span>
+            <span style={{ fontSize: '9px', color: '#38bdf8' }}>Temp: {Math.round(tires.tempCelsius)}°C</span>
+          </div>
+        </div>
+
+        {/* Combustible y Aerodinámica */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginTop: '4px' }}>
+          <div className={styles.telemetryMiniBox}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <Fuel size={11} color="#f59e0b" />
+              <span className={styles.miniBoxLabel}>Combustible</span>
+            </div>
+            <span className={styles.miniBoxVal}>{fuelKg.toFixed(1)} kg</span>
+            <span style={{ fontSize: '8.5px', color: '#94a3b8' }}>{fuelLapsLeft} vueltas restantes</span>
           </div>
 
           <div className={styles.telemetryMiniBox}>
-            <span className={styles.miniBoxLabel}>Marcha & Velocidad</span>
-            <span className={styles.miniBoxVal}>{telemetry.speedKmh} km/h</span>
-            <span style={{ fontSize: '9px', color: '#38bdf8' }}>GEAR {telemetry.gear} ({telemetry.rpm.toLocaleString()} RPM)</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <Wind size={11} color="#38bdf8" />
+              <span className={styles.miniBoxLabel}>Carga Aerodinámica</span>
+            </div>
+            <span className={styles.miniBoxVal} style={{ fontSize: '11px' }}>{downforceLevel}</span>
+            <span style={{ fontSize: '8.5px', color: '#22c55e' }}>Aero Rating: {Math.round(team.aerodynamics * 100)}%</span>
           </div>
         </div>
 
