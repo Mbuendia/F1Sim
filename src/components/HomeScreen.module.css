@@ -10,6 +10,7 @@
   flex-direction: column;
   gap: 20px;
   user-select: none;
+  position: relative;
 }
 
 .homeContainer::-webkit-scrollbar {
@@ -143,16 +144,16 @@
   margin-top: 2px;
 }
 
-/* Layout Principal de Selección: 3 Columnas */
+/* Layout 2 Columnas */
 .selectionRow {
   display: grid;
-  grid-template-columns: 1fr 340px 300px;
-  gap: 18px;
+  grid-template-columns: 1fr 340px;
+  gap: 24px;
 }
 
 .sectionTitle {
   font-family: 'Orbitron', sans-serif;
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 900;
   color: #ffffff;
   letter-spacing: 1px;
@@ -165,11 +166,11 @@
 /* Grid de Pilotos */
 .driversGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
   max-height: 480px;
   overflow-y: auto;
-  padding-right: 4px;
+  padding-right: 6px;
 }
 
 .driversGrid::-webkit-scrollbar {
@@ -183,24 +184,26 @@
 .driverCard {
   background: rgba(255, 255, 255, 0.04);
   border: 1.5px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  padding: 8px 10px;
+  border-radius: 10px;
+  padding: 10px 12px;
   cursor: pointer;
   transition: all 0.2s ease;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
+  position: relative;
 }
 
 .driverCard:hover {
   background: rgba(255, 255, 255, 0.12);
   transform: translateY(-2px);
+  border-color: #38bdf8;
 }
 
 .driverCardSelected {
   background: rgba(225, 6, 0, 0.22) !important;
   border-color: #e10600 !important;
-  box-shadow: 0 0 14px rgba(225, 6, 0, 0.45);
+  box-shadow: 0 0 16px rgba(225, 6, 0, 0.45);
 }
 
 .cardTopRow {
@@ -212,14 +215,14 @@
 .driverFlagName {
   display: flex;
   align-items: center;
-  gap: 5px;
-  font-size: 13px;
+  gap: 6px;
+  font-size: 14px;
 }
 
 .driverName {
   font-family: 'Rajdhani', sans-serif;
   font-weight: 800;
-  font-size: 13.5px;
+  font-size: 14px;
   color: #ffffff;
   white-space: nowrap;
   overflow: hidden;
@@ -228,124 +231,37 @@
 
 .driverNum {
   font-family: 'Orbitron', sans-serif;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 900;
 }
 
 .driverTeam {
-  font-size: 10.5px;
+  font-size: 11px;
   font-family: 'Rajdhani', sans-serif;
   font-weight: 600;
   color: #94a3b8;
 }
 
+.engineBadge {
+  font-size: 10px;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 700;
+  color: #ffd700;
+  background: rgba(255, 215, 0, 0.1);
+  padding: 2px 5px;
+  border-radius: 4px;
+  align-self: flex-start;
+}
+
 .statsRow {
   display: flex;
   justify-content: space-between;
-  font-size: 9.5px;
-  font-family: 'Rajdhani', sans-serif;
-  font-weight: 700;
-  color: #cbd5e1;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
-  padding-top: 3px;
-}
-
-/* Panel de Inspección Técnica Detallada */
-.inspectorCard {
-  background: rgba(15, 22, 38, 0.95);
-  border: 1.5px solid rgba(255, 255, 255, 0.15);
-  border-top: 4px solid #e10600;
-  border-radius: 12px;
-  padding: 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.7);
-}
-
-.inspectorHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  padding-bottom: 8px;
-}
-
-.inspectorDriverTitle {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 15px;
-  font-weight: 900;
-  color: #ffffff;
-}
-
-.inspectorCarSubtitle {
-  font-family: 'Rajdhani', sans-serif;
-  font-size: 12px;
-  font-weight: 700;
-  color: #94a3b8;
-}
-
-.specsGrid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
-}
-
-.specBox {
-  background: rgba(0, 0, 0, 0.4);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 6px;
-  padding: 6px 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.specLabel {
-  font-size: 9px;
-  font-family: 'Rajdhani', sans-serif;
-  font-weight: 700;
-  color: #94a3b8;
-}
-
-.specValue {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 11.5px;
-  font-weight: 800;
-  color: #ffffff;
-}
-
-.driverRadarGrid {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  background: rgba(0, 0, 0, 0.3);
-  padding: 8px;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-.radarRow {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   font-size: 10px;
   font-family: 'Rajdhani', sans-serif;
   font-weight: 700;
   color: #cbd5e1;
-}
-
-.radarBarBg {
-  width: 100px;
-  height: 5px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 3px;
-  overflow: hidden;
-}
-
-.radarBarFill {
-  height: 100%;
-  border-radius: 3px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding-top: 4px;
 }
 
 /* Tarjeta Circuito */
@@ -353,16 +269,16 @@
   background: rgba(255, 255, 255, 0.04);
   border: 1.5px solid #e10600;
   border-radius: 12px;
-  padding: 12px;
+  padding: 14px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
 }
 
 .trackPreviewCanvas {
   width: 100%;
-  height: 120px;
+  height: 130px;
   background: #0d1220;
   border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -370,7 +286,7 @@
 
 .trackInfo h3 {
   font-family: 'Orbitron', sans-serif;
-  font-size: 13.5px;
+  font-size: 14px;
   font-weight: 900;
   color: #ffffff;
   margin: 0;
@@ -378,7 +294,7 @@
 
 .trackInfo p {
   font-family: 'Rajdhani', sans-serif;
-  font-size: 11px;
+  font-size: 11.5px;
   color: #94a3b8;
   font-weight: 600;
   margin: 2px 0 6px;
@@ -387,13 +303,13 @@
 .trackSpecsList {
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  font-size: 10.5px;
+  gap: 4px;
+  font-size: 11px;
   font-family: 'Rajdhani', sans-serif;
   font-weight: 700;
   color: #cbd5e1;
   background: rgba(0, 0, 0, 0.4);
-  padding: 6px 8px;
+  padding: 8px 10px;
   border-radius: 6px;
 }
 
@@ -401,14 +317,14 @@
 .startSection {
   display: flex;
   justify-content: center;
-  margin-top: 4px;
+  margin-top: 6px;
 }
 
 .launchButton {
   background: linear-gradient(135deg, #e10600 0%, #9e0400 100%);
   color: #ffffff;
   border: none;
-  padding: 14px 44px;
+  padding: 14px 48px;
   border-radius: 10px;
   font-family: 'Orbitron', sans-serif;
   font-size: 15px;
@@ -426,4 +342,212 @@
   transform: translateY(-2px);
   box-shadow: 0 14px 45px rgba(225, 6, 0, 0.7);
   background: linear-gradient(135deg, #ff1a14 0%, #b80500 100%);
+}
+
+/* ════ OVERLAY GIGANTE DE FICHA TÉCNICA A PANTALLA COMPLETA ════ */
+.overlayBackdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(4, 7, 16, 0.85);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 24px;
+}
+
+.overlayModal {
+  background: linear-gradient(145deg, #111827 0%, #080d1a 100%);
+  border: 2px solid rgba(255, 255, 255, 0.18);
+  border-top: 6px solid #e10600;
+  border-radius: 18px;
+  width: 920px;
+  max-width: 95vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 28px 36px;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.9), 0 0 40px rgba(225, 6, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  position: relative;
+}
+
+.modalCloseBtn {
+  position: absolute;
+  top: 20px;
+  right: 24px;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: #cbd5e1;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  transition: all 0.2s;
+}
+
+.modalCloseBtn:hover {
+  background: #e10600;
+  color: #ffffff;
+}
+
+.modalHeroRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1.5px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 16px;
+}
+
+.modalDriverNameBig {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 26px;
+  font-weight: 900;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.modalTeamSubtitle {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: #94a3b8;
+  margin-top: 4px;
+}
+
+.modalNumberPill {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 32px;
+  font-weight: 900;
+  padding: 4px 18px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.modalContentGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 22px;
+}
+
+.modalSectionCard {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.modalSectionTitle {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 12px;
+  font-weight: 900;
+  color: #38bdf8;
+  letter-spacing: 1px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  padding-bottom: 6px;
+}
+
+.modalSpecs2Col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.modalSpecBox {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.modalSpecLabel {
+  font-size: 10.5px;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 700;
+  color: #94a3b8;
+}
+
+.modalSpecVal {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.modalRadarList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.modalRadarItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11.5px;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.modalRadarBarBg {
+  width: 140px;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.modalRadarBarFill {
+  height: 100%;
+  border-radius: 3px;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 14px;
+  border-top: 1.5px solid rgba(255, 255, 255, 0.1);
+  padding-top: 16px;
+}
+
+.selectDriverConfirmBtn {
+  background: linear-gradient(135deg, #e10600 0%, #a80400 100%);
+  color: #ffffff;
+  border: none;
+  padding: 12px 32px;
+  border-radius: 8px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s;
+  box-shadow: 0 4px 20px rgba(225, 6, 0, 0.4);
+}
+
+.selectDriverConfirmBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 28px rgba(225, 6, 0, 0.6);
 }

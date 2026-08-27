@@ -34,6 +34,9 @@ export interface Team {
   enginePower: number;
   reliability: number;
   pitStopAverageTime: number;
+  engineManufacturer: string;
+  engineModel: string;
+  horsepower: number;
   drivers: string[];
 }
 
@@ -159,6 +162,9 @@ export interface CarState {
   targetLateralOffset: number;
   isOvertaking: boolean;
   isBlueFlagged: boolean;
+
+  hasPuncture?: boolean;
+  dnfReason?: string;
 
   raceDayLuckFactor: number;
   

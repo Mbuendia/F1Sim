@@ -111,6 +111,9 @@ export class RaceSimulation {
         isOvertaking: false,
         isBlueFlagged: false,
 
+        hasPuncture: false,
+        dnfReason: undefined,
+
         raceDayLuckFactor,
 
         tires: initialTires,
@@ -235,15 +238,52 @@ export class RaceSimulation {
 
     const totalPoints = BARCELONA_CIRCUIT.points.length;
     const lapDistanceMeters = BARCELONA_CIRCUIT.lapLengthMeters;
-    const sortedActive = [...this.cars].sort((a, b) => b.progress - a.progress);
+    const sortedActive = [...this.cars].filter(c => c.status !== 'out').sort((a, b) => b.progress - a.progress);
     const leaderCar = sortedActive[0];
 
     for (const car of this.cars) {
       if (car.status === 'finished') continue;
 
+      // Si ha abandonado por avería mecánica (DNF)
+      if (car.status === 'out') {
+        car.currentSpeedKmh = Math.max(0, car.currentSpeedKmh - dt * 45);
+        car.speed = (car.currentSpeedKmh / 3.6) / lapDistanceMeters;
+        car.progress += car.speed * dt;
+        car.trackT = ((car.progress % 1) + 1) % 1;
+        car.telemetry.speedKmh = Math.round(car.currentSpeedKmh);
+        car.telemetry.rpm = 0;
+        car.telemetry.throttle = 0;
+        car.targetLateralOffset = 0.85; // Apartado en la hierba
+        car.lateralOffset += (car.targetLateralOffset - car.lateralOffset) * Math.min(1.0, dt * 2.0);
+        continue;
+      }
+
+      // ── EVALUACIÓN DE FACTOR SUERTE: AVERÍAS MECÁNICAS & PINCHAZOS ──
+      // Probabilidad muy baja y realista por segundo (~0.000008)
+      const baseDnfChancePerSec = 0.000008;
+      const unluckFactor = Math.max(0.2, 1.2 - car.driver.luckRating);
+      const teamUnreliability = Math.max(0.01, 1.0 - car.team.reliability);
+      const dnfStepChance = baseDnfChancePerSec * unluckFactor * (teamUnreliability * 50) * dt;
+
+      if (car.currentLap > 3 && Math.random() < dnfStepChance) {
+        car.status = 'out';
+        const failureTypes = ['💥 FALLO MOTOR V6', '⚙️ CAJA DE CAMBIOS', '🔌 FALLO MGU-K / HÍBRIDO', '💧 PÉRDIDA PRESIÓN HIDRÁULICA'];
+        car.dnfReason = failureTypes[Math.floor(Math.random() * failureTypes.length)];
+        continue;
+      }
+
+      // Probabilidad de pinchazo imprevisto
+      const punctureChance = 0.000006 * unluckFactor * dt;
+      if (car.currentLap > 2 && !car.hasPuncture && !car.pitStop.isPitting && Math.random() < punctureChance) {
+        car.hasPuncture = true;
+        car.tires.health = 0;
+      }
+
+      // 1. Pit Stop Update
       const isHandlingPit = PitStopModel.updatePitStop(car, dt, lapDistanceMeters);
 
       if (isHandlingPit) {
+        car.hasPuncture = false;
         car.speed = (car.currentSpeedKmh / 3.6) / lapDistanceMeters;
         car.progress += (dt * (car.currentSpeedKmh / 3.6)) / lapDistanceMeters;
         car.trackT = ((car.progress % 1) + 1) % 1;
@@ -254,6 +294,7 @@ export class RaceSimulation {
         continue;
       }
 
+      // 2. Posición en pista
       const normalizedT = ((car.progress % 1) + 1) % 1;
       car.trackT = normalizedT;
       const pointIndex = Math.floor(normalizedT * totalPoints) % totalPoints;
@@ -261,7 +302,7 @@ export class RaceSimulation {
 
       const isBeingLapped = leaderCar && leaderCar.id !== car.id && (leaderCar.progress - car.progress) >= 0.85;
       const carApproachingBehind = this.cars.find(
-        c => c.id !== car.id && c.status !== 'finished' && c.progress > car.progress && (c.progress - car.progress) < 0.015 && (c.currentLap > car.currentLap)
+        c => c.id !== car.id && c.status === 'running' && c.progress > car.progress && (c.progress - car.progress) < 0.015 && (c.currentLap > car.currentLap)
       );
 
       if (isBeingLapped && carApproachingBehind) {
@@ -307,18 +348,20 @@ export class RaceSimulation {
       const enginePerf = EngineModel.getEnginePerformance(car.engineMode);
       
       const driverSkillMultiplier = 
-        0.60 * car.driver.talentRating + 
-        0.20 * car.driver.palmaresScore + 
-        0.20 * (car.driver.consistency);
+        0.55 * car.driver.talentRating + 
+        0.25 * car.driver.palmaresScore + 
+        0.20 * car.driver.consistency;
 
-      const raceDayVariance = 1.0 + car.raceDayLuckFactor + ((car.driver.luckRating - 0.75) * 0.003);
+      // Consistencia de vuelta: Pilotos como Verstappen/Hamilton/Alonso varían apenas milésimas
+      const consistencyNoise = (1.0 - car.driver.consistency) * (Math.sin(car.currentLap * 1.7 + car.id) * 0.003);
+      const raceDayVariance = 1.0 + car.raceDayLuckFactor + ((car.driver.luckRating - 0.75) * 0.002) + consistencyNoise;
       const slipstreamBonus = (car.gapToCarAheadSec > 0 && car.gapToCarAheadSec < 0.85 && !isCornering) ? 1.012 : 1.0;
 
       const carBasePerf = car.team.carPerformance;
       const baseLapSpeed = 1.0 / RaceSimulation.BASE_LAP_TIME_SEC;
 
-      // Ritmo efectivo incorporando la velocidad del compuesto
-      const effectivePace = 
+      // Ritmo efectivo
+      let effectivePace = 
         carBasePerf * 
         (0.92 + 0.08 * driverSkillMultiplier) * 
         tireResult.speedMultiplier * 
@@ -328,6 +371,11 @@ export class RaceSimulation {
         slipstreamBonus * 
         raceDayVariance;
 
+      // Si tiene pinchazo
+      if (car.hasPuncture) {
+        effectivePace *= 0.40;
+      }
+
       const speedLimitFactor = trackPoint.speedLimitFactor;
       let targetSpeedLapPerSec = baseLapSpeed * effectivePace * (0.48 + 0.52 * speedLimitFactor);
 
@@ -335,20 +383,19 @@ export class RaceSimulation {
         targetSpeedLapPerSec *= 0.85;
       }
 
-      // ── DECISIÓN DE ADELANTAMIENTO CON VENTAJA DE NEUMÁTICOS ──
+      // ── ADELANTAMIENTO CON VENTAJA DE NEUMÁTICOS ──
       const minSafeSpacing = 0.0030;
       const canOvertakeHere = this.isOvertakingAllowedZone(normalizedT);
       
-      // Ventaja de agarre de neumáticos sobre el coche de delante
       let tireDeltaAdvantage = 0;
       if (carAhead) {
-        tireDeltaAdvantage = (tireResult.gripMultiplier - (carAhead.tires.health / 100)) * 0.05;
+        tireDeltaAdvantage = (tireResult.gripMultiplier - (carAhead.tires.health / 100)) * 0.06;
       }
 
       const hasOvertakePace = (effectivePace + tireDeltaAdvantage) > 1.002;
       const rareCornerOvertakeChance = Math.random() < 0.00008 && tireResult.gripMultiplier > 1.04;
 
-      if (carAhead && !carAhead.pitStop.isPitting && !car.isBlueFlagged && carAhead.status !== 'finished') {
+      if (carAhead && !carAhead.pitStop.isPitting && !car.isBlueFlagged && carAhead.status === 'running') {
         const deltaProgress = carAhead.progress - car.progress;
 
         if (deltaProgress > 0 && deltaProgress < minSafeSpacing) {
@@ -375,9 +422,11 @@ export class RaceSimulation {
       car.speed += (targetSpeedLapPerSec - car.speed) * Math.min(1.0, dt * 3.5);
       
       const isMainStraight = normalizedT > 0.95 || normalizedT < 0.05;
-      const targetKmh = isMainStraight 
-        ? (330 + (car.drsActive ? 15 : 0) + (car.engineMode === 'push' ? 10 : 0))
-        : (speedLimitFactor * 230 + 80) * (0.85 + 0.15 * effectivePace) * (car.drsActive ? 1.06 : 1.0);
+      const targetKmh = car.hasPuncture 
+        ? 75 
+        : (isMainStraight 
+          ? (330 + (car.drsActive ? 15 : 0) + (car.engineMode === 'push' ? 10 : 0))
+          : (speedLimitFactor * 230 + 80) * (0.85 + 0.15 * effectivePace) * (car.drsActive ? 1.06 : 1.0));
 
       car.currentSpeedKmh += (targetKmh - car.currentSpeedKmh) * Math.min(1.0, dt * 4.0);
 
@@ -497,7 +546,8 @@ export class RaceSimulation {
 
     this.updateLeaderboardPositions();
 
-    if (this.cars.every(c => c.status === 'finished') && this.cars.length > 0) {
+    const activeRunningOrPit = this.cars.filter(c => c.status === 'running' || c.status === 'pit');
+    if (activeRunningOrPit.length === 0 && this.cars.length > 0) {
       this.isFinished = true;
       this.podiumCars = this.getSortedCars().slice(0, 3);
     }
@@ -617,16 +667,28 @@ export class RaceSimulation {
   }
 
   updateLeaderboardPositions() {
-    const sorted = [...this.cars].sort((a, b) => b.progress - a.progress);
-    const leader = sorted[0];
+    const runningCars = this.cars.filter(c => c.status !== 'out');
+    const sortedRunning = [...runningCars].sort((a, b) => b.progress - a.progress);
+    const outCars = this.cars.filter(c => c.status === 'out');
+    const sortedAll = [...sortedRunning, ...outCars];
+
+    const leader = sortedRunning[0];
     const leaderProgress = leader ? leader.progress : 0;
     const leaderCompletedLaps = Math.max(0, Math.floor(leaderProgress));
 
     this.leaderLap = Math.min(this.totalLaps, leaderCompletedLaps + 1);
 
-    sorted.forEach((car, index) => {
+    sortedAll.forEach((car, index) => {
       car.previousPosition = car.currentPosition;
       car.currentPosition = index + 1;
+
+      if (car.status === 'out') {
+        car.gapToLeaderSec = 999;
+        car.gapToCarAheadSec = 999;
+        car.carAheadId = null;
+        car.aheadInfo = null;
+        return;
+      }
 
       if (index === 0) {
         car.gapToLeaderSec = 0;
@@ -637,27 +699,27 @@ export class RaceSimulation {
         const leaderDiffProgress = leaderProgress - car.progress;
         car.gapToLeaderSec = leaderDiffProgress * RaceSimulation.BASE_LAP_TIME_SEC;
 
-        const carAhead = sorted[index - 1];
-        const aheadDiffProgress = carAhead.progress - car.progress;
-        const gapAhead = aheadDiffProgress * RaceSimulation.BASE_LAP_TIME_SEC;
-        car.gapToCarAheadSec = gapAhead;
-        car.carAheadId = carAhead.id;
+        const carAhead = sortedRunning[index - 1];
+        if (carAhead) {
+          const aheadDiffProgress = carAhead.progress - car.progress;
+          const gapAhead = aheadDiffProgress * RaceSimulation.BASE_LAP_TIME_SEC;
+          car.gapToCarAheadSec = gapAhead;
+          car.carAheadId = carAhead.id;
 
-        car.aheadInfo = {
-          id: carAhead.id,
-          driverName: `${carAhead.driver.firstName} ${carAhead.driver.lastName}`,
-          driverCode: carAhead.driver.code,
-          teamName: carAhead.team.shortName,
-          teamColor: carAhead.team.color,
-          gapSec: Number(gapAhead.toFixed(1)),
-          position: carAhead.currentPosition
-        };
+          car.aheadInfo = {
+            id: carAhead.id,
+            driverName: `${carAhead.driver.firstName} ${carAhead.driver.lastName}`,
+            driverCode: carAhead.driver.code,
+            teamName: carAhead.team.shortName,
+            teamColor: carAhead.team.color,
+            gapSec: Number(gapAhead.toFixed(1)),
+            position: carAhead.currentPosition
+          };
+        }
       }
 
-      if (index === sorted.length - 1) {
-        car.behindInfo = null;
-      } else {
-        const carBehind = sorted[index + 1];
+      const carBehind = sortedRunning[index + 1];
+      if (carBehind) {
         const behindDiffProgress = car.progress - carBehind.progress;
         const gapBehind = behindDiffProgress * RaceSimulation.BASE_LAP_TIME_SEC;
 
@@ -670,6 +732,8 @@ export class RaceSimulation {
           gapSec: Number(gapBehind.toFixed(1)),
           position: carBehind.currentPosition
         };
+      } else {
+        car.behindInfo = null;
       }
     });
   }

@@ -1,6 +1,5 @@
 import { Team } from '../types/f1';
 
-// Rendimiento ultra nivelado de F1 moderna: diferencias de centésimas a décimas por vuelta
 export const TEAMS: Record<string, Team> = {
   mclaren: {
     id: 'mclaren',
@@ -14,6 +13,9 @@ export const TEAMS: Record<string, Team> = {
     enginePower: 0.996,
     reliability: 0.99,
     pitStopAverageTime: 2.1,
+    engineManufacturer: 'Mercedes-AMG',
+    engineModel: 'Mercedes-AMG F1 M15 E Performance 1.6L V6 Turbo',
+    horsepower: 1045,
     drivers: ['norris', 'piastri']
   },
   redbull: {
@@ -28,6 +30,9 @@ export const TEAMS: Record<string, Team> = {
     enginePower: 0.998,
     reliability: 0.98,
     pitStopAverageTime: 2.0,
+    engineManufacturer: 'Honda RBPT',
+    engineModel: 'Honda RBPT RBPTH002 1.6L V6 Turbo',
+    horsepower: 1030,
     drivers: ['verstappen', 'lawson']
   },
   ferrari: {
@@ -42,6 +47,9 @@ export const TEAMS: Record<string, Team> = {
     enginePower: 0.999,
     reliability: 0.98,
     pitStopAverageTime: 2.2,
+    engineManufacturer: 'Scuderia Ferrari',
+    engineModel: 'Ferrari 066/12 1.6L V6 Turbo',
+    horsepower: 1038,
     drivers: ['leclerc', 'hamilton']
   },
   mercedes: {
@@ -56,6 +64,9 @@ export const TEAMS: Record<string, Team> = {
     enginePower: 0.996,
     reliability: 0.99,
     pitStopAverageTime: 2.3,
+    engineManufacturer: 'Mercedes-AMG',
+    engineModel: 'Mercedes-AMG F1 M15 E Performance 1.6L V6 Turbo',
+    horsepower: 1045,
     drivers: ['russell', 'antonelli']
   },
   astonmartin: {
@@ -70,6 +81,9 @@ export const TEAMS: Record<string, Team> = {
     enginePower: 0.994,
     reliability: 0.98,
     pitStopAverageTime: 2.4,
+    engineManufacturer: 'Mercedes-AMG',
+    engineModel: 'Mercedes-AMG F1 M15 E Performance 1.6L V6 Turbo',
+    horsepower: 1045,
     drivers: ['alonso', 'stroll']
   },
   williams: {
@@ -84,6 +98,9 @@ export const TEAMS: Record<string, Team> = {
     enginePower: 0.996,
     reliability: 0.98,
     pitStopAverageTime: 2.3,
+    engineManufacturer: 'Mercedes-AMG',
+    engineModel: 'Mercedes-AMG F1 M15 E Performance 1.6L V6 Turbo',
+    horsepower: 1045,
     drivers: ['sainz', 'albon']
   },
   racingbulls: {
@@ -98,6 +115,9 @@ export const TEAMS: Record<string, Team> = {
     enginePower: 0.993,
     reliability: 0.97,
     pitStopAverageTime: 2.4,
+    engineManufacturer: 'Honda RBPT',
+    engineModel: 'Honda RBPT RBPTH002 1.6L V6 Turbo',
+    horsepower: 1030,
     drivers: ['tsunoda', 'hadjar']
   },
   haas: {
@@ -112,6 +132,9 @@ export const TEAMS: Record<string, Team> = {
     enginePower: 0.995,
     reliability: 0.97,
     pitStopAverageTime: 2.4,
+    engineManufacturer: 'Scuderia Ferrari',
+    engineModel: 'Ferrari 066/12 1.6L V6 Turbo',
+    horsepower: 1038,
     drivers: ['ocon', 'bearman']
   },
   alpine: {
@@ -126,6 +149,9 @@ export const TEAMS: Record<string, Team> = {
     enginePower: 0.990,
     reliability: 0.97,
     pitStopAverageTime: 2.5,
+    engineManufacturer: 'Renault',
+    engineModel: 'Renault E-Tech RE24 1.6L V6 Turbo',
+    horsepower: 1015,
     drivers: ['gasly', 'doohan']
   },
   sauber: {
@@ -140,6 +166,9 @@ export const TEAMS: Record<string, Team> = {
     enginePower: 0.990,
     reliability: 0.96,
     pitStopAverageTime: 2.6,
+    engineManufacturer: 'Scuderia Ferrari',
+    engineModel: 'Ferrari 066/12 1.6L V6 Turbo',
+    horsepower: 1038,
     drivers: ['hulkenberg', 'bortoleto']
   }
 };
