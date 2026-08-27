@@ -670,7 +670,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 </div>
                 <div style={{ marginTop: '4px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <img 
-                    src={`/circuits/minimal/${selectedCircuit.svgFile}`} 
+                    src={`${import.meta.env.BASE_URL}circuits/minimal/${selectedCircuit.svgFile}`} 
                     alt={selectedCircuit.name} 
                     style={{ maxHeight: '100%', maxWidth: '100%', filter: 'drop-shadow(0 0 6px rgba(225,6,0,0.5))' }} 
                   />
