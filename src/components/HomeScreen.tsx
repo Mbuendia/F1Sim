@@ -1,11 +1,23 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import styles from './HomeScreen.module.css';
 import { DRIVERS } from '../data/drivers';
 import { TEAMS, STARTING_GRID_ORDER } from '../data/teams';
-import { BARCELONA_CIRCUIT } from '../data/barcelonaTrack';
+import { OFFICIAL_CIRCUITS, CircuitSpec } from '../data/circuits';
 import { RaceResultHistory } from '../types/f1';
-import { Play, MapPin, History, Sparkles, Wrench, Shield, Zap, Check, X, Flame } from 'lucide-react';
-import { animate, stagger } from 'animejs';
+import { 
+  Play, 
+  MapPin, 
+  History, 
+  Sparkles, 
+  Wrench, 
+  Users, 
+  Clock, 
+  CloudRain, 
+  Wind, 
+  ExternalLink,
+  Flag
+} from 'lucide-react';
+import { animate } from 'animejs';
 
 interface HomeScreenProps {
   selectedDriverId: string;
@@ -20,89 +32,77 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   onStartRace,
   raceHistory
 }) => {
-  const [modalDriverId, setModalDriverId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'drivers' | 'circuits'>('drivers');
+  const [selectedCircuitId, setSelectedCircuitId] = useState<string>('barcelona');
+  const [inspectedDriverId, setInspectedDriverId] = useState<string>(selectedDriverId);
+  const [inspectedCircuitId, setInspectedCircuitId] = useState<string>('barcelona');
+
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const modalRef = useRef<HTMLDivElement | null>(null);
+  const rightPanelRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    if (containerRef.current) {
-      animate(`.${styles.driverCard}`, {
-        scale: [0.94, 1],
-        opacity: [0, 1],
-        delay: stagger(16),
+    setInspectedDriverId(selectedDriverId);
+  }, [selectedDriverId]);
+
+  // Animación al cambiar de foco
+  useEffect(() => {
+    if (rightPanelRef.current) {
+      animate(rightPanelRef.current, {
+        opacity: [0.85, 1],
+        translateX: [8, 0],
         ease: 'outQuad',
-        duration: 350
+        duration: 300
       });
     }
-  }, []);
+  }, [inspectedDriverId, inspectedCircuitId, activeTab]);
 
-  useEffect(() => {
-    if (modalDriverId && modalRef.current) {
-      animate(modalRef.current, {
-        scale: [0.88, 1],
-        opacity: [0, 1],
-        ease: 'outElastic(1, .75)',
-        duration: 450
-      });
-    }
-  }, [modalDriverId]);
-
+  // Dibujar circuito en el canvas SVG interactivo
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    canvas.width = 300;
-    canvas.height = 130;
+    canvas.width = 380;
+    canvas.height = 150;
 
+    const circuit = OFFICIAL_CIRCUITS[inspectedCircuitId] || OFFICIAL_CIRCUITS['barcelona'];
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    const b = BARCELONA_CIRCUIT.bounds;
-    const tW = b.maxX - b.minX;
-    const tH = b.maxY - b.minY;
-    const scale = Math.min((canvas.width - 24) / tW, (canvas.height - 24) / tH);
-    const offX = 12 + (canvas.width - 24 - tW * scale) / 2;
-    const offY = 12 + (canvas.height - 24 - tH * scale) / 2;
 
-    const toScreen = (x: number, y: number) => ({
-      x: (x - b.minX) * scale + offX,
-      y: (y - b.minY) * scale + offY
-    });
-
-    const pts = BARCELONA_CIRCUIT.points;
-    ctx.beginPath();
-    const first = toScreen(pts[0].x, pts[0].y);
-    ctx.moveTo(first.x, first.y);
-    for (let i = 2; i < pts.length; i += 2) {
-      const p = toScreen(pts[i].x, pts[i].y);
-      ctx.lineTo(p.x, p.y);
-    }
-    ctx.closePath();
+    // Dibujar trazo
+    const p = new Path2D(circuit.svgPath);
+    ctx.save();
+    ctx.scale(canvas.width / 1600, canvas.height / 950);
     ctx.strokeStyle = '#e10600';
-    ctx.lineWidth = 2.5;
+    ctx.lineWidth = 14;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
-    ctx.stroke();
+    ctx.shadowColor = '#e10600';
+    ctx.shadowBlur = 15;
+    ctx.stroke(p);
 
-    ctx.fillStyle = '#ffffff';
-    ctx.beginPath();
-    ctx.arc(first.x, first.y, 3.5, 0, Math.PI * 2);
-    ctx.fill();
-  }, []);
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 4;
+    ctx.shadowBlur = 0;
+    ctx.stroke(p);
+    ctx.restore();
+  }, [inspectedCircuitId, activeTab]);
 
-  const modalDriver = modalDriverId ? DRIVERS[modalDriverId] : null;
-  const modalTeam = modalDriver ? TEAMS[modalDriver.teamId] : null;
+  const activeDriver = DRIVERS[inspectedDriverId] || DRIVERS[selectedDriverId] || DRIVERS['alonso'];
+  const activeTeam = TEAMS[activeDriver.teamId];
+  const activeCircuit = OFFICIAL_CIRCUITS[inspectedCircuitId] || OFFICIAL_CIRCUITS['barcelona'];
+  const selectedDriver = DRIVERS[selectedDriverId];
+  const selectedCircuit = OFFICIAL_CIRCUITS[selectedCircuitId];
 
   return (
-    <div ref={containerRef} className={styles.homeContainer}>
+    <div className={styles.homeContainer}>
       {/* ── HEADER ── */}
       <header className={styles.header}>
         <div className={styles.brandGroup}>
           <div className={styles.f1Logo}>F1</div>
           <div className={styles.headerTitles}>
             <h1>F1 GRAND PRIX SIMULATOR</h1>
-            <p>SELECCIÓN DE PILOTO, FICHA TÉCNICA OFICIAL & CIRCUITO</p>
+            <p>CENTRO DE CONTROL OFICIAL · SELECCIÓN DE PILOTO & CIRCUITO</p>
           </div>
         </div>
       </header>
@@ -111,7 +111,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       {raceHistory.length > 0 && (
         <section className={styles.historySection}>
           <div className={styles.historyTitle}>
-            <History size={14} />
+            <History size={13} />
             <span>HISTORIAL DE CARRERAS DISPUTADAS ({raceHistory.length})</span>
           </div>
 
@@ -131,7 +131,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 <div className={styles.historyStrategy}>
                   <span>Estrategia: {race.winnerStrategy}</span>
                 </div>
-                <div style={{ fontSize: '9.5px', color: '#94a3b8', marginTop: '2px' }}>
+                <div style={{ fontSize: '9px', color: '#94a3b8', marginTop: '1px' }}>
                   Tu piloto: <strong>{race.userDriverName} (P{race.userDriverPos})</strong> · Tiempo: {race.totalRaceTime}
                 </div>
               </div>
@@ -140,291 +140,334 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         </section>
       )}
 
-      {/* ── LAYOUT DE 2 COLUMNAS (GRID PILOTOS + CIRCUITO) ── */}
-      <div className={styles.selectionRow}>
-        {/* 1. Grid de Pilotos */}
-        <div>
-          <div className={styles.sectionTitle}>
-            <Sparkles size={15} color="#ffd700" />
-            <span>PARRILLA DE PILOTOS 2026 (Haz clic o pasa el ratón para ver la ficha técnica)</span>
-          </div>
-
-          <div className={styles.driversGrid}>
-            {STARTING_GRID_ORDER.map((driverId) => {
-              const driver = DRIVERS[driverId];
-              const team = TEAMS[driver.teamId];
-              const isSelected = selectedDriverId === driverId;
-
-              return (
-                <div
-                  key={driver.id}
-                  className={`${styles.driverCard} ${isSelected ? styles.driverCardSelected : ''}`}
-                  style={{ borderLeftColor: team.color }}
-                  onClick={() => {
-                    onSelectDriver(driver.id);
-                    setModalDriverId(driver.id);
-                  }}
-                  onMouseEnter={() => {
-                    setModalDriverId(driver.id);
-                  }}
-                >
-                  <div className={styles.cardTopRow}>
-                    <div className={styles.driverFlagName}>
-                      <span>{driver.countryFlag}</span>
-                      <span className={styles.driverName}>{driver.firstName} {driver.lastName}</span>
-                    </div>
-                    <span className={styles.driverNum} style={{ color: team.color }}>#{driver.number}</span>
-                  </div>
-
-                  <div className={styles.driverTeam}>{team.name}</div>
-                  
-                  <div className={styles.engineBadge}>
-                    ⚡ {team.engineManufacturer} ({team.horsepower} CV)
-                  </div>
-
-                  <div className={styles.statsRow}>
-                    <span>🏆 {driver.worldChampionships} Tit.</span>
-                    <span>🥇 {driver.careerWins} Wins</span>
-                    <span>🍀 {Math.round(driver.luckRating * 100)}% Suerte</span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* 2. Circuito Oficial */}
-        <div>
-          <div className={styles.sectionTitle}>
-            <MapPin size={15} color="#e10600" />
-            <span>CIRCUITO OFICIAL</span>
-          </div>
-
-          <div className={styles.trackCard}>
-            <canvas ref={canvasRef} className={styles.trackPreviewCanvas} />
-
-            <div className={styles.trackInfo}>
-              <h3>{BARCELONA_CIRCUIT.name}</h3>
-              <p>{BARCELONA_CIRCUIT.location} · {BARCELONA_CIRCUIT.country}</p>
-
-              <div className={styles.trackSpecsList}>
-                <div>📏 <strong>Longitud:</strong> {BARCELONA_CIRCUIT.lapLengthMeters} metros</div>
-                <div>🔄 <strong>Vueltas totales:</strong> {BARCELONA_CIRCUIT.totalLaps} vueltas</div>
-                <div>⚡ <strong>Curvas:</strong> 16 curvas oficiales</div>
-                <div>🏁 <strong>Sentido:</strong> Horario</div>
-                <div>🛑 <strong>Pit Lane:</strong> Límite 80 km/h</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ── BOTÓN INICIAR GRAN PREMIO ── */}
-      <div className={styles.startSection}>
-        <button className={styles.launchButton} onClick={onStartRace}>
-          <Play size={18} fill="#ffffff" />
-          <span>ENTRAR A PISTA & EMPEZAR GRAN PREMIO</span>
-        </button>
-      </div>
-
-      {/* ════ OVERLAY GIGANTE DE FICHA TÉCNICA A PANTALLA COMPLETA ════ */}
-      {modalDriver && modalTeam && (
-        <div 
-          className={styles.overlayBackdrop} 
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setModalDriverId(null);
-          }}
-        >
-          <div ref={modalRef} className={styles.overlayModal} style={{ borderTopColor: modalTeam.color }}>
-            <button className={styles.modalCloseBtn} onClick={() => setModalDriverId(null)}>
-              <X size={16} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '4px' }} />
-              CERRAR (ESC)
+      {/* ════ SPLIT-SCREEN LAYOUT ════ */}
+      <div className={styles.splitLayout}>
+        {/* ── COLUMNA IZQUIERDA (Scroll de Pilotos o Circuitos) ── */}
+        <div className={styles.leftColumn}>
+          <div className={styles.tabButtonsRow}>
+            <button 
+              className={`${styles.tabBtn} ${activeTab === 'drivers' ? styles.tabBtnActive : ''}`}
+              onClick={() => setActiveTab('drivers')}
+            >
+              <Sparkles size={14} />
+              <span>PILOTOS ({STARTING_GRID_ORDER.length})</span>
             </button>
+            <button 
+              className={`${styles.tabBtn} ${activeTab === 'circuits' ? styles.tabBtnActive : ''}`}
+              onClick={() => setActiveTab('circuits')}
+            >
+              <Flag size={14} />
+              <span>CIRCUITOS ({Object.keys(OFFICIAL_CIRCUITS).length})</span>
+            </button>
+          </div>
 
-            {/* Cabecera del Piloto */}
-            <div className={styles.modalHeroRow}>
-              <div>
-                <div className={styles.modalDriverNameBig}>
-                  <span>{modalDriver.countryFlag}</span>
-                  <span>{modalDriver.firstName} {modalDriver.lastName}</span>
-                </div>
-                <div className={styles.modalTeamSubtitle}>
-                  {modalTeam.name} · Piloto Oficial FIA Formula 1
-                </div>
-              </div>
-              <div className={styles.modalNumberPill} style={{ color: modalTeam.color, border: `2px solid ${modalTeam.color}` }}>
-                #{modalDriver.number}
-              </div>
-            </div>
+          <div className={styles.scrollableListWrapper}>
+            {activeTab === 'drivers' ? (
+              STARTING_GRID_ORDER.map((driverId) => {
+                const d = DRIVERS[driverId];
+                const t = TEAMS[d.teamId];
+                const isSelected = selectedDriverId === driverId;
+                const isInspected = inspectedDriverId === driverId;
 
-            {/* Contenido en 2 Columnas Grandes */}
-            <div className={styles.modalContentGrid}>
-              {/* Columna Izquierda: Ficha Técnica del Monoplaza & Motor */}
-              <div className={styles.modalSectionCard}>
-                <div className={styles.modalSectionTitle}>
-                  <Wrench size={16} color="#38bdf8" />
-                  <span>ESPECIFICACIONES TÉCNICAS DEL MONOPLAZA</span>
-                </div>
-
-                <div className={styles.modalSpecs2Col}>
-                  <div className={styles.modalSpecBox}>
-                    <span className={styles.modalSpecLabel}>⚡ Fabricante Unidad de Potencia</span>
-                    <span className={styles.modalSpecVal} style={{ color: '#ffd700' }}>{modalTeam.engineManufacturer}</span>
-                  </div>
-
-                  <div className={styles.modalSpecBox}>
-                    <span className={styles.modalSpecLabel}>🐎 Potencia Estimada</span>
-                    <span className={styles.modalSpecVal} style={{ color: '#38bdf8' }}>{modalTeam.horsepower} CV</span>
-                  </div>
-
-                  <div className={styles.modalSpecBox} style={{ gridColumn: 'span 2' }}>
-                    <span className={styles.modalSpecLabel}>🔧 Modelo de Motor V6 Turbo Híbrido</span>
-                    <span className={styles.modalSpecVal} style={{ fontSize: '11px' }}>{modalTeam.engineModel}</span>
-                  </div>
-
-                  <div className={styles.modalSpecBox}>
-                    <span className={styles.modalSpecLabel}>🚀 Velocidad Punta Estimada</span>
-                    <span className={styles.modalSpecVal}>{Math.round(338 + modalTeam.carPerformance * 16)} km/h (DRS)</span>
-                  </div>
-
-                  <div className={styles.modalSpecBox}>
-                    <span className={styles.modalSpecLabel}>🌪️ Carga Aerodinámica (Downforce)</span>
-                    <span className={styles.modalSpecVal}>{Math.round(1450 + modalTeam.aerodynamics * 350)} kgf (@250km/h)</span>
-                  </div>
-
-                  <div className={styles.modalSpecBox}>
-                    <span className={styles.modalSpecLabel}>⚙️ Transmisión & Marchas</span>
-                    <span className={styles.modalSpecVal}>8 Vel. Seamless + R</span>
-                  </div>
-
-                  <div className={styles.modalSpecBox}>
-                    <span className={styles.modalSpecLabel}>🔴 Límite de RPM FIA</span>
-                    <span className={styles.modalSpecVal}>15.000 RPM (13.5k Race)</span>
-                  </div>
-
-                  <div className={styles.modalSpecBox}>
-                    <span className={styles.modalSpecLabel}>⏱️ Tiempo Medio Pit Stop</span>
-                    <span className={styles.modalSpecVal}>{modalTeam.pitStopAverageTime.toFixed(1)}s</span>
-                  </div>
-
-                  <div className={styles.modalSpecBox}>
-                    <span className={styles.modalSpecLabel}>🛡️ Fiabilidad Mecánica Base</span>
-                    <span className={styles.modalSpecVal} style={{ color: modalTeam.reliability > 0.97 ? '#22c55e' : '#f59e0b' }}>
-                      {Math.round(modalTeam.reliability * 100)}%
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Columna Derecha: Palmarés Oficial & Radar de Habilidades del Piloto */}
-              <div className={styles.modalSectionCard}>
-                <div className={styles.modalSectionTitle}>
-                  <Sparkles size={16} color="#ffd700" />
-                  <span>PALMARÉS Y ATRIBUTOS DE PILOTAJE</span>
-                </div>
-
-                {/* Palmarés */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
-                  <div className={styles.modalSpecBox} style={{ textAlign: 'center' }}>
-                    <span className={styles.modalSpecLabel}>🏆 Mundiales</span>
-                    <span className={styles.modalSpecVal} style={{ color: '#ffd700', fontSize: '18px' }}>{modalDriver.worldChampionships}</span>
-                  </div>
-                  <div className={styles.modalSpecBox} style={{ textAlign: 'center' }}>
-                    <span className={styles.modalSpecLabel}>🥇 Victorias</span>
-                    <span className={styles.modalSpecVal} style={{ fontSize: '18px' }}>{modalDriver.careerWins}</span>
-                  </div>
-                  <div className={styles.modalSpecBox} style={{ textAlign: 'center' }}>
-                    <span className={styles.modalSpecLabel}>🥈 Podios</span>
-                    <span className={styles.modalSpecVal} style={{ fontSize: '18px' }}>{modalDriver.careerPodiums}</span>
-                  </div>
-                </div>
-
-                {/* Radar con explicaciones */}
-                <div className={styles.modalRadarList} style={{ marginTop: '8px' }}>
-                  <div className={styles.modalRadarItem}>
-                    <div>
-                      <span>🧠 Talento Puro & Ritmo en Vuelta</span>
-                      <div style={{ fontSize: '9px', color: '#94a3b8' }}>Velocidad pura y tiempo por vuelta</div>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <div className={styles.modalRadarBarBg}>
-                        <div className={styles.modalRadarBarFill} style={{ width: `${modalDriver.talentRating * 100}%`, backgroundColor: '#38bdf8' }} />
+                return (
+                  <div
+                    key={d.id}
+                    className={`${styles.driverListItem} ${isSelected || isInspected ? styles.driverListItemActive : ''}`}
+                    style={{ borderLeftColor: t.color }}
+                    onClick={() => {
+                      onSelectDriver(d.id);
+                      setInspectedDriverId(d.id);
+                    }}
+                    onMouseEnter={() => setInspectedDriverId(d.id)}
+                  >
+                    <div className={styles.driverListLeft}>
+                      <span className={styles.driverListFlag}>{d.countryFlag}</span>
+                      <div>
+                        <div className={styles.driverListName}>{d.firstName} {d.lastName}</div>
+                        <div className={styles.driverListTeam}>{t.name}</div>
+                        <div className={styles.driverListEngine}>⚡ {t.engineManufacturer} ({t.horsepower} CV)</div>
                       </div>
-                      <span style={{ fontFamily: 'Orbitron', minWidth: '32px' }}>{Math.round(modalDriver.talentRating * 100)}%</span>
+                    </div>
+
+                    <div className={styles.driverListRight}>
+                      <span className={styles.driverListNum} style={{ color: t.color }}>#{d.number}</span>
+                      <span style={{ fontSize: '10px', color: '#94a3b8' }}>🏆 {d.worldChampionships} Tit. · 🥇 {d.careerWins}W</span>
                     </div>
                   </div>
+                );
+              })
+            ) : (
+              Object.values(OFFICIAL_CIRCUITS).map((circuit: CircuitSpec) => {
+                const isSelected = selectedCircuitId === circuit.id;
+                const isInspected = inspectedCircuitId === circuit.id;
 
-                  <div className={styles.modalRadarItem}>
+                return (
+                  <div
+                    key={circuit.id}
+                    className={`${styles.circuitListItem} ${isSelected || isInspected ? styles.circuitListItemActive : ''}`}
+                    onClick={() => {
+                      setSelectedCircuitId(circuit.id);
+                      setInspectedCircuitId(circuit.id);
+                    }}
+                    onMouseEnter={() => setInspectedCircuitId(circuit.id)}
+                  >
                     <div>
-                      <span>🛞 Gestión de Neumáticos (Tire Save)</span>
-                      <div style={{ fontSize: '9px', color: '#94a3b8' }}>Mayor duración y agarre prolongado de gomas</div>
+                      <div className={styles.circuitListName}>{circuit.countryFlag} {circuit.name}</div>
+                      <div className={styles.circuitListSub}>{circuit.officialGpName} · {circuit.location}</div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <div className={styles.modalRadarBarBg}>
-                        <div className={styles.modalRadarBarFill} style={{ width: `${modalDriver.tireManagement * 100}%`, backgroundColor: '#22c55e' }} />
-                      </div>
-                      <span style={{ fontFamily: 'Orbitron', minWidth: '32px' }}>{Math.round(modalDriver.tireManagement * 100)}%</span>
-                    </div>
+                    <span style={{ fontFamily: 'Orbitron', fontSize: '11px', color: '#38bdf8' }}>{circuit.totalLaps} Vtas</span>
                   </div>
-
-                  <div className={styles.modalRadarItem}>
-                    <div>
-                      <span>⚔️ Agresividad en Batalla (Racecraft)</span>
-                      <div style={{ fontSize: '9px', color: '#94a3b8' }}>Facilidad para defender y adelantar en pista</div>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <div className={styles.modalRadarBarBg}>
-                        <div className={styles.modalRadarBarFill} style={{ width: `${modalDriver.raceCraft * 100}%`, backgroundColor: '#e10600' }} />
-                      </div>
-                      <span style={{ fontFamily: 'Orbitron', minWidth: '32px' }}>{Math.round(modalDriver.raceCraft * 100)}%</span>
-                    </div>
-                  </div>
-
-                  <div className={styles.modalRadarItem}>
-                    <div>
-                      <span>🎯 Consistencia de Vueltas (Lap Precision)</span>
-                      <div style={{ fontSize: '9px', color: '#94a3b8' }}>Vueltas calcadas en milésimas sin errores</div>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <div className={styles.modalRadarBarBg}>
-                        <div className={styles.modalRadarBarFill} style={{ width: `${modalDriver.consistency * 100}%`, backgroundColor: '#c084fc' }} />
-                      </div>
-                      <span style={{ fontFamily: 'Orbitron', minWidth: '32px' }}>{Math.round(modalDriver.consistency * 100)}%</span>
-                    </div>
-                  </div>
-
-                  <div className={styles.modalRadarItem}>
-                    <div>
-                      <span>🍀 Factor Suerte & Resistencia a Averías</span>
-                      <div style={{ fontSize: '9px', color: '#94a3b8' }}>Inmunidad a pinchazos y roturas de motor V6</div>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <div className={styles.modalRadarBarBg}>
-                        <div className={styles.modalRadarBarFill} style={{ width: `${modalDriver.luckRating * 100}%`, backgroundColor: '#ffd700' }} />
-                      </div>
-                      <span style={{ fontFamily: 'Orbitron', minWidth: '32px' }}>{Math.round(modalDriver.luckRating * 100)}%</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Acciones del Modal */}
-            <div className={styles.modalActions}>
-              <button 
-                className={styles.selectDriverConfirmBtn} 
-                onClick={() => {
-                  onSelectDriver(modalDriver.id);
-                  setModalDriverId(null);
-                }}
-              >
-                <Check size={16} />
-                <span>SELECCIONAR A {modalDriver.lastName.toUpperCase()} COMO PROTAGONISTA</span>
-              </button>
-            </div>
+                );
+              })
+            )}
           </div>
         </div>
-      )}
+
+        {/* ── COLUMNA DERECHA (Panel Fijo Amplio de Información) ── */}
+        <div ref={rightPanelRef} className={styles.rightColumn}>
+          {activeTab === 'drivers' ? (
+            /* DETALLE COMPLETO DEL PILOTO Y MONOPLAZA */
+            <div>
+              <div className={styles.detailHeader}>
+                <div>
+                  <div className={styles.detailTitleBig}>
+                    <span>{activeDriver.countryFlag}</span>
+                    <span>{activeDriver.firstName} {activeDriver.lastName}</span>
+                  </div>
+                  <div className={styles.detailSubtitle}>
+                    {activeTeam.name} · Piloto Oficial F1 2026
+                  </div>
+                </div>
+                <div className={styles.detailNumberBadge} style={{ color: activeTeam.color, border: `2px solid ${activeTeam.color}` }}>
+                  #{activeDriver.number}
+                </div>
+              </div>
+
+              <div className={styles.detailContentGrid}>
+                {/* 1. Ficha Técnica del Monoplaza */}
+                <div className={styles.detailCardBox}>
+                  <div className={styles.detailCardTitle}>
+                    <Wrench size={14} />
+                    <span>FICHA TÉCNICA DEL MONOPLAZA</span>
+                  </div>
+
+                  <div className={styles.specs2ColGrid}>
+                    <div className={styles.specItem}>
+                      <span className={styles.specItemLabel}>⚡ Motor V6 Híbrido</span>
+                      <span className={styles.specItemVal} style={{ color: '#ffd700' }}>{activeTeam.engineManufacturer}</span>
+                    </div>
+
+                    <div className={styles.specItem}>
+                      <span className={styles.specItemLabel}>🐎 Potencia Real Estimada</span>
+                      <span className={styles.specItemVal} style={{ color: '#38bdf8' }}>{activeTeam.horsepower} CV</span>
+                    </div>
+
+                    <div className={styles.specItem} style={{ gridColumn: 'span 2' }}>
+                      <span className={styles.specItemLabel}>🔧 Unidad de Potencia</span>
+                      <span className={styles.specItemVal} style={{ fontSize: '10.5px' }}>{activeTeam.engineModel}</span>
+                    </div>
+
+                    <div className={styles.specItem}>
+                      <span className={styles.specItemLabel}>🚀 Velocidad Punta Estimada</span>
+                      <span className={styles.specItemVal}>{Math.round(338 + activeTeam.carPerformance * 16)} km/h (DRS)</span>
+                    </div>
+
+                    <div className={styles.specItem}>
+                      <span className={styles.specItemLabel}>🌪️ Carga Aerodinámica</span>
+                      <span className={styles.specItemVal}>{Math.round(1450 + activeTeam.aerodynamics * 350)} kgf</span>
+                    </div>
+
+                    <div className={styles.specItem}>
+                      <span className={styles.specItemLabel}>⚙️ Transmisión</span>
+                      <span className={styles.specItemVal}>8 Marchas Seamless + R</span>
+                    </div>
+
+                    <div className={styles.specItem}>
+                      <span className={styles.specItemLabel}>🔴 RPM Máximas FIA</span>
+                      <span className={styles.specItemVal}>15.000 RPM (13.5k Race)</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. Palmarés y Radar de Atributos */}
+                <div className={styles.detailCardBox}>
+                  <div className={styles.detailCardTitle}>
+                    <Sparkles size={14} color="#ffd700" />
+                    <span>PALMARÉS & ATRIBUTOS DE PILOTAJE</span>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px' }}>
+                    <div className={styles.specItem} style={{ textAlign: 'center' }}>
+                      <span className={styles.specItemLabel}>🏆 Mundiales</span>
+                      <span className={styles.specItemVal} style={{ color: '#ffd700', fontSize: '16px' }}>{activeDriver.worldChampionships}</span>
+                    </div>
+                    <div className={styles.specItem} style={{ textAlign: 'center' }}>
+                      <span className={styles.specItemLabel}>🥇 Victorias</span>
+                      <span className={styles.specItemVal} style={{ fontSize: '16px' }}>{activeDriver.careerWins}</span>
+                    </div>
+                    <div className={styles.specItem} style={{ textAlign: 'center' }}>
+                      <span className={styles.specItemLabel}>🥈 Podios</span>
+                      <span className={styles.specItemVal} style={{ fontSize: '16px' }}>{activeDriver.careerPodiums}</span>
+                    </div>
+                  </div>
+
+                  <div className={styles.radarList} style={{ marginTop: '4px' }}>
+                    <div className={styles.radarRow}>
+                      <span>🧠 Talento Puro & Pace</span>
+                      <div className={styles.radarBarBg}>
+                        <div className={styles.radarBarFill} style={{ width: `${activeDriver.talentRating * 100}%`, backgroundColor: '#38bdf8' }} />
+                      </div>
+                      <span style={{ fontFamily: 'Orbitron', minWidth: '28px' }}>{Math.round(activeDriver.talentRating * 100)}%</span>
+                    </div>
+
+                    <div className={styles.radarRow}>
+                      <span>🛞 Gestión Neumáticos (+Speed)</span>
+                      <div className={styles.radarBarBg}>
+                        <div className={styles.radarBarFill} style={{ width: `${activeDriver.tireManagement * 100}%`, backgroundColor: '#22c55e' }} />
+                      </div>
+                      <span style={{ fontFamily: 'Orbitron', minWidth: '28px' }}>{Math.round(activeDriver.tireManagement * 100)}%</span>
+                    </div>
+
+                    <div className={styles.radarRow}>
+                      <span>🎯 Consistencia de Vuelta</span>
+                      <div className={styles.radarBarBg}>
+                        <div className={styles.radarBarFill} style={{ width: `${activeDriver.consistency * 100}%`, backgroundColor: '#c084fc' }} />
+                      </div>
+                      <span style={{ fontFamily: 'Orbitron', minWidth: '28px' }}>{Math.round(activeDriver.consistency * 100)}%</span>
+                    </div>
+
+                    <div className={styles.radarRow}>
+                      <span>⚔️ Agresividad en Batalla</span>
+                      <div className={styles.radarBarBg}>
+                        <div className={styles.radarBarFill} style={{ width: `${activeDriver.raceCraft * 100}%`, backgroundColor: '#e10600' }} />
+                      </div>
+                      <span style={{ fontFamily: 'Orbitron', minWidth: '28px' }}>{Math.round(activeDriver.raceCraft * 100)}%</span>
+                    </div>
+
+                    <div className={styles.radarRow}>
+                      <span>🍀 Factor Suerte & Fiabilidad</span>
+                      <div className={styles.radarBarBg}>
+                        <div className={styles.radarBarFill} style={{ width: `${activeDriver.luckRating * 100}%`, backgroundColor: '#ffd700' }} />
+                      </div>
+                      <span style={{ fontFamily: 'Orbitron', minWidth: '28px' }}>{Math.round(activeDriver.luckRating * 100)}%</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* DETALLE COMPLETO DEL CIRCUITO */
+            <div>
+              <div className={styles.detailHeader}>
+                <div>
+                  <div className={styles.detailTitleBig}>
+                    <span>{activeCircuit.countryFlag}</span>
+                    <span>{activeCircuit.name}</span>
+                  </div>
+                  <div className={styles.detailSubtitle}>
+                    {activeCircuit.officialGpName} · {activeCircuit.location}, {activeCircuit.country}
+                  </div>
+                </div>
+                <a
+                  href={activeCircuit.googleMapsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={styles.mapsLinkBtn}
+                  title="Abrir ubicación en Google Maps"
+                >
+                  <MapPin size={14} />
+                  <span>VER EN GOOGLE MAPS</span>
+                  <ExternalLink size={12} />
+                </a>
+              </div>
+
+              {/* Canvas del Trazado */}
+              <canvas ref={canvasRef} className={styles.trackCanvasBig} />
+
+              <div className={styles.detailContentGrid}>
+                {/* Métricas y Datos del Gran Premio */}
+                <div className={styles.detailCardBox}>
+                  <div className={styles.detailCardTitle}>
+                    <Users size={14} />
+                    <span>DATOS DEL EVENTO & AMBIENTE</span>
+                  </div>
+
+                  <div className={styles.specs2ColGrid}>
+                    <div className={styles.specItem}>
+                      <span className={styles.specItemLabel}>👥 Espectadores en Tribuna</span>
+                      <span className={styles.specItemVal} style={{ color: '#ffd700' }}>{activeCircuit.spectators.toLocaleString()}</span>
+                    </div>
+
+                    <div className={styles.specItem}>
+                      <span className={styles.specItemLabel}>🛑 Tiempo Perdido en Pit Lane</span>
+                      <span className={styles.specItemVal} style={{ color: '#38bdf8' }}>{activeCircuit.pitLaneTimeLossSec}s</span>
+                    </div>
+
+                    <div className={styles.specItem}>
+                      <span className={styles.specItemLabel}>🌧️ Probabilidad de Lluvia</span>
+                      <span className={styles.specItemVal} style={{ color: activeCircuit.rainProbabilityPercent > 30 ? '#38bdf8' : '#22c55e' }}>
+                        {activeCircuit.rainProbabilityPercent}%
+                      </span>
+                    </div>
+
+                    <div className={styles.specItem}>
+                      <span className={styles.specItemLabel}>💨 Viento en Pista</span>
+                      <span className={styles.specItemVal}>{activeCircuit.windSpeedKmh} km/h ({activeCircuit.windDirection})</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Especificaciones del Trazado */}
+                <div className={styles.detailCardBox}>
+                  <div className={styles.detailCardTitle}>
+                    <Flag size={14} color="#e10600" />
+                    <span>FICHA TÉCNICA DE LA PISTA</span>
+                  </div>
+
+                  <div className={styles.specs2ColGrid}>
+                    <div className={styles.specItem}>
+                      <span className={styles.specItemLabel}>📏 Longitud Oficial</span>
+                      <span className={styles.specItemVal}>{activeCircuit.lapLengthMeters} metros</span>
+                    </div>
+
+                    <div className={styles.specItem}>
+                      <span className={styles.specItemLabel}>🔄 Vueltas de Carrera</span>
+                      <span className={styles.specItemVal}>{activeCircuit.totalLaps} vueltas</span>
+                    </div>
+
+                    <div className={styles.specItem}>
+                      <span className={styles.specItemLabel}>⚡ Curvas Totales</span>
+                      <span className={styles.specItemVal}>{activeCircuit.turns} curvas</span>
+                    </div>
+
+                    <div className={styles.specItem}>
+                      <span className={styles.specItemLabel}>🏎️ Zonas de DRS</span>
+                      <span className={styles.specItemVal} style={{ color: '#00ff66' }}>{activeCircuit.drsZones} Zonas DRS</span>
+                    </div>
+
+                    <div className={styles.specItem} style={{ gridColumn: 'span 2' }}>
+                      <span className={styles.specItemLabel}>📍 Coordenadas GPS</span>
+                      <span className={styles.specItemVal} style={{ fontSize: '11px' }}>Lat: {activeCircuit.latitude} · Lon: {activeCircuit.longitude}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── FOOTER BAR DE INICIO ── */}
+          <div className={styles.footerBar}>
+            <div className={styles.selectionSummaryText}>
+              Configuración: <strong>{selectedDriver.countryFlag} {selectedDriver.firstName} {selectedDriver.lastName} (#{selectedDriver.number})</strong> en <strong>{selectedCircuit.countryFlag} {selectedCircuit.name}</strong>
+            </div>
+
+            <button className={styles.launchButton} onClick={onStartRace}>
+              <Play size={18} fill="#ffffff" />
+              <span>ENTRAR A PISTA & EMPEZAR GRAN PREMIO</span>
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

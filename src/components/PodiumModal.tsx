@@ -135,7 +135,6 @@ export const PodiumModal: React.FC<PodiumModalProps> = ({ podiumCars, onRestart,
               <div className={styles.driverFlag}>{p1.driver.countryFlag}</div>
               <div className={styles.winnerName}>{p1.driver.firstName} {p1.driver.lastName}</div>
               <div className={styles.teamName}>{p1.team.name}</div>
-              <div className={styles.winnerTag}>1º CLASIFICADO</div>
             </div>
             <div className={styles.pedestal} style={{ height: '190px', background: 'linear-gradient(180deg, #ffd700 0%, #b8860b 100%)' }}>
               <span className={styles.pedestalNumber} style={{ color: '#000000' }}>1</span>

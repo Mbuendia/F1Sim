@@ -6,7 +6,6 @@ import {
   History, 
   TrendingDown, 
   Gauge,
-  Fuel,
   Wind
 } from 'lucide-react';
 import { animate } from 'animejs';
@@ -58,7 +57,7 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
 
   if (!activeCar) return null;
 
-  const { driver, team, sectors, pitStop, stats, telemetry, tires, currentPosition, lapHistory, bestLapTime, fuelKg } = activeCar;
+  const { driver, team, sectors, pitStop, stats, telemetry, tires, currentPosition, lapHistory, bestLapTime } = activeCar;
 
   // ── 1. ESTILOS DE SECTORES ──
   const getSectorStyle = (
@@ -126,10 +125,8 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
   };
   const brakeStatus = getBrakeStatus(stats.brakeTempCelsius);
 
-  // Cálculos no redundantes de aerodinámica, frenada y gasolina
   const brakeBiasFront = 56.5;
   const tirePressurePsi = (22.5 + (tires.tempCelsius - 85) * 0.05).toFixed(1);
-  const fuelLapsLeft = Math.max(0, Math.floor(fuelKg / telemetry.fuelPerLap));
   const downforceLevel = team.aerodynamics > 0.90 ? 'ALTA (High Downforce)' : 'MEDIA (Medium DF)';
 
   return (
@@ -199,7 +196,6 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
 
             <line x1={padLeft} y1={getY(20)} x2={chartW - padRight} y2={getY(20)} stroke="#ef4444" strokeWidth="0.8" strokeDasharray="3,3" opacity="0.5" />
 
-            {/* Línea fija teórica de previsión de stint */}
             <line 
               x1={stintStartPoint.x} 
               y1={stintStartPoint.y} 
@@ -211,7 +207,6 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
               opacity="0.85" 
             />
 
-            {/* Línea sólida real */}
             {historyPoints.map((p, i) => {
               if (i === 0) return null;
               const prev = historyPoints[i - 1];
@@ -256,7 +251,7 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
         </div>
       </div>
 
-      {/* ── 3. TELEMETRÍA AVANZADA NO REDUNDANTE (FRENADA, MOTOR, COMBUSTIBLE & AERO) ── */}
+      {/* ── 3. TELEMETRÍA AVANZADA (FRENADA, MOTOR & AERO) ── */}
       <div className={styles.sectionCard}>
         <div className={styles.cardHeader}>
           <Gauge size={14} color="#38bdf8" />
@@ -291,23 +286,14 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
           </div>
         </div>
 
-        {/* Combustible y Aerodinámica */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginTop: '4px' }}>
-          <div className={styles.telemetryMiniBox}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <Fuel size={11} color="#f59e0b" />
-              <span className={styles.miniBoxLabel}>Combustible</span>
-            </div>
-            <span className={styles.miniBoxVal}>{fuelKg.toFixed(1)} kg</span>
-            <span style={{ fontSize: '8.5px', color: '#94a3b8' }}>{fuelLapsLeft} vueltas restantes</span>
-          </div>
-
+        {/* Aerodinámica */}
+        <div style={{ marginTop: '4px' }}>
           <div className={styles.telemetryMiniBox}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
               <Wind size={11} color="#38bdf8" />
-              <span className={styles.miniBoxLabel}>Carga Aerodinámica</span>
+              <span className={styles.miniBoxLabel}>Carga Aerodinámica & Eficiencia</span>
             </div>
-            <span className={styles.miniBoxVal} style={{ fontSize: '11px' }}>{downforceLevel}</span>
+            <span className={styles.miniBoxVal} style={{ fontSize: '11.5px' }}>{downforceLevel}</span>
             <span style={{ fontSize: '8.5px', color: '#22c55e' }}>Aero Rating: {Math.round(team.aerodynamics * 100)}%</span>
           </div>
         </div>
