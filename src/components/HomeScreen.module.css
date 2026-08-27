@@ -5,10 +5,10 @@
   background: radial-gradient(circle at 50% 10%, #111728 0%, #060912 100%);
   color: #f1f5f9;
   font-family: 'Inter', system-ui, sans-serif;
-  padding: 16px 28px 20px;
+  padding: 14px 24px 16px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
   user-select: none;
 }
 
@@ -18,7 +18,7 @@
   justify-content: space-between;
   align-items: center;
   border-bottom: 1.5px solid rgba(255, 255, 255, 0.1);
-  padding-bottom: 10px;
+  padding-bottom: 8px;
   flex-shrink: 0;
 }
 
@@ -38,7 +38,7 @@
 
 .headerTitles h1 {
   font-family: 'Orbitron', sans-serif;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 900;
   color: #ffffff;
   margin: 0;
@@ -47,7 +47,7 @@
 
 .headerTitles p {
   font-family: 'Rajdhani', sans-serif;
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 700;
   color: #94a3b8;
   margin: 1px 0 0;
@@ -57,17 +57,17 @@
 .historySection {
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
-  padding: 8px 14px;
+  border-radius: 8px;
+  padding: 6px 12px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   flex-shrink: 0;
 }
 
 .historyTitle {
   font-family: 'Orbitron', sans-serif;
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 900;
   color: #ffd700;
   letter-spacing: 1px;
@@ -78,7 +78,7 @@
 
 .historyCardsList {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   overflow-x: auto;
   padding-bottom: 2px;
 }
@@ -96,8 +96,8 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-left: 3px solid #ffd700;
   border-radius: 6px;
-  padding: 6px 10px;
-  min-width: 240px;
+  padding: 5px 8px;
+  min-width: 230px;
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -106,7 +106,7 @@
 .historyHeaderRow {
   display: flex;
   justify-content: space-between;
-  font-size: 9.5px;
+  font-size: 9px;
   font-family: 'Rajdhani', sans-serif;
   font-weight: 700;
   color: #94a3b8;
@@ -114,34 +114,33 @@
 
 .historyWinner {
   font-family: 'Orbitron', sans-serif;
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 900;
   color: #ffffff;
 }
 
 .historyPodiumSub {
-  font-size: 10px;
+  font-size: 9.5px;
   font-family: 'Rajdhani', sans-serif;
   font-weight: 700;
   color: #cbd5e1;
 }
 
 .historyStrategy {
-  font-size: 9.5px;
+  font-size: 9px;
   font-family: 'Rajdhani', sans-serif;
   font-weight: 700;
   color: #38bdf8;
   background: rgba(56, 189, 248, 0.1);
-  padding: 1px 5px;
+  padding: 1px 4px;
   border-radius: 3px;
-  margin-top: 1px;
 }
 
-/* ════ LAYOUT SPLIT-SCREEN (Mitad izquierda con scroll / Mitad derecha fija) ════ */
+/* ════ SPLIT-SCREEN LAYOUT ════ */
 .splitLayout {
   display: grid;
   grid-template-columns: 460px 1fr;
-  gap: 20px;
+  gap: 16px;
   flex: 1;
   min-height: 0;
 }
@@ -150,17 +149,18 @@
 .leftColumn {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   min-height: 0;
 }
 
 .tabButtonsRow {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   background: rgba(0, 0, 0, 0.4);
-  padding: 4px;
+  padding: 3px;
   border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
 }
 
 .tabBtn {
@@ -168,10 +168,10 @@
   background: transparent;
   border: none;
   color: #94a3b8;
-  padding: 8px 12px;
+  padding: 7px 10px;
   border-radius: 6px;
   font-family: 'Orbitron', sans-serif;
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 800;
   letter-spacing: 1px;
   cursor: pointer;
@@ -194,24 +194,24 @@
   padding-right: 6px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .scrollableListWrapper::-webkit-scrollbar {
-  width: 5px;
+  width: 4px;
 }
 .scrollableListWrapper::-webkit-scrollbar-thumb {
   background: #27354f;
-  border-radius: 3px;
+  border-radius: 2px;
 }
 
-/* Tarjetas de Piloto en Lista */
+/* Pilotos en Lista */
 .driverListItem {
   background: rgba(255, 255, 255, 0.04);
   border: 1.5px solid rgba(255, 255, 255, 0.1);
   border-left: 4px solid #64748b;
   border-radius: 8px;
-  padding: 8px 12px;
+  padding: 7px 10px;
   cursor: pointer;
   transition: all 0.15s ease;
   display: flex;
@@ -221,13 +221,13 @@
 
 .driverListItem:hover {
   background: rgba(255, 255, 255, 0.10);
-  transform: translateX(4px);
+  transform: translateX(3px);
 }
 
 .driverListItemActive {
   background: rgba(225, 6, 0, 0.20) !important;
   border-color: #e10600 !important;
-  box-shadow: 0 0 14px rgba(225, 6, 0, 0.35);
+  box-shadow: 0 0 12px rgba(225, 6, 0, 0.35);
 }
 
 .driverListLeft {
@@ -237,54 +237,54 @@
 }
 
 .driverListFlag {
-  font-size: 16px;
+  font-size: 15px;
 }
 
 .driverListName {
   font-family: 'Rajdhani', sans-serif;
-  font-size: 14.5px;
+  font-size: 14px;
   font-weight: 800;
   color: #ffffff;
 }
 
 .driverListTeam {
-  font-size: 11px;
+  font-size: 10.5px;
   font-family: 'Rajdhani', sans-serif;
   font-weight: 600;
   color: #94a3b8;
 }
 
 .driverListEngine {
-  font-size: 9.5px;
+  font-size: 9px;
   font-family: 'Rajdhani', sans-serif;
   font-weight: 700;
   color: #ffd700;
   background: rgba(255, 215, 0, 0.1);
   padding: 1px 4px;
   border-radius: 3px;
-  margin-top: 2px;
+  margin-top: 1px;
 }
 
 .driverListRight {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 2px;
+  gap: 1px;
 }
 
 .driverListNum {
   font-family: 'Orbitron', sans-serif;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 900;
 }
 
-/* Tarjetas de Circuito en Lista */
+/* Circuitos en Lista */
 .circuitListItem {
   background: rgba(255, 255, 255, 0.04);
   border: 1.5px solid rgba(255, 255, 255, 0.1);
   border-left: 4px solid #e10600;
   border-radius: 8px;
-  padding: 10px 12px;
+  padding: 8px 10px;
   cursor: pointer;
   transition: all 0.15s ease;
   display: flex;
@@ -294,35 +294,35 @@
 
 .circuitListItem:hover {
   background: rgba(255, 255, 255, 0.10);
-  transform: translateX(4px);
+  transform: translateX(3px);
 }
 
 .circuitListItemActive {
   background: rgba(56, 189, 248, 0.18) !important;
   border-color: #38bdf8 !important;
-  box-shadow: 0 0 14px rgba(56, 189, 248, 0.35);
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.35);
 }
 
 .circuitListName {
   font-family: 'Rajdhani', sans-serif;
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 800;
   color: #ffffff;
 }
 
 .circuitListSub {
-  font-size: 11px;
+  font-size: 10.5px;
   font-family: 'Rajdhani', sans-serif;
   font-weight: 600;
   color: #94a3b8;
 }
 
-/* ════ Columna Derecha (Panel Fijo Amplio de Información) ════ */
+/* ════ Columna Derecha (Panel Fijo Amplio) ════ */
 .rightColumn {
   background: linear-gradient(145deg, #111827 0%, #090e1a 100%);
   border: 1.5px solid rgba(255, 255, 255, 0.12);
-  border-radius: 14px;
-  padding: 18px 22px;
+  border-radius: 12px;
+  padding: 16px 20px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -332,11 +332,11 @@
 }
 
 .rightColumn::-webkit-scrollbar {
-  width: 5px;
+  width: 4px;
 }
 .rightColumn::-webkit-scrollbar-thumb {
   background: #27354f;
-  border-radius: 3px;
+  border-radius: 2px;
 }
 
 .detailHeader {
@@ -344,22 +344,22 @@
   justify-content: space-between;
   align-items: center;
   border-bottom: 1.5px solid rgba(255, 255, 255, 0.1);
-  padding-bottom: 12px;
+  padding-bottom: 10px;
 }
 
 .detailTitleBig {
   font-family: 'Orbitron', sans-serif;
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 900;
   color: #ffffff;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .detailSubtitle {
   font-family: 'Rajdhani', sans-serif;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
   color: #94a3b8;
   margin-top: 2px;
@@ -367,62 +367,62 @@
 
 .detailNumberBadge {
   font-family: 'Orbitron', sans-serif;
-  font-size: 26px;
+  font-size: 22px;
   font-weight: 900;
-  padding: 4px 14px;
-  border-radius: 8px;
+  padding: 3px 12px;
+  border-radius: 6px;
   background: rgba(255, 255, 255, 0.05);
 }
 
-/* Secciones dentro de la columna derecha */
+/* Grid de detalles */
 .detailContentGrid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 14px;
-  margin: 12px 0;
+  gap: 12px;
+  margin: 10px 0;
 }
 
 .detailCardBox {
   background: rgba(0, 0, 0, 0.35);
   border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 10px;
-  padding: 12px;
+  border-radius: 8px;
+  padding: 10px 12px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .detailCardTitle {
   font-family: 'Orbitron', sans-serif;
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 900;
   color: #38bdf8;
   letter-spacing: 1px;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  padding-bottom: 4px;
+  padding-bottom: 3px;
 }
 
 .specs2ColGrid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 6px;
+  gap: 5px;
 }
 
 .specItem {
   background: rgba(255, 255, 255, 0.025);
   border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 6px;
-  padding: 6px 8px;
+  border-radius: 5px;
+  padding: 5px 7px;
   display: flex;
   flex-direction: column;
   gap: 1px;
 }
 
 .specItemLabel {
-  font-size: 9.5px;
+  font-size: 9px;
   font-family: 'Rajdhani', sans-serif;
   font-weight: 700;
   color: #94a3b8;
@@ -430,7 +430,7 @@
 
 .specItemVal {
   font-family: 'Orbitron', sans-serif;
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 800;
   color: #ffffff;
 }
@@ -438,64 +438,77 @@
 .radarList {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
 }
 
 .radarRow {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 10.5px;
+  font-size: 10px;
   font-family: 'Rajdhani', sans-serif;
   font-weight: 700;
   color: #cbd5e1;
 }
 
 .radarBarBg {
-  width: 110px;
-  height: 5px;
+  width: 100px;
+  height: 4px;
   background: rgba(255, 255, 255, 0.1);
-  border-radius: 3px;
+  border-radius: 2px;
   overflow: hidden;
 }
 
 .radarBarFill {
   height: 100%;
-  border-radius: 3px;
+  border-radius: 2px;
 }
 
-/* Canvas del Circuito en la Columna Derecha */
-.trackCanvasBig {
+/* Visor Vectorial Oficial SVG del Circuito */
+.svgCircuitFrame {
   width: 100%;
-  height: 150px;
-  background: #090e18;
+  height: 180px;
+  background: radial-gradient(circle at 50% 50%, #151d2f 0%, #080c16 100%);
   border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1.5px solid rgba(255, 255, 255, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+  overflow: hidden;
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8);
+}
+
+.svgCircuitImage {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 0 10px rgba(225, 6, 0, 0.6));
 }
 
 .mapsLinkBtn {
   background: rgba(56, 189, 248, 0.15);
   border: 1px solid rgba(56, 189, 248, 0.4);
   color: #38bdf8;
-  padding: 6px 12px;
-  border-radius: 6px;
+  padding: 5px 10px;
+  border-radius: 5px;
   font-family: 'Rajdhani', sans-serif;
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 700;
   text-decoration: none;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   transition: all 0.2s;
 }
 
 .mapsLinkBtn:hover {
-  background: rgba(56, 189, 248, 0.28);
+  background: rgba(56, 189, 248, 0.3);
   border-color: #38bdf8;
   color: #ffffff;
 }
 
-/* Footer con Botón de Iniciar Carrera */
+/* Footer Bar */
 .footerBar {
   display: flex;
   justify-content: space-between;
@@ -507,7 +520,7 @@
 
 .selectionSummaryText {
   font-family: 'Rajdhani', sans-serif;
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 700;
   color: #cbd5e1;
 }
@@ -516,22 +529,22 @@
   background: linear-gradient(135deg, #e10600 0%, #9e0400 100%);
   color: #ffffff;
   border: none;
-  padding: 12px 36px;
+  padding: 10px 32px;
   border-radius: 8px;
   font-family: 'Orbitron', sans-serif;
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 900;
   letter-spacing: 2px;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 10px;
-  box-shadow: 0 8px 30px rgba(225, 6, 0, 0.5);
+  gap: 8px;
+  box-shadow: 0 6px 25px rgba(225, 6, 0, 0.5);
   transition: all 0.2s ease;
 }
 
 .launchButton:hover {
   transform: translateY(-2px);
-  box-shadow: 0 12px 38px rgba(225, 6, 0, 0.7);
+  box-shadow: 0 10px 32px rgba(225, 6, 0, 0.7);
   background: linear-gradient(135deg, #ff1a14 0%, #b80500 100%);
 }

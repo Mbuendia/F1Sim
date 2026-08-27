@@ -11,9 +11,6 @@ import {
   Sparkles, 
   Wrench, 
   Users, 
-  Clock, 
-  CloudRain, 
-  Wind, 
   ExternalLink,
   Flag
 } from 'lucide-react';
@@ -37,56 +34,22 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   const [inspectedDriverId, setInspectedDriverId] = useState<string>(selectedDriverId);
   const [inspectedCircuitId, setInspectedCircuitId] = useState<string>('barcelona');
 
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const rightPanelRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     setInspectedDriverId(selectedDriverId);
   }, [selectedDriverId]);
 
-  // Animación al cambiar de foco
   useEffect(() => {
     if (rightPanelRef.current) {
       animate(rightPanelRef.current, {
         opacity: [0.85, 1],
         translateX: [8, 0],
         ease: 'outQuad',
-        duration: 300
+        duration: 250
       });
     }
   }, [inspectedDriverId, inspectedCircuitId, activeTab]);
-
-  // Dibujar circuito en el canvas SVG interactivo
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    canvas.width = 380;
-    canvas.height = 150;
-
-    const circuit = OFFICIAL_CIRCUITS[inspectedCircuitId] || OFFICIAL_CIRCUITS['barcelona'];
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // Dibujar trazo
-    const p = new Path2D(circuit.svgPath);
-    ctx.save();
-    ctx.scale(canvas.width / 1600, canvas.height / 950);
-    ctx.strokeStyle = '#e10600';
-    ctx.lineWidth = 14;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    ctx.shadowColor = '#e10600';
-    ctx.shadowBlur = 15;
-    ctx.stroke(p);
-
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 4;
-    ctx.shadowBlur = 0;
-    ctx.stroke(p);
-    ctx.restore();
-  }, [inspectedCircuitId, activeTab]);
 
   const activeDriver = DRIVERS[inspectedDriverId] || DRIVERS[selectedDriverId] || DRIVERS['alonso'];
   const activeTeam = TEAMS[activeDriver.teamId];
@@ -111,7 +74,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       {raceHistory.length > 0 && (
         <section className={styles.historySection}>
           <div className={styles.historyTitle}>
-            <History size={13} />
+            <History size={12} />
             <span>HISTORIAL DE CARRERAS DISPUTADAS ({raceHistory.length})</span>
           </div>
 
@@ -131,7 +94,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 <div className={styles.historyStrategy}>
                   <span>Estrategia: {race.winnerStrategy}</span>
                 </div>
-                <div style={{ fontSize: '9px', color: '#94a3b8', marginTop: '1px' }}>
+                <div style={{ fontSize: '8.5px', color: '#94a3b8', marginTop: '1px' }}>
                   Tu piloto: <strong>{race.userDriverName} (P{race.userDriverPos})</strong> · Tiempo: {race.totalRaceTime}
                 </div>
               </div>
@@ -140,7 +103,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         </section>
       )}
 
-      {/* ════ SPLIT-SCREEN LAYOUT ════ */}
+      {/* ════ SPLIT-SCREEN LAYOUT (Izquierda Scrollable / Derecha Amplia) ════ */}
       <div className={styles.splitLayout}>
         {/* ── COLUMNA IZQUIERDA (Scroll de Pilotos o Circuitos) ── */}
         <div className={styles.leftColumn}>
@@ -149,14 +112,14 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               className={`${styles.tabBtn} ${activeTab === 'drivers' ? styles.tabBtnActive : ''}`}
               onClick={() => setActiveTab('drivers')}
             >
-              <Sparkles size={14} />
+              <Sparkles size={13} />
               <span>PILOTOS ({STARTING_GRID_ORDER.length})</span>
             </button>
             <button 
               className={`${styles.tabBtn} ${activeTab === 'circuits' ? styles.tabBtnActive : ''}`}
               onClick={() => setActiveTab('circuits')}
             >
-              <Flag size={14} />
+              <Flag size={13} />
               <span>CIRCUITOS ({Object.keys(OFFICIAL_CIRCUITS).length})</span>
             </button>
           </div>
@@ -191,7 +154,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
                     <div className={styles.driverListRight}>
                       <span className={styles.driverListNum} style={{ color: t.color }}>#{d.number}</span>
-                      <span style={{ fontSize: '10px', color: '#94a3b8' }}>🏆 {d.worldChampionships} Tit. · 🥇 {d.careerWins}W</span>
+                      <span style={{ fontSize: '9.5px', color: '#94a3b8' }}>🏆 {d.worldChampionships} Tit. · 🥇 {d.careerWins}W</span>
                     </div>
                   </div>
                 );
@@ -215,7 +178,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                       <div className={styles.circuitListName}>{circuit.countryFlag} {circuit.name}</div>
                       <div className={styles.circuitListSub}>{circuit.officialGpName} · {circuit.location}</div>
                     </div>
-                    <span style={{ fontFamily: 'Orbitron', fontSize: '11px', color: '#38bdf8' }}>{circuit.totalLaps} Vtas</span>
+                    <span style={{ fontFamily: 'Orbitron', fontSize: '10.5px', color: '#38bdf8' }}>{circuit.totalLaps} Vtas</span>
                   </div>
                 );
               })
@@ -223,7 +186,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           </div>
         </div>
 
-        {/* ── COLUMNA DERECHA (Panel Fijo Amplio de Información) ── */}
+        {/* ── COLUMNA DERECHA (Panel Fijo Amplio con SVG Oficial Íntegro) ── */}
         <div ref={rightPanelRef} className={styles.rightColumn}>
           {activeTab === 'drivers' ? (
             /* DETALLE COMPLETO DEL PILOTO Y MONOPLAZA */
@@ -235,7 +198,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                     <span>{activeDriver.firstName} {activeDriver.lastName}</span>
                   </div>
                   <div className={styles.detailSubtitle}>
-                    {activeTeam.name} · Piloto Oficial F1 2026
+                    {activeTeam.name} · Piloto Oficial FIA Formula 1
                   </div>
                 </div>
                 <div className={styles.detailNumberBadge} style={{ color: activeTeam.color, border: `2px solid ${activeTeam.color}` }}>
@@ -247,7 +210,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 {/* 1. Ficha Técnica del Monoplaza */}
                 <div className={styles.detailCardBox}>
                   <div className={styles.detailCardTitle}>
-                    <Wrench size={14} />
+                    <Wrench size={13} />
                     <span>FICHA TÉCNICA DEL MONOPLAZA</span>
                   </div>
 
@@ -264,7 +227,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
                     <div className={styles.specItem} style={{ gridColumn: 'span 2' }}>
                       <span className={styles.specItemLabel}>🔧 Unidad de Potencia</span>
-                      <span className={styles.specItemVal} style={{ fontSize: '10.5px' }}>{activeTeam.engineModel}</span>
+                      <span className={styles.specItemVal} style={{ fontSize: '10px' }}>{activeTeam.engineModel}</span>
                     </div>
 
                     <div className={styles.specItem}>
@@ -292,32 +255,32 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 {/* 2. Palmarés y Radar de Atributos */}
                 <div className={styles.detailCardBox}>
                   <div className={styles.detailCardTitle}>
-                    <Sparkles size={14} color="#ffd700" />
+                    <Sparkles size={13} color="#ffd700" />
                     <span>PALMARÉS & ATRIBUTOS DE PILOTAJE</span>
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '5px' }}>
                     <div className={styles.specItem} style={{ textAlign: 'center' }}>
                       <span className={styles.specItemLabel}>🏆 Mundiales</span>
-                      <span className={styles.specItemVal} style={{ color: '#ffd700', fontSize: '16px' }}>{activeDriver.worldChampionships}</span>
+                      <span className={styles.specItemVal} style={{ color: '#ffd700', fontSize: '15px' }}>{activeDriver.worldChampionships}</span>
                     </div>
                     <div className={styles.specItem} style={{ textAlign: 'center' }}>
                       <span className={styles.specItemLabel}>🥇 Victorias</span>
-                      <span className={styles.specItemVal} style={{ fontSize: '16px' }}>{activeDriver.careerWins}</span>
+                      <span className={styles.specItemVal} style={{ fontSize: '15px' }}>{activeDriver.careerWins}</span>
                     </div>
                     <div className={styles.specItem} style={{ textAlign: 'center' }}>
                       <span className={styles.specItemLabel}>🥈 Podios</span>
-                      <span className={styles.specItemVal} style={{ fontSize: '16px' }}>{activeDriver.careerPodiums}</span>
+                      <span className={styles.specItemVal} style={{ fontSize: '15px' }}>{activeDriver.careerPodiums}</span>
                     </div>
                   </div>
 
-                  <div className={styles.radarList} style={{ marginTop: '4px' }}>
+                  <div className={styles.radarList} style={{ marginTop: '3px' }}>
                     <div className={styles.radarRow}>
                       <span>🧠 Talento Puro & Pace</span>
                       <div className={styles.radarBarBg}>
                         <div className={styles.radarBarFill} style={{ width: `${activeDriver.talentRating * 100}%`, backgroundColor: '#38bdf8' }} />
                       </div>
-                      <span style={{ fontFamily: 'Orbitron', minWidth: '28px' }}>{Math.round(activeDriver.talentRating * 100)}%</span>
+                      <span style={{ fontFamily: 'Orbitron', minWidth: '26px' }}>{Math.round(activeDriver.talentRating * 100)}%</span>
                     </div>
 
                     <div className={styles.radarRow}>
@@ -325,7 +288,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                       <div className={styles.radarBarBg}>
                         <div className={styles.radarBarFill} style={{ width: `${activeDriver.tireManagement * 100}%`, backgroundColor: '#22c55e' }} />
                       </div>
-                      <span style={{ fontFamily: 'Orbitron', minWidth: '28px' }}>{Math.round(activeDriver.tireManagement * 100)}%</span>
+                      <span style={{ fontFamily: 'Orbitron', minWidth: '26px' }}>{Math.round(activeDriver.tireManagement * 100)}%</span>
                     </div>
 
                     <div className={styles.radarRow}>
@@ -333,7 +296,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                       <div className={styles.radarBarBg}>
                         <div className={styles.radarBarFill} style={{ width: `${activeDriver.consistency * 100}%`, backgroundColor: '#c084fc' }} />
                       </div>
-                      <span style={{ fontFamily: 'Orbitron', minWidth: '28px' }}>{Math.round(activeDriver.consistency * 100)}%</span>
+                      <span style={{ fontFamily: 'Orbitron', minWidth: '26px' }}>{Math.round(activeDriver.consistency * 100)}%</span>
                     </div>
 
                     <div className={styles.radarRow}>
@@ -341,7 +304,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                       <div className={styles.radarBarBg}>
                         <div className={styles.radarBarFill} style={{ width: `${activeDriver.raceCraft * 100}%`, backgroundColor: '#e10600' }} />
                       </div>
-                      <span style={{ fontFamily: 'Orbitron', minWidth: '28px' }}>{Math.round(activeDriver.raceCraft * 100)}%</span>
+                      <span style={{ fontFamily: 'Orbitron', minWidth: '26px' }}>{Math.round(activeDriver.raceCraft * 100)}%</span>
                     </div>
 
                     <div className={styles.radarRow}>
@@ -349,14 +312,14 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                       <div className={styles.radarBarBg}>
                         <div className={styles.radarBarFill} style={{ width: `${activeDriver.luckRating * 100}%`, backgroundColor: '#ffd700' }} />
                       </div>
-                      <span style={{ fontFamily: 'Orbitron', minWidth: '28px' }}>{Math.round(activeDriver.luckRating * 100)}%</span>
+                      <span style={{ fontFamily: 'Orbitron', minWidth: '26px' }}>{Math.round(activeDriver.luckRating * 100)}%</span>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
           ) : (
-            /* DETALLE COMPLETO DEL CIRCUITO */
+            /* DETALLE COMPLETO DEL CIRCUITO CON SVG OFICIAL */
             <div>
               <div className={styles.detailHeader}>
                 <div>
@@ -375,20 +338,27 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                   className={styles.mapsLinkBtn}
                   title="Abrir ubicación en Google Maps"
                 >
-                  <MapPin size={14} />
+                  <MapPin size={13} />
                   <span>VER EN GOOGLE MAPS</span>
-                  <ExternalLink size={12} />
+                  <ExternalLink size={11} />
                 </a>
               </div>
 
-              {/* Canvas del Trazado */}
-              <canvas ref={canvasRef} className={styles.trackCanvasBig} />
+              {/* Visor Vectorial Oficial SVG del Circuito */}
+              <div className={styles.svgCircuitFrame}>
+                <img 
+                  key={activeCircuit.id}
+                  src={`/circuits/${activeCircuit.svgFile}`} 
+                  alt={activeCircuit.name} 
+                  className={styles.svgCircuitImage} 
+                />
+              </div>
 
               <div className={styles.detailContentGrid}>
-                {/* Métricas y Datos del Gran Premio */}
+                {/* Métricas del Gran Premio */}
                 <div className={styles.detailCardBox}>
                   <div className={styles.detailCardTitle}>
-                    <Users size={14} />
+                    <Users size={13} />
                     <span>DATOS DEL EVENTO & AMBIENTE</span>
                   </div>
 
@@ -399,12 +369,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                     </div>
 
                     <div className={styles.specItem}>
-                      <span className={styles.specItemLabel}>🛑 Tiempo Perdido en Pit Lane</span>
+                      <span className={styles.specItemLabel}>🛑 Tiempo Perdido Pit Lane</span>
                       <span className={styles.specItemVal} style={{ color: '#38bdf8' }}>{activeCircuit.pitLaneTimeLossSec}s</span>
                     </div>
 
                     <div className={styles.specItem}>
-                      <span className={styles.specItemLabel}>🌧️ Probabilidad de Lluvia</span>
+                      <span className={styles.specItemLabel}>🌧️ Probabilidad Lluvia</span>
                       <span className={styles.specItemVal} style={{ color: activeCircuit.rainProbabilityPercent > 30 ? '#38bdf8' : '#22c55e' }}>
                         {activeCircuit.rainProbabilityPercent}%
                       </span>
@@ -420,7 +390,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 {/* Especificaciones del Trazado */}
                 <div className={styles.detailCardBox}>
                   <div className={styles.detailCardTitle}>
-                    <Flag size={14} color="#e10600" />
+                    <Flag size={13} color="#e10600" />
                     <span>FICHA TÉCNICA DE LA PISTA</span>
                   </div>
 
@@ -447,7 +417,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
                     <div className={styles.specItem} style={{ gridColumn: 'span 2' }}>
                       <span className={styles.specItemLabel}>📍 Coordenadas GPS</span>
-                      <span className={styles.specItemVal} style={{ fontSize: '11px' }}>Lat: {activeCircuit.latitude} · Lon: {activeCircuit.longitude}</span>
+                      <span className={styles.specItemVal} style={{ fontSize: '10.5px' }}>Lat: {activeCircuit.latitude} · Lon: {activeCircuit.longitude}</span>
                     </div>
                   </div>
                 </div>
@@ -462,7 +432,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             </div>
 
             <button className={styles.launchButton} onClick={onStartRace}>
-              <Play size={18} fill="#ffffff" />
+              <Play size={16} fill="#ffffff" />
               <span>ENTRAR A PISTA & EMPEZAR GRAN PREMIO</span>
             </button>
           </div>
