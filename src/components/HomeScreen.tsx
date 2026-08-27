@@ -18,6 +18,8 @@ import {
   Zap,
   RotateCw,
   RotateCcw,
+  Globe,
+  Disc,
   Gauge,
   Award,
   Flame,
@@ -461,6 +463,19 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                     <span>MAPS</span>
                     <ExternalLink size={10} />
                   </a>
+                  {inspectedCircuit.officialWebsiteUrl && (
+                    <a
+                      href={inspectedCircuit.officialWebsiteUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={styles.mapsLinkBtn}
+                      title="Sitio Web Oficial del Circuito"
+                    >
+                      <Globe size={12} />
+                      <span>WEB</span>
+                      <ExternalLink size={10} />
+                    </a>
+                  )}
                 </div>
               </div>
 
@@ -527,7 +542,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                   </span>
                   <span style={{ fontSize: '10px', background: 'rgba(34,197,94,0.12)', color: '#22c55e', padding: '3px 8px', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', gap: '4px', fontWeight: 700 }}>
                     <Zap size={11} />
-                    <span>{inspectedCircuit.drsZones} Zonas DRS Oficiales</span>
+                    <span>{inspectedCircuit.drsZones} Zonas DRS</span>
+                  </span>
+                  <span style={{ fontSize: '10px', background: 'rgba(234,179,8,0.12)', color: '#eab308', padding: '3px 8px', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', gap: '4px', fontWeight: 700 }}>
+                    <Disc size={11} />
+                    <span>Abrasión: {inspectedCircuit.asphaltAbrasion || 'Alta'}</span>
                   </span>
                 </div>
 
@@ -547,18 +566,18 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 <div className={styles.detailCardBox}>
                   <div className={styles.detailCardTitle}>
                     <Users size={14} />
-                    <span>DATOS DEL EVENTO & AMBIENTE</span>
+                    <span>METEOROLOGÍA & ASFALTO (PIRELLI / STATSF1)</span>
                   </div>
 
                   <div className={styles.specs2ColGrid}>
                     <div className={styles.specItem}>
-                      <span className={styles.specItemLabel}>👥 Espectadores</span>
-                      <span className={styles.specItemVal} style={{ color: '#ffd700' }}>{inspectedCircuit.spectators.toLocaleString()}</span>
+                      <span className={styles.specItemLabel}>🛞 Abrasión del Asfalto</span>
+                      <span className={styles.specItemVal} style={{ color: '#ffd700' }}>{inspectedCircuit.asphaltAbrasion || 'Alta'}</span>
                     </div>
 
                     <div className={styles.specItem}>
-                      <span className={styles.specItemLabel}>🛑 Pérdida Pit Lane</span>
-                      <span className={styles.specItemVal} style={{ color: '#38bdf8' }}>{inspectedCircuit.pitLaneTimeLossSec}s</span>
+                      <span className={styles.specItemLabel}>🧪 Estrés Neumáticos</span>
+                      <span className={styles.specItemVal} style={{ color: '#38bdf8' }}>{inspectedCircuit.tireStressLevel || 'Alta'}</span>
                     </div>
 
                     <div className={styles.specItem}>
@@ -571,6 +590,16 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                     <div className={styles.specItem}>
                       <span className={styles.specItemLabel}>💨 Viento</span>
                       <span className={styles.specItemVal}>{inspectedCircuit.windSpeedKmh} km/h ({inspectedCircuit.windDirection})</span>
+                    </div>
+
+                    <div className={styles.specItem}>
+                      <span className={styles.specItemLabel}>🚨 Prob. Safety Car</span>
+                      <span className={styles.specItemVal} style={{ color: '#f97316' }}>{inspectedCircuit.safetyCarProbabilityPercent || 50}%</span>
+                    </div>
+
+                    <div className={styles.specItem}>
+                      <span className={styles.specItemLabel}>⛰️ Desnivel / Elevación</span>
+                      <span className={styles.specItemVal}>{inspectedCircuit.elevationChangeMeters || 30} metros</span>
                     </div>
                   </div>
                 </div>

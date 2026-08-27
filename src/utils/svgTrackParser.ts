@@ -6,7 +6,7 @@ import svgPathsJson from '../data/svgTrackPaths.json';
 const svgPathsMap: Record<string, string> = svgPathsJson as any;
 
 /**
- * Convierte un path SVG oficial en un TrackDefinition espacioso sin solapamiento de curvas
+ * Convierte un path SVG oficial en un TrackDefinition calibrado con pit lane exacto y meta oficial
  */
 export function buildTrackFromSvg(circuit: CircuitSpec, sampleCount: number = 750): TrackDefinition {
   const pathD = svgPathsMap[circuit.svgFile] || '';
@@ -238,25 +238,39 @@ export function buildTrackFromSvg(circuit: CircuitSpec, sampleCount: number = 75
     accumDist += distances[i];
   }
 
-  // ── 5. GENERACIÓN DEL PIT LANE OFICIAL ──
-  const pitStartIdx = Math.floor(total * 0.92);
-  const pitEndIdx = Math.floor(total * 0.08);
+  // ── 5. GENERACIÓN DEL PIT LANE OFICIAL (CON PIT ENTRY Y PIT EXIT ESPECÍFICOS) ──
+  const pitEntryT = circuit.pitEntryT !== undefined ? circuit.pitEntryT : 0.92;
+  const pitExitT = circuit.pitExitT !== undefined ? circuit.pitExitT : 0.08;
+
+  const pitStartIdx = Math.floor(total * pitEntryT);
+  const pitEndIdx = Math.floor(total * pitExitT);
   const pitLanePoints: Point2D[] = [];
 
   const pitOffset = 38;
-  for (let i = pitStartIdx; i < total; i++) {
-    const pt = splinePoints[i];
-    pitLanePoints.push({
-      x: pt.x + pt.normal.x * pitOffset,
-      y: pt.y + pt.normal.y * pitOffset
-    });
-  }
-  for (let i = 0; i <= pitEndIdx; i++) {
-    const pt = splinePoints[i];
-    pitLanePoints.push({
-      x: pt.x + pt.normal.x * pitOffset,
-      y: pt.y + pt.normal.y * pitOffset
-    });
+  if (pitStartIdx > pitEndIdx) {
+    // Cruza el punto 0 (la recta principal)
+    for (let i = pitStartIdx; i < total; i++) {
+      const pt = splinePoints[i];
+      pitLanePoints.push({
+        x: pt.x + pt.normal.x * pitOffset,
+        y: pt.y + pt.normal.y * pitOffset
+      });
+    }
+    for (let i = 0; i <= pitEndIdx; i++) {
+      const pt = splinePoints[i];
+      pitLanePoints.push({
+        x: pt.x + pt.normal.x * pitOffset,
+        y: pt.y + pt.normal.y * pitOffset
+      });
+    }
+  } else {
+    for (let i = pitStartIdx; i <= pitEndIdx; i++) {
+      const pt = splinePoints[i];
+      pitLanePoints.push({
+        x: pt.x + pt.normal.x * pitOffset,
+        y: pt.y + pt.normal.y * pitOffset
+      });
+    }
   }
 
   // ── 6. CURVAS Y BORDES ──
@@ -297,8 +311,8 @@ export function buildTrackFromSvg(circuit: CircuitSpec, sampleCount: number = 75
     corners,
     points: splinePoints,
     pitLanePoints,
-    pitEntryT: 0.92,
-    pitExitT: 0.08,
+    pitEntryT,
+    pitExitT,
     pitBoxT: 0.00,
     sector1EndT: 0.33,
     sector2EndT: 0.67,
