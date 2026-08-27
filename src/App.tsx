@@ -241,9 +241,9 @@ export const App: React.FC = () => {
           />
         )}
         <button 
-          className={styles.sidebarToggle} 
+          className={`${styles.sidebarToggle} ${styles.sidebarToggleLeft}`} 
           onClick={() => setLeftSidebarOpen(!leftSidebarOpen)}
-          style={{ right: leftSidebarOpen ? '-14px' : '-14px' }}
+          title={leftSidebarOpen ? "Ocultar Timing Tower" : "Mostrar Timing Tower"}
         >
           {leftSidebarOpen ? <ChevronLeft size={14} /> : <ChevronRight size={14} />}
         </button>
@@ -316,7 +316,13 @@ export const App: React.FC = () => {
           />
         </div>
 
-        <div className={styles.bottomDockWrapper}>
+        <div 
+          className={styles.bottomDockWrapper}
+          style={{
+            left: leftSidebarOpen ? '210px' : '20px',
+            right: rightSidebarOpen ? '374px' : '20px'
+          }}
+        >
           <BottomTelemetryDock
             car={selectedCar || favoriteCar}
             onSelectCar={handleSelectCar}
@@ -346,9 +352,9 @@ export const App: React.FC = () => {
       {/* ── 3. PANEL DERECHO: DASHBOARD AVANZADO (GRÁFICA PREVISIÓN + VUELTAS) ── */}
       <div className={`${styles.rightSidebar} ${rightSidebarOpen ? '' : styles.sidebarCollapsed}`}>
         <button 
-          className={styles.sidebarToggle} 
+          className={`${styles.sidebarToggle} ${styles.sidebarToggleRight}`} 
           onClick={() => setRightSidebarOpen(!rightSidebarOpen)}
-          style={{ left: rightSidebarOpen ? '-14px' : '-14px' }}
+          title={rightSidebarOpen ? "Ocultar Panel de Telemetría" : "Mostrar Panel de Telemetría"}
         >
           {rightSidebarOpen ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
         </button>

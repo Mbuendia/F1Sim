@@ -92,12 +92,13 @@
 .bottomDockWrapper {
   position: absolute;
   bottom: 14px;
-  left: 210px; /* Despejado para que el minimapa a la izquierda no se solape */
+  left: 210px;
   right: 374px;
   display: flex;
   justify-content: center;
   z-index: 35;
   pointer-events: none;
+  transition: left 0.3s ease, right 0.3s ease;
 }
 
 .bottomDockWrapper > * {
@@ -120,34 +121,48 @@
 .leftSidebar,
 .rightSidebar {
   position: relative;
-  transition: width 0.3s ease, min-width 0.3s ease;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), min-width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: visible !important;
 }
 
 .sidebarCollapsed {
   width: 0px !important;
   min-width: 0px !important;
-  overflow: hidden;
 }
 
 .sidebarToggle {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  width: 28px;
-  height: 48px;
+  width: 24px;
+  height: 52px;
   background: rgba(11, 15, 25, 0.95);
-  border: 1.5px solid rgba(255, 255, 255, 0.15);
-  border-radius: 6px;
-  color: #94a3b8;
+  border: 1.5px solid rgba(255, 255, 255, 0.2);
+  color: #38bdf8;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  z-index: 40;
-  transition: background 0.15s, color 0.15s;
+  z-index: 60;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.7);
+  transition: background 0.15s, color 0.15s, transform 0.15s, border-color 0.15s;
 }
 
 .sidebarToggle:hover {
-  background: rgba(30, 41, 59, 0.95);
-  color: #e2e8f0;
+  background: #1e293b;
+  color: #ffffff;
+  border-color: #38bdf8;
+  transform: translateY(-50%) scale(1.08);
+}
+
+.sidebarToggleLeft {
+  right: -24px;
+  border-radius: 0 8px 8px 0;
+  border-left: none;
+}
+
+.sidebarToggleRight {
+  left: -24px;
+  border-radius: 8px 0 0 8px;
+  border-right: none;
 }

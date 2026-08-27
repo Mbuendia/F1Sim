@@ -46,11 +46,17 @@ export class PitStopModel {
     }
 
     if (pit.isPitting) {
+      // Transit progress rate calibrated for realistic 20-26s total pit lane time
+      // 0.40 in-lane transit (8.5s) + 2.0-3.5s tyre change + 0.59 out-lane transit (12.5s) = ~23.5s total
+      const pitTransitSpeed = 0.048;
+
       if (pit.pitLaneProgress < 0.40) {
-        pit.pitLaneProgress += dt * 0.06;
-        if (pit.pitLaneProgress < 0.05) {
-          car.currentSpeedKmh = Math.max(this.PIT_SPEED_LIMIT_KMH, car.currentSpeedKmh - dt * 250);
+        pit.pitLaneProgress += dt * pitTransitSpeed;
+        if (pit.pitLaneProgress < 0.04) {
+          // Decelerating into pit lane
+          car.currentSpeedKmh = Math.max(this.PIT_SPEED_LIMIT_KMH, car.currentSpeedKmh - dt * 280);
         } else {
+          // Pit speed limiter active (80 km/h)
           car.currentSpeedKmh = this.PIT_SPEED_LIMIT_KMH;
         }
       } 
@@ -98,10 +104,12 @@ export class PitStopModel {
         }
       } 
       else if (pit.pitLaneProgress >= 0.41 && pit.pitLaneProgress < 1.0) {
-        pit.pitLaneProgress += dt * 0.06;
-        if (pit.pitLaneProgress > 0.95) {
-          car.currentSpeedKmh = Math.min(250, car.currentSpeedKmh + dt * 150);
+        pit.pitLaneProgress += dt * pitTransitSpeed;
+        if (pit.pitLaneProgress > 0.94) {
+          // Re-accelerating out of pit exit
+          car.currentSpeedKmh = Math.min(260, car.currentSpeedKmh + dt * 200);
         } else {
+          // Pit speed limiter active (80 km/h)
           car.currentSpeedKmh = this.PIT_SPEED_LIMIT_KMH;
         }
 
