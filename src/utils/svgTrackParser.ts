@@ -6,9 +6,9 @@ import svgPathsJson from '../data/svgTrackPaths.json';
 const svgPathsMap: Record<string, string> = svgPathsJson as any;
 
 /**
- * Convierte un path SVG oficial en un TrackDefinition calibrado con pistas anchas, pit lane y meta oficial abajo
+ * Convierte un path SVG oficial en un TrackDefinition espacioso sin solapamiento de curvas
  */
-export function buildTrackFromSvg(circuit: CircuitSpec, sampleCount: number = 700): TrackDefinition {
+export function buildTrackFromSvg(circuit: CircuitSpec, sampleCount: number = 750): TrackDefinition {
   const pathD = svgPathsMap[circuit.svgFile] || '';
 
   const rawPoints: { x: number; y: number }[] = [];
@@ -31,7 +31,6 @@ export function buildTrackFromSvg(circuit: CircuitSpec, sampleCount: number = 70
     }
   }
 
-  // Fallback seguro
   if (rawPoints.length === 0) {
     for (let i = 0; i < sampleCount; i++) {
       const angle = (i / sampleCount) * Math.PI * 2;
@@ -42,7 +41,7 @@ export function buildTrackFromSvg(circuit: CircuitSpec, sampleCount: number = 70
     }
   }
 
-  // ── 1. DETERMINAR Y ALINEAR SENTIDO DE GIRO (CLOCKWISE vs ANTI-CLOCKWISE) ──
+  // ── 1. DETERMINAR Y ALINEAR SENTIDO DE GIRO ──
   let areaSum = 0;
   for (let i = 0; i < rawPoints.length; i++) {
     const p1 = rawPoints[i];
@@ -77,7 +76,6 @@ export function buildTrackFromSvg(circuit: CircuitSpec, sampleCount: number = 70
     };
   });
 
-  // Si la recta de meta quedó en la mitad superior, rotamos 180º para ponerla abajo
   if (rotatedPoints[0].y < centerY) {
     rotAngle += Math.PI;
     rotatedPoints = orderedPoints.map(p => {
@@ -90,7 +88,7 @@ export function buildTrackFromSvg(circuit: CircuitSpec, sampleCount: number = 70
     });
   }
 
-  // ── 3. ESCALADO AL MUNDO DE SIMULACIÓN (1600 x 1000) ──
+  // ── 3. ESCALADO ESPACIOSO PARA EVITAR SOLAPAMIENTO DE CURVAS (1900 x 1150) ──
   let minRawX = Infinity, maxRawX = -Infinity;
   let minRawY = Infinity, maxRawY = -Infinity;
 
@@ -104,12 +102,12 @@ export function buildTrackFromSvg(circuit: CircuitSpec, sampleCount: number = 70
   const rawWidth = Math.max(1, maxRawX - minRawX);
   const rawHeight = Math.max(1, maxRawY - minRawY);
 
-  const targetWidth = 1420;
-  const targetHeight = 840;
+  const targetWidth = 1900;
+  const targetHeight = 1150;
   const scale = Math.min(targetWidth / rawWidth, targetHeight / rawHeight);
 
-  const offsetX = 90 + (targetWidth - rawWidth * scale) / 2;
-  const offsetY = 70 + (targetHeight - rawHeight * scale) / 2;
+  const offsetX = 100 + (targetWidth - rawWidth * scale) / 2;
+  const offsetY = 90 + (targetHeight - rawHeight * scale) / 2;
 
   const worldPoints = rotatedPoints.map(p => ({
     x: (p.x - minRawX) * scale + offsetX,
@@ -159,7 +157,7 @@ export function buildTrackFromSvg(circuit: CircuitSpec, sampleCount: number = 70
     smoothedCurvatures.push(sumC / (windowSize * 2 + 1));
   }
 
-  // Velocidades locales en cada punto
+  // Velocidades locales
   const rawSpeedLimits: number[] = [];
   for (let i = 0; i < total; i++) {
     const curv = smoothedCurvatures[i];
@@ -168,7 +166,7 @@ export function buildTrackFromSvg(circuit: CircuitSpec, sampleCount: number = 70
     rawSpeedLimits.push(speed);
   }
 
-  // Lookahead para frenadas previas
+  // Lookahead para frenadas
   const finalSpeedLimits: number[] = [...rawSpeedLimits];
   const isBrakingZones: boolean[] = new Array(total).fill(false);
 
@@ -190,7 +188,6 @@ export function buildTrackFromSvg(circuit: CircuitSpec, sampleCount: number = 70
     }
   }
 
-  // Construcción de SplinePoints con DRS y sectores
   const splinePoints: SplinePoint[] = [];
   accumDist = 0;
 
@@ -241,13 +238,12 @@ export function buildTrackFromSvg(circuit: CircuitSpec, sampleCount: number = 70
     accumDist += distances[i];
   }
 
-  // ── 5. GENERACIÓN DEL PIT LANE OFICIAL (Alineado con la recta inferior de meta) ──
+  // ── 5. GENERACIÓN DEL PIT LANE OFICIAL ──
   const pitStartIdx = Math.floor(total * 0.92);
   const pitEndIdx = Math.floor(total * 0.08);
   const pitLanePoints: Point2D[] = [];
 
-  // El Pit Lane corre paralelo al interior de la recta principal a 34 metros
-  const pitOffset = 34;
+  const pitOffset = 38;
   for (let i = pitStartIdx; i < total; i++) {
     const pt = splinePoints[i];
     pitLanePoints.push({
@@ -297,7 +293,7 @@ export function buildTrackFromSvg(circuit: CircuitSpec, sampleCount: number = 70
     country: circuit.country,
     totalLaps: circuit.totalLaps,
     lapLengthMeters: circuit.lapLengthMeters,
-    trackWidthMeters: 26, // Pista más ancha y espaciosa
+    trackWidthMeters: 24,
     corners,
     points: splinePoints,
     pitLanePoints,
@@ -307,10 +303,10 @@ export function buildTrackFromSvg(circuit: CircuitSpec, sampleCount: number = 70
     sector1EndT: 0.33,
     sector2EndT: 0.67,
     bounds: {
-      minX: minX - 120,
-      maxX: maxX + 120,
-      minY: minY - 120,
-      maxY: maxY + 120
+      minX: minX - 140,
+      maxX: maxX + 140,
+      minY: minY - 140,
+      maxY: maxY + 140
     }
   };
 }

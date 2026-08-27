@@ -4,7 +4,7 @@ import { Camera } from './Camera';
 
 export class CarRenderer {
   /**
-   * Renderiza todos los monoplazas sobre el trazado activo actual
+   * Renderiza todos los monoplazas sobre el trazado activo actual con diseño F1 aerodinámico
    */
   static renderCars(
     ctx: CanvasRenderingContext2D,
@@ -48,7 +48,8 @@ export class CarRenderer {
 
         const nx = Math.cos(angle + Math.PI / 2);
         const ny = Math.sin(angle + Math.PI / 2);
-        const lateralDist = car.lateralOffset * 7.5;
+        // Distancia lateral para ir en paralelo (hasta 12 metros de separación en pista de 26m)
+        const lateralDist = car.lateralOffset * 10.5;
 
         worldX = pt.x + nx * lateralDist;
         worldY = pt.y + ny * lateralDist;
@@ -62,59 +63,146 @@ export class CarRenderer {
       }
 
       const isSelected = car.id === selectedCarId;
-      const zoom = camera.zoom;
+      this.drawSingleCar(ctx, screen.x, screen.y, angle, car, camera.zoom, isSelected);
+    }
+  }
 
+  private static drawSingleCar(
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    angle: number,
+    car: CarState,
+    zoom: number,
+    isSelected: boolean
+  ) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+
+    const scale = Math.max(0.9, Math.min(3.2, zoom * 1.15));
+    const carLen = 19 * scale;
+    const carWid = 8.5 * scale;
+
+    // Sombra del coche
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+    ctx.beginPath();
+    ctx.ellipse(1, 2, carLen * 0.52, carWid * 0.48, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // ── 1. CHASIS PRINCIPAL AERODINÁMICO ──
+    ctx.fillStyle = car.team.color;
+    ctx.beginPath();
+    ctx.moveTo(carLen * 0.54, 0); // Morro afilado
+    ctx.lineTo(carLen * 0.26, -carWid * 0.24);
+    ctx.lineTo(carLen * 0.10, -carWid * 0.48);
+    ctx.lineTo(-carLen * 0.35, -carWid * 0.42);
+    ctx.lineTo(-carLen * 0.52, -carWid * 0.50);
+    ctx.lineTo(-carLen * 0.52, carWid * 0.50);
+    ctx.lineTo(-carLen * 0.35, carWid * 0.42);
+    ctx.lineTo(carLen * 0.10, carWid * 0.48);
+    ctx.lineTo(carLen * 0.26, carWid * 0.24);
+    ctx.closePath();
+    ctx.fill();
+
+    // Acento secundario del equipo
+    ctx.fillStyle = car.team.accentColor || '#111827';
+    ctx.beginPath();
+    ctx.moveTo(0, -carWid * 0.38);
+    ctx.lineTo(-carLen * 0.38, -carWid * 0.36);
+    ctx.lineTo(-carLen * 0.38, carWid * 0.36);
+    ctx.lineTo(0, carWid * 0.38);
+    ctx.closePath();
+    ctx.fill();
+
+    // ── 2. RUEDAS (4 NEUMÁTICOS CON AROS DE COMPUESTO) ──
+    const tireColor = car.tires.compound === 'soft' ? '#e10600' : (car.tires.compound === 'medium' ? '#ffd700' : '#ffffff');
+    ctx.fillStyle = '#18181b';
+    const wheelLen = 5.8 * scale;
+    const wheelWid = 2.5 * scale;
+
+    ctx.fillRect(carLen * 0.22, -carWid * 0.65, wheelLen, wheelWid);
+    ctx.fillRect(carLen * 0.22, carWid * 0.65 - wheelWid, wheelLen, wheelWid);
+    ctx.fillRect(-carLen * 0.42, -carWid * 0.65, wheelLen, wheelWid);
+    ctx.fillRect(-carLen * 0.42, carWid * 0.65 - wheelWid, wheelLen, wheelWid);
+
+    if (zoom > 1.1) {
+      ctx.fillStyle = tireColor;
+      ctx.fillRect(carLen * 0.24, -carWid * 0.65 + 0.6, wheelLen * 0.8, 0.8 * scale);
+      ctx.fillRect(carLen * 0.24, carWid * 0.65 - 1.4, wheelLen * 0.8, 0.8 * scale);
+      ctx.fillRect(-carLen * 0.40, -carWid * 0.65 + 0.6, wheelLen * 0.8, 0.8 * scale);
+      ctx.fillRect(-carLen * 0.40, carWid * 0.65 - 1.4, wheelLen * 0.8, 0.8 * scale);
+    }
+
+    // ── 3. COCKPIT, HALO Y CASCO ──
+    ctx.fillStyle = '#0a0a0a';
+    ctx.beginPath();
+    ctx.ellipse(carLen * 0.05, 0, carLen * 0.13, carWid * 0.18, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = isSelected ? '#ffd700' : '#f8fafc';
+    ctx.beginPath();
+    ctx.arc(carLen * 0.06, 0, carWid * 0.14, 0, Math.PI * 2);
+    ctx.fill();
+
+    // ── 4. ALERÓN TRASERO Y DRS ──
+    ctx.fillStyle = car.drsActive ? '#00ff66' : car.team.color;
+    ctx.fillRect(-carLen * 0.52, -carWid * 0.48, 2.2 * scale, carWid * 0.96);
+
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.5)';
+    ctx.lineWidth = 0.8;
+    ctx.stroke();
+
+    ctx.restore();
+
+    // ── EFECTO DE GLOW SI ESTÁ SELECCIONADO ──
+    if (isSelected) {
       ctx.save();
-      ctx.translate(screen.x, screen.y);
-      ctx.rotate(angle);
-
-      const carLen = Math.max(16, 26 * zoom);
-      const carWid = Math.max(8, 13 * zoom);
-
-      // Sombra
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
-      ctx.fillRect(-carLen / 2 + 2, -carWid / 2 + 3, carLen, carWid);
-
-      // DRS halo
-      if (car.drsActive) {
-        ctx.strokeStyle = '#00ff66';
-        ctx.lineWidth = 2.5;
-        ctx.strokeRect(-carLen / 2 - 2, -carWid / 2 - 2, carLen + 4, carWid + 4);
-      }
-
-      // Carrocería
-      ctx.fillStyle = car.team.color;
-      ctx.fillRect(-carLen / 2, -carWid / 2, carLen, carWid);
-
-      // Cabina
-      ctx.fillStyle = '#111827';
-      ctx.fillRect(-carLen * 0.15, -carWid * 0.35, carLen * 0.35, carWid * 0.7);
-
-      // Casco piloto
-      ctx.fillStyle = isSelected ? '#ffd700' : '#ffffff';
+      ctx.strokeStyle = car.team.color;
+      ctx.lineWidth = 2.5;
+      ctx.shadowColor = car.team.color;
+      ctx.shadowBlur = 18;
       ctx.beginPath();
-      ctx.arc(0, 0, carWid * 0.22, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Ruedas
-      ctx.fillStyle = '#0a0a0a';
-      const wheelL = carLen * 0.30;
-      const wheelW = carWid * 0.25;
-      ctx.fillRect(carLen * 0.22, -carWid / 2 - wheelW * 0.6, wheelL, wheelW);
-      ctx.fillRect(carLen * 0.22, carWid / 2 - wheelW * 0.4, wheelL, wheelW);
-      ctx.fillRect(-carLen * 0.45, -carWid / 2 - wheelW * 0.6, wheelL, wheelW);
-      ctx.fillRect(-carLen * 0.45, carWid / 2 - wheelW * 0.4, wheelL, wheelW);
-
-      ctx.restore();
-
-      // Etiqueta piloto
-      ctx.save();
-      ctx.font = isSelected ? 'bold 11px Orbitron, sans-serif' : '9px Rajdhani, sans-serif';
-      ctx.fillStyle = isSelected ? '#ffd700' : '#ffffff';
-      ctx.textAlign = 'center';
-      const label = `P${car.currentPosition} ${car.driver.code}`;
-      ctx.fillText(label, screen.x, screen.y - 14);
+      ctx.arc(x, y, 16 * scale, 0, Math.PI * 2);
+      ctx.stroke();
       ctx.restore();
     }
+
+    // ── ETIQUETA DEL PILOTO O BANDERA AZUL ──
+    ctx.save();
+    if (car.isBlueFlagged) {
+      const flagLabel = `🟦 BLUE FLAG`;
+      ctx.font = `bold ${Math.max(9, 10 * scale)}px 'Orbitron', sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'bottom';
+      ctx.fillStyle = '#38bdf8';
+      ctx.strokeStyle = '#000000';
+      ctx.lineWidth = 3.0;
+      ctx.strokeText(flagLabel, x, y - 14 * scale);
+      ctx.fillText(flagLabel, x, y - 14 * scale);
+    } else if (zoom > 1.2) {
+      const label = `${car.driver.code} (P${car.currentPosition})`;
+      ctx.font = `bold ${Math.max(10, 11 * scale)}px 'Orbitron', sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'bottom';
+      
+      ctx.strokeStyle = '#000000';
+      ctx.lineWidth = 3.5;
+      ctx.strokeText(label, x, y - 13 * scale);
+
+      ctx.fillStyle = isSelected ? '#ffd700' : car.team.color;
+      ctx.fillText(label, x, y - 13 * scale);
+    } else {
+      const label = `P${car.currentPosition}`;
+      ctx.font = `bold 10px 'Orbitron', sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'bottom';
+      ctx.fillStyle = '#ffffff';
+      ctx.strokeStyle = '#000000';
+      ctx.lineWidth = 3.0;
+      ctx.strokeText(label, x, y - 10);
+      ctx.fillText(label, x, y - 10);
+    }
+    ctx.restore();
   }
 }
