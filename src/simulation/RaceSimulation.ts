@@ -16,6 +16,7 @@ export class RaceSimulation {
   speedMultiplier: number = 1;
   isPaused: boolean = false;
   isFinished: boolean = false;
+  leaderFinished: boolean = false;
   
   lightState: StartLightState = 'idle';
   lightsTimer: number = 0;
@@ -38,6 +39,7 @@ export class RaceSimulation {
     this.raceTimeSec = 0;
     this.leaderLap = 0;
     this.isFinished = false;
+    this.leaderFinished = false;
     this.lightState = 'idle';
     this.lightsTimer = 0;
     this.lightsRandomDelay = 0.8 + Math.random() * 1.6;
@@ -224,12 +226,13 @@ export class RaceSimulation {
 
     const totalPoints = BARCELONA_CIRCUIT.points.length;
     const lapDistanceMeters = BARCELONA_CIRCUIT.lapLengthMeters;
-    const leaderCar = [...this.cars].sort((a, b) => b.progress - a.progress)[0];
+    const sortedActive = [...this.cars].sort((a, b) => b.progress - a.progress);
+    const leaderCar = sortedActive[0];
 
     for (const car of this.cars) {
       if (car.status === 'finished') continue;
 
-      // 1. Pit Stop Update (Adelantamientos en boxes permitidos por duración de parada a 80 km/h)
+      // 1. Pit Stop Update (Adelantamientos en boxes a 80 km/h)
       const isHandlingPit = PitStopModel.updatePitStop(car, dt, lapDistanceMeters);
 
       if (isHandlingPit) {
@@ -249,20 +252,20 @@ export class RaceSimulation {
       const pointIndex = Math.floor(normalizedT * totalPoints) % totalPoints;
       const trackPoint = BARCELONA_CIRCUIT.points[pointIndex];
 
-      // ── DETECCIÓN DE BANDERA AZUL (DEJAR PASAR A DOBLADORES) ──
-      const isBeingLapped = leaderCar.id !== car.id && (leaderCar.progress - car.progress) >= 0.85;
+      // ── BANDERAS AZULES ──
+      const isBeingLapped = leaderCar && leaderCar.id !== car.id && (leaderCar.progress - car.progress) >= 0.85;
       const carApproachingBehind = this.cars.find(
-        c => c.id !== car.id && c.progress > car.progress && (c.progress - car.progress) < 0.015 && (c.currentLap > car.currentLap)
+        c => c.id !== car.id && c.status !== 'finished' && c.progress > car.progress && (c.progress - car.progress) < 0.015 && (c.currentLap > car.currentLap)
       );
 
       if (isBeingLapped && carApproachingBehind) {
         car.isBlueFlagged = true;
-        car.targetLateralOffset = -0.70; // Apartarse al exterior
+        car.targetLateralOffset = -0.70;
       } else {
         car.isBlueFlagged = false;
       }
 
-      // Modo Push cuando el de delante entra a boxes
+      // Modo Push
       const carAhead = car.carAheadId !== null ? this.getCarById(car.carAheadId) : null;
       if (carAhead && carAhead.pitStop.isPitting && !car.pitStop.isPitting) {
         car.engineMode = 'push';
@@ -298,7 +301,6 @@ export class RaceSimulation {
 
       const enginePerf = EngineModel.getEnginePerformance(car.engineMode);
       
-      // Calibración ultra ajustada: diferencias mínimas de centésimas
       const driverSkillMultiplier = 
         0.60 * car.driver.talentRating + 
         0.20 * car.driver.palmaresScore + 
@@ -323,7 +325,6 @@ export class RaceSimulation {
       const speedLimitFactor = trackPoint.speedLimitFactor;
       let targetSpeedLapPerSec = baseLapSpeed * effectivePace * (0.48 + 0.52 * speedLimitFactor);
 
-      // Si tiene bandera azul -> levanta suavemente el pie para no bloquear
       if (car.isBlueFlagged) {
         targetSpeedLapPerSec *= 0.85;
       }
@@ -331,10 +332,9 @@ export class RaceSimulation {
       // ── PREVENCIÓN DE SOLAPAMIENTO & REBASES ──
       const minSafeSpacing = 0.0030;
       const canOvertakeHere = this.isOvertakingAllowedZone(normalizedT);
-      // Probabilidad ínfima (1 de cada 20.000) en curvas reviradas
       const rareCornerOvertakeChance = Math.random() < 0.00005 && tireResult.gripMultiplier > 1.05;
 
-      if (carAhead && !carAhead.pitStop.isPitting && !car.isBlueFlagged) {
+      if (carAhead && !carAhead.pitStop.isPitting && !car.isBlueFlagged && carAhead.status !== 'finished') {
         const deltaProgress = carAhead.progress - car.progress;
 
         if (deltaProgress > 0 && deltaProgress < minSafeSpacing) {
@@ -375,6 +375,7 @@ export class RaceSimulation {
       const prevLap = Math.floor(Math.max(0, prevProgress));
       const currLap = Math.floor(Math.max(0, car.progress));
 
+      // ── PASO POR META Y PROCEDIMIENTO DE BANDERA A CUADROS ──
       if (currLap > prevLap && prevProgress >= 0) {
         car.currentLap = currLap;
         car.tires.lapsOnTire += 1;
@@ -418,9 +419,14 @@ export class RaceSimulation {
         car.sectorStartTime = this.raceTimeSec;
         car.currentSector = 1;
 
-        if (car.currentLap >= this.totalLaps) {
+        // 1. Si el líder completa las vueltas totales -> gana y desaparece de pista
+        if (car.currentLap >= this.totalLaps && !this.leaderFinished) {
+          this.leaderFinished = true;
           car.status = 'finished';
-          car.progress = this.totalLaps;
+        }
+        // 2. Si el líder ya finalizó, cualquier coche que cruce meta concluye su carrera y desaparece
+        else if (this.leaderFinished) {
+          car.status = 'finished';
         }
       }
 
@@ -477,7 +483,8 @@ export class RaceSimulation {
 
     this.updateLeaderboardPositions();
 
-    if (this.cars.every(c => c.status === 'finished') || (this.leaderLap >= this.totalLaps && this.cars[0].status === 'finished')) {
+    // Cuando todos los coches han cruzado la meta tras ver la bandera a cuadros
+    if (this.cars.every(c => c.status === 'finished') && this.cars.length > 0) {
       this.isFinished = true;
       this.podiumCars = this.getSortedCars().slice(0, 3);
     }
@@ -599,7 +606,7 @@ export class RaceSimulation {
   updateLeaderboardPositions() {
     const sorted = [...this.cars].sort((a, b) => b.progress - a.progress);
     const leader = sorted[0];
-    const leaderProgress = leader.progress;
+    const leaderProgress = leader ? leader.progress : 0;
     const leaderCompletedLaps = Math.max(0, Math.floor(leaderProgress));
 
     this.leaderLap = Math.min(this.totalLaps, leaderCompletedLaps + 1);

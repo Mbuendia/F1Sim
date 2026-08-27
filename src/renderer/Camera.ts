@@ -51,23 +51,36 @@ export class Camera {
   update(cars: CarState[], dt: number) {
     if (this.followingCarId !== null) {
       const car = cars.find(c => c.id === this.followingCarId);
-      if (car) {
-        const totalPts = BARCELONA_CIRCUIT.points.length;
-        const normT = ((car.progress % 1) + 1) % 1;
-        const ptIndex = Math.floor(normT * totalPts) % totalPts;
-        const pt = BARCELONA_CIRCUIT.points[ptIndex];
+      if (car && car.status !== 'finished') {
+        if (car.isInPitLane && BARCELONA_CIRCUIT.pitLanePoints.length > 0) {
+          // Seguimiento continuo y suave en el carril de boxes
+          const pitPts = BARCELONA_CIRCUIT.pitLanePoints;
+          const pitProgress = car.pitStop.pitLaneProgress;
+          const pIndex = Math.min(pitPts.length - 2, Math.floor(pitProgress * (pitPts.length - 1)));
+          const frac = (pitProgress * (pitPts.length - 1)) - pIndex;
+          const p1 = pitPts[pIndex];
+          const p2 = pitPts[pIndex + 1] || p1;
 
-        // Cámara adelantada hacia la dirección de avance
-        const lookAheadIdx = (ptIndex + 8) % totalPts;
-        const lookPt = BARCELONA_CIRCUIT.points[lookAheadIdx];
+          this.targetX = p1.x + (p2.x - p1.x) * frac;
+          this.targetY = p1.y + (p2.y - p1.y) * frac;
+          this.targetZoom = Camera.FOLLOW_ZOOM;
+        } else {
+          // Seguimiento en pista principal
+          const totalPts = BARCELONA_CIRCUIT.points.length;
+          const normT = ((car.progress % 1) + 1) % 1;
+          const ptIndex = Math.floor(normT * totalPts) % totalPts;
+          const pt = BARCELONA_CIRCUIT.points[ptIndex];
 
-        this.targetX = pt.x + (lookPt.x - pt.x) * 0.35;
-        this.targetY = pt.y + (lookPt.y - pt.y) * 0.35;
-        this.targetZoom = Camera.FOLLOW_ZOOM;
+          const lookAheadIdx = (ptIndex + 8) % totalPts;
+          const lookPt = BARCELONA_CIRCUIT.points[lookAheadIdx];
+
+          this.targetX = pt.x + (lookPt.x - pt.x) * 0.35;
+          this.targetY = pt.y + (lookPt.y - pt.y) * 0.35;
+          this.targetZoom = Camera.FOLLOW_ZOOM;
+        }
       }
     }
 
-    // Suavizado lerp de cámara
     const smoothFactor = Math.min(1.0, 5.5 * dt);
     this.x += (this.targetX - this.x) * smoothFactor;
     this.y += (this.targetY - this.y) * smoothFactor;

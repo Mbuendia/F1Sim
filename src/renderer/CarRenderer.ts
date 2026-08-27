@@ -4,7 +4,7 @@ import { Camera } from './Camera';
 
 export class CarRenderer {
   /**
-   * Renderiza todos los monoplazas sobre el canvas con banderas azules y desplazamiento lateral
+   * Renderiza todos los monoplazas activos sobre el canvas (los finalizados desaparecen de pista)
    */
   static renderCars(
     ctx: CanvasRenderingContext2D,
@@ -12,7 +12,9 @@ export class CarRenderer {
     camera: Camera,
     selectedCarId: number | null
   ) {
-    const sorted = [...cars].sort((a, b) => {
+    const activeCars = cars.filter(c => c.status !== 'finished');
+
+    const sorted = [...activeCars].sort((a, b) => {
       if (a.id === selectedCarId) return 1;
       if (b.id === selectedCarId) return -1;
       return a.progress - b.progress;
@@ -164,7 +166,6 @@ export class CarRenderer {
     // ── ETIQUETA DEL PILOTO O BANDERA AZUL ──
     ctx.save();
     if (car.isBlueFlagged) {
-      // Indicador de Bandera Azul (dejar pasar)
       const flagLabel = `🟦 BLUE FLAG`;
       ctx.font = `bold ${Math.max(9, 10 * scale)}px 'Orbitron', sans-serif`;
       ctx.textAlign = 'center';
