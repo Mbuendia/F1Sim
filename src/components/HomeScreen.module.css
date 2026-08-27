@@ -611,3 +611,101 @@
   box-shadow: 0 12px 38px rgba(225, 6, 0, 0.8);
   background: linear-gradient(135deg, #ff1a14 0%, #b80500 100%);
 }
+
+/* ── 4. SUB-TABS Y TOGGLES INFORMATIVOS EN EL PANEL CENTRAL ── */
+.subTabBar {
+  display: flex;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.35);
+  padding: 4px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  margin-bottom: 6px;
+}
+
+.subTabBtn {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.subTabBtn:hover {
+  color: #f1f5f9;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.subTabBtnActive {
+  background: rgba(56, 189, 248, 0.2) !important;
+  color: #38bdf8 !important;
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.25);
+}
+
+.drsListGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.drsCardItem {
+  background: rgba(0, 255, 102, 0.05);
+  border: 1px solid rgba(0, 255, 102, 0.2);
+  border-left: 4px solid #00ff66;
+  border-radius: 6px;
+  padding: 8px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.drsZoneName {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.drsZoneRange {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 10px;
+  color: #00ff66;
+  font-weight: 700;
+}
+
+.strategyHighlightBox {
+  background: rgba(255, 215, 0, 0.08);
+  border: 1px solid rgba(255, 215, 0, 0.3);
+  border-radius: 8px;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.strategyHighlightTitle {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 10px;
+  font-weight: 800;
+  color: #ffd700;
+  letter-spacing: 0.5px;
+}
+
+.strategyHighlightVal {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 14px;
+  font-weight: 800;
+  color: #ffffff;
+}

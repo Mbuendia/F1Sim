@@ -1,0 +1,115 @@
+.landingContainer {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse at 50% 40%, #111728 0%, #060912 70%, #020408 100%);
+  overflow: hidden;
+  position: relative;
+  cursor: pointer;
+  user-select: none;
+}
+
+.particleField {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.particle {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  background: rgba(56, 189, 248, 0.5);
+  border-radius: 50%;
+}
+
+.tireWrapper {
+  position: relative;
+  width: 220px;
+  height: 220px;
+  margin-bottom: 30px;
+}
+
+.tireSvg {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 0 40px rgba(225, 6, 0, 0.35)) drop-shadow(0 0 80px rgba(225, 6, 0, 0.15));
+}
+
+.tireGlow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 280px;
+  height: 280px;
+  background: radial-gradient(circle, rgba(225, 6, 0, 0.15) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.brandGroup {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  opacity: 0;
+}
+
+.f1LogoBig {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 72px;
+  font-weight: 900;
+  color: #e10600;
+  letter-spacing: 4px;
+  text-shadow: 0 0 30px rgba(225, 6, 0, 0.5), 0 0 60px rgba(225, 6, 0, 0.2);
+  line-height: 1;
+}
+
+.titleText {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: rgba(241, 245, 249, 0.7);
+  letter-spacing: 8px;
+  text-transform: uppercase;
+}
+
+.subtitleText {
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  color: rgba(148, 163, 184, 0.6);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+.enterHint {
+  position: absolute;
+  bottom: 60px;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 13px;
+  color: rgba(148, 163, 184, 0.5);
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  animation: fadeInOut 2.5s ease-in-out infinite;
+}
+
+@keyframes fadeInOut {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.8; }
+}
+
+.versionBadge {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 9px;
+  color: rgba(100, 116, 139, 0.5);
+  letter-spacing: 1px;
+}

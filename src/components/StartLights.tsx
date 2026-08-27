@@ -45,6 +45,8 @@ export const StartLights: React.FC<StartLightsProps> = ({
     return null;
   }
 
+  const isGridReady = lightState === 'grid-ready';
+
   const getLightCount = (): number => {
     switch (lightState) {
       case 'lights-1': return 1;
@@ -66,7 +68,7 @@ export const StartLights: React.FC<StartLightsProps> = ({
         <div className={styles.gantryHeader}>
           <span className={styles.f1Brand}>FORMULA 1</span>
           <span className={styles.gantryTitle}>
-            {isCountdown ? 'PROCEDIMIENTO DE SALIDA' : 'GRAN PREMIO LISTO'}
+            {isCountdown ? 'PROCEDIMIENTO DE SALIDA' : isGridReady ? 'COCHES EN PARRILLA · LISTOS' : 'GRAN PREMIO LISTO'}
           </span>
         </div>
 
@@ -89,6 +91,13 @@ export const StartLights: React.FC<StartLightsProps> = ({
           <button className={styles.startButton} onClick={onStartClick}>
             <Play size={18} fill="#ffffff" />
             <span>INICIAR VUELTA DE FORMACIÓN</span>
+          </button>
+        )}
+
+        {isGridReady && (
+          <button className={styles.startButton} onClick={onStartClick} style={{ background: 'linear-gradient(135deg, #16a34a, #15803d)' }}>
+            <Play size={18} fill="#ffffff" />
+            <span>🏁 CONFIRMAR INICIO DE CARRERA</span>
           </button>
         )}
 

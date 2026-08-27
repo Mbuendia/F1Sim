@@ -236,6 +236,16 @@ export class RaceSimulation {
       return;
     }
 
+    if (this.lightState === 'grid-ready') {
+      // Cars are parked on grid, waiting for user confirmation
+      for (const car of this.cars) {
+        car.currentSpeedKmh = 0;
+        car.telemetry.speedKmh = 0;
+        car.telemetry.rpm = Math.round(4000 + Math.sin(this.raceTimeSec * 2 + car.id) * 500);
+      }
+      return;
+    }
+
     if (this.lightState !== 'racing') {
       this.updateStartLights(dt);
       if ((this.lightState as string) !== 'racing') {
@@ -293,7 +303,7 @@ export class RaceSimulation {
       }
 
       // 1. Pit Stop Update
-      const isHandlingPit = PitStopModel.updatePitStop(car, dt, lapDistanceMeters, this.activeTrack);
+      const isHandlingPit = PitStopModel.updatePitStop(car, dt, lapDistanceMeters, this.activeTrack, this.totalLaps);
 
       if (isHandlingPit) {
         car.hasPuncture = false;
@@ -680,6 +690,13 @@ export class RaceSimulation {
         car.currentLap = 0;
         car.lapStartTime = 0;
       });
+      this.lightState = 'grid-ready';
+      this.lightsTimer = 0;
+    }
+  }
+
+  confirmRaceStart() {
+    if (this.lightState === 'grid-ready') {
       this.lightState = 'lights-1';
       this.lightsTimer = 0;
     }

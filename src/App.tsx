@@ -11,9 +11,10 @@ import { BottomTelemetryDock } from './components/BottomTelemetryDock';
 import { RightStatsPanel } from './components/RightStatsPanel';
 import { PodiumModal } from './components/PodiumModal';
 import { HomeScreen } from './components/HomeScreen';
+import { LandingPage } from './components/LandingPage';
 import { OFFICIAL_CIRCUITS } from './data/circuits';
 import { StartLightState, CarState, RaceResultHistory } from './types/f1';
-import { RotateCw, Flag, ArrowLeft } from 'lucide-react';
+import { RotateCw, Flag, ArrowLeft, ChevronLeft, ChevronRight, Camera as CameraIcon } from 'lucide-react';
 
 export const App: React.FC = () => {
   // Piloto y Circuito seleccionados
@@ -23,11 +24,18 @@ export const App: React.FC = () => {
   const simulation = useMemo(() => new RaceSimulation(selectedCircuitId), []);
   const camera = useMemo(() => new Camera(), []);
 
-  // Vista actual: 'home' o 'race'
-  const [currentView, setCurrentView] = useState<'home' | 'race'>('home');
+  // Vista actual: 'landing', 'home' o 'race'
+  const [currentView, setCurrentView] = useState<'landing' | 'home' | 'race'>('landing');
 
   // Coche seleccionado expresamente en pista
   const [selectedCarId, setSelectedCarId] = useState<number | null>(null);
+
+  // Sidebar collapse state
+  const [leftSidebarOpen, setLeftSidebarOpen] = useState(true);
+  const [rightSidebarOpen, setRightSidebarOpen] = useState(true);
+
+  // Camera mode
+  const [cameraMode, setCameraMode] = useState<string>('overview');
 
   // Historial de carreras guardadas
   const [raceHistory, setRaceHistory] = useState<RaceResultHistory[]>(() => {
@@ -53,6 +61,8 @@ export const App: React.FC = () => {
   const [bestS2, setBestS2] = useState<number | null>(null);
   const [bestS3, setBestS3] = useState<number | null>(null);
 
+
+
   useEffect(() => {
     const interval = setInterval(() => {
       setLightState(simulation.lightState);
@@ -65,6 +75,7 @@ export const App: React.FC = () => {
       setBestS1(simulation.overallBestS1);
       setBestS2(simulation.overallBestS2);
       setBestS3(simulation.overallBestS3);
+      setCameraMode(camera.currentMode);
 
       if (simulation.isFinished) {
         setPodiumCars(simulation.podiumCars);
@@ -75,7 +86,7 @@ export const App: React.FC = () => {
     }, 66);
 
     return () => clearInterval(interval);
-  }, [simulation]);
+  }, [simulation, camera]);
 
   const handleSelectCar = useCallback((carId: number | null) => {
     setSelectedCarId(carId);
@@ -110,7 +121,11 @@ export const App: React.FC = () => {
   }, [simulation, camera, selectedCircuitId]);
 
   const handleStartFormationLap = useCallback(() => {
-    simulation.startRaceSequence();
+    if (simulation.lightState === 'grid-ready') {
+      simulation.confirmRaceStart();
+    } else {
+      simulation.startRaceSequence();
+    }
   }, [simulation]);
 
   const formatRaceTime = (totalSec: number): string => {
@@ -159,6 +174,11 @@ export const App: React.FC = () => {
     setCurrentView('home');
   }, [simulation, selectedDriverId, selectedCircuitId, raceHistory]);
 
+  const handleCycleCameraMode = useCallback(() => {
+    camera.cycleMode();
+    setCameraMode(camera.currentMode);
+  }, [camera]);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (currentView !== 'race') return;
@@ -167,6 +187,8 @@ export const App: React.FC = () => {
       } else if (e.key === ' ') {
         e.preventDefault();
         handleSpeedChange(isPaused ? 1 : 0);
+      } else if (e.key.toLowerCase() === 'c') {
+        handleCycleCameraMode();
       } else if (['1', '2', '3', '4', '5', '6'].includes(e.key)) {
         const speedMap: Record<string, number> = {
           '1': 1,
@@ -182,11 +204,15 @@ export const App: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentView, handleSelectCar, handleSpeedChange, isPaused]);
+  }, [currentView, handleSelectCar, handleSpeedChange, isPaused, handleCycleCameraMode]);
 
   const favoriteCar = simulation.cars.find(c => c.driver.id === selectedDriverId) || simulation.cars[0];
   const selectedCar = selectedCarId !== null ? simulation.getCarById(selectedCarId) || null : null;
   const activeCircuitSpec = OFFICIAL_CIRCUITS[selectedCircuitId] || OFFICIAL_CIRCUITS['barcelona'];
+
+  if (currentView === 'landing') {
+    return <LandingPage onEnter={() => setCurrentView('home')} />;
+  }
 
   if (currentView === 'home') {
     return (
@@ -204,14 +230,23 @@ export const App: React.FC = () => {
   return (
     <div className={styles.appContainer}>
       {/* ── 1. TIMING TOWER IZQUIERDA ── */}
-      <div className={styles.leftSidebar}>
-        <Leaderboard
-          cars={cars}
-          selectedCarId={selectedCarId}
-          onSelectCar={handleSelectCar}
-          fastestLapDriverName={fastestLapDriver}
-          leaderLap={leaderLap}
-        />
+      <div className={`${styles.leftSidebar} ${leftSidebarOpen ? '' : styles.sidebarCollapsed}`}>
+        {leftSidebarOpen && (
+          <Leaderboard
+            cars={cars}
+            selectedCarId={selectedCarId}
+            onSelectCar={handleSelectCar}
+            fastestLapDriverName={fastestLapDriver}
+            leaderLap={leaderLap}
+          />
+        )}
+        <button 
+          className={styles.sidebarToggle} 
+          onClick={() => setLeftSidebarOpen(!leftSidebarOpen)}
+          style={{ right: leftSidebarOpen ? '-14px' : '-14px' }}
+        >
+          {leftSidebarOpen ? <ChevronLeft size={14} /> : <ChevronRight size={14} />}
+        </button>
       </div>
 
       {/* ── 2. CANVAS DEL CIRCUITO + CONTROLES + DOCK INFERIOR ── */}
@@ -261,6 +296,13 @@ export const App: React.FC = () => {
               <span>INICIO</span>
             </button>
             <RaceHeader circuit={activeCircuitSpec} />
+            <div 
+              className={styles.cameraBadge} 
+              onClick={handleCycleCameraMode}
+              title="Presiona 'C' para cambiar cámara"
+            >
+              CAM: {cameraMode.toUpperCase()}
+            </div>
           </div>
 
           <SpeedControls
@@ -302,15 +344,24 @@ export const App: React.FC = () => {
       </div>
 
       {/* ── 3. PANEL DERECHO: DASHBOARD AVANZADO (GRÁFICA PREVISIÓN + VUELTAS) ── */}
-      <div className={styles.rightSidebar}>
-        <RightStatsPanel
-          car={selectedCar}
-          defaultCar={favoriteCar}
-          totalLaps={simulation.totalLaps}
-          overallBestS1={bestS1}
-          overallBestS2={bestS2}
-          overallBestS3={bestS3}
-        />
+      <div className={`${styles.rightSidebar} ${rightSidebarOpen ? '' : styles.sidebarCollapsed}`}>
+        <button 
+          className={styles.sidebarToggle} 
+          onClick={() => setRightSidebarOpen(!rightSidebarOpen)}
+          style={{ left: rightSidebarOpen ? '-14px' : '-14px' }}
+        >
+          {rightSidebarOpen ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+        </button>
+        {rightSidebarOpen && (
+          <RightStatsPanel
+            car={selectedCar}
+            defaultCar={favoriteCar}
+            totalLaps={simulation.totalLaps}
+            overallBestS1={bestS1}
+            overallBestS2={bestS2}
+            overallBestS3={bestS3}
+          />
+        )}
       </div>
     </div>
   );

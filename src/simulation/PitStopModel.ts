@@ -17,7 +17,8 @@ export class PitStopModel {
     car: CarState,
     dt: number,
     lapDistanceMeters: number,
-    track?: TrackDefinition
+    track: TrackDefinition | undefined,
+    totalLaps: number
   ): boolean {
     const pit = car.pitStop;
     const pitEntryThreshold = track ? track.pitEntryT : 0.94;
@@ -28,18 +29,30 @@ export class PitStopModel {
       pit.isPitting = true;
       car.isInPitLane = true;
       pit.pitLaneProgress = 0.0;
-      car.currentSpeedKmh = this.PIT_SPEED_LIMIT_KMH;
 
-      const baseStop = 1.6 + Math.random() * 1.1;
-      const disasterFumble = Math.random() < 0.15 ? (0.8 + Math.random() * 1.3) : 0;
-      pit.stopDuration = Number(Math.min(4.0, Math.max(1.5, baseStop + disasterFumble)).toFixed(2));
+      const roll = Math.random();
+      let stopDuration: number;
+      if (roll < 0.20) {
+        stopDuration = 1.8 + Math.random() * 0.4;
+      } else if (roll < 0.75) {
+        stopDuration = 2.2 + Math.random() * 0.8;
+      } else if (roll < 0.90) {
+        stopDuration = 3.0 + Math.random() * 1.0;
+      } else {
+        stopDuration = 4.0 + Math.random() * 4.0;
+      }
+      pit.stopDuration = Number(stopDuration.toFixed(2));
       pit.currentStopTimer = 0;
     }
 
     if (pit.isPitting) {
       if (pit.pitLaneProgress < 0.40) {
-        pit.pitLaneProgress += dt * 0.11;
-        car.currentSpeedKmh = this.PIT_SPEED_LIMIT_KMH;
+        pit.pitLaneProgress += dt * 0.06;
+        if (pit.pitLaneProgress < 0.05) {
+          car.currentSpeedKmh = Math.max(this.PIT_SPEED_LIMIT_KMH, car.currentSpeedKmh - dt * 250);
+        } else {
+          car.currentSpeedKmh = this.PIT_SPEED_LIMIT_KMH;
+        }
       } 
       else if (pit.pitLaneProgress >= 0.40 && pit.currentStopTimer < pit.stopDuration) {
         pit.currentStopTimer += dt;
@@ -50,16 +63,23 @@ export class PitStopModel {
           
           let nextCompound: TireCompound = 'hard';
           let expectedLaps = 36;
+          const currentLap = car.currentLap;
 
-          if (car.tires.compound === 'medium') {
-            nextCompound = Math.random() > 0.5 ? 'hard' : 'soft';
-            expectedLaps = nextCompound === 'hard' ? 36 : 16;
-          } else if (car.tires.compound === 'hard') {
-            nextCompound = Math.random() > 0.5 ? 'medium' : 'soft';
+          if (currentLap < totalLaps * 0.4) {
+            nextCompound = Math.random() > 0.5 ? 'medium' : 'hard';
+            expectedLaps = nextCompound === 'hard' ? 36 : 24;
+          } else if (currentLap > totalLaps * 0.7) {
+            nextCompound = Math.random() > 0.5 ? 'soft' : 'medium';
             expectedLaps = nextCompound === 'medium' ? 24 : 16;
           } else {
-            nextCompound = Math.random() > 0.5 ? 'hard' : 'medium';
-            expectedLaps = nextCompound === 'hard' ? 36 : 24;
+            const r = Math.random();
+            if (r < 0.33) {
+              nextCompound = 'soft'; expectedLaps = 16;
+            } else if (r < 0.66) {
+              nextCompound = 'medium'; expectedLaps = 24;
+            } else {
+              nextCompound = 'hard'; expectedLaps = 36;
+            }
           }
 
           car.tires = TireModel.createFreshTire(nextCompound);
@@ -78,8 +98,12 @@ export class PitStopModel {
         }
       } 
       else if (pit.pitLaneProgress >= 0.41 && pit.pitLaneProgress < 1.0) {
-        pit.pitLaneProgress += dt * 0.11;
-        car.currentSpeedKmh = this.PIT_SPEED_LIMIT_KMH;
+        pit.pitLaneProgress += dt * 0.06;
+        if (pit.pitLaneProgress > 0.95) {
+          car.currentSpeedKmh = Math.min(250, car.currentSpeedKmh + dt * 150);
+        } else {
+          car.currentSpeedKmh = this.PIT_SPEED_LIMIT_KMH;
+        }
 
         if (pit.pitLaneProgress >= 1.0) {
           pit.isPitting = false;

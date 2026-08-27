@@ -4,6 +4,7 @@ import { RaceSimulation } from '../simulation/RaceSimulation';
 import { Camera } from '../renderer/Camera';
 import { TrackRenderer } from '../renderer/TrackRenderer';
 import { CarRenderer } from '../renderer/CarRenderer';
+import { OFFICIAL_CIRCUITS } from '../data/circuits';
 
 interface RaceCanvasProps {
   simulation: RaceSimulation;
@@ -77,7 +78,10 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
       ctx.fillRect(0, 0, camera.screenWidth, camera.screenHeight);
 
       TrackRenderer.renderTrack(ctx, simulation.activeTrack, camera, dpr);
-      CarRenderer.renderCars(ctx, simulation.cars, camera, selectedCarId, simulation.activeTrack);
+
+      const circuitSpec = OFFICIAL_CIRCUITS[simulation.circuitId];
+      const trackWidthCarsCapacity = circuitSpec?.trackWidthCars ?? 3;
+      CarRenderer.renderCars(ctx, simulation.cars, camera, selectedCarId, simulation.activeTrack, trackWidthCarsCapacity);
 
       // ── MINIMAPA A LA IZQUIERDA DEL TODO (visible al seguir un coche) ──
       if (camera.followingCarId !== null) {

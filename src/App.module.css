@@ -93,13 +93,61 @@
   position: absolute;
   bottom: 14px;
   left: 210px; /* Despejado para que el minimapa a la izquierda no se solape */
-  right: 14px;
+  right: 374px;
   display: flex;
   justify-content: center;
-  z-index: 25;
+  z-index: 35;
   pointer-events: none;
 }
 
 .bottomDockWrapper > * {
   pointer-events: auto;
+}
+
+.cameraBadge {
+  background: rgba(15, 23, 42, 0.85);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 0.5px;
+}
+
+.leftSidebar,
+.rightSidebar {
+  position: relative;
+  transition: width 0.3s ease, min-width 0.3s ease;
+}
+
+.sidebarCollapsed {
+  width: 0px !important;
+  min-width: 0px !important;
+  overflow: hidden;
+}
+
+.sidebarToggle {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 48px;
+  background: rgba(11, 15, 25, 0.95);
+  border: 1.5px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 40;
+  transition: background 0.15s, color 0.15s;
+}
+
+.sidebarToggle:hover {
+  background: rgba(30, 41, 59, 0.95);
+  color: #e2e8f0;
 }

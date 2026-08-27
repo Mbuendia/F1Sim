@@ -126,6 +126,7 @@ export type StartLightState =
   | 'idle'
   | 'formation-lap'
   | 'grid-parking'
+  | 'grid-ready'
   | 'lights-1'
   | 'lights-2'
   | 'lights-3'

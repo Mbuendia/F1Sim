@@ -1,4 +1,4 @@
-﻿export interface CornerInfo {
+export interface CornerInfo {
   number: number;
   name: string;
   t: number;
@@ -50,6 +50,7 @@ export interface CircuitSpec {
   racingCircuitsUrl: string;
   racingNews365Url: string;
   statsF1Url: string;
+  trackWidthCars?: number;
 }
 
 export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
@@ -207,6 +208,7 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
     },
   monaco: {
     id: 'monaco',
+    trackWidthCars: 2,
     name: 'Circuit de Monaco',
       pitEntryT: 0.92,
       pitExitT: 0.1,
@@ -358,6 +360,7 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
     },
   zandvoort: {
     id: 'zandvoort',
+    trackWidthCars: 2,
     name: 'Circuit Zandvoort',
       pitEntryT: 0.9,
       pitExitT: 0.1,
@@ -396,6 +399,7 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
     },
   'las-vegas': {
     id: 'las-vegas',
+    trackWidthCars: 2,
     name: 'Las Vegas Strip Circuit',
     pitEntryT: 0.9,
       pitExitT: 0.1,
@@ -473,6 +477,7 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
     },
   baku: {
     id: 'baku',
+    trackWidthCars: 2,
     name: 'Baku City Circuit',
       pitEntryT: 0.9,
       pitExitT: 0.1,
@@ -551,6 +556,7 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
     },
   miami: {
     id: 'miami',
+    trackWidthCars: 2,
     name: 'Miami International Autodrome',
       pitEntryT: 0.9,
       pitExitT: 0.1,
@@ -628,6 +634,7 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
     },
   jeddah: {
     id: 'jeddah',
+    trackWidthCars: 2,
     name: 'Jeddah Corniche Circuit',
       pitEntryT: 0.9,
       pitExitT: 0.1,
@@ -667,6 +674,7 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
     },
   'marina-bay': {
     id: 'marina-bay',
+    trackWidthCars: 2,
     name: 'Marina Bay Street Circuit',
     pitEntryT: 0.9,
       pitExitT: 0.1,

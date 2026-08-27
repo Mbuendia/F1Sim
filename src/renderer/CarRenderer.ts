@@ -11,7 +11,8 @@ export class CarRenderer {
     cars: CarState[],
     camera: Camera,
     selectedCarId: number | null,
-    track: TrackDefinition
+    track: TrackDefinition,
+    trackWidthCarsCapacity: number = 2
   ) {
     const activeCars = cars.filter(c => c.status !== 'finished');
 
@@ -48,8 +49,8 @@ export class CarRenderer {
 
         const nx = Math.cos(angle + Math.PI / 2);
         const ny = Math.sin(angle + Math.PI / 2);
-        // Distancia lateral para ir en paralelo (hasta 12 metros de separación en pista de 26m)
-        const lateralDist = car.lateralOffset * 10.5;
+        // Distancia lateral para ir en paralelo
+        const lateralDist = car.lateralOffset * (8 / trackWidthCarsCapacity);
 
         worldX = pt.x + nx * lateralDist;
         worldY = pt.y + ny * lateralDist;
@@ -81,8 +82,8 @@ export class CarRenderer {
     ctx.rotate(angle);
 
     const scale = Math.max(0.9, Math.min(3.2, zoom * 1.15));
-    const carLen = 19 * scale;
-    const carWid = 8.5 * scale;
+    const carLen = 14 * scale;
+    const carWid = 6 * scale;
 
     // Sombra del coche
     ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
@@ -93,17 +94,21 @@ export class CarRenderer {
     // ── 1. CHASIS PRINCIPAL AERODINÁMICO ──
     ctx.fillStyle = car.team.color;
     ctx.beginPath();
-    ctx.moveTo(carLen * 0.54, 0); // Morro afilado
-    ctx.lineTo(carLen * 0.26, -carWid * 0.24);
-    ctx.lineTo(carLen * 0.10, -carWid * 0.48);
-    ctx.lineTo(-carLen * 0.35, -carWid * 0.42);
-    ctx.lineTo(-carLen * 0.52, -carWid * 0.50);
-    ctx.lineTo(-carLen * 0.52, carWid * 0.50);
-    ctx.lineTo(-carLen * 0.35, carWid * 0.42);
-    ctx.lineTo(carLen * 0.10, carWid * 0.48);
-    ctx.lineTo(carLen * 0.26, carWid * 0.24);
+    ctx.moveTo(carLen * 0.60, 0); // Morro afilado
+    ctx.lineTo(carLen * 0.40, -carWid * 0.15);
+    ctx.lineTo(carLen * 0.15, -carWid * 0.35);
+    ctx.lineTo(-carLen * 0.25, -carWid * 0.45);
+    ctx.lineTo(-carLen * 0.50, -carWid * 0.40);
+    ctx.lineTo(-carLen * 0.50, carWid * 0.40);
+    ctx.lineTo(-carLen * 0.25, carWid * 0.45);
+    ctx.lineTo(carLen * 0.15, carWid * 0.35);
+    ctx.lineTo(carLen * 0.40, carWid * 0.15);
     ctx.closePath();
     ctx.fill();
+
+    // Alerón delantero (Front wing)
+    ctx.fillStyle = car.team.accentColor || '#111827';
+    ctx.fillRect(carLen * 0.50, -carWid * 0.40, 2.5 * scale, carWid * 0.80);
 
     // Acento secundario del equipo
     ctx.fillStyle = car.team.accentColor || '#111827';
@@ -172,7 +177,7 @@ export class CarRenderer {
     ctx.save();
     if (car.isBlueFlagged) {
       const flagLabel = `🟦 BLUE FLAG`;
-      ctx.font = `bold ${Math.max(9, 10 * scale)}px 'Orbitron', sans-serif`;
+      ctx.font = `bold ${Math.max(7, 8 * scale)}px 'Orbitron', sans-serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'bottom';
       ctx.fillStyle = '#38bdf8';
@@ -182,7 +187,7 @@ export class CarRenderer {
       ctx.fillText(flagLabel, x, y - 14 * scale);
     } else if (zoom > 1.2) {
       const label = `${car.driver.code} (P${car.currentPosition})`;
-      ctx.font = `bold ${Math.max(10, 11 * scale)}px 'Orbitron', sans-serif`;
+      ctx.font = `bold ${Math.max(8, 9 * scale)}px 'Orbitron', sans-serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'bottom';
       
@@ -194,7 +199,7 @@ export class CarRenderer {
       ctx.fillText(label, x, y - 13 * scale);
     } else {
       const label = `P${car.currentPosition}`;
-      ctx.font = `bold 10px 'Orbitron', sans-serif`;
+      ctx.font = `bold 8px 'Orbitron', sans-serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'bottom';
       ctx.fillStyle = '#ffffff';
