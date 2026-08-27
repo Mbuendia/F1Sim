@@ -216,7 +216,7 @@ export class RaceSimulation {
   }
 
   isOvertakingAllowedZone(t: number): boolean {
-    if (t >= 0.94 || t <= 0.10) return true;
+    if (t >= 0.92 || t <= 0.10) return true;
     if (t >= 0.40 && t <= 0.60) return true;
     return false;
   }
@@ -292,7 +292,7 @@ export class RaceSimulation {
         car.tires.health = 0;
       }
 
-      // 1. Pit Stop Update con el circuito activo
+      // 1. Pit Stop Update
       const isHandlingPit = PitStopModel.updatePitStop(car, dt, lapDistanceMeters, this.activeTrack);
 
       if (isHandlingPit) {
@@ -307,7 +307,7 @@ export class RaceSimulation {
         continue;
       }
 
-      // 2. Posición en pista
+      // 2. Posición y punto de pista
       const normalizedT = ((car.progress % 1) + 1) % 1;
       car.trackT = normalizedT;
       const pointIndex = Math.floor(normalizedT * totalPoints) % totalPoints;
@@ -334,11 +334,12 @@ export class RaceSimulation {
         car.aggression = 'balanced';
       }
 
-      const drsEval = DRSModel.evaluateDRS(trackPoint as any, car.gapToCarAheadSec, car.currentLap);
-      car.drsEligible = drsEval.isEligible;
-      car.drsActive = drsEval.isActive;
+      // DRS
+      const isEligibleForDrs = trackPoint.isDrsZone && car.currentLap > 1 && car.gapToCarAheadSec > 0 && car.gapToCarAheadSec <= 1.0;
+      car.drsEligible = trackPoint.isDrsZone && car.currentLap > 1;
+      car.drsActive = isEligibleForDrs;
 
-      const isCornering = trackPoint.speedLimitFactor < 0.85;
+      const isCornering = trackPoint.speedLimitFactor < 0.80;
       const tireResult = TireModel.updateTires(
         car.tires,
         car.driver,
@@ -367,32 +368,75 @@ export class RaceSimulation {
 
       const consistencyNoise = (1.0 - car.driver.consistency) * (Math.sin(car.currentLap * 1.7 + car.id) * 0.003);
       const raceDayVariance = 1.0 + car.raceDayLuckFactor + ((car.driver.luckRating - 0.75) * 0.002) + consistencyNoise;
-      const slipstreamBonus = (car.gapToCarAheadSec > 0 && car.gapToCarAheadSec < 0.85 && !isCornering) ? 1.012 : 1.0;
+      const slipstreamBonus = (car.gapToCarAheadSec > 0 && car.gapToCarAheadSec < 0.85 && !isCornering) ? 1.018 : 1.0;
 
       const carBasePerf = car.team.carPerformance;
-      const baseLapSpeed = 1.0 / RaceSimulation.BASE_LAP_TIME_SEC;
-
       let effectivePace = 
         carBasePerf * 
         (0.92 + 0.08 * driverSkillMultiplier) * 
         tireResult.speedMultiplier * 
         fuelResult.weightAdvantageMultiplier * 
         enginePerf.speedFactor * 
-        drsEval.speedBoostMultiplier * 
+        (car.drsActive ? 1.07 : 1.0) * 
         slipstreamBonus * 
         raceDayVariance;
 
       if (car.hasPuncture) {
-        effectivePace *= 0.40;
+        effectivePace *= 0.35;
       }
 
+      // ── FÍSICA LONGITUDINAL REALISTA: FRENADAS VIOLENTAS Y ACELERACIÓN A FONDO ──
+      // Velocidad objetivo real en km/h según la curva / recta
       const speedLimitFactor = trackPoint.speedLimitFactor;
-      let targetSpeedLapPerSec = baseLapSpeed * effectivePace * (0.48 + 0.52 * speedLimitFactor);
+      let targetKmh = 0;
+
+      if (car.hasPuncture) {
+        targetKmh = 70;
+      } else if (speedLimitFactor >= 0.90) {
+        // Recta a fondo
+        const topStraightSpeed = 338 + (car.drsActive ? 18 : 0) + (car.engineMode === 'push' ? 8 : 0) + (car.team.carPerformance - 0.88) * 120;
+        targetKmh = topStraightSpeed * effectivePace;
+      } else if (speedLimitFactor >= 0.65) {
+        // Curva rápida de media-alta velocidad
+        targetKmh = (190 + (speedLimitFactor - 0.65) * 450) * effectivePace;
+      } else if (speedLimitFactor >= 0.40) {
+        // Curva media
+        targetKmh = (120 + (speedLimitFactor - 0.40) * 280) * effectivePace;
+      } else {
+        // Horquilla o chicane lenta
+        targetKmh = (68 + (speedLimitFactor - 0.20) * 240) * effectivePace;
+      }
 
       if (car.isBlueFlagged) {
-        targetSpeedLapPerSec *= 0.85;
+        targetKmh *= 0.85;
       }
 
+      // Aceleración vs Frenada
+      let throttleVal = 0;
+      let brakeVal = 0;
+
+      if (targetKmh < car.currentSpeedKmh) {
+        // FRENADA: Desaceleración violenta de F1 (hasta 55 m/s² ~ 190 km/h por segundo)
+        const brakeForce = trackPoint.isBrakingZone ? 180 : 120;
+        const deltaSpeed = (car.currentSpeedKmh - targetKmh);
+        const speedDrop = Math.min(deltaSpeed, brakeForce * dt);
+        car.currentSpeedKmh -= speedDrop;
+        brakeVal = Math.min(100, Math.round((speedDrop / (brakeForce * dt + 0.001)) * 100));
+        throttleVal = 0;
+      } else {
+        // ACELERACIÓN: Aceleración potente según potencia motor (12-16 m/s² ~ 45-60 km/h por segundo)
+        const accelForce = (50 + (car.team.horsepower - 1000) * 0.4) * effectivePace;
+        const deltaSpeed = (targetKmh - car.currentSpeedKmh);
+        const speedGain = Math.min(deltaSpeed, accelForce * dt);
+        car.currentSpeedKmh += speedGain;
+        throttleVal = Math.min(100, Math.round((speedGain / (accelForce * dt + 0.001)) * 100));
+        brakeVal = 0;
+      }
+
+      // Velocidad angular en la pista (progreso / segundo)
+      car.speed = (car.currentSpeedKmh / 3.6) / lapDistanceMeters;
+
+      // Gestión de adelantamientos
       const minSafeSpacing = 0.0030;
       const canOvertakeHere = this.isOvertakingAllowedZone(normalizedT);
       
@@ -414,7 +458,8 @@ export class RaceSimulation {
           } else {
             car.isOvertaking = false;
             car.targetLateralOffset = 0;
-            targetSpeedLapPerSec = Math.min(targetSpeedLapPerSec, carAhead.speed * 0.98);
+            car.currentSpeedKmh = Math.min(car.currentSpeedKmh, carAhead.currentSpeedKmh * 0.99);
+            car.speed = (car.currentSpeedKmh / 3.6) / lapDistanceMeters;
           }
         } else if (deltaProgress >= minSafeSpacing) {
           if (car.isOvertaking && deltaProgress > 0.0045) {
@@ -428,16 +473,6 @@ export class RaceSimulation {
       }
 
       car.lateralOffset += (car.targetLateralOffset - car.lateralOffset) * Math.min(1.0, dt * 4.0);
-      car.speed += (targetSpeedLapPerSec - car.speed) * Math.min(1.0, dt * 3.5);
-      
-      const isMainStraight = normalizedT > 0.94 || normalizedT < 0.08;
-      const targetKmh = car.hasPuncture 
-        ? 75 
-        : (isMainStraight 
-          ? (330 + (car.drsActive ? 15 : 0) + (car.engineMode === 'push' ? 10 : 0))
-          : (speedLimitFactor * 230 + 80) * (0.85 + 0.15 * effectivePace) * (car.drsActive ? 1.06 : 1.0));
-
-      car.currentSpeedKmh += (targetKmh - car.currentSpeedKmh) * Math.min(1.0, dt * 4.0);
 
       const prevProgress = car.progress;
       car.progress += car.speed * dt;
@@ -503,6 +538,22 @@ export class RaceSimulation {
       const projectedLapsLeft = Math.max(0, Math.floor(car.tires.health / wearPerLapEst));
       const lapsToEnd = this.totalLaps - car.currentLap;
 
+      // Marchas y RPM reales
+      const kmh = Math.round(car.currentSpeedKmh);
+      let gearVal = 8;
+      if (kmh < 95) gearVal = 2;
+      else if (kmh < 135) gearVal = 3;
+      else if (kmh < 180) gearVal = 4;
+      else if (kmh < 225) gearVal = 5;
+      else if (kmh < 270) gearVal = 6;
+      else if (kmh < 315) gearVal = 7;
+
+      const baseRpm = 9500 + (kmh / 355) * 3800 + (throttleVal > 80 ? 400 : 0);
+      const finalRpm = Math.min(13600, Math.max(8000, Math.round(baseRpm)));
+
+      // Temperatura de frenos realista
+      const targetBrakeTemp = brakeVal > 20 ? 820 : 380;
+
       car.stats = {
         pushLaps: Math.floor(car.currentLap * 0.35),
         savingLaps: Math.floor(car.currentLap * 0.65),
@@ -511,24 +562,9 @@ export class RaceSimulation {
         willMakeToEndWithoutPit: projectedLapsLeft >= lapsToEnd,
         optimalPitLap: car.currentLap + projectedLapsLeft,
         overtakesMade: Math.max(0, car.gridPosition - car.currentPosition),
-        brakeTempCelsius: Math.round(350 + (trackPoint.isBrakingZone ? 280 : 0) - (car.currentSpeedKmh < 100 ? 50 : 0)),
+        brakeTempCelsius: targetBrakeTemp,
         engineTempCelsius: Math.round(101 + (car.currentSpeedKmh / 350) * 8)
       };
-
-      const throttleVal = isCornering ? Math.round(trackPoint.speedLimitFactor * 90) : 100;
-      const brakeVal = trackPoint.isBrakingZone ? Math.round((1 - trackPoint.speedLimitFactor) * 100) : 0;
-      
-      let gearVal = 8;
-      const kmh = Math.round(car.currentSpeedKmh);
-      if (kmh < 100) gearVal = 2;
-      else if (kmh < 140) gearVal = 3;
-      else if (kmh < 185) gearVal = 4;
-      else if (kmh < 230) gearVal = 5;
-      else if (kmh < 275) gearVal = 6;
-      else if (kmh < 315) gearVal = 7;
-
-      const baseRpm = 9500 + (kmh / 350) * 3500;
-      const finalRpm = Math.min(13500, Math.max(8000, Math.round(baseRpm)));
 
       car.telemetry = {
         speedKmh: kmh,

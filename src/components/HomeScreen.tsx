@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import styles from './HomeScreen.module.css';
 import { DRIVERS } from '../data/drivers';
 import { TEAMS, STARTING_GRID_ORDER } from '../data/teams';
 import { OFFICIAL_CIRCUITS, CircuitSpec } from '../data/circuits';
+import { buildTrackFromSvg } from '../utils/svgTrackParser';
 import { RaceResultHistory } from '../types/f1';
 import { 
   Play, 
@@ -14,9 +15,13 @@ import {
   ExternalLink,
   Flag,
   CheckCircle2,
-  Zap
+  Zap,
+  RotateCw,
+  RotateCcw,
+  Compass,
+  Layers
 } from 'lucide-react';
-import { animate, createMotionPath } from 'animejs';
+import { animate } from 'animejs';
 
 interface HomeScreenProps {
   selectedDriverId: string;
@@ -38,13 +43,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   const [activeTab, setActiveTab] = useState<'drivers' | 'circuits'>('drivers');
   const [inspectedDriverId, setInspectedDriverId] = useState<string>(selectedDriverId);
   const [inspectedCircuitId, setInspectedCircuitId] = useState<string>(selectedCircuitId);
-  const [extractedPathD, setExtractedPathD] = useState<string>('');
 
   const centerPanelRef = useRef<HTMLDivElement | null>(null);
   const sidePanelRef = useRef<HTMLDivElement | null>(null);
-  const pathRef = useRef<SVGPathElement | null>(null);
-  const glowTrailRef = useRef<SVGPathElement | null>(null);
-  const runnerCarRef = useRef<SVGGElement | null>(null);
+  const trackPathRef = useRef<SVGPathElement | null>(null);
+  const trailPathRef = useRef<SVGPathElement | null>(null);
+  const runnerMarkerRef = useRef<SVGGElement | null>(null);
 
   useEffect(() => {
     setInspectedDriverId(selectedDriverId);
@@ -54,106 +58,94 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     setInspectedCircuitId(selectedCircuitId);
   }, [selectedCircuitId]);
 
-  // Cargar el archivo SVG minimal oficial y extraer su <path d="...">
+  const inspectedDriver = DRIVERS[inspectedDriverId] || DRIVERS[selectedDriverId] || DRIVERS['alonso'];
+  const inspectedTeam = TEAMS[inspectedDriver.teamId];
+  const inspectedCircuit = OFFICIAL_CIRCUITS[inspectedCircuitId] || OFFICIAL_CIRCUITS[selectedCircuitId] || OFFICIAL_CIRCUITS['barcelona'];
+
+  const selectedDriver = DRIVERS[selectedDriverId] || DRIVERS['alonso'];
+  const selectedTeam = TEAMS[selectedDriver.teamId];
+  const selectedCircuit = OFFICIAL_CIRCUITS[selectedCircuitId] || OFFICIAL_CIRCUITS['barcelona'];
+
+  // Generar la geometría orientada idéntica a la pista de carrera (meta en la parte inferior)
+  const trackDefinition = useMemo(() => {
+    return buildTrackFromSvg(inspectedCircuit, 600);
+  }, [inspectedCircuit]);
+
+  // Generar el path SVG exacto con la meta en la parte inferior
+  const svgPathD = useMemo(() => {
+    const pts = trackDefinition.points;
+    if (pts.length === 0) return '';
+    const b = trackDefinition.bounds;
+    const w = b.maxX - b.minX;
+    const h = b.maxY - b.minY;
+
+    // Normalizar a viewBox 0 0 500 500 con padding
+    const padding = 35;
+    const scale = Math.min((500 - padding * 2) / w, (500 - padding * 2) / h);
+    const offX = padding + (500 - padding * 2 - w * scale) / 2;
+    const offY = padding + (500 - padding * 2 - h * scale) / 2;
+
+    const toSvgCoord = (x: number, y: number) => ({
+      x: (x - b.minX) * scale + offX,
+      y: (y - b.minY) * scale + offY
+    });
+
+    const p0 = toSvgCoord(pts[0].x, pts[0].y);
+    let d = `M ${p0.x.toFixed(1)} ${p0.y.toFixed(1)}`;
+    for (let i = 1; i < pts.length; i++) {
+      const p = toSvgCoord(pts[i].x, pts[i].y);
+      d += ` L ${p.x.toFixed(1)} ${p.y.toFixed(1)}`;
+    }
+    d += ' Z';
+    return d;
+  }, [trackDefinition]);
+
+  // Animación continua de la pelotita delante y la estela directamente detrás
   useEffect(() => {
-    const circuit = OFFICIAL_CIRCUITS[inspectedCircuitId] || OFFICIAL_CIRCUITS['barcelona'];
-    const svgUrl = `/circuits/minimal/${circuit.svgFile}`;
+    if (activeTab !== 'circuits' || !svgPathD) return;
 
-    fetch(svgUrl)
-      .then((res) => res.text())
-      .then((svgText) => {
-        const match = svgText.match(/<path[^>]*d="([^"]+)"/i);
-        if (match && match[1]) {
-          setExtractedPathD(match[1]);
-        }
-      })
-      .catch((err) => {
-        console.error('Error loading circuit SVG:', err);
-      });
-  }, [inspectedCircuitId]);
+    let animFrame: number;
+    const startT = performance.now();
+    const duration = 4800; // 4.8s por vuelta
 
-  // Animación del circuito con createMotionPath y estela de trazo en bucle continuo
-  useEffect(() => {
-    if (activeTab !== 'circuits' || !extractedPathD) return;
+    const step = (now: number) => {
+      const pathEl = trackPathRef.current;
+      const trailEl = trailPathRef.current;
+      const markerEl = runnerMarkerRef.current;
 
-    let animInstance: any = null;
-    let fallbackFrame: number | null = null;
+      if (pathEl && markerEl && trailEl) {
+        const totalLen = pathEl.getTotalLength();
+        if (totalLen > 0) {
+          const elapsed = (now - startT) % duration;
+          const progress = elapsed / duration; // 0.0 a 1.0
+          const currentDist = progress * totalLen;
 
-    const timer = setTimeout(() => {
-      const pathEl = pathRef.current;
-      const carEl = runnerCarRef.current;
-      const trailEl = glowTrailRef.current;
-
-      if (!pathEl || !carEl) return;
-
-      const totalLen = pathEl.getTotalLength();
-
-      // Configurar estela brillante que va recorriendo el circuito
-      if (trailEl) {
-        trailEl.style.strokeDasharray = `${totalLen * 0.28} ${totalLen * 0.72}`;
-        trailEl.style.strokeDashoffset = '0';
-
-        try {
-          animate(trailEl, {
-            strokeDashoffset: [-totalLen, 0],
-            duration: 4800,
-            loop: true,
-            ease: 'linear'
-          });
-        } catch (e) {
-          // Ignore
-        }
-      }
-
-      try {
-        if (typeof createMotionPath === 'function') {
-          const pathMotion = createMotionPath(pathEl);
-          animInstance = animate(carEl, {
-            ...pathMotion,
-            duration: 4800,
-            loop: true,
-            ease: 'linear'
-          });
-        }
-      } catch (err) {
-        console.warn('Anime createMotionPath fallback to getPointAtLength:', err);
-      }
-
-      // Fallback robusto sincronizado al milímetro
-      if (!animInstance && pathEl) {
-        let startT = performance.now();
-
-        const step = (now: number) => {
-          const elapsed = (now - startT) % 4800;
-          const progress = elapsed / 4800;
-          const dist = progress * totalLen;
-          const pt = pathEl.getPointAtLength(dist);
-          const ptNext = pathEl.getPointAtLength(Math.min(totalLen, dist + 2));
+          // 1. Posición de la pelotita
+          const pt = pathEl.getPointAtLength(currentDist);
+          const ptNext = pathEl.getPointAtLength(Math.min(totalLen, (currentDist + 3) % totalLen));
           const angle = Math.atan2(ptNext.y - pt.y, ptNext.x - pt.x) * (180 / Math.PI);
 
-          if (carEl) {
-            carEl.setAttribute('transform', `translate(${pt.x}, ${pt.y}) rotate(${angle})`);
-          }
+          markerEl.setAttribute('transform', `translate(${pt.x}, ${pt.y}) rotate(${angle})`);
 
-          fallbackFrame = requestAnimationFrame(step);
-        };
-
-        fallbackFrame = requestAnimationFrame(step);
+          // 2. Estela que va EXACTAMENTE detrás de la pelotita
+          const trailLength = totalLen * 0.32;
+          trailEl.style.strokeDasharray = `${trailLength} ${totalLen}`;
+          // El offset sitúa el final del segmento visible en currentDist
+          trailEl.style.strokeDashoffset = `${-currentDist + trailLength}`;
+        }
       }
-    }, 60);
+
+      animFrame = requestAnimationFrame(step);
+    };
+
+    animFrame = requestAnimationFrame(step);
 
     return () => {
-      clearTimeout(timer);
-      if (animInstance && animInstance.pause) {
-        animInstance.pause();
-      }
-      if (fallbackFrame) {
-        cancelAnimationFrame(fallbackFrame);
-      }
+      cancelAnimationFrame(animFrame);
     };
-  }, [extractedPathD, activeTab]);
+  }, [svgPathD, activeTab]);
 
-  // Animación de entrada al cambiar de pestaña o elemento
+  // Animación de entrada al cambiar de pestaña
   useEffect(() => {
     if (centerPanelRef.current) {
       animate(centerPanelRef.current, {
@@ -164,14 +156,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       });
     }
   }, [inspectedDriverId, inspectedCircuitId, activeTab]);
-
-  const inspectedDriver = DRIVERS[inspectedDriverId] || DRIVERS[selectedDriverId] || DRIVERS['alonso'];
-  const inspectedTeam = TEAMS[inspectedDriver.teamId];
-  const inspectedCircuit = OFFICIAL_CIRCUITS[inspectedCircuitId] || OFFICIAL_CIRCUITS[selectedCircuitId] || OFFICIAL_CIRCUITS['barcelona'];
-
-  const selectedDriver = DRIVERS[selectedDriverId] || DRIVERS['alonso'];
-  const selectedTeam = TEAMS[selectedDriver.teamId];
-  const selectedCircuit = OFFICIAL_CIRCUITS[selectedCircuitId] || OFFICIAL_CIRCUITS['barcelona'];
 
   return (
     <div className={styles.homeContainer}>
@@ -215,7 +199,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
       {/* ════ LAYOUT 3 COLUMNAS ════ */}
       <div className={styles.mainLayout3Col}>
-        {/* ── 1. COLUMNA IZQUIERDA (Lista de Selección con Scroll) ── */}
+        {/* ── 1. COLUMNA IZQUIERDA (Lista de Selección) ── */}
         <div className={styles.leftColumn}>
           <div className={styles.tabButtonsRow}>
             <button 
@@ -285,11 +269,15 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                     onMouseEnter={() => setInspectedCircuitId(circuit.id)}
                   >
                     <div>
-                      <div className={styles.circuitListName}>{circuit.countryFlag} {circuit.name}</div>
-                      <div className={styles.circuitListSub}>{circuit.officialGpName} · {circuit.country}</div>
+                      <div className={styles.circuitListName}>
+                        {circuit.countryFlag} {circuit.name}
+                      </div>
+                      <div className={styles.circuitListSub}>
+                        {circuit.direction === 'clockwise' ? '🔄 Horario' : '🔄 Antihorario'} · {circuit.totalLaps} Vueltas
+                      </div>
                     </div>
                     <div style={{ textAlign: 'right' }}>
-                      <span style={{ fontFamily: 'Orbitron', fontSize: '10px', color: '#38bdf8' }}>{circuit.totalLaps} V</span>
+                      <span style={{ fontFamily: 'Orbitron', fontSize: '10px', color: '#38bdf8' }}>{circuit.drsZones} DRS</span>
                       {isSelected && <div style={{ fontSize: '9px', color: '#38bdf8', fontWeight: 800 }}>ACTIVO ✓</div>}
                     </div>
                   </div>
@@ -299,7 +287,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           </div>
         </div>
 
-        {/* ── 2. COLUMNA CENTRAL (Ficha Técnica / Circuito con createMotionPath) ── */}
+        {/* ── 2. COLUMNA CENTRAL (Ficha Técnica / Circuito con Estela Alineada) ── */}
         <div ref={centerPanelRef} className={styles.centerColumn}>
           {activeTab === 'drivers' ? (
             /* DETALLE COMPLETO DEL PILOTO Y MONOPLAZA */
@@ -441,7 +429,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               </div>
             </div>
           ) : (
-            /* DETALLE COMPLETO DEL CIRCUITO CON ESTELA ANIMADA & CREATEMOTIONPATH */
+            /* DETALLE COMPLETO DEL CIRCUITO CON ESTELA DETRÁS DE LA PELOTITA */
             <div>
               <div className={styles.detailHeader}>
                 <div>
@@ -466,6 +454,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                     target="_blank"
                     rel="noopener noreferrer"
                     className={styles.mapsLinkBtn}
+                    title="Ver en Google Maps"
                   >
                     <MapPin size={12} />
                     <span>MAPS</span>
@@ -474,9 +463,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 </div>
               </div>
 
-              {/* Visor con Matriz de Puntos, Estela Luminosa en Bucle y Coche MotionPath */}
+              {/* Visor con Matriz de Puntos, Recta de Meta Abajo y Pelotita con Estela Posterior */}
               <div className={styles.svgMotionPathContainer}>
-                {extractedPathD ? (
+                {svgPathD ? (
                   <svg 
                     viewBox="0 0 500 500" 
                     preserveAspectRatio="xMidYMid meet" 
@@ -484,42 +473,46 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                   >
                     {/* Trazado base oscuro */}
                     <path 
-                      d={extractedPathD} 
+                      d={svgPathD} 
                       fill="none" 
                       stroke="#0f3b4c" 
                       strokeWidth="14" 
-                      opacity="0.7" 
+                      opacity="0.75" 
                     />
-                    {/* Trazo guía cian */}
+                    {/* Línea guía del circuito */}
                     <path 
-                      ref={pathRef}
+                      ref={trackPathRef}
                       id="active-circuit-path" 
-                      d={extractedPathD} 
+                      d={svgPathD} 
                       fill="none" 
                       stroke="#0891b2" 
                       strokeWidth="3.5" 
                       strokeLinecap="round" 
                       strokeLinejoin="round" 
                     />
-                    {/* Estela luminosa cian brillante que recorre el circuito en bucle */}
+                    {/* Estela luminosa cian que va EXACTAMENTE DETRÁS de la pelotita */}
                     <path 
-                      ref={glowTrailRef}
-                      d={extractedPathD} 
+                      ref={trailPathRef}
+                      d={svgPathD} 
                       fill="none" 
                       stroke="#00f0ff" 
-                      strokeWidth="5.5" 
+                      strokeWidth="6" 
                       strokeLinecap="round" 
                       strokeLinejoin="round" 
                       filter="drop-shadow(0 0 10px #00f0ff)"
                     />
-                    {/* Cursor / Monoplaza F1 estilizado con dirección de avance */}
-                    <g ref={runnerCarRef} id="circuit-runner-car">
-                      <polygon 
-                        points="-10,-6 10,0 -10,6 -6,0" 
+                    {/* Pelotita / Botoncito que va PRIMERO abriendo camino */}
+                    <g ref={runnerMarkerRef} id="circuit-runner-marker">
+                      <circle 
+                        r="6.5" 
                         fill="#00f0ff" 
                         stroke="#ffffff" 
-                        strokeWidth="1.5" 
-                        filter="drop-shadow(0 0 6px #00f0ff)"
+                        strokeWidth="2" 
+                        filter="drop-shadow(0 0 8px #00f0ff)"
+                      />
+                      <circle 
+                        r="2.5" 
+                        fill="#ffffff" 
                       />
                     </g>
                   </svg>
@@ -528,6 +521,31 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                     Cargando trazado oficial del circuito...
                   </div>
                 )}
+              </div>
+
+              {/* Enlaces y referencias técnicas oficiales */}
+              <div style={{ display: 'flex', gap: '6px', alignItems: 'center', justifyContent: 'space-between', margin: '4px 0 6px' }}>
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  <span style={{ fontSize: '10px', background: 'rgba(56,189,248,0.12)', color: '#38bdf8', padding: '3px 8px', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', gap: '4px', fontWeight: 700 }}>
+                    {inspectedCircuit.direction === 'clockwise' ? <RotateCw size={11} /> : <RotateCcw size={11} />}
+                    <span>{inspectedCircuit.direction === 'clockwise' ? 'Sentido Horario' : 'Sentido Antihorario'}</span>
+                  </span>
+                  <span style={{ fontSize: '10px', background: 'rgba(34,197,94,0.12)', color: '#22c55e', padding: '3px 8px', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', gap: '4px', fontWeight: 700 }}>
+                    <Zap size={11} />
+                    <span>{inspectedCircuit.drsZones} Zonas DRS Oficiales</span>
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', gap: '4px' }}>
+                  <a href={inspectedCircuit.racingCircuitsUrl} target="_blank" rel="noopener noreferrer" className={styles.mapsLinkBtn} title="RacingCircuits.info">
+                    <span>RacingCircuits</span>
+                    <ExternalLink size={9} />
+                  </a>
+                  <a href={inspectedCircuit.statsF1Url} target="_blank" rel="noopener noreferrer" className={styles.mapsLinkBtn} title="StatsF1.com">
+                    <span>StatsF1</span>
+                    <ExternalLink size={9} />
+                  </a>
+                </div>
               </div>
 
               <div className={styles.detailContentGrid}>
@@ -629,7 +647,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 </div>
                 <div className={styles.summaryCardSub}>{selectedCircuit.officialGpName} · {selectedCircuit.country}</div>
                 <div className={styles.summaryCardExtra} style={{ color: '#ffd700', background: 'rgba(255,215,0,0.1)' }}>
-                  🏁 {selectedCircuit.totalLaps} Vueltas · {selectedCircuit.lapLengthMeters}m
+                  🏁 {selectedCircuit.totalLaps} Vueltas · {selectedCircuit.direction === 'clockwise' ? '🔄 Horario' : '🔄 Antihorario'}
                 </div>
                 <div style={{ marginTop: '4px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <img 

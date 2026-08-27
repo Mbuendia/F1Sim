@@ -1,3 +1,19 @@
+export interface CornerInfo {
+  number: number;
+  name: string;
+  t: number;
+  gear: number;
+  apexSpeedKmh: number;
+  brakingG: number;
+}
+
+export interface DrsZoneSpec {
+  id: number;
+  name: string;
+  startT: number;
+  endT: number;
+}
+
 export interface CircuitSpec {
   id: string;
   name: string;
@@ -6,10 +22,12 @@ export interface CircuitSpec {
   country: string;
   countryFlag: string;
   svgFile: string;
+  direction: 'clockwise' | 'anti-clockwise';
   lapLengthMeters: number;
   totalLaps: number;
   turns: number;
   drsZones: number;
+  drsZoneSpecs: DrsZoneSpec[];
   spectators: number;
   pitLaneTimeLossSec: number;
   rainProbabilityPercent: number;
@@ -18,6 +36,9 @@ export interface CircuitSpec {
   latitude: number;
   longitude: number;
   googleMapsUrl: string;
+  racingCircuitsUrl: string;
+  racingNews365Url: string;
+  statsF1Url: string;
 }
 
 export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
@@ -29,10 +50,15 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
     country: 'España',
     countryFlag: '🇪🇸',
     svgFile: 'catalunya-6.svg',
+    direction: 'clockwise',
     lapLengthMeters: 4657,
     totalLaps: 66,
     turns: 16,
     drsZones: 2,
+    drsZoneSpecs: [
+      { id: 1, name: 'Recta Principal', startT: 0.90, endT: 0.08 },
+      { id: 2, name: 'Contrarrecta T9-T10', startT: 0.44, endT: 0.54 }
+    ],
     spectators: 140000,
     pitLaneTimeLossSec: 22.4,
     rainProbabilityPercent: 12,
@@ -40,7 +66,10 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
     windDirection: 'NO (Noroeste)',
     latitude: 41.5700,
     longitude: 2.2611,
-    googleMapsUrl: 'https://www.google.com/maps/search/?api=1&query=41.5700,2.2611'
+    googleMapsUrl: 'https://www.google.com/maps/search/?api=1&query=41.5700,2.2611',
+    racingCircuitsUrl: 'https://www.racingcircuits.info/europe/spain/circuit-de-barcelona-catalunya.html',
+    racingNews365Url: 'https://racingnews365.com/f1/races/spanish-grand-prix',
+    statsF1Url: 'https://www.statsf1.com/en/circuit-barcelona.aspx'
   },
   monza: {
     id: 'monza',
@@ -50,10 +79,15 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
     country: 'Italia',
     countryFlag: '🇮🇹',
     svgFile: 'monza-7.svg',
+    direction: 'clockwise',
     lapLengthMeters: 5793,
     totalLaps: 53,
     turns: 11,
     drsZones: 2,
+    drsZoneSpecs: [
+      { id: 1, name: 'Rettifilo Tribune', startT: 0.88, endT: 0.07 },
+      { id: 2, name: 'Rettifilo Serraglio (Variante Ascari)', startT: 0.52, endT: 0.68 }
+    ],
     spectators: 155000,
     pitLaneTimeLossSec: 24.1,
     rainProbabilityPercent: 8,
@@ -61,7 +95,10 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
     windDirection: 'NE (Nordeste)',
     latitude: 45.6190,
     longitude: 9.2811,
-    googleMapsUrl: 'https://www.google.com/maps/search/?api=1&query=45.6190,9.2811'
+    googleMapsUrl: 'https://www.google.com/maps/search/?api=1&query=45.6190,9.2811',
+    racingCircuitsUrl: 'https://www.racingcircuits.info/europe/italy/monza.html',
+    racingNews365Url: 'https://racingnews365.com/f1/races/italian-grand-prix',
+    statsF1Url: 'https://www.statsf1.com/en/circuit-monza.aspx'
   },
   silverstone: {
     id: 'silverstone',
@@ -71,10 +108,15 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
     country: 'Reino Unido',
     countryFlag: '🇬🇧',
     svgFile: 'silverstone-8.svg',
+    direction: 'clockwise',
     lapLengthMeters: 5891,
     totalLaps: 52,
     turns: 18,
     drsZones: 2,
+    drsZoneSpecs: [
+      { id: 1, name: 'Wellington Straight', startT: 0.22, endT: 0.35 },
+      { id: 2, name: 'Hangar Straight (Stowe)', startT: 0.68, endT: 0.82 }
+    ],
     spectators: 160000,
     pitLaneTimeLossSec: 20.5,
     rainProbabilityPercent: 45,
@@ -82,7 +124,10 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
     windDirection: 'SO (Suroeste)',
     latitude: 52.0786,
     longitude: -1.0169,
-    googleMapsUrl: 'https://www.google.com/maps/search/?api=1&query=52.0786,-1.0169'
+    googleMapsUrl: 'https://www.google.com/maps/search/?api=1&query=52.0786,-1.0169',
+    racingCircuitsUrl: 'https://www.racingcircuits.info/europe/united-kingdom/silverstone.html',
+    racingNews365Url: 'https://racingnews365.com/f1/races/british-grand-prix',
+    statsF1Url: 'https://www.statsf1.com/en/circuit-silverstone.aspx'
   },
   spa: {
     id: 'spa',
@@ -92,81 +137,113 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
     country: 'Bélgica',
     countryFlag: '🇧🇪',
     svgFile: 'spa-francorchamps-4.svg',
+    direction: 'clockwise',
     lapLengthMeters: 7004,
     totalLaps: 44,
     turns: 19,
     drsZones: 2,
+    drsZoneSpecs: [
+      { id: 1, name: 'Kemmel Straight (post Raidillon)', startT: 0.12, endT: 0.28 },
+      { id: 2, name: 'Recta Principal (La Source)', startT: 0.92, endT: 0.04 }
+    ],
     spectators: 130000,
     pitLaneTimeLossSec: 21.8,
     rainProbabilityPercent: 60,
-    windSpeedKmh: 18,
+    windSpeedKmh: 16,
     windDirection: 'O (Oeste)',
     latitude: 50.4372,
     longitude: 5.9714,
-    googleMapsUrl: 'https://www.google.com/maps/search/?api=1&query=50.4372,5.9714'
+    googleMapsUrl: 'https://www.google.com/maps/search/?api=1&query=50.4372,5.9714',
+    racingCircuitsUrl: 'https://www.racingcircuits.info/europe/belgium/spa-francorchamps.html',
+    racingNews365Url: 'https://racingnews365.com/f1/races/belgian-grand-prix',
+    statsF1Url: 'https://www.statsf1.com/en/circuit-spa-francorchamps.aspx'
   },
   monaco: {
     id: 'monaco',
     name: 'Circuit de Monaco',
     officialGpName: 'Grand Prix de Monaco',
-    location: 'Monte Carlo',
+    location: 'Montecarlo',
     country: 'Mónaco',
     countryFlag: '🇲🇨',
     svgFile: 'monaco-6.svg',
+    direction: 'clockwise',
     lapLengthMeters: 3337,
     totalLaps: 78,
     turns: 19,
     drsZones: 1,
-    spectators: 110000,
-    pitLaneTimeLossSec: 25.6,
-    rainProbabilityPercent: 10,
+    drsZoneSpecs: [
+      { id: 1, name: 'Boulevard Albert 1er', startT: 0.90, endT: 0.05 }
+    ],
+    spectators: 40000,
+    pitLaneTimeLossSec: 22.0,
+    rainProbabilityPercent: 15,
     windSpeedKmh: 8,
-    windDirection: 'S (Sur / Marítimo)',
+    windDirection: 'SE (Sudeste)',
     latitude: 43.7347,
     longitude: 7.4206,
-    googleMapsUrl: 'https://www.google.com/maps/search/?api=1&query=43.7347,7.4206'
+    googleMapsUrl: 'https://www.google.com/maps/search/?api=1&query=43.7347,7.4206',
+    racingCircuitsUrl: 'https://www.racingcircuits.info/europe/monaco/monte-carlo.html',
+    racingNews365Url: 'https://racingnews365.com/f1/races/monaco-grand-prix',
+    statsF1Url: 'https://www.statsf1.com/en/circuit-monaco.aspx'
   },
-  redbullring: {
-    id: 'redbullring',
+  spielberg: {
+    id: 'spielberg',
     name: 'Red Bull Ring',
-    officialGpName: 'Großer Preis von Österreich',
+    officialGpName: 'Austrian Grand Prix',
     location: 'Spielberg, Estiria',
     country: 'Austria',
     countryFlag: '🇦🇹',
     svgFile: 'spielberg-3.svg',
+    direction: 'clockwise',
     lapLengthMeters: 4318,
     totalLaps: 71,
     turns: 10,
     drsZones: 3,
-    spectators: 125000,
-    pitLaneTimeLossSec: 20.1,
+    drsZoneSpecs: [
+      { id: 1, name: 'Recta Principal', startT: 0.88, endT: 0.06 },
+      { id: 2, name: 'Subida a T3 (Remus)', startT: 0.10, endT: 0.28 },
+      { id: 3, name: 'Bajada T3-T4 (Rauch)', startT: 0.32, endT: 0.48 }
+    ],
+    spectators: 105000,
+    pitLaneTimeLossSec: 20.2,
     rainProbabilityPercent: 25,
     windSpeedKmh: 12,
-    windDirection: 'N (Norte Alpino)',
+    windDirection: 'N (Norte)',
     latitude: 47.2197,
     longitude: 14.7647,
-    googleMapsUrl: 'https://www.google.com/maps/search/?api=1&query=47.2197,14.7647'
+    googleMapsUrl: 'https://www.google.com/maps/search/?api=1&query=47.2197,14.7647',
+    racingCircuitsUrl: 'https://www.racingcircuits.info/europe/austria/red-bull-ring.html',
+    racingNews365Url: 'https://racingnews365.com/f1/races/austrian-grand-prix',
+    statsF1Url: 'https://www.statsf1.com/en/circuit-a1-ring.aspx'
   },
   interlagos: {
     id: 'interlagos',
-    name: 'Autódromo José Carlos Pace (Interlagos)',
+    name: 'Autódromo José Carlos Pace',
     officialGpName: 'Grande Prêmio de São Paulo',
     location: 'São Paulo',
     country: 'Brasil',
     countryFlag: '🇧🇷',
     svgFile: 'interlagos-2.svg',
+    direction: 'anti-clockwise',
     lapLengthMeters: 4309,
     totalLaps: 71,
     turns: 15,
     drsZones: 2,
-    spectators: 145000,
-    pitLaneTimeLossSec: 21.3,
+    drsZoneSpecs: [
+      { id: 1, name: 'Reta dos Boxes', startT: 0.86, endT: 0.05 },
+      { id: 2, name: 'Reta Oposta (post Senna S)', startT: 0.16, endT: 0.32 }
+    ],
+    spectators: 110000,
+    pitLaneTimeLossSec: 23.5,
     rainProbabilityPercent: 55,
-    windSpeedKmh: 16,
+    windSpeedKmh: 15,
     windDirection: 'SE (Sudeste)',
     latitude: -23.7036,
     longitude: -46.6997,
-    googleMapsUrl: 'https://www.google.com/maps/search/?api=1&query=-23.7036,-46.6997'
+    googleMapsUrl: 'https://www.google.com/maps/search/?api=1&query=-23.7036,-46.6997',
+    racingCircuitsUrl: 'https://www.racingcircuits.info/south-america/brazil/interlagos.html',
+    racingNews365Url: 'https://racingnews365.com/f1/races/brazilian-grand-prix',
+    statsF1Url: 'https://www.statsf1.com/en/circuit-interlagos.aspx'
   },
   suzuka: {
     id: 'suzuka',
@@ -176,60 +253,83 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
     country: 'Japón',
     countryFlag: '🇯🇵',
     svgFile: 'suzuka-2.svg',
+    direction: 'clockwise',
     lapLengthMeters: 5807,
     totalLaps: 53,
     turns: 18,
     drsZones: 1,
-    spectators: 150000,
+    drsZoneSpecs: [
+      { id: 1, name: 'Main Pit Straight', startT: 0.90, endT: 0.05 }
+    ],
+    spectators: 130000,
     pitLaneTimeLossSec: 22.8,
-    rainProbabilityPercent: 35,
-    windSpeedKmh: 15,
+    rainProbabilityPercent: 40,
+    windSpeedKmh: 18,
     windDirection: 'E (Este)',
     latitude: 34.8431,
-    longitude: 136.5407,
-    googleMapsUrl: 'https://www.google.com/maps/search/?api=1&query=34.8431,136.5407'
+    longitude: 136.5414,
+    googleMapsUrl: 'https://www.google.com/maps/search/?api=1&query=34.8431,136.5414',
+    racingCircuitsUrl: 'https://www.racingcircuits.info/asia/japan/suzuka.html',
+    racingNews365Url: 'https://racingnews365.com/f1/races/japanese-grand-prix',
+    statsF1Url: 'https://www.statsf1.com/en/circuit-suzuka.aspx'
   },
   zandvoort: {
     id: 'zandvoort',
     name: 'Circuit Zandvoort',
     officialGpName: 'Dutch Grand Prix',
-    location: 'Zandvoort, Holanda Septentrional',
+    location: 'Zandvoort',
     country: 'Países Bajos',
     countryFlag: '🇳🇱',
     svgFile: 'zandvoort-5.svg',
+    direction: 'clockwise',
     lapLengthMeters: 4259,
     totalLaps: 72,
     turns: 14,
     drsZones: 2,
-    spectators: 120000,
-    pitLaneTimeLossSec: 21.9,
-    rainProbabilityPercent: 40,
-    windSpeedKmh: 32,
-    windDirection: 'O (Oeste Mar del Norte)',
+    drsZoneSpecs: [
+      { id: 1, name: 'Arie Luyendyk Bocht Straight', startT: 0.91, endT: 0.05 },
+      { id: 2, name: 'Hugenholtz to Slotemaker', startT: 0.22, endT: 0.35 }
+    ],
+    spectators: 115000,
+    pitLaneTimeLossSec: 21.0,
+    rainProbabilityPercent: 30,
+    windSpeedKmh: 28,
+    windDirection: 'NO (Noroeste Marino)',
     latitude: 52.3888,
     longitude: 4.5409,
-    googleMapsUrl: 'https://www.google.com/maps/search/?api=1&query=52.3888,4.5409'
+    googleMapsUrl: 'https://www.google.com/maps/search/?api=1&query=52.3888,4.5409',
+    racingCircuitsUrl: 'https://www.racingcircuits.info/europe/netherlands/zandvoort.html',
+    racingNews365Url: 'https://racingnews365.com/f1/races/dutch-grand-prix',
+    statsF1Url: 'https://www.statsf1.com/en/circuit-zandvoort.aspx'
   },
-  lasvegas: {
-    id: 'lasvegas',
+  'las-vegas': {
+    id: 'las-vegas',
     name: 'Las Vegas Strip Circuit',
     officialGpName: 'Las Vegas Grand Prix',
     location: 'Las Vegas, Nevada',
     country: 'Estados Unidos',
     countryFlag: '🇺🇸',
     svgFile: 'las-vegas-1.svg',
+    direction: 'anti-clockwise',
     lapLengthMeters: 6201,
     totalLaps: 50,
     turns: 17,
     drsZones: 2,
-    spectators: 135000,
-    pitLaneTimeLossSec: 20.8,
+    drsZoneSpecs: [
+      { id: 1, name: 'Las Vegas Blvd (The Strip)', startT: 0.58, endT: 0.82 },
+      { id: 2, name: 'Koval Lane Straight', startT: 0.18, endT: 0.30 }
+    ],
+    spectators: 120000,
+    pitLaneTimeLossSec: 21.5,
     rainProbabilityPercent: 2,
-    windSpeedKmh: 11,
+    windSpeedKmh: 8,
     windDirection: 'S (Sur)',
     latitude: 36.1147,
     longitude: -115.1728,
-    googleMapsUrl: 'https://www.google.com/maps/search/?api=1&query=36.1147,-115.1728'
+    googleMapsUrl: 'https://www.google.com/maps/search/?api=1&query=36.1147,-115.1728',
+    racingCircuitsUrl: 'https://www.racingcircuits.info/north-america/usa/las-vegas-strip-circuit.html',
+    racingNews365Url: 'https://racingnews365.com/f1/races/las-vegas-grand-prix',
+    statsF1Url: 'https://www.statsf1.com/en/circuit-las-vegas.aspx'
   },
   bahrain: {
     id: 'bahrain',
@@ -239,18 +339,27 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
     country: 'Baréin',
     countryFlag: '🇧🇭',
     svgFile: 'bahrain-1.svg',
+    direction: 'clockwise',
     lapLengthMeters: 5412,
     totalLaps: 57,
     turns: 15,
     drsZones: 3,
-    spectators: 100000,
-    pitLaneTimeLossSec: 22.5,
+    drsZoneSpecs: [
+      { id: 1, name: 'Main Pit Straight', startT: 0.88, endT: 0.05 },
+      { id: 2, name: 'Straight T3-T4', startT: 0.18, endT: 0.30 },
+      { id: 3, name: 'Straight T10-T11', startT: 0.58, endT: 0.70 }
+    ],
+    spectators: 98000,
+    pitLaneTimeLossSec: 23.9,
     rainProbabilityPercent: 1,
-    windSpeedKmh: 19,
+    windSpeedKmh: 18,
     windDirection: 'N (Norte Desértico)',
     latitude: 26.0325,
     longitude: 50.5106,
-    googleMapsUrl: 'https://www.google.com/maps/search/?api=1&query=26.0325,50.5106'
+    googleMapsUrl: 'https://www.google.com/maps/search/?api=1&query=26.0325,50.5106',
+    racingCircuitsUrl: 'https://www.racingcircuits.info/middle-east/bahrain/bahrain-international-circuit.html',
+    racingNews365Url: 'https://racingnews365.com/f1/races/bahrain-grand-prix',
+    statsF1Url: 'https://www.statsf1.com/en/circuit-sakhir.aspx'
   },
   baku: {
     id: 'baku',
@@ -260,18 +369,26 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
     country: 'Azerbaiyán',
     countryFlag: '🇦🇿',
     svgFile: 'baku-1.svg',
+    direction: 'anti-clockwise',
     lapLengthMeters: 6003,
     totalLaps: 51,
     turns: 20,
     drsZones: 2,
-    spectators: 95000,
-    pitLaneTimeLossSec: 20.9,
-    rainProbabilityPercent: 4,
-    windSpeedKmh: 28,
-    windDirection: 'NE (Viento del Caspio)',
+    drsZoneSpecs: [
+      { id: 1, name: 'Neftchilar Avenue (2.2km flat out)', startT: 0.76, endT: 0.05 },
+      { id: 2, name: 'Straight T2-T3', startT: 0.14, endT: 0.25 }
+    ],
+    spectators: 85000,
+    pitLaneTimeLossSec: 21.2,
+    rainProbabilityPercent: 5,
+    windSpeedKmh: 26,
+    windDirection: 'E (Mar Caspio)',
     latitude: 40.3725,
     longitude: 49.8533,
-    googleMapsUrl: 'https://www.google.com/maps/search/?api=1&query=40.3725,49.8533'
+    googleMapsUrl: 'https://www.google.com/maps/search/?api=1&query=40.3725,49.8533',
+    racingCircuitsUrl: 'https://www.racingcircuits.info/asia/azerbaijan/baku-city-circuit.html',
+    racingNews365Url: 'https://racingnews365.com/f1/races/azerbaijan-grand-prix',
+    statsF1Url: 'https://www.statsf1.com/en/circuit-bakou.aspx'
   },
   melbourne: {
     id: 'melbourne',
@@ -281,18 +398,28 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
     country: 'Australia',
     countryFlag: '🇦🇺',
     svgFile: 'melbourne-2.svg',
+    direction: 'clockwise',
     lapLengthMeters: 5278,
     totalLaps: 58,
     turns: 14,
     drsZones: 4,
-    spectators: 150000,
+    drsZoneSpecs: [
+      { id: 1, name: 'Main Straight', startT: 0.88, endT: 0.05 },
+      { id: 2, name: 'Lakeside Drive 1', startT: 0.16, endT: 0.28 },
+      { id: 3, name: 'Lakeside Drive 2', startT: 0.42, endT: 0.58 },
+      { id: 4, name: 'Straight T12-T13', startT: 0.72, endT: 0.82 }
+    ],
+    spectators: 145000,
     pitLaneTimeLossSec: 21.0,
     rainProbabilityPercent: 20,
-    windSpeedKmh: 17,
+    windSpeedKmh: 14,
     windDirection: 'SO (Suroeste)',
     latitude: -37.8497,
-    longitude: 144.968,
-    googleMapsUrl: 'https://www.google.com/maps/search/?api=1&query=-37.8497,144.968'
+    longitude: 144.9680,
+    googleMapsUrl: 'https://www.google.com/maps/search/?api=1&query=-37.8497,144.9680',
+    racingCircuitsUrl: 'https://www.racingcircuits.info/australasia/australia/albert-park-melbourne.html',
+    racingNews365Url: 'https://racingnews365.com/f1/races/australian-grand-prix',
+    statsF1Url: 'https://www.statsf1.com/en/circuit-albert-park.aspx'
   },
   miami: {
     id: 'miami',
@@ -302,39 +429,56 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
     country: 'Estados Unidos',
     countryFlag: '🇺🇸',
     svgFile: 'miami-1.svg',
+    direction: 'anti-clockwise',
     lapLengthMeters: 5412,
     totalLaps: 57,
     turns: 19,
     drsZones: 3,
-    spectators: 115000,
-    pitLaneTimeLossSec: 21.7,
-    rainProbabilityPercent: 30,
-    windSpeedKmh: 14,
-    windDirection: 'E (Este Atlántico)',
-    latitude: 25.9581,
+    drsZoneSpecs: [
+      { id: 1, name: 'Main Straight', startT: 0.90, endT: 0.05 },
+      { id: 2, name: 'Turn 8 to Turn 11 Straight', startT: 0.32, endT: 0.46 },
+      { id: 3, name: 'Turn 16 to Turn 17 Long Straight', startT: 0.70, endT: 0.85 }
+    ],
+    spectators: 95000,
+    pitLaneTimeLossSec: 22.1,
+    rainProbabilityPercent: 35,
+    windSpeedKmh: 16,
+    windDirection: 'E (Atlántico)',
+    latitude: 25.9580,
     longitude: -80.2389,
-    googleMapsUrl: 'https://www.google.com/maps/search/?api=1&query=25.9581,-80.2389'
+    googleMapsUrl: 'https://www.google.com/maps/search/?api=1&query=25.9580,-80.2389',
+    racingCircuitsUrl: 'https://www.racingcircuits.info/north-america/usa/miami-international-autodrome.html',
+    racingNews365Url: 'https://racingnews365.com/f1/races/miami-grand-prix',
+    statsF1Url: 'https://www.statsf1.com/en/circuit-miami.aspx'
   },
   shanghai: {
     id: 'shanghai',
     name: 'Shanghai International Circuit',
     officialGpName: 'Chinese Grand Prix',
-    location: 'Jiading, Shanghái',
+    location: 'Jiading, Shanghai',
     country: 'China',
     countryFlag: '🇨🇳',
     svgFile: 'shanghai-1.svg',
+    direction: 'clockwise',
     lapLengthMeters: 5451,
     totalLaps: 56,
     turns: 16,
     drsZones: 2,
-    spectators: 130000,
-    pitLaneTimeLossSec: 23.2,
-    rainProbabilityPercent: 25,
+    drsZoneSpecs: [
+      { id: 1, name: '1.2km Back Straight (T13-T14)', startT: 0.68, endT: 0.88 },
+      { id: 2, name: 'Main Pit Straight', startT: 0.92, endT: 0.05 }
+    ],
+    spectators: 120000,
+    pitLaneTimeLossSec: 22.9,
+    rainProbabilityPercent: 28,
     windSpeedKmh: 12,
-    windDirection: 'N (Norte)',
+    windDirection: 'E (Este)',
     latitude: 31.3389,
     longitude: 121.2200,
-    googleMapsUrl: 'https://www.google.com/maps/search/?api=1&query=31.3389,121.2200'
+    googleMapsUrl: 'https://www.google.com/maps/search/?api=1&query=31.3389,121.2200',
+    racingCircuitsUrl: 'https://www.racingcircuits.info/asia/china/shanghai-international-circuit.html',
+    racingNews365Url: 'https://racingnews365.com/f1/races/chinese-grand-prix',
+    statsF1Url: 'https://www.statsf1.com/en/circuit-shanghai.aspx'
   },
   jeddah: {
     id: 'jeddah',
@@ -344,81 +488,115 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
     country: 'Arabia Saudí',
     countryFlag: '🇸🇦',
     svgFile: 'jeddah-1.svg',
+    direction: 'anti-clockwise',
     lapLengthMeters: 6174,
     totalLaps: 50,
     turns: 27,
     drsZones: 3,
+    drsZoneSpecs: [
+      { id: 1, name: 'Main Pit Straight', startT: 0.90, endT: 0.05 },
+      { id: 2, name: 'High-speed Sweep T19-T22', startT: 0.48, endT: 0.62 },
+      { id: 3, name: 'Back Straight to T27', startT: 0.74, endT: 0.88 }
+    ],
     spectators: 90000,
-    pitLaneTimeLossSec: 20.4,
+    pitLaneTimeLossSec: 20.8,
     rainProbabilityPercent: 0,
-    windSpeedKmh: 16,
+    windSpeedKmh: 20,
     windDirection: 'NO (Mar Rojo)',
     latitude: 21.6319,
     longitude: 39.1044,
-    googleMapsUrl: 'https://www.google.com/maps/search/?api=1&query=21.6319,39.1044'
+    googleMapsUrl: 'https://www.google.com/maps/search/?api=1&query=21.6319,39.1044',
+    racingCircuitsUrl: 'https://www.racingcircuits.info/middle-east/saudi-arabia/jeddah-corniche-circuit.html',
+    racingNews365Url: 'https://racingnews365.com/f1/races/saudi-arabian-grand-prix',
+    statsF1Url: 'https://www.statsf1.com/en/circuit-djeddah.aspx'
   },
-  singapore: {
-    id: 'singapore',
+  'marina-bay': {
+    id: 'marina-bay',
     name: 'Marina Bay Street Circuit',
     officialGpName: 'Singapore Grand Prix',
     location: 'Marina Bay',
     country: 'Singapur',
     countryFlag: '🇸🇬',
     svgFile: 'marina-bay-4.svg',
+    direction: 'anti-clockwise',
     lapLengthMeters: 4940,
     totalLaps: 62,
     turns: 19,
-    drsZones: 3,
-    spectators: 125000,
-    pitLaneTimeLossSec: 28.5,
-    rainProbabilityPercent: 45,
+    drsZones: 4,
+    drsZoneSpecs: [
+      { id: 1, name: 'Pit Straight', startT: 0.90, endT: 0.05 },
+      { id: 2, name: 'Raffles Boulevard', startT: 0.20, endT: 0.35 },
+      { id: 3, name: 'Straight T13-T14', startT: 0.52, endT: 0.62 },
+      { id: 4, name: 'New Section T15-T16', startT: 0.70, endT: 0.82 }
+    ],
+    spectators: 100000,
+    pitLaneTimeLossSec: 29.5,
+    rainProbabilityPercent: 40,
     windSpeedKmh: 6,
-    windDirection: 'Variable',
+    windDirection: 'SO (Húmedo Tropical)',
     latitude: 1.2914,
-    longitude: 103.8644,
-    googleMapsUrl: 'https://www.google.com/maps/search/?api=1&query=1.2914,103.8644'
+    longitude: 103.8636,
+    googleMapsUrl: 'https://www.google.com/maps/search/?api=1&query=1.2914,103.8636',
+    racingCircuitsUrl: 'https://www.racingcircuits.info/asia/singapore/marina-bay.html',
+    racingNews365Url: 'https://racingnews365.com/f1/races/singapore-grand-prix',
+    statsF1Url: 'https://www.statsf1.com/en/circuit-singapour.aspx'
   },
   lusail: {
     id: 'lusail',
     name: 'Lusail International Circuit',
     officialGpName: 'Qatar Grand Prix',
-    location: 'Lusail, Al Daayen',
+    location: 'Lusail, Doha',
     country: 'Catar',
     countryFlag: '🇶🇦',
     svgFile: 'lusail-1.svg',
+    direction: 'clockwise',
     lapLengthMeters: 5419,
     totalLaps: 57,
     turns: 16,
     drsZones: 1,
+    drsZoneSpecs: [
+      { id: 1, name: 'Main Pit Straight (1.068km)', startT: 0.88, endT: 0.05 }
+    ],
     spectators: 85000,
-    pitLaneTimeLossSec: 23.0,
+    pitLaneTimeLossSec: 22.0,
     rainProbabilityPercent: 0,
-    windSpeedKmh: 20,
-    windDirection: 'N (Norte Golfo)',
+    windSpeedKmh: 22,
+    windDirection: 'N (Golfo Pérsico)',
     latitude: 25.4900,
     longitude: 51.4542,
-    googleMapsUrl: 'https://www.google.com/maps/search/?api=1&query=25.4900,51.4542'
+    googleMapsUrl: 'https://www.google.com/maps/search/?api=1&query=25.4900,51.4542',
+    racingCircuitsUrl: 'https://www.racingcircuits.info/middle-east/qatar/losail.html',
+    racingNews365Url: 'https://racingnews365.com/f1/races/qatar-grand-prix',
+    statsF1Url: 'https://www.statsf1.com/en/circuit-losail.aspx'
   },
-  abudhabi: {
-    id: 'abudhabi',
+  'yas-marina': {
+    id: 'yas-marina',
     name: 'Yas Marina Circuit',
     officialGpName: 'Abu Dhabi Grand Prix',
     location: 'Isla Yas, Abu Dabi',
     country: 'Emiratos Árabes Unidos',
     countryFlag: '🇦🇪',
     svgFile: 'yas-marina-2.svg',
+    direction: 'anti-clockwise',
     lapLengthMeters: 5281,
     totalLaps: 58,
     turns: 16,
     drsZones: 2,
-    spectators: 130000,
-    pitLaneTimeLossSec: 22.0,
+    drsZoneSpecs: [
+      { id: 1, name: '1.2km Back Straight (T5-T6)', startT: 0.28, endT: 0.45 },
+      { id: 2, name: 'Secondary Straight (T6-T9)', startT: 0.50, endT: 0.65 }
+    ],
+    spectators: 110000,
+    pitLaneTimeLossSec: 22.6,
     rainProbabilityPercent: 0,
-    windSpeedKmh: 10,
-    windDirection: 'NO (Noroeste)',
+    windSpeedKmh: 12,
+    windDirection: 'NO (Golfo)',
     latitude: 24.4672,
     longitude: 54.6031,
-    googleMapsUrl: 'https://www.google.com/maps/search/?api=1&query=24.4672,54.6031'
+    googleMapsUrl: 'https://www.google.com/maps/search/?api=1&query=24.4672,54.6031',
+    racingCircuitsUrl: 'https://www.racingcircuits.info/middle-east/united-arab-emirates/yas-marina.html',
+    racingNews365Url: 'https://racingnews365.com/f1/races/abu-dhabi-grand-prix',
+    statsF1Url: 'https://www.statsf1.com/en/circuit-yas-marina.aspx'
   },
   hungaroring: {
     id: 'hungaroring',
@@ -428,80 +606,114 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
     country: 'Hungría',
     countryFlag: '🇭🇺',
     svgFile: 'hungaroring-3.svg',
+    direction: 'clockwise',
     lapLengthMeters: 4381,
     totalLaps: 70,
     turns: 14,
     drsZones: 2,
-    spectators: 110000,
-    pitLaneTimeLossSec: 20.8,
-    rainProbabilityPercent: 15,
-    windSpeedKmh: 9,
-    windDirection: 'E (Este)',
+    drsZoneSpecs: [
+      { id: 1, name: 'Main Pit Straight', startT: 0.88, endT: 0.05 },
+      { id: 2, name: 'Descent to Turn 2', startT: 0.08, endT: 0.18 }
+    ],
+    spectators: 100000,
+    pitLaneTimeLossSec: 21.4,
+    rainProbabilityPercent: 18,
+    windSpeedKmh: 10,
+    windDirection: 'NE (Nordeste)',
     latitude: 47.5830,
     longitude: 19.2486,
-    googleMapsUrl: 'https://www.google.com/maps/search/?api=1&query=47.5830,19.2486'
+    googleMapsUrl: 'https://www.google.com/maps/search/?api=1&query=47.5830,19.2486',
+    racingCircuitsUrl: 'https://www.racingcircuits.info/europe/hungary/hungaroring.html',
+    racingNews365Url: 'https://racingnews365.com/f1/races/hungarian-grand-prix',
+    statsF1Url: 'https://www.statsf1.com/en/circuit-hungaroring.aspx'
   },
-  mexico: {
-    id: 'mexico',
+  'mexico-city': {
+    id: 'mexico-city',
     name: 'Autódromo Hermanos Rodríguez',
     officialGpName: 'Gran Premio de la Ciudad de México',
     location: 'Ciudad de México',
     country: 'México',
     countryFlag: '🇲🇽',
     svgFile: 'mexico-city-3.svg',
+    direction: 'clockwise',
     lapLengthMeters: 4304,
     totalLaps: 71,
     turns: 17,
     drsZones: 3,
+    drsZoneSpecs: [
+      { id: 1, name: '1.3km Main Straight', startT: 0.86, endT: 0.05 },
+      { id: 2, name: 'Straight T3-T4', startT: 0.12, endT: 0.22 },
+      { id: 3, name: 'Straight T11-T12 (Foro Sol)', startT: 0.58, endT: 0.70 }
+    ],
     spectators: 150000,
-    pitLaneTimeLossSec: 21.5,
+    pitLaneTimeLossSec: 22.5,
     rainProbabilityPercent: 20,
     windSpeedKmh: 8,
-    windDirection: 'SO (Suroeste)',
+    windDirection: 'N (Valle de México)',
     latitude: 19.4042,
-    longitude: -99.0908,
-    googleMapsUrl: 'https://www.google.com/maps/search/?api=1&query=19.4042,-99.0908'
+    longitude: -99.0907,
+    googleMapsUrl: 'https://www.google.com/maps/search/?api=1&query=19.4042,-99.0907',
+    racingCircuitsUrl: 'https://www.racingcircuits.info/north-america/mexico/autodromo-hermanos-rodriguez.html',
+    racingNews365Url: 'https://racingnews365.com/f1/races/mexican-grand-prix',
+    statsF1Url: 'https://www.statsf1.com/en/circuit-mexico.aspx'
   },
   montreal: {
     id: 'montreal',
-    name: 'Circuit Gilles Villeneuve',
-    officialGpName: 'Grand Prix du Canada',
-    location: 'Montreal, Quebec',
+    name: 'Circuit Gilles-Villeneuve',
+    officialGpName: 'Canadian Grand Prix',
+    location: 'Île Notre-Dame, Montreal',
     country: 'Canadá',
     countryFlag: '🇨🇦',
     svgFile: 'montreal-6.svg',
+    direction: 'clockwise',
     lapLengthMeters: 4361,
     totalLaps: 70,
     turns: 14,
-    drsZones: 2,
-    spectators: 140000,
-    pitLaneTimeLossSec: 19.8,
+    drsZones: 3,
+    drsZoneSpecs: [
+      { id: 1, name: 'Droit du Casino (1.1km)', startT: 0.70, endT: 0.88 },
+      { id: 2, name: 'Main Pit Straight', startT: 0.92, endT: 0.05 },
+      { id: 3, name: 'Straight T7-T8', startT: 0.38, endT: 0.50 }
+    ],
+    spectators: 115000,
+    pitLaneTimeLossSec: 18.5,
     rainProbabilityPercent: 35,
-    windSpeedKmh: 14,
-    windDirection: 'O (Oeste San Lorenzo)',
+    windSpeedKmh: 16,
+    windDirection: 'SO (Río San Lorenzo)',
     latitude: 45.5000,
     longitude: -73.5228,
-    googleMapsUrl: 'https://www.google.com/maps/search/?api=1&query=45.5000,-73.5228'
+    googleMapsUrl: 'https://www.google.com/maps/search/?api=1&query=45.5000,-73.5228',
+    racingCircuitsUrl: 'https://www.racingcircuits.info/north-america/canada/circuit-gilles-villeneuve.html',
+    racingNews365Url: 'https://racingnews365.com/f1/races/canadian-grand-prix',
+    statsF1Url: 'https://www.statsf1.com/en/circuit-montreal.aspx'
   },
-  cota: {
-    id: 'cota',
-    name: 'Circuit of the Americas (COTA)',
+  austin: {
+    id: 'austin',
+    name: 'Circuit of the Americas',
     officialGpName: 'United States Grand Prix',
     location: 'Austin, Texas',
     country: 'Estados Unidos',
     countryFlag: '🇺🇸',
     svgFile: 'austin-1.svg',
+    direction: 'anti-clockwise',
     lapLengthMeters: 5513,
     totalLaps: 56,
     turns: 20,
     drsZones: 2,
+    drsZoneSpecs: [
+      { id: 1, name: '1.2km Back Straight (T11-T12)', startT: 0.42, endT: 0.60 },
+      { id: 2, name: 'Main Pit Straight (Subida a T1)', startT: 0.90, endT: 0.05 }
+    ],
     spectators: 150000,
-    pitLaneTimeLossSec: 21.4,
-    rainProbabilityPercent: 18,
-    windSpeedKmh: 15,
-    windDirection: 'S (Sur Tejana)',
+    pitLaneTimeLossSec: 21.6,
+    rainProbabilityPercent: 15,
+    windSpeedKmh: 14,
+    windDirection: 'S (Sur Tejano)',
     latitude: 30.1328,
     longitude: -97.6411,
-    googleMapsUrl: 'https://www.google.com/maps/search/?api=1&query=30.1328,-97.6411'
+    googleMapsUrl: 'https://www.google.com/maps/search/?api=1&query=30.1328,-97.6411',
+    racingCircuitsUrl: 'https://www.racingcircuits.info/north-america/usa/circuit-of-the-americas.html',
+    racingNews365Url: 'https://racingnews365.com/f1/races/united-states-grand-prix',
+    statsF1Url: 'https://www.statsf1.com/en/circuit-austin.aspx'
   }
 };
