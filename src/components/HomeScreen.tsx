@@ -38,12 +38,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   const [activeTab, setActiveTab] = useState<'drivers' | 'circuits'>('drivers');
   const [inspectedDriverId, setInspectedDriverId] = useState<string>(selectedDriverId);
   const [inspectedCircuitId, setInspectedCircuitId] = useState<string>(selectedCircuitId);
-  const [svgContent, setSvgContent] = useState<string>('');
+  const [extractedPathD, setExtractedPathD] = useState<string>('');
 
   const centerPanelRef = useRef<HTMLDivElement | null>(null);
   const sidePanelRef = useRef<HTMLDivElement | null>(null);
-  const motionDotRef = useRef<HTMLDivElement | null>(null);
-  const svgContainerRef = useRef<HTMLDivElement | null>(null);
+  const pathRef = useRef<SVGPathElement | null>(null);
+  const runnerCarRef = useRef<SVGGElement | null>(null);
 
   useEffect(() => {
     setInspectedDriverId(selectedDriverId);
@@ -53,62 +53,94 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     setInspectedCircuitId(selectedCircuitId);
   }, [selectedCircuitId]);
 
-  // Cargar el SVG del circuito para poder aplicar createMotionPath
+  // Cargar el archivo SVG minimal oficial y extraer su <path d="...">
   useEffect(() => {
     const circuit = OFFICIAL_CIRCUITS[inspectedCircuitId] || OFFICIAL_CIRCUITS['barcelona'];
-    const svgPath = `/circuits/minimal/${circuit.svgFile}`;
+    const svgUrl = `/circuits/minimal/${circuit.svgFile}`;
 
-    fetch(svgPath)
+    fetch(svgUrl)
       .then((res) => res.text())
-      .then((text) => {
-        // Asegurar que el path tenga id para motion path
-        const cleaned = text
-          .replace('<path ', '<path id="circuit-motion-path" ')
-          .replace(/stroke="#fff"/g, 'stroke="#38bdf8"')
-          .replace(/stroke-width="\d+"/g, 'stroke-width="12"');
-        setSvgContent(cleaned);
+      .then((svgText) => {
+        const match = svgText.match(/<path[^>]*d="([^"]+)"/i);
+        if (match && match[1]) {
+          setExtractedPathD(match[1]);
+        }
       })
-      .catch(() => {
-        // Fallback
-        setSvgContent('');
+      .catch((err) => {
+        console.error('Error loading circuit SVG:', err);
       });
   }, [inspectedCircuitId]);
 
-  // Ejecutar animación createMotionPath de anime.js sobre el path del SVG
+  // Animación del coche sobre el SVG del circuito usando createMotionPath / getPointAtLength
   useEffect(() => {
-    if (activeTab !== 'circuits' || !svgContent) return;
+    if (activeTab !== 'circuits' || !extractedPathD) return;
+
+    let animInstance: any = null;
+    let fallbackFrame: number | null = null;
 
     const timer = setTimeout(() => {
+      const pathEl = pathRef.current;
+      const carEl = runnerCarRef.current;
+
+      if (!pathEl || !carEl) return;
+
       try {
-        const pathEl = document.querySelector('#circuit-motion-path') as SVGPathElement | null;
-        const dotEl = motionDotRef.current;
-
-        if (pathEl && dotEl && typeof createMotionPath === 'function') {
-          const pathData = createMotionPath('#circuit-motion-path');
-
-          animate(dotEl, {
-            ...pathData,
-            ease: 'linear',
+        if (typeof createMotionPath === 'function') {
+          const pathMotion = createMotionPath(pathEl);
+          animInstance = animate(carEl, {
+            ...pathMotion,
             duration: 4800,
-            loop: true
+            loop: true,
+            ease: 'linear'
           });
         }
       } catch (err) {
-        console.warn('Anime motion path warning:', err);
+        console.warn('Anime createMotionPath fallback to getPointAtLength:', err);
       }
-    }, 80);
 
-    return () => clearTimeout(timer);
-  }, [svgContent, activeTab]);
+      // Fallback robusto garantizado si createMotionPath no se adjuntó
+      if (!animInstance && pathEl) {
+        const totalLen = pathEl.getTotalLength();
+        let startT = performance.now();
 
-  // Animación del panel central al cambiar foco
+        const step = (now: number) => {
+          const elapsed = (now - startT) % 4800;
+          const progress = elapsed / 4800;
+          const dist = progress * totalLen;
+          const pt = pathEl.getPointAtLength(dist);
+          const ptNext = pathEl.getPointAtLength(Math.min(totalLen, dist + 2));
+          const angle = Math.atan2(ptNext.y - pt.y, ptNext.x - pt.x) * (180 / Math.PI);
+
+          if (carEl) {
+            carEl.setAttribute('transform', `translate(${pt.x}, ${pt.y}) rotate(${angle})`);
+          }
+
+          fallbackFrame = requestAnimationFrame(step);
+        };
+
+        fallbackFrame = requestAnimationFrame(step);
+      }
+    }, 60);
+
+    return () => {
+      clearTimeout(timer);
+      if (animInstance && animInstance.pause) {
+        animInstance.pause();
+      }
+      if (fallbackFrame) {
+        cancelAnimationFrame(fallbackFrame);
+      }
+    };
+  }, [extractedPathD, activeTab]);
+
+  // Animación de entrada al cambiar de pestaña o elemento
   useEffect(() => {
     if (centerPanelRef.current) {
       animate(centerPanelRef.current, {
         opacity: [0.85, 1],
         translateX: [6, 0],
         ease: 'outQuad',
-        duration: 220
+        duration: 200
       });
     }
   }, [inspectedDriverId, inspectedCircuitId, activeTab]);
@@ -389,7 +421,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               </div>
             </div>
           ) : (
-            /* DETALLE COMPLETO DEL CIRCUITO CON ANIMACIÓN CREATEMOTIONPATH */
+            /* DETALLE COMPLETO DEL CIRCUITO CON ANIMACIÓN CREATEMOTIONPATH INTEGRADA */
             <div>
               <div className={styles.detailHeader}>
                 <div>
@@ -422,13 +454,55 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 </div>
               </div>
 
-              {/* Visor con Animación createMotionPath Anime.js */}
-              <div className={styles.svgMotionPathContainer} ref={svgContainerRef}>
-                <div 
-                  className={styles.svgMotionPathElement}
-                  dangerouslySetInnerHTML={{ __html: svgContent }} 
-                />
-                <div ref={motionDotRef} className={styles.racingCarMotionDot} />
+              {/* Visor SVG de Alta Fidelidad con Coche Animado por MotionPath */}
+              <div className={styles.svgMotionPathContainer}>
+                {extractedPathD ? (
+                  <svg 
+                    viewBox="0 0 500 500" 
+                    preserveAspectRatio="xMidYMid meet" 
+                    className={styles.svgMotionCanvas}
+                  >
+                    {/* Brillo de fondo */}
+                    <path 
+                      d={extractedPathD} 
+                      fill="none" 
+                      stroke="#0891b2" 
+                      strokeWidth="14" 
+                      opacity="0.35" 
+                    />
+                    {/* Trazo nítido del circuito */}
+                    <path 
+                      ref={pathRef}
+                      id="active-circuit-path" 
+                      d={extractedPathD} 
+                      fill="none" 
+                      stroke="#22d3ee" 
+                      strokeWidth="4" 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round" 
+                    />
+                    {/* Monoplaza F1 cápsula estilizada que recorre el circuito */}
+                    <g ref={runnerCarRef} id="circuit-runner-car">
+                      <rect 
+                        x="-11" 
+                        y="-5.5" 
+                        width="22" 
+                        height="11" 
+                        rx="5.5" 
+                        ry="5.5" 
+                        fill="#ffffff" 
+                        stroke="#22d3ee" 
+                        strokeWidth="1.5" 
+                        filter="drop-shadow(0 0 8px #22d3ee)"
+                      />
+                      <circle cx="4" cy="0" r="2.5" fill="#e10600" />
+                    </g>
+                  </svg>
+                ) : (
+                  <div style={{ color: '#64748b', fontStyle: 'italic', fontSize: '12px' }}>
+                    Cargando trazado oficial del circuito...
+                  </div>
+                )}
               </div>
 
               <div className={styles.detailContentGrid}>
@@ -502,7 +576,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         <div ref={sidePanelRef} className={styles.rightSidePanel}>
           <div>
             <div className={styles.sidePanelTitle}>
-              <Zap size={14} color="#ffd700" />
+              <Zap size={13} color="#ffd700" />
               <span>SELECCIÓN ACTIVA DE CARRERA</span>
             </div>
 
@@ -532,7 +606,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 <div className={styles.summaryCardExtra} style={{ color: '#ffd700', background: 'rgba(255,215,0,0.1)' }}>
                   🏁 {selectedCircuit.totalLaps} Vueltas · {selectedCircuit.lapLengthMeters}m
                 </div>
-                <div style={{ marginTop: '6px', height: '65px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ marginTop: '4px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <img 
                     src={`/circuits/minimal/${selectedCircuit.svgFile}`} 
                     alt={selectedCircuit.name} 
@@ -545,11 +619,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
           {/* Botón de Entrada a Pista */}
           <button className={styles.launchBigButton} onClick={onStartRace}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Play size={16} fill="#ffffff" />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Play size={15} fill="#ffffff" />
               <span>ENTRAR A PISTA</span>
             </div>
-            <span style={{ fontSize: '9px', opacity: 0.85, letterSpacing: '0.5px' }}>EMPEZAR GRAN PREMIO OFICIAL</span>
+            <span style={{ fontSize: '8.5px', opacity: 0.85, letterSpacing: '0.5px' }}>EMPEZAR GRAN PREMIO OFICIAL</span>
           </button>
         </div>
       </div>
