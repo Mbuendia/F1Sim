@@ -1,0 +1,200 @@
+[
+    {
+        "id": 1,
+        "circuito": "Circuit de Barcelona-Catalunya",
+        "pais": "🇪🇸",
+        "sentido": "Horario",
+        "boxes": { "ubicacion": "Lado derecho" },
+        "neumaticos": { "abrasion": "Alta" },
+        "clima": { "probabilidad_lluvia": "Baja" }
+    },
+    {
+        "id": 2,
+        "circuito": "Autodromo Nazionale Monza",
+        "pais": "🇮🇹",
+        "sentido": "Horario",
+        "boxes": { "ubicacion": "Lado derecho" },
+        "neumaticos": { "abrasion": "Baja" },
+        "clima": { "probabilidad_lluvia": "Baja" }
+    },
+    {
+        "id": 3,
+        "circuito": "Silverstone Circuit",
+        "pais": "🇬🇧",
+        "sentido": "Horario",
+        "boxes": { "ubicacion": "Lado derecho" },
+        "neumaticos": { "abrasion": "Alta" },
+        "clima": { "probabilidad_lluvia": "Alta" }
+    },
+    {
+        "id": 4,
+        "circuito": "Circuit de Spa-Francorchamps",
+        "pais": "🇧🇪",
+        "sentido": "Horario",
+        "boxes": { "ubicacion": "Lado derecho" },
+        "neumaticos": { "abrasion": "Alta" },
+        "clima": { "probabilidad_lluvia": "Alta" }
+    },
+    {
+        "id": 5,
+        "circuito": "Circuit de Monaco",
+        "pais": "🇲🇨",
+        "sentido": "Horario",
+        "boxes": { "ubicacion": "Lado derecho" },
+        "neumaticos": { "abrasion": "Baja" },
+        "clima": { "probabilidad_lluvia": "Baja" }
+    },
+    {
+        "id": 6,
+        "circuito": "Red Bull Ring",
+        "pais": "🇦🇹",
+        "sentido": "Horario",
+        "boxes": { "ubicacion": "Lado derecho" },
+        "neumaticos": { "abrasion": "Media" },
+        "clima": { "probabilidad_lluvia": "Media" }
+    },
+    {
+        "id": 7,
+        "circuito": "Suzuka International",
+        "pais": "🇯🇵",
+        "sentido": "Horario (Forma de 8)",
+        "boxes": { "ubicacion": "Lado derecho" },
+        "neumaticos": { "abrasion": "Alta" },
+        "clima": { "probabilidad_lluvia": "Alta" }
+    },
+    {
+        "id": 8,
+        "circuito": "Circuit Zandvoort",
+        "pais": "🇳🇱",
+        "sentido": "Horario",
+        "boxes": { "ubicacion": "Lado derecho" },
+        "neumaticos": { "abrasion": "Alta" },
+        "clima": { "probabilidad_lluvia": "Media" }
+    },
+    {
+        "id": 9,
+        "circuito": "Bahrain International Circuit",
+        "pais": "🇧🇭",
+        "sentido": "Horario",
+        "boxes": { "ubicacion": "Lado derecho" },
+        "neumaticos": { "abrasion": "Alta" },
+        "clima": { "probabilidad_lluvia": "Muy Baja" }
+    },
+    {
+        "id": 10,
+        "circuito": "Albert Park Circuit",
+        "pais": "🇦🇺",
+        "sentido": "Horario",
+        "boxes": { "ubicacion": "Lado derecho" },
+        "neumaticos": { "abrasion": "Media" },
+        "clima": { "probabilidad_lluvia": "Media" }
+    },
+    {
+        "id": 11,
+        "circuito": "Shanghai International",
+        "pais": "🇨🇳",
+        "sentido": "Horario",
+        "boxes": { "ubicacion": "Lado derecho" },
+        "neumaticos": { "abrasion": "Alta" },
+        "clima": { "probabilidad_lluvia": "Media" }
+    },
+    {
+        "id": 12,
+        "circuito": "Lusail International Circuit",
+        "pais": "🇶🇦",
+        "sentido": "Horario",
+        "boxes": { "ubicacion": "Lado derecho" },
+        "neumaticos": { "abrasion": "Alta" },
+        "clima": { "probabilidad_lluvia": "Muy Baja" }
+    },
+    {
+        "id": 13,
+        "circuito": "Hungaroring",
+        "pais": "🇭🇺",
+        "sentido": "Horario",
+        "boxes": { "ubicacion": "Lado derecho" },
+        "neumaticos": { "abrasion": "Media" },
+        "clima": { "probabilidad_lluvia": "Baja" }
+    },
+    {
+        "id": 14,
+        "circuito": "Autódromo Hermanos Rodríguez",
+        "pais": "🇲🇽",
+        "sentido": "Horario",
+        "boxes": { "ubicacion": "Lado derecho" },
+        "neumaticos": { "abrasion": "Baja" },
+        "clima": { "probabilidad_lluvia": "Media" }
+    },
+    {
+        "id": 15,
+        "circuito": "Circuit Gilles Villeneuve",
+        "pais": "🇨🇦",
+        "sentido": "Horario",
+        "boxes": { "ubicacion": "Lado derecho" },
+        "neumaticos": { "abrasion": "Baja" },
+        "clima": { "probabilidad_lluvia": "Media" }
+    },
+    {
+        "id": 16,
+        "circuito": "Circuit of the Americas (COTA)",
+        "pais": "🇺🇸",
+        "sentido": "Antihorario",
+        "boxes": { "ubicacion": "Lado izquierdo" },
+        "neumaticos": { "abrasion": "Alta" },
+        "clima": { "probabilidad_lluvia": "Media" }
+    },
+    {
+        "id": 17,
+        "circuito": "Yas Marina Circuit",
+        "pais": "🇦🇪",
+        "sentido": "Antihorario",
+        "boxes": { "ubicacion": "Lado derecho" },
+        "neumaticos": { "abrasion": "Media" },
+        "clima": { "probabilidad_lluvia": "Muy Baja" }
+    },
+    {
+        "id": 18,
+        "circuito": "Jeddah Corniche Circuit",
+        "pais": "🇸🇦",
+        "sentido": "Antihorario",
+        "boxes": { "ubicacion": "Lado izquierdo" },
+        "neumaticos": { "abrasion": "Baja" },
+        "clima": { "probabilidad_lluvia": "Muy Baja" }
+    },
+    {
+        "id": 19,
+        "circuito": "Marina Bay Street Circuit",
+        "pais": "🇸🇬",
+        "sentido": "Antihorario",
+        "boxes": { "ubicacion": "Lado izquierdo" },
+        "neumaticos": { "abrasion": "Media" },
+        "clima": { "probabilidad_lluvia": "Alta" }
+    },
+    {
+        "id": 20,
+        "circuito": "Baku City Circuit",
+        "pais": "🇦🇿",
+        "sentido": "Antihorario",
+        "boxes": { "ubicacion": "Lado izquierdo" },
+        "neumaticos": { "abrasion": "Baja" },
+        "clima": { "probabilidad_lluvia": "Baja" }
+    },
+    {
+        "id": 21,
+        "circuito": "Miami International Autodrome",
+        "pais": "🇺🇸",
+        "sentido": "Antihorario",
+        "boxes": { "ubicacion": "Lado izquierdo" },
+        "neumaticos": { "abrasion": "Media" },
+        "clima": { "probabilidad_lluvia": "Media" }
+    },
+    {
+        "id": 22,
+        "circuito": "Las Vegas Strip Circuit",
+        "pais": "🇺🇸",
+        "sentido": "Antihorario",
+        "boxes": { "ubicacion": "Lado izquierdo" },
+        "neumaticos": { "abrasion": "Baja" },
+        "clima": { "probabilidad_lluvia": "Muy Baja" }
+    }
+]

@@ -20,6 +20,7 @@ export interface CircuitSpec {
   officialGpName: string;
   location: string;
   country: string;
+  flag?: string;
   countryFlag: string;
   svgFile: string;
   direction: 'clockwise' | 'anti-clockwise';
@@ -280,6 +281,7 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
     officialGpName: 'Grande Prêmio de São Paulo',
     location: 'São Paulo',
     country: 'Brasil',
+    flag: '🇧🇷',
     countryFlag: '🇧🇷',
     svgFile: 'interlagos-2.svg',
     direction: 'anti-clockwise',
