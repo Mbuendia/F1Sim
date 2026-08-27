@@ -6,7 +6,8 @@ import svgPathsJson from '../data/svgTrackPaths.json';
 const svgPathsMap: Record<string, string> = svgPathsJson as any;
 
 /**
- * Convierte un path SVG oficial en un TrackDefinition calibrado con pit lane exacto y meta oficial
+ * Convierte un path SVG oficial en un TrackDefinition calibrado con geometría auténtica 1:1,
+ * preservando la orientación geográfica oficial FIA y satelital.
  */
 export function buildTrackFromSvg(circuit: CircuitSpec, sampleCount: number = 750): TrackDefinition {
   const pathD = svgPathsMap[circuit.svgFile] || '';
@@ -41,7 +42,7 @@ export function buildTrackFromSvg(circuit: CircuitSpec, sampleCount: number = 75
     }
   }
 
-  // ── 1. DETERMINAR Y ALINEAR SENTIDO DE GIRO ──
+  // ── 1. DETERMINAR Y ALINEAR SENTIDO DE GIRO (CLOCKWISE vs ANTI-CLOCKWISE) ──
   let areaSum = 0;
   for (let i = 0; i < rawPoints.length; i++) {
     const p1 = rawPoints[i];
@@ -56,43 +57,12 @@ export function buildTrackFromSvg(circuit: CircuitSpec, sampleCount: number = 75
     orderedPoints.reverse();
   }
 
-  // ── 2. ROTAR PARA COLOCAR LA RECTA DE META HORIZONTAL EN LA PARTE INFERIOR ──
-  const p0 = orderedPoints[0];
-  const p1 = orderedPoints[Math.min(orderedPoints.length - 1, 15)];
-  const startAngle = Math.atan2(p1.y - p0.y, p1.x - p0.x);
-
-  let sumX = 0, sumY = 0;
-  orderedPoints.forEach(p => { sumX += p.x; sumY += p.y; });
-  const centerX = sumX / orderedPoints.length;
-  const centerY = sumY / orderedPoints.length;
-
-  let rotAngle = -startAngle;
-  let rotatedPoints = orderedPoints.map(p => {
-    const rx = p.x - centerX;
-    const ry = p.y - centerY;
-    return {
-      x: rx * Math.cos(rotAngle) - ry * Math.sin(rotAngle) + centerX,
-      y: rx * Math.sin(rotAngle) + ry * Math.cos(rotAngle) + centerY
-    };
-  });
-
-  if (rotatedPoints[0].y < centerY) {
-    rotAngle += Math.PI;
-    rotatedPoints = orderedPoints.map(p => {
-      const rx = p.x - centerX;
-      const ry = p.y - centerY;
-      return {
-        x: rx * Math.cos(rotAngle) - ry * Math.sin(rotAngle) + centerX,
-        y: rx * Math.sin(rotAngle) + ry * Math.cos(rotAngle) + centerY
-      };
-    });
-  }
-
-  // ── 3. ESCALADO ESPACIOSO PARA EVITAR SOLAPAMIENTO DE CURVAS (1900 x 1150) ──
+  // ── 2. ESCALADO Y CENTRADO EN EL MUNDO DE SIMULACIÓN (1900 x 1150) ──
+  // Manteniendo la orientación geográfica natural y oficial del SVG satelital
   let minRawX = Infinity, maxRawX = -Infinity;
   let minRawY = Infinity, maxRawY = -Infinity;
 
-  rotatedPoints.forEach(p => {
+  orderedPoints.forEach(p => {
     if (p.x < minRawX) minRawX = p.x;
     if (p.x > maxRawX) maxRawX = p.x;
     if (p.y < minRawY) minRawY = p.y;
@@ -109,12 +79,12 @@ export function buildTrackFromSvg(circuit: CircuitSpec, sampleCount: number = 75
   const offsetX = 100 + (targetWidth - rawWidth * scale) / 2;
   const offsetY = 90 + (targetHeight - rawHeight * scale) / 2;
 
-  const worldPoints = rotatedPoints.map(p => ({
+  const worldPoints = orderedPoints.map(p => ({
     x: (p.x - minRawX) * scale + offsetX,
     y: (p.y - minRawY) * scale + offsetY
   }));
 
-  // ── 4. CÁLCULO DE CURVATURAS, VELOCIDADES Y FRENADAS PREVIAS ──
+  // ── 3. CÁLCULO DE CURVATURAS, VELOCIDADES Y FRENADAS PREVIAS ──
   const total = worldPoints.length;
   const rawCurvatures: number[] = [];
   const distances: number[] = [];
@@ -157,7 +127,7 @@ export function buildTrackFromSvg(circuit: CircuitSpec, sampleCount: number = 75
     smoothedCurvatures.push(sumC / (windowSize * 2 + 1));
   }
 
-  // Velocidades locales
+  // Velocidades locales en función de la curvatura
   const rawSpeedLimits: number[] = [];
   for (let i = 0; i < total; i++) {
     const curv = smoothedCurvatures[i];
@@ -166,7 +136,7 @@ export function buildTrackFromSvg(circuit: CircuitSpec, sampleCount: number = 75
     rawSpeedLimits.push(speed);
   }
 
-  // Lookahead para frenadas
+  // Lookahead para frenadas F1
   const finalSpeedLimits: number[] = [...rawSpeedLimits];
   const isBrakingZones: boolean[] = new Array(total).fill(false);
 
@@ -238,7 +208,7 @@ export function buildTrackFromSvg(circuit: CircuitSpec, sampleCount: number = 75
     accumDist += distances[i];
   }
 
-  // ── 5. GENERACIÓN DEL PIT LANE OFICIAL (CON PIT ENTRY Y PIT EXIT ESPECÍFICOS) ──
+  // ── 4. GENERACIÓN DEL PIT LANE OFICIAL (CARRIL DE BOXES INTERIOR) ──
   const pitEntryT = circuit.pitEntryT !== undefined ? circuit.pitEntryT : 0.92;
   const pitExitT = circuit.pitExitT !== undefined ? circuit.pitExitT : 0.08;
 
@@ -248,7 +218,6 @@ export function buildTrackFromSvg(circuit: CircuitSpec, sampleCount: number = 75
 
   const pitOffset = 38;
   if (pitStartIdx > pitEndIdx) {
-    // Cruza el punto 0 (la recta principal)
     for (let i = pitStartIdx; i < total; i++) {
       const pt = splinePoints[i];
       pitLanePoints.push({
@@ -273,7 +242,7 @@ export function buildTrackFromSvg(circuit: CircuitSpec, sampleCount: number = 75
     }
   }
 
-  // ── 6. CURVAS Y BORDES ──
+  // ── 5. CURVAS Y BORDES OFICIALES ──
   const corners: CornerMarker[] = [];
   let cornerCount = 0;
   for (let i = 10; i < total - 10; i += 15) {
