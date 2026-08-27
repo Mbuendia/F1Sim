@@ -2,12 +2,9 @@ import React, { useEffect, useRef } from 'react';
 import styles from './RightStatsPanel.module.css';
 import { CarState } from '../types/f1';
 import { 
-  Flame, 
   Timer, 
-  Wrench, 
-  Activity,
-  History,
-  TrendingDown,
+  History, 
+  TrendingDown, 
   Gauge
 } from 'lucide-react';
 import { animate } from 'animejs';
@@ -82,10 +79,10 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
   const s2Style = getSectorStyle(sectors.s2, sectors.personalBestS2, overallBestS2);
   const s3Style = getSectorStyle(sectors.s3, sectors.personalBestS3, overallBestS3);
 
-  // ── 2. CÁLCULO DE GRÁFICA DE DEGRADACIÓN Y PREVISIÓN (Vueltas 1 a 66) ──
+  // ── 2. CÁLCULO DE GRÁFICA DE DEGRADACIÓN Y PREVISIÓN FIJA (1 a 66 vueltas) ──
   const chartW = 320;
-  const chartH = 90;
-  const padLeft = 24;
+  const chartH = 95;
+  const padLeft = 26;
   const padRight = 10;
   const padTop = 8;
   const padBottom = 18;
@@ -93,37 +90,37 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
   const innerW = chartW - padLeft - padRight;
   const innerH = chartH - padTop - padBottom;
 
-  const getX = (lap: number) => padLeft + (lap / totalLaps) * innerW;
-  const getY = (health: number) => padTop + (1 - health / 100) * innerH;
+  const getX = (lap: number) => padLeft + (Math.min(totalLaps, Math.max(0, lap)) / totalLaps) * innerW;
+  const getY = (health: number) => padTop + (1 - Math.min(100, Math.max(0, health)) / 100) * innerH;
 
-  // Puntos históricos
+  // Stints del monoplaza
+  const stints = pitStop.stints && pitStop.stints.length > 0
+    ? pitStop.stints
+    : [{ stintNumber: 1, compound: tires.compound, startLap: 0, endLap: 24, expectedLaps: 24 }];
+
+  const currentStint = stints[stints.length - 1];
+
+  // Línea fija teórica de previsión del stint actual (de startLap al 100% a startLap + expectedLaps al 0%)
+  const expectedEndLap = currentStint.startLap + currentStint.expectedLaps;
+  const stintStartPoint = { x: getX(currentStint.startLap), y: getY(100) };
+  const stintExpectedEndPoint = { x: getX(expectedEndLap), y: getY(0) };
+
+  const currentCompoundColor = tires.compound === 'soft' ? '#e10600' : (tires.compound === 'medium' ? '#ffd700' : '#ffffff');
+
+  // Puntos reales históricos
   const historyPoints = lapHistory.map(h => ({
     x: getX(h.lap),
-    y: getY(h.tireHealth || 100),
+    y: getY(h.tireHealth !== undefined ? h.tireHealth : 100),
     compound: h.compound,
-    health: h.tireHealth || 100
+    health: h.tireHealth !== undefined ? h.tireHealth : 100
   }));
 
   // Punto actual en pista
   const currentLapFloat = activeCar.currentLap + activeCar.trackT;
   const currentPoint = {
     x: getX(currentLapFloat),
-    y: getY(tires.health),
-    compound: tires.compound,
-    health: tires.health
+    y: getY(tires.health)
   };
-
-  // Previsión de caída hasta 0% de salud
-  const wearRatePerLap = Math.max(2.8, (100 - tires.health) / Math.max(1, tires.lapsOnTire));
-  const lapsUntilEmpty = tires.health / wearRatePerLap;
-  const forecastEndLap = Math.min(totalLaps, currentLapFloat + lapsUntilEmpty);
-  const forecastEndPoint = {
-    x: getX(forecastEndLap),
-    y: getY(Math.max(0, tires.health - lapsUntilEmpty * wearRatePerLap))
-  };
-
-  // Color compuesto actual
-  const currentCompoundColor = tires.compound === 'soft' ? '#e10600' : (tires.compound === 'medium' ? '#ffd700' : '#ffffff');
 
   // Estado térmico de frenos
   const getBrakeStatus = (temp: number) => {
@@ -175,20 +172,20 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
         </div>
       </div>
 
-      {/* ── 2. GRÁFICA DINÁMICA DE PREVISIÓN Y USO DE NEUMÁTICOS ── */}
+      {/* ── 2. GRÁFICA DINÁMICA DE PREVISIÓN FIJA & DEGRADACIÓN REAL ── */}
       <div className={styles.sectionCard}>
         <div className={styles.cardHeader}>
           <TrendingDown size={14} color="#ffd700" />
-          <span>PREVISIÓN & DEGRADACIÓN DE NEUMÁTICOS</span>
+          <span>PREVISIÓN FIJA & DEGRADACIÓN REAL</span>
         </div>
 
         <div className={styles.chartContainer}>
           <svg className={styles.chartSvg} viewBox={`0 0 ${chartW} ${chartH}`}>
-            {/* Ejes y rejilla */}
+            {/* Ejes */}
             <line x1={padLeft} y1={padTop} x2={padLeft} y2={chartH - padBottom} stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
             <line x1={padLeft} y1={chartH - padBottom} x2={chartW - padRight} y2={chartH - padBottom} stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
 
-            {/* Marcas de vuelta (0, 20, 40, 66) */}
+            {/* Marcas de vuelta */}
             {[0, 20, 40, 66].map(l => (
               <g key={l}>
                 <line x1={getX(l)} y1={chartH - padBottom} x2={getX(l)} y2={chartH - padBottom + 4} stroke="rgba(255,255,255,0.3)" strokeWidth="1" />
@@ -196,25 +193,37 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
               </g>
             ))}
 
-            {/* Marcas de salud (100%, 50%, 0%) */}
+            {/* Marcas de salud */}
             <text x={padLeft - 4} y={getY(100) + 3} fill="#64748b" fontSize="8" fontFamily="Orbitron" textAnchor="end">100%</text>
             <text x={padLeft - 4} y={getY(50) + 3} fill="#64748b" fontSize="8" fontFamily="Orbitron" textAnchor="end">50%</text>
             <text x={padLeft - 4} y={getY(0) + 3} fill="#64748b" fontSize="8" fontFamily="Orbitron" textAnchor="end">0%</text>
 
             {/* Línea horizontal de desgaste crítico 20% */}
-            <line x1={padLeft} y1={getY(20)} x2={chartW - padRight} y2={getY(20)} stroke="#ef4444" strokeWidth="0.8" strokeDasharray="3,3" opacity="0.6" />
+            <line x1={padLeft} y1={getY(20)} x2={chartW - padRight} y2={getY(20)} stroke="#ef4444" strokeWidth="0.8" strokeDasharray="3,3" opacity="0.5" />
 
-            {/* Trazado de historial de vueltas */}
+            {/* 1. LÍNEA FIJA DE PREVISIÓN TEÓRICA (PUNTITOS AMARILLOS/BLANCOS/ROJOS) */}
+            <line 
+              x1={stintStartPoint.x} 
+              y1={stintStartPoint.y} 
+              x2={stintExpectedEndPoint.x} 
+              y2={stintExpectedEndPoint.y} 
+              stroke={currentCompoundColor} 
+              strokeWidth="2.0" 
+              strokeDasharray="4,4" 
+              opacity="0.85" 
+            />
+
+            {/* 2. LÍNEA SÓLIDA REAL DEGRADADA VUELTA A VUELTA */}
             {historyPoints.map((p, i) => {
               if (i === 0) return null;
               const prev = historyPoints[i - 1];
               const strokeCol = prev.compound === 'soft' ? '#e10600' : (prev.compound === 'medium' ? '#ffd700' : '#ffffff');
               return (
-                <line key={i} x1={prev.x} y1={prev.y} x2={p.x} y2={p.y} stroke={strokeCol} strokeWidth="2.2" strokeLinecap="round" />
+                <line key={i} x1={prev.x} y1={prev.y} x2={p.x} y2={p.y} stroke={strokeCol} strokeWidth="2.6" strokeLinecap="round" />
               );
             })}
 
-            {/* Conexión con la vuelta actual */}
+            {/* Conexión con punto actual */}
             {historyPoints.length > 0 && (
               <line 
                 x1={historyPoints[historyPoints.length - 1].x} 
@@ -222,43 +231,31 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
                 x2={currentPoint.x} 
                 y2={currentPoint.y} 
                 stroke={currentCompoundColor} 
-                strokeWidth="2.2" 
+                strokeWidth="2.6" 
               />
             )}
 
-            {/* Línea proyectada discontinua (Previsión de cuándo se agota el neumático) */}
-            <line 
-              x1={currentPoint.x} 
-              y1={currentPoint.y} 
-              x2={forecastEndPoint.x} 
-              y2={forecastEndPoint.y} 
-              stroke={currentCompoundColor} 
-              strokeWidth="1.8" 
-              strokeDasharray="4,3" 
-              opacity="0.85" 
-            />
-
-            {/* Punto actual pulsante */}
-            <circle cx={currentPoint.x} cy={currentPoint.y} r="4" fill={currentCompoundColor} stroke="#000000" strokeWidth="1.5" />
+            {/* Punto actual */}
+            <circle cx={currentPoint.x} cy={currentPoint.y} r="4.5" fill={currentCompoundColor} stroke="#000000" strokeWidth="1.5" />
           </svg>
 
           <div className={styles.chartLegend}>
             <div className={styles.legendItem}>
               <span className={styles.legendDot} style={{ backgroundColor: '#e10600' }} />
-              <span>Blandos</span>
+              <span>Blandos (~16v)</span>
             </div>
             <div className={styles.legendItem}>
               <span className={styles.legendDot} style={{ backgroundColor: '#ffd700' }} />
-              <span>Medios</span>
+              <span>Medios (~24v)</span>
             </div>
             <div className={styles.legendItem}>
               <span className={styles.legendDot} style={{ backgroundColor: '#ffffff' }} />
-              <span>Duros</span>
+              <span>Duros (~36v)</span>
             </div>
           </div>
 
           <div className={styles.forecastBanner}>
-            <span>⏱️ Previsión actual: Neumático {tires.compound.toUpperCase()} rinde hasta la <strong>Vuelta {Math.round(forecastEndLap)}</strong> ({Math.round(lapsUntilEmpty)} vtas más)</span>
+            <span>🎯 Previsión teórica: Neumático {tires.compound.toUpperCase()} rinde hasta <strong>Vuelta {Math.round(expectedEndLap)}</strong> ({currentStint.expectedLaps} vtas previstas)</span>
           </div>
         </div>
       </div>
@@ -296,7 +293,7 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
           <div className={styles.telemetryMiniBox}>
             <span className={styles.miniBoxLabel}>Marcha & Velocidad</span>
             <span className={styles.miniBoxVal}>{telemetry.speedKmh} km/h</span>
-            <span style={{ fontSize: '9px', color: '#38bdf8' }}>GEAR {telemetry.gear} ({telemetry.rpm} RPM)</span>
+            <span style={{ fontSize: '9px', color: '#38bdf8' }}>GEAR {telemetry.gear} ({telemetry.rpm.toLocaleString()} RPM)</span>
           </div>
         </div>
 
@@ -351,7 +348,7 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
                       <td>
                         <span style={{ color: dotColor, fontWeight: 900 }}>{h.compound[0].toUpperCase()}</span>
                       </td>
-                      <td>{h.tireHealth ? `${h.tireHealth}%` : '-'}</td>
+                      <td>{h.tireHealth !== undefined ? `${h.tireHealth}%` : '-'}</td>
                     </tr>
                   );
                 })

@@ -87,7 +87,7 @@ export class RaceSimulation {
         drsZonesTraversed: 0,
         projectedLapsRemainingOnTire: 24,
         willMakeToEndWithoutPit: false,
-        optimalPitLap: 22,
+        optimalPitLap: 24,
         overtakesMade: 0,
         brakeTempCelsius: 380,
         engineTempCelsius: 102
@@ -143,14 +143,23 @@ export class RaceSimulation {
         sectorStartTime: 0,
 
         pitStop: {
-          scheduledLap: 22,
+          scheduledLap: 24,
           isPitting: false,
           pitLaneProgress: 0,
           stopDuration: team.pitStopAverageTime,
           currentStopTimer: 0,
           totalPitStops: 0,
           lastStopDuration: null,
-          targetCompound: 'hard'
+          targetCompound: 'hard',
+          stints: [
+            {
+              stintNumber: 1,
+              compound: 'medium',
+              startLap: 1,
+              endLap: 24,
+              expectedLaps: 24
+            }
+          ]
         },
 
         stats: initialStats,
@@ -214,7 +223,7 @@ export class RaceSimulation {
       if ((this.lightState as string) !== 'racing') {
         for (const car of this.cars) {
           car.currentSpeedKmh = 0;
-          car.telemetry.rpm = 11000 + Math.sin(this.lightsTimer * 10 + car.id) * 600;
+          car.telemetry.rpm = Math.round(11000 + Math.sin(this.lightsTimer * 10 + car.id) * 600);
           car.telemetry.throttle = 100;
           car.telemetry.brake = 100;
         }
@@ -250,7 +259,6 @@ export class RaceSimulation {
       const pointIndex = Math.floor(normalizedT * totalPoints) % totalPoints;
       const trackPoint = BARCELONA_CIRCUIT.points[pointIndex];
 
-      // Banderas azules
       const isBeingLapped = leaderCar && leaderCar.id !== car.id && (leaderCar.progress - car.progress) >= 0.85;
       const carApproachingBehind = this.cars.find(
         c => c.id !== car.id && c.status !== 'finished' && c.progress > car.progress && (c.progress - car.progress) < 0.015 && (c.currentLap > car.currentLap)
@@ -263,7 +271,6 @@ export class RaceSimulation {
         car.isBlueFlagged = false;
       }
 
-      // Modo Push
       const carAhead = car.carAheadId !== null ? this.getCarById(car.carAheadId) : null;
       if (carAhead && carAhead.pitStop.isPitting && !car.pitStop.isPitting) {
         car.engineMode = 'push';
@@ -452,12 +459,16 @@ export class RaceSimulation {
       else if (kmh < 275) gearVal = 6;
       else if (kmh < 315) gearVal = 7;
 
+      // RPM en enteros limpios realistas de F1 (8.000 a 13.500 RPM)
+      const baseRpm = 9500 + (kmh / 350) * 3500;
+      const finalRpm = Math.min(13500, Math.max(8000, Math.round(baseRpm)));
+
       car.telemetry = {
         speedKmh: kmh,
         throttle: throttleVal,
         brake: brakeVal,
         gear: gearVal,
-        rpm: Math.round(9500 + (kmh / 350) * 3500),
+        rpm: finalRpm,
         drsActive: car.drsActive,
         drsAvailable: car.drsEligible,
         engineMode: car.engineMode,
@@ -467,10 +478,10 @@ export class RaceSimulation {
         batterySoc: 85,
         ersDeploying: car.engineMode === 'push',
         tireWear: Math.round(car.tires.health),
-        tireHealthFL: tireResult.tireHealthFL,
-        tireHealthFR: tireResult.tireHealthFR,
-        tireHealthRL: tireResult.tireHealthRL,
-        tireHealthRR: tireResult.tireHealthRR,
+        tireHealthFL: Math.round(tireResult.tireHealthFL),
+        tireHealthFR: Math.round(tireResult.tireHealthFR),
+        tireHealthRL: Math.round(tireResult.tireHealthRL),
+        tireHealthRR: Math.round(tireResult.tireHealthRR),
         currentPaceDelta: car.lastLapTime ? Number((car.lastLapTime - RaceSimulation.BASE_LAP_TIME_SEC).toFixed(3)) : 0
       };
     }
@@ -525,7 +536,7 @@ export class RaceSimulation {
       const weaveKmh = Math.round(155 + tireWeaveWave * 25);
       car.currentSpeedKmh = weaveKmh;
       car.telemetry.speedKmh = weaveKmh;
-      car.telemetry.rpm = 9500 + Math.round(tireWeaveWave * 800);
+      car.telemetry.rpm = Math.round(9500 + tireWeaveWave * 800);
 
       car.tires.health = Math.max(99.6, car.tires.health - dt * 0.005);
 

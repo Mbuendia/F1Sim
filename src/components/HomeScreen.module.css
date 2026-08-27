@@ -1,0 +1,332 @@
+.homeContainer {
+  width: 100vw;
+  height: 100vh;
+  overflow-y: auto;
+  background: radial-gradient(circle at 50% 10%, #111728 0%, #060912 100%);
+  color: #f1f5f9;
+  font-family: 'Inter', system-ui, sans-serif;
+  padding: 24px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  user-select: none;
+}
+
+.homeContainer::-webkit-scrollbar {
+  width: 6px;
+}
+.homeContainer::-webkit-scrollbar-thumb {
+  background: #27354f;
+  border-radius: 3px;
+}
+
+/* Header */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1.5px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 16px;
+}
+
+.brandGroup {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.f1Logo {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 28px;
+  font-weight: 900;
+  color: #e10600;
+  letter-spacing: 4px;
+}
+
+.headerTitles h1 {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 20px;
+  font-weight: 900;
+  color: #ffffff;
+  margin: 0;
+  letter-spacing: 1px;
+}
+
+.headerTitles p {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: #94a3b8;
+  margin: 2px 0 0;
+}
+
+/* Historial Superior de Carreras */
+.historySection {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  padding: 14px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.historyTitle {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 11px;
+  font-weight: 900;
+  color: #ffd700;
+  letter-spacing: 1px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.historyCardsList {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+}
+
+.historyCardsList::-webkit-scrollbar {
+  height: 4px;
+}
+.historyCardsList::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 2px;
+}
+
+.historyCard {
+  background: rgba(0, 0, 0, 0.5);
+  border: 1.5px solid rgba(255, 255, 255, 0.1);
+  border-left: 4px solid #ffd700;
+  border-radius: 10px;
+  padding: 10px 14px;
+  min-width: 280px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.historyHeaderRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10.5px;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 700;
+  color: #94a3b8;
+}
+
+.historyWinner {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 12.5px;
+  font-weight: 900;
+  color: #ffffff;
+}
+
+.historyPodiumSub {
+  font-size: 11.5px;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 700;
+  color: #cbd5e1;
+}
+
+.historyStrategy {
+  font-size: 10.5px;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 700;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.1);
+  padding: 3px 6px;
+  border-radius: 4px;
+  margin-top: 2px;
+}
+
+/* Configuración: Piloto + Circuito */
+.selectionRow {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 24px;
+}
+
+.sectionTitle {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 14px;
+  font-weight: 900;
+  color: #ffffff;
+  letter-spacing: 1.5px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Grid de Pilotos */
+.driversGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
+  max-height: 480px;
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
+.driversGrid::-webkit-scrollbar {
+  width: 4px;
+}
+.driversGrid::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 2px;
+}
+
+.driverCard {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1.5px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: relative;
+}
+
+.driverCard:hover {
+  background: rgba(255, 255, 255, 0.09);
+  transform: translateY(-2px);
+}
+
+.driverCardSelected {
+  background: rgba(225, 6, 0, 0.18) !important;
+  border-color: #e10600 !important;
+  box-shadow: 0 0 16px rgba(225, 6, 0, 0.4);
+}
+
+.cardTopRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.driverFlagName {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+}
+
+.driverName {
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 800;
+  font-size: 14px;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.driverNum {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.driverTeam {
+  font-size: 11px;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 600;
+  color: #94a3b8;
+}
+
+.statsRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 700;
+  color: #cbd5e1;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding-top: 4px;
+}
+
+/* Tarjeta Circuito */
+.trackCard {
+  background: rgba(255, 255, 255, 0.04);
+  border: 2px solid #e10600;
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+}
+
+.trackPreviewCanvas {
+  width: 100%;
+  height: 140px;
+  background: #0d1220;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.trackInfo h3 {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 15px;
+  font-weight: 900;
+  color: #ffffff;
+  margin: 0;
+}
+
+.trackInfo p {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 12px;
+  color: #94a3b8;
+  font-weight: 600;
+  margin: 2px 0 8px;
+}
+
+.trackSpecsList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11.5px;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 700;
+  color: #cbd5e1;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 8px 10px;
+  border-radius: 6px;
+}
+
+/* Botón Start */
+.startSection {
+  display: flex;
+  justify-content: center;
+  margin-top: 8px;
+}
+
+.launchButton {
+  background: linear-gradient(135deg, #e10600 0%, #9e0400 100%);
+  color: #ffffff;
+  border: none;
+  padding: 16px 48px;
+  border-radius: 12px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 16px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  box-shadow: 0 10px 35px rgba(225, 6, 0, 0.5);
+  transition: all 0.2s ease;
+}
+
+.launchButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 45px rgba(225, 6, 0, 0.7);
+  background: linear-gradient(135deg, #ff1a14 0%, #b80500 100%);
+}

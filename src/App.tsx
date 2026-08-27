@@ -10,18 +10,32 @@ import { Leaderboard } from './components/Leaderboard';
 import { BottomTelemetryDock } from './components/BottomTelemetryDock';
 import { RightStatsPanel } from './components/RightStatsPanel';
 import { PodiumModal } from './components/PodiumModal';
-import { StartLightState, CarState } from './types/f1';
-import { RotateCw, Flag } from 'lucide-react';
+import { HomeScreen } from './components/HomeScreen';
+import { StartLightState, CarState, RaceResultHistory } from './types/f1';
+import { RotateCw, Flag, ArrowLeft } from 'lucide-react';
 
 export const App: React.FC = () => {
   const simulation = useMemo(() => new RaceSimulation(), []);
   const camera = useMemo(() => new Camera(), []);
 
-  // Piloto seleccionado expresamente en pista/tabla (o null para ver vista general)
+  // Vista actual: 'home' o 'race'
+  const [currentView, setCurrentView] = useState<'home' | 'race'>('home');
+
+  // Piloto protagonista seleccionado en la Home (por defecto 'alonso')
+  const [selectedDriverId, setSelectedDriverId] = useState<string>('alonso');
+
+  // Coche seleccionado expresamente en pista
   const [selectedCarId, setSelectedCarId] = useState<number | null>(null);
-  
-  // Piloto protagonista favorito elegido al inicio (por defecto Fernando Alonso id=6)
-  const [favoriteCarId, setFavoriteCarId] = useState<number>(6);
+
+  // Historial de carreras guardadas
+  const [raceHistory, setRaceHistory] = useState<RaceResultHistory[]>(() => {
+    try {
+      const saved = localStorage.getItem('f1_race_history');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
 
   const [lightState, setLightState] = useState<StartLightState>(simulation.lightState);
   const [speedMultiplier, setSpeedMultiplier] = useState<number>(simulation.speedMultiplier);
@@ -33,7 +47,6 @@ export const App: React.FC = () => {
   const [isFinished, setIsFinished] = useState<boolean>(false);
   const [podiumCars, setPodiumCars] = useState<CarState[]>([]);
   
-  // Tiempos récord de sectores
   const [bestS1, setBestS1] = useState<number | null>(null);
   const [bestS2, setBestS2] = useState<number | null>(null);
   const [bestS3, setBestS3] = useState<number | null>(null);
@@ -71,10 +84,6 @@ export const App: React.FC = () => {
     }
   }, [camera]);
 
-  const handleSelectFavoriteCar = useCallback((carId: number) => {
-    setFavoriteCarId(carId);
-  }, []);
-
   const handleSpeedChange = useCallback((speed: number) => {
     simulation.setSpeed(speed);
     setSpeedMultiplier(simulation.speedMultiplier);
@@ -89,12 +98,68 @@ export const App: React.FC = () => {
     setIsFinished(false);
   }, [simulation, camera]);
 
-  const handleStartRace = useCallback(() => {
+  const handleStartRaceFromHome = useCallback(() => {
+    simulation.initRace();
+    camera.resetToFullTrack();
+    setSelectedCarId(null);
+    setLightState('idle');
+    setIsFinished(false);
+    setCurrentView('race');
+  }, [simulation, camera]);
+
+  const handleStartFormationLap = useCallback(() => {
     simulation.startRaceSequence();
   }, [simulation]);
 
+  const formatRaceTime = (totalSec: number): string => {
+    const hrs = Math.floor(totalSec / 3600);
+    const mins = Math.floor((totalSec % 3600) / 60);
+    const secs = Math.floor(totalSec % 60);
+    return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const handleGoHome = useCallback(() => {
+    if (simulation.podiumCars.length >= 3) {
+      const winner = simulation.podiumCars[0];
+      const p2 = simulation.podiumCars[1];
+      const p3 = simulation.podiumCars[2];
+      const userCar = simulation.cars.find(c => c.driver.id === selectedDriverId) || winner;
+
+      // Calcular estrategia del ganador
+      const stintsDesc = winner.pitStop.stints && winner.pitStop.stints.length > 0
+        ? winner.pitStop.stints.map(s => `${s.compound.toUpperCase()} (L${s.startLap}-${s.endLap})`).join(' ➔ ')
+        : '1 PARADA (MEDIOS ➔ DUROS)';
+
+      const newHistoryItem: RaceResultHistory = {
+        id: `gp_${Date.now()}`,
+        dateFormatted: new Date().toLocaleDateString('es-ES', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }),
+        trackName: 'Circuit de Barcelona-Catalunya',
+        winnerName: `${winner.driver.firstName} ${winner.driver.lastName}`,
+        winnerTeam: winner.team.name,
+        winnerTeamColor: winner.team.color,
+        p2Name: `${p2.driver.firstName} ${p2.driver.lastName}`,
+        p3Name: `${p3.driver.firstName} ${p3.driver.lastName}`,
+        userDriverName: `${userCar.driver.firstName} ${userCar.driver.lastName}`,
+        userDriverPos: userCar.currentPosition,
+        winnerStrategy: stintsDesc,
+        totalRaceTime: formatRaceTime(simulation.raceTimeSec)
+      };
+
+      const updatedHistory = [newHistoryItem, ...raceHistory].slice(0, 10);
+      setRaceHistory(updatedHistory);
+      try {
+        localStorage.setItem('f1_race_history', JSON.stringify(updatedHistory));
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    setCurrentView('home');
+  }, [simulation, selectedDriverId, raceHistory]);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (currentView !== 'race') return;
       if (e.key === 'Escape') {
         handleSelectCar(null);
       } else if (e.key === ' ') {
@@ -115,21 +180,26 @@ export const App: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleSelectCar, handleSpeedChange, isPaused]);
+  }, [currentView, handleSelectCar, handleSpeedChange, isPaused]);
 
-  const formatRaceTime = (totalSec: number): string => {
-    const hrs = Math.floor(totalSec / 3600);
-    const mins = Math.floor((totalSec % 3600) / 60);
-    const secs = Math.floor(totalSec % 60);
-    return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
-
+  // Coche protagonista elegido
+  const favoriteCar = simulation.cars.find(c => c.driver.id === selectedDriverId) || simulation.cars[0];
   const selectedCar = selectedCarId !== null ? simulation.getCarById(selectedCarId) || null : null;
-  const favoriteCar = simulation.getCarById(favoriteCarId) || simulation.cars[0] || null;
+
+  if (currentView === 'home') {
+    return (
+      <HomeScreen
+        selectedDriverId={selectedDriverId}
+        onSelectDriver={setSelectedDriverId}
+        onStartRace={handleStartRaceFromHome}
+        raceHistory={raceHistory}
+      />
+    );
+  }
 
   return (
     <div className={styles.appContainer}>
-      {/* ── 1. TIMING TOWER / LEADERBOARD IZQUIERDA ── */}
+      {/* ── 1. TIMING TOWER IZQUIERDA ── */}
       <div className={styles.leftSidebar}>
         <Leaderboard
           cars={cars}
@@ -153,7 +223,7 @@ export const App: React.FC = () => {
         {lightState === 'formation-lap' && (
           <div className={styles.formationBanner}>
             <RotateCw size={14} className={styles.spinIcon} />
-            <span>VUELTA DE FORMACIÓN · CALENTANDO NEUMÁTICOS EN TRETECITO</span>
+            <span>VUELTA DE FORMACIÓN · CALENTANDO NEUMÁTICOS EN TRETECICITO</span>
           </div>
         )}
 
@@ -166,7 +236,31 @@ export const App: React.FC = () => {
 
         {/* Header superior y Controles de velocidad */}
         <div className={styles.topBarOverlay}>
-          <RaceHeader />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <button
+              onClick={handleGoHome}
+              style={{
+                background: 'rgba(15, 23, 42, 0.85)',
+                color: '#ffffff',
+                border: '1px solid rgba(255,255,255,0.15)',
+                padding: '6px 12px',
+                borderRadius: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                cursor: 'pointer',
+                fontFamily: 'Rajdhani, sans-serif',
+                fontWeight: 700,
+                fontSize: '13px'
+              }}
+              title="Volver al menú de inicio"
+            >
+              <ArrowLeft size={16} />
+              <span>INICIO</span>
+            </button>
+            <RaceHeader />
+          </div>
+
           <SpeedControls
             currentSpeed={speedMultiplier}
             isPaused={isPaused}
@@ -178,7 +272,7 @@ export const App: React.FC = () => {
           />
         </div>
 
-        {/* Dock inferior central */}
+        {/* Dock inferior central (muestra el coche seleccionado o el protagonista por defecto) */}
         <div className={styles.bottomDockWrapper}>
           <BottomTelemetryDock
             car={selectedCar || favoriteCar}
@@ -186,20 +280,24 @@ export const App: React.FC = () => {
           />
         </div>
 
-        {/* Semáforo de salida con Selector de Piloto Protagonista */}
+        {/* Semáforo de salida */}
         <StartLights
           lightState={lightState}
           cars={cars}
-          favoriteCarId={favoriteCarId}
-          onSelectFavoriteCar={handleSelectFavoriteCar}
-          onStartClick={handleStartRace}
+          favoriteCarId={favoriteCar.id}
+          onSelectFavoriteCar={(id) => {
+            const c = simulation.getCarById(id);
+            if (c) setSelectedDriverId(c.driver.id);
+          }}
+          onStartClick={handleStartFormationLap}
         />
 
-        {/* Modal de Podio al terminar */}
+        {/* Modal de Podio al terminar con botón Volver a Inicio */}
         {isFinished && podiumCars.length >= 3 && (
           <PodiumModal
             podiumCars={podiumCars}
             onRestart={handleResetRace}
+            onGoHome={handleGoHome}
           />
         )}
       </div>

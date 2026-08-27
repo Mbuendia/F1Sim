@@ -1,15 +1,16 @@
 import React, { useEffect, useRef } from 'react';
 import styles from './PodiumModal.module.css';
 import { CarState } from '../types/f1';
-import { Trophy, RotateCcw, Sparkles } from 'lucide-react';
+import { Trophy, RotateCcw, Home, Sparkles } from 'lucide-react';
 import { animate, stagger } from 'animejs';
 
 interface PodiumModalProps {
   podiumCars: CarState[];
   onRestart: () => void;
+  onGoHome: () => void;
 }
 
-export const PodiumModal: React.FC<PodiumModalProps> = ({ podiumCars, onRestart }) => {
+export const PodiumModal: React.FC<PodiumModalProps> = ({ podiumCars, onRestart, onGoHome }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const confettiCanvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -105,8 +106,8 @@ export const PodiumModal: React.FC<PodiumModalProps> = ({ podiumCars, onRestart 
       <div ref={containerRef} className={styles.podiumContainer}>
         <div className={styles.header}>
           <div className={styles.f1Logo}>FORMULA 1</div>
-          <h1 className={styles.title}>🏆 GRAN PREMIO DE ESPAÑA 🏆</h1>
-          <p className={styles.subtitle}>CEREMONIA OFICIAL DEL PODIO · CIRCUIT DE BARCELONA-CATALUNYA</p>
+          <h1 className={styles.title}>🏆 GRAN PREMIO DE F1 🏆</h1>
+          <p className={styles.subtitle}>CEREMONIA OFICIAL DEL PODIO</p>
         </div>
 
         <div className={styles.podiumStage}>
@@ -157,10 +158,20 @@ export const PodiumModal: React.FC<PodiumModalProps> = ({ podiumCars, onRestart 
           </div>
         </div>
 
-        <button className={styles.restartBtn} onClick={onRestart}>
-          <RotateCcw size={18} />
-          <span>REINICIAR GRAN PREMIO</span>
-        </button>
+        <div style={{ display: 'flex', gap: '14px' }}>
+          <button className={styles.restartBtn} onClick={onRestart}>
+            <RotateCcw size={18} />
+            <span>REPETIR CARRERA</span>
+          </button>
+          <button 
+            className={styles.restartBtn} 
+            style={{ background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)', border: '1px solid rgba(255,255,255,0.2)' }}
+            onClick={onGoHome}
+          >
+            <Home size={18} />
+            <span>VOLVER A LA PANTALLA PRINCIPAL</span>
+          </button>
+        </div>
       </div>
     </div>
   );

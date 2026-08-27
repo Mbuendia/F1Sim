@@ -110,6 +110,9 @@ export const BottomTelemetryDock: React.FC<BottomTelemetryDockProps> = ({
           <div className={styles.rpmBar}>
             <div className={styles.rpmProgress} style={{ width: `${rpmPercent}%` }} />
           </div>
+          <span style={{ fontSize: '9px', color: '#94a3b8', marginTop: '2px', fontFamily: 'Orbitron' }}>
+            {telemetry.rpm.toLocaleString()} RPM
+          </span>
         </div>
 
         {/* Neumáticos */}

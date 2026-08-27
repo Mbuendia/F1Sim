@@ -99,6 +99,14 @@ export interface CarTelemetryLog {
   tireHealth: number;
 }
 
+export interface StintLog {
+  stintNumber: number;
+  compound: TireCompound;
+  startLap: number;
+  endLap: number;
+  expectedLaps: number;
+}
+
 export interface PitStopState {
   scheduledLap: number;
   isPitting: boolean;
@@ -108,6 +116,7 @@ export interface PitStopState {
   totalPitStops: number;
   lastStopDuration: number | null;
   targetCompound: TireCompound;
+  stints: StintLog[];
 }
 
 export type StartLightState = 
@@ -180,4 +189,19 @@ export interface CarState {
   lapHistory: CarTelemetryLog[];
   telemetry: TelemetryData;
   status: 'running' | 'pit' | 'out' | 'finished';
+}
+
+export interface RaceResultHistory {
+  id: string;
+  dateFormatted: string;
+  trackName: string;
+  winnerName: string;
+  winnerTeam: string;
+  winnerTeamColor: string;
+  p2Name: string;
+  p3Name: string;
+  userDriverName: string;
+  userDriverPos: number;
+  winnerStrategy: string;
+  totalRaceTime: string;
 }
