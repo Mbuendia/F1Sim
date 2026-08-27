@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import styles from './StartLights.module.css';
 import { StartLightState } from '../types/f1';
 import { Play } from 'lucide-react';
+import { animate } from 'animejs';
 
 interface StartLightsProps {
   lightState: StartLightState;
@@ -9,7 +10,31 @@ interface StartLightsProps {
 }
 
 export const StartLights: React.FC<StartLightsProps> = ({ lightState, onStartClick }) => {
-  // En carrera, terminado, vuelta de formación o aparcamiento NO mostramos la modal gigante en medio
+  const containerRef = useRef<HTMLDivElement>(null);
+  const bannerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (containerRef.current) {
+      animate(containerRef.current, {
+        scale: [0.92, 1],
+        opacity: [0, 1],
+        ease: 'outElastic(1, .6)',
+        duration: 800
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    if (lightState === 'lights-out' && bannerRef.current) {
+      animate(bannerRef.current, {
+        scale: [0.8, 1.15, 1],
+        opacity: [0, 1],
+        ease: 'outBack',
+        duration: 600
+      });
+    }
+  }, [lightState]);
+
   if (lightState === 'racing' || lightState === 'finished' || lightState === 'formation-lap' || lightState === 'grid-parking') {
     return null;
   }
@@ -31,7 +56,7 @@ export const StartLights: React.FC<StartLightsProps> = ({ lightState, onStartCli
 
   return (
     <div className={styles.overlay}>
-      <div className={styles.gantryContainer}>
+      <div ref={containerRef} className={styles.gantryContainer}>
         <div className={styles.gantryHeader}>
           <span className={styles.f1Brand}>FORMULA 1</span>
           <span className={styles.gantryTitle}>
@@ -39,7 +64,6 @@ export const StartLights: React.FC<StartLightsProps> = ({ lightState, onStartCli
           </span>
         </div>
 
-        {/* Las 5 columnas del semáforo oficial F1 */}
         <div className={styles.lightsGantry}>
           {[1, 2, 3, 4, 5].map((lightIdx) => {
             const isRedOn = activeLights >= lightIdx;
@@ -57,13 +81,13 @@ export const StartLights: React.FC<StartLightsProps> = ({ lightState, onStartCli
 
         {lightState === 'idle' && (
           <button className={styles.startButton} onClick={onStartClick}>
-            <Play size={18} fill="#ffffff" />
+            <Play size={20} fill="#ffffff" />
             <span>INICIAR VUELTA DE FORMACIÓN</span>
           </button>
         )}
 
         {lightState === 'lights-out' && (
-          <div className={styles.lightsOutBanner}>
+          <div ref={bannerRef} className={styles.lightsOutBanner}>
             ¡LIGHTS OUT AND AWAY WE GO! 🏎️💨
           </div>
         )}

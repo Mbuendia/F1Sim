@@ -1,11 +1,20 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import styles from './RightStatsPanel.module.css';
 import { CarState } from '../types/f1';
-import { Activity, Flame, Sparkles, Thermometer, Trophy, AlertTriangle, CheckCircle2, Timer, Wrench } from 'lucide-react';
+import { 
+  Flame, 
+  Timer, 
+  Wrench, 
+  Award, 
+  Activity,
+  CheckCircle2,
+  AlertTriangle
+} from 'lucide-react';
+import { animate } from 'animejs';
 
-interface RightStatsPanelProps {
+export interface RightStatsPanelProps {
   car: CarState | null;
-  totalLaps: number;
+  totalLaps?: number;
   overallBestS1: number | null;
   overallBestS2: number | null;
   overallBestS3: number | null;
@@ -13,148 +22,187 @@ interface RightStatsPanelProps {
 
 export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
   car,
-  totalLaps,
   overallBestS1,
   overallBestS2,
   overallBestS3
 }) => {
+  const panelRef = useRef<HTMLDivElement>(null);
+  const pitBannerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (car && panelRef.current) {
+      animate(panelRef.current, {
+        opacity: [0.85, 1],
+        translateX: [12, 0],
+        ease: 'outQuad',
+        duration: 400
+      });
+    }
+  }, [car?.id]);
+
+  useEffect(() => {
+    if (car?.pitStop.isPitting && pitBannerRef.current) {
+      animate(pitBannerRef.current, {
+        scale: [0.96, 1.03],
+        alternate: true,
+        loop: true,
+        ease: 'inOutSine',
+        duration: 500
+      });
+    }
+  }, [car?.pitStop.isPitting]);
+
   if (!car) {
     return (
       <div className={styles.container}>
         <div className={styles.emptyCard}>
-          <Activity size={24} color="#64748b" />
-          <span>Selecciona un monoplaza para ver tiempos de sector, telemetría y estrategia</span>
+          <Activity size={32} color="#475569" />
+          <p>Selecciona un piloto para ver sectores en vivo, paradas y telemetría avanzada</p>
         </div>
       </div>
     );
   }
 
-  const { driver, tires, stats, currentLap, sectors, lastLapTime, bestLapTime, pitStop } = car;
-  const lapsRemaining = totalLaps - currentLap;
+  const { sectors, pitStop, stats, driver, lastLapTime, bestLapTime } = car;
 
-  const getSectorColor = (sectorNum: 1 | 2 | 3, currentVal: number | null, pbVal: number | null, overallBest: number | null) => {
-    if (!currentVal) return { color: '#64748b', bg: 'rgba(255,255,255,0.03)', status: '...' };
-    if (overallBest && Math.abs(currentVal - overallBest) < 0.005) {
-      return { color: '#c084fc', bg: 'rgba(192, 132, 252, 0.18)', status: '🟣 RÉCORD' };
+  const getSectorStyle = (
+    currentSectorVal: number | null,
+    personalBest: number | null,
+    overallBest: number | null
+  ) => {
+    if (!currentSectorVal) return { color: '#94a3b8', bg: 'rgba(255,255,255,0.04)', status: '-' };
+
+    if (overallBest && Math.abs(currentSectorVal - overallBest) < 0.005) {
+      return { color: '#c084fc', bg: 'rgba(192, 132, 252, 0.22)', border: '#c084fc', status: 'RÉCORD' };
     }
-    if (pbVal && Math.abs(currentVal - pbVal) < 0.005) {
-      return { color: '#22c55e', bg: 'rgba(34, 197, 94, 0.18)', status: '🟢 PERSONAL' };
+    if (personalBest && Math.abs(currentSectorVal - personalBest) < 0.005) {
+      return { color: '#22c55e', bg: 'rgba(34, 197, 94, 0.22)', border: '#22c55e', status: 'MEJOR PERSONAL' };
     }
-    return { color: '#eab308', bg: 'rgba(234, 179, 8, 0.12)', status: '🟡 NORMAL' };
+    return { color: '#eab308', bg: 'rgba(234, 179, 8, 0.15)', border: '#eab308', status: 'ESTÁNDAR' };
   };
 
-  const s1Color = getSectorColor(1, sectors.s1, sectors.personalBestS1, overallBestS1);
-  const s2Color = getSectorColor(2, sectors.s2, sectors.personalBestS2, overallBestS2);
-  const s3Color = getSectorColor(3, sectors.s3, sectors.personalBestS3, overallBestS3);
-
-  const formatLapTime = (sec: number | null) => {
-    if (!sec || sec <= 0) return '--:--.---';
-    const m = Math.floor(sec / 60);
-    const s = sec % 60;
-    return `${m}:${s < 10 ? '0' : ''}${s.toFixed(3)}`;
-  };
+  const s1Style = getSectorStyle(sectors.s1, sectors.personalBestS1, overallBestS1);
+  const s2Style = getSectorStyle(sectors.s2, sectors.personalBestS2, overallBestS2);
+  const s3Style = getSectorStyle(sectors.s3, sectors.personalBestS3, overallBestS3);
 
   return (
-    <div className={styles.container}>
-      {/* ── 1. TIEMPOS DE SECTOR (S1, S2, S3) ── */}
+    <div ref={panelRef} className={styles.container}>
+      {/* ── 1. SECTORES EN DIRECTO ── */}
       <div className={styles.sectionCard}>
         <div className={styles.cardHeader}>
-          <Timer size={13} color="#c084fc" />
-          <span>TIEMPOS DE SECTOR Y VUELTA</span>
+          <Timer size={15} color="#e10600" />
+          <span>SECTORES EN DIRECTO (S1 / S2 / S3)</span>
         </div>
 
         <div className={styles.sectorsGrid}>
-          <div className={styles.sectorBox} style={{ background: s1Color.bg, borderColor: s1Color.color }}>
-            <div className={styles.sectorLabel}>SECTOR 1</div>
-            <div className={styles.sectorTime} style={{ color: s1Color.color }}>
+          <div 
+            className={styles.sectorBox} 
+            style={{ backgroundColor: s1Style.bg, borderColor: s1Style.border || 'transparent' }}
+          >
+            <span className={styles.sectorLabel}>SECTOR 1</span>
+            <span className={styles.sectorTime} style={{ color: s1Style.color }}>
               {sectors.s1 ? `${sectors.s1.toFixed(3)}s` : '--.---'}
-            </div>
-            <div className={styles.sectorStatus}>{s1Color.status}</div>
+            </span>
+            <span className={styles.sectorStatus} style={{ color: s1Style.color }}>
+              {s1Style.status}
+            </span>
           </div>
 
-          <div className={styles.sectorBox} style={{ background: s2Color.bg, borderColor: s2Color.color }}>
-            <div className={styles.sectorLabel}>SECTOR 2</div>
-            <div className={styles.sectorTime} style={{ color: s2Color.color }}>
+          <div 
+            className={styles.sectorBox} 
+            style={{ backgroundColor: s2Style.bg, borderColor: s2Style.border || 'transparent' }}
+          >
+            <span className={styles.sectorLabel}>SECTOR 2</span>
+            <span className={styles.sectorTime} style={{ color: s2Style.color }}>
               {sectors.s2 ? `${sectors.s2.toFixed(3)}s` : '--.---'}
-            </div>
-            <div className={styles.sectorStatus}>{s2Color.status}</div>
+            </span>
+            <span className={styles.sectorStatus} style={{ color: s2Style.color }}>
+              {s2Style.status}
+            </span>
           </div>
 
-          <div className={styles.sectorBox} style={{ background: s3Color.bg, borderColor: s3Color.color }}>
-            <div className={styles.sectorLabel}>SECTOR 3</div>
-            <div className={styles.sectorTime} style={{ color: s3Color.color }}>
+          <div 
+            className={styles.sectorBox} 
+            style={{ backgroundColor: s3Style.bg, borderColor: s3Style.border || 'transparent' }}
+          >
+            <span className={styles.sectorLabel}>SECTOR 3</span>
+            <span className={styles.sectorTime} style={{ color: s3Style.color }}>
               {sectors.s3 ? `${sectors.s3.toFixed(3)}s` : '--.---'}
-            </div>
-            <div className={styles.sectorStatus}>{s3Color.status}</div>
+            </span>
+            <span className={styles.sectorStatus} style={{ color: s3Style.color }}>
+              {s3Style.status}
+            </span>
           </div>
         </div>
 
         <div className={styles.lapTimesSummary}>
           <div className={styles.lapTimeRow}>
-            <span className={styles.timeLabel}>ÚLTIMA VUELTA:</span>
-            <span className={styles.timeVal}>{formatLapTime(lastLapTime)}</span>
+            <span className={styles.timeLabel}>Última Vuelta:</span>
+            <span className={styles.timeVal}>{lastLapTime ? `${lastLapTime.toFixed(3)}s` : '--.---'}</span>
           </div>
           <div className={styles.lapTimeRow}>
-            <span className={styles.timeLabel}>MEJOR VUELTA:</span>
-            <span className={styles.timeValBest}>{formatLapTime(bestLapTime)}</span>
+            <span className={styles.timeLabel}>Mejor Vuelta:</span>
+            <span className={styles.timeValBest}>{bestLapTime ? `${bestLapTime.toFixed(3)}s` : '--.---'}</span>
           </div>
         </div>
       </div>
 
-      {/* ── 2. INFORMACIÓN DETALLADA DE PIT STOP ── */}
+      {/* ── 2. BOXES & PIT STOPS ── */}
       <div className={styles.sectionCard}>
         <div className={styles.cardHeader}>
-          <Wrench size={13} color="#eab308" />
-          <span>ESTADO DE PARADAS EN BOXES</span>
+          <Wrench size={15} color="#eab308" />
+          <span>ESTADO DE BOXES & PIT STOPS</span>
         </div>
 
         <div className={styles.pitDetailBox}>
           {pitStop.isPitting ? (
-            <div className={styles.pitActiveBanner}>
+            <div ref={pitBannerRef} className={styles.pitActiveBanner}>
               <span className={styles.pitBlink}>🔴 EN BOXES AHORA MISMO</span>
               <span className={styles.pitCurrentTimer}>
-                {pitStop.currentStopTimer > 0 ? `PARADA: ${pitStop.currentStopTimer.toFixed(2)}s / ${pitStop.stopDuration.toFixed(2)}s` : 'RODANDO A 80 KM/H'}
+                ⏱️ Tiempo parada: {pitStop.currentStopTimer.toFixed(2)}s / {pitStop.stopDuration}s
               </span>
             </div>
           ) : (
             <div className={styles.pitNormalStatus}>
               <div className={styles.pitStatRow}>
-                <span>PARADAS REALIZADAS:</span>
-                <strong>{pitStop.totalPitStops} {pitStop.totalPitStops === 1 ? 'PARADA' : 'PARADAS'}</strong>
+                <span>Paradas Realizadas:</span>
+                <strong>{pitStop.totalPitStops}</strong>
               </div>
               <div className={styles.pitStatRow}>
-                <span>ÚLTIMO TIEMPO EN BOX:</span>
-                <strong style={{ color: pitStop.lastStopDuration && pitStop.lastStopDuration < 2.3 ? '#22c55e' : '#ffd700' }}>
-                  {pitStop.lastStopDuration ? `${pitStop.lastStopDuration.toFixed(2)} seg` : 'NINGUNA'}
-                </strong>
+                <span>Última Parada:</span>
+                <strong>{pitStop.lastStopDuration ? `${pitStop.lastStopDuration.toFixed(2)}s` : 'Ninguna'}</strong>
+              </div>
+              <div className={styles.pitStatRow}>
+                <span>Ventana Óptima:</span>
+                <strong>Vuelta {stats.optimalPitLap}</strong>
               </div>
             </div>
           )}
         </div>
       </div>
 
-      {/* ── 3. PREVISIÓN DE NEUMÁTICOS Y ESTRATEGIA ── */}
+      {/* ── 3. PREVISIÓN ESTRATÉGICA ── */}
       <div className={styles.sectionCard}>
         <div className={styles.cardHeader}>
-          <Activity size={13} color="#38bdf8" />
-          <span>PREVISIÓN DE NEUMÁTICOS</span>
+          <Activity size={15} color="#38bdf8" />
+          <span>PREVISIÓN ESTRATÉGICA DE NEUMÁTICOS</span>
         </div>
 
         <div className={styles.forecastStatusBox}>
           {stats.willMakeToEndWithoutPit ? (
             <div className={styles.statusSuccess}>
-              <CheckCircle2 size={15} color="#22c55e" />
+              <CheckCircle2 size={16} color="#22c55e" />
               <div>
                 <div className={styles.statusTitle}>LLEGA AL FINAL DE CARRERA</div>
-                <div className={styles.statusSub}>Aguante estimado: {stats.projectedLapsRemainingOnTire} laps (Quedan {lapsRemaining})</div>
+                <div className={styles.statusSub}>El desgaste actual permite terminar sin más paradas.</div>
               </div>
             </div>
           ) : (
             <div className={styles.statusWarning}>
-              <AlertTriangle size={15} color="#f59e0b" />
+              <AlertTriangle size={16} color="#f59e0b" />
               <div>
-                <div className={styles.statusTitle}>REQUIERE PARADA EN BOXES</div>
-                <div className={styles.statusSub}>Goma útil: ~{stats.projectedLapsRemainingOnTire} laps (Quedan {lapsRemaining})</div>
+                <div className={styles.statusTitle}>PARADA REQUERIDA</div>
+                <div className={styles.statusSub}>Vida estimada de goma: ~{stats.projectedLapsRemainingOnTire} vueltas más.</div>
               </div>
             </div>
           )}
@@ -162,104 +210,84 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
 
         <div className={styles.statsMiniGrid}>
           <div className={styles.miniStat}>
-            <span className={styles.miniLabel}>VUELTAS CON ESTA GOMA</span>
-            <span className={styles.miniValue}>{tires.lapsOnTire} laps</span>
+            <span className={styles.miniLabel}>Vueltas a Tope (Push):</span>
+            <span className={styles.miniValue}>{stats.pushLaps}</span>
           </div>
           <div className={styles.miniStat}>
-            <span className={styles.miniLabel}>VENTANA ÓPTIMA PIT</span>
-            <span className={styles.miniValue}>Vuelta {stats.optimalPitLap}</span>
+            <span className={styles.miniLabel}>Vueltas Ahorro:</span>
+            <span className={styles.miniValue}>{stats.savingLaps}</span>
           </div>
         </div>
       </div>
 
-      {/* ── 4. ESTADÍSTICAS DE PILOTAJE EN CARRERA ── */}
+      {/* ── 4. TEMPERATURAS ── */}
       <div className={styles.sectionCard}>
         <div className={styles.cardHeader}>
-          <Flame size={13} color="#f97316" />
-          <span>ESTADÍSTICAS DE PILOTAJE</span>
+          <Flame size={15} color="#ef4444" />
+          <span>TELEMETRÍA TÉRMICA & RENDIMIENTO</span>
         </div>
 
         <div className={styles.barsList}>
           <div className={styles.statBarItem}>
             <div className={styles.barHeader}>
-              <span>Vueltas al límite (Push)</span>
-              <span className={styles.barVal}>{stats.pushLaps} laps</span>
+              <span>Temp. Frenos:</span>
+              <span className={styles.barVal}>{stats.brakeTempCelsius}°C</span>
             </div>
             <div className={styles.barTrack}>
-              <div className={styles.barFill} style={{ width: `${Math.min(100, (stats.pushLaps / Math.max(1, currentLap)) * 100)}%`, backgroundColor: '#ef4444' }} />
+              <div 
+                className={styles.barFill} 
+                style={{ 
+                  width: `${Math.min(100, (stats.brakeTempCelsius / 800) * 100)}%`,
+                  backgroundColor: stats.brakeTempCelsius > 600 ? '#ef4444' : '#22c55e'
+                }} 
+              />
             </div>
           </div>
 
           <div className={styles.statBarItem}>
             <div className={styles.barHeader}>
-              <span>Vueltas en gestión (Eco)</span>
-              <span className={styles.barVal}>{stats.savingLaps} laps</span>
+              <span>Temp. Motor:</span>
+              <span className={styles.barVal}>{stats.engineTempCelsius}°C</span>
             </div>
             <div className={styles.barTrack}>
-              <div className={styles.barFill} style={{ width: `${Math.min(100, (stats.savingLaps / Math.max(1, currentLap)) * 100)}%`, backgroundColor: '#38bdf8' }} />
+              <div 
+                className={styles.barFill} 
+                style={{ 
+                  width: `${Math.min(100, (stats.engineTempCelsius / 130) * 100)}%`,
+                  backgroundColor: stats.engineTempCelsius > 115 ? '#ef4444' : '#38bdf8'
+                }} 
+              />
             </div>
           </div>
         </div>
-
-        <div className={styles.statsMiniGrid} style={{ marginTop: '6px' }}>
-          <div className={styles.miniStat}>
-            <span className={styles.miniLabel}>ZONAS DRS PASADAS</span>
-            <span className={styles.miniValue}>{stats.drsZonesTraversed}</span>
-          </div>
-          <div className={styles.miniStat}>
-            <span className={styles.miniLabel}>POSICIONES GANADAS</span>
-            <span className={styles.miniValue} style={{ color: '#22c55e' }}>+{stats.overtakesMade}</span>
-          </div>
-        </div>
       </div>
 
-      {/* ── 5. TELEMETRÍA TÉRMICA EN VIVO ── */}
+      {/* ── 5. HISTORIAL DEL PILOTO ── */}
       <div className={styles.sectionCard}>
         <div className={styles.cardHeader}>
-          <Thermometer size={13} color="#ef4444" />
-          <span>TELEMETRÍA TÉRMICA</span>
-        </div>
-
-        <div className={styles.statsMiniGrid}>
-          <div className={styles.miniStat}>
-            <span className={styles.miniLabel}>TEMPERATURA FRENOS</span>
-            <span className={styles.miniValue} style={{ color: stats.brakeTempCelsius > 550 ? '#ef4444' : '#f59e0b' }}>
-              {stats.brakeTempCelsius} °C
-            </span>
-          </div>
-          <div className={styles.miniStat}>
-            <span className={styles.miniLabel}>TEMPERATURA MOTOR</span>
-            <span className={styles.miniValue} style={{ color: '#38bdf8' }}>
-              {stats.engineTempCelsius} °C
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* ── 6. PALMARÉS Y RATINGS FIA ── */}
-      <div className={styles.sectionCard}>
-        <div className={styles.cardHeader}>
-          <Sparkles size={13} color="#ffd700" />
-          <span>PALMARÉS Y RATINGS FIA</span>
+          <Award size={15} color="#ffd700" />
+          <span>PALMARÉS & VALORACIÓN</span>
         </div>
 
         <div className={styles.palmaresList}>
-          {driver.worldChampionships > 0 ? (
-            <div className={styles.palmaresItem}>
-              <Trophy size={13} color="#ffd700" />
-              <span>{driver.worldChampionships} Títulos Mundiales (WDC)</span>
-            </div>
-          ) : null}
           <div className={styles.palmaresItem}>
-            <Trophy size={13} color="#cbd5e1" />
-            <span>{driver.careerWins} Victorias en GP</span>
+            <span>🏆 Campeonatos Mundiales:</span>
+            <strong>{driver.worldChampionships}</strong>
+          </div>
+          <div className={styles.palmaresItem}>
+            <span>🥇 Victorias en GP:</span>
+            <strong>{driver.careerWins}</strong>
+          </div>
+          <div className={styles.palmaresItem}>
+            <span>🍾 Podios:</span>
+            <strong>{driver.careerPodiums}</strong>
           </div>
         </div>
 
         <div className={styles.ratingsMiniFooter}>
-          <span>Talento: <strong>{(driver.talentRating * 100).toFixed(0)}</strong></span>
-          <span>Suerte: <strong>{(driver.luckRating * 100).toFixed(0)}</strong></span>
-          <span>Gomas: <strong>{(driver.tireManagement * 100).toFixed(0)}</strong></span>
+          <span>Talento: <strong>{Math.round(driver.talentRating * 100)}</strong></span>
+          <span>Gestión Gomas: <strong>{Math.round(driver.tireManagement * 100)}</strong></span>
+          <span>Consistencia: <strong>{Math.round(driver.consistency * 100)}</strong></span>
         </div>
       </div>
     </div>

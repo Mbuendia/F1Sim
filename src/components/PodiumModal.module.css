@@ -4,44 +4,56 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(4, 7, 15, 0.88);
-  backdrop-filter: blur(8px);
+  background: rgba(4, 7, 15, 0.90);
+  backdrop-filter: blur(10px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 100;
-  animation: fadeIn 0.4s ease;
+  overflow: hidden;
+}
+
+.confettiCanvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 105;
 }
 
 .podiumContainer {
-  background: linear-gradient(180deg, #111422 0%, #080a12 100%);
-  border: 2px solid rgba(255, 215, 0, 0.3);
-  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.9), 0 0 50px rgba(255, 215, 0, 0.2);
-  border-radius: 20px;
+  background: linear-gradient(180deg, #131728 0%, #080a14 100%);
+  border: 2px solid rgba(255, 215, 0, 0.4);
+  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.95), 0 0 60px rgba(255, 215, 0, 0.25);
+  border-radius: 24px;
   padding: 36px 48px;
   text-align: center;
-  max-width: 850px;
-  width: 90%;
+  max-width: 900px;
+  width: 92%;
   display: flex;
   flex-direction: column;
   align-items: center;
+  position: relative;
+  z-index: 110;
 }
 
 .header {
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
 .f1Logo {
   font-family: 'Orbitron', sans-serif;
   color: #e10600;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 900;
   letter-spacing: 4px;
 }
 
 .title {
   font-family: 'Orbitron', sans-serif;
-  font-size: 24px;
+  font-size: 26px;
   font-weight: 900;
   color: #ffffff;
   margin: 6px 0;
@@ -50,7 +62,8 @@
 
 .subtitle {
   font-family: 'Rajdhani', sans-serif;
-  font-size: 12px;
+  font-size: 14px;
+  font-weight: 700;
   color: #94a3b8;
   letter-spacing: 1px;
 }
@@ -59,9 +72,9 @@
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  gap: 20px;
+  gap: 24px;
   width: 100%;
-  margin: 20px 0 30px;
+  margin: 20px 0 28px;
 }
 
 .podiumStep {
@@ -69,7 +82,7 @@
   flex-direction: column;
   align-items: center;
   flex: 1;
-  max-width: 220px;
+  max-width: 240px;
 }
 
 .stepP1 {
@@ -84,22 +97,22 @@
 
 .winnerCrown {
   font-family: 'Orbitron', sans-serif;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 900;
   color: #ffd700;
   margin-bottom: 8px;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   letter-spacing: 1px;
 }
 
 .driverCard {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-top: 4px solid #e10600;
-  border-radius: 12px 12px 0 0;
-  padding: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1.5px solid rgba(255, 255, 255, 0.12);
+  border-top: 5px solid #e10600;
+  border-radius: 14px 14px 0 0;
+  padding: 14px;
   width: 100%;
   display: flex;
   flex-direction: column;
@@ -108,81 +121,82 @@
 }
 
 .winnerCard {
-  background: rgba(255, 215, 0, 0.08);
-  border-color: rgba(255, 215, 0, 0.3);
-  box-shadow: 0 0 25px rgba(255, 215, 0, 0.2);
+  background: rgba(255, 215, 0, 0.1);
+  border-color: rgba(255, 215, 0, 0.4);
+  box-shadow: 0 0 30px rgba(255, 215, 0, 0.25);
 }
 
 .carMini {
-  width: 50px;
-  height: 14px;
-  border-radius: 7px;
-  margin: 4px 0;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.6);
+  width: 60px;
+  height: 16px;
+  border-radius: 8px;
+  margin: 6px 0;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.7);
 }
 
 .winnerCar {
-  width: 65px;
-  height: 18px;
-  border-radius: 9px;
+  width: 75px;
+  height: 20px;
+  border-radius: 10px;
 }
 
 .driverFlag {
-  font-size: 20px;
+  font-size: 24px;
 }
 
 .driverName {
   font-family: 'Rajdhani', sans-serif;
-  font-size: 14px;
-  font-weight: 700;
+  font-size: 16px;
+  font-weight: 800;
   color: #f1f5f9;
 }
 
 .winnerName {
   font-family: 'Orbitron', sans-serif;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 900;
   color: #ffffff;
 }
 
 .teamName {
-  font-size: 10px;
+  font-size: 12px;
   color: #94a3b8;
   font-family: 'Rajdhani', sans-serif;
+  font-weight: 600;
 }
 
 .gapText {
   font-family: 'Orbitron', sans-serif;
-  font-size: 11px;
+  font-size: 13px;
   color: #38bdf8;
-  font-weight: 700;
+  font-weight: 800;
   margin-top: 4px;
 }
 
 .winnerTag {
   font-family: 'Orbitron', sans-serif;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 900;
   color: #ffd700;
-  background: rgba(255, 215, 0, 0.2);
-  padding: 2px 8px;
-  border-radius: 4px;
+  background: rgba(255, 215, 0, 0.25);
+  padding: 3px 10px;
+  border-radius: 5px;
   margin-top: 4px;
 }
 
 .pedestal {
   width: 100%;
-  background: linear-gradient(180deg, #1e2538 0%, #0d111d 100%);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(180deg, #222b40 0%, #0d1220 100%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 0 0 8px 8px;
+  border-radius: 0 0 10px 10px;
 }
 
 .pedestalNumber {
   font-family: 'Orbitron', sans-serif;
-  font-size: 36px;
+  font-size: 42px;
   font-weight: 900;
   color: #ffffff;
 }
@@ -191,26 +205,21 @@
   background: linear-gradient(135deg, #e10600 0%, #a80400 100%);
   color: #ffffff;
   border: none;
-  padding: 14px 32px;
-  border-radius: 8px;
+  padding: 14px 36px;
+  border-radius: 10px;
   font-family: 'Orbitron', sans-serif;
-  font-size: 13px;
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 800;
   letter-spacing: 2px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   transition: all 0.2s;
-  box-shadow: 0 6px 20px rgba(225, 6, 0, 0.4);
+  box-shadow: 0 8px 25px rgba(225, 6, 0, 0.5);
 }
 
 .restartBtn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 28px rgba(225, 6, 0, 0.6);
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: scale(0.96); }
-  to { opacity: 1; transform: scale(1); }
+  box-shadow: 0 10px 32px rgba(225, 6, 0, 0.7);
 }

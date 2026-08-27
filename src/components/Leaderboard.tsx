@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import styles from './Leaderboard.module.css';
 import { CarState } from '../types/f1';
 import { Timer } from 'lucide-react';
+import { animate, stagger } from 'animejs';
 
 interface LeaderboardProps {
   cars: CarState[];
@@ -17,6 +18,20 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
   onSelectCar,
   fastestLapDriverName
 }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (containerRef.current) {
+      animate(`.${styles.row}`, {
+        translateX: [-18, 0],
+        opacity: [0, 1],
+        delay: stagger(22),
+        ease: 'outQuad',
+        duration: 350
+      });
+    }
+  }, []);
+
   const sortedCars = [...cars].sort((a, b) => a.currentPosition - b.currentPosition);
   const leader = sortedCars[0];
   const leaderProgress = leader ? leader.progress : 0;
@@ -26,7 +41,6 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
     if (index === 0) return 'LÍDER';
     if (car.pitStop.isPitting) return 'PIT';
 
-    // Doblados
     const carFloorLap = Math.max(0, Math.floor(car.progress));
     const lapsBehind = leaderFloorLap - carFloorLap;
 
@@ -52,7 +66,7 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
   };
 
   return (
-    <div className={styles.towerContainer}>
+    <div ref={containerRef} className={styles.towerContainer}>
       <div className={styles.header}>
         <div className={styles.f1Brand}>F1 TIMING</div>
         <span className={styles.headerTitle}>POSICIONES</span>
