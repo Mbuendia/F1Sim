@@ -1,4 +1,4 @@
-import { SplinePoint, Point2D } from './spline';
+﻿import { SplinePoint, Point2D } from './spline';
 import { TrackDefinition, CornerMarker } from '../data/barcelonaTrack';
 import { CircuitSpec } from '../data/circuits';
 import svgPathsJson from '../data/svgTrackPaths.json';
@@ -49,12 +49,21 @@ export function buildTrackFromSvg(circuit: CircuitSpec, sampleCount: number = 75
     const p2 = rawPoints[(i + 1) % rawPoints.length];
     areaSum += (p2.x - p1.x) * (p2.y + p1.y);
   }
-  const isRawClockwise = areaSum > 0;
+  const isRawClockwise = areaSum < 0;
   const targetClockwise = circuit.direction === 'clockwise';
 
   let orderedPoints = [...rawPoints];
   if (isRawClockwise !== targetClockwise) {
     orderedPoints.reverse();
+  }
+
+  // ── 1.5. APLICAR START OFFSET (SHIFT) ──
+  if (circuit.startOffsetT !== undefined) {
+    const shiftIndex = Math.floor(circuit.startOffsetT * orderedPoints.length);
+    orderedPoints = [
+      ...orderedPoints.slice(shiftIndex),
+      ...orderedPoints.slice(0, shiftIndex)
+    ];
   }
 
   // ── 2. ESCALADO Y CENTRADO EN EL MUNDO DE SIMULACIÓN (1900 x 1150) ──
@@ -216,7 +225,7 @@ export function buildTrackFromSvg(circuit: CircuitSpec, sampleCount: number = 75
   const pitEndIdx = Math.floor(total * pitExitT);
   const pitLanePoints: Point2D[] = [];
 
-  const pitOffset = 38;
+  const pitOffset = circuit.pitOffset !== undefined ? circuit.pitOffset : 38;
   if (pitStartIdx > pitEndIdx) {
     for (let i = pitStartIdx; i < total; i++) {
       const pt = splinePoints[i];

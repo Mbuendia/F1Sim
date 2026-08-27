@@ -1,4 +1,4 @@
-export interface CornerInfo {
+﻿export interface CornerInfo {
   number: number;
   name: string;
   t: number;
@@ -41,6 +41,8 @@ export interface CircuitSpec {
   officialWebsiteUrl: string;
   pitEntryT?: number;
   pitExitT?: number;
+  startOffsetT?: number;
+  pitOffset?: number;
   latitude: number;
   longitude: number;
   googleMapsUrl: string;
