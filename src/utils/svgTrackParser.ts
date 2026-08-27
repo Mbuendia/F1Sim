@@ -1,12 +1,12 @@
 import { SplinePoint, Point2D } from './spline';
 import { TrackDefinition, CornerMarker } from '../data/barcelonaTrack';
-import { CircuitSpec, OFFICIAL_CIRCUITS } from '../data/circuits';
+import { CircuitSpec } from '../data/circuits';
 import svgPathsJson from '../data/svgTrackPaths.json';
 
 const svgPathsMap: Record<string, string> = svgPathsJson as any;
 
 /**
- * Convierte un path SVG oficial en un TrackDefinition calibrado con físicas de aceleración y frenada F1 reales
+ * Convierte un path SVG oficial en un TrackDefinition calibrado con pistas anchas, pit lane y meta oficial abajo
  */
 export function buildTrackFromSvg(circuit: CircuitSpec, sampleCount: number = 700): TrackDefinition {
   const pathD = svgPathsMap[circuit.svgFile] || '';
@@ -43,20 +43,17 @@ export function buildTrackFromSvg(circuit: CircuitSpec, sampleCount: number = 70
   }
 
   // ── 1. DETERMINAR Y ALINEAR SENTIDO DE GIRO (CLOCKWISE vs ANTI-CLOCKWISE) ──
-  // Calcular el área con el producto cruzado (shoelace formula)
   let areaSum = 0;
   for (let i = 0; i < rawPoints.length; i++) {
     const p1 = rawPoints[i];
     const p2 = rawPoints[(i + 1) % rawPoints.length];
     areaSum += (p2.x - p1.x) * (p2.y + p1.y);
   }
-  // En SVG (donde Y crece hacia abajo), areaSum > 0 es Clockwise, areaSum < 0 es Anti-Clockwise
   const isRawClockwise = areaSum > 0;
   const targetClockwise = circuit.direction === 'clockwise';
 
   let orderedPoints = [...rawPoints];
   if (isRawClockwise !== targetClockwise) {
-    // Si la orientación del archivo no coincide con el sentido oficial de la FIA, invertimos el orden
     orderedPoints.reverse();
   }
 
@@ -70,8 +67,6 @@ export function buildTrackFromSvg(circuit: CircuitSpec, sampleCount: number = 70
   const centerX = sumX / orderedPoints.length;
   const centerY = sumY / orderedPoints.length;
 
-  // Si es Clockwise los coches van en la recta hacia la izquierda/derecha
-  // Hacemos que la recta de meta sea horizontal (ángulo 0 o PI)
   let rotAngle = -startAngle;
   let rotatedPoints = orderedPoints.map(p => {
     const rx = p.x - centerX;
@@ -110,7 +105,7 @@ export function buildTrackFromSvg(circuit: CircuitSpec, sampleCount: number = 70
   const rawHeight = Math.max(1, maxRawY - minRawY);
 
   const targetWidth = 1420;
-  const targetHeight = 860;
+  const targetHeight = 840;
   const scale = Math.min(targetWidth / rawWidth, targetHeight / rawHeight);
 
   const offsetX = 90 + (targetWidth - rawWidth * scale) / 2;
@@ -152,7 +147,7 @@ export function buildTrackFromSvg(circuit: CircuitSpec, sampleCount: number = 70
     rawCurvatures.push(curvature);
   }
 
-  // Suavizado de curvatura para no tener picos bruscos
+  // Suavizado de curvatura
   const smoothedCurvatures: number[] = [];
   for (let i = 0; i < total; i++) {
     let sumC = 0;
@@ -164,31 +159,26 @@ export function buildTrackFromSvg(circuit: CircuitSpec, sampleCount: number = 70
     smoothedCurvatures.push(sumC / (windowSize * 2 + 1));
   }
 
-  // Velocidades locales en cada punto basadas en el radio de curvatura
+  // Velocidades locales en cada punto
   const rawSpeedLimits: number[] = [];
   for (let i = 0; i < total; i++) {
     const curv = smoothedCurvatures[i];
-    // Curvatura alta (horquilla) -> factor ~ 0.22 (75 km/h)
-    // Curvatura media (curva rápida) -> factor ~ 0.55 - 0.70 (180 - 240 km/h)
-    // Recta -> factor 1.0 (340+ km/h)
     const tightness = Math.min(1.0, curv * 55);
     const speed = Math.max(0.24, 1.0 - tightness * 0.76);
     rawSpeedLimits.push(speed);
   }
 
-  // Lookahead para frenadas previas (los F1 empiezan a frenar 120-180m antes del vértice)
+  // Lookahead para frenadas previas
   const finalSpeedLimits: number[] = [...rawSpeedLimits];
   const isBrakingZones: boolean[] = new Array(total).fill(false);
 
-  const lookaheadSteps = Math.floor(total * 0.04); // ~28 puntos antes
+  const lookaheadSteps = Math.floor(total * 0.045);
   for (let i = 0; i < total; i++) {
     const apexSpeed = rawSpeedLimits[i];
     if (apexSpeed < 0.55) {
-      // Es una curva que requiere frenada fuerte
       for (let step = 1; step <= lookaheadSteps; step++) {
         const prevIdx = (i - step + total) % total;
         const progressToApex = step / lookaheadSteps;
-        // La velocidad límite decrece suavemente desde 1.0 hasta el ápice
         const interpolatedLimit = apexSpeed + (1.0 - apexSpeed) * progressToApex;
         if (interpolatedLimit < finalSpeedLimits[prevIdx]) {
           finalSpeedLimits[prevIdx] = interpolatedLimit;
@@ -212,7 +202,6 @@ export function buildTrackFromSvg(circuit: CircuitSpec, sampleCount: number = 70
     if (progress > 0.67) sector = 3;
     else if (progress > 0.33) sector = 2;
 
-    // Verificar si cae en alguna de las zonas DRS oficiales de este circuito
     let isDrsZone = false;
     let drsZoneId: number | undefined = undefined;
 
@@ -220,7 +209,6 @@ export function buildTrackFromSvg(circuit: CircuitSpec, sampleCount: number = 70
       for (const drs of circuit.drsZoneSpecs) {
         let inside = false;
         if (drs.startT > drs.endT) {
-          // Zona DRS que cruza la línea de meta (ej. 0.90 a 0.05)
           inside = progress >= drs.startT || progress <= drs.endT;
         } else {
           inside = progress >= drs.startT && progress <= drs.endT;
@@ -232,7 +220,6 @@ export function buildTrackFromSvg(circuit: CircuitSpec, sampleCount: number = 70
         }
       }
     } else {
-      // Fallback genérico a la recta principal
       isDrsZone = progress >= 0.90 || progress <= 0.06;
       drsZoneId = isDrsZone ? 1 : undefined;
     }
@@ -254,12 +241,13 @@ export function buildTrackFromSvg(circuit: CircuitSpec, sampleCount: number = 70
     accumDist += distances[i];
   }
 
-  // ── 5. GENERACIÓN DEL PIT LANE PARALELO A LA RECTA PRINCIPAL ──
-  const pitStartIdx = Math.floor(total * 0.93);
-  const pitEndIdx = Math.floor(total * 0.07);
+  // ── 5. GENERACIÓN DEL PIT LANE OFICIAL (Alineado con la recta inferior de meta) ──
+  const pitStartIdx = Math.floor(total * 0.92);
+  const pitEndIdx = Math.floor(total * 0.08);
   const pitLanePoints: Point2D[] = [];
 
-  const pitOffset = 24;
+  // El Pit Lane corre paralelo al interior de la recta principal a 34 metros
+  const pitOffset = 34;
   for (let i = pitStartIdx; i < total; i++) {
     const pt = splinePoints[i];
     pitLanePoints.push({
@@ -309,20 +297,20 @@ export function buildTrackFromSvg(circuit: CircuitSpec, sampleCount: number = 70
     country: circuit.country,
     totalLaps: circuit.totalLaps,
     lapLengthMeters: circuit.lapLengthMeters,
-    trackWidthMeters: 14,
+    trackWidthMeters: 26, // Pista más ancha y espaciosa
     corners,
     points: splinePoints,
     pitLanePoints,
-    pitEntryT: 0.93,
-    pitExitT: 0.07,
+    pitEntryT: 0.92,
+    pitExitT: 0.08,
     pitBoxT: 0.00,
     sector1EndT: 0.33,
     sector2EndT: 0.67,
     bounds: {
-      minX: minX - 100,
-      maxX: maxX + 100,
-      minY: minY - 100,
-      maxY: maxY + 100
+      minX: minX - 120,
+      maxX: maxX + 120,
+      minY: minY - 120,
+      maxY: maxY + 120
     }
   };
 }

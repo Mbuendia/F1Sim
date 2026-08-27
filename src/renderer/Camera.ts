@@ -14,7 +14,7 @@ export class Camera {
   screenHeight = 800;
 
   followingCarId: number | null = null;
-  static readonly FOLLOW_ZOOM = 2.6;
+  static readonly FOLLOW_ZOOM = 2.75;
 
   constructor() {
     // Initial state
@@ -67,13 +67,20 @@ export class Camera {
           const normT = ((car.progress % 1) + 1) % 1;
           const ptIdx = Math.floor(normT * points.length) % points.length;
           const pt = points[ptIdx] || points[0];
-          this.targetX = pt.x;
-          this.targetY = pt.y;
+
+          // Lookahead cinematográfico en la dirección de la marcha (40m hacia adelante)
+          const lookaheadIdx = (ptIdx + 16) % points.length;
+          const lookaheadPt = points[lookaheadIdx] || pt;
+
+          this.targetX = pt.x * 0.65 + lookaheadPt.x * 0.35;
+          this.targetY = pt.y * 0.65 + lookaheadPt.y * 0.35;
         }
+        this.targetZoom = Camera.FOLLOW_ZOOM;
       }
     }
 
-    const lerpSpeed = 7.0 * dt;
+    // Suavizado cinemático fluido
+    const lerpSpeed = (this.followingCarId !== null ? 8.5 : 5.0) * dt;
     this.x += (this.targetX - this.x) * Math.min(1.0, lerpSpeed);
     this.y += (this.targetY - this.y) * Math.min(1.0, lerpSpeed);
     this.zoom += (this.targetZoom - this.zoom) * Math.min(1.0, lerpSpeed);

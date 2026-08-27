@@ -20,6 +20,15 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
+  // Sincronizar el seguimiento de la cámara cuando cambia selectedCarId
+  useEffect(() => {
+    if (selectedCarId !== null) {
+      camera.followCar(selectedCarId);
+    } else {
+      camera.resetToFullTrack(simulation.activeTrack);
+    }
+  }, [selectedCarId, camera, simulation.activeTrack]);
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -47,7 +56,9 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
     };
 
     handleResize();
-    camera.resetToFullTrack(simulation.activeTrack);
+    if (selectedCarId === null) {
+      camera.resetToFullTrack(simulation.activeTrack);
+    }
     window.addEventListener('resize', handleResize);
 
     const loop = (currentTime: number) => {
@@ -68,7 +79,7 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
       TrackRenderer.renderTrack(ctx, simulation.activeTrack, camera, dpr);
       CarRenderer.renderCars(ctx, simulation.cars, camera, selectedCarId, simulation.activeTrack);
 
-      // ── MINIMAPA A LA IZQUIERDA DEL TODO ──
+      // ── MINIMAPA A LA IZQUIERDA DEL TODO (visible al seguir un coche) ──
       if (camera.followingCarId !== null) {
         renderLeftMinimap(ctx, simulation, camera);
       }
@@ -83,7 +94,7 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
       cancelAnimationFrame(animationFrameId);
       window.removeEventListener('resize', handleResize);
     };
-  }, [simulation, camera, selectedCarId, simulation.circuitId]);
+  }, [simulation, camera, simulation.circuitId]);
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
@@ -94,7 +105,7 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
     const clickY = e.clientY - rect.top;
 
     let clickedCarId: number | null = null;
-    let minDistance = 28;
+    let minDistance = 35;
 
     const points = simulation.activeTrack.points;
     const totalPts = points.length;
@@ -131,7 +142,7 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
       />
       {selectedCarId !== null && (
         <div className={styles.cameraHint}>
-          Siguiendo monoplaza · Pulsa <strong>ESC</strong> para volver a vista general
+          🎥 <strong>CÁMARA CINEMATOGRÁFICA DE SEGUIMIENTO</strong> · Pulsa <strong>ESC</strong> para vista general
         </div>
       )}
     </div>
@@ -146,26 +157,23 @@ function renderLeftMinimap(
 ) {
   const mmW = 180;
   const mmH = 115;
-  const mmX = 20; // Extremo izquierdo
-  const mmY = camera.screenHeight - mmH - 24; // Abajo a la izquierda
+  const mmX = 20;
+  const mmY = camera.screenHeight - mmH - 24;
   const b = simulation.activeTrack.bounds;
 
-  // Caja minimapa
-  ctx.fillStyle = 'rgba(8, 12, 20, 0.90)';
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
+  ctx.fillStyle = 'rgba(8, 12, 20, 0.92)';
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.20)';
   ctx.lineWidth = 1.5;
   ctx.beginPath();
   ctx.roundRect(mmX, mmY, mmW, mmH, 10);
   ctx.fill();
   ctx.stroke();
 
-  // Etiqueta
   ctx.font = 'bold 9px Orbitron, sans-serif';
   ctx.fillStyle = '#94a3b8';
   ctx.textAlign = 'left';
   ctx.fillText('MAPA PISTA', mmX + 8, mmY + 13);
 
-  // Escala
   const padding = 12;
   const tW = b.maxX - b.minX;
   const tH = b.maxY - b.minY;
@@ -178,7 +186,6 @@ function renderLeftMinimap(
     y: (wy - b.minY) * scale + offY
   });
 
-  // Trazado
   ctx.beginPath();
   const pts = simulation.activeTrack.points;
   const first = toMM(pts[0].x, pts[0].y);
@@ -188,11 +195,10 @@ function renderLeftMinimap(
     ctx.lineTo(p.x, p.y);
   }
   ctx.closePath();
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
-  ctx.lineWidth = 2;
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.40)';
+  ctx.lineWidth = 2.5;
   ctx.stroke();
 
-  // Coches
   for (const car of simulation.cars) {
     if (car.status === 'finished') continue;
     const normT = ((car.progress % 1) + 1) % 1;
