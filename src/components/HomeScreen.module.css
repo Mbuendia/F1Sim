@@ -5,10 +5,10 @@
   background: radial-gradient(circle at 50% 10%, #111728 0%, #060912 100%);
   color: #f1f5f9;
   font-family: 'Inter', system-ui, sans-serif;
-  padding: 14px 24px 16px;
+  padding: 12px 20px 14px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
   user-select: none;
 }
 
@@ -30,7 +30,7 @@
 
 .f1Logo {
   font-family: 'Orbitron', sans-serif;
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 900;
   color: #e10600;
   letter-spacing: 4px;
@@ -38,7 +38,7 @@
 
 .headerTitles h1 {
   font-family: 'Orbitron', sans-serif;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 900;
   color: #ffffff;
   margin: 0;
@@ -56,24 +56,24 @@
 /* Historial Superior */
 .historySection {
   background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 8px;
-  padding: 6px 12px;
+  padding: 5px 10px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
   flex-shrink: 0;
 }
 
 .historyTitle {
   font-family: 'Orbitron', sans-serif;
-  font-size: 9.5px;
+  font-size: 9px;
   font-weight: 900;
   color: #ffd700;
   letter-spacing: 1px;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
 }
 
 .historyCardsList {
@@ -93,20 +93,20 @@
 
 .historyCard {
   background: rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-left: 3px solid #ffd700;
-  border-radius: 6px;
-  padding: 5px 8px;
-  min-width: 230px;
+  border-radius: 5px;
+  padding: 4px 8px;
+  min-width: 210px;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
 }
 
 .historyHeaderRow {
   display: flex;
   justify-content: space-between;
-  font-size: 9px;
+  font-size: 8.5px;
   font-family: 'Rajdhani', sans-serif;
   font-weight: 700;
   color: #94a3b8;
@@ -114,38 +114,28 @@
 
 .historyWinner {
   font-family: 'Orbitron', sans-serif;
-  font-size: 10.5px;
+  font-size: 10px;
   font-weight: 900;
   color: #ffffff;
 }
 
 .historyPodiumSub {
-  font-size: 9.5px;
+  font-size: 9px;
   font-family: 'Rajdhani', sans-serif;
   font-weight: 700;
   color: #cbd5e1;
 }
 
-.historyStrategy {
-  font-size: 9px;
-  font-family: 'Rajdhani', sans-serif;
-  font-weight: 700;
-  color: #38bdf8;
-  background: rgba(56, 189, 248, 0.1);
-  padding: 1px 4px;
-  border-radius: 3px;
-}
-
-/* ════ SPLIT-SCREEN LAYOUT ════ */
-.splitLayout {
+/* ════ LAYOUT 3 COLUMNAS (Izquierda / Centro / Side Panel Derecho Fijo) ════ */
+.mainLayout3Col {
   display: grid;
-  grid-template-columns: 460px 1fr;
-  gap: 16px;
+  grid-template-columns: 340px 1fr 300px;
+  gap: 14px;
   flex: 1;
   min-height: 0;
 }
 
-/* Columna Izquierda */
+/* ── 1. COLUMNA IZQUIERDA (Lista Scrolleable) ── */
 .leftColumn {
   display: flex;
   flex-direction: column;
@@ -168,17 +158,17 @@
   background: transparent;
   border: none;
   color: #94a3b8;
-  padding: 7px 10px;
+  padding: 6px 8px;
   border-radius: 6px;
   font-family: 'Orbitron', sans-serif;
-  font-size: 10.5px;
+  font-size: 10px;
   font-weight: 800;
   letter-spacing: 1px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 5px;
   transition: all 0.2s;
 }
 
@@ -191,10 +181,10 @@
 .scrollableListWrapper {
   flex: 1;
   overflow-y: auto;
-  padding-right: 6px;
+  padding-right: 5px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
 }
 
 .scrollableListWrapper::-webkit-scrollbar {
@@ -205,13 +195,12 @@
   border-radius: 2px;
 }
 
-/* Pilotos en Lista */
 .driverListItem {
   background: rgba(255, 255, 255, 0.04);
-  border: 1.5px solid rgba(255, 255, 255, 0.1);
+  border: 1.5px solid rgba(255, 255, 255, 0.08);
   border-left: 4px solid #64748b;
-  border-radius: 8px;
-  padding: 7px 10px;
+  border-radius: 6px;
+  padding: 6px 8px;
   cursor: pointer;
   transition: all 0.15s ease;
   display: flex;
@@ -224,67 +213,44 @@
   transform: translateX(3px);
 }
 
-.driverListItemActive {
-  background: rgba(225, 6, 0, 0.20) !important;
+.driverListItemSelected {
+  background: rgba(225, 6, 0, 0.22) !important;
   border-color: #e10600 !important;
-  box-shadow: 0 0 12px rgba(225, 6, 0, 0.35);
+  box-shadow: 0 0 10px rgba(225, 6, 0, 0.35);
 }
 
 .driverListLeft {
   display: flex;
   align-items: center;
-  gap: 8px;
-}
-
-.driverListFlag {
-  font-size: 15px;
+  gap: 7px;
 }
 
 .driverListName {
   font-family: 'Rajdhani', sans-serif;
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 800;
   color: #ffffff;
 }
 
 .driverListTeam {
-  font-size: 10.5px;
+  font-size: 10px;
   font-family: 'Rajdhani', sans-serif;
   font-weight: 600;
   color: #94a3b8;
 }
 
-.driverListEngine {
-  font-size: 9px;
-  font-family: 'Rajdhani', sans-serif;
-  font-weight: 700;
-  color: #ffd700;
-  background: rgba(255, 215, 0, 0.1);
-  padding: 1px 4px;
-  border-radius: 3px;
-  margin-top: 1px;
-}
-
-.driverListRight {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 1px;
-}
-
 .driverListNum {
   font-family: 'Orbitron', sans-serif;
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 900;
 }
 
-/* Circuitos en Lista */
 .circuitListItem {
   background: rgba(255, 255, 255, 0.04);
-  border: 1.5px solid rgba(255, 255, 255, 0.1);
+  border: 1.5px solid rgba(255, 255, 255, 0.08);
   border-left: 4px solid #e10600;
-  border-radius: 8px;
-  padding: 8px 10px;
+  border-radius: 6px;
+  padding: 7px 9px;
   cursor: pointer;
   transition: all 0.15s ease;
   display: flex;
@@ -297,32 +263,32 @@
   transform: translateX(3px);
 }
 
-.circuitListItemActive {
-  background: rgba(56, 189, 248, 0.18) !important;
+.circuitListItemSelected {
+  background: rgba(56, 189, 248, 0.20) !important;
   border-color: #38bdf8 !important;
-  box-shadow: 0 0 12px rgba(56, 189, 248, 0.35);
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.35);
 }
 
 .circuitListName {
   font-family: 'Rajdhani', sans-serif;
-  font-size: 13.5px;
+  font-size: 13px;
   font-weight: 800;
   color: #ffffff;
 }
 
 .circuitListSub {
-  font-size: 10.5px;
+  font-size: 10px;
   font-family: 'Rajdhani', sans-serif;
   font-weight: 600;
   color: #94a3b8;
 }
 
-/* ════ Columna Derecha (Panel Fijo Amplio) ════ */
-.rightColumn {
+/* ── 2. COLUMNA CENTRAL (Ficha Técnica / Circuito Interactivo) ── */
+.centerColumn {
   background: linear-gradient(145deg, #111827 0%, #090e1a 100%);
   border: 1.5px solid rgba(255, 255, 255, 0.12);
   border-radius: 12px;
-  padding: 16px 20px;
+  padding: 14px 18px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -331,10 +297,10 @@
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
 }
 
-.rightColumn::-webkit-scrollbar {
+.centerColumn::-webkit-scrollbar {
   width: 4px;
 }
-.rightColumn::-webkit-scrollbar-thumb {
+.centerColumn::-webkit-scrollbar-thumb {
   background: #27354f;
   border-radius: 2px;
 }
@@ -344,12 +310,12 @@
   justify-content: space-between;
   align-items: center;
   border-bottom: 1.5px solid rgba(255, 255, 255, 0.1);
-  padding-bottom: 10px;
+  padding-bottom: 8px;
 }
 
 .detailTitleBig {
   font-family: 'Orbitron', sans-serif;
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 900;
   color: #ffffff;
   display: flex;
@@ -359,42 +325,31 @@
 
 .detailSubtitle {
   font-family: 'Rajdhani', sans-serif;
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 700;
   color: #94a3b8;
-  margin-top: 2px;
 }
 
-.detailNumberBadge {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 22px;
-  font-weight: 900;
-  padding: 3px 12px;
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.05);
-}
-
-/* Grid de detalles */
 .detailContentGrid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin: 10px 0;
+  gap: 10px;
+  margin: 8px 0;
 }
 
 .detailCardBox {
   background: rgba(0, 0, 0, 0.35);
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 8px;
-  padding: 10px 12px;
+  padding: 8px 10px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
 }
 
 .detailCardTitle {
   font-family: 'Orbitron', sans-serif;
-  font-size: 10.5px;
+  font-size: 10px;
   font-weight: 900;
   color: #38bdf8;
   letter-spacing: 1px;
@@ -408,21 +363,21 @@
 .specs2ColGrid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 5px;
+  gap: 4px;
 }
 
 .specItem {
   background: rgba(255, 255, 255, 0.025);
   border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 5px;
-  padding: 5px 7px;
+  border-radius: 4px;
+  padding: 4px 6px;
   display: flex;
   flex-direction: column;
   gap: 1px;
 }
 
 .specItemLabel {
-  font-size: 9px;
+  font-size: 8.5px;
   font-family: 'Rajdhani', sans-serif;
   font-weight: 700;
   color: #94a3b8;
@@ -430,7 +385,7 @@
 
 .specItemVal {
   font-family: 'Orbitron', sans-serif;
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 800;
   color: #ffffff;
 }
@@ -438,21 +393,21 @@
 .radarList {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 4px;
 }
 
 .radarRow {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 10px;
+  font-size: 9.5px;
   font-family: 'Rajdhani', sans-serif;
   font-weight: 700;
   color: #cbd5e1;
 }
 
 .radarBarBg {
-  width: 100px;
+  width: 90px;
   height: 4px;
   background: rgba(255, 255, 255, 0.1);
   border-radius: 2px;
@@ -464,41 +419,56 @@
   border-radius: 2px;
 }
 
-/* Visor Vectorial Oficial SVG del Circuito */
-.svgCircuitFrame {
+/* Visor Vectorial Oficial SVG con Animación MotionPath */
+.svgMotionPathContainer {
+  position: relative;
   width: 100%;
-  height: 180px;
+  height: 175px;
   background: radial-gradient(circle at 50% 50%, #151d2f 0%, #080c16 100%);
   border-radius: 8px;
   border: 1.5px solid rgba(255, 255, 255, 0.12);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 10px;
   overflow: hidden;
   box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8);
 }
 
-.svgCircuitImage {
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
-  filter: drop-shadow(0 0 10px rgba(225, 6, 0, 0.6));
+.svgMotionPathElement {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.racingCarMotionDot {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #e10600;
+  box-shadow: 0 0 14px #ff1a14, 0 0 24px #e10600;
+  border: 2px solid #ffffff;
+  pointer-events: none;
+  z-index: 10;
+  top: 0;
+  left: 0;
 }
 
 .mapsLinkBtn {
   background: rgba(56, 189, 248, 0.15);
   border: 1px solid rgba(56, 189, 248, 0.4);
   color: #38bdf8;
-  padding: 5px 10px;
+  padding: 4px 8px;
   border-radius: 5px;
   font-family: 'Rajdhani', sans-serif;
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 700;
   text-decoration: none;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   transition: all 0.2s;
 }
 
@@ -508,43 +478,131 @@
   color: #ffffff;
 }
 
-/* Footer Bar */
-.footerBar {
-  display: flex;
-  justify-content: space-between;
+.selectItemConfirmBtn {
+  background: linear-gradient(135deg, #e10600 0%, #a80400 100%);
+  color: #ffffff;
+  border: none;
+  padding: 8px 18px;
+  border-radius: 6px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  cursor: pointer;
+  display: inline-flex;
   align-items: center;
-  border-top: 1.5px solid rgba(255, 255, 255, 0.1);
-  padding-top: 10px;
-  flex-shrink: 0;
+  gap: 6px;
+  transition: all 0.2s;
+  align-self: flex-start;
+  margin-top: 4px;
 }
 
-.selectionSummaryText {
+.selectItemConfirmBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 18px rgba(225, 6, 0, 0.5);
+}
+
+/* ── 3. COLUMNA DERECHA (SIDE PANEL PERMANENTE DE SELECCIÓN ACTIVA) ── */
+.rightSidePanel {
+  background: linear-gradient(180deg, #131c31 0%, #0a0f1d 100%);
+  border: 2px solid rgba(225, 6, 0, 0.4);
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), 0 0 20px rgba(225, 6, 0, 0.15);
+}
+
+.sidePanelTitle {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 11px;
+  font-weight: 900;
+  color: #ffd700;
+  letter-spacing: 1.5px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 6px;
+}
+
+.sideSummaryCards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 10px 0;
+}
+
+.selectedSummaryCard {
+  background: rgba(0, 0, 0, 0.45);
+  border: 1.5px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.summaryCardBadge {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 1px;
+}
+
+.summaryCardMain {
   font-family: 'Rajdhani', sans-serif;
-  font-size: 12.5px;
-  font-weight: 700;
-  color: #cbd5e1;
+  font-size: 15px;
+  font-weight: 800;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
-.launchButton {
+.summaryCardSub {
+  font-size: 11px;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 600;
+  color: #94a3b8;
+}
+
+.summaryCardExtra {
+  font-size: 10px;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 700;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.1);
+  padding: 2px 5px;
+  border-radius: 4px;
+  align-self: flex-start;
+  margin-top: 2px;
+}
+
+.launchBigButton {
   background: linear-gradient(135deg, #e10600 0%, #9e0400 100%);
   color: #ffffff;
   border: none;
-  padding: 10px 32px;
+  padding: 14px 16px;
   border-radius: 8px;
   font-family: 'Orbitron', sans-serif;
-  font-size: 13.5px;
+  font-size: 12px;
   font-weight: 900;
-  letter-spacing: 2px;
+  letter-spacing: 1.5px;
   cursor: pointer;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 8px;
-  box-shadow: 0 6px 25px rgba(225, 6, 0, 0.5);
+  justify-content: center;
+  gap: 4px;
+  box-shadow: 0 8px 30px rgba(225, 6, 0, 0.6);
   transition: all 0.2s ease;
+  text-align: center;
 }
 
-.launchButton:hover {
+.launchBigButton:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 32px rgba(225, 6, 0, 0.7);
+  box-shadow: 0 12px 38px rgba(225, 6, 0, 0.8);
   background: linear-gradient(135deg, #ff1a14 0%, #b80500 100%);
 }

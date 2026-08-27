@@ -11,6 +11,7 @@ import { BottomTelemetryDock } from './components/BottomTelemetryDock';
 import { RightStatsPanel } from './components/RightStatsPanel';
 import { PodiumModal } from './components/PodiumModal';
 import { HomeScreen } from './components/HomeScreen';
+import { OFFICIAL_CIRCUITS } from './data/circuits';
 import { StartLightState, CarState, RaceResultHistory } from './types/f1';
 import { RotateCw, Flag, ArrowLeft } from 'lucide-react';
 
@@ -21,8 +22,9 @@ export const App: React.FC = () => {
   // Vista actual: 'home' o 'race'
   const [currentView, setCurrentView] = useState<'home' | 'race'>('home');
 
-  // Piloto protagonista seleccionado en la Home (por defecto 'alonso')
+  // Piloto y Circuito seleccionados
   const [selectedDriverId, setSelectedDriverId] = useState<string>('alonso');
+  const [selectedCircuitId, setSelectedCircuitId] = useState<string>('barcelona');
 
   // Coche seleccionado expresamente en pista
   const [selectedCarId, setSelectedCarId] = useState<number | null>(null);
@@ -99,13 +101,15 @@ export const App: React.FC = () => {
   }, [simulation, camera]);
 
   const handleStartRaceFromHome = useCallback(() => {
+    const circuit = OFFICIAL_CIRCUITS[selectedCircuitId] || OFFICIAL_CIRCUITS['barcelona'];
+    simulation.totalLaps = circuit.totalLaps;
     simulation.initRace();
     camera.resetToFullTrack();
     setSelectedCarId(null);
     setLightState('idle');
     setIsFinished(false);
     setCurrentView('race');
-  }, [simulation, camera]);
+  }, [simulation, camera, selectedCircuitId]);
 
   const handleStartFormationLap = useCallback(() => {
     simulation.startRaceSequence();
@@ -124,8 +128,8 @@ export const App: React.FC = () => {
       const p2 = simulation.podiumCars[1];
       const p3 = simulation.podiumCars[2];
       const userCar = simulation.cars.find(c => c.driver.id === selectedDriverId) || winner;
+      const circuit = OFFICIAL_CIRCUITS[selectedCircuitId] || OFFICIAL_CIRCUITS['barcelona'];
 
-      // Calcular estrategia del ganador
       const stintsDesc = winner.pitStop.stints && winner.pitStop.stints.length > 0
         ? winner.pitStop.stints.map(s => `${s.compound.toUpperCase()} (L${s.startLap}-${s.endLap})`).join(' ➔ ')
         : '1 PARADA (MEDIOS ➔ DUROS)';
@@ -133,7 +137,7 @@ export const App: React.FC = () => {
       const newHistoryItem: RaceResultHistory = {
         id: `gp_${Date.now()}`,
         dateFormatted: new Date().toLocaleDateString('es-ES', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }),
-        trackName: 'Circuit de Barcelona-Catalunya',
+        trackName: circuit.name,
         winnerName: `${winner.driver.firstName} ${winner.driver.lastName}`,
         winnerTeam: winner.team.name,
         winnerTeamColor: winner.team.color,
@@ -155,7 +159,7 @@ export const App: React.FC = () => {
     }
 
     setCurrentView('home');
-  }, [simulation, selectedDriverId, raceHistory]);
+  }, [simulation, selectedDriverId, selectedCircuitId, raceHistory]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -182,7 +186,6 @@ export const App: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [currentView, handleSelectCar, handleSpeedChange, isPaused]);
 
-  // Coche protagonista elegido
   const favoriteCar = simulation.cars.find(c => c.driver.id === selectedDriverId) || simulation.cars[0];
   const selectedCar = selectedCarId !== null ? simulation.getCarById(selectedCarId) || null : null;
 
@@ -190,7 +193,9 @@ export const App: React.FC = () => {
     return (
       <HomeScreen
         selectedDriverId={selectedDriverId}
+        selectedCircuitId={selectedCircuitId}
         onSelectDriver={setSelectedDriverId}
+        onSelectCircuit={setSelectedCircuitId}
         onStartRace={handleStartRaceFromHome}
         raceHistory={raceHistory}
       />
@@ -219,11 +224,10 @@ export const App: React.FC = () => {
           onSelectCar={handleSelectCar}
         />
 
-        {/* Banner durante la vuelta de formación */}
         {lightState === 'formation-lap' && (
           <div className={styles.formationBanner}>
             <RotateCw size={14} className={styles.spinIcon} />
-            <span>VUELTA DE FORMACIÓN · CALENTANDO NEUMÁTICOS EN TRETECICITO</span>
+            <span>VUELTA DE FORMACIÓN · CALENTANDO NEUMÁTICOS EN TRENCITO</span>
           </div>
         )}
 
@@ -234,7 +238,6 @@ export const App: React.FC = () => {
           </div>
         )}
 
-        {/* Header superior y Controles de velocidad */}
         <div className={styles.topBarOverlay}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <button
@@ -272,7 +275,6 @@ export const App: React.FC = () => {
           />
         </div>
 
-        {/* Dock inferior central (muestra el coche seleccionado o el protagonista por defecto) */}
         <div className={styles.bottomDockWrapper}>
           <BottomTelemetryDock
             car={selectedCar || favoriteCar}
@@ -280,7 +282,6 @@ export const App: React.FC = () => {
           />
         </div>
 
-        {/* Semáforo de salida */}
         <StartLights
           lightState={lightState}
           cars={cars}
@@ -292,7 +293,6 @@ export const App: React.FC = () => {
           onStartClick={handleStartFormationLap}
         />
 
-        {/* Modal de Podio al terminar con botón Volver a Inicio */}
         {isFinished && podiumCars.length >= 3 && (
           <PodiumModal
             podiumCars={podiumCars}
@@ -302,7 +302,7 @@ export const App: React.FC = () => {
         )}
       </div>
 
-      {/* ── 3. PANEL DERECHO: DASHBOARD AVANZADO (GRÁFICA PREVISIÓN + 66 VUELTAS) ── */}
+      {/* ── 3. PANEL DERECHO: DASHBOARD AVANZADO (GRÁFICA PREVISIÓN + VUELTAS) ── */}
       <div className={styles.rightSidebar}>
         <RightStatsPanel
           car={selectedCar}
