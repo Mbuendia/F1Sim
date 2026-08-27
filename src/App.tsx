@@ -16,15 +16,15 @@ import { StartLightState, CarState, RaceResultHistory } from './types/f1';
 import { RotateCw, Flag, ArrowLeft } from 'lucide-react';
 
 export const App: React.FC = () => {
-  const simulation = useMemo(() => new RaceSimulation(), []);
+  // Piloto y Circuito seleccionados
+  const [selectedDriverId, setSelectedDriverId] = useState<string>('alonso');
+  const [selectedCircuitId, setSelectedCircuitId] = useState<string>('barcelona');
+
+  const simulation = useMemo(() => new RaceSimulation(selectedCircuitId), []);
   const camera = useMemo(() => new Camera(), []);
 
   // Vista actual: 'home' o 'race'
   const [currentView, setCurrentView] = useState<'home' | 'race'>('home');
-
-  // Piloto y Circuito seleccionados
-  const [selectedDriverId, setSelectedDriverId] = useState<string>('alonso');
-  const [selectedCircuitId, setSelectedCircuitId] = useState<string>('barcelona');
 
   // Coche seleccionado expresamente en pista
   const [selectedCarId, setSelectedCarId] = useState<number | null>(null);
@@ -101,9 +101,7 @@ export const App: React.FC = () => {
   }, [simulation, camera]);
 
   const handleStartRaceFromHome = useCallback(() => {
-    const circuit = OFFICIAL_CIRCUITS[selectedCircuitId] || OFFICIAL_CIRCUITS['barcelona'];
-    simulation.totalLaps = circuit.totalLaps;
-    simulation.initRace();
+    simulation.setCircuit(selectedCircuitId);
     camera.resetToFullTrack();
     setSelectedCarId(null);
     setLightState('idle');
@@ -188,6 +186,7 @@ export const App: React.FC = () => {
 
   const favoriteCar = simulation.cars.find(c => c.driver.id === selectedDriverId) || simulation.cars[0];
   const selectedCar = selectedCarId !== null ? simulation.getCarById(selectedCarId) || null : null;
+  const activeCircuitSpec = OFFICIAL_CIRCUITS[selectedCircuitId] || OFFICIAL_CIRCUITS['barcelona'];
 
   if (currentView === 'home') {
     return (
@@ -261,7 +260,7 @@ export const App: React.FC = () => {
               <ArrowLeft size={16} />
               <span>INICIO</span>
             </button>
-            <RaceHeader />
+            <RaceHeader circuit={activeCircuitSpec} />
           </div>
 
           <SpeedControls

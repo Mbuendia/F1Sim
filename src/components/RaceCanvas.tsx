@@ -4,7 +4,6 @@ import { RaceSimulation } from '../simulation/RaceSimulation';
 import { Camera } from '../renderer/Camera';
 import { TrackRenderer } from '../renderer/TrackRenderer';
 import { CarRenderer } from '../renderer/CarRenderer';
-import { BARCELONA_CIRCUIT } from '../data/barcelonaTrack';
 
 interface RaceCanvasProps {
   simulation: RaceSimulation;
@@ -65,7 +64,7 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
       ctx.fillStyle = '#14181f';
       ctx.fillRect(0, 0, camera.screenWidth, camera.screenHeight);
 
-      TrackRenderer.renderTrack(ctx, BARCELONA_CIRCUIT, camera, dpr);
+      TrackRenderer.renderTrack(ctx, simulation.activeTrack, camera, dpr);
       CarRenderer.renderCars(ctx, simulation.cars, camera, selectedCarId);
 
       // ── MINIMAPA A LA IZQUIERDA DEL TODO ──
@@ -96,13 +95,14 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
     let clickedCarId: number | null = null;
     let minDistance = 28;
 
-    const totalPts = BARCELONA_CIRCUIT.points.length;
+    const points = simulation.activeTrack.points;
+    const totalPts = points.length;
 
     for (const car of simulation.cars) {
       if (car.status === 'finished') continue;
       const normT = ((car.progress % 1) + 1) % 1;
       const ptIdx = Math.floor(normT * totalPts) % totalPts;
-      const pt = BARCELONA_CIRCUIT.points[ptIdx];
+      const pt = points[ptIdx] || points[0];
       const screenPos = camera.worldToScreen(pt.x, pt.y);
 
       const dx = screenPos.x - clickX;
@@ -147,7 +147,7 @@ function renderLeftMinimap(
   const mmH = 115;
   const mmX = 20; // Extremo izquierdo
   const mmY = camera.screenHeight - mmH - 24; // Abajo a la izquierda
-  const b = BARCELONA_CIRCUIT.bounds;
+  const b = simulation.activeTrack.bounds;
 
   // Caja minimapa
   ctx.fillStyle = 'rgba(8, 12, 20, 0.90)';
@@ -179,7 +179,7 @@ function renderLeftMinimap(
 
   // Trazado
   ctx.beginPath();
-  const pts = BARCELONA_CIRCUIT.points;
+  const pts = simulation.activeTrack.points;
   const first = toMM(pts[0].x, pts[0].y);
   ctx.moveTo(first.x, first.y);
   for (let i = 2; i < pts.length; i += 3) {
@@ -196,7 +196,7 @@ function renderLeftMinimap(
     if (car.status === 'finished') continue;
     const normT = ((car.progress % 1) + 1) % 1;
     const ptIdx = Math.floor(normT * pts.length) % pts.length;
-    const pt = pts[ptIdx];
+    const pt = pts[ptIdx] || pts[0];
     const sp = toMM(pt.x, pt.y);
 
     const isSelected = car.id === camera.followingCarId;

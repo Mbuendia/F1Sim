@@ -1,7 +1,9 @@
 import { CarState, StartLightState, TelemetryData, RelativeCarInfo, DriverStatsSummary } from '../types/f1';
 import { DRIVERS } from '../data/drivers';
 import { TEAMS, STARTING_GRID_ORDER } from '../data/teams';
-import { BARCELONA_CIRCUIT } from '../data/barcelonaTrack';
+import { OFFICIAL_CIRCUITS, CircuitSpec } from '../data/circuits';
+import { TrackDefinition } from '../data/barcelonaTrack';
+import { buildTrackFromSvg } from '../utils/svgTrackParser';
 import { TireModel } from './TireModel';
 import { FuelModel } from './FuelModel';
 import { EngineModel } from './EngineModel';
@@ -12,12 +14,15 @@ export class RaceSimulation {
   cars: CarState[] = [];
   raceTimeSec: number = 0;
   leaderLap: number = 0;
-  totalLaps: number = BARCELONA_CIRCUIT.totalLaps;
   speedMultiplier: number = 1;
   isPaused: boolean = false;
   isFinished: boolean = false;
   leaderFinished: boolean = false;
   
+  circuitId: string = 'barcelona';
+  activeTrack: TrackDefinition;
+  totalLaps: number = 66;
+
   lightState: StartLightState = 'idle';
   lightsTimer: number = 0;
   lightsRandomDelay: number = 1.2;
@@ -31,7 +36,19 @@ export class RaceSimulation {
   podiumCars: CarState[] = [];
   static readonly BASE_LAP_TIME_SEC = 77.8;
 
-  constructor() {
+  constructor(circuitId: string = 'barcelona') {
+    this.circuitId = circuitId;
+    const spec = OFFICIAL_CIRCUITS[circuitId] || OFFICIAL_CIRCUITS['barcelona'];
+    this.totalLaps = spec.totalLaps;
+    this.activeTrack = buildTrackFromSvg(spec);
+    this.initRace();
+  }
+
+  setCircuit(circuitId: string) {
+    this.circuitId = circuitId;
+    const spec = OFFICIAL_CIRCUITS[circuitId] || OFFICIAL_CIRCUITS['barcelona'];
+    this.totalLaps = spec.totalLaps;
+    this.activeTrack = buildTrackFromSvg(spec);
     this.initRace();
   }
 
@@ -199,10 +216,8 @@ export class RaceSimulation {
   }
 
   isOvertakingAllowedZone(t: number): boolean {
-    if (t >= 0.96 || t <= 0.09) return true;
-    if (t >= 0.14 && t <= 0.23) return true;
-    if (t >= 0.25 && t <= 0.32) return true;
-    if (t >= 0.56 && t <= 0.67) return true;
+    if (t >= 0.94 || t <= 0.10) return true;
+    if (t >= 0.40 && t <= 0.60) return true;
     return false;
   }
 
@@ -236,15 +251,15 @@ export class RaceSimulation {
 
     this.raceTimeSec += dt;
 
-    const totalPoints = BARCELONA_CIRCUIT.points.length;
-    const lapDistanceMeters = BARCELONA_CIRCUIT.lapLengthMeters;
+    const points = this.activeTrack.points;
+    const totalPoints = points.length;
+    const lapDistanceMeters = this.activeTrack.lapLengthMeters;
     const sortedActive = [...this.cars].filter(c => c.status !== 'out').sort((a, b) => b.progress - a.progress);
     const leaderCar = sortedActive[0];
 
     for (const car of this.cars) {
       if (car.status === 'finished') continue;
 
-      // Si ha abandonado por avería mecánica (DNF)
       if (car.status === 'out') {
         car.currentSpeedKmh = Math.max(0, car.currentSpeedKmh - dt * 45);
         car.speed = (car.currentSpeedKmh / 3.6) / lapDistanceMeters;
@@ -253,13 +268,12 @@ export class RaceSimulation {
         car.telemetry.speedKmh = Math.round(car.currentSpeedKmh);
         car.telemetry.rpm = 0;
         car.telemetry.throttle = 0;
-        car.targetLateralOffset = 0.85; // Apartado en la hierba
+        car.targetLateralOffset = 0.85;
         car.lateralOffset += (car.targetLateralOffset - car.lateralOffset) * Math.min(1.0, dt * 2.0);
         continue;
       }
 
       // ── EVALUACIÓN DE FACTOR SUERTE: AVERÍAS MECÁNICAS & PINCHAZOS ──
-      // Probabilidad muy baja y realista por segundo (~0.000008)
       const baseDnfChancePerSec = 0.000008;
       const unluckFactor = Math.max(0.2, 1.2 - car.driver.luckRating);
       const teamUnreliability = Math.max(0.01, 1.0 - car.team.reliability);
@@ -272,7 +286,6 @@ export class RaceSimulation {
         continue;
       }
 
-      // Probabilidad de pinchazo imprevisto
       const punctureChance = 0.000006 * unluckFactor * dt;
       if (car.currentLap > 2 && !car.hasPuncture && !car.pitStop.isPitting && Math.random() < punctureChance) {
         car.hasPuncture = true;
@@ -298,7 +311,7 @@ export class RaceSimulation {
       const normalizedT = ((car.progress % 1) + 1) % 1;
       car.trackT = normalizedT;
       const pointIndex = Math.floor(normalizedT * totalPoints) % totalPoints;
-      const trackPoint = BARCELONA_CIRCUIT.points[pointIndex];
+      const trackPoint = points[pointIndex] || points[0];
 
       const isBeingLapped = leaderCar && leaderCar.id !== car.id && (leaderCar.progress - car.progress) >= 0.85;
       const carApproachingBehind = this.cars.find(
@@ -321,7 +334,7 @@ export class RaceSimulation {
         car.aggression = 'balanced';
       }
 
-      const drsEval = DRSModel.evaluateDRS(trackPoint, car.gapToCarAheadSec, car.currentLap);
+      const drsEval = DRSModel.evaluateDRS(trackPoint as any, car.gapToCarAheadSec, car.currentLap);
       car.drsEligible = drsEval.isEligible;
       car.drsActive = drsEval.isActive;
 
@@ -352,7 +365,6 @@ export class RaceSimulation {
         0.25 * car.driver.palmaresScore + 
         0.20 * car.driver.consistency;
 
-      // Consistencia de vuelta: Pilotos como Verstappen/Hamilton/Alonso varían apenas milésimas
       const consistencyNoise = (1.0 - car.driver.consistency) * (Math.sin(car.currentLap * 1.7 + car.id) * 0.003);
       const raceDayVariance = 1.0 + car.raceDayLuckFactor + ((car.driver.luckRating - 0.75) * 0.002) + consistencyNoise;
       const slipstreamBonus = (car.gapToCarAheadSec > 0 && car.gapToCarAheadSec < 0.85 && !isCornering) ? 1.012 : 1.0;
@@ -360,7 +372,6 @@ export class RaceSimulation {
       const carBasePerf = car.team.carPerformance;
       const baseLapSpeed = 1.0 / RaceSimulation.BASE_LAP_TIME_SEC;
 
-      // Ritmo efectivo
       let effectivePace = 
         carBasePerf * 
         (0.92 + 0.08 * driverSkillMultiplier) * 
@@ -371,7 +382,6 @@ export class RaceSimulation {
         slipstreamBonus * 
         raceDayVariance;
 
-      // Si tiene pinchazo
       if (car.hasPuncture) {
         effectivePace *= 0.40;
       }
@@ -383,7 +393,6 @@ export class RaceSimulation {
         targetSpeedLapPerSec *= 0.85;
       }
 
-      // ── ADELANTAMIENTO CON VENTAJA DE NEUMÁTICOS ──
       const minSafeSpacing = 0.0030;
       const canOvertakeHere = this.isOvertakingAllowedZone(normalizedT);
       
@@ -421,7 +430,7 @@ export class RaceSimulation {
       car.lateralOffset += (car.targetLateralOffset - car.lateralOffset) * Math.min(1.0, dt * 4.0);
       car.speed += (targetSpeedLapPerSec - car.speed) * Math.min(1.0, dt * 3.5);
       
-      const isMainStraight = normalizedT > 0.95 || normalizedT < 0.05;
+      const isMainStraight = normalizedT > 0.94 || normalizedT < 0.08;
       const targetKmh = car.hasPuncture 
         ? 75 
         : (isMainStraight 
@@ -554,7 +563,7 @@ export class RaceSimulation {
   }
 
   updateCarSectors(car: CarState, trackT: number) {
-    if (car.currentSector === 1 && trackT >= BARCELONA_CIRCUIT.sector1EndT && trackT < 0.40) {
+    if (car.currentSector === 1 && trackT >= this.activeTrack.sector1EndT && trackT < 0.50) {
       const s1Time = this.raceTimeSec - car.sectorStartTime;
       car.sectors.s1 = Number(s1Time.toFixed(3));
       if (!car.sectors.personalBestS1 || s1Time < car.sectors.personalBestS1) {
@@ -567,7 +576,7 @@ export class RaceSimulation {
       car.sectorStartTime = this.raceTimeSec;
     }
 
-    if (car.currentSector === 2 && trackT >= BARCELONA_CIRCUIT.sector2EndT && trackT < 0.75) {
+    if (car.currentSector === 2 && trackT >= this.activeTrack.sector2EndT && trackT < 0.85) {
       const s2Time = this.raceTimeSec - car.sectorStartTime;
       car.sectors.s2 = Number(s2Time.toFixed(3));
       if (!car.sectors.personalBestS2 || s2Time < car.sectors.personalBestS2) {
