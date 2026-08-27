@@ -1,0 +1,324 @@
+.dockContainer {
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+  background: rgba(11, 15, 25, 0.96);
+  backdrop-filter: blur(14px);
+  padding: 12px 18px;
+  border-radius: 14px;
+  border: 1.5px solid rgba(255, 255, 255, 0.16);
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.8);
+  max-width: 1250px;
+  width: 96%;
+  margin: 0 auto;
+}
+
+.dockEmpty {
+  background: rgba(11, 15, 25, 0.9);
+  backdrop-filter: blur(10px);
+  padding: 12px 28px;
+  border-radius: 20px;
+  border: 1.5px solid rgba(255, 255, 255, 0.12);
+  text-align: center;
+  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.6);
+}
+
+.emptyHint {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: #cbd5e1;
+}
+
+/* Tarjetas Coche Delante / Detrás */
+.relativeCarCard {
+  width: 240px;
+  min-width: 220px;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.relativeHeader {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  color: #94a3b8;
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+
+.relativeContent {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 6px 10px;
+  border-radius: 6px;
+  border-left: 4px solid #e10600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.relativeContent:hover {
+  background: rgba(255, 255, 255, 0.12);
+  transform: translateY(-2px);
+}
+
+.relPosBadge {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 14px;
+  font-weight: 900;
+  color: #ffffff;
+}
+
+.relDriverInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.relDriverName {
+  font-size: 13.5px;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 800;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.relTeamName {
+  font-size: 11px;
+  color: #94a3b8;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 600;
+}
+
+.relGap {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  color: #38bdf8;
+}
+
+.relativeEmptyLeader, .relativeEmptyLast {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 11.5px;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 800;
+  color: #ffd700;
+  background: rgba(255, 215, 0, 0.12);
+  padding: 10px;
+  border-radius: 6px;
+  height: 100%;
+}
+
+.relativeEmptyLast {
+  color: #94a3b8;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+/* Tarjeta Central Piloto */
+.mainPilotCard {
+  flex: 1;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-top: 4px solid #e10600;
+  border-radius: 10px;
+  padding: 8px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.pilotIdentity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pilotPosBig {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 24px;
+  font-weight: 900;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 4px 10px;
+  border-radius: 8px;
+}
+
+.pilotNameGroup {
+  display: flex;
+  flex-direction: column;
+}
+
+.pilotNameTop {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pilotFlag {
+  font-size: 18px;
+}
+
+.pilotName {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 17px;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.pilotNum {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.pilotTeam {
+  font-size: 12px;
+  color: #cbd5e1;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 600;
+}
+
+/* Cluster Velocidad */
+.speedCluster {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 110px;
+}
+
+.speedDigits {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 22px;
+  font-weight: 900;
+  color: #ffffff;
+  line-height: 1;
+}
+
+.kmhUnit {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.gearPill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 3px;
+}
+
+.gearLabel {
+  font-size: 10px;
+  color: #94a3b8;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+}
+
+.gearVal {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 15px;
+  font-weight: 900;
+  color: #38bdf8;
+}
+
+.rpmBar {
+  width: 100%;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.rpmProgress {
+  height: 100%;
+  background: linear-gradient(90deg, #22c55e 0%, #eab308 70%, #ef4444 100%);
+}
+
+/* Cluster Neumáticos */
+.tireCluster {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.tireTopRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.compoundPill {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 11px;
+  font-weight: 900;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.tireHealthText {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.fourWheelsRow {
+  display: flex;
+  gap: 8px;
+  font-size: 11px;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 800;
+}
+
+/* Cluster Estado */
+.statusCluster {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.statItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+
+.drsPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 5px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.drsOn {
+  background: rgba(34, 197, 94, 0.25);
+  color: #22c55e;
+  border: 1px solid #22c55e;
+}
+
+.drsOff {
+  background: rgba(255, 255, 255, 0.08);
+  color: #94a3b8;
+}

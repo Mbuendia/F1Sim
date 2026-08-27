@@ -1,0 +1,329 @@
+.container {
+  width: 330px;
+  min-width: 330px;
+  height: 100%;
+  background: #0b0f19;
+  border-left: 2px solid #1a2236;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+  z-index: 30;
+  box-shadow: -4px 0 25px rgba(0, 0, 0, 0.6);
+}
+
+.container::-webkit-scrollbar {
+  width: 5px;
+}
+.container::-webkit-scrollbar-thumb {
+  background: #27354f;
+  border-radius: 3px;
+}
+
+.emptyCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 40px 20px;
+  text-align: center;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: #94a3b8;
+  height: 100%;
+}
+
+.sectionCard {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1.5px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 11px;
+  font-weight: 900;
+  color: #ffffff;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+}
+
+/* Sectores Grid */
+.sectorsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.sectorBox {
+  border: 1.5px solid transparent;
+  border-radius: 6px;
+  padding: 6px 4px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sectorLabel {
+  font-size: 9px;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  color: #cbd5e1;
+  letter-spacing: 0.5px;
+}
+
+.sectorTime {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 12.5px;
+  font-weight: 900;
+}
+
+.sectorStatus {
+  font-size: 9px;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 800;
+}
+
+.lapTimesSummary {
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 6px 10px;
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.lapTimeRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.timeLabel {
+  font-size: 11px;
+  font-family: 'Rajdhani', sans-serif;
+  color: #94a3b8;
+  font-weight: 700;
+}
+
+.timeVal {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 12.5px;
+  color: #ffffff;
+  font-weight: 800;
+}
+
+.timeValBest {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 12.5px;
+  color: #c084fc;
+  font-weight: 900;
+}
+
+/* Pit Stop Box */
+.pitDetailBox {
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.pitActiveBanner {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  text-align: center;
+  background: rgba(225, 6, 0, 0.25);
+  border: 1.5px solid #e10600;
+  padding: 6px;
+  border-radius: 6px;
+}
+
+.pitBlink {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 11px;
+  font-weight: 900;
+  color: #ef4444;
+}
+
+.pitCurrentTimer {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 13px;
+  font-weight: 900;
+  color: #ffffff;
+}
+
+.pitNormalStatus {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pitStatRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 700;
+  color: #cbd5e1;
+}
+
+.pitStatRow strong {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 12px;
+  font-weight: 900;
+  color: #ffffff;
+}
+
+/* Forecast */
+.forecastStatusBox {
+  margin-bottom: 6px;
+}
+
+.statusSuccess, .statusWarning {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px;
+  border-radius: 6px;
+}
+
+.statusSuccess {
+  background: rgba(34, 197, 94, 0.15);
+  border: 1.5px solid rgba(34, 197, 94, 0.4);
+}
+
+.statusWarning {
+  background: rgba(245, 158, 11, 0.15);
+  border: 1.5px solid rgba(245, 158, 11, 0.4);
+}
+
+.statusTitle {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 10.5px;
+  font-weight: 900;
+  color: #ffffff;
+}
+
+.statusSub {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #cbd5e1;
+  margin-top: 2px;
+}
+
+.statsMiniGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.miniStat {
+  background: rgba(0, 0, 0, 0.5);
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.miniLabel {
+  display: block;
+  font-size: 9.5px;
+  font-family: 'Rajdhani', sans-serif;
+  color: #94a3b8;
+  font-weight: 700;
+}
+
+.miniValue {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 12px;
+  font-weight: 800;
+  color: #ffffff;
+  margin-top: 2px;
+}
+
+.barsList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.statBarItem {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.barHeader {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 700;
+  color: #cbd5e1;
+}
+
+.barVal {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.barTrack {
+  height: 5px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.barFill {
+  height: 100%;
+  border-radius: 3px;
+}
+
+.palmaresList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.palmaresItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 700;
+  color: #f1f5f9;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 4px 6px;
+  border-radius: 4px;
+}
+
+.ratingsMiniFooter {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  font-size: 11px;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 700;
+  color: #cbd5e1;
+}
+
+.ratingsMiniFooter strong {
+  color: #38bdf8;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 12px;
+}

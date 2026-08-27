@@ -1,0 +1,482 @@
+.panel {
+  background: rgba(12, 16, 26, 0.96);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 480px;
+  overflow-y: auto;
+}
+
+.panel::-webkit-scrollbar {
+  width: 4px;
+}
+.panel::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 2px;
+}
+
+.driverHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 10px 14px;
+  border-radius: 8px;
+  border-left: 4px solid #e10600;
+}
+
+.driverIdentity {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.flagAndNumber {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.flag {
+  font-size: 16px;
+}
+
+.driverNumber {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.driverFullName {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+  line-height: 1.1;
+}
+
+.teamName {
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.positionBadge {
+  display: flex;
+  align-items: baseline;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.posLabel {
+  font-size: 10px;
+  color: #94a3b8;
+  font-family: 'Orbitron', sans-serif;
+}
+
+.posValue {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 16px;
+  font-weight: 900;
+  color: #ffffff;
+  margin-left: 2px;
+}
+
+.closeBtn {
+  background: rgba(255, 255, 255, 0.05);
+  border: none;
+  color: #94a3b8;
+  padding: 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+.closeBtn:hover {
+  background: rgba(225, 6, 0, 0.2);
+  color: #ef4444;
+}
+
+/* Ratings */
+.ratingsCard {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.ratingsHeader {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: #94a3b8;
+  margin-bottom: 8px;
+}
+
+.ratingsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.ratingItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ratingLabel {
+  font-size: 9px;
+  font-family: 'Rajdhani', sans-serif;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.ratingBar {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.ratingFill {
+  height: 100%;
+  border-radius: 2px;
+}
+
+.ratingNum {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 10px;
+  color: #f1f5f9;
+  font-weight: 700;
+}
+
+.palmaresBadges {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.wdcBadge {
+  background: rgba(255, 215, 0, 0.15);
+  color: #ffd700;
+  border: 1px solid rgba(255, 215, 0, 0.4);
+  font-size: 9px;
+  padding: 1px 4px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.winsBadge {
+  background: rgba(255, 255, 255, 0.05);
+  color: #cbd5e1;
+  font-size: 9px;
+  padding: 1px 4px;
+  border-radius: 4px;
+}
+
+/* Telemetría */
+.telemetryGrid {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 8px;
+}
+
+.cardSpeed {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.speedValue {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 24px;
+  font-weight: 900;
+  color: #ffffff;
+}
+
+.speedUnit {
+  font-size: 10px;
+  color: #64748b;
+}
+
+.gearDisplay {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.gearLabel {
+  font-size: 9px;
+  color: #94a3b8;
+  font-family: 'Orbitron', sans-serif;
+}
+
+.gearNum {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 14px;
+  font-weight: 900;
+  color: #38bdf8;
+}
+
+.rpmContainer {
+  margin-top: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  height: 12px;
+  border-radius: 3px;
+  position: relative;
+  overflow: hidden;
+}
+
+.rpmFill {
+  height: 100%;
+  background: linear-gradient(90deg, #22c55e 0%, #eab308 70%, #ef4444 100%);
+  transition: width 0.1s;
+}
+
+.rpmText {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 8px;
+  font-family: 'Orbitron', sans-serif;
+  color: #ffffff;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+}
+
+.cardStatus {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  gap: 4px;
+}
+
+.statusRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.statusTitle {
+  font-size: 10px;
+  color: #64748b;
+  font-family: 'Rajdhani', sans-serif;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.drsBadge {
+  font-size: 9px;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.drsActive {
+  background: rgba(34, 197, 94, 0.2);
+  color: #22c55e;
+  border: 1px solid #22c55e;
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
+}
+
+.drsReady {
+  background: rgba(56, 189, 248, 0.2);
+  color: #38bdf8;
+  border: 1px solid #38bdf8;
+}
+
+.drsOff {
+  background: rgba(255, 255, 255, 0.05);
+  color: #64748b;
+}
+
+.engineBadge {
+  font-size: 9px;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  border: 1px solid transparent;
+  padding: 1px 5px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.aggBadge {
+  font-size: 9px;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 700;
+}
+
+/* Tires */
+.tireCard {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.tireHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.tireTitle {
+  font-size: 10px;
+  font-family: 'Orbitron', sans-serif;
+  color: #94a3b8;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.compoundTag {
+  font-size: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 1px 4px;
+  border-radius: 3px;
+  color: #cbd5e1;
+}
+
+.tireGlobalPct {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.tireHealthBar {
+  height: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.tireHealthFill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.2s;
+}
+
+.tirePhaseNote {
+  font-size: 8.5px;
+  margin-top: 3px;
+  font-family: 'Rajdhani', sans-serif;
+}
+
+.linearPhase {
+  color: #22c55e;
+}
+
+.cliffPhase {
+  color: #f97316;
+}
+
+.fourTiresGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.wheelBox {
+  background: rgba(255, 255, 255, 0.03);
+  padding: 4px 6px;
+  border-radius: 4px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.wheelName {
+  font-size: 8.5px;
+  color: #64748b;
+  font-family: 'Rajdhani', sans-serif;
+}
+
+.wheelPct {
+  font-size: 10px;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+}
+
+/* Footer */
+.footerGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.fuelBox, .pitBox {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.boxHeader {
+  font-size: 9px;
+  color: #64748b;
+  font-family: 'Orbitron', sans-serif;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 2px;
+}
+
+.fuelValue, .pitValue {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+
+.unit {
+  font-size: 9px;
+  color: #64748b;
+}
+
+.fuelSub, .pitSub {
+  font-size: 8.5px;
+  color: #64748b;
+  font-family: 'Rajdhani', sans-serif;
+  margin-top: 2px;
+}
+
+.inPitTag {
+  color: #f59e0b;
+  font-size: 11px;
+}

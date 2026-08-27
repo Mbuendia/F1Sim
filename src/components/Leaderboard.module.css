@@ -1,0 +1,176 @@
+.towerContainer {
+  width: 320px;
+  min-width: 320px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #0b0f19;
+  border-right: 2px solid #1a2236;
+  box-shadow: 4px 0 25px rgba(0, 0, 0, 0.6);
+  z-index: 30;
+  overflow: hidden;
+}
+
+.header {
+  padding: 14px 16px;
+  background: linear-gradient(135deg, #182032 0%, #0d1220 100%);
+  border-bottom: 2px solid rgba(255, 255, 255, 0.12);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.f1Brand {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 14px;
+  font-weight: 900;
+  color: #e10600;
+  letter-spacing: 2px;
+}
+
+.headerTitle {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 14px;
+  color: #cbd5e1;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+.tableList {
+  flex: 1;
+  overflow-y: auto;
+  padding: 6px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.tableList::-webkit-scrollbar {
+  width: 5px;
+}
+.tableList::-webkit-scrollbar-thumb {
+  background: #27354f;
+  border-radius: 3px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  padding: 6px 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border-left: 4px solid transparent;
+}
+
+.row:hover {
+  background: rgba(255, 255, 255, 0.09);
+  transform: translateX(2px);
+}
+
+.selected {
+  background: rgba(225, 6, 0, 0.25) !important;
+  border-left-color: #e10600 !important;
+  box-shadow: 0 0 12px rgba(225, 6, 0, 0.3);
+}
+
+.leaderRow .posNum {
+  color: #ffd700;
+  font-weight: 900;
+}
+
+.posCell {
+  width: 26px;
+  text-align: center;
+}
+
+.posNum {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  color: #94a3b8;
+}
+
+.teamBar {
+  width: 4px;
+  height: 20px;
+  border-radius: 2px;
+  margin: 0 8px;
+  flex-shrink: 0;
+}
+
+.driverCell {
+  flex: 1;
+  min-width: 0;
+}
+
+.driverNameRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.driverCode {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.driverLastName {
+  font-size: 13.5px;
+  font-family: 'Rajdhani', sans-serif;
+  color: #f1f5f9;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fastestLapBadge {
+  display: inline-flex;
+  align-items: center;
+}
+
+.tireCell {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0 8px;
+}
+
+.tireDot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  display: inline-block;
+  box-shadow: 0 0 4px rgba(255,255,255,0.4);
+}
+
+.pitCountBadge {
+  font-size: 10px;
+  background: rgba(255, 255, 255, 0.12);
+  padding: 2px 5px;
+  border-radius: 3px;
+  color: #f1f5f9;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+}
+
+.gapCell {
+  width: 68px;
+  text-align: right;
+}
+
+.gapText {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 11.5px;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.leaderText {
+  color: #ffd700;
+  font-weight: 900;
+}
