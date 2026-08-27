@@ -10,8 +10,8 @@
 }
 
 .leftSidebar {
-  width: 320px;
-  min-width: 320px;
+  width: 310px;
+  min-width: 310px;
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -19,8 +19,8 @@
 }
 
 .rightSidebar {
-  width: 330px;
-  min-width: 330px;
+  width: 360px;
+  min-width: 360px;
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -92,8 +92,8 @@
 .bottomDockWrapper {
   position: absolute;
   bottom: 14px;
-  left: 0;
-  right: 0;
+  left: 210px; /* Despejado para que el minimapa a la izquierda no se solape */
+  right: 14px;
   display: flex;
   justify-content: center;
   z-index: 25;

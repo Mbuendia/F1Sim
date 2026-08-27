@@ -96,6 +96,7 @@ export interface CarTelemetryLog {
   sector2: number;
   sector3: number;
   compound: TireCompound;
+  tireHealth: number;
 }
 
 export interface PitStopState {

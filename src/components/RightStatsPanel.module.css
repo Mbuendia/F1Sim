@@ -1,13 +1,13 @@
 .container {
-  width: 330px;
-  min-width: 330px;
+  width: 360px;
+  min-width: 360px;
   height: 100%;
   background: #0b0f19;
   border-left: 2px solid #1a2236;
   padding: 10px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
   overflow-y: auto;
   z-index: 30;
   box-shadow: -4px 0 25px rgba(0, 0, 0, 0.6);
@@ -21,19 +21,52 @@
   border-radius: 3px;
 }
 
-.emptyCard {
+.driverHeroCard {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(0, 0, 0, 0.4) 100%);
+  border: 1.5px solid rgba(255, 255, 255, 0.12);
+  border-left: 5px solid #e10600;
+  border-radius: 10px;
+  padding: 10px 14px;
   display: flex;
-  flex-direction: column;
+  justify-content: space-between;
   align-items: center;
-  justify-content: center;
-  gap: 12px;
-  padding: 40px 20px;
-  text-align: center;
+}
+
+.driverHeroLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.driverHeroPos {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 20px;
+  font-weight: 900;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.driverHeroName {
   font-family: 'Rajdhani', sans-serif;
-  font-size: 15px;
-  font-weight: 700;
+  font-size: 17px;
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 1.1;
+}
+
+.driverHeroTeam {
+  font-size: 11.5px;
   color: #94a3b8;
-  height: 100%;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 600;
+}
+
+.driverHeroNum {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 18px;
+  font-weight: 900;
 }
 
 .sectionCard {
@@ -41,6 +74,9 @@
   border: 1.5px solid rgba(255, 255, 255, 0.1);
   border-radius: 10px;
   padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .cardHeader {
@@ -52,7 +88,6 @@
   font-weight: 900;
   color: #ffffff;
   letter-spacing: 1px;
-  margin-bottom: 8px;
 }
 
 /* Sectores Grid */
@@ -60,7 +95,6 @@
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
   gap: 6px;
-  margin-bottom: 8px;
 }
 
 .sectorBox {
@@ -78,7 +112,6 @@
   font-family: 'Orbitron', sans-serif;
   font-weight: 700;
   color: #cbd5e1;
-  letter-spacing: 0.5px;
 }
 
 .sectorTime {
@@ -88,65 +121,186 @@
 }
 
 .sectorStatus {
+  font-size: 8.5px;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 800;
+}
+
+/* Gráfica de Neumáticos */
+.chartContainer {
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 10px 8px 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.chartSvg {
+  width: 100%;
+  height: 120px;
+  overflow: visible;
+}
+
+.chartLegend {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 10px;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  color: #cbd5e1;
+  padding: 0 4px;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.legendDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.forecastBanner {
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  padding: 5px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 700;
+  color: #38bdf8;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Historial 66 vueltas */
+.historyTableWrapper {
+  max-height: 190px;
+  overflow-y: auto;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.historyTableWrapper::-webkit-scrollbar {
+  width: 4px;
+}
+.historyTableWrapper::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 2px;
+}
+
+.historyTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+.historyTable th {
+  background: rgba(255, 255, 255, 0.08);
+  color: #94a3b8;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 9px;
+  padding: 5px 6px;
+  text-align: center;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+.historyTable td {
+  padding: 4px 6px;
+  text-align: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.historyTable tr:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.lapNumCell {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 800;
+  color: #38bdf8;
+}
+
+.lapTimeCell {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 800;
+}
+
+/* Telemetría y Temperaturas */
+.telemetryGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.telemetryMiniBox {
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 6px;
+  padding: 6px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.miniBoxLabel {
+  font-size: 9.5px;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 700;
+  color: #94a3b8;
+}
+
+.miniBoxVal {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.statusOptimal {
+  color: #22c55e;
   font-size: 9px;
   font-family: 'Rajdhani', sans-serif;
   font-weight: 800;
 }
 
-.lapTimesSummary {
-  background: rgba(0, 0, 0, 0.45);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 6px 10px;
-  border-radius: 6px;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.lapTimeRow {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.timeLabel {
-  font-size: 11px;
+.statusHot {
+  color: #ef4444;
+  font-size: 9px;
   font-family: 'Rajdhani', sans-serif;
-  color: #94a3b8;
-  font-weight: 700;
-}
-
-.timeVal {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 12.5px;
-  color: #ffffff;
   font-weight: 800;
 }
 
-.timeValBest {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 12.5px;
-  color: #c084fc;
-  font-weight: 900;
+.statusCold {
+  color: #38bdf8;
+  font-size: 9px;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 800;
 }
 
-/* Pit Stop Box */
-.pitDetailBox {
-  background: rgba(0, 0, 0, 0.45);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 8px;
-  padding: 8px 10px;
-}
-
+/* Boxes Banner */
 .pitActiveBanner {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  text-align: center;
   background: rgba(225, 6, 0, 0.25);
   border: 1.5px solid #e10600;
   padding: 6px;
   border-radius: 6px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .pitBlink {
@@ -161,169 +315,4 @@
   font-size: 13px;
   font-weight: 900;
   color: #ffffff;
-}
-
-.pitNormalStatus {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.pitStatRow {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 11px;
-  font-family: 'Rajdhani', sans-serif;
-  font-weight: 700;
-  color: #cbd5e1;
-}
-
-.pitStatRow strong {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 12px;
-  font-weight: 900;
-  color: #ffffff;
-}
-
-/* Forecast */
-.forecastStatusBox {
-  margin-bottom: 6px;
-}
-
-.statusSuccess, .statusWarning {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  padding: 8px;
-  border-radius: 6px;
-}
-
-.statusSuccess {
-  background: rgba(34, 197, 94, 0.15);
-  border: 1.5px solid rgba(34, 197, 94, 0.4);
-}
-
-.statusWarning {
-  background: rgba(245, 158, 11, 0.15);
-  border: 1.5px solid rgba(245, 158, 11, 0.4);
-}
-
-.statusTitle {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 10.5px;
-  font-weight: 900;
-  color: #ffffff;
-}
-
-.statusSub {
-  font-family: 'Rajdhani', sans-serif;
-  font-size: 11.5px;
-  font-weight: 700;
-  color: #cbd5e1;
-  margin-top: 2px;
-}
-
-.statsMiniGrid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
-}
-
-.miniStat {
-  background: rgba(0, 0, 0, 0.5);
-  padding: 6px 8px;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-.miniLabel {
-  display: block;
-  font-size: 9.5px;
-  font-family: 'Rajdhani', sans-serif;
-  color: #94a3b8;
-  font-weight: 700;
-}
-
-.miniValue {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 12px;
-  font-weight: 800;
-  color: #ffffff;
-  margin-top: 2px;
-}
-
-.barsList {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.statBarItem {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.barHeader {
-  display: flex;
-  justify-content: space-between;
-  font-size: 11px;
-  font-family: 'Rajdhani', sans-serif;
-  font-weight: 700;
-  color: #cbd5e1;
-}
-
-.barVal {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 11px;
-  font-weight: 800;
-  color: #ffffff;
-}
-
-.barTrack {
-  height: 5px;
-  background: rgba(255, 255, 255, 0.12);
-  border-radius: 3px;
-  overflow: hidden;
-}
-
-.barFill {
-  height: 100%;
-  border-radius: 3px;
-}
-
-.palmaresList {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.palmaresItem {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  font-family: 'Rajdhani', sans-serif;
-  font-weight: 700;
-  color: #f1f5f9;
-  background: rgba(255, 255, 255, 0.05);
-  padding: 4px 6px;
-  border-radius: 4px;
-}
-
-.ratingsMiniFooter {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 8px;
-  font-size: 11px;
-  font-family: 'Rajdhani', sans-serif;
-  font-weight: 700;
-  color: #cbd5e1;
-}
-
-.ratingsMiniFooter strong {
-  color: #38bdf8;
-  font-family: 'Orbitron', sans-serif;
-  font-size: 12px;
 }

@@ -232,7 +232,6 @@ export class RaceSimulation {
     for (const car of this.cars) {
       if (car.status === 'finished') continue;
 
-      // 1. Pit Stop Update (Adelantamientos en boxes a 80 km/h)
       const isHandlingPit = PitStopModel.updatePitStop(car, dt, lapDistanceMeters);
 
       if (isHandlingPit) {
@@ -246,13 +245,12 @@ export class RaceSimulation {
         continue;
       }
 
-      // 2. Posición en pista
       const normalizedT = ((car.progress % 1) + 1) % 1;
       car.trackT = normalizedT;
       const pointIndex = Math.floor(normalizedT * totalPoints) % totalPoints;
       const trackPoint = BARCELONA_CIRCUIT.points[pointIndex];
 
-      // ── BANDERAS AZULES ──
+      // Banderas azules
       const isBeingLapped = leaderCar && leaderCar.id !== car.id && (leaderCar.progress - car.progress) >= 0.85;
       const carApproachingBehind = this.cars.find(
         c => c.id !== car.id && c.status !== 'finished' && c.progress > car.progress && (c.progress - car.progress) < 0.015 && (c.currentLap > car.currentLap)
@@ -329,7 +327,6 @@ export class RaceSimulation {
         targetSpeedLapPerSec *= 0.85;
       }
 
-      // ── PREVENCIÓN DE SOLAPAMIENTO & REBASES ──
       const minSafeSpacing = 0.0030;
       const canOvertakeHere = this.isOvertakingAllowedZone(normalizedT);
       const rareCornerOvertakeChance = Math.random() < 0.00005 && tireResult.gripMultiplier > 1.05;
@@ -375,7 +372,6 @@ export class RaceSimulation {
       const prevLap = Math.floor(Math.max(0, prevProgress));
       const currLap = Math.floor(Math.max(0, car.progress));
 
-      // ── PASO POR META Y PROCEDIMIENTO DE BANDERA A CUADROS ──
       if (currLap > prevLap && prevProgress >= 0) {
         car.currentLap = currLap;
         car.tires.lapsOnTire += 1;
@@ -412,20 +408,18 @@ export class RaceSimulation {
             sector1: car.sectors.s1 || lapTime * 0.28,
             sector2: car.sectors.s2 || lapTime * 0.34,
             sector3: car.sectors.s3 || lapTime * 0.38,
-            compound: car.tires.compound
+            compound: car.tires.compound,
+            tireHealth: Math.round(car.tires.health)
           });
         }
         car.lapStartTime = this.raceTimeSec;
         car.sectorStartTime = this.raceTimeSec;
         car.currentSector = 1;
 
-        // 1. Si el líder completa las vueltas totales -> gana y desaparece de pista
         if (car.currentLap >= this.totalLaps && !this.leaderFinished) {
           this.leaderFinished = true;
           car.status = 'finished';
-        }
-        // 2. Si el líder ya finalizó, cualquier coche que cruce meta concluye su carrera y desaparece
-        else if (this.leaderFinished) {
+        } else if (this.leaderFinished) {
           car.status = 'finished';
         }
       }
@@ -483,7 +477,6 @@ export class RaceSimulation {
 
     this.updateLeaderboardPositions();
 
-    // Cuando todos los coches han cruzado la meta tras ver la bandera a cuadros
     if (this.cars.every(c => c.status === 'finished') && this.cars.length > 0) {
       this.isFinished = true;
       this.podiumCars = this.getSortedCars().slice(0, 3);

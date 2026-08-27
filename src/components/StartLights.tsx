@@ -1,15 +1,24 @@
 import React, { useEffect, useRef } from 'react';
 import styles from './StartLights.module.css';
-import { StartLightState } from '../types/f1';
-import { Play } from 'lucide-react';
+import { StartLightState, CarState } from '../types/f1';
+import { Play, UserCheck } from 'lucide-react';
 import { animate } from 'animejs';
 
 interface StartLightsProps {
   lightState: StartLightState;
+  cars: CarState[];
+  favoriteCarId: number;
+  onSelectFavoriteCar: (carId: number) => void;
   onStartClick: () => void;
 }
 
-export const StartLights: React.FC<StartLightsProps> = ({ lightState, onStartClick }) => {
+export const StartLights: React.FC<StartLightsProps> = ({
+  lightState,
+  cars,
+  favoriteCarId,
+  onSelectFavoriteCar,
+  onStartClick
+}) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const bannerRef = useRef<HTMLDivElement>(null);
 
@@ -60,7 +69,7 @@ export const StartLights: React.FC<StartLightsProps> = ({ lightState, onStartCli
         <div className={styles.gantryHeader}>
           <span className={styles.f1Brand}>FORMULA 1</span>
           <span className={styles.gantryTitle}>
-            {isCountdown ? 'PROCEDIMIENTO DE SALIDA' : 'GRAN PREMIO DE ESPAÑA'}
+            {isCountdown ? 'PROCEDIMIENTO DE SALIDA' : 'GRAN PREMIO DE F1'}
           </span>
         </div>
 
@@ -80,10 +89,30 @@ export const StartLights: React.FC<StartLightsProps> = ({ lightState, onStartCli
         </div>
 
         {lightState === 'idle' && (
-          <button className={styles.startButton} onClick={onStartClick}>
-            <Play size={20} fill="#ffffff" />
-            <span>INICIAR VUELTA DE FORMACIÓN</span>
-          </button>
+          <>
+            <div className={styles.driverSelectorSection}>
+              <div className={styles.selectorLabel}>
+                <UserCheck size={14} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '6px' }} />
+                ELIGE A TU PILOTO PROTAGONISTA:
+              </div>
+              <select
+                className={styles.driverSelectDropdown}
+                value={favoriteCarId}
+                onChange={(e) => onSelectFavoriteCar(Number(e.target.value))}
+              >
+                {cars.map((car) => (
+                  <option key={car.id} value={car.id}>
+                    {car.driver.countryFlag} {car.driver.firstName} {car.driver.lastName} (#{car.driver.number} - {car.team.name})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <button className={styles.startButton} onClick={onStartClick}>
+              <Play size={18} fill="#ffffff" />
+              <span>INICIAR VUELTA DE FORMACIÓN</span>
+            </button>
+          </>
         )}
 
         {lightState === 'lights-out' && (

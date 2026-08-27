@@ -17,7 +17,12 @@ export const App: React.FC = () => {
   const simulation = useMemo(() => new RaceSimulation(), []);
   const camera = useMemo(() => new Camera(), []);
 
-  const [selectedCarId, setSelectedCarId] = useState<number | null>(0);
+  // Piloto seleccionado expresamente en pista/tabla (o null para ver vista general)
+  const [selectedCarId, setSelectedCarId] = useState<number | null>(null);
+  
+  // Piloto protagonista favorito elegido al inicio (por defecto Fernando Alonso id=6)
+  const [favoriteCarId, setFavoriteCarId] = useState<number>(6);
+
   const [lightState, setLightState] = useState<StartLightState>(simulation.lightState);
   const [speedMultiplier, setSpeedMultiplier] = useState<number>(simulation.speedMultiplier);
   const [isPaused, setIsPaused] = useState<boolean>(simulation.isPaused);
@@ -66,6 +71,10 @@ export const App: React.FC = () => {
     }
   }, [camera]);
 
+  const handleSelectFavoriteCar = useCallback((carId: number) => {
+    setFavoriteCarId(carId);
+  }, []);
+
   const handleSpeedChange = useCallback((speed: number) => {
     simulation.setSpeed(speed);
     setSpeedMultiplier(simulation.speedMultiplier);
@@ -75,7 +84,7 @@ export const App: React.FC = () => {
   const handleResetRace = useCallback(() => {
     simulation.initRace();
     camera.resetToFullTrack();
-    setSelectedCarId(0);
+    setSelectedCarId(null);
     setLightState('idle');
     setIsFinished(false);
   }, [simulation, camera]);
@@ -116,6 +125,7 @@ export const App: React.FC = () => {
   };
 
   const selectedCar = selectedCarId !== null ? simulation.getCarById(selectedCarId) || null : null;
+  const favoriteCar = simulation.getCarById(favoriteCarId) || simulation.cars[0] || null;
 
   return (
     <div className={styles.appContainer}>
@@ -139,7 +149,7 @@ export const App: React.FC = () => {
           onSelectCar={handleSelectCar}
         />
 
-        {/* Banner no intrusivo durante la vuelta de formación */}
+        {/* Banner durante la vuelta de formación */}
         {lightState === 'formation-lap' && (
           <div className={styles.formationBanner}>
             <RotateCw size={14} className={styles.spinIcon} />
@@ -168,17 +178,20 @@ export const App: React.FC = () => {
           />
         </div>
 
-        {/* Infografía fija inferior central */}
+        {/* Dock inferior central */}
         <div className={styles.bottomDockWrapper}>
           <BottomTelemetryDock
-            car={selectedCar}
+            car={selectedCar || favoriteCar}
             onSelectCar={handleSelectCar}
           />
         </div>
 
-        {/* Semáforo de salida */}
+        {/* Semáforo de salida con Selector de Piloto Protagonista */}
         <StartLights
           lightState={lightState}
+          cars={cars}
+          favoriteCarId={favoriteCarId}
+          onSelectFavoriteCar={handleSelectFavoriteCar}
           onStartClick={handleStartRace}
         />
 
@@ -191,10 +204,11 @@ export const App: React.FC = () => {
         )}
       </div>
 
-      {/* ── 3. PANEL DERECHO: SECTORES S1/S2/S3 & ESTRATEGIA ── */}
+      {/* ── 3. PANEL DERECHO: DASHBOARD AVANZADO (GRÁFICA PREVISIÓN + 66 VUELTAS) ── */}
       <div className={styles.rightSidebar}>
         <RightStatsPanel
           car={selectedCar}
+          defaultCar={favoriteCar}
           totalLaps={simulation.totalLaps}
           overallBestS1={bestS1}
           overallBestS2={bestS2}

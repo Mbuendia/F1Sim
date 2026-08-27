@@ -50,35 +50,27 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
     handleResize();
     window.addEventListener('resize', handleResize);
 
-    // ── GAME LOOP PRINCIPAL DE RENDERIZADO ──
     const loop = (currentTime: number) => {
       const dtRaw = Math.min((currentTime - lastTime) / 1000, 0.1);
       lastTime = currentTime;
 
-      // 1. Actualizar simulación
       simulation.update(dtRaw);
-
-      // 2. Actualizar cámara
       camera.update(simulation.cars, dtRaw);
 
-      // 3. Renderizar Canvas
       ctx.save();
       const dpr = window.devicePixelRatio || 1;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-      // Fondo oscuro de circuito (asfalto/terreno nocturno F1)
+      // Fondo oscuro
       ctx.fillStyle = '#14181f';
       ctx.fillRect(0, 0, camera.screenWidth, camera.screenHeight);
 
-      // Dibujar circuito
       TrackRenderer.renderTrack(ctx, BARCELONA_CIRCUIT, camera, dpr);
-
-      // Dibujar monoplazas
       CarRenderer.renderCars(ctx, simulation.cars, camera, selectedCarId);
 
-      // Minimapa si la cámara está en seguimiento
+      // ── MINIMAPA A LA IZQUIERDA DEL TODO ──
       if (camera.followingCarId !== null) {
-        renderMinimap(ctx, simulation, camera);
+        renderLeftMinimap(ctx, simulation, camera);
       }
 
       ctx.restore();
@@ -93,7 +85,6 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
     };
   }, [simulation, camera, selectedCarId]);
 
-  // Manejar clic en el canvas para seleccionar monoplazas
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -103,11 +94,12 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
     const clickY = e.clientY - rect.top;
 
     let clickedCarId: number | null = null;
-    let minDistance = 28; // Radio de clic en píxeles
+    let minDistance = 28;
 
     const totalPts = BARCELONA_CIRCUIT.points.length;
 
     for (const car of simulation.cars) {
+      if (car.status === 'finished') continue;
       const normT = ((car.progress % 1) + 1) % 1;
       const ptIdx = Math.floor(normT * totalPts) % totalPts;
       const pt = BARCELONA_CIRCUIT.points[ptIdx];
@@ -145,26 +137,32 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
   );
 };
 
-// Renderizado del minimapa en la esquina
-function renderMinimap(
+// ── RENDERIZADO DEL MINIMAPA A LA IZQUIERDA DEL TODO ──
+function renderLeftMinimap(
   ctx: CanvasRenderingContext2D,
   simulation: RaceSimulation,
   camera: Camera
 ) {
-  const mmW = 190;
-  const mmH = 120;
-  const mmX = camera.screenWidth - mmW - 20;
-  const mmY = camera.screenHeight - mmH - 20;
+  const mmW = 180;
+  const mmH = 115;
+  const mmX = 20; // Extremo izquierdo
+  const mmY = camera.screenHeight - mmH - 24; // Abajo a la izquierda
   const b = BARCELONA_CIRCUIT.bounds;
 
   // Caja minimapa
-  ctx.fillStyle = 'rgba(8, 12, 20, 0.85)';
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
-  ctx.lineWidth = 1;
+  ctx.fillStyle = 'rgba(8, 12, 20, 0.90)';
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
+  ctx.lineWidth = 1.5;
   ctx.beginPath();
-  ctx.roundRect(mmX, mmY, mmW, mmH, 8);
+  ctx.roundRect(mmX, mmY, mmW, mmH, 10);
   ctx.fill();
   ctx.stroke();
+
+  // Etiqueta
+  ctx.font = 'bold 9px Orbitron, sans-serif';
+  ctx.fillStyle = '#94a3b8';
+  ctx.textAlign = 'left';
+  ctx.fillText('MAPA PISTA', mmX + 8, mmY + 13);
 
   // Escala
   const padding = 12;
@@ -172,14 +170,14 @@ function renderMinimap(
   const tH = b.maxY - b.minY;
   const scale = Math.min((mmW - padding * 2) / tW, (mmH - padding * 2) / tH);
   const offX = mmX + padding + (mmW - padding * 2 - tW * scale) / 2;
-  const offY = mmY + padding + (mmH - padding * 2 - tH * scale) / 2;
+  const offY = mmY + padding + 6 + (mmH - padding * 2 - tH * scale) / 2;
 
   const toMM = (wx: number, wy: number) => ({
     x: (wx - b.minX) * scale + offX,
     y: (wy - b.minY) * scale + offY
   });
 
-  // Trazado minimapa
+  // Trazado
   ctx.beginPath();
   const pts = BARCELONA_CIRCUIT.points;
   const first = toMM(pts[0].x, pts[0].y);
@@ -189,12 +187,13 @@ function renderMinimap(
     ctx.lineTo(p.x, p.y);
   }
   ctx.closePath();
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
   ctx.lineWidth = 2;
   ctx.stroke();
 
-  // Coches en el minimapa
+  // Coches
   for (const car of simulation.cars) {
+    if (car.status === 'finished') continue;
     const normT = ((car.progress % 1) + 1) % 1;
     const ptIdx = Math.floor(normT * pts.length) % pts.length;
     const pt = pts[ptIdx];
@@ -202,13 +201,13 @@ function renderMinimap(
 
     const isSelected = car.id === camera.followingCarId;
     ctx.beginPath();
-    ctx.arc(sp.x, sp.y, isSelected ? 4 : 2, 0, Math.PI * 2);
+    ctx.arc(sp.x, sp.y, isSelected ? 4.5 : 2.5, 0, Math.PI * 2);
     ctx.fillStyle = isSelected ? '#ffffff' : car.team.color;
     ctx.fill();
 
     if (isSelected) {
       ctx.strokeStyle = car.team.color;
-      ctx.lineWidth = 1.5;
+      ctx.lineWidth = 2;
       ctx.stroke();
     }
   }

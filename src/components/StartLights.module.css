@@ -4,8 +4,8 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(4, 7, 15, 0.75);
-  backdrop-filter: blur(4px);
+  background: rgba(4, 7, 15, 0.80);
+  backdrop-filter: blur(5px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -15,18 +15,22 @@
 .gantryContainer {
   background: linear-gradient(180deg, #11141f 0%, #090b12 100%);
   border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 30px rgba(225, 6, 0, 0.2);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.85), 0 0 30px rgba(225, 6, 0, 0.25);
   border-radius: 16px;
-  padding: 32px 48px;
+  padding: 24px 36px;
   text-align: center;
-  max-width: 600px;
+  max-width: 620px;
+  width: 90%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
 }
 
 .gantryHeader {
-  margin-bottom: 24px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
 }
 
 .f1Brand {
@@ -47,10 +51,10 @@
 
 .lightsGantry {
   display: flex;
-  gap: 18px;
+  gap: 16px;
   justify-content: center;
   background: #000000;
-  padding: 18px 24px;
+  padding: 14px 20px;
   border-radius: 12px;
   border: 2px solid #222530;
   box-shadow: inset 0 2px 10px rgba(0,0,0,0.8);
@@ -59,16 +63,16 @@
 .lightColumn {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   background: #11131a;
-  padding: 8px;
+  padding: 6px;
   border-radius: 8px;
   border: 1px solid #252836;
 }
 
 .lightBulb {
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   transition: all 0.08s ease;
 }
@@ -84,21 +88,52 @@
   border: 1px solid #ffffff;
 }
 
+.driverSelectorSection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.selectorLabel {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  color: #cbd5e1;
+  letter-spacing: 1px;
+}
+
+.driverSelectDropdown {
+  background: #182032;
+  color: #ffffff;
+  border: 1.5px solid rgba(255, 255, 255, 0.2);
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  outline: none;
+}
+
 .startButton {
-  margin-top: 28px;
   background: linear-gradient(135deg, #e10600 0%, #a80400 100%);
   color: #ffffff;
   border: none;
-  padding: 14px 32px;
+  padding: 12px 32px;
   border-radius: 8px;
   font-family: 'Orbitron', sans-serif;
-  font-size: 14px;
-  font-weight: 700;
+  font-size: 13.5px;
+  font-weight: 800;
   letter-spacing: 2px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   transition: all 0.2s;
   box-shadow: 0 4px 20px rgba(225, 6, 0, 0.4);
 }
@@ -110,24 +145,16 @@
 }
 
 .lightsOutBanner {
-  margin-top: 24px;
   font-family: 'Orbitron', sans-serif;
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 900;
   color: #00ff66;
   letter-spacing: 2px;
-  animation: pulse 0.3s infinite alternate;
 }
 
 .statusText {
-  margin-top: 24px;
   font-family: 'Orbitron', sans-serif;
-  font-size: 13px;
+  font-size: 12px;
   color: #f59e0b;
   letter-spacing: 1px;
-}
-
-@keyframes pulse {
-  from { opacity: 0.8; transform: scale(0.98); }
-  to { opacity: 1; transform: scale(1.02); }
 }
