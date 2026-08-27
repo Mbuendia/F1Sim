@@ -6,9 +6,9 @@ import svgPathsJson from '../data/svgTrackPaths.json';
 const svgPathsMap: Record<string, string> = svgPathsJson as any;
 
 /**
- * Genera un TrackDefinition de alta fidelidad para cualquier circuito oficial FIA a partir de su path SVG
+ * Genera un TrackDefinition con el trazado oficial FIA alineado con la recta de meta en la parte inferior
  */
-export function buildTrackFromSvg(circuit: CircuitSpec, sampleCount: number = 600): TrackDefinition {
+export function buildTrackFromSvg(circuit: CircuitSpec, sampleCount: number = 650): TrackDefinition {
   const pathD = svgPathsMap[circuit.svgFile] || '';
 
   const rawPoints: { x: number; y: number }[] = [];
@@ -31,7 +31,7 @@ export function buildTrackFromSvg(circuit: CircuitSpec, sampleCount: number = 60
     }
   }
 
-  // Fallback si no se pudo muestrear
+  // Fallback seguro
   if (rawPoints.length === 0) {
     for (let i = 0; i < sampleCount; i++) {
       const angle = (i / sampleCount) * Math.PI * 2;
@@ -42,11 +42,48 @@ export function buildTrackFromSvg(circuit: CircuitSpec, sampleCount: number = 60
     }
   }
 
-  // 1. Normalizar y escalar a dimensiones del mundo de simulación (1600 x 1100)
+  // ── 1. ALINEACIÓN: Rotar para que la recta de meta esté horizontal y abajo ──
+  // El punto 0 del SVG es la línea de salida/meta
+  const p0 = rawPoints[0];
+  const p1 = rawPoints[Math.min(rawPoints.length - 1, 15)];
+  const initialAngle = Math.atan2(p1.y - p0.y, p1.x - p0.x);
+
+  // Centro geométrico para rotar
+  let sumX = 0, sumY = 0;
+  rawPoints.forEach(p => { sumX += p.x; sumY += p.y; });
+  const centerX = sumX / rawPoints.length;
+  const centerY = sumY / rawPoints.length;
+
+  // Rotamos para hacer la recta horizontal (ángulo 0 o PI)
+  let rotAngle = -initialAngle;
+  let rotatedPoints = rawPoints.map(p => {
+    const rx = p.x - centerX;
+    const ry = p.y - centerY;
+    return {
+      x: rx * Math.cos(rotAngle) - ry * Math.sin(rotAngle) + centerX,
+      y: rx * Math.sin(rotAngle) + ry * Math.cos(rotAngle) + centerY
+    };
+  });
+
+  // Comprobar si la recta de meta (punto 0) quedó arriba o abajo del centroide
+  if (rotatedPoints[0].y < centerY) {
+    // Si quedó arriba, rotamos 180º para colocarla en la parte inferior
+    rotAngle += Math.PI;
+    rotatedPoints = rawPoints.map(p => {
+      const rx = p.x - centerX;
+      const ry = p.y - centerY;
+      return {
+        x: rx * Math.cos(rotAngle) - ry * Math.sin(rotAngle) + centerX,
+        y: rx * Math.sin(rotAngle) + ry * Math.cos(rotAngle) + centerY
+      };
+    });
+  }
+
+  // ── 2. ESCALADO AL MUNDO DE SIMULACIÓN (1600 x 1050) ──
   let minRawX = Infinity, maxRawX = -Infinity;
   let minRawY = Infinity, maxRawY = -Infinity;
 
-  rawPoints.forEach(p => {
+  rotatedPoints.forEach(p => {
     if (p.x < minRawX) minRawX = p.x;
     if (p.x > maxRawX) maxRawX = p.x;
     if (p.y < minRawY) minRawY = p.y;
@@ -56,19 +93,19 @@ export function buildTrackFromSvg(circuit: CircuitSpec, sampleCount: number = 60
   const rawWidth = Math.max(1, maxRawX - minRawX);
   const rawHeight = Math.max(1, maxRawY - minRawY);
 
-  const targetWidth = 1400;
-  const targetHeight = 900;
+  const targetWidth = 1420;
+  const targetHeight = 880;
   const scale = Math.min(targetWidth / rawWidth, targetHeight / rawHeight);
 
-  const offsetX = 100 + (targetWidth - rawWidth * scale) / 2;
-  const offsetY = 100 + (targetHeight - rawHeight * scale) / 2;
+  const offsetX = 90 + (targetWidth - rawWidth * scale) / 2;
+  const offsetY = 70 + (targetHeight - rawHeight * scale) / 2;
 
-  const worldPoints = rawPoints.map(p => ({
+  const worldPoints = rotatedPoints.map(p => ({
     x: (p.x - minRawX) * scale + offsetX,
     y: (p.y - minRawY) * scale + offsetY
   }));
 
-  // 2. Calcular distancias, ángulos, normales, curvatura y sectores
+  // ── 3. CÁLCULO DE DISTANCIAS, ÁNGULOS, CURVATURAS Y SECTORES ──
   const total = worldPoints.length;
   const splinePoints: SplinePoint[] = [];
   let accumDist = 0;
@@ -96,13 +133,14 @@ export function buildTrackFromSvg(circuit: CircuitSpec, sampleCount: number = 60
     if (progress > 0.67) sector = 3;
     else if (progress > 0.33) sector = 2;
 
-    // Límite de velocidad dinámico basado en la física de curvatura del viraje
     const cornerTightness = Math.min(1.0, curvature * 45);
     const speedLimit = Math.max(0.38, 1.0 - cornerTightness * 0.62);
 
-    const isBrakingZone = cornerTightness > 0.55;
-    const isDrsZone = speedLimit > 0.92 && (progress < 0.12 || progress > 0.88 || (progress > 0.45 && progress < 0.58));
-    const drsZoneId = isDrsZone ? (progress > 0.40 && progress < 0.60 ? 2 : 1) : undefined;
+    const isBrakingZone = cornerTightness > 0.52;
+    const isMainStraight = progress <= 0.08 || progress >= 0.92;
+    const isBackStraight = progress >= 0.42 && progress <= 0.58;
+    const isDrsZone = (isMainStraight || isBackStraight) && speedLimit > 0.90;
+    const drsZoneId = isDrsZone ? (isMainStraight ? 1 : 2) : undefined;
 
     splinePoints.push({
       x: curr.x,
@@ -121,12 +159,12 @@ export function buildTrackFromSvg(circuit: CircuitSpec, sampleCount: number = 60
     accumDist += dist;
   }
 
-  // 3. Generar Pit Lane paralelo a la recta de salida (inicio del trazado)
+  // ── 4. GENERACIÓN DEL PIT LANE PARALELO A LA RECTA INFERIOR ──
   const pitStartIdx = Math.floor(total * 0.94);
   const pitEndIdx = Math.floor(total * 0.06);
   const pitLanePoints: Point2D[] = [];
 
-  const pitOffset = 22; // Offset en metros
+  const pitOffset = 24; // Offset hacia el interior de la pista
   for (let i = pitStartIdx; i < total; i++) {
     const pt = splinePoints[i];
     pitLanePoints.push({
@@ -142,12 +180,12 @@ export function buildTrackFromSvg(circuit: CircuitSpec, sampleCount: number = 60
     });
   }
 
-  // 4. Marcadores de curvas
+  // ── 5. CURVAS Y BORDES ──
   const corners: CornerMarker[] = [];
   let cornerCount = 0;
-  for (let i = 5; i < total - 5; i += 15) {
+  for (let i = 8; i < total - 8; i += 12) {
     const pt = splinePoints[i];
-    if (pt.isBrakingZone && pt.speedLimitFactor < 0.60) {
+    if (pt.isBrakingZone && pt.speedLimitFactor < 0.62) {
       cornerCount++;
       corners.push({
         number: cornerCount,
@@ -156,7 +194,7 @@ export function buildTrackFromSvg(circuit: CircuitSpec, sampleCount: number = 60
         gear: pt.speedLimitFactor < 0.45 ? 2 : (pt.speedLimitFactor < 0.6 ? 3 : 4),
         apexSpeedKmh: Math.round(pt.speedLimitFactor * 260)
       });
-      i += 20; // Saltar para no duplicar la misma curva
+      i += 18;
     }
   }
 
@@ -186,10 +224,10 @@ export function buildTrackFromSvg(circuit: CircuitSpec, sampleCount: number = 60
     sector1EndT: 0.33,
     sector2EndT: 0.67,
     bounds: {
-      minX: minX - 120,
-      maxX: maxX + 120,
-      minY: minY - 120,
-      maxY: maxY + 120
+      minX: minX - 100,
+      maxX: maxX + 100,
+      minY: minY - 100,
+      maxY: maxY + 100
     }
   };
 }

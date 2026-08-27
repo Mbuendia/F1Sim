@@ -1,11 +1,12 @@
 import { CarState, TireCompound, StintLog } from '../types/f1';
 import { TireModel } from './TireModel';
-import { BARCELONA_CIRCUIT } from '../data/barcelonaTrack';
+import { TrackDefinition } from '../data/barcelonaTrack';
 
 export class PitStopModel {
   static readonly PIT_SPEED_LIMIT_KMH = 80;
 
   static shouldEnterPit(car: CarState): boolean {
+    if (car.hasPuncture) return true;
     if (car.tires.health <= 5.0 && !car.pitStop.isPitting) {
       return true;
     }
@@ -15,11 +16,13 @@ export class PitStopModel {
   static updatePitStop(
     car: CarState,
     dt: number,
-    lapDistanceMeters: number
+    lapDistanceMeters: number,
+    track?: TrackDefinition
   ): boolean {
     const pit = car.pitStop;
+    const pitEntryThreshold = track ? track.pitEntryT : 0.94;
 
-    const inEntryWindow = car.trackT >= BARCELONA_CIRCUIT.pitEntryT || car.trackT <= 0.01;
+    const inEntryWindow = car.trackT >= pitEntryThreshold || car.trackT <= 0.01;
     
     if (!pit.isPitting && this.shouldEnterPit(car) && inEntryWindow) {
       pit.isPitting = true;
@@ -60,33 +63,32 @@ export class PitStopModel {
           }
 
           car.tires = TireModel.createFreshTire(nextCompound);
-          car.tires.lapsOnTire = 0;
           pit.totalPitStops += 1;
 
-          const currentLap = car.currentLap || 1;
           const newStint: StintLog = {
-            stintNumber: pit.totalPitStops + 1,
+            stintNumber: pit.stints.length + 1,
             compound: nextCompound,
-            startLap: currentLap,
-            endLap: currentLap + expectedLaps,
+            startLap: car.currentLap,
+            endLap: car.currentLap + expectedLaps,
             expectedLaps
           };
           pit.stints.push(newStint);
+
+          pit.pitLaneProgress = 0.41;
         }
       } 
-      else if (pit.pitLaneProgress < 1.0) {
+      else if (pit.pitLaneProgress >= 0.41 && pit.pitLaneProgress < 1.0) {
         pit.pitLaneProgress += dt * 0.11;
         car.currentSpeedKmh = this.PIT_SPEED_LIMIT_KMH;
-      } 
-      else {
-        pit.isPitting = false;
-        car.isInPitLane = false;
-        pit.pitLaneProgress = 0;
-        
-        const currentLapInteger = Math.floor(car.progress);
-        car.progress = (currentLapInteger + 1) + BARCELONA_CIRCUIT.pitExitT;
-        car.trackT = BARCELONA_CIRCUIT.pitExitT;
-        car.currentSpeedKmh = this.PIT_SPEED_LIMIT_KMH;
+
+        if (pit.pitLaneProgress >= 1.0) {
+          pit.isPitting = false;
+          car.isInPitLane = false;
+          pit.pitLaneProgress = 0.0;
+          const pitExitT = track ? track.pitExitT : 0.06;
+          car.trackT = pitExitT;
+          car.progress = Math.floor(car.progress) + pitExitT;
+        }
       }
       return true;
     }

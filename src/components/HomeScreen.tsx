@@ -43,6 +43,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   const centerPanelRef = useRef<HTMLDivElement | null>(null);
   const sidePanelRef = useRef<HTMLDivElement | null>(null);
   const pathRef = useRef<SVGPathElement | null>(null);
+  const glowTrailRef = useRef<SVGPathElement | null>(null);
   const runnerCarRef = useRef<SVGGElement | null>(null);
 
   useEffect(() => {
@@ -71,7 +72,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       });
   }, [inspectedCircuitId]);
 
-  // Animación del coche sobre el SVG del circuito usando createMotionPath / getPointAtLength
+  // Animación del circuito con createMotionPath y estela de trazo en bucle continuo
   useEffect(() => {
     if (activeTab !== 'circuits' || !extractedPathD) return;
 
@@ -81,8 +82,28 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     const timer = setTimeout(() => {
       const pathEl = pathRef.current;
       const carEl = runnerCarRef.current;
+      const trailEl = glowTrailRef.current;
 
       if (!pathEl || !carEl) return;
+
+      const totalLen = pathEl.getTotalLength();
+
+      // Configurar estela brillante que va recorriendo el circuito
+      if (trailEl) {
+        trailEl.style.strokeDasharray = `${totalLen * 0.28} ${totalLen * 0.72}`;
+        trailEl.style.strokeDashoffset = '0';
+
+        try {
+          animate(trailEl, {
+            strokeDashoffset: [-totalLen, 0],
+            duration: 4800,
+            loop: true,
+            ease: 'linear'
+          });
+        } catch (e) {
+          // Ignore
+        }
+      }
 
       try {
         if (typeof createMotionPath === 'function') {
@@ -98,9 +119,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         console.warn('Anime createMotionPath fallback to getPointAtLength:', err);
       }
 
-      // Fallback robusto garantizado si createMotionPath no se adjuntó
+      // Fallback robusto sincronizado al milímetro
       if (!animInstance && pathEl) {
-        const totalLen = pathEl.getTotalLength();
         let startT = performance.now();
 
         const step = (now: number) => {
@@ -421,7 +441,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               </div>
             </div>
           ) : (
-            /* DETALLE COMPLETO DEL CIRCUITO CON ANIMACIÓN CREATEMOTIONPATH INTEGRADA */
+            /* DETALLE COMPLETO DEL CIRCUITO CON ESTELA ANIMADA & CREATEMOTIONPATH */
             <div>
               <div className={styles.detailHeader}>
                 <div>
@@ -454,7 +474,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 </div>
               </div>
 
-              {/* Visor SVG de Alta Fidelidad con Coche Animado por MotionPath */}
+              {/* Visor con Matriz de Puntos, Estela Luminosa en Bucle y Coche MotionPath */}
               <div className={styles.svgMotionPathContainer}>
                 {extractedPathD ? (
                   <svg 
@@ -462,40 +482,45 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                     preserveAspectRatio="xMidYMid meet" 
                     className={styles.svgMotionCanvas}
                   >
-                    {/* Brillo de fondo */}
+                    {/* Trazado base oscuro */}
                     <path 
                       d={extractedPathD} 
                       fill="none" 
-                      stroke="#0891b2" 
+                      stroke="#0f3b4c" 
                       strokeWidth="14" 
-                      opacity="0.35" 
+                      opacity="0.7" 
                     />
-                    {/* Trazo nítido del circuito */}
+                    {/* Trazo guía cian */}
                     <path 
                       ref={pathRef}
                       id="active-circuit-path" 
                       d={extractedPathD} 
                       fill="none" 
-                      stroke="#22d3ee" 
-                      strokeWidth="4" 
+                      stroke="#0891b2" 
+                      strokeWidth="3.5" 
                       strokeLinecap="round" 
                       strokeLinejoin="round" 
                     />
-                    {/* Monoplaza F1 cápsula estilizada que recorre el circuito */}
+                    {/* Estela luminosa cian brillante que recorre el circuito en bucle */}
+                    <path 
+                      ref={glowTrailRef}
+                      d={extractedPathD} 
+                      fill="none" 
+                      stroke="#00f0ff" 
+                      strokeWidth="5.5" 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round" 
+                      filter="drop-shadow(0 0 10px #00f0ff)"
+                    />
+                    {/* Cursor / Monoplaza F1 estilizado con dirección de avance */}
                     <g ref={runnerCarRef} id="circuit-runner-car">
-                      <rect 
-                        x="-11" 
-                        y="-5.5" 
-                        width="22" 
-                        height="11" 
-                        rx="5.5" 
-                        ry="5.5" 
-                        fill="#ffffff" 
-                        stroke="#22d3ee" 
+                      <polygon 
+                        points="-10,-6 10,0 -10,6 -6,0" 
+                        fill="#00f0ff" 
+                        stroke="#ffffff" 
                         strokeWidth="1.5" 
-                        filter="drop-shadow(0 0 8px #22d3ee)"
+                        filter="drop-shadow(0 0 6px #00f0ff)"
                       />
-                      <circle cx="4" cy="0" r="2.5" fill="#e10600" />
                     </g>
                   </svg>
                 ) : (

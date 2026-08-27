@@ -292,8 +292,8 @@ export class RaceSimulation {
         car.tires.health = 0;
       }
 
-      // 1. Pit Stop Update
-      const isHandlingPit = PitStopModel.updatePitStop(car, dt, lapDistanceMeters);
+      // 1. Pit Stop Update con el circuito activo
+      const isHandlingPit = PitStopModel.updatePitStop(car, dt, lapDistanceMeters, this.activeTrack);
 
       if (isHandlingPit) {
         car.hasPuncture = false;

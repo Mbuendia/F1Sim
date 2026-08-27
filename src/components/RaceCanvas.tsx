@@ -43,10 +43,11 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
 
       ctx.resetTransform();
       ctx.scale(dpr, dpr);
-      camera.resize(rect.width, rect.height);
+      camera.resize(rect.width, rect.height, simulation.activeTrack);
     };
 
     handleResize();
+    camera.resetToFullTrack(simulation.activeTrack);
     window.addEventListener('resize', handleResize);
 
     const loop = (currentTime: number) => {
@@ -54,7 +55,7 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
       lastTime = currentTime;
 
       simulation.update(dtRaw);
-      camera.update(simulation.cars, dtRaw);
+      camera.update(simulation.cars, dtRaw, simulation.activeTrack);
 
       ctx.save();
       const dpr = window.devicePixelRatio || 1;
@@ -65,7 +66,7 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
       ctx.fillRect(0, 0, camera.screenWidth, camera.screenHeight);
 
       TrackRenderer.renderTrack(ctx, simulation.activeTrack, camera, dpr);
-      CarRenderer.renderCars(ctx, simulation.cars, camera, selectedCarId);
+      CarRenderer.renderCars(ctx, simulation.cars, camera, selectedCarId, simulation.activeTrack);
 
       // ── MINIMAPA A LA IZQUIERDA DEL TODO ──
       if (camera.followingCarId !== null) {
@@ -82,7 +83,7 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
       cancelAnimationFrame(animationFrameId);
       window.removeEventListener('resize', handleResize);
     };
-  }, [simulation, camera, selectedCarId]);
+  }, [simulation, camera, selectedCarId, simulation.circuitId]);
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;

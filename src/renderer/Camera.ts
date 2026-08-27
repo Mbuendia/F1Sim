@@ -1,4 +1,4 @@
-import { BARCELONA_CIRCUIT } from '../data/barcelonaTrack';
+import { TrackDefinition } from '../data/barcelonaTrack';
 import { CarState } from '../types/f1';
 
 export class Camera {
@@ -17,20 +17,21 @@ export class Camera {
   static readonly FOLLOW_ZOOM = 2.6;
 
   constructor() {
-    this.resetToFullTrack();
+    // Initial state
   }
 
-  resize(width: number, height: number) {
+  resize(width: number, height: number, track?: TrackDefinition) {
     this.screenWidth = width;
     this.screenHeight = height;
-    if (this.followingCarId === null) {
-      this.resetToFullTrack();
+    if (this.followingCarId === null && track) {
+      this.resetToFullTrack(track);
     }
   }
 
-  resetToFullTrack() {
+  resetToFullTrack(track?: TrackDefinition) {
     this.followingCarId = null;
-    const b = BARCELONA_CIRCUIT.bounds;
+    if (!track) return;
+    const b = track.bounds;
     const trackW = b.maxX - b.minX + 160;
     const trackH = b.maxY - b.minY + 160;
 
@@ -48,56 +49,51 @@ export class Camera {
     this.targetZoom = Camera.FOLLOW_ZOOM;
   }
 
-  update(cars: CarState[], dt: number) {
+  update(cars: CarState[], dt: number, track?: TrackDefinition) {
     if (this.followingCarId !== null) {
       const car = cars.find(c => c.id === this.followingCarId);
-      if (car && car.status !== 'finished') {
-        if (car.isInPitLane && BARCELONA_CIRCUIT.pitLanePoints.length > 0) {
-          // Seguimiento continuo y suave en el carril de boxes
-          const pitPts = BARCELONA_CIRCUIT.pitLanePoints;
+      if (car && car.status !== 'finished' && track) {
+        if (car.isInPitLane && track.pitLanePoints.length > 0) {
+          const pitPts = track.pitLanePoints;
           const pitProgress = car.pitStop.pitLaneProgress;
           const pIndex = Math.min(pitPts.length - 2, Math.floor(pitProgress * (pitPts.length - 1)));
           const frac = (pitProgress * (pitPts.length - 1)) - pIndex;
           const p1 = pitPts[pIndex];
           const p2 = pitPts[pIndex + 1] || p1;
-
           this.targetX = p1.x + (p2.x - p1.x) * frac;
           this.targetY = p1.y + (p2.y - p1.y) * frac;
-          this.targetZoom = Camera.FOLLOW_ZOOM;
         } else {
-          // Seguimiento en pista principal
-          const totalPts = BARCELONA_CIRCUIT.points.length;
+          const points = track.points;
           const normT = ((car.progress % 1) + 1) % 1;
-          const ptIndex = Math.floor(normT * totalPts) % totalPts;
-          const pt = BARCELONA_CIRCUIT.points[ptIndex];
-
-          const lookAheadIdx = (ptIndex + 8) % totalPts;
-          const lookPt = BARCELONA_CIRCUIT.points[lookAheadIdx];
-
-          this.targetX = pt.x + (lookPt.x - pt.x) * 0.35;
-          this.targetY = pt.y + (lookPt.y - pt.y) * 0.35;
-          this.targetZoom = Camera.FOLLOW_ZOOM;
+          const ptIdx = Math.floor(normT * points.length) % points.length;
+          const pt = points[ptIdx] || points[0];
+          this.targetX = pt.x;
+          this.targetY = pt.y;
         }
       }
     }
 
-    const smoothFactor = Math.min(1.0, 5.5 * dt);
-    this.x += (this.targetX - this.x) * smoothFactor;
-    this.y += (this.targetY - this.y) * smoothFactor;
-    this.zoom += (this.targetZoom - this.zoom) * smoothFactor;
+    const lerpSpeed = 7.0 * dt;
+    this.x += (this.targetX - this.x) * Math.min(1.0, lerpSpeed);
+    this.y += (this.targetY - this.y) * Math.min(1.0, lerpSpeed);
+    this.zoom += (this.targetZoom - this.zoom) * Math.min(1.0, lerpSpeed);
   }
 
-  worldToScreen(wx: number, wy: number): { x: number; y: number } {
+  worldToScreen(worldX: number, worldY: number) {
+    const screenCenterX = this.screenWidth / 2;
+    const screenCenterY = this.screenHeight / 2;
     return {
-      x: (wx - this.x) * this.zoom + this.screenWidth / 2,
-      y: (wy - this.y) * this.zoom + this.screenHeight / 2
+      x: screenCenterX + (worldX - this.x) * this.zoom,
+      y: screenCenterY + (worldY - this.y) * this.zoom
     };
   }
 
-  screenToWorld(sx: number, sy: number): { x: number; y: number } {
+  screenToWorld(screenX: number, screenY: number) {
+    const screenCenterX = this.screenWidth / 2;
+    const screenCenterY = this.screenHeight / 2;
     return {
-      x: (sx - this.screenWidth / 2) / this.zoom + this.x,
-      y: (sy - this.screenHeight / 2) / this.zoom + this.y
+      x: this.x + (screenX - screenCenterX) / this.zoom,
+      y: this.y + (screenY - screenCenterY) / this.zoom
     };
   }
 }
