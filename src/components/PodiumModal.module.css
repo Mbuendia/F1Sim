@@ -4,8 +4,8 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(4, 7, 15, 0.90);
-  backdrop-filter: blur(10px);
+  background: rgba(4, 7, 15, 0.92);
+  backdrop-filter: blur(12px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -25,13 +25,13 @@
 
 .podiumContainer {
   background: linear-gradient(180deg, #131728 0%, #080a14 100%);
-  border: 2px solid rgba(255, 215, 0, 0.4);
+  border: 2px solid rgba(255, 215, 0, 0.45);
   box-shadow: 0 25px 70px rgba(0, 0, 0, 0.95), 0 0 60px rgba(255, 215, 0, 0.25);
   border-radius: 24px;
-  padding: 36px 48px;
+  padding: 32px 42px;
   text-align: center;
-  max-width: 900px;
-  width: 92%;
+  max-width: 920px;
+  width: 94%;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -40,7 +40,7 @@
 }
 
 .header {
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .f1Logo {
@@ -72,9 +72,9 @@
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  gap: 24px;
+  gap: 20px;
   width: 100%;
-  margin: 20px 0 28px;
+  margin: 16px 0 24px;
 }
 
 .podiumStep {
@@ -82,7 +82,7 @@
   flex-direction: column;
   align-items: center;
   flex: 1;
-  max-width: 240px;
+  max-width: 260px;
 }
 
 .stepP1 {
@@ -104,44 +104,68 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  letter-spacing: 1px;
+  letter-spacing: 1.5px;
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.6);
 }
 
 .driverCard {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1.5px solid rgba(255, 255, 255, 0.12);
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(8px);
+  border: 1.5px solid rgba(255, 255, 255, 0.15);
   border-top: 5px solid #e10600;
   border-radius: 14px 14px 0 0;
-  padding: 14px;
+  padding: 14px 12px;
   width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
 }
 
 .winnerCard {
-  background: rgba(255, 215, 0, 0.1);
-  border-color: rgba(255, 215, 0, 0.4);
-  box-shadow: 0 0 30px rgba(255, 215, 0, 0.25);
+  background: rgba(30, 41, 59, 0.95);
+  border-color: rgba(255, 215, 0, 0.45);
+  box-shadow: 0 0 35px rgba(255, 215, 0, 0.3);
+  padding: 16px 14px;
 }
 
-.carMini {
-  width: 60px;
-  height: 16px;
-  border-radius: 8px;
-  margin: 6px 0;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.7);
+.teamBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid;
+  margin: 4px 0 2px;
+  max-width: 95%;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
-.winnerCar {
-  width: 75px;
-  height: 20px;
-  border-radius: 10px;
+.teamColorDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 0 8px currentColor;
+}
+
+.teamBadgeText {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 12.5px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .driverFlag {
-  font-size: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 2px 0;
 }
 
 .driverName {
@@ -149,39 +173,36 @@
   font-size: 16px;
   font-weight: 800;
   color: #f1f5f9;
+  text-align: center;
 }
 
 .winnerName {
   font-family: 'Orbitron', sans-serif;
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 900;
   color: #ffffff;
-}
-
-.teamName {
-  font-size: 12px;
-  color: #94a3b8;
-  font-family: 'Rajdhani', sans-serif;
-  font-weight: 600;
+  text-align: center;
 }
 
 .gapText {
   font-family: 'Orbitron', sans-serif;
-  font-size: 13px;
+  font-size: 12px;
   color: #38bdf8;
   font-weight: 800;
-  margin-top: 4px;
+  margin-top: 2px;
 }
 
 .winnerTag {
   font-family: 'Orbitron', sans-serif;
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 900;
   color: #ffd700;
-  background: rgba(255, 215, 0, 0.25);
+  background: rgba(255, 215, 0, 0.2);
+  border: 1px solid rgba(255, 215, 0, 0.4);
   padding: 3px 10px;
-  border-radius: 5px;
-  margin-top: 4px;
+  border-radius: 6px;
+  margin-top: 2px;
+  letter-spacing: 1px;
 }
 
 .pedestal {
@@ -205,16 +226,16 @@
   background: linear-gradient(135deg, #e10600 0%, #a80400 100%);
   color: #ffffff;
   border: none;
-  padding: 14px 36px;
+  padding: 13px 32px;
   border-radius: 10px;
   font-family: 'Orbitron', sans-serif;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 800;
   letter-spacing: 2px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   transition: all 0.2s;
   box-shadow: 0 8px 25px rgba(225, 6, 0, 0.5);
 }
