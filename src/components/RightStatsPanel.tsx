@@ -1,15 +1,18 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import styles from './RightStatsPanel.module.css';
 import { CarState, TrackWeatherState } from '../types/f1';
 import { 
   Timer, 
   History, 
   TrendingDown, 
-  Gauge,
-  Wind,
-  CloudRain,
-  Thermometer,
-  Droplets
+  Gauge, 
+  Wind, 
+  CloudRain, 
+  Thermometer, 
+  Droplets,
+  Radio,
+  Compass,
+  Zap
 } from 'lucide-react';
 import { animate } from 'animejs';
 
@@ -23,6 +26,8 @@ export interface RightStatsPanelProps {
   weather?: TrackWeatherState;
 }
 
+export type RightPanelTab = 'car_telemetry' | 'track_weather';
+
 export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
   car,
   defaultCar,
@@ -32,21 +37,23 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
   overallBestS3,
   weather,
 }) => {
+  const [activeTab, setActiveTab] = useState<RightPanelTab>('car_telemetry');
   const panelRef = useRef<HTMLDivElement>(null);
   const pitBannerRef = useRef<HTMLDivElement>(null);
+  const radarCanvasRef = useRef<HTMLCanvasElement>(null);
 
   const activeCar = car || defaultCar;
 
   useEffect(() => {
     if (activeCar && panelRef.current) {
       animate(panelRef.current, {
-        opacity: [0.88, 1],
-        translateX: [10, 0],
+        opacity: [0.92, 1],
+        translateX: [6, 0],
         ease: 'outQuad',
-        duration: 350
+        duration: 250
       });
     }
-  }, [activeCar?.id]);
+  }, [activeCar?.id, activeTab]);
 
   useEffect(() => {
     if (activeCar?.pitStop.isPitting && pitBannerRef.current) {
@@ -60,11 +67,121 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
     }
   }, [activeCar?.pitStop.isPitting]);
 
+  // ── PROCEDURAL RADAR GPS CANVAS WITH ROTATING SWEEP & MOVING RAIN CLOUDS ──
+  useEffect(() => {
+    if (activeTab !== 'track_weather') return;
+    const canvas = radarCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    let animId: number;
+    let angle = 0;
+    const size = 260;
+    canvas.width = size;
+    canvas.height = size;
+    const cx = size / 2;
+    const cy = size / 2;
+
+    const clouds = [
+      { x: cx + 35, y: cy - 40, r: 42, opacity: 0.35, speedX: -0.12, speedY: 0.08 },
+      { x: cx - 50, y: cy + 30, r: 36, opacity: 0.25, speedX: -0.15, speedY: 0.05 },
+      { x: cx + 20, y: cy + 50, r: 28, opacity: 0.20, speedX: -0.10, speedY: 0.09 },
+    ];
+
+    const renderRadar = () => {
+      ctx.clearRect(0, 0, size, size);
+
+      // Radar dark background
+      ctx.fillStyle = '#060a12';
+      ctx.fillRect(0, 0, size, size);
+
+      // Distance range rings (5km, 10km, 20km)
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.18)';
+      ctx.lineWidth = 1;
+      [35, 70, 105].forEach((r, idx) => {
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.fillStyle = 'rgba(56, 189, 248, 0.45)';
+        ctx.font = '8px Orbitron';
+        ctx.fillText(`${(idx + 1) * 5}km`, cx + 3, cy - r + 9);
+      });
+
+      // Axis crosshairs
+      ctx.beginPath();
+      ctx.moveTo(cx, 15);
+      ctx.lineTo(cx, size - 15);
+      ctx.moveTo(15, cy);
+      ctx.lineTo(size - 15, cy);
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.12)';
+      ctx.stroke();
+
+      // Draw moving weather clouds
+      clouds.forEach((c) => {
+        c.x += c.speedX;
+        c.y += c.speedY;
+        if (c.x < -20) c.x = size + 20;
+        if (c.y > size + 20) c.y = -20;
+
+        const isWet = (weather?.waterPercentage || 0) > 20;
+        const grad = ctx.createRadialGradient(c.x, c.y, 2, c.x, c.y, c.r);
+        grad.addColorStop(0, isWet ? 'rgba(56, 189, 248, 0.65)' : 'rgba(148, 163, 184, 0.35)');
+        grad.addColorStop(0.6, isWet ? 'rgba(2, 132, 199, 0.35)' : 'rgba(100, 116, 139, 0.15)');
+        grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(c.x, c.y, c.r, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // Rotating radar beam
+      angle += 0.035;
+      const sweepX = cx + Math.cos(angle) * 115;
+      const sweepY = cy + Math.sin(angle) * 115;
+
+      const beamGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 115);
+      beamGrad.addColorStop(0, 'rgba(56, 189, 248, 0.5)');
+      beamGrad.addColorStop(1, 'rgba(56, 189, 248, 0.0)');
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.arc(cx, cy, 115, angle - 0.45, angle);
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(56, 189, 248, 0.15)';
+      ctx.fill();
+      ctx.restore();
+
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(sweepX, sweepY);
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // Circuit Center Icon (GPS Beacon)
+      ctx.beginPath();
+      ctx.arc(cx, cy, 4.5, 0, Math.PI * 2);
+      ctx.fillStyle = '#e10600';
+      ctx.fill();
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      animId = requestAnimationFrame(renderRadar);
+    };
+
+    renderRadar();
+    return () => cancelAnimationFrame(animId);
+  }, [activeTab, weather?.waterPercentage]);
+
   if (!activeCar) return null;
 
-  const { driver, team, sectors, pitStop, stats, tires, currentPosition, lapHistory, bestLapTime } = activeCar;
+  const { team, sectors, pitStop, stats, tires, lapHistory, bestLapTime } = activeCar;
 
-  // ── 1. ESTILOS DE SECTORES ──
+  // ── ESTILOS DE SECTORES ──
   const getSectorStyle = (
     currentSectorVal: number | null,
     personalBest: number | null,
@@ -85,7 +202,7 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
   const s2Style = getSectorStyle(sectors.s2, sectors.personalBestS2, overallBestS2);
   const s3Style = getSectorStyle(sectors.s3, sectors.personalBestS3, overallBestS3);
 
-  // ── 2. GRÁFICA DE DEGRADACIÓN Y PREVISIÓN FIJA (1 a 66 vueltas) ──
+  // ── GRÁFICA DE DEGRADACIÓN Y PREVISIÓN FIJA ──
   const chartW = 320;
   const chartH = 95;
   const padLeft = 26;
@@ -134,312 +251,407 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
   const tirePressurePsi = (22.5 + (tires.tempCelsius - 85) * 0.05).toFixed(1);
   const downforceLevel = team.aerodynamics > 0.90 ? 'ALTA (High Downforce)' : 'MEDIA (Medium DF)';
 
+  // Rain Recommendation Strategy
+  const getRainRecommendation = () => {
+    const depth = weather?.waterDepthMm || 0;
+    if (depth > 3.0) return { compound: 'WET (AZUL)', advice: 'Extrema acumulación de agua. Slicks no operativos.', col: '#0284c7' };
+    if (depth > 0.5) return { compound: 'INTERMEDIATE (VERDE)', advice: 'Pista húmeda / con spray. Ventana óptima de Inter.', col: '#22c55e' };
+    return { compound: 'SLICK (SECO)', advice: 'Asfalto seco. Máximo agarre en compuestos Soft/Med/Hard.', col: '#ffd700' };
+  };
+  const rainRec = getRainRecommendation();
+
   return (
     <div ref={panelRef} className={styles.container}>
-      {/* ── TARJETA HERO DEL PILOTO PROTAGONISTA ── */}
-      <div className={styles.driverHeroCard} style={{ borderLeftColor: team.color }}>
-        <div className={styles.driverHeroLeft}>
-          <span className={styles.driverHeroPos}>P{currentPosition}</span>
-          <div>
-            <div className={styles.driverHeroName}>{driver.countryFlag} {driver.firstName} {driver.lastName}</div>
-            <div className={styles.driverHeroTeam}>{team.name}</div>
-          </div>
-        </div>
-        <div className={styles.driverHeroNum} style={{ color: team.color }}>#{driver.number}</div>
+      {/* ── 1. SELECTOR DE PESTAÑAS (TABS) ── */}
+      <div className={styles.tabBar}>
+        <button
+          type="button"
+          className={`${styles.tabBtn} ${activeTab === 'car_telemetry' ? styles.tabBtnActive : ''}`}
+          onClick={() => setActiveTab('car_telemetry')}
+        >
+          <Gauge size={13} />
+          <span>TELEMETRÍA COCHE</span>
+        </button>
+        <button
+          type="button"
+          className={`${styles.tabBtn} ${activeTab === 'track_weather' ? styles.tabBtnActive : ''}`}
+          onClick={() => setActiveTab('track_weather')}
+        >
+          <CloudRain size={13} />
+          <span>PISTA & RADAR GPS</span>
+        </button>
       </div>
 
-      {/* ── 1. ESTADO DE PISTA & CONDICIONES METEOROLÓGICAS ── */}
-      {weather && (
-        <div className={styles.sectionCard}>
-          <div className={styles.cardHeader}>
-            <CloudRain size={14} color="#38bdf8" />
-            <span>ESTADO DE PISTA & METEOROLOGÍA</span>
-            <span className={styles.weatherConditionBadge}>
-              {weather.condition === 'dry' ? '☀️ SECO' : '🌧️ MOJADO'}
-            </span>
+      {/* ══════════════════════════════════════════════════════════════════════ */}
+      {/* ── PESTAÑA 1: TELEMETRÍA DEL MONOPLAZA ── */}
+      {/* ══════════════════════════════════════════════════════════════════════ */}
+      {activeTab === 'car_telemetry' && (
+        <>
+          {/* 1. SECTORES EN DIRECTO */}
+          <div className={styles.sectionCard}>
+            <div className={styles.cardHeader}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Timer size={14} color="#e10600" />
+                <span>SECTORES EN DIRECTO</span>
+              </div>
+            </div>
+
+            <div className={styles.sectorsGrid}>
+              <div className={styles.sectorBox} style={{ backgroundColor: s1Style.bg, borderColor: s1Style.border || 'transparent' }}>
+                <span className={styles.sectorLabel}>SECTOR 1</span>
+                <span className={styles.sectorTime} style={{ color: s1Style.color }}>{sectors.s1 ? `${sectors.s1.toFixed(3)}s` : '--.---'}</span>
+                <span className={styles.sectorStatus} style={{ color: s1Style.color }}>{s1Style.status}</span>
+              </div>
+
+              <div className={styles.sectorBox} style={{ backgroundColor: s2Style.bg, borderColor: s2Style.border || 'transparent' }}>
+                <span className={styles.sectorLabel}>SECTOR 2</span>
+                <span className={styles.sectorTime} style={{ color: s2Style.color }}>{sectors.s2 ? `${sectors.s2.toFixed(3)}s` : '--.---'}</span>
+                <span className={styles.sectorStatus} style={{ color: s2Style.color }}>{s2Style.status}</span>
+              </div>
+
+              <div className={styles.sectorBox} style={{ backgroundColor: s3Style.bg, borderColor: s3Style.border || 'transparent' }}>
+                <span className={styles.sectorLabel}>SECTOR 3</span>
+                <span className={styles.sectorTime} style={{ color: s3Style.color }}>{sectors.s3 ? `${sectors.s3.toFixed(3)}s` : '--.---'}</span>
+                <span className={styles.sectorStatus} style={{ color: s3Style.color }}>{s3Style.status}</span>
+              </div>
+            </div>
           </div>
 
-          <div className={styles.weatherGrid}>
-            {/* Nivel de agua */}
-            <div className={styles.weatherMiniBox}>
-              <div className={styles.weatherBoxHeader}>
-                <Droplets size={11} color="#38bdf8" />
-                <span>Nivel de Agua</span>
+          {/* 2. GRÁFICA DE DEGRADACIÓN Y PREVISIÓN */}
+          <div className={styles.sectionCard}>
+            <div className={styles.cardHeader}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <TrendingDown size={14} color="#ffd700" />
+                <span>PREVISIÓN FIJA & DEGRADACIÓN</span>
               </div>
-              <span className={styles.weatherBoxVal}>{weather.waterDepthMm.toFixed(1)} mm</span>
-              <div className={styles.waterProgressBar}>
-                <div 
-                  className={styles.waterProgressFill} 
-                  style={{ width: `${Math.max(6, weather.waterPercentage)}%` }} 
+            </div>
+
+            <div className={styles.chartContainer}>
+              <svg className={styles.chartSvg} viewBox={`0 0 ${chartW} ${chartH}`}>
+                <line x1={padLeft} y1={padTop} x2={padLeft} y2={chartH - padBottom} stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
+                <line x1={padLeft} y1={chartH - padBottom} x2={chartW - padRight} y2={chartH - padBottom} stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
+
+                {[0, 20, 40, 66].map(l => (
+                  <g key={l}>
+                    <line x1={getX(l)} y1={chartH - padBottom} x2={getX(l)} y2={chartH - padBottom + 4} stroke="rgba(255,255,255,0.3)" strokeWidth="1" />
+                    <text x={getX(l)} y={chartH - 4} fill="#64748b" fontSize="8" fontFamily="Orbitron" textAnchor="middle">L{l}</text>
+                  </g>
+                ))}
+
+                <text x={padLeft - 4} y={getY(100) + 3} fill="#64748b" fontSize="8" fontFamily="Orbitron" textAnchor="end">100%</text>
+                <text x={padLeft - 4} y={getY(50) + 3} fill="#64748b" fontSize="8" fontFamily="Orbitron" textAnchor="end">50%</text>
+                <text x={padLeft - 4} y={getY(0) + 3} fill="#64748b" fontSize="8" fontFamily="Orbitron" textAnchor="end">0%</text>
+
+                <line x1={padLeft} y1={getY(20)} x2={chartW - padRight} y2={getY(20)} stroke="#ef4444" strokeWidth="0.8" strokeDasharray="3,3" opacity="0.5" />
+
+                <line 
+                  x1={stintStartPoint.x} 
+                  y1={stintStartPoint.y} 
+                  x2={stintExpectedEndPoint.x} 
+                  y2={stintExpectedEndPoint.y} 
+                  stroke={currentCompoundColor} 
+                  strokeWidth="2.0" 
+                  strokeDasharray="4,4" 
+                  opacity="0.85" 
                 />
-              </div>
-              <span className={styles.weatherBoxSub}>
-                {weather.waterPercentage === 0 ? 'Asfalto Seco (0%)' : `${weather.waterPercentage}% Mojado`}
-              </span>
-            </div>
 
-            {/* Temperatura asfalto */}
-            <div className={styles.weatherMiniBox}>
-              <div className={styles.weatherBoxHeader}>
-                <Thermometer size={11} color="#f97316" />
-                <span>Temp. Pista</span>
-              </div>
-              <span className={styles.weatherBoxVal} style={{ color: '#f97316' }}>
-                {weather.trackTempCelsius}°C
-              </span>
-              <span className={styles.weatherBoxSub}>Ambiente: {weather.airTempCelsius}°C</span>
-              <span className={styles.weatherBoxSub}>Humedad: {weather.humidityPercentage}%</span>
-            </div>
+                {historyPoints.map((p, i) => {
+                  if (i === 0) return null;
+                  const prev = historyPoints[i - 1];
+                  const strokeCol = prev.compound === 'soft' ? '#e10600' : (prev.compound === 'medium' ? '#ffd700' : '#ffffff');
+                  return (
+                    <line key={i} x1={prev.x} y1={prev.y} x2={p.x} y2={p.y} stroke={strokeCol} strokeWidth="2.6" strokeLinecap="round" />
+                  );
+                })}
 
-            {/* Grip */}
-            <div className={styles.weatherMiniBox}>
-              <div className={styles.weatherBoxHeader}>
-                <Gauge size={11} color="#22c55e" />
-                <span>Grip Pista</span>
-              </div>
-              <span className={styles.weatherBoxVal} style={{ color: '#22c55e' }}>
-                {Math.round(weather.gripMultiplier * 100)}%
-              </span>
-              <span className={styles.weatherBoxSub}>
-                {weather.gripMultiplier >= 0.95 ? 'Grip Óptimo 🟢' : 'Grip Reducido 🟡'}
-              </span>
-            </div>
+                {historyPoints.length > 0 && (
+                  <line 
+                    x1={historyPoints[historyPoints.length - 1].x} 
+                    y1={historyPoints[historyPoints.length - 1].y} 
+                    x2={currentPoint.x} 
+                    y2={currentPoint.y} 
+                    stroke={currentCompoundColor} 
+                    strokeWidth="2.6" 
+                  />
+                )}
 
-            {/* Viento */}
-            <div className={styles.weatherMiniBox}>
-              <div className={styles.weatherBoxHeader}>
-                <Wind size={11} color="#c084fc" />
-                <span>Viento</span>
+                <circle cx={currentPoint.x} cy={currentPoint.y} r="4.5" fill={currentCompoundColor} stroke="#000000" strokeWidth="1.5" />
+              </svg>
+
+              <div className={styles.chartLegend}>
+                <div className={styles.legendItem}>
+                  <span className={styles.legendDot} style={{ backgroundColor: '#e10600' }} />
+                  <span>Blandos (~15v)</span>
+                </div>
+                <div className={styles.legendItem}>
+                  <span className={styles.legendDot} style={{ backgroundColor: '#ffd700' }} />
+                  <span>Medios (~24v)</span>
+                </div>
+                <div className={styles.legendItem}>
+                  <span className={styles.legendDot} style={{ backgroundColor: '#ffffff' }} />
+                  <span>Duros (~38v)</span>
+                </div>
               </div>
-              <span className={styles.weatherBoxVal} style={{ color: '#c084fc' }}>
-                {weather.windSpeedKmh} km/h
-              </span>
-              <span className={styles.weatherBoxSub}>Dirección: {weather.windDirection}</span>
-              <span className={styles.weatherBoxSub}>Lluvia: {weather.rainProbabilityPct}%</span>
+
+              <div className={styles.forecastBanner}>
+                <span>🎯 Neumático {tires.compound.toUpperCase()} rinde hasta <strong>Vuelta {Math.round(expectedEndLap)}</strong> ({currentStint.expectedLaps} vtas previstas)</span>
+              </div>
             </div>
           </div>
 
-          <div className={styles.weatherForecastBanner}>
-            <span>📡 Previsión radar: <strong>{weather.forecast5Min}</strong> (15m: {weather.forecast15Min})</span>
+          {/* 3. DINÁMICA & BALANCE MECÁNICO */}
+          <div className={styles.sectionCard}>
+            <div className={styles.cardHeader}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Gauge size={14} color="#38bdf8" />
+                <span>BALANCE MECÁNICO & DINÁMICA</span>
+              </div>
+            </div>
+
+            <div className={styles.telemetryGrid}>
+              <div className={styles.telemetryMiniBox}>
+                <span className={styles.miniBoxLabel}>Temp. Discos Freno</span>
+                <span className={styles.miniBoxVal}>{stats.brakeTempCelsius}°C</span>
+                <span className={brakeStatus.className}>{brakeStatus.label}</span>
+              </div>
+
+              <div className={styles.telemetryMiniBox}>
+                <span className={styles.miniBoxLabel}>Brake Bias (Reparto)</span>
+                <span className={styles.miniBoxVal}>{brakeBiasFront}% F</span>
+                <span style={{ fontSize: '9px', color: '#94a3b8' }}>{(100 - brakeBiasFront).toFixed(1)}% Trasero</span>
+              </div>
+
+              <div className={styles.telemetryMiniBox}>
+                <span className={styles.miniBoxLabel}>Temp. Motor V6</span>
+                <span className={styles.miniBoxVal}>{stats.engineTempCelsius}°C</span>
+                <span className={stats.engineTempCelsius > 115 ? styles.statusHot : styles.statusOptimal}>
+                  {stats.engineTempCelsius > 115 ? 'ALERTA 🔴' : 'CORRECTA 🟢'}
+                </span>
+              </div>
+
+              <div className={styles.telemetryMiniBox}>
+                <span className={styles.miniBoxLabel}>Presión Neumáticos</span>
+                <span className={styles.miniBoxVal}>{tirePressurePsi} PSI</span>
+                <span style={{ fontSize: '9px', color: '#38bdf8' }}>Temp: {Math.round(tires.tempCelsius)}°C</span>
+              </div>
+            </div>
+
+            <div style={{ marginTop: '2px' }}>
+              <div className={styles.telemetryMiniBox}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <Wind size={11} color="#38bdf8" />
+                  <span className={styles.miniBoxLabel}>Carga Aerodinámica & Eficiencia</span>
+                </div>
+                <span className={styles.miniBoxVal} style={{ fontSize: '11.5px' }}>{downforceLevel}</span>
+                <span style={{ fontSize: '8.5px', color: '#22c55e' }}>Aero Rating: {Math.round(team.aerodynamics * 100)}%</span>
+              </div>
+            </div>
+
+            {pitStop.isPitting && (
+              <div ref={pitBannerRef} className={styles.pitActiveBanner}>
+                <span className={styles.pitBlink}>🔴 EN BOXES AHORA MISMO</span>
+                <span className={styles.pitCurrentTimer}>⏱️ {pitStop.currentStopTimer.toFixed(2)}s / {pitStop.stopDuration}s</span>
+              </div>
+            )}
           </div>
-        </div>
+
+          {/* 4. HISTORIAL DE TODAS LAS VUELTAS */}
+          <div className={styles.sectionCard}>
+            <div className={styles.cardHeader}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <History size={14} color="#c084fc" />
+                <span>HISTORIAL DE VUELTAS ({lapHistory.length}/{totalLaps})</span>
+              </div>
+            </div>
+
+            <div className={styles.historyTableWrapper}>
+              <table className={styles.historyTable}>
+                <thead>
+                  <tr>
+                    <th>VTA</th>
+                    <th>TIEMPO</th>
+                    <th>S1</th>
+                    <th>S2</th>
+                    <th>S3</th>
+                    <th>GOMA</th>
+                    <th>VIDA</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {lapHistory.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} style={{ padding: '12px', color: '#64748b', fontStyle: 'italic' }}>
+                        Completando Vuelta 1 en pista...
+                      </td>
+                    </tr>
+                  ) : (
+                    [...lapHistory].reverse().map((h) => {
+                      const isBestLap = bestLapTime && Math.abs(h.lapTime - bestLapTime) < 0.005;
+                      const dotColor = h.compound === 'soft' ? '#e10600' : (h.compound === 'medium' ? '#ffd700' : '#ffffff');
+                      return (
+                        <tr key={h.lap}>
+                          <td className={styles.lapNumCell}>L{h.lap}</td>
+                          <td className={styles.lapTimeCell} style={{ color: isBestLap ? '#c084fc' : '#ffffff' }}>
+                            {h.lapTime.toFixed(3)}s
+                          </td>
+                          <td>{h.sector1 ? `${h.sector1.toFixed(2)}s` : '-'}</td>
+                          <td>{h.sector2 ? `${h.sector2.toFixed(2)}s` : '-'}</td>
+                          <td>{h.sector3 ? `${h.sector3.toFixed(2)}s` : '-'}</td>
+                          <td>
+                            <span style={{ color: dotColor, fontWeight: 900 }}>{h.compound[0].toUpperCase()}</span>
+                          </td>
+                          <td>{h.tireHealth !== undefined ? `${h.tireHealth}%` : '-'}</td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
       )}
 
-      {/* ── 2. SECTORES EN DIRECTO ── */}
-      <div className={styles.sectionCard}>
-        <div className={styles.cardHeader}>
-          <Timer size={14} color="#e10600" />
-          <span>SECTORES EN DIRECTO</span>
-        </div>
-
-        <div className={styles.sectorsGrid}>
-          <div className={styles.sectorBox} style={{ backgroundColor: s1Style.bg, borderColor: s1Style.border || 'transparent' }}>
-            <span className={styles.sectorLabel}>SECTOR 1</span>
-            <span className={styles.sectorTime} style={{ color: s1Style.color }}>{sectors.s1 ? `${sectors.s1.toFixed(3)}s` : '--.---'}</span>
-            <span className={styles.sectorStatus} style={{ color: s1Style.color }}>{s1Style.status}</span>
-          </div>
-
-          <div className={styles.sectorBox} style={{ backgroundColor: s2Style.bg, borderColor: s2Style.border || 'transparent' }}>
-            <span className={styles.sectorLabel}>SECTOR 2</span>
-            <span className={styles.sectorTime} style={{ color: s2Style.color }}>{sectors.s2 ? `${sectors.s2.toFixed(3)}s` : '--.---'}</span>
-            <span className={styles.sectorStatus} style={{ color: s2Style.color }}>{s2Style.status}</span>
-          </div>
-
-          <div className={styles.sectorBox} style={{ backgroundColor: s3Style.bg, borderColor: s3Style.border || 'transparent' }}>
-            <span className={styles.sectorLabel}>SECTOR 3</span>
-            <span className={styles.sectorTime} style={{ color: s3Style.color }}>{sectors.s3 ? `${sectors.s3.toFixed(3)}s` : '--.---'}</span>
-            <span className={styles.sectorStatus} style={{ color: s3Style.color }}>{s3Style.status}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* ── 3. GRÁFICA DINÁMICA DE PREVISIÓN FIJA & DEGRADACIÓN REAL ── */}
-      <div className={styles.sectionCard}>
-        <div className={styles.cardHeader}>
-          <TrendingDown size={14} color="#ffd700" />
-          <span>PREVISIÓN FIJA & DEGRADACIÓN REAL</span>
-        </div>
-
-        <div className={styles.chartContainer}>
-          <svg className={styles.chartSvg} viewBox={`0 0 ${chartW} ${chartH}`}>
-            <line x1={padLeft} y1={padTop} x2={padLeft} y2={chartH - padBottom} stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
-            <line x1={padLeft} y1={chartH - padBottom} x2={chartW - padRight} y2={chartH - padBottom} stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
-
-            {[0, 20, 40, 66].map(l => (
-              <g key={l}>
-                <line x1={getX(l)} y1={chartH - padBottom} x2={getX(l)} y2={chartH - padBottom + 4} stroke="rgba(255,255,255,0.3)" strokeWidth="1" />
-                <text x={getX(l)} y={chartH - 4} fill="#64748b" fontSize="8" fontFamily="Orbitron" textAnchor="middle">L{l}</text>
-              </g>
-            ))}
-
-            <text x={padLeft - 4} y={getY(100) + 3} fill="#64748b" fontSize="8" fontFamily="Orbitron" textAnchor="end">100%</text>
-            <text x={padLeft - 4} y={getY(50) + 3} fill="#64748b" fontSize="8" fontFamily="Orbitron" textAnchor="end">50%</text>
-            <text x={padLeft - 4} y={getY(0) + 3} fill="#64748b" fontSize="8" fontFamily="Orbitron" textAnchor="end">0%</text>
-
-            <line x1={padLeft} y1={getY(20)} x2={chartW - padRight} y2={getY(20)} stroke="#ef4444" strokeWidth="0.8" strokeDasharray="3,3" opacity="0.5" />
-
-            <line 
-              x1={stintStartPoint.x} 
-              y1={stintStartPoint.y} 
-              x2={stintExpectedEndPoint.x} 
-              y2={stintExpectedEndPoint.y} 
-              stroke={currentCompoundColor} 
-              strokeWidth="2.0" 
-              strokeDasharray="4,4" 
-              opacity="0.85" 
-            />
-
-            {historyPoints.map((p, i) => {
-              if (i === 0) return null;
-              const prev = historyPoints[i - 1];
-              const strokeCol = prev.compound === 'soft' ? '#e10600' : (prev.compound === 'medium' ? '#ffd700' : '#ffffff');
-              return (
-                <line key={i} x1={prev.x} y1={prev.y} x2={p.x} y2={p.y} stroke={strokeCol} strokeWidth="2.6" strokeLinecap="round" />
-              );
-            })}
-
-            {historyPoints.length > 0 && (
-              <line 
-                x1={historyPoints[historyPoints.length - 1].x} 
-                y1={historyPoints[historyPoints.length - 1].y} 
-                x2={currentPoint.x} 
-                y2={currentPoint.y} 
-                stroke={currentCompoundColor} 
-                strokeWidth="2.6" 
-              />
-            )}
-
-            <circle cx={currentPoint.x} cy={currentPoint.y} r="4.5" fill={currentCompoundColor} stroke="#000000" strokeWidth="1.5" />
-          </svg>
-
-          <div className={styles.chartLegend}>
-            <div className={styles.legendItem}>
-              <span className={styles.legendDot} style={{ backgroundColor: '#e10600' }} />
-              <span>Blandos (~15v)</span>
+      {/* ══════════════════════════════════════════════════════════════════════ */}
+      {/* ── PESTAÑA 2: PISTA, CLIMA & RADAR GPS METEOROLÓGICO ── */}
+      {/* ══════════════════════════════════════════════════════════════════════ */}
+      {activeTab === 'track_weather' && weather && (
+        <>
+          {/* 1. RADAR GPS METEOROLÓGICO EN VIVO */}
+          <div className={styles.sectionCard}>
+            <div className={styles.cardHeader}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Radio size={14} color="#38bdf8" />
+                <span>RADAR METEOROLÓGICO GPS</span>
+              </div>
+              <span className={styles.radarLiveBadge}>● EN VIVO</span>
             </div>
-            <div className={styles.legendItem}>
-              <span className={styles.legendDot} style={{ backgroundColor: '#ffd700' }} />
-              <span>Medios (~24v)</span>
+
+            <div className={styles.radarContainer}>
+              <canvas ref={radarCanvasRef} className={styles.radarCanvas} />
+              <div className={styles.radarOverlayGps}>
+                <Compass size={12} color="#38bdf8" />
+                <span>GPS: 41°34'12"N 2°15'27"E</span>
+              </div>
             </div>
-            <div className={styles.legendItem}>
-              <span className={styles.legendDot} style={{ backgroundColor: '#ffffff' }} />
-              <span>Duros (~38v)</span>
+
+            <div className={styles.radarLegendRow}>
+              <div className={styles.radarLegendItem}>
+                <span className={styles.radarDot} style={{ background: '#38bdf8' }} />
+                <span>Nube Densa</span>
+              </div>
+              <div className={styles.radarLegendItem}>
+                <span className={styles.radarDot} style={{ background: '#e10600' }} />
+                <span>Baliza Circuito</span>
+              </div>
+              <div className={styles.radarLegendItem}>
+                <span className={styles.radarDot} style={{ background: 'rgba(56, 189, 248, 0.3)' }} />
+                <span>Barrido Doppler</span>
+              </div>
             </div>
           </div>
 
-          <div className={styles.forecastBanner}>
-            <span>🎯 Previsión teórica: Neumático {tires.compound.toUpperCase()} rinde hasta <strong>Vuelta {Math.round(expectedEndLap)}</strong> ({currentStint.expectedLaps} vtas previstas)</span>
-          </div>
-        </div>
-      </div>
-
-      {/* ── 4. TELEMETRÍA AVANZADA (FRENADA, MOTOR & AERO) ── */}
-      <div className={styles.sectionCard}>
-        <div className={styles.cardHeader}>
-          <Gauge size={14} color="#38bdf8" />
-          <span>BALANCE MECÁNICO & DINÁMICA DE COCHE</span>
-        </div>
-
-        <div className={styles.telemetryGrid}>
-          <div className={styles.telemetryMiniBox}>
-            <span className={styles.miniBoxLabel}>Temp. Discos Freno</span>
-            <span className={styles.miniBoxVal}>{stats.brakeTempCelsius}°C</span>
-            <span className={brakeStatus.className}>{brakeStatus.label}</span>
-          </div>
-
-          <div className={styles.telemetryMiniBox}>
-            <span className={styles.miniBoxLabel}>Brake Bias (Reparto)</span>
-            <span className={styles.miniBoxVal}>{brakeBiasFront}% F</span>
-            <span style={{ fontSize: '9px', color: '#94a3b8' }}>{(100 - brakeBiasFront).toFixed(1)}% Trasero</span>
-          </div>
-
-          <div className={styles.telemetryMiniBox}>
-            <span className={styles.miniBoxLabel}>Temp. Motor V6</span>
-            <span className={styles.miniBoxVal}>{stats.engineTempCelsius}°C</span>
-            <span className={stats.engineTempCelsius > 115 ? styles.statusHot : styles.statusOptimal}>
-              {stats.engineTempCelsius > 115 ? 'ALERTA 🔴' : 'CORRECTA 🟢'}
-            </span>
-          </div>
-
-          <div className={styles.telemetryMiniBox}>
-            <span className={styles.miniBoxLabel}>Presión Neumáticos</span>
-            <span className={styles.miniBoxVal}>{tirePressurePsi} PSI</span>
-            <span style={{ fontSize: '9px', color: '#38bdf8' }}>Temp: {Math.round(tires.tempCelsius)}°C</span>
-          </div>
-        </div>
-
-        {/* Aerodinámica */}
-        <div style={{ marginTop: '4px' }}>
-          <div className={styles.telemetryMiniBox}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <Wind size={11} color="#38bdf8" />
-              <span className={styles.miniBoxLabel}>Carga Aerodinámica & Eficiencia</span>
+          {/* 2. NIVEL DE AGUA Y PREVISIÓN DE CANTIDAD DE LLUVIA */}
+          <div className={styles.sectionCard}>
+            <div className={styles.cardHeader}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Droplets size={14} color="#38bdf8" />
+                <span>CANTIDAD DE AGUA & LLUVIA</span>
+              </div>
+              <span className={styles.weatherConditionBadge}>
+                {weather.condition === 'dry' ? '☀️ SECO' : '🌧️ LLUVIA'}
+              </span>
             </div>
-            <span className={styles.miniBoxVal} style={{ fontSize: '11.5px' }}>{downforceLevel}</span>
-            <span style={{ fontSize: '8.5px', color: '#22c55e' }}>Aero Rating: {Math.round(team.aerodynamics * 100)}%</span>
+
+            <div className={styles.weatherGrid}>
+              <div className={styles.weatherMiniBox}>
+                <span className={styles.weatherBoxHeader}>Agua en Asfalto</span>
+                <span className={styles.weatherBoxVal}>{weather.waterDepthMm.toFixed(1)} mm</span>
+                <div className={styles.waterProgressBar}>
+                  <div 
+                    className={styles.waterProgressFill} 
+                    style={{ width: `${Math.max(6, weather.waterPercentage)}%` }} 
+                  />
+                </div>
+                <span className={styles.weatherBoxSub}>{weather.waterPercentage}% Humedad Pista</span>
+              </div>
+
+              <div className={styles.weatherMiniBox}>
+                <span className={styles.weatherBoxHeader}>Probabilidad Lluvia</span>
+                <span className={styles.weatherBoxVal} style={{ color: '#38bdf8' }}>
+                  {weather.rainProbabilityPct}%
+                </span>
+                <span className={styles.weatherBoxSub}>5 min: {weather.forecast5Min}</span>
+                <span className={styles.weatherBoxSub}>15 min: {weather.forecast15Min}</span>
+              </div>
+            </div>
+
+            {/* Tactical Tire Suggestion */}
+            <div className={styles.strategyRecBox} style={{ borderColor: rainRec.col, background: `${rainRec.col}15` }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Zap size={13} color={rainRec.col} />
+                <span className={styles.recTitle} style={{ color: rainRec.col }}>ESTRATEGIA RECOMENDADA</span>
+              </div>
+              <span className={styles.recCompound}>{rainRec.compound}</span>
+              <p className={styles.recAdvice}>{rainRec.advice}</p>
+            </div>
           </div>
-        </div>
 
-        {pitStop.isPitting && (
-          <div ref={pitBannerRef} className={styles.pitActiveBanner}>
-            <span className={styles.pitBlink}>🔴 EN BOXES AHORA MISMO</span>
-            <span className={styles.pitCurrentTimer}>⏱️ {pitStop.currentStopTimer.toFixed(2)}s / {pitStop.stopDuration}s</span>
+          {/* 3. ANEMÓMETRO, TEMPERATURA Y GRIP */}
+          <div className={styles.sectionCard}>
+            <div className={styles.cardHeader}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Wind size={14} color="#a855f7" />
+                <span>VIENTO & TERMOMETRÍA AMBIENTAL</span>
+              </div>
+            </div>
+
+            <div className={styles.weatherGrid}>
+              {/* Viento */}
+              <div className={styles.weatherMiniBox}>
+                <div className={styles.weatherBoxHeader}>
+                  <Wind size={11} color="#c084fc" />
+                  <span>Anemómetro</span>
+                </div>
+                <span className={styles.weatherBoxVal} style={{ color: '#c084fc' }}>
+                  {weather.windSpeedKmh} km/h
+                </span>
+                <span className={styles.weatherBoxSub}>Dirección: {weather.windDirection} (Ráfagas)</span>
+                <span className={styles.weatherBoxSub}>Incidencia: Frontal T1</span>
+              </div>
+
+              {/* Temp Pista */}
+              <div className={styles.weatherMiniBox}>
+                <div className={styles.weatherBoxHeader}>
+                  <Thermometer size={11} color="#f97316" />
+                  <span>Temp. Pista</span>
+                </div>
+                <span className={styles.weatherBoxVal} style={{ color: '#f97316' }}>
+                  {weather.trackTempCelsius}°C
+                </span>
+                <span className={styles.weatherBoxSub}>Ambiente: {weather.airTempCelsius}°C</span>
+                <span className={styles.weatherBoxSub}>Humedad: {weather.humidityPercentage}%</span>
+              </div>
+
+              {/* Grip Pista */}
+              <div className={styles.weatherMiniBox} style={{ gridColumn: 'span 2' }}>
+                <div className={styles.weatherBoxHeader}>
+                  <Gauge size={11} color="#22c55e" />
+                  <span>Grip Efectivo en Pista</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span className={styles.weatherBoxVal} style={{ color: '#22c55e' }}>
+                    {Math.round(weather.gripMultiplier * 100)}% ADHERENCIA
+                  </span>
+                  <span className={styles.weatherBoxSub}>
+                    {weather.gripMultiplier >= 0.95 ? 'Grip Máximo 🟢' : 'Pérdida de tracción 🟡'}
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
-        )}
-      </div>
-
-      {/* ── 5. HISTORIAL COMPLETO DE TODAS LAS VUELTAS (1 A 66) ── */}
-      <div className={styles.sectionCard}>
-        <div className={styles.cardHeader}>
-          <History size={14} color="#c084fc" />
-          <span>HISTORIAL DE TODAS LAS VUELTAS ({lapHistory.length}/{totalLaps})</span>
-        </div>
-
-        <div className={styles.historyTableWrapper}>
-          <table className={styles.historyTable}>
-            <thead>
-              <tr>
-                <th>VTA</th>
-                <th>TIEMPO</th>
-                <th>S1</th>
-                <th>S2</th>
-                <th>S3</th>
-                <th>GOMA</th>
-                <th>VIDA</th>
-              </tr>
-            </thead>
-            <tbody>
-              {lapHistory.length === 0 ? (
-                <tr>
-                  <td colSpan={7} style={{ padding: '12px', color: '#64748b', fontStyle: 'italic' }}>
-                    Completando Vuelta 1 en pista...
-                  </td>
-                </tr>
-              ) : (
-                [...lapHistory].reverse().map((h) => {
-                  const isBestLap = bestLapTime && Math.abs(h.lapTime - bestLapTime) < 0.005;
-                  const dotColor = h.compound === 'soft' ? '#e10600' : (h.compound === 'medium' ? '#ffd700' : '#ffffff');
-                  return (
-                    <tr key={h.lap}>
-                      <td className={styles.lapNumCell}>L{h.lap}</td>
-                      <td className={styles.lapTimeCell} style={{ color: isBestLap ? '#c084fc' : '#ffffff' }}>
-                        {h.lapTime.toFixed(3)}s
-                      </td>
-                      <td>{h.sector1 ? `${h.sector1.toFixed(2)}s` : '-'}</td>
-                      <td>{h.sector2 ? `${h.sector2.toFixed(2)}s` : '-'}</td>
-                      <td>{h.sector3 ? `${h.sector3.toFixed(2)}s` : '-'}</td>
-                      <td>
-                        <span style={{ color: dotColor, fontWeight: 900 }}>{h.compound[0].toUpperCase()}</span>
-                      </td>
-                      <td>{h.tireHealth !== undefined ? `${h.tireHealth}%` : '-'}</td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+        </>
+      )}
     </div>
   );
 };
