@@ -8,6 +8,7 @@ import {
   ChevronDown
 } from 'lucide-react';
 import { animate } from 'animejs';
+import { FlagIcon } from './FlagIcon';
 
 export interface BottomTelemetryDockProps {
   car: CarState | null;
@@ -90,9 +91,16 @@ export const BottomTelemetryDock: React.FC<BottomTelemetryDockProps> = ({
           <div className={styles.pilotPosBig}>P{currentPosition}</div>
           <div className={styles.pilotNameGroup}>
             <div className={styles.pilotNameTop}>
-              <span className={styles.pilotFlag}>{driver.countryFlag}</span>
+              <FlagIcon country={driver.country} emoji={driver.countryFlag} size={15} style={{ marginRight: '6px' }} />
               <span className={styles.pilotName}>{driver.firstName} {driver.lastName}</span>
               <span className={styles.pilotNum} style={{ color: team.color }}>#{driver.number}</span>
+              <button 
+                className={styles.deselectBtn} 
+                onClick={() => onSelectCar(null)}
+                title="Deseleccionar y volver a vista general completa (ESC)"
+              >
+                ✕ OVERVIEW
+              </button>
             </div>
             <span className={styles.pilotTeam}>{team.name}</span>
           </div>

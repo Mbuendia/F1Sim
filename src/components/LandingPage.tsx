@@ -16,22 +16,22 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
     // Tire spin-in animation
     if (tireRef.current) {
       animate(tireRef.current, {
-        rotate: ['-180deg', '0deg'],
+        rotate: [-180, 0],
         scale: [0.3, 1],
         opacity: [0, 1],
-        ease: 'outElastic(1, .5)',
-        duration: 1800,
+        ease: 'outElastic(1, 0.6)',
+        duration: 1600,
       });
     }
 
     // Glow pulse
     if (glowRef.current) {
       animate(glowRef.current, {
-        scale: [0.8, 1.15, 1],
-        opacity: [0, 0.8, 0.6],
+        scale: [0.8, 1.2, 1],
+        opacity: [0, 0.8, 0.5],
         ease: 'outQuad',
-        duration: 2000,
-        delay: 600,
+        duration: 1800,
+        delay: 400,
       });
     }
 
@@ -39,10 +39,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
     if (brandRef.current) {
       animate(brandRef.current, {
         opacity: [0, 1],
-        translateY: [30, 0],
+        translateY: [25, 0],
         ease: 'outQuart',
-        duration: 1000,
-        delay: 1000,
+        duration: 900,
+        delay: 800,
       });
     }
 
@@ -50,13 +50,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
     const idleInterval = setTimeout(() => {
       if (tireRef.current) {
         animate(tireRef.current, {
-          rotate: '360deg',
+          rotate: [0, 360],
           ease: 'linear',
-          duration: 12000,
+          duration: 16000,
           loop: true,
         });
       }
-    }, 2000);
+    }, 1700);
 
     // Enter on any key or click
     const handleKey = (e: KeyboardEvent) => {
@@ -172,13 +172,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
       {/* Brand text */}
       <div ref={brandRef} className={styles.brandGroup}>
         <div className={styles.f1LogoBig}>F1</div>
-        <div className={styles.titleText}>Grand Prix Simulator</div>
-        <div className={styles.subtitleText}>2026 Season · React Engine</div>
+        <div className={styles.titleText}>Race Manager & Simulator</div>
+        <div className={styles.subtitleText}>2026 Season · Tactical Strategy & Race Engine</div>
       </div>
 
       {/* Enter hint */}
       <div className={styles.enterHint}>
-        Click o pulsa Enter para continuar
+        Pulsa cualquier tecla o haz click para continuar
       </div>
 
       <div className={styles.versionBadge}>v29.0</div>

@@ -5,6 +5,7 @@ import { TEAMS, STARTING_GRID_ORDER } from '../data/teams';
 import { OFFICIAL_CIRCUITS, CircuitSpec } from '../data/circuits';
 import { buildTrackFromSvg } from '../utils/svgTrackParser';
 import { RaceResultHistory } from '../types/f1';
+import { FlagIcon } from './FlagIcon';
 import { 
   Play, 
   MapPin, 
@@ -236,7 +237,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                     }}
                   >
                     <div className={styles.driverListLeft}>
-                      <span style={{ fontSize: '15px' }}>{d.countryFlag}</span>
+                      <FlagIcon country={d.country} emoji={d.countryFlag} size={14} />
                       <div>
                         <div className={styles.driverListName}>{d.firstName} {d.lastName}</div>
                         <div className={styles.driverListTeam}>{t.shortName} · ⚡ {t.engineManufacturer}</div>
@@ -266,7 +267,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontSize: '18px' }}>{circuit.countryFlag}</span>
+                      <FlagIcon country={circuit.country} emoji={circuit.countryFlag} size={15} />
                       <div>
                         <div className={styles.circuitListName}>{circuit.name}</div>
                         <div className={styles.circuitListSub}>
@@ -291,7 +292,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               <div className={styles.detailHeader}>
                 <div>
                   <div className={styles.detailTitleBig}>
-                    <span style={{ fontSize: '24px' }}>{inspectedDriver.countryFlag}</span>
+                    <FlagIcon country={inspectedDriver.country} emoji={inspectedDriver.countryFlag} size={22} />
                     <span>{inspectedDriver.firstName} {inspectedDriver.lastName}</span>
                   </div>
                   <div className={styles.detailSubtitle}>
@@ -591,7 +592,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               <div className={styles.detailHeader}>
                 <div>
                   <div className={styles.detailTitleBig}>
-                    <span style={{ fontSize: '24px' }}>{inspectedCircuit.countryFlag}</span>
+                    <FlagIcon country={inspectedCircuit.country} emoji={inspectedCircuit.countryFlag} size={22} />
                     <span>{inspectedCircuit.name}</span>
                   </div>
                   <div className={styles.detailSubtitle}>
@@ -937,7 +938,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               <div className={styles.selectedSummaryCard} style={{ borderLeft: `4px solid ${selectedTeam.color}` }}>
                 <span className={styles.summaryCardBadge} style={{ color: selectedTeam.color }}>PILOTO SELECCIONADO</span>
                 <div className={styles.summaryCardMain}>
-                  <span style={{ fontSize: '18px' }}>{selectedDriver.countryFlag}</span>
+                  <FlagIcon country={selectedDriver.country} emoji={selectedDriver.countryFlag} size={16} />
                   <span>{selectedDriver.firstName} {selectedDriver.lastName}</span>
                   <span style={{ color: selectedTeam.color, marginLeft: 'auto', fontFamily: 'Orbitron' }}>#{selectedDriver.number}</span>
                 </div>
@@ -950,7 +951,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               <div className={styles.selectedSummaryCard} style={{ borderLeft: '4px solid #e10600' }}>
                 <span className={styles.summaryCardBadge} style={{ color: '#e10600' }}>CIRCUITO SELECCIONADO</span>
                 <div className={styles.summaryCardMain}>
-                  <span style={{ fontSize: '18px' }}>{selectedCircuit.countryFlag}</span>
+                  <FlagIcon country={selectedCircuit.country} emoji={selectedCircuit.countryFlag} size={16} />
                   <span>{selectedCircuit.name}</span>
                 </div>
                 <div className={styles.summaryCardSub}>{selectedCircuit.officialGpName} · {selectedCircuit.country}</div>

@@ -1,0 +1,126 @@
+.notificationContainer {
+  position: absolute;
+  top: 70px;
+  right: 20px;
+  z-index: 90;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: auto;
+}
+
+.dnfCard {
+  background: rgba(15, 23, 42, 0.96);
+  border: 1.5px solid #ef4444;
+  border-left: 6px solid #ef4444;
+  box-shadow: 0 10px 30px rgba(239, 68, 68, 0.35), 0 0 25px rgba(0, 0, 0, 0.9);
+  border-radius: 10px;
+  padding: 12px 16px;
+  min-width: 310px;
+  max-width: 360px;
+  color: #ffffff;
+  backdrop-filter: blur(14px);
+  animation: slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(120px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.headerRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 6px;
+}
+
+.badgeDnf {
+  background: #ef4444;
+  color: #ffffff;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 10.5px;
+  font-weight: 900;
+  padding: 2px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.8px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.closeBtn {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.closeBtn:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.driverInfoRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.driverFlag {
+  font-size: 20px;
+}
+
+.driverNameGroup {
+  flex: 1;
+}
+
+.driverFullName {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 16px;
+  font-weight: 800;
+  color: #f8fafc;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.driverTeam {
+  font-size: 11px;
+  color: #94a3b8;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 600;
+}
+
+.causeBox {
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #fca5a5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.metaInfo {
+  font-size: 10.5px;
+  color: #cbd5e1;
+  font-family: 'Orbitron', sans-serif;
+}

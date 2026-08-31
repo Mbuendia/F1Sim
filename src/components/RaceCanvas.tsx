@@ -56,6 +56,14 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
       camera.resize(rect.width, rect.height, simulation.activeTrack);
     };
 
+    const resizeObserver = new ResizeObserver(() => {
+      handleResize();
+    });
+
+    if (canvas.parentElement) {
+      resizeObserver.observe(canvas.parentElement);
+    }
+
     handleResize();
     if (selectedCarId === null) {
       camera.resetToFullTrack(simulation.activeTrack);
@@ -96,6 +104,7 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
 
     return () => {
       cancelAnimationFrame(animationFrameId);
+      resizeObserver.disconnect();
       window.removeEventListener('resize', handleResize);
     };
   }, [simulation, camera, simulation.circuitId]);

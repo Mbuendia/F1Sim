@@ -148,6 +148,27 @@
   gap: 12px;
 }
 
+.deselectBtn {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 10px;
+  font-weight: 800;
+  cursor: pointer;
+  letter-spacing: 0.5px;
+  transition: all 0.2s ease;
+  margin-left: 6px;
+}
+
+.deselectBtn:hover {
+  background: #ef4444;
+  color: #ffffff;
+  border-color: #ef4444;
+}
+
 .pilotPosBig {
   font-family: 'Orbitron', sans-serif;
   font-size: 24px;

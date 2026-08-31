@@ -13,8 +13,9 @@ import { PodiumModal } from './components/PodiumModal';
 import { HomeScreen } from './components/HomeScreen';
 import { LandingPage } from './components/LandingPage';
 import RaceFlagsHUD from './components/RaceFlagsHUD';
+import { DnfNotificationModal } from './components/DnfNotificationModal';
 import { OFFICIAL_CIRCUITS } from './data/circuits';
-import { StartLightState, CarState, RaceResultHistory, RaceFlagState, SafetyCarState, TrackIncident } from './types/f1';
+import { RaceResultHistory, StartLightState, CarState, RaceFlagState, SafetyCarState, DnfNotification } from './types/f1';
 import { RotateCw, Flag, ArrowLeft, ChevronLeft, ChevronRight, Camera as CameraIcon } from 'lucide-react';
 
 export const App: React.FC = () => {
@@ -62,12 +63,11 @@ export const App: React.FC = () => {
   const [bestS2, setBestS2] = useState<number | null>(null);
   const [bestS3, setBestS3] = useState<number | null>(null);
 
-  // Race flags & Safety Car state
+  // Race flags & Safety Car & DNF state
   const [raceFlagState, setRaceFlagState] = useState<RaceFlagState>('green');
   const [sectorFlags, setSectorFlags] = useState<[RaceFlagState, RaceFlagState, RaceFlagState]>(['green', 'green', 'green']);
   const [safetyCar, setSafetyCar] = useState<SafetyCarState | null>(null);
-
-
+  const [activeDnf, setActiveDnf] = useState<DnfNotification | null>(null);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -85,6 +85,7 @@ export const App: React.FC = () => {
       setRaceFlagState(simulation.raceFlagState);
       setSectorFlags([...simulation.sectorFlags]);
       setSafetyCar(simulation.safetyCar.isDeployed ? { ...simulation.safetyCar } : null);
+      setActiveDnf(simulation.latestDnf ? { ...simulation.latestDnf } : null);
 
       if (simulation.isFinished) {
         setPodiumCars(simulation.podiumCars);
@@ -124,9 +125,9 @@ export const App: React.FC = () => {
     simulation.setCircuit(selectedCircuitId);
     camera.resetToFullTrack();
     setSelectedCarId(null);
-    setLightState('idle');
     setIsFinished(false);
     setCurrentView('race');
+    simulation.startRaceSequence();
   }, [simulation, camera, selectedCircuitId]);
 
   const handleStartFormationLap = useCallback(() => {
@@ -362,6 +363,14 @@ export const App: React.FC = () => {
             onGoHome={handleGoHome}
           />
         )}
+
+        <DnfNotificationModal
+          notification={activeDnf}
+          onDismiss={() => {
+            simulation.latestDnf = null;
+            setActiveDnf(null);
+          }}
+        />
       </div>
 
       {/* ── 3. PANEL DERECHO: DASHBOARD AVANZADO (GRÁFICA PREVISIÓN + VUELTAS) ── */}

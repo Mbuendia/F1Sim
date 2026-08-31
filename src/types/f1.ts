@@ -29,6 +29,20 @@ export interface TrackIncident {
   reason: string;
 }
 
+export interface DnfNotification {
+  id: string;
+  driverName: string;
+  driverCode: string;
+  driverNumber: number;
+  driverCountryFlag: string;
+  teamName: string;
+  teamColor: string;
+  lap: number;
+  sector: 1 | 2 | 3;
+  reason: string;
+  timestamp: number;
+}
+
 export interface Driver {
   id: string;
   code: string;

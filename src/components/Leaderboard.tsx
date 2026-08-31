@@ -3,11 +3,12 @@ import styles from './Leaderboard.module.css';
 import { CarState } from '../types/f1';
 import { Timer, AlertTriangle } from 'lucide-react';
 import { animate, stagger } from 'animejs';
+import { FlagIcon } from './FlagIcon';
 
 interface LeaderboardProps {
   cars: CarState[];
   selectedCarId: number | null;
-  onSelectCar: (carId: number) => void;
+  onSelectCar: (carId: number | null) => void;
   fastestLapDriverName: string | null;
   leaderLap: number;
 }
@@ -91,9 +92,9 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
             <div
               key={car.id}
               className={`${styles.row} ${isSelected ? styles.selected : ''} ${isLeader ? styles.leaderRow : ''} ${isOut ? styles.outRow : ''}`}
-              onClick={() => onSelectCar(car.id)}
+              onClick={() => onSelectCar(isSelected ? null : car.id)}
               style={{ borderLeftColor: isOut ? '#64748b' : car.team.color, opacity: isOut ? 0.6 : 1 }}
-              title={isOut ? `ABANDONO: ${car.dnfReason || 'Fallo mecánico'}` : `Clic para seguir a ${car.driver.firstName} ${car.driver.lastName}`}
+              title={isOut ? `ABANDONO: ${car.dnfReason || 'Fallo mecánico'}` : isSelected ? `Clic para deseleccionar y volver a vista general (Overview)` : `Clic para seguir a ${car.driver.firstName} ${car.driver.lastName}`}
             >
               {/* Posición */}
               <div className={styles.posCell}>
@@ -106,6 +107,7 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
               {/* Piloto */}
               <div className={styles.driverCell}>
                 <div className={styles.driverNameRow}>
+                  <FlagIcon country={car.driver.country} emoji={car.driver.countryFlag} size={11} />
                   <span className={styles.driverCode}>{car.driver.code}</span>
                   <span className={styles.driverLastName}>{car.driver.lastName}</span>
                   {isFastest && !isOut && (

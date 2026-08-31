@@ -2,6 +2,7 @@ import React from 'react';
 import styles from './RaceHeader.module.css';
 import { MapPin, Navigation } from 'lucide-react';
 import { CircuitSpec } from '../data/circuits';
+import { FlagIcon } from './FlagIcon';
 
 interface RaceHeaderProps {
   circuit?: CircuitSpec;
@@ -17,7 +18,7 @@ export const RaceHeader: React.FC<RaceHeaderProps> = ({ circuit }) => {
   return (
     <div className={styles.header}>
       <div className={styles.topRow}>
-        <span className={styles.gpFlag}>{flag}</span>
+        <FlagIcon country={circuit?.country} emoji={flag} size={20} className={styles.gpFlag} />
         <div>
           <h1 className={styles.title}>{gpName.toUpperCase()}</h1>
           <p className={styles.subTitle}>{trackName}</p>

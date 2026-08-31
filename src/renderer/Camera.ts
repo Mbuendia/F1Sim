@@ -17,6 +17,7 @@ export class Camera {
 
   followingCarId: number | null = null;
   currentMode: CameraMode = 'overview';
+  lastTrack: TrackDefinition | null = null;
   
   static readonly FOLLOW_ZOOM = 2.75;
   static readonly CINEMATIC_ZOOM = 1.8;
@@ -30,8 +31,9 @@ export class Camera {
   resize(width: number, height: number, track?: TrackDefinition) {
     this.screenWidth = width;
     this.screenHeight = height;
-    if (this.followingCarId === null && track) {
-      this.resetToFullTrack(track);
+    if (track) this.lastTrack = track;
+    if (this.followingCarId === null && this.lastTrack) {
+      this.resetToFullTrack(this.lastTrack);
     }
   }
 
@@ -39,6 +41,7 @@ export class Camera {
     this.currentMode = mode;
     if (mode === 'overview') {
       this.followingCarId = null;
+      if (this.lastTrack) this.resetToFullTrack(this.lastTrack);
     }
   }
 
@@ -52,8 +55,11 @@ export class Camera {
   resetToFullTrack(track?: TrackDefinition) {
     this.followingCarId = null;
     this.currentMode = 'overview';
-    if (!track) return;
-    const b = track.bounds;
+    const activeTrack = track || this.lastTrack;
+    if (!activeTrack) return;
+    this.lastTrack = activeTrack;
+    
+    const b = activeTrack.bounds;
     const trackW = b.maxX - b.minX + 160;
     const trackH = b.maxY - b.minY + 160;
 
@@ -74,8 +80,21 @@ export class Camera {
   }
 
   update(cars: CarState[], dt: number, track?: TrackDefinition) {
+    if (track) this.lastTrack = track;
+    const activeTrack = track || this.lastTrack;
+
     if (this.currentMode === 'overview') {
-      // Keep overview target logic from resetToFullTrack
+      if (activeTrack) {
+        const b = activeTrack.bounds;
+        const trackW = b.maxX - b.minX + 160;
+        const trackH = b.maxY - b.minY + 160;
+
+        const zoomX = this.screenWidth / trackW;
+        const zoomY = this.screenHeight / trackH;
+        this.targetZoom = Math.min(zoomX, zoomY) * 0.94;
+        this.targetX = (b.minX + b.maxX) / 2;
+        this.targetY = (b.minY + b.maxY) / 2;
+      }
     } else if (this.followingCarId !== null) {
       const car = cars.find(c => c.id === this.followingCarId);
       if (car && car.status !== 'finished' && track) {

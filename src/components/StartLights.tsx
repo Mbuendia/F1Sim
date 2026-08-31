@@ -41,7 +41,13 @@ export const StartLights: React.FC<StartLightsProps> = ({
     }
   }, [lightState]);
 
-  if (lightState === 'racing' || lightState === 'finished' || lightState === 'formation-lap' || lightState === 'grid-parking') {
+  if (
+    lightState === 'idle' ||
+    lightState === 'racing' ||
+    lightState === 'finished' ||
+    lightState === 'formation-lap' ||
+    lightState === 'grid-parking'
+  ) {
     return null;
   }
 
@@ -86,13 +92,6 @@ export const StartLights: React.FC<StartLightsProps> = ({
             );
           })}
         </div>
-
-        {lightState === 'idle' && (
-          <button className={styles.startButton} onClick={onStartClick}>
-            <Play size={18} fill="#ffffff" />
-            <span>INICIAR VUELTA DE FORMACIÓN</span>
-          </button>
-        )}
 
         {isGridReady && (
           <button className={styles.startButton} onClick={onStartClick} style={{ background: 'linear-gradient(135deg, #16a34a, #15803d)' }}>

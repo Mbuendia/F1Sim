@@ -1,4 +1,4 @@
-import { CarState, StartLightState, TelemetryData, RelativeCarInfo, DriverStatsSummary, RaceFlagState, SafetyCarState, TrackIncident } from '../types/f1';
+import { CarState, StartLightState, TelemetryData, RelativeCarInfo, DriverStatsSummary, RaceFlagState, SafetyCarState, TrackIncident, DnfNotification } from '../types/f1';
 import { DRIVERS } from '../data/drivers';
 import { TEAMS, STARTING_GRID_ORDER } from '../data/teams';
 import { OFFICIAL_CIRCUITS, CircuitSpec } from '../data/circuits';
@@ -43,6 +43,7 @@ export class RaceSimulation {
   sectorFlags: [RaceFlagState, RaceFlagState, RaceFlagState] = ['green', 'green', 'green'];
   safetyCar: SafetyCarState = SafetyCarModel.createInitialState();
   incidents: TrackIncident[] = [];
+  latestDnf: DnfNotification | null = null;
   drsDisabledLaps: number = 0;
   vscActive: boolean = false;
   vscTimer: number = 0;
@@ -83,6 +84,7 @@ export class RaceSimulation {
     this.sectorFlags = ['green', 'green', 'green'];
     this.safetyCar = SafetyCarModel.createInitialState();
     this.incidents = [];
+    this.latestDnf = null;
     this.drsDisabledLaps = 0;
     this.vscActive = false;
     this.vscTimer = 0;
@@ -272,7 +274,7 @@ export class RaceSimulation {
     }
 
     if (this.lightState !== 'racing') {
-      this.updateStartLights(dt);
+      this.updateStartLights(dtRaw);
       if ((this.lightState as string) !== 'racing') {
         for (const car of this.cars) {
           car.currentSpeedKmh = 0;
@@ -334,6 +336,21 @@ export class RaceSimulation {
         // ── Registrar incidente y evaluar respuesta ──
         const incident = IncidentModel.registerIncident(car, 'dnf');
         this.incidents.push(incident);
+
+        this.latestDnf = {
+          id: `dnf_${car.id}_${Date.now()}`,
+          driverName: `${car.driver.firstName} ${car.driver.lastName}`,
+          driverCode: car.driver.code,
+          driverNumber: car.driver.number,
+          driverCountryFlag: car.driver.countryFlag,
+          teamName: car.team.name,
+          teamColor: car.team.color,
+          lap: car.currentLap,
+          sector: incident.sector,
+          reason: car.dnfReason,
+          timestamp: Date.now()
+        };
+
         const activeIncidents = IncidentModel.getActiveIncidents(this.incidents);
         const response = SafetyCarModel.evaluateResponse(
           incident, activeIncidents, car.currentLap, this.totalLaps, this.safetyCar.isDeployed
