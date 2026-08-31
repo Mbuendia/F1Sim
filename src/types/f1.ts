@@ -2,6 +2,33 @@ export type EngineMode = 'low' | 'standard' | 'push' | 'overtake';
 export type AggressionLevel = 'conservative' | 'balanced' | 'aggressive' | 'maximum';
 export type TireCompound = 'soft' | 'medium' | 'hard';
 
+// ── SISTEMA DE BANDERAS Y SAFETY CAR ──
+export type RaceFlagState = 'green' | 'yellow' | 'double-yellow' | 'vsc' | 'sc' | 'red';
+
+export interface SafetyCarState {
+  isDeployed: boolean;
+  mode: 'idle' | 'deploying' | 'leading' | 'returning' | 'in';
+  progress: number;
+  trackT: number;
+  currentSpeedKmh: number;
+  lapCount: number;
+  targetLaps: number;
+  triggerReason: string;
+  deployedAtRaceTime: number;
+}
+
+export interface TrackIncident {
+  id: number;
+  carId: number;
+  driverCode: string;
+  trackT: number;
+  sector: 1 | 2 | 3;
+  type: 'dnf' | 'crash' | 'spin';
+  isCleared: boolean;
+  clearTimer: number;
+  reason: string;
+}
+
 export interface Driver {
   id: string;
   code: string;
@@ -166,6 +193,9 @@ export interface CarState {
 
   hasPuncture?: boolean;
   dnfReason?: string;
+  isRetiredVisible: boolean;
+  retireTimer: number;
+  smokeOpacity: number;
 
   raceDayLuckFactor: number;
   

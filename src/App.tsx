@@ -12,8 +12,9 @@ import { RightStatsPanel } from './components/RightStatsPanel';
 import { PodiumModal } from './components/PodiumModal';
 import { HomeScreen } from './components/HomeScreen';
 import { LandingPage } from './components/LandingPage';
+import RaceFlagsHUD from './components/RaceFlagsHUD';
 import { OFFICIAL_CIRCUITS } from './data/circuits';
-import { StartLightState, CarState, RaceResultHistory } from './types/f1';
+import { StartLightState, CarState, RaceResultHistory, RaceFlagState, SafetyCarState, TrackIncident } from './types/f1';
 import { RotateCw, Flag, ArrowLeft, ChevronLeft, ChevronRight, Camera as CameraIcon } from 'lucide-react';
 
 export const App: React.FC = () => {
@@ -61,6 +62,11 @@ export const App: React.FC = () => {
   const [bestS2, setBestS2] = useState<number | null>(null);
   const [bestS3, setBestS3] = useState<number | null>(null);
 
+  // Race flags & Safety Car state
+  const [raceFlagState, setRaceFlagState] = useState<RaceFlagState>('green');
+  const [sectorFlags, setSectorFlags] = useState<[RaceFlagState, RaceFlagState, RaceFlagState]>(['green', 'green', 'green']);
+  const [safetyCar, setSafetyCar] = useState<SafetyCarState | null>(null);
+
 
 
   useEffect(() => {
@@ -76,6 +82,9 @@ export const App: React.FC = () => {
       setBestS2(simulation.overallBestS2);
       setBestS3(simulation.overallBestS3);
       setCameraMode(camera.currentMode);
+      setRaceFlagState(simulation.raceFlagState);
+      setSectorFlags([...simulation.sectorFlags]);
+      setSafetyCar(simulation.safetyCar.isDeployed ? { ...simulation.safetyCar } : null);
 
       if (simulation.isFinished) {
         setPodiumCars(simulation.podiumCars);
@@ -256,6 +265,12 @@ export const App: React.FC = () => {
           camera={camera}
           selectedCarId={selectedCarId}
           onSelectCar={handleSelectCar}
+        />
+
+        <RaceFlagsHUD
+          raceFlagState={raceFlagState}
+          sectorFlags={sectorFlags}
+          safetyCar={safetyCar}
         />
 
         {lightState === 'formation-lap' && (

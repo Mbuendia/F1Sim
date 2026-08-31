@@ -81,7 +81,7 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
 
       const circuitSpec = OFFICIAL_CIRCUITS[simulation.circuitId];
       const trackWidthCarsCapacity = circuitSpec?.trackWidthCars ?? 3;
-      CarRenderer.renderCars(ctx, simulation.cars, camera, selectedCarId, simulation.activeTrack, trackWidthCarsCapacity);
+      CarRenderer.renderCars(ctx, simulation.cars, camera, selectedCarId, simulation.activeTrack, trackWidthCarsCapacity, simulation.safetyCar);
 
       // ── MINIMAPA A LA IZQUIERDA DEL TODO (visible al seguir un coche) ──
       if (camera.followingCarId !== null) {
@@ -221,5 +221,21 @@ function renderLeftMinimap(
       ctx.lineWidth = 2;
       ctx.stroke();
     }
+  }
+
+  // Safety Car en el minimapa
+  if (simulation.safetyCar.isDeployed && simulation.safetyCar.mode !== 'idle' && simulation.safetyCar.mode !== 'in') {
+    const normT = ((simulation.safetyCar.progress % 1) + 1) % 1;
+    const ptIdx = Math.floor(normT * pts.length) % pts.length;
+    const pt = pts[ptIdx] || pts[0];
+    const sp = toMM(pt.x, pt.y);
+
+    ctx.beginPath();
+    ctx.arc(sp.x, sp.y, 4, 0, Math.PI * 2);
+    ctx.fillStyle = '#f59e0b';
+    ctx.fill();
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
   }
 }

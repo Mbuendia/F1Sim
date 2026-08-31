@@ -1,4 +1,4 @@
-import { CarState, StartLightState, TelemetryData, RelativeCarInfo, DriverStatsSummary } from '../types/f1';
+import { CarState, StartLightState, TelemetryData, RelativeCarInfo, DriverStatsSummary, RaceFlagState, SafetyCarState, TrackIncident } from '../types/f1';
 import { DRIVERS } from '../data/drivers';
 import { TEAMS, STARTING_GRID_ORDER } from '../data/teams';
 import { OFFICIAL_CIRCUITS, CircuitSpec } from '../data/circuits';
@@ -9,6 +9,8 @@ import { FuelModel } from './FuelModel';
 import { EngineModel } from './EngineModel';
 import { DRSModel } from './DRSModel';
 import { PitStopModel } from './PitStopModel';
+import { SafetyCarModel } from './SafetyCarModel';
+import { IncidentModel } from './IncidentModel';
 
 export class RaceSimulation {
   cars: CarState[] = [];
@@ -35,6 +37,16 @@ export class RaceSimulation {
 
   podiumCars: CarState[] = [];
   static readonly BASE_LAP_TIME_SEC = 77.8;
+
+  // ── SISTEMA DE BANDERAS Y SAFETY CAR ──
+  raceFlagState: RaceFlagState = 'green';
+  sectorFlags: [RaceFlagState, RaceFlagState, RaceFlagState] = ['green', 'green', 'green'];
+  safetyCar: SafetyCarState = SafetyCarModel.createInitialState();
+  incidents: TrackIncident[] = [];
+  drsDisabledLaps: number = 0;
+  vscActive: boolean = false;
+  vscTimer: number = 0;
+  vscDuration: number = 0;
 
   constructor(circuitId: string = 'barcelona') {
     this.circuitId = circuitId;
@@ -65,6 +77,16 @@ export class RaceSimulation {
     this.overallBestS2 = null;
     this.overallBestS3 = null;
     this.podiumCars = [];
+
+    // Reset sistema de banderas y safety car
+    this.raceFlagState = 'green';
+    this.sectorFlags = ['green', 'green', 'green'];
+    this.safetyCar = SafetyCarModel.createInitialState();
+    this.incidents = [];
+    this.drsDisabledLaps = 0;
+    this.vscActive = false;
+    this.vscTimer = 0;
+    this.vscDuration = 0;
 
     this.cars = STARTING_GRID_ORDER.map((driverId, idx) => {
       const driver = DRIVERS[driverId];
@@ -130,6 +152,9 @@ export class RaceSimulation {
 
         hasPuncture: false,
         dnfReason: undefined,
+        isRetiredVisible: false,
+        retireTimer: 0,
+        smokeOpacity: 0,
 
         raceDayLuckFactor,
 
@@ -280,6 +305,15 @@ export class RaceSimulation {
         car.telemetry.throttle = 0;
         car.targetLateralOffset = 0.85;
         car.lateralOffset += (car.targetLateralOffset - car.lateralOffset) * Math.min(1.0, dt * 2.0);
+        // ── Disipación de humo y temporizador de grúa ──
+        car.smokeOpacity = Math.max(0, car.smokeOpacity - dt * 0.08);
+        if (car.isRetiredVisible) {
+          car.retireTimer -= dt;
+          if (car.retireTimer <= 0) {
+            car.isRetiredVisible = false;
+            car.retireTimer = 0;
+          }
+        }
         continue;
       }
 
@@ -293,6 +327,27 @@ export class RaceSimulation {
         car.status = 'out';
         const failureTypes = ['💥 FALLO MOTOR V6', '⚙️ CAJA DE CAMBIOS', '🔌 FALLO MGU-K / HÍBRIDO', '💧 PÉRDIDA PRESIÓN HIDRÁULICA'];
         car.dnfReason = failureTypes[Math.floor(Math.random() * failureTypes.length)];
+        // ── Activar efectos visuales de retirada ──
+        car.isRetiredVisible = true;
+        car.smokeOpacity = 1.0;
+        car.retireTimer = 15 + Math.random() * 10; // 15-25s hasta que la grúa se lo lleve
+        // ── Registrar incidente y evaluar respuesta ──
+        const incident = IncidentModel.registerIncident(car, 'dnf');
+        this.incidents.push(incident);
+        const activeIncidents = IncidentModel.getActiveIncidents(this.incidents);
+        const response = SafetyCarModel.evaluateResponse(
+          incident, activeIncidents, car.currentLap, this.totalLaps, this.safetyCar.isDeployed
+        );
+        if (response === 'sc') {
+          const leaderProgress = leaderCar ? leaderCar.progress : 0;
+          SafetyCarModel.deploy(this.safetyCar, `Abandono de ${car.driver.code}`, leaderProgress, this.raceTimeSec);
+          this.raceFlagState = 'sc';
+        } else if (response === 'vsc') {
+          this.raceFlagState = 'vsc';
+          this.vscActive = true;
+          this.vscTimer = 0;
+          this.vscDuration = incident.clearTimer + 5; // VSC dura hasta que se limpie + 5s extra
+        }
         continue;
       }
 
@@ -344,9 +399,10 @@ export class RaceSimulation {
         car.aggression = 'balanced';
       }
 
-      // DRS
-      const isEligibleForDrs = trackPoint.isDrsZone && car.currentLap > 1 && car.gapToCarAheadSec > 0 && car.gapToCarAheadSec <= 1.0;
-      car.drsEligible = trackPoint.isDrsZone && car.currentLap > 1;
+      // DRS — Desactivado bajo SC, VSC o banderas amarillas
+      const drsBlockedByFlags = this.raceFlagState !== 'green' || this.drsDisabledLaps > 0;
+      const isEligibleForDrs = !drsBlockedByFlags && trackPoint.isDrsZone && car.currentLap > 1 && car.gapToCarAheadSec > 0 && car.gapToCarAheadSec <= 1.0;
+      car.drsEligible = !drsBlockedByFlags && trackPoint.isDrsZone && car.currentLap > 1;
       car.drsActive = isEligibleForDrs;
 
       const isCornering = trackPoint.speedLimitFactor < 0.80;
@@ -419,6 +475,20 @@ export class RaceSimulation {
 
       if (car.isBlueFlagged) {
         targetKmh *= 0.85;
+      }
+
+      // ── RESTRICCIONES DE VELOCIDAD BAJO SC / VSC / BANDERA AMARILLA ──
+      const scMaxSpeed = SafetyCarModel.getMaxAllowedSpeed(this.raceFlagState, this.safetyCar.mode);
+      if (scMaxSpeed !== null) {
+        targetKmh = Math.min(targetKmh, scMaxSpeed);
+        // Prohibir adelantamientos bajo SC/VSC
+        car.isOvertaking = false;
+        car.targetLateralOffset = 0;
+      }
+      // Bandera amarilla local: reducir velocidad en el sector afectado
+      const carSector: 1 | 2 | 3 = normalizedT < 0.33 ? 1 : normalizedT < 0.66 ? 2 : 3;
+      if (this.sectorFlags[carSector - 1] !== 'green' && this.raceFlagState === 'green') {
+        targetKmh = Math.min(targetKmh, targetKmh * 0.75);
       }
 
       // Aceleración vs Frenada
@@ -536,6 +606,11 @@ export class RaceSimulation {
         car.sectorStartTime = this.raceTimeSec;
         car.currentSector = 1;
 
+        // Decrementar contador de DRS deshabilitado tras SC/VSC
+        if (this.drsDisabledLaps > 0 && car.id === (leaderCar ? leaderCar.id : -1)) {
+          this.drsDisabledLaps--;
+        }
+
         if (car.currentLap >= this.totalLaps && !this.leaderFinished) {
           this.leaderFinished = true;
           car.status = 'finished';
@@ -598,6 +673,59 @@ export class RaceSimulation {
         currentPaceDelta: car.lastLapTime ? Number((car.lastLapTime - RaceSimulation.BASE_LAP_TIME_SEC).toFixed(3)) : 0
       };
     }
+
+    // ══════════════════════════════════════════════════════════
+    // ── ACTUALIZACIÓN DE BANDERAS, SAFETY CAR E INCIDENTES ──
+    // ══════════════════════════════════════════════════════════
+
+    // 1. Avanzar temporizadores de limpieza de incidentes
+    IncidentModel.updateIncidents(this.incidents, dt);
+
+    // 2. Actualizar banderas de sector
+    this.sectorFlags = [
+      IncidentModel.getSectorFlag(this.incidents, 1),
+      IncidentModel.getSectorFlag(this.incidents, 2),
+      IncidentModel.getSectorFlag(this.incidents, 3),
+    ];
+
+    // 3. Actualizar Safety Car en pista
+    if (this.safetyCar.isDeployed) {
+      SafetyCarModel.update(this.safetyCar, dt, this.cars, this.incidents, lapDistanceMeters);
+      // Compactar el pelotón detrás del SC
+      if (this.safetyCar.mode === 'leading') {
+        SafetyCarModel.compactField(this.cars, this.safetyCar.progress, dt);
+      }
+      // SC ha entrado en boxes → transición a bandera verde
+      if (this.safetyCar.mode === 'in') {
+        this.raceFlagState = 'green';
+        this.drsDisabledLaps = 2; // DRS deshabilitado durante 2 vueltas tras SC
+      }
+    }
+
+    // 4. Actualizar Virtual Safety Car
+    if (this.vscActive) {
+      this.vscTimer += dt;
+      if (this.vscTimer >= this.vscDuration || IncidentModel.isTrackClear(this.incidents)) {
+        this.vscActive = false;
+        this.raceFlagState = 'green';
+        this.drsDisabledLaps = 1; // DRS deshabilitado 1 vuelta tras VSC
+      }
+    }
+
+    // 5. Actualizar estado global de bandera
+    if (!this.safetyCar.isDeployed && !this.vscActive) {
+      const hasActiveIncidents = !IncidentModel.isTrackClear(this.incidents);
+      if (hasActiveIncidents) {
+        // Determinar severidad por sector
+        const hasDoubleYellow = this.sectorFlags.some(f => f === 'double-yellow');
+        this.raceFlagState = hasDoubleYellow ? 'double-yellow' : 'yellow';
+      } else if (this.raceFlagState !== 'green') {
+        this.raceFlagState = 'green';
+      }
+    }
+
+    // 6. Decrementar DRS disabled laps al cruzar el líder la meta
+    // (se decrementa en la lógica de lap counting del líder, ya gestionado arriba)
 
     this.updateLeaderboardPositions();
 
