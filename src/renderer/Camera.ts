@@ -1,19 +1,21 @@
 import { TrackDefinition } from '../data/barcelonaTrack';
 import { CarState } from '../types/f1';
 
-export type CameraMode = 'overview' | 'follow' | 'cinematic' | 'onboard' | 'helicopter';
+export type CameraMode = 'overview' | 'follow' | 'cinematic' | 'onboard' | 'helicopter' | 'free';
 
 export class Camera {
   x: number = 800;
   y: number = 450;
   zoom: number = 1.0;
+  rotation: number = 0; // Current rotation in radians
 
   targetX: number = 800;
   targetY: number = 450;
   targetZoom: number = 1.0;
+  targetRotation: number = 0; // Target rotation for smooth lerp
 
   screenWidth: number = 1200;
-  screenHeight = 800;
+  screenHeight: number = 800;
 
   followingCarId: number | null = null;
   currentMode: CameraMode = 'overview';
@@ -32,7 +34,7 @@ export class Camera {
     this.screenWidth = width;
     this.screenHeight = height;
     if (track) this.lastTrack = track;
-    if (this.followingCarId === null && this.lastTrack) {
+    if (this.followingCarId === null && this.lastTrack && this.currentMode !== 'free') {
       this.resetToFullTrack(this.lastTrack);
     }
   }
@@ -41,6 +43,7 @@ export class Camera {
     this.currentMode = mode;
     if (mode === 'overview') {
       this.followingCarId = null;
+      this.targetRotation = 0;
       if (this.lastTrack) this.resetToFullTrack(this.lastTrack);
     }
   }
@@ -55,6 +58,7 @@ export class Camera {
   resetToFullTrack(track?: TrackDefinition) {
     this.followingCarId = null;
     this.currentMode = 'overview';
+    this.targetRotation = 0;
     const activeTrack = track || this.lastTrack;
     if (!activeTrack) return;
     this.lastTrack = activeTrack;
@@ -74,9 +78,34 @@ export class Camera {
 
   followCar(carId: number) {
     this.followingCarId = carId;
-    if (this.currentMode === 'overview') {
+    if (this.currentMode === 'overview' || this.currentMode === 'free') {
       this.currentMode = 'follow';
     }
+  }
+
+  // ── ROTACIÓN Y MANIPULACIÓN LIBRE DE PISTA CON RATÓN ──
+  rotateBy(deltaRad: number) {
+    this.targetRotation += deltaRad;
+  }
+
+  panBy(screenDx: number, screenDy: number) {
+    this.followingCarId = null;
+    this.currentMode = 'free';
+
+    // Desrotar el vector de desplazamiento
+    const cos = Math.cos(-this.rotation);
+    const sin = Math.sin(-this.rotation);
+    const worldDx = (screenDx * cos - screenDy * sin) / this.zoom;
+    const worldDy = (screenDx * sin + screenDy * cos) / this.zoom;
+
+    this.targetX -= worldDx;
+    this.targetY -= worldDy;
+    this.x -= worldDx;
+    this.y -= worldDy;
+  }
+
+  zoomBy(factor: number) {
+    this.targetZoom = Math.max(0.25, Math.min(8.0, this.targetZoom * factor));
   }
 
   update(cars: CarState[], dt: number, track?: TrackDefinition) {
@@ -95,32 +124,19 @@ export class Camera {
         this.targetX = (b.minX + b.maxX) / 2;
         this.targetY = (b.minY + b.maxY) / 2;
       }
-    } else if (this.followingCarId !== null) {
+    } else if (this.followingCarId !== null && this.currentMode !== 'free') {
       const car = cars.find(c => c.id === this.followingCarId);
       if (car && car.status !== 'finished' && track) {
-        if (car.isInPitLane && track.pitLanePoints.length > 0) {
-          const pitPts = track.pitLanePoints;
-          const pitProgress = car.pitStop.pitLaneProgress;
-          const pIndex = Math.min(pitPts.length - 2, Math.floor(pitProgress * (pitPts.length - 1)));
-          const frac = (pitProgress * (pitPts.length - 1)) - pIndex;
-          const p1 = pitPts[pIndex];
-          const p2 = pitPts[pIndex + 1] || p1;
-          this.targetX = p1.x + (p2.x - p1.x) * frac;
-          this.targetY = p1.y + (p2.y - p1.y) * frac;
-          
-          if (this.currentMode === 'follow') this.targetZoom = Camera.FOLLOW_ZOOM;
-          else if (this.currentMode === 'cinematic') this.targetZoom = Camera.CINEMATIC_ZOOM;
-          else if (this.currentMode === 'onboard') this.targetZoom = Camera.ONBOARD_ZOOM;
-          else if (this.currentMode === 'helicopter') this.targetZoom = Camera.HELICOPTER_ZOOM;
-        } else {
-          const points = track.points;
+        let pt = { x: 800, y: 450, angle: 0 };
+        const points = track.points;
+        if (points && points.length > 0) {
           const normT = ((car.progress % 1) + 1) % 1;
           const ptIdx = Math.floor(normT * points.length) % points.length;
-          const pt = points[ptIdx] || points[0];
+          pt = points[ptIdx] || points[0];
 
           let lookaheadFactor = 16;
-          if (this.currentMode === 'cinematic') lookaheadFactor = 24; // 60m ahead (approx 2.5m per pt)
-          else if (this.currentMode === 'onboard') lookaheadFactor = 6; // 15m ahead
+          if (this.currentMode === 'cinematic') lookaheadFactor = 24;
+          else if (this.currentMode === 'onboard') lookaheadFactor = 6;
           
           const lookaheadIdx = (ptIdx + lookaheadFactor) % points.length;
           const lookaheadPt = points[lookaheadIdx] || pt;
@@ -152,28 +168,54 @@ export class Camera {
     else if (this.currentMode === 'cinematic') baseLerp = 3.5;
     else if (this.currentMode === 'onboard') baseLerp = 15.0;
     else if (this.currentMode === 'helicopter') baseLerp = 6.0;
+    else if (this.currentMode === 'free') baseLerp = 12.0;
 
     const lerpSpeed = baseLerp * dt;
     this.x += (this.targetX - this.x) * Math.min(1.0, lerpSpeed);
     this.y += (this.targetY - this.y) * Math.min(1.0, lerpSpeed);
     this.zoom += (this.targetZoom - this.zoom) * Math.min(1.0, lerpSpeed);
+    this.rotation += (this.targetRotation - this.rotation) * Math.min(1.0, lerpSpeed * 1.5);
   }
 
   worldToScreen(worldX: number, worldY: number) {
     const screenCenterX = this.screenWidth / 2;
     const screenCenterY = this.screenHeight / 2;
+    const dx = (worldX - this.x) * this.zoom;
+    const dy = (worldY - this.y) * this.zoom;
+
+    if (this.rotation === 0) {
+      return {
+        x: screenCenterX + dx,
+        y: screenCenterY + dy
+      };
+    }
+
+    const cos = Math.cos(this.rotation);
+    const sin = Math.sin(this.rotation);
     return {
-      x: screenCenterX + (worldX - this.x) * this.zoom,
-      y: screenCenterY + (worldY - this.y) * this.zoom
+      x: screenCenterX + (dx * cos - dy * sin),
+      y: screenCenterY + (dx * sin + dy * cos)
     };
   }
 
   screenToWorld(screenX: number, screenY: number) {
     const screenCenterX = this.screenWidth / 2;
     const screenCenterY = this.screenHeight / 2;
+    const sx = screenX - screenCenterX;
+    const sy = screenY - screenCenterY;
+
+    let dx = sx;
+    let dy = sy;
+    if (this.rotation !== 0) {
+      const cos = Math.cos(-this.rotation);
+      const sin = Math.sin(-this.rotation);
+      dx = sx * cos - sy * sin;
+      dy = sx * sin + sy * cos;
+    }
+
     return {
-      x: this.x + (screenX - screenCenterX) / this.zoom,
-      y: this.y + (screenY - screenCenterY) / this.zoom
+      x: this.x + dx / this.zoom,
+      y: this.y + dy / this.zoom
     };
   }
 }

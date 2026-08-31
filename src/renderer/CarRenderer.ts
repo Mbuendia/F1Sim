@@ -50,8 +50,8 @@ export class CarRenderer {
 
         const nx = Math.cos(angle + Math.PI / 2);
         const ny = Math.sin(angle + Math.PI / 2);
-        // Distancia lateral para ir en paralelo
-        const lateralDist = car.lateralOffset * (8 / trackWidthCarsCapacity);
+        // Distancia lateral amplia para evitar efecto tren
+        const lateralDist = car.lateralOffset * (13 / trackWidthCarsCapacity);
 
         worldX = pt.x + nx * lateralDist;
         worldY = pt.y + ny * lateralDist;
@@ -86,7 +86,7 @@ export class CarRenderer {
       // ── OPACIDAD DEL COCHE RETIRADO (FADING ANTES DE GRÚA) ──
       const retiredOpacity = car.status === 'out' ? Math.max(0.25, Math.min(1.0, car.retireTimer / 10)) : 1.0;
 
-      this.drawSingleCar(ctx, screen.x, screen.y, angle, car, camera.zoom, isSelected, retiredOpacity);
+      this.drawSingleCar(ctx, screen.x, screen.y, angle + camera.rotation, car, camera.zoom, isSelected, retiredOpacity);
     }
 
     // ── RENDERIZADO DEL SAFETY CAR FÍSICO ──
@@ -121,7 +121,7 @@ export class CarRenderer {
 
     ctx.save();
     ctx.translate(screen.x, screen.y);
-    ctx.rotate(angle);
+    ctx.rotate(angle + camera.rotation);
 
     // Sombra del Safety Car
     ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';

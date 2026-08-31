@@ -1,10 +1,11 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import styles from './RaceCanvas.module.css';
 import { RaceSimulation } from '../simulation/RaceSimulation';
 import { Camera } from '../renderer/Camera';
 import { TrackRenderer } from '../renderer/TrackRenderer';
 import { CarRenderer } from '../renderer/CarRenderer';
 import { OFFICIAL_CIRCUITS } from '../data/circuits';
+import { Compass, RotateCw } from 'lucide-react';
 
 interface RaceCanvasProps {
   simulation: RaceSimulation;
@@ -20,6 +21,11 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
   onSelectCar
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const isDraggingRef = useRef(false);
+  const dragButtonRef = useRef<number>(0);
+  const dragStartPosRef = useRef({ x: 0, y: 0 });
+  const totalDragDistanceRef = useRef(0);
+  const [currentRotationDeg, setCurrentRotationDeg] = useState(0);
 
   // Sincronizar el seguimiento de la cámara cuando cambia selectedCarId
   useEffect(() => {
@@ -85,7 +91,7 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
       ctx.fillStyle = '#14181f';
       ctx.fillRect(0, 0, camera.screenWidth, camera.screenHeight);
 
-      TrackRenderer.renderTrack(ctx, simulation.activeTrack, camera, dpr);
+      TrackRenderer.renderTrack(ctx, simulation.activeTrack, camera, dpr, simulation.weather);
 
       const circuitSpec = OFFICIAL_CIRCUITS[simulation.circuitId];
       const trackWidthCarsCapacity = circuitSpec?.trackWidthCars ?? 3;
@@ -109,41 +115,82 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
     };
   }, [simulation, camera, simulation.circuitId]);
 
-  const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+  // ── MANEJADORES DE RATÓN: ROTACIÓN 360°, PAN Y ZOOM ──
+  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    isDraggingRef.current = true;
+    dragButtonRef.current = e.button;
+    dragStartPosRef.current = { x: e.clientX, y: e.clientY };
+    totalDragDistanceRef.current = 0;
+  };
 
-    const rect = canvas.getBoundingClientRect();
-    const clickX = e.clientX - rect.left;
-    const clickY = e.clientY - rect.top;
+  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!isDraggingRef.current) return;
 
-    let clickedCarId: number | null = null;
-    let minDistance = 35;
+    const dx = e.clientX - dragStartPosRef.current.x;
+    const dy = e.clientY - dragStartPosRef.current.y;
+    totalDragDistanceRef.current += Math.hypot(dx, dy);
+    dragStartPosRef.current = { x: e.clientX, y: e.clientY };
 
-    const points = simulation.activeTrack.points;
-    const totalPts = points.length;
+    if (dragButtonRef.current === 0) {
+      // Click izquierdo: Rotar 360° la pista
+      camera.rotateBy(dx * 0.008);
+      setCurrentRotationDeg(Math.round(((camera.targetRotation * 180) / Math.PI) % 360));
+    } else if (dragButtonRef.current === 1 || dragButtonRef.current === 2) {
+      // Click central o derecho: Desplazar la pista (Pan)
+      camera.panBy(dx, dy);
+    }
+  };
 
-    for (const car of simulation.cars) {
-      if (car.status === 'finished') continue;
-      const normT = ((car.progress % 1) + 1) % 1;
-      const ptIdx = Math.floor(normT * totalPts) % totalPts;
-      const pt = points[ptIdx] || points[0];
-      const screenPos = camera.worldToScreen(pt.x, pt.y);
+  const handleMouseUp = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!isDraggingRef.current) return;
+    isDraggingRef.current = false;
 
-      const dx = screenPos.x - clickX;
-      const dy = screenPos.y - clickY;
-      const dist = Math.hypot(dx, dy);
+    // Si fue un click rápido casi sin arrastrar (< 6px), seleccionar monoplaza
+    if (totalDragDistanceRef.current < 6 && e.button === 0) {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
 
-      if (dist < minDistance) {
-        minDistance = dist;
-        clickedCarId = car.id;
+      const rect = canvas.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const clickY = e.clientY - rect.top;
+
+      let clickedCarId: number | null = null;
+      let minDistance = 35;
+
+      const points = simulation.activeTrack.points;
+      const totalPts = points.length;
+
+      for (const car of simulation.cars) {
+        if (car.status === 'finished') continue;
+        const normT = ((car.progress % 1) + 1) % 1;
+        const ptIdx = Math.floor(normT * totalPts) % totalPts;
+        const pt = points[ptIdx] || points[0];
+        const screenPos = camera.worldToScreen(pt.x, pt.y);
+
+        const dist = Math.hypot(screenPos.x - clickX, screenPos.y - clickY);
+        if (dist < minDistance) {
+          minDistance = dist;
+          clickedCarId = car.id;
+        }
+      }
+
+      if (clickedCarId !== null) {
+        onSelectCar(clickedCarId);
+        camera.followCar(clickedCarId);
       }
     }
+  };
 
-    if (clickedCarId !== null) {
-      onSelectCar(clickedCarId);
-      camera.followCar(clickedCarId);
-    }
+  const handleWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    const factor = e.deltaY < 0 ? 1.15 : 0.87;
+    camera.zoomBy(factor);
+  };
+
+  const handleDoubleClick = () => {
+    camera.resetToFullTrack(simulation.activeTrack);
+    setCurrentRotationDeg(0);
+    onSelectCar(null);
   };
 
   return (
@@ -151,13 +198,24 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
       <canvas
         ref={canvasRef}
         className={styles.canvas}
-        onClick={handleCanvasClick}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onWheel={handleWheel}
+        onDoubleClick={handleDoubleClick}
+        onContextMenu={(e) => e.preventDefault()}
       />
-      {selectedCarId !== null && (
-        <div className={styles.cameraHint}>
-          🎥 <strong>CÁMARA CINEMATOGRÁFICA DE SEGUIMIENTO</strong> · Pulsa <strong>ESC</strong> para vista general
-        </div>
-      )}
+
+      {/* ── BRÚJULA & INDICADOR DE ROTACIÓN 360° ── */}
+      <div className={styles.orbitBadge} onClick={handleDoubleClick} title="Haz doble click para resetear vista">
+        <Compass size={13} style={{ transform: `rotate(${-currentRotationDeg}deg)`, transition: 'transform 0.1s' }} />
+        <span>{currentRotationDeg}° {currentRotationDeg !== 0 ? '(Click para reset)' : 'NORTE'}</span>
+      </div>
+
+      {/* ── HINT DE CONTROLES DE CÁMARA & PISTA ── */}
+      <div className={styles.cameraHint}>
+        🖱️ <strong>Click + Arrastrar:</strong> Rotar pista 360° | <strong>Click Dcho:</strong> Mover | <strong>Rueda:</strong> Zoom | <strong>Doble Click:</strong> Reset
+      </div>
     </div>
   );
 };
@@ -178,73 +236,48 @@ function renderLeftMinimap(
   ctx.strokeStyle = 'rgba(255, 255, 255, 0.20)';
   ctx.lineWidth = 1.5;
   ctx.beginPath();
-  ctx.roundRect(mmX, mmY, mmW, mmH, 10);
+  ctx.roundRect(mmX, mmY, mmW, mmH, 8);
   ctx.fill();
   ctx.stroke();
 
-  ctx.font = 'bold 9px Orbitron, sans-serif';
-  ctx.fillStyle = '#94a3b8';
-  ctx.textAlign = 'left';
-  ctx.fillText('MAPA PISTA', mmX + 8, mmY + 13);
+  const scaleX = (mmW - 30) / (b.maxX - b.minX);
+  const scaleY = (mmH - 30) / (b.maxY - b.minY);
+  const mmScale = Math.min(scaleX, scaleY);
 
-  const padding = 12;
-  const tW = b.maxX - b.minX;
-  const tH = b.maxY - b.minY;
-  const scale = Math.min((mmW - padding * 2) / tW, (mmH - padding * 2) / tH);
-  const offX = mmX + padding + (mmW - padding * 2 - tW * scale) / 2;
-  const offY = mmY + padding + 6 + (mmH - padding * 2 - tH * scale) / 2;
+  const mmOffsetX = mmX + (mmW - (b.maxX - b.minX) * mmScale) / 2;
+  const mmOffsetY = mmY + (mmH - (b.maxY - b.minY) * mmScale) / 2;
 
-  const toMM = (wx: number, wy: number) => ({
-    x: (wx - b.minX) * scale + offX,
-    y: (wy - b.minY) * scale + offY
-  });
+  const points = simulation.activeTrack.points;
+  if (points.length > 0) {
+    ctx.beginPath();
+    const firstX = mmOffsetX + (points[0].x - b.minX) * mmScale;
+    const firstY = mmOffsetY + (points[0].y - b.minY) * mmScale;
+    ctx.moveTo(firstX, firstY);
 
-  ctx.beginPath();
-  const pts = simulation.activeTrack.points;
-  const first = toMM(pts[0].x, pts[0].y);
-  ctx.moveTo(first.x, first.y);
-  for (let i = 2; i < pts.length; i += 3) {
-    const p = toMM(pts[i].x, pts[i].y);
-    ctx.lineTo(p.x, p.y);
+    for (let i = 1; i < points.length; i++) {
+      const px = mmOffsetX + (points[i].x - b.minX) * mmScale;
+      const py = mmOffsetY + (points[i].y - b.minY) * mmScale;
+      ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    ctx.strokeStyle = '#475569';
+    ctx.lineWidth = 3.5;
+    ctx.stroke();
   }
-  ctx.closePath();
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.40)';
-  ctx.lineWidth = 2.5;
-  ctx.stroke();
 
+  // Puntos de los coches en el minimapa
   for (const car of simulation.cars) {
     if (car.status === 'finished') continue;
     const normT = ((car.progress % 1) + 1) % 1;
-    const ptIdx = Math.floor(normT * pts.length) % pts.length;
-    const pt = pts[ptIdx] || pts[0];
-    const sp = toMM(pt.x, pt.y);
+    const ptIdx = Math.floor(normT * points.length) % points.length;
+    const pt = points[ptIdx] || points[0];
 
-    const isSelected = car.id === camera.followingCarId;
+    const cx = mmOffsetX + (pt.x - b.minX) * mmScale;
+    const cy = mmOffsetY + (pt.y - b.minY) * mmScale;
+
+    ctx.fillStyle = car.team.color;
     ctx.beginPath();
-    ctx.arc(sp.x, sp.y, isSelected ? 4.5 : 2.5, 0, Math.PI * 2);
-    ctx.fillStyle = isSelected ? '#ffffff' : car.team.color;
+    ctx.arc(cx, cy, car.id === camera.followingCarId ? 4.5 : 2.5, 0, Math.PI * 2);
     ctx.fill();
-
-    if (isSelected) {
-      ctx.strokeStyle = car.team.color;
-      ctx.lineWidth = 2;
-      ctx.stroke();
-    }
-  }
-
-  // Safety Car en el minimapa
-  if (simulation.safetyCar.isDeployed && simulation.safetyCar.mode !== 'idle' && simulation.safetyCar.mode !== 'in') {
-    const normT = ((simulation.safetyCar.progress % 1) + 1) % 1;
-    const ptIdx = Math.floor(normT * pts.length) % pts.length;
-    const pt = pts[ptIdx] || pts[0];
-    const sp = toMM(pt.x, pt.y);
-
-    ctx.beginPath();
-    ctx.arc(sp.x, sp.y, 4, 0, Math.PI * 2);
-    ctx.fillStyle = '#f59e0b';
-    ctx.fill();
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
   }
 }

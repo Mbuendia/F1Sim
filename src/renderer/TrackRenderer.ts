@@ -1,20 +1,24 @@
 import { TrackDefinition } from '../data/barcelonaTrack';
 import { Camera } from './Camera';
+import { TrackWeatherState } from '../types/f1';
 
 export class TrackRenderer {
   /**
-   * Renderiza el circuito oficial FIA con pista ancha, asfalto bicapa, pit lane oficial y meta ajedrezada
+   * Renderiza el circuito oficial FIA con pista ancha, asfalto realista, charcos de lluvia dinámicos, pit lane y meta
    */
   static renderTrack(
     ctx: CanvasRenderingContext2D,
     track: TrackDefinition,
     camera: Camera,
-    dpr: number
+    _dpr: number,
+    weather?: TrackWeatherState
   ) {
     const points = track.points;
     const n = points.length;
     const zoom = camera.zoom;
-    const trackWidth = (track.trackWidthMeters || 26) * 1.7 * zoom;
+    const trackWidth = (track.trackWidthMeters || 26) * 1.75 * zoom;
+    const isWet = (weather?.waterPercentage || 0) > 10;
+    const waterDepth = weather?.waterDepthMm || 0;
 
     const buildPath = () => {
       ctx.beginPath();
@@ -32,7 +36,7 @@ export class TrackRenderer {
 
     // ── 1. ÁREA PERIMETRAL / ESCAPATORIAS / GRAVA ──
     buildPath();
-    ctx.strokeStyle = '#181e1a'; // Hierba oscura exterior
+    ctx.strokeStyle = '#181e1a'; // Hierba exterior
     ctx.lineWidth = trackWidth + 40 * zoom;
     ctx.stroke();
 
@@ -55,36 +59,84 @@ export class TrackRenderer {
     ctx.stroke();
     ctx.restore();
 
-    // ── 3. ASFALTO BASE DEL CIRCUITO (BICAPA ANCHO) ──
+    // ── 3. ASFALTO BASE DEL CIRCUITO (MÁS OSCURO Y BRILLANTE SI LLUEVE) ──
     buildPath();
-    ctx.strokeStyle = '#272b35';
+    ctx.strokeStyle = isWet ? '#161922' : '#272b35';
     ctx.lineWidth = trackWidth;
     ctx.stroke();
 
-    // ── 4. TRAZADA ENGOMADA (RACING LINE NEGRA) ──
+    // ── 4. TRAZADA ENGOMADA (RACING LINE) ──
     buildPath();
-    ctx.strokeStyle = '#12141a';
-    ctx.lineWidth = trackWidth * 0.52;
+    ctx.strokeStyle = isWet ? '#0d1017' : '#14161c';
+    ctx.lineWidth = trackWidth * 0.54;
     ctx.stroke();
 
-    // ── 5. LÍNEAS DE LÍMITES DE PISTA BLANCAS ──
+    // ── 5. CHARCOS DE AGUA DINÁMICOS EN PISTA (SI HAY LLUVIA) ──
+    if (isWet && waterDepth > 0.2) {
+      this.renderRainPuddles(ctx, track, camera, waterDepth);
+    }
+
+    // ── 6. LÍNEAS DE LÍMITES DE PISTA BLANCAS ──
     ctx.save();
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.75)';
+    ctx.strokeStyle = isWet ? 'rgba(255, 255, 255, 0.55)' : 'rgba(255, 255, 255, 0.75)';
     ctx.lineWidth = Math.max(1.2, 1.8 * zoom);
     buildPath();
     ctx.stroke();
     ctx.restore();
 
-    // ── 6. PIT LANE COMPLETO & MURO DE BOXES ──
+    // ── 7. PIT LANE COMPLETO & MURO DE BOXES ──
     this.renderPitLane(ctx, track, camera);
 
-    // ── 7. LÍNEA DE META OFICIAL AJEDREZADA & PÓRTICO FIA ──
+    // ── 8. LÍNEA DE META OFICIAL AJEDREZADA & PÓRTICO FIA ──
     this.renderStartFinishLine(ctx, track, camera);
 
-    // ── 8. ETIQUETAS DE CURVAS OFICIALES ──
+    // ── 9. ETIQUETAS DE CURVAS OFICIALES ──
     if (zoom >= 0.70) {
       this.renderCornerLabels(ctx, track, camera);
     }
+  }
+
+  /**
+   * Renderiza charcos y acumulaciones de agua brillante en frenadas y curvas
+   */
+  private static renderRainPuddles(
+    ctx: CanvasRenderingContext2D,
+    track: TrackDefinition,
+    camera: Camera,
+    waterDepth: number
+  ) {
+    const zoom = camera.zoom;
+    const puddleOpacity = Math.min(0.65, 0.15 + (waterDepth / 5.0) * 0.5);
+
+    ctx.save();
+    // Charcos en zonas estratégicas del circuito (curvas lentas y puntos bajos)
+    const puddleLocations = [0.12, 0.24, 0.38, 0.52, 0.68, 0.85];
+    const totalPts = track.points.length;
+
+    puddleLocations.forEach((t) => {
+      const idx = Math.floor(t * totalPts) % totalPts;
+      const pt = track.points[idx];
+      const screen = camera.worldToScreen(pt.x, pt.y);
+
+      const rad = (18 + (t * 10) % 15) * zoom;
+      const grad = ctx.createRadialGradient(screen.x, screen.y, 2, screen.x, screen.y, rad);
+      grad.addColorStop(0, `rgba(56, 189, 248, ${puddleOpacity * 1.3})`);
+      grad.addColorStop(0.5, `rgba(2, 132, 199, ${puddleOpacity * 0.8})`);
+      grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(screen.x, screen.y, rad, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Reflejo brillante de superficie
+      ctx.fillStyle = `rgba(255, 255, 255, ${puddleOpacity * 0.45})`;
+      ctx.beginPath();
+      ctx.ellipse(screen.x - rad * 0.2, screen.y - rad * 0.2, rad * 0.35, rad * 0.18, 0.4, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    ctx.restore();
   }
 
   private static renderPitLane(ctx: CanvasRenderingContext2D, track: TrackDefinition, camera: Camera) {
@@ -116,7 +168,7 @@ export class TrackRenderer {
     ctx.setLineDash([6 * zoom, 6 * zoom]);
     ctx.stroke();
 
-    // Muro de boxes / Pit Wall (línea blanca y roja sólida separadora)
+    // Muro de boxes / Pit Wall
     ctx.setLineDash([]);
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 2.0 * zoom;
@@ -151,7 +203,7 @@ export class TrackRenderer {
   private static renderStartFinishLine(ctx: CanvasRenderingContext2D, track: TrackDefinition, camera: Camera) {
     const startPoint = track.points[0];
     const zoom = camera.zoom;
-    const trackWidth = (track.trackWidthMeters || 26) * 1.7 * zoom;
+    const trackWidth = (track.trackWidthMeters || 26) * 1.75 * zoom;
     const hw = trackWidth / 2;
 
     const nx = Math.cos(startPoint.angle + Math.PI / 2);
@@ -180,7 +232,7 @@ export class TrackRenderer {
       ctx.stroke();
     }
 
-    // 2. Líneas blancas de parrilla / bordes
+    // 2. Líneas blancas de parrilla
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = Math.max(2.0, 2.5 * zoom);
     ctx.beginPath();
@@ -198,7 +250,7 @@ export class TrackRenderer {
     ctx.shadowBlur = 4;
     ctx.fillText('FINISH / META', centerScreen.x, centerScreen.y - 8 * zoom);
 
-    // 4. Faro/Baliza oficial roja en el lateral
+    // 4. Faro oficial rojo en el lateral
     ctx.fillStyle = '#e10600';
     ctx.beginPath();
     ctx.arc(p1.x, p1.y, Math.max(4, 5.5 * zoom), 0, Math.PI * 2);
@@ -217,7 +269,7 @@ export class TrackRenderer {
     for (const corner of track.corners) {
       const pointIdx = Math.floor(corner.t * track.points.length) % track.points.length;
       const pt = track.points[pointIdx];
-      const hw = ((track.trackWidthMeters || 26) * 1.7 * zoom) / 2 + 18 * zoom;
+      const hw = ((track.trackWidthMeters || 26) * 1.75 * zoom) / 2 + 18 * zoom;
 
       const nx = Math.cos(pt.angle + Math.PI / 2);
       const ny = Math.sin(pt.angle + Math.PI / 2);
