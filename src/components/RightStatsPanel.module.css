@@ -1,35 +1,38 @@
 .container {
-  width: 360px;
-  min-width: 360px;
+  width: 100%;
   height: 100%;
-  background: #0b0f19;
-  border-left: 2px solid #1a2236;
-  padding: 10px;
+  background: #0d111c;
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 10px 10px 14px;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 10px;
-  overflow-y: auto;
-  z-index: 30;
-  box-shadow: -4px 0 25px rgba(0, 0, 0, 0.6);
+  box-sizing: border-box;
 }
 
+/* Custom Scrollbar */
 .container::-webkit-scrollbar {
   width: 5px;
 }
+.container::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+}
 .container::-webkit-scrollbar-thumb {
-  background: #27354f;
-  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
 }
 
+/* Tarjeta Hero del Piloto */
 .driverHeroCard {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(0, 0, 0, 0.4) 100%);
-  border: 1.5px solid rgba(255, 255, 255, 0.12);
-  border-left: 5px solid #e10600;
-  border-radius: 10px;
-  padding: 10px 14px;
+  background: linear-gradient(135deg, #131a2b 0%, #0d1220 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-left: 4px solid #e10600;
+  border-radius: 8px;
+  padding: 8px 12px;
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
 }
 
 .driverHeroLeft {
@@ -40,12 +43,9 @@
 
 .driverHeroPos {
   font-family: 'Orbitron', sans-serif;
-  font-size: 20px;
+  font-size: 16px;
   font-weight: 900;
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.1);
-  padding: 4px 8px;
-  border-radius: 6px;
+  color: #ffd700;
 }
 
 .driverHeroName {
@@ -82,12 +82,90 @@
 .cardHeader {
   display: flex;
   align-items: center;
-  gap: 6px;
+  justify-content: space-between;
   font-family: 'Orbitron', sans-serif;
   font-size: 11px;
   font-weight: 900;
   color: #ffffff;
   letter-spacing: 1px;
+}
+
+.weatherConditionBadge {
+  font-size: 9.5px;
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  padding: 2px 7px;
+  border-radius: 10px;
+  letter-spacing: 0.5px;
+}
+
+/* Weather Grid */
+.weatherGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.weatherMiniBox {
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 6px;
+  padding: 6px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.weatherBoxHeader {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 9.5px;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 700;
+  color: #94a3b8;
+}
+
+.weatherBoxVal {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.weatherBoxSub {
+  font-size: 9px;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 600;
+  color: #94a3b8;
+}
+
+.waterProgressBar {
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+  margin: 2px 0;
+}
+
+.waterProgressFill {
+  height: 100%;
+  background: linear-gradient(90deg, #38bdf8 0%, #0284c7 100%);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.weatherForecastBanner {
+  background: rgba(56, 189, 248, 0.08);
+  border: 1px dashed rgba(56, 189, 248, 0.3);
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 10px;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 700;
+  color: #bae6fd;
 }
 
 /* Sectores Grid */
@@ -121,37 +199,32 @@
 }
 
 .sectorStatus {
-  font-size: 8.5px;
-  font-family: 'Rajdhani', sans-serif;
-  font-weight: 800;
+  font-size: 8px;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
 }
 
-/* Gráfica de Neumáticos */
+/* Gráfica SVG Degradación */
 .chartContainer {
-  background: rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 8px;
-  padding: 10px 8px 6px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 6px;
+  padding: 6px 4px;
 }
 
 .chartSvg {
   width: 100%;
-  height: 120px;
-  overflow: visible;
+  height: auto;
+  display: block;
 }
 
 .chartLegend {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 10px;
-  font-family: 'Orbitron', sans-serif;
+  justify-content: space-around;
+  margin-top: 6px;
+  font-size: 9.5px;
+  font-family: 'Rajdhani', sans-serif;
   font-weight: 700;
-  color: #cbd5e1;
-  padding: 0 4px;
+  color: #94a3b8;
 }
 
 .legendItem {
@@ -161,85 +234,24 @@
 }
 
 .legendDot {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
 }
 
 .forecastBanner {
-  background: rgba(56, 189, 248, 0.12);
-  border: 1px solid rgba(56, 189, 248, 0.35);
+  background: rgba(255, 215, 0, 0.08);
+  border: 1px dashed rgba(255, 215, 0, 0.3);
+  border-radius: 6px;
   padding: 5px 8px;
-  border-radius: 6px;
-  font-size: 11px;
+  margin-top: 6px;
+  font-size: 10px;
   font-family: 'Rajdhani', sans-serif;
   font-weight: 700;
-  color: #38bdf8;
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  color: #fef08a;
 }
 
-/* Historial 66 vueltas */
-.historyTableWrapper {
-  max-height: 190px;
-  overflow-y: auto;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 6px;
-  background: rgba(0, 0, 0, 0.4);
-}
-
-.historyTableWrapper::-webkit-scrollbar {
-  width: 4px;
-}
-.historyTableWrapper::-webkit-scrollbar-thumb {
-  background: #334155;
-  border-radius: 2px;
-}
-
-.historyTable {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 11px;
-}
-
-.historyTable th {
-  background: rgba(255, 255, 255, 0.08);
-  color: #94a3b8;
-  font-family: 'Orbitron', sans-serif;
-  font-size: 9px;
-  padding: 5px 6px;
-  text-align: center;
-  position: sticky;
-  top: 0;
-  z-index: 5;
-}
-
-.historyTable td {
-  padding: 4px 6px;
-  text-align: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-  font-family: 'Rajdhani', sans-serif;
-  font-weight: 700;
-  color: #e2e8f0;
-}
-
-.historyTable tr:hover {
-  background: rgba(255, 255, 255, 0.06);
-}
-
-.lapNumCell {
-  font-family: 'Orbitron', sans-serif;
-  font-weight: 800;
-  color: #38bdf8;
-}
-
-.lapTimeCell {
-  font-family: 'Orbitron', sans-serif;
-  font-weight: 800;
-}
-
-/* Telemetría y Temperaturas */
+/* Telemetría Grid */
 .telemetryGrid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -315,4 +327,48 @@
   font-size: 13px;
   font-weight: 900;
   color: #ffffff;
+}
+
+/* Historial de Vueltas */
+.historyTableWrapper {
+  max-height: 180px;
+  overflow-y: auto;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.historyTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 10.5px;
+  text-align: center;
+  font-family: 'Rajdhani', sans-serif;
+}
+
+.historyTable th {
+  background: rgba(15, 23, 42, 0.95);
+  color: #94a3b8;
+  padding: 5px 3px;
+  font-weight: 800;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 8.5px;
+  position: sticky;
+  top: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.historyTable td {
+  padding: 4px 3px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.lapNumCell {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 800;
+  color: #64748b;
+}
+
+.lapTimeCell {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 800;
 }

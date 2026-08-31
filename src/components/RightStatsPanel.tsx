@@ -1,12 +1,15 @@
 import React, { useEffect, useRef } from 'react';
 import styles from './RightStatsPanel.module.css';
-import { CarState } from '../types/f1';
+import { CarState, TrackWeatherState } from '../types/f1';
 import { 
   Timer, 
   History, 
   TrendingDown, 
   Gauge,
-  Wind
+  Wind,
+  CloudRain,
+  Thermometer,
+  Droplets
 } from 'lucide-react';
 import { animate } from 'animejs';
 
@@ -17,6 +20,7 @@ export interface RightStatsPanelProps {
   overallBestS1: number | null;
   overallBestS2: number | null;
   overallBestS3: number | null;
+  weather?: TrackWeatherState;
 }
 
 export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
@@ -25,7 +29,8 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
   totalLaps = 66,
   overallBestS1,
   overallBestS2,
-  overallBestS3
+  overallBestS3,
+  weather,
 }) => {
   const panelRef = useRef<HTMLDivElement>(null);
   const pitBannerRef = useRef<HTMLDivElement>(null);
@@ -57,7 +62,7 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
 
   if (!activeCar) return null;
 
-  const { driver, team, sectors, pitStop, stats, telemetry, tires, currentPosition, lapHistory, bestLapTime } = activeCar;
+  const { driver, team, sectors, pitStop, stats, tires, currentPosition, lapHistory, bestLapTime } = activeCar;
 
   // ── 1. ESTILOS DE SECTORES ──
   const getSectorStyle = (
@@ -143,7 +148,84 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
         <div className={styles.driverHeroNum} style={{ color: team.color }}>#{driver.number}</div>
       </div>
 
-      {/* ── 1. SECTORES EN DIRECTO ── */}
+      {/* ── 1. ESTADO DE PISTA & CONDICIONES METEOROLÓGICAS ── */}
+      {weather && (
+        <div className={styles.sectionCard}>
+          <div className={styles.cardHeader}>
+            <CloudRain size={14} color="#38bdf8" />
+            <span>ESTADO DE PISTA & METEOROLOGÍA</span>
+            <span className={styles.weatherConditionBadge}>
+              {weather.condition === 'dry' ? '☀️ SECO' : '🌧️ MOJADO'}
+            </span>
+          </div>
+
+          <div className={styles.weatherGrid}>
+            {/* Nivel de agua */}
+            <div className={styles.weatherMiniBox}>
+              <div className={styles.weatherBoxHeader}>
+                <Droplets size={11} color="#38bdf8" />
+                <span>Nivel de Agua</span>
+              </div>
+              <span className={styles.weatherBoxVal}>{weather.waterDepthMm.toFixed(1)} mm</span>
+              <div className={styles.waterProgressBar}>
+                <div 
+                  className={styles.waterProgressFill} 
+                  style={{ width: `${Math.max(6, weather.waterPercentage)}%` }} 
+                />
+              </div>
+              <span className={styles.weatherBoxSub}>
+                {weather.waterPercentage === 0 ? 'Asfalto Seco (0%)' : `${weather.waterPercentage}% Mojado`}
+              </span>
+            </div>
+
+            {/* Temperatura asfalto */}
+            <div className={styles.weatherMiniBox}>
+              <div className={styles.weatherBoxHeader}>
+                <Thermometer size={11} color="#f97316" />
+                <span>Temp. Pista</span>
+              </div>
+              <span className={styles.weatherBoxVal} style={{ color: '#f97316' }}>
+                {weather.trackTempCelsius}°C
+              </span>
+              <span className={styles.weatherBoxSub}>Ambiente: {weather.airTempCelsius}°C</span>
+              <span className={styles.weatherBoxSub}>Humedad: {weather.humidityPercentage}%</span>
+            </div>
+
+            {/* Grip */}
+            <div className={styles.weatherMiniBox}>
+              <div className={styles.weatherBoxHeader}>
+                <Gauge size={11} color="#22c55e" />
+                <span>Grip Pista</span>
+              </div>
+              <span className={styles.weatherBoxVal} style={{ color: '#22c55e' }}>
+                {Math.round(weather.gripMultiplier * 100)}%
+              </span>
+              <span className={styles.weatherBoxSub}>
+                {weather.gripMultiplier >= 0.95 ? 'Grip Óptimo 🟢' : 'Grip Reducido 🟡'}
+              </span>
+            </div>
+
+            {/* Viento */}
+            <div className={styles.weatherMiniBox}>
+              <div className={styles.weatherBoxHeader}>
+                <Wind size={11} color="#c084fc" />
+                <span>Viento</span>
+              </div>
+              <span className={styles.weatherBoxVal} style={{ color: '#c084fc' }}>
+                {weather.windSpeedKmh} km/h
+              </span>
+              <span className={styles.weatherBoxSub}>Dirección: {weather.windDirection}</span>
+              <span className={styles.weatherBoxSub}>Lluvia: {weather.rainProbabilityPct}%</span>
+            </div>
+          </div>
+
+          <div className={styles.weatherForecastBanner}>
+            <span>📡 Previsión radar: <strong>{weather.forecast5Min}</strong> (15m: {weather.forecast15Min})</span>
+          </div>
+        </div>
+      )}
+
+      {/* ── 2. SECTORES EN DIRECTO ── */}
       <div className={styles.sectionCard}>
         <div className={styles.cardHeader}>
           <Timer size={14} color="#e10600" />
@@ -171,7 +253,7 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
         </div>
       </div>
 
-      {/* ── 2. GRÁFICA DINÁMICA DE PREVISIÓN FIJA & DEGRADACIÓN REAL ── */}
+      {/* ── 3. GRÁFICA DINÁMICA DE PREVISIÓN FIJA & DEGRADACIÓN REAL ── */}
       <div className={styles.sectionCard}>
         <div className={styles.cardHeader}>
           <TrendingDown size={14} color="#ffd700" />
@@ -251,7 +333,7 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
         </div>
       </div>
 
-      {/* ── 3. TELEMETRÍA AVANZADA (FRENADA, MOTOR & AERO) ── */}
+      {/* ── 4. TELEMETRÍA AVANZADA (FRENADA, MOTOR & AERO) ── */}
       <div className={styles.sectionCard}>
         <div className={styles.cardHeader}>
           <Gauge size={14} color="#38bdf8" />
@@ -306,7 +388,7 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
         )}
       </div>
 
-      {/* ── 4. HISTORIAL COMPLETO DE TODAS LAS VUELTAS (1 A 66) ── */}
+      {/* ── 5. HISTORIAL COMPLETO DE TODAS LAS VUELTAS (1 A 66) ── */}
       <div className={styles.sectionCard}>
         <div className={styles.cardHeader}>
           <History size={14} color="#c084fc" />

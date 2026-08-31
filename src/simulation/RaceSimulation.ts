@@ -1,4 +1,16 @@
-import { CarState, StartLightState, TelemetryData, RelativeCarInfo, DriverStatsSummary, RaceFlagState, SafetyCarState, TrackIncident, DnfNotification } from '../types/f1';
+import { 
+  CarState, 
+  StartLightState, 
+  TelemetryData, 
+  RelativeCarInfo, 
+  DriverStatsSummary, 
+  RaceFlagState, 
+  SafetyCarState, 
+  TrackIncident, 
+  DnfNotification,
+  TrackWeatherState,
+  D20LuckEvent
+} from '../types/f1';
 import { DRIVERS } from '../data/drivers';
 import { TEAMS, STARTING_GRID_ORDER } from '../data/teams';
 import { OFFICIAL_CIRCUITS, CircuitSpec } from '../data/circuits';
@@ -37,6 +49,26 @@ export class RaceSimulation {
 
   podiumCars: CarState[] = [];
   static readonly BASE_LAP_TIME_SEC = 77.8;
+
+  // ── TELEMETRÍA AMBIENTAL & CONDICIONES DE PISTA ──
+  weather: TrackWeatherState = {
+    condition: 'dry',
+    conditionLabel: 'SECO / DESPEJADO',
+    waterDepthMm: 0.0,
+    waterPercentage: 0,
+    trackTempCelsius: 38.6,
+    airTempCelsius: 24.5,
+    humidityPercentage: 42,
+    gripMultiplier: 1.0,
+    windSpeedKmh: 14.2,
+    windDirection: 'SO',
+    forecast5Min: 'ESTABLE (0% LLUVIA)',
+    forecast15Min: 'DESPEJADO',
+    rainProbabilityPct: 4,
+  };
+
+  // ── DADO D20 DE LA SUERTE ANTE INCIDENTES ──
+  activeLuckEvent: D20LuckEvent | null = null;
 
   // ── SISTEMA DE BANDERAS Y SAFETY CAR ──
   raceFlagState: RaceFlagState = 'green';
@@ -287,6 +319,7 @@ export class RaceSimulation {
     }
 
     this.raceTimeSec += dt;
+    this.updateWeather(dt);
 
     const points = this.activeTrack.points;
     const totalPoints = points.length;
@@ -359,11 +392,13 @@ export class RaceSimulation {
           const leaderProgress = leaderCar ? leaderCar.progress : 0;
           SafetyCarModel.deploy(this.safetyCar, `Abandono de ${car.driver.code}`, leaderProgress, this.raceTimeSec);
           this.raceFlagState = 'sc';
+          this.triggerD20LuckRoll('sc');
         } else if (response === 'vsc') {
           this.raceFlagState = 'vsc';
           this.vscActive = true;
           this.vscTimer = 0;
           this.vscDuration = incident.clearTimer + 5; // VSC dura hasta que se limpie + 5s extra
+          this.triggerD20LuckRoll('vsc');
         }
         continue;
       }
@@ -960,5 +995,85 @@ export class RaceSimulation {
       this.isPaused = false;
       this.speedMultiplier = speed;
     }
+  }
+
+  // ── MÉTODOS DE EVENTO DE SUERTE CON DADO D20 ──
+  triggerD20LuckRoll(triggerType: 'sc' | 'vsc' | 'red', playerDriverId?: string): D20LuckEvent {
+    const roll = Math.floor(Math.random() * 20) + 1; // 1 al 20
+    const runningCars = this.cars.filter(c => c.status === 'running');
+    let luckyCar = runningCars[Math.floor(Math.random() * runningCars.length)] || this.cars[0];
+
+    // Tirada alta favorece al piloto seleccionado por el jugador
+    if (roll >= 14 && playerDriverId) {
+      const playerCar = this.cars.find(c => c.driver.id === playerDriverId && c.status === 'running');
+      if (playerCar) luckyCar = playerCar;
+    }
+
+    let optimalCompound: 'soft' | 'medium' | 'hard' = 'soft';
+    if (this.leaderLap > this.totalLaps * 0.7) {
+      optimalCompound = 'soft';
+    } else {
+      optimalCompound = 'medium';
+    }
+
+    let rewardTitle = '';
+    let rewardDescription = '';
+
+    if (roll === 20) {
+      rewardTitle = '💥 ¡ÉXITO CRÍTICO D20! (NAT 20)';
+      rewardDescription = `¡Parada milagrosa en boxes bajo ${triggerType.toUpperCase()}! Neumáticos ${optimalCompound.toUpperCase()} nuevos a estrenar con 100% de agarre y 0s de pérdida de tiempo.`;
+    } else if (roll >= 14) {
+      rewardTitle = `✨ GOLPE DE SUERTE TÁCTICO (DADO ${roll})`;
+      rewardDescription = `Ventana de parada de boxes óptima aprovechada con compuesto ${optimalCompound.toUpperCase()} fresco.`;
+    } else if (roll >= 8) {
+      rewardTitle = `🎲 ESTRATEGIA FAVORABLE (DADO ${roll})`;
+      rewardDescription = `Ajuste táctico de ritmo de carrera y refrigeración de frenos y neumáticos.`;
+    } else {
+      rewardTitle = `⚡ REACCIÓN RÁPIDA DE BOXES (DADO ${roll})`;
+      rewardDescription = `La escudería aprovecha la ralentización del pelotón para recalibrar los mapas de motor y gomas.`;
+    }
+
+    const event: D20LuckEvent = {
+      id: `d20_${Date.now()}_${roll}`,
+      triggerType,
+      rollValue: roll,
+      luckyCarId: luckyCar.id,
+      luckyDriverName: `${luckyCar.driver.firstName} ${luckyCar.driver.lastName}`,
+      luckyDriverNumber: luckyCar.driver.number,
+      luckyDriverFlag: luckyCar.driver.countryFlag,
+      luckyTeamName: luckyCar.team.name,
+      luckyTeamColor: luckyCar.team.color,
+      isPlayerCar: luckyCar.driver.id === playerDriverId,
+      rewardTitle,
+      rewardDescription,
+      optimalCompound,
+      applied: false,
+      timestamp: Date.now(),
+    };
+
+    this.activeLuckEvent = event;
+    return event;
+  }
+
+  applyLuckEventReward(eventId: string) {
+    if (!this.activeLuckEvent || this.activeLuckEvent.id !== eventId || this.activeLuckEvent.applied) return;
+
+    const car = this.getCarById(this.activeLuckEvent.luckyCarId);
+    if (car && car.status === 'running') {
+      car.tires = TireModel.createFreshTire(this.activeLuckEvent.optimalCompound);
+      car.tires.health = 100;
+      car.stats.brakeTempCelsius = 420;
+      car.stats.engineTempCelsius = 98;
+    }
+    this.activeLuckEvent.applied = true;
+  }
+
+  // ── EVOLUCIÓN DINÁMICA DE CONDICIONES DE PISTA & CLIMA ──
+  updateWeather(dt: number) {
+    // Evolución sutil y continua de temperatura de asfalto y viento
+    const tempOscillation = Math.sin(this.raceTimeSec * 0.05) * 1.5;
+    this.weather.trackTempCelsius = Number((38.5 + tempOscillation).toFixed(1));
+    this.weather.airTempCelsius = Number((24.2 + tempOscillation * 0.4).toFixed(1));
+    this.weather.windSpeedKmh = Number((14.0 + Math.cos(this.raceTimeSec * 0.08) * 3.5).toFixed(1));
   }
 }

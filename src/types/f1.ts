@@ -256,3 +256,42 @@ export interface RaceResultHistory {
   winnerStrategy: string;
   totalRaceTime: string;
 }
+
+// ── TELEMETRÍA AMBIENTAL & CONDICIONES DE PISTA ──
+export type WeatherCondition = 'dry' | 'drizzle' | 'rain' | 'heavy_rain' | 'storm';
+
+export interface TrackWeatherState {
+  condition: WeatherCondition;
+  conditionLabel: string;
+  waterDepthMm: number;        // 0.0 mm (Seco) a 6.0 mm (Encharcado)
+  waterPercentage: number;     // 0% a 100%
+  trackTempCelsius: number;    // Temperatura de asfalto (ej. 32°C - 52°C)
+  airTempCelsius: number;      // Temperatura ambiente (ej. 20°C - 30°C)
+  humidityPercentage: number;  // 35% a 95%
+  gripMultiplier: number;      // 1.0 (óptimo) a 0.65 (pista mojada)
+  windSpeedKmh: number;        // 5 a 45 km/h
+  windDirection: string;       // N, NE, E, SE, S, SW, W, NW
+  forecast5Min: string;
+  forecast15Min: string;
+  rainProbabilityPct: number;
+}
+
+// ── EVENTO TÁCTICO DADO D20 (SAFETY CAR & BANDERA ROJA) ──
+export interface D20LuckEvent {
+  id: string;
+  triggerType: 'sc' | 'vsc' | 'red';
+  rollValue: number;           // 1 al 20
+  luckyCarId: number;
+  luckyDriverName: string;
+  luckyDriverNumber: number;
+  luckyDriverFlag: string;
+  luckyTeamName: string;
+  luckyTeamColor: string;
+  isPlayerCar: boolean;
+  rewardTitle: string;
+  rewardDescription: string;
+  optimalCompound: TireCompound;
+  applied: boolean;
+  timestamp: number;
+}
+

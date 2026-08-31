@@ -14,8 +14,9 @@ import { HomeScreen } from './components/HomeScreen';
 import { LandingPage } from './components/LandingPage';
 import RaceFlagsHUD from './components/RaceFlagsHUD';
 import { DnfNotificationModal } from './components/DnfNotificationModal';
+import { D20LuckModal } from './components/D20LuckModal';
 import { OFFICIAL_CIRCUITS } from './data/circuits';
-import { RaceResultHistory, StartLightState, CarState, RaceFlagState, SafetyCarState, DnfNotification } from './types/f1';
+import { RaceResultHistory, StartLightState, CarState, RaceFlagState, SafetyCarState, DnfNotification, D20LuckEvent, TrackWeatherState } from './types/f1';
 import { RotateCw, Flag, ArrowLeft, ChevronLeft, ChevronRight, Camera as CameraIcon } from 'lucide-react';
 
 export const App: React.FC = () => {
@@ -63,11 +64,13 @@ export const App: React.FC = () => {
   const [bestS2, setBestS2] = useState<number | null>(null);
   const [bestS3, setBestS3] = useState<number | null>(null);
 
-  // Race flags & Safety Car & DNF state
+  // Race flags & Safety Car & DNF & Luck D20 state
   const [raceFlagState, setRaceFlagState] = useState<RaceFlagState>('green');
   const [sectorFlags, setSectorFlags] = useState<[RaceFlagState, RaceFlagState, RaceFlagState]>(['green', 'green', 'green']);
   const [safetyCar, setSafetyCar] = useState<SafetyCarState | null>(null);
   const [activeDnf, setActiveDnf] = useState<DnfNotification | null>(null);
+  const [activeLuckEvent, setActiveLuckEvent] = useState<D20LuckEvent | null>(null);
+  const [weather, setWeather] = useState<TrackWeatherState>(simulation.weather);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -86,6 +89,8 @@ export const App: React.FC = () => {
       setSectorFlags([...simulation.sectorFlags]);
       setSafetyCar(simulation.safetyCar.isDeployed ? { ...simulation.safetyCar } : null);
       setActiveDnf(simulation.latestDnf ? { ...simulation.latestDnf } : null);
+      setActiveLuckEvent(simulation.activeLuckEvent ? { ...simulation.activeLuckEvent } : null);
+      setWeather({ ...simulation.weather });
 
       if (simulation.isFinished) {
         setPodiumCars(simulation.podiumCars);
@@ -119,6 +124,7 @@ export const App: React.FC = () => {
     setSelectedCarId(null);
     setLightState('idle');
     setIsFinished(false);
+    simulation.startRaceSequence();
   }, [simulation, camera]);
 
   const handleStartRaceFromHome = useCallback(() => {
@@ -192,6 +198,7 @@ export const App: React.FC = () => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (currentView !== 'race') return;
+
       if (e.key === 'Escape') {
         handleSelectCar(null);
       } else if (e.key === ' ') {
@@ -259,7 +266,7 @@ export const App: React.FC = () => {
         </button>
       </div>
 
-      {/* ── 2. CANVAS DEL CIRCUITO + CONTROLES + DOCK INFERIOR ── */}
+      {/* ── 2. VISTA CENTRAL DE CARRERA (CANVAS + OVERLAYS) ── */}
       <div className={styles.mainRaceView}>
         <RaceCanvas
           simulation={simulation}
@@ -268,6 +275,7 @@ export const App: React.FC = () => {
           onSelectCar={handleSelectCar}
         />
 
+        {/* HUD de Banderas y Safety Car en Directo */}
         <RaceFlagsHUD
           raceFlagState={raceFlagState}
           sectorFlags={sectorFlags}
@@ -276,49 +284,30 @@ export const App: React.FC = () => {
 
         {lightState === 'formation-lap' && (
           <div className={styles.formationBanner}>
-            <RotateCw size={14} className={styles.spinIcon} />
-            <span>VUELTA DE FORMACIÓN · CALENTANDO NEUMÁTICOS EN TRENCITO</span>
-          </div>
-        )}
-
-        {lightState === 'grid-parking' && (
-          <div className={styles.formationBanner} style={{ borderColor: '#eab308', color: '#eab308' }}>
-            <Flag size={14} />
-            <span>PARRILLA FORMÁNDOSE · ESPERANDO A QUE APARQUE P20...</span>
+            <RotateCw size={16} className={styles.spinIcon} />
+            <span>VUELTA DE FORMACIÓN EN CURSO</span>
           </div>
         )}
 
         <div className={styles.topBarOverlay}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <button
-              onClick={handleGoHome}
-              style={{
-                background: 'rgba(15, 23, 42, 0.85)',
-                color: '#ffffff',
-                border: '1px solid rgba(255,255,255,0.15)',
-                padding: '6px 12px',
-                borderRadius: '8px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                cursor: 'pointer',
-                fontFamily: 'Rajdhani, sans-serif',
-                fontWeight: 700,
-                fontSize: '13px'
-              }}
-              title="Volver al menú de inicio"
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <button 
+              className={styles.homeBtn} 
+              onClick={() => setCurrentView('home')}
+              title="Volver a la selección"
             >
-              <ArrowLeft size={16} />
-              <span>INICIO</span>
+              <ArrowLeft size={14} />
+              <span>GPs</span>
             </button>
             <RaceHeader circuit={activeCircuitSpec} />
-            <div 
-              className={styles.cameraBadge} 
+            <button
+              className={styles.cameraBadge}
               onClick={handleCycleCameraMode}
-              title="Presiona 'C' para cambiar cámara"
+              title="Pulsar 'C' para cambiar vista de cámara"
             >
-              CAM: {cameraMode.toUpperCase()}
-            </div>
+              <CameraIcon size={12} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} />
+              <span>{cameraMode.toUpperCase()}</span>
+            </button>
           </div>
 
           <SpeedControls
@@ -332,13 +321,8 @@ export const App: React.FC = () => {
           />
         </div>
 
-        <div 
-          className={styles.bottomDockWrapper}
-          style={{
-            left: leftSidebarOpen ? '210px' : '20px',
-            right: rightSidebarOpen ? '374px' : '20px'
-          }}
-        >
+        {/* ── HUD INFERIOR: CENTRADO DINÁMICAMENTE ── */}
+        <div className={styles.bottomDockWrapper}>
           <BottomTelemetryDock
             car={selectedCar || favoriteCar}
             onSelectCar={handleSelectCar}
@@ -371,9 +355,25 @@ export const App: React.FC = () => {
             setActiveDnf(null);
           }}
         />
+
+        {/* ── MODAL DE SUERTE CON DADO D20 (SAFETY CAR & BANDERA ROJA) ── */}
+        {activeLuckEvent && (
+          <D20LuckModal
+            event={activeLuckEvent}
+            onApplyReward={(id) => {
+              simulation.applyLuckEventReward(id);
+              simulation.activeLuckEvent = null;
+              setActiveLuckEvent(null);
+            }}
+            onDismiss={() => {
+              simulation.activeLuckEvent = null;
+              setActiveLuckEvent(null);
+            }}
+          />
+        )}
       </div>
 
-      {/* ── 3. PANEL DERECHO: DASHBOARD AVANZADO (GRÁFICA PREVISIÓN + VUELTAS) ── */}
+      {/* ── 3. PANEL DERECHO: DASHBOARD AVANZADO & ESTADO DE PISTA ── */}
       <div className={`${styles.rightSidebar} ${rightSidebarOpen ? '' : styles.sidebarCollapsed}`}>
         <button 
           className={`${styles.sidebarToggle} ${styles.sidebarToggleRight}`} 
@@ -390,6 +390,7 @@ export const App: React.FC = () => {
             overallBestS1={bestS1}
             overallBestS2={bestS2}
             overallBestS3={bestS3}
+            weather={weather}
           />
         )}
       </div>
