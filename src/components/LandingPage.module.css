@@ -208,3 +208,21 @@
   color: rgba(100, 116, 139, 0.6);
   letter-spacing: 1.5px;
 }
+
+.landingTransitionOut {
+  animation: zoomThroughOut 0.45s cubic-bezier(0.8, 0, 0.2, 1) forwards;
+  pointer-events: none;
+}
+
+@keyframes zoomThroughOut {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+    filter: brightness(1) blur(0px);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.15);
+    filter: brightness(2.5) blur(12px);
+  }
+}

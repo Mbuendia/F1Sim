@@ -1,27 +1,40 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import styles from './LandingPage.module.css';
 import { Play } from 'lucide-react';
-import { F1WheelSvg } from './F1WheelSvg';
+import { F1Wheel3D } from './F1Wheel3D';
 
 interface LandingPageProps {
   onEnter: () => void;
 }
 
 export const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
+  const [isTransitioning, setIsTransitioning] = useState(false);
+
+  const handleEnterSequence = () => {
+    if (isTransitioning) return;
+    setIsTransitioning(true);
+    setTimeout(() => {
+      onEnter();
+    }, 450);
+  };
+
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
-        onEnter();
+        handleEnterSequence();
       }
     };
 
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [onEnter]);
+  }, [isTransitioning]);
 
   return (
-    <div className={styles.landingContainer} onClick={onEnter}>
+    <div 
+      className={`${styles.landingContainer} ${isTransitioning ? styles.landingTransitionOut : ''}`} 
+      onClick={handleEnterSequence}
+    >
       {/* Particle field */}
       <div className={styles.particleField}>
         {Array.from({ length: 35 }).map((_, i) => (
@@ -39,11 +52,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
         ))}
       </div>
 
-      {/* F1 Pirelli Tire */}
-      <div className={styles.tireWrapper}>
-        <div className={styles.tireGlow} />
-        <F1WheelSvg className={styles.tireSvg} />
-      </div>
+      {/* 3D Interactive F1 Pirelli Wheel Hero */}
+      <F1Wheel3D 
+        onEnter={handleEnterSequence} 
+        isTransitioning={isTransitioning}
+      />
 
       {/* Brand text */}
       <div className={styles.brandGroup}>
@@ -54,7 +67,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
           className={styles.enterButton}
           onClick={(e) => {
             e.stopPropagation();
-            onEnter();
+            handleEnterSequence();
           }}
         >
           <Play size={16} fill="#ffffff" />
@@ -67,7 +80,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
         Pulsa cualquier tecla o haz click para continuar
       </div>
 
-      <div className={styles.versionBadge}>F1 2026 ENGINE</div>
+      <div className={styles.versionBadge}>F1 2026 ENGINE · 3D WEBGL</div>
     </div>
   );
 };
