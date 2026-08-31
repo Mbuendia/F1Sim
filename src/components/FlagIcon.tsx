@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 const EMOJI_TO_ISO: Record<string, string> = {
   '🇳🇱': 'nl',
@@ -36,8 +36,10 @@ const COUNTRY_TO_ISO: Record<string, string> = {
   'spain': 'es',
   'reino unido': 'gb',
   'great britain': 'gb',
+  'united kingdom': 'gb',
   'países bajos': 'nl',
   'netherlands': 'nl',
+  'holanda': 'nl',
   'mónaco': 'mc',
   'monaco': 'mc',
   'méxico': 'mx',
@@ -58,6 +60,8 @@ const COUNTRY_TO_ISO: Record<string, string> = {
   'new zealand': 'nz',
   'estados unidos': 'us',
   'usa': 'us',
+  'ee.uu.': 'us',
+  'eeuu': 'us',
   'brasil': 'br',
   'brazil': 'br',
   'china': 'cn',
@@ -75,6 +79,8 @@ const COUNTRY_TO_ISO: Record<string, string> = {
   'belgium': 'be',
   'austria': 'at',
   'emiratos árabes unidos': 'ae',
+  'emiratos árabes': 'ae',
+  'uae': 'ae',
   'qatar': 'qa',
   'catar': 'qa'
 };
@@ -94,20 +100,47 @@ export const FlagIcon: React.FC<FlagIconProps> = ({
   style,
   size = 14
 }) => {
+  const [imgError, setImgError] = useState(false);
+
+  useEffect(() => {
+    setImgError(false);
+  }, [country, emoji]);
+
   let iso = '';
   if (emoji && EMOJI_TO_ISO[emoji]) {
     iso = EMOJI_TO_ISO[emoji];
-  } else if (country && COUNTRY_TO_ISO[country.toLowerCase().trim()]) {
-    iso = COUNTRY_TO_ISO[country.toLowerCase().trim()];
+  } else if (country) {
+    const clean = country.toLowerCase().trim();
+    if (COUNTRY_TO_ISO[clean]) {
+      iso = COUNTRY_TO_ISO[clean];
+    }
   }
 
-  if (!iso) {
-    return <span style={style} className={className}>{emoji || '🏁'}</span>;
+  if (!iso || imgError) {
+    return (
+      <span 
+        className={className} 
+        style={{ 
+          fontSize: `${size}px`, 
+          lineHeight: 1, 
+          display: 'inline-flex', 
+          alignItems: 'center', 
+          justifyContent: 'center',
+          ...style 
+        }}
+      >
+        {emoji || '🏁'}
+      </span>
+    );
   }
+
+  const base = import.meta.env.BASE_URL || '/';
+  const cleanBase = base.endsWith('/') ? base : `${base}/`;
+  const flagUrl = `${cleanBase}flags/${iso.toLowerCase()}.svg`;
 
   return (
     <img
-      src={`/flags/${iso}.svg`}
+      src={flagUrl}
       alt={country || emoji || 'flag'}
       className={className}
       style={{
@@ -117,12 +150,10 @@ export const FlagIcon: React.FC<FlagIconProps> = ({
         borderRadius: '2px',
         display: 'inline-block',
         verticalAlign: 'middle',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.35)',
         ...style
       }}
-      onError={(e) => {
-        (e.currentTarget as HTMLElement).style.display = 'none';
-      }}
+      onError={() => setImgError(true)}
     />
   );
 };

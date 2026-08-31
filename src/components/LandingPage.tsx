@@ -1,64 +1,13 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect } from 'react';
 import styles from './LandingPage.module.css';
-import { animate } from 'animejs';
+import { Play } from 'lucide-react';
 
 interface LandingPageProps {
   onEnter: () => void;
 }
 
 export const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const tireRef = useRef<SVGSVGElement>(null);
-  const brandRef = useRef<HTMLDivElement>(null);
-  const glowRef = useRef<HTMLDivElement>(null);
-
   useEffect(() => {
-    // Tire spin-in animation
-    if (tireRef.current) {
-      animate(tireRef.current, {
-        rotate: [-180, 0],
-        scale: [0.3, 1],
-        opacity: [0, 1],
-        ease: 'outElastic(1, 0.6)',
-        duration: 1600,
-      });
-    }
-
-    // Glow pulse
-    if (glowRef.current) {
-      animate(glowRef.current, {
-        scale: [0.8, 1.2, 1],
-        opacity: [0, 0.8, 0.5],
-        ease: 'outQuad',
-        duration: 1800,
-        delay: 400,
-      });
-    }
-
-    // Brand text reveal
-    if (brandRef.current) {
-      animate(brandRef.current, {
-        opacity: [0, 1],
-        translateY: [25, 0],
-        ease: 'outQuart',
-        duration: 900,
-        delay: 800,
-      });
-    }
-
-    // Continuous tire rotation (slow idle)
-    const idleInterval = setTimeout(() => {
-      if (tireRef.current) {
-        animate(tireRef.current, {
-          rotate: [0, 360],
-          ease: 'linear',
-          duration: 16000,
-          loop: true,
-        });
-      }
-    }, 1700);
-
-    // Enter on any key or click
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
@@ -67,51 +16,45 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
     };
 
     window.addEventListener('keydown', handleKey);
-    return () => {
-      window.removeEventListener('keydown', handleKey);
-      clearTimeout(idleInterval);
-    };
+    return () => window.removeEventListener('keydown', handleKey);
   }, [onEnter]);
 
   return (
-    <div ref={containerRef} className={styles.landingContainer} onClick={onEnter}>
+    <div className={styles.landingContainer} onClick={onEnter}>
       {/* Particle field */}
       <div className={styles.particleField}>
-        {Array.from({ length: 40 }).map((_, i) => (
+        {Array.from({ length: 35 }).map((_, i) => (
           <div
             key={i}
             className={styles.particle}
             style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              opacity: 0.2 + Math.random() * 0.5,
-              animationDelay: `${Math.random() * 5}s`,
-              width: `${1 + Math.random() * 2}px`,
-              height: `${1 + Math.random() * 2}px`,
+              left: `${(i * 2.85) % 100}%`,
+              top: `${(i * 3.7 + 10) % 95}%`,
+              animationDelay: `${(i * 0.25) % 4}s`,
+              width: `${1.5 + (i % 3)}px`,
+              height: `${1.5 + (i % 3)}px`,
             }}
           />
         ))}
       </div>
 
-      {/* F1 Tire */}
+      {/* F1 Pirelli Tire */}
       <div className={styles.tireWrapper}>
-        <div ref={glowRef} className={styles.tireGlow} />
+        <div className={styles.tireGlow} />
         <svg
-          ref={tireRef}
           className={styles.tireSvg}
           viewBox="0 0 200 200"
           xmlns="http://www.w3.org/2000/svg"
-          style={{ opacity: 0 }}
         >
           {/* Outer rubber */}
-          <circle cx="100" cy="100" r="95" fill="none" stroke="#1a1a1a" strokeWidth="28" />
-          {/* Tread pattern grooves */}
+          <circle cx="100" cy="100" r="95" fill="#141414" stroke="#1f242d" strokeWidth="18" />
+          {/* Tread grooves */}
           {Array.from({ length: 24 }).map((_, i) => {
             const angle = (i * 15) * Math.PI / 180;
             const x1 = 100 + Math.cos(angle) * 82;
             const y1 = 100 + Math.sin(angle) * 82;
-            const x2 = 100 + Math.cos(angle) * 95;
-            const y2 = 100 + Math.sin(angle) * 95;
+            const x2 = 100 + Math.cos(angle) * 98;
+            const y2 = 100 + Math.sin(angle) * 98;
             return (
               <line
                 key={i}
@@ -119,23 +62,27 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
                 y1={y1}
                 x2={x2}
                 y2={y2}
-                stroke="#0d0d0d"
-                strokeWidth="2"
-                opacity="0.7"
+                stroke="#090c10"
+                strokeWidth="2.5"
+                opacity="0.85"
               />
             );
           })}
           {/* Sidewall */}
-          <circle cx="100" cy="100" r="68" fill="none" stroke="#222" strokeWidth="3" />
-          {/* Rim */}
-          <circle cx="100" cy="100" r="42" fill="#1e293b" stroke="#334155" strokeWidth="2" />
+          <circle cx="100" cy="100" r="74" fill="none" stroke="#111827" strokeWidth="4" />
+          {/* Pirelli Red Compound Band */}
+          <circle cx="100" cy="100" r="71" fill="none" stroke="#e10600" strokeWidth="5" opacity="0.95" />
+          
+          {/* Rim Background */}
+          <circle cx="100" cy="100" r="48" fill="#1e293b" stroke="#334155" strokeWidth="3" />
+          
           {/* Rim spokes */}
           {Array.from({ length: 5 }).map((_, i) => {
             const angle = (i * 72 - 90) * Math.PI / 180;
-            const x1 = 100 + Math.cos(angle) * 18;
-            const y1 = 100 + Math.sin(angle) * 18;
-            const x2 = 100 + Math.cos(angle) * 38;
-            const y2 = 100 + Math.sin(angle) * 38;
+            const x1 = 100 + Math.cos(angle) * 16;
+            const y1 = 100 + Math.sin(angle) * 16;
+            const x2 = 100 + Math.cos(angle) * 44;
+            const y2 = 100 + Math.sin(angle) * 44;
             return (
               <line
                 key={i}
@@ -143,37 +90,60 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
                 y1={y1}
                 x2={x2}
                 y2={y2}
-                stroke="#475569"
-                strokeWidth="6"
+                stroke="#64748b"
+                strokeWidth="7"
                 strokeLinecap="round"
               />
             );
           })}
-          {/* Center lock */}
-          <circle cx="100" cy="100" r="14" fill="#334155" stroke="#64748b" strokeWidth="1.5" />
-          {/* Pirelli red band */}
-          <circle cx="100" cy="100" r="73" fill="none" stroke="#e10600" strokeWidth="4" opacity="0.85" />
-          {/* PIRELLI text on tire (simplified) */}
+          
+          {/* Center lock wheel nut */}
+          <circle cx="100" cy="100" r="15" fill="#e10600" stroke="#fca5a5" strokeWidth="1.5" />
+          <circle cx="100" cy="100" r="8" fill="#0f172a" />
+          
+          {/* PIRELLI brand letters */}
           <text
             x="100"
-            y="30"
+            y="27"
+            textAnchor="middle"
+            fill="#e10600"
+            fontSize="8"
+            fontFamily="'Orbitron', sans-serif"
+            fontWeight="900"
+            letterSpacing="2.5"
+          >
+            PIRELLI
+          </text>
+          <text
+            x="100"
+            y="180"
             textAnchor="middle"
             fill="#e10600"
             fontSize="7"
             fontFamily="'Orbitron', sans-serif"
-            fontWeight="700"
-            letterSpacing="3"
+            fontWeight="900"
+            letterSpacing="2"
           >
-            PIRELLI
+            P ZERO
           </text>
         </svg>
       </div>
 
       {/* Brand text */}
-      <div ref={brandRef} className={styles.brandGroup}>
+      <div className={styles.brandGroup}>
         <div className={styles.f1LogoBig}>F1</div>
         <div className={styles.titleText}>Race Manager & Simulator</div>
-        <div className={styles.subtitleText}>2026 Season · Tactical Strategy & Race Engine</div>
+        <div className={styles.subtitleText}>2026 Season · Tactical Strategy & Simulation Engine</div>
+        <button 
+          className={styles.enterButton}
+          onClick={(e) => {
+            e.stopPropagation();
+            onEnter();
+          }}
+        >
+          <Play size={16} fill="#ffffff" />
+          <span>ENTRAR AL PADDOCK</span>
+        </button>
       </div>
 
       {/* Enter hint */}
@@ -181,7 +151,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
         Pulsa cualquier tecla o haz click para continuar
       </div>
 
-      <div className={styles.versionBadge}>v29.0</div>
+      <div className={styles.versionBadge}>F1 2026 ENGINE</div>
     </div>
   );
 };

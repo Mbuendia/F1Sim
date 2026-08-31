@@ -5,7 +5,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: radial-gradient(ellipse at 50% 40%, #111728 0%, #060912 70%, #020408 100%);
+  background: radial-gradient(ellipse at 50% 45%, #111827 0%, #080d1a 60%, #03060c 100%);
   overflow: hidden;
   position: relative;
   cursor: pointer;
@@ -21,23 +21,65 @@
 
 .particle {
   position: absolute;
-  width: 2px;
-  height: 2px;
   background: rgba(56, 189, 248, 0.5);
   border-radius: 50%;
+  animation: floatParticle 8s linear infinite;
+}
+
+@keyframes floatParticle {
+  0% {
+    transform: translateY(0) translateX(0);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.6;
+  }
+  80% {
+    opacity: 0.6;
+  }
+  100% {
+    transform: translateY(-100px) translateX(20px);
+    opacity: 0;
+  }
 }
 
 .tireWrapper {
   position: relative;
-  width: 220px;
-  height: 220px;
-  margin-bottom: 30px;
+  width: 230px;
+  height: 230px;
+  margin-bottom: 25px;
+  animation: tireEntrance 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes tireEntrance {
+  0% {
+    opacity: 0;
+    transform: scale(0.3) rotate(-180deg);
+  }
+  70% {
+    transform: scale(1.08) rotate(15deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
 }
 
 .tireSvg {
   width: 100%;
   height: 100%;
-  filter: drop-shadow(0 0 40px rgba(225, 6, 0, 0.35)) drop-shadow(0 0 80px rgba(225, 6, 0, 0.15));
+  filter: drop-shadow(0 0 35px rgba(225, 6, 0, 0.5)) drop-shadow(0 0 70px rgba(225, 6, 0, 0.25));
+  animation: tireSpin 22s linear infinite;
+  transform-origin: center center;
+}
+
+@keyframes tireSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .tireGlow {
@@ -45,11 +87,23 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 280px;
-  height: 280px;
-  background: radial-gradient(circle, rgba(225, 6, 0, 0.15) 0%, transparent 70%);
+  width: 320px;
+  height: 320px;
+  background: radial-gradient(circle, rgba(225, 6, 0, 0.22) 0%, rgba(225, 6, 0, 0.05) 50%, transparent 70%);
   border-radius: 50%;
   pointer-events: none;
+  animation: glowPulse 3s ease-in-out infinite alternate;
+}
+
+@keyframes glowPulse {
+  0% {
+    transform: translate(-50%, -50%) scale(0.9);
+    opacity: 0.5;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1.15);
+    opacity: 0.9;
+  }
 }
 
 .brandGroup {
@@ -57,51 +111,91 @@
   flex-direction: column;
   align-items: center;
   gap: 8px;
+  animation: brandReveal 1s cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards;
   opacity: 0;
+}
+
+@keyframes brandReveal {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .f1LogoBig {
   font-family: 'Orbitron', sans-serif;
-  font-size: 72px;
+  font-size: 68px;
   font-weight: 900;
   color: #e10600;
-  letter-spacing: 4px;
-  text-shadow: 0 0 30px rgba(225, 6, 0, 0.5), 0 0 60px rgba(225, 6, 0, 0.2);
+  letter-spacing: 5px;
+  text-shadow: 0 0 25px rgba(225, 6, 0, 0.6), 0 0 50px rgba(225, 6, 0, 0.3);
   line-height: 1;
 }
 
 .titleText {
   font-family: 'Rajdhani', sans-serif;
-  font-size: 18px;
-  font-weight: 700;
-  color: rgba(241, 245, 249, 0.7);
-  letter-spacing: 8px;
+  font-size: 22px;
+  font-weight: 800;
+  color: #f8fafc;
+  letter-spacing: 6px;
   text-transform: uppercase;
 }
 
 .subtitleText {
-  font-family: 'Inter', sans-serif;
-  font-size: 11px;
-  color: rgba(148, 163, 184, 0.6);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 13.5px;
+  color: #94a3b8;
   letter-spacing: 3px;
   text-transform: uppercase;
-  margin-top: 4px;
+  font-weight: 600;
+}
+
+.enterButton {
+  margin-top: 24px;
+  background: linear-gradient(135deg, #e10600 0%, #b91c1c 100%);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 8px;
+  padding: 12px 28px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 0 30px rgba(225, 6, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  cursor: pointer;
+  transition: all 0.25s ease;
+  animation: brandReveal 1s cubic-bezier(0.16, 1, 0.3, 1) 0.6s forwards;
+  opacity: 0;
+}
+
+.enterButton:hover {
+  transform: scale(1.06);
+  box-shadow: 0 0 45px rgba(225, 6, 0, 0.85);
+  background: linear-gradient(135deg, #ff1a1a 0%, #dc2626 100%);
 }
 
 .enterHint {
   position: absolute;
-  bottom: 60px;
+  bottom: 50px;
   font-family: 'Rajdhani', sans-serif;
-  font-size: 13px;
-  color: rgba(148, 163, 184, 0.5);
-  letter-spacing: 4px;
+  font-size: 12.5px;
+  color: rgba(148, 163, 184, 0.6);
+  letter-spacing: 3px;
   text-transform: uppercase;
+  font-weight: 700;
   animation: fadeInOut 2.5s ease-in-out infinite;
 }
 
 @keyframes fadeInOut {
-  0%, 100% { opacity: 0.3; }
-  50% { opacity: 0.8; }
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 0.9; }
 }
 
 .versionBadge {
@@ -109,7 +203,8 @@
   bottom: 20px;
   right: 20px;
   font-family: 'Orbitron', sans-serif;
-  font-size: 9px;
-  color: rgba(100, 116, 139, 0.5);
-  letter-spacing: 1px;
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(100, 116, 139, 0.6);
+  letter-spacing: 1.5px;
 }
