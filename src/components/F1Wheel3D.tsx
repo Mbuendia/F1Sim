@@ -13,16 +13,17 @@ interface F1Wheel3DProps {
 const COMPOUND_COLORS: Record<TireCompound, { hex: string; num: number; label: string }> = {
   soft: { hex: '#e10600', num: 0xe10600, label: 'SOFT (P ZERO ROJO)' },
   medium: { hex: '#ffd700', num: 0xffd700, label: 'MEDIUM (P ZERO AMARILLO)' },
-  hard: { hex: '#f8fafc', num: 0xf8fafc, label: 'HARD (P ZERO BLANCO)' },
+  hard: { hex: '#ffffff', num: 0xffffff, label: 'HARD (P ZERO BLANCO)' },
   inter: { hex: '#22c55e', num: 0x22c55e, label: 'INTERMEDIATE (CINTURATO VERDE)' },
   wet: { hex: '#0284c7', num: 0x0284c7, label: 'WET (CINTURATO AZUL)' },
 };
 
 /**
- * Creates high-resolution procedural Pirelli tire sidewall canvas texture
- * with deep racing rubber background and glowing compound markings.
+ * Creates transparent decal texture containing only the Pirelli branding and compound stripes.
+ * Because the canvas is 100% transparent behind the text/stripes, the underlying rubber
+ * material remains physically identical to the tire tread and shoulders with ZERO grey mismatch.
  */
-function createSidewallTexture(compound: TireCompound): THREE.CanvasTexture {
+function createSidewallDecalTexture(compound: TireCompound): THREE.CanvasTexture {
   const size = 1024;
   const canvas = document.createElement('canvas');
   canvas.width = size;
@@ -33,30 +34,12 @@ function createSidewallTexture(compound: TireCompound): THREE.CanvasTexture {
   const cy = size / 2;
   const compInfo = COMPOUND_COLORS[compound];
 
-  // 1. Base Rubber Texture - Dark Charcoal Vulcanized Rubber (#13161c)
-  const bgGrad = ctx.createRadialGradient(cx, cy, size * 0.22, cx, cy, size * 0.5);
-  bgGrad.addColorStop(0, '#101318');
-  bgGrad.addColorStop(0.35, '#14171e');
-  bgGrad.addColorStop(0.7, '#13161d');
-  bgGrad.addColorStop(0.95, '#11141a');
-  bgGrad.addColorStop(1, '#0e1015');
-  ctx.fillStyle = bgGrad;
-  ctx.fillRect(0, 0, size, size);
+  ctx.clearRect(0, 0, size, size);
 
-  // 2. Concentric Mold Ridges & Tire Texture
-  for (let r = size * 0.25; r < size * 0.485; r += 5) {
-    ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, Math.PI * 2);
-    ctx.strokeStyle = (r % 15 === 0) ? 'rgba(255, 255, 255, 0.035)' : 'rgba(0, 0, 0, 0.35)';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-  }
-
-  // 3. Official Compound Colored Curved Stripes
+  // 1. Official Compound Colored Curved Stripes
   const stripeRadius = size * 0.418;
   const stripeWidth = 24;
 
-  // Outer glow for the stripe
   ctx.save();
   ctx.shadowColor = compInfo.hex;
   ctx.shadowBlur = 24;
@@ -87,11 +70,10 @@ function createSidewallTexture(compound: TireCompound): THREE.CanvasTexture {
   ctx.stroke();
   ctx.globalAlpha = 1.0;
 
-  // 4. Pirelli & P Zero Curved Typography
+  // 2. Pirelli & P Zero Curved Typography
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
-  // Draw PIRELLI on top arc
   const textPirelli = compound === 'inter' || compound === 'wet' ? 'CINTURATO' : 'PIRELLI';
   const textRadius = size * 0.418;
   ctx.font = '900 46px "Orbitron", "Montserrat", sans-serif';
@@ -134,8 +116,8 @@ function createSidewallTexture(compound: TireCompound): THREE.CanvasTexture {
   ctx.font = '900 42px "Orbitron", "Montserrat", sans-serif';
   drawCurvedTextBottom('P ZERO', textRadius);
 
-  // 5. Official FIA Barcode & QR Code Hologram detail
-  ctx.fillStyle = 'rgba(203, 213, 225, 0.75)';
+  // 3. Official FIA Barcode & QR Code Hologram detail
+  ctx.fillStyle = 'rgba(241, 245, 249, 0.85)';
   for (let b = 0; b < 12; b++) {
     const barAngle = -Math.PI * 0.05 + b * 0.01;
     const bx = cx + Math.cos(barAngle) * (size * 0.315);
@@ -143,12 +125,62 @@ function createSidewallTexture(compound: TireCompound): THREE.CanvasTexture {
     ctx.fillRect(bx, by, 2.5, 12);
   }
 
-  // 6. Transparent inner hole for rim
-  ctx.globalCompositeOperation = 'destination-out';
-  ctx.beginPath();
-  ctx.arc(cx, cy, size * 0.24, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.globalCompositeOperation = 'source-over';
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.anisotropy = 8;
+  texture.needsUpdate = true;
+  return texture;
+}
+
+/**
+ * Procedural Cross-Drilled Steel Brake Rotor Texture (Like Reference Porsche/F1 Photo)
+ */
+function createCrossDrilledBrakeRotorTexture(): THREE.CanvasTexture {
+  const size = 512;
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d')!;
+  const cx = size / 2;
+  const cy = size / 2;
+
+  // Brushed steel radial gradient
+  const grad = ctx.createRadialGradient(cx, cy, size * 0.18, cx, cy, size * 0.5);
+  grad.addColorStop(0, '#334155');
+  grad.addColorStop(0.2, '#64748b');
+  grad.addColorStop(0.5, '#cbd5e1');
+  grad.addColorStop(0.8, '#94a3b8');
+  grad.addColorStop(1, '#475569');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, size, size);
+
+  // Concentric machining wear tracks
+  for (let r = size * 0.2; r < size * 0.49; r += 2.5) {
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.strokeStyle = r % 5 === 0 ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.15)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
+  // Cross-drilled spiral ventilation holes (like reference photo)
+  ctx.fillStyle = '#0f172a';
+  for (let i = 0; i < 36; i++) {
+    const baseAng = (i * 10 * Math.PI) / 180;
+    // 5 holes along each curved cooling vane
+    for (let h = 0; h < 5; h++) {
+      const r = size * (0.24 + h * 0.048);
+      const ang = baseAng + h * 0.055;
+      const x = cx + Math.cos(ang) * r;
+      const y = cy + Math.sin(ang) * r;
+
+      ctx.beginPath();
+      ctx.arc(x, y, 3.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+      ctx.lineWidth = 0.8;
+      ctx.stroke();
+    }
+  }
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.anisotropy = 8;
@@ -169,7 +201,6 @@ function createTreadBumpTexture(): THREE.CanvasTexture {
   ctx.fillStyle = '#808080';
   ctx.fillRect(0, 0, size, size);
 
-  // Micro-texture noise
   const imgData = ctx.getImageData(0, 0, size, size);
   for (let i = 0; i < imgData.data.length; i += 4) {
     const noise = (Math.random() - 0.5) * 22;
@@ -179,7 +210,6 @@ function createTreadBumpTexture(): THREE.CanvasTexture {
   }
   ctx.putImageData(imgData, 0, 0);
 
-  // Lateral shoulder grip grooves
   ctx.fillStyle = '#202020';
   for (let y = 0; y < size; y += 16) {
     ctx.fillRect(0, y, 45, 4);
@@ -195,19 +225,18 @@ function createTreadBumpTexture(): THREE.CanvasTexture {
 }
 
 /**
- * Creates authentic Brembo F1 Monobloc 6-Piston Brake Caliper using Extruded Curved Arc
- * (No wedges, no central artifacts, perfectly hugs outer perimeter of the brake disc)
+ * Authentic Brembo F1 Monobloc 6-Piston Caliper (Matching Reference Photo on Left Side at ~10 O'Clock)
  */
 function createBremboF1Caliper(): THREE.Group {
   const group = new THREE.Group();
 
-  const innerR = 1.08;
-  const outerR = 1.38;
-  const startAng = 0.22; // ~12 degrees
-  const endAng = 0.96;   // ~55 degrees
-  const segments = 20;
+  // Position on upper-left (~10 o'clock position, exactly like the reference Porsche photo)
+  const innerR = 1.05;
+  const outerR = 1.42;
+  const startAng = Math.PI * 0.72; // ~130 deg
+  const endAng = Math.PI * 1.16;   // ~208 deg
+  const segments = 24;
 
-  // Construct true curved 2D arc shape
   const shape = new THREE.Shape();
   for (let i = 0; i <= segments; i++) {
     const a = startAng + (endAng - startAng) * (i / segments);
@@ -226,80 +255,107 @@ function createBremboF1Caliper(): THREE.Group {
 
   const extrudeSettings = {
     steps: 1,
-    depth: 0.22,
+    depth: 0.28,
     bevelEnabled: true,
-    bevelThickness: 0.02,
-    bevelSize: 0.015,
-    bevelSegments: 3,
+    bevelThickness: 0.025,
+    bevelSize: 0.02,
+    bevelSegments: 4,
   };
 
   const caliperGeom = new THREE.ExtrudeGeometry(shape, extrudeSettings);
-  caliperGeom.translate(0, 0, -0.11);
+  caliperGeom.translate(0, 0, -0.14);
 
   const caliperMat = new THREE.MeshStandardMaterial({
-    color: 0xc81e1e, // Brembo racing red
-    metalness: 0.7,
-    roughness: 0.28,
+    color: 0xdd1111, // Glossy Brembo Racing Red
+    roughness: 0.2,
+    metalness: 0.45,
   });
 
   const caliperMesh = new THREE.Mesh(caliperGeom, caliperMat);
   group.add(caliperMesh);
 
-  // 4 Titanium/Chrome Piston Caps on the Caliper face
+  // 6 Piston Circular Bosses (3 pairs along the curved face)
   const pistonMat = new THREE.MeshStandardMaterial({
     color: 0xd4d4d8,
     metalness: 0.95,
     roughness: 0.18,
   });
-  const pistonGeom = new THREE.CylinderGeometry(0.045, 0.045, 0.04, 16);
+  const pistonGeom = new THREE.CylinderGeometry(0.048, 0.048, 0.04, 16);
   pistonGeom.rotateX(Math.PI / 2);
 
-  const pistonAngles = [0.34, 0.52, 0.70, 0.86];
+  const pistonAngles = [
+    Math.PI * 0.80,
+    Math.PI * 0.94,
+    Math.PI * 1.08,
+  ];
   pistonAngles.forEach((ang) => {
-    const px = Math.cos(ang) * 1.23;
-    const py = Math.sin(ang) * 1.23;
+    const px = Math.cos(ang) * 1.24;
+    const py = Math.sin(ang) * 1.24;
     const pMesh = new THREE.Mesh(pistonGeom, pistonMat);
-    pMesh.position.set(px, py, 0.13);
+    pMesh.position.set(px, py, 0.16);
     group.add(pMesh);
   });
 
-  // Top Gold Bleeder Valve
+  // White "BREMBO" logo text badge across the caliper face
+  const logoCanvas = document.createElement('canvas');
+  logoCanvas.width = 256;
+  logoCanvas.height = 64;
+  const lctx = logoCanvas.getContext('2d')!;
+  lctx.fillStyle = '#ffffff';
+  lctx.font = '900 32px "Orbitron", sans-serif';
+  lctx.textAlign = 'center';
+  lctx.textBaseline = 'middle';
+  lctx.fillText('brembo', 128, 32);
+  const logoTex = new THREE.CanvasTexture(logoCanvas);
+
+  const logoMat = new THREE.MeshBasicMaterial({
+    map: logoTex,
+    transparent: true,
+    opacity: 0.95,
+  });
+  const logoPlane = new THREE.Mesh(new THREE.PlaneGeometry(0.48, 0.12), logoMat);
+  const midAng = Math.PI * 0.94;
+  logoPlane.position.set(Math.cos(midAng) * 1.24, Math.sin(midAng) * 1.24, 0.17);
+  logoPlane.rotation.z = midAng - Math.PI / 2;
+  group.add(logoPlane);
+
+  // Gold bleeder valve
   const bleederMat = new THREE.MeshStandardMaterial({
     color: 0xf59e0b,
     metalness: 0.85,
     roughness: 0.25,
   });
-  const bleederGeom = new THREE.CylinderGeometry(0.025, 0.025, 0.12, 12);
+  const bleederGeom = new THREE.CylinderGeometry(0.022, 0.022, 0.1, 12);
   const bleeder = new THREE.Mesh(bleederGeom, bleederMat);
-  bleeder.position.set(Math.cos(0.92) * 1.34, Math.sin(0.92) * 1.34, 0.08);
+  bleeder.position.set(Math.cos(Math.PI * 1.15) * 1.36, Math.sin(Math.PI * 1.15) * 1.36, 0.1);
   bleeder.rotation.z = Math.PI / 4;
   group.add(bleeder);
 
-  group.position.z = 0.26;
+  group.position.z = 0.24;
   return group;
 }
 
 export const F1Wheel3D: React.FC<F1Wheel3DProps> = ({ onEnter, isTransitioning = false, className }) => {
   const mountRef = useRef<HTMLDivElement>(null);
   const [selectedCompound, setSelectedCompound] = useState<TireCompound>('soft');
-  const sidewallMeshFrontRef = useRef<THREE.Mesh | null>(null);
-  const sidewallMeshBackRef = useRef<THREE.Mesh | null>(null);
+  const sidewallDecalFrontRef = useRef<THREE.Mesh | null>(null);
+  const sidewallDecalBackRef = useRef<THREE.Mesh | null>(null);
   const spinSpeedRef = useRef(1.8);
   const targetRotationRef = useRef({ x: 0.12, y: 0.32 });
   const wheelGroupRef = useRef<THREE.Group | null>(null);
   const isHoveredRef = useRef(false);
 
-  // Update sidewall texture when compound changes
+  // Update sidewall decal texture when compound changes
   const updateCompound = useCallback((comp: TireCompound) => {
     setSelectedCompound(comp);
-    const newTex = createSidewallTexture(comp);
-    if (sidewallMeshFrontRef.current) {
-      (sidewallMeshFrontRef.current.material as THREE.MeshStandardMaterial).map = newTex;
-      (sidewallMeshFrontRef.current.material as THREE.MeshStandardMaterial).needsUpdate = true;
+    const newTex = createSidewallDecalTexture(comp);
+    if (sidewallDecalFrontRef.current) {
+      (sidewallDecalFrontRef.current.material as THREE.MeshBasicMaterial).map = newTex;
+      (sidewallDecalFrontRef.current.material as THREE.MeshBasicMaterial).needsUpdate = true;
     }
-    if (sidewallMeshBackRef.current) {
-      (sidewallMeshBackRef.current.material as THREE.MeshStandardMaterial).map = newTex;
-      (sidewallMeshBackRef.current.material as THREE.MeshStandardMaterial).needsUpdate = true;
+    if (sidewallDecalBackRef.current) {
+      (sidewallDecalBackRef.current.material as THREE.MeshBasicMaterial).map = newTex;
+      (sidewallDecalBackRef.current.material as THREE.MeshBasicMaterial).needsUpdate = true;
     }
   }, []);
 
@@ -326,8 +382,8 @@ export const F1Wheel3D: React.FC<F1Wheel3DProps> = ({ onEnter, isTransitioning =
     renderer.toneMappingExposure = 1.15;
     container.appendChild(renderer.domElement);
 
-    // ── BALANCED STUDIO LIGHTING ──
-    const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
+    // ── STUDIO LIGHTING ──
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1.1);
     scene.add(ambientLight);
 
     // Key front light
@@ -336,12 +392,12 @@ export const F1Wheel3D: React.FC<F1Wheel3DProps> = ({ onEnter, isTransitioning =
     scene.add(keyLight);
 
     // Kicker red racing light
-    const kickerLight = new THREE.DirectionalLight(0xe10600, 2.8);
+    const kickerLight = new THREE.DirectionalLight(0xe10600, 2.5);
     kickerLight.position.set(-4, -2, 4);
     scene.add(kickerLight);
 
     // Rim specular light
-    const rimLight = new THREE.DirectionalLight(0x38bdf8, 1.5);
+    const rimLight = new THREE.DirectionalLight(0x38bdf8, 1.4);
     rimLight.position.set(0, 6, -4);
     scene.add(rimLight);
 
@@ -357,16 +413,16 @@ export const F1Wheel3D: React.FC<F1Wheel3DProps> = ({ onEnter, isTransitioning =
     const spinningAssembly = new THREE.Group();
     rootWheelGroup.add(spinningAssembly);
 
-    // 1. TIRE RUBBER (Charcoal Vulcanized Slick Rubber #13161c)
+    // 1. TIRE RUBBER (Deep Charcoal Racing Slick #111317)
     const tireOuterRadius = 2.45;
     const tireInnerRadius = 1.45;
     const tireWidth = 1.35;
     const treadBump = createTreadBumpTexture();
 
     const rubberMat = new THREE.MeshStandardMaterial({
-      color: 0x13161c,
-      roughness: 0.8,
-      metalness: 0.1,
+      color: 0x111317,
+      roughness: 0.85,
+      metalness: 0.08,
       bumpMap: treadBump,
       bumpScale: 0.03,
     });
@@ -399,48 +455,49 @@ export const F1Wheel3D: React.FC<F1Wheel3DProps> = ({ onEnter, isTransitioning =
     shoulderBack.position.z = -tireWidth * 0.42;
     spinningAssembly.add(shoulderBack);
 
-    // 2. SIDEWALL DISCS (Pure White Material so Texture Renders with 100% Crisp Color)
+    // 2. SOLID SIDEWALL BASE (100% exact same rubberMat and color as tread)
     const sidewallGeom = new THREE.RingGeometry(tireInnerRadius, tireOuterRadius - 0.02, 64);
-    const sidewallTex = createSidewallTexture(selectedCompound);
+    
+    const sidewallBaseFront = new THREE.Mesh(sidewallGeom, rubberMat);
+    sidewallBaseFront.position.z = tireWidth * 0.5;
+    spinningAssembly.add(sidewallBaseFront);
 
-    const sidewallMatFront = new THREE.MeshStandardMaterial({
-      map: sidewallTex,
-      color: 0xffffff, // Pure white ensures true colors from texture
-      roughness: 0.65,
-      metalness: 0.08,
-      side: THREE.FrontSide,
+    const sidewallBaseBack = new THREE.Mesh(sidewallGeom, rubberMat);
+    sidewallBaseBack.position.z = -tireWidth * 0.5;
+    sidewallBaseBack.rotation.y = Math.PI;
+    spinningAssembly.add(sidewallBaseBack);
+
+    // 3. PIRELLI TRANSPARENT DECAL OVERLAY (Zero grey background!)
+    const decalTex = createSidewallDecalTexture(selectedCompound);
+    const decalMat = new THREE.MeshBasicMaterial({
+      map: decalTex,
       transparent: true,
+      depthWrite: false,
+      side: THREE.DoubleSide,
     });
 
-    const sidewallMeshFront = new THREE.Mesh(sidewallGeom, sidewallMatFront);
-    sidewallMeshFront.position.z = tireWidth * 0.5 + 0.01;
-    sidewallMeshFrontRef.current = sidewallMeshFront;
-    spinningAssembly.add(sidewallMeshFront);
+    const decalFront = new THREE.Mesh(sidewallGeom, decalMat);
+    decalFront.position.z = tireWidth * 0.5 + 0.005;
+    sidewallDecalFrontRef.current = decalFront;
+    spinningAssembly.add(decalFront);
 
-    const sidewallMatBack = new THREE.MeshStandardMaterial({
-      map: sidewallTex,
-      color: 0xffffff,
-      roughness: 0.65,
-      metalness: 0.08,
-      side: THREE.BackSide,
-      transparent: true,
-    });
-    const sidewallMeshBack = new THREE.Mesh(sidewallGeom, sidewallMatBack);
-    sidewallMeshBack.position.z = -tireWidth * 0.5 - 0.01;
-    sidewallMeshBackRef.current = sidewallMeshBack;
-    spinningAssembly.add(sidewallMeshBack);
+    const decalBack = new THREE.Mesh(sidewallGeom, decalMat);
+    decalBack.position.z = -tireWidth * 0.5 - 0.005;
+    decalBack.rotation.y = Math.PI;
+    sidewallDecalBackRef.current = decalBack;
+    spinningAssembly.add(decalBack);
 
-    // 3. ALLOY WHEEL RIM (BBS / OZ 18" FORGED RIM)
+    // 4. ALLOY WHEEL RIM (BBS / OZ Satin Black Forged Rim like Reference Photo)
     const rimMat = new THREE.MeshStandardMaterial({
-      color: 0x1a212d,
-      roughness: 0.28,
-      metalness: 0.88,
+      color: 0x181c24, // Satin Black
+      roughness: 0.32,
+      metalness: 0.85,
     });
 
     const rimLipMat = new THREE.MeshStandardMaterial({
-      color: 0x475569,
-      roughness: 0.22,
-      metalness: 0.92,
+      color: 0x334155,
+      roughness: 0.25,
+      metalness: 0.9,
     });
 
     // Outer Rim Bed (Cylinder)
@@ -456,13 +513,13 @@ export const F1Wheel3D: React.FC<F1Wheel3DProps> = ({ onEnter, isTransitioning =
     rimBed.rotation.x = Math.PI / 2;
     spinningAssembly.add(rimBed);
 
-    // Outer Polished Lip
+    // Outer Lip Ring
     const rimLipGeom = new THREE.TorusGeometry(tireInnerRadius + 0.02, 0.045, 16, 48);
     const rimLip = new THREE.Mesh(rimLipGeom, rimLipMat);
     rimLip.position.z = tireWidth * 0.44;
     spinningAssembly.add(rimLip);
 
-    // 4. 5-TWIN FORGED SPOKES (RADIAL SYMMETRY AT 72°)
+    // 5. 5-TWIN FORGED SPOKES (RADIAL SYMMETRY AT 72°)
     const spokeGroup = new THREE.Group();
     spokeGroup.position.z = tireWidth * 0.32;
     spinningAssembly.add(spokeGroup);
@@ -484,22 +541,35 @@ export const F1Wheel3D: React.FC<F1Wheel3DProps> = ({ onEnter, isTransitioning =
       spokeGroup.add(spokeB);
     }
 
-    // 5. CARBON-CERAMIC BRAKE DISC & ROTOR (Static behind spinning rim)
+    // 6. CROSS-DRILLED STEEL/CARBON BRAKE DISC ROTOR (Like Reference Photo)
+    const rotorTex = createCrossDrilledBrakeRotorTexture();
     const brakeDiscMat = new THREE.MeshStandardMaterial({
-      color: 0x1f242d,
-      roughness: 0.65,
-      metalness: 0.5,
+      map: rotorTex,
+      roughness: 0.35,
+      metalness: 0.85,
     });
-    const brakeDiscGeom = new THREE.RingGeometry(0.48, 1.4, 48);
+    const brakeDiscGeom = new THREE.RingGeometry(0.48, 1.42, 48);
     const brakeDisc = new THREE.Mesh(brakeDiscGeom, brakeDiscMat);
     brakeDisc.position.z = tireWidth * 0.14;
     rootWheelGroup.add(brakeDisc);
 
-    // Authentic Extruded Brembo F1 Curved Caliper
+    // Central Rotor Hat (Inner Bell)
+    const bellMat = new THREE.MeshStandardMaterial({
+      color: 0x0f172a,
+      roughness: 0.4,
+      metalness: 0.8,
+    });
+    const bellGeom = new THREE.CylinderGeometry(0.5, 0.5, 0.08, 32);
+    const bellMesh = new THREE.Mesh(bellGeom, bellMat);
+    bellMesh.rotation.x = Math.PI / 2;
+    bellMesh.position.z = tireWidth * 0.14;
+    rootWheelGroup.add(bellMesh);
+
+    // Authentic Brembo F1 Curved Caliper at ~10 O'Clock
     const bremboCaliper = createBremboF1Caliper();
     rootWheelGroup.add(bremboCaliper);
 
-    // 6. F1 ANODIZED RED CENTER LOCK NUT & HUB
+    // 7. F1 ANODIZED RED CENTER LOCK NUT & HUB
     const centerNutMat = new THREE.MeshStandardMaterial({
       color: 0xe10600,
       roughness: 0.18,
