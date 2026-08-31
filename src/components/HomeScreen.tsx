@@ -6,6 +6,7 @@ import { OFFICIAL_CIRCUITS, CircuitSpec } from '../data/circuits';
 import { buildTrackFromSvg } from '../utils/svgTrackParser';
 import { RaceResultHistory } from '../types/f1';
 import { FlagIcon } from './FlagIcon';
+import { F1WheelSvg } from './F1WheelSvg';
 import { 
   Play, 
   MapPin, 
@@ -166,6 +167,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       <header className={styles.header}>
         <div className={styles.brandGroup}>
           <div className={styles.f1Logo}>F1</div>
+          <F1WheelSvg style={{ width: '28px', height: '28px', flexShrink: 0 }} />
           <div className={styles.headerTitles}>
             <h1>F1 GRAND PRIX SIMULATOR</h1>
             <p>CENTRO DE CONTROL OFICIAL · SELECCIÓN DE PILOTO & CIRCUITO</p>
