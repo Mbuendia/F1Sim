@@ -1,36 +1,37 @@
 .overlay {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(4, 7, 15, 0.80);
-  backdrop-filter: blur(5px);
+  top: 80px;
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   z-index: 50;
+  pointer-events: none;
+}
+
+.overlay > * {
+  pointer-events: auto;
 }
 
 .gantryContainer {
   background: linear-gradient(180deg, #11141f 0%, #090b12 100%);
   border: 1px solid rgba(255, 255, 255, 0.12);
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.85), 0 0 30px rgba(225, 6, 0, 0.25);
-  border-radius: 16px;
-  padding: 24px 36px;
+  border-radius: 12px;
+  padding: 16px 24px;
   text-align: center;
-  max-width: 620px;
-  width: 90%;
+  max-width: 500px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
 }
 
 .gantryHeader {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
 }
 
 .f1Brand {

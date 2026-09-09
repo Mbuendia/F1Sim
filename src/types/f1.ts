@@ -23,7 +23,7 @@ export interface TrackIncident {
   driverCode: string;
   trackT: number;
   sector: 1 | 2 | 3;
-  type: 'dnf' | 'crash' | 'spin';
+  type: 'dnf' | 'crash' | 'major_crash' | 'spin';
   isCleared: boolean;
   clearTimer: number;
   reason: string;
@@ -219,6 +219,10 @@ export interface CarState {
   aggression: AggressionLevel;
   drsActive: boolean;
   drsEligible: boolean;
+
+  // ── MODELO TERMODINÁMICO CONTINUO ──
+  brakeTempCelsius: number;    // 250°C (frío) → 1050°C (frenada extrema)
+  engineTempCelsius: number;   // 85°C (frío) → 130°C (sobrecalentamiento)
   
   currentLap: number;
   lapStartTime: number;

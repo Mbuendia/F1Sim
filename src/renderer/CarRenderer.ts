@@ -2,6 +2,35 @@ import { CarState, SafetyCarState } from '../types/f1';
 import { TrackDefinition } from '../data/barcelonaTrack';
 import { Camera } from './Camera';
 
+class SpriteManager {
+  static sprites: HTMLImageElement[] = [];
+  static isLoaded: boolean = false;
+
+  static loadSprites() {
+    if (this.isLoaded) return;
+    
+    const base = import.meta.env.BASE_URL || '/';
+    const cleanBase = base.endsWith('/') ? base : `${base}/`;
+    
+    // Cargar 20 sprites de coches (uno para cada monoplaza, indexados del 0 al 19)
+    for (let i = 1; i <= 20; i++) {
+      const img = new Image();
+      img.src = `${cleanBase}racecars2d/cars/pitstop_car_${i}.png`;
+      this.sprites.push(img);
+    }
+    this.isLoaded = true;
+  }
+
+  static getSprite(index: number): HTMLImageElement | null {
+    if (!this.isLoaded) this.loadSprites();
+    const img = this.sprites[index % 20];
+    if (img && img.complete && img.naturalHeight !== 0) {
+      return img;
+    }
+    return null; // Fallback si no ha cargado
+  }
+}
+
 export class CarRenderer {
   /**
    * Renderiza todos los monoplazas sobre el trazado activo actual con diseño F1 aerodinámico
@@ -43,18 +72,34 @@ export class CarRenderer {
         angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
       } else {
         const normT = ((car.progress % 1) + 1) % 1;
-        const ptIndex = Math.floor(normT * totalPts) % totalPts;
+        // ── INTERPOLACIÓN SUB-PUNTO PARA ANTI-JITTER ──
+        // En lugar de saltar de un punto discreto al siguiente, interpolamos
+        // entre los dos puntos adyacentes usando la fracción decimal
+        const exactIndex = normT * totalPts;
+        const ptIndex = Math.floor(exactIndex) % totalPts;
+        const nextIndex = (ptIndex + 1) % totalPts;
+        const frac = exactIndex - Math.floor(exactIndex);
+
         const pt = points[ptIndex] || points[0];
-        
-        angle = pt.angle;
+        const ptNext = points[nextIndex] || points[0];
+
+        // Interpolación lineal de posición
+        const interpX = pt.x + (ptNext.x - pt.x) * frac;
+        const interpY = pt.y + (ptNext.y - pt.y) * frac;
+
+        // Interpolación de ángulo con manejo de wraparound (-PI / +PI)
+        let angleDiff = ptNext.angle - pt.angle;
+        if (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+        if (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+        angle = pt.angle + angleDiff * frac;
 
         const nx = Math.cos(angle + Math.PI / 2);
         const ny = Math.sin(angle + Math.PI / 2);
         // Distancia lateral amplia para evitar efecto tren
         const lateralDist = car.lateralOffset * (13 / trackWidthCarsCapacity);
 
-        worldX = pt.x + nx * lateralDist;
-        worldY = pt.y + ny * lateralDist;
+        worldX = interpX + nx * lateralDist;
+        worldY = interpY + ny * lateralDist;
       }
 
       const screen = camera.worldToScreen(worldX, worldY);
@@ -106,9 +151,20 @@ export class CarRenderer {
     const normT = ((sc.progress % 1) + 1) % 1;
     const ptIndex = Math.floor(normT * totalPts) % totalPts;
     const pt = points[ptIndex] || points[0];
-    const angle = pt.angle;
+    const nextPtIndex = (ptIndex + 1) % totalPts;
+    const nextPt = points[nextPtIndex] || points[0];
 
-    const screen = camera.worldToScreen(pt.x, pt.y);
+    const fraction = (normT * totalPts) % 1;
+    
+    const worldX = pt.x + (nextPt.x - pt.x) * fraction;
+    const worldY = pt.y + (nextPt.y - pt.y) * fraction;
+    
+    let dAngle = nextPt.angle - pt.angle;
+    if (dAngle > Math.PI) dAngle -= Math.PI * 2;
+    if (dAngle < -Math.PI) dAngle += Math.PI * 2;
+    const angle = pt.angle + dAngle * fraction;
+
+    const screen = camera.worldToScreen(worldX, worldY);
     if (screen.x < -80 || screen.x > camera.screenWidth + 80 ||
         screen.y < -80 || screen.y > camera.screenHeight + 80) {
       return;
@@ -189,78 +245,151 @@ export class CarRenderer {
     const carLen = 14 * scale;
     const carWid = 6 * scale;
 
-    // Sombra del coche
+    // Sombra del coche general
     ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
     ctx.beginPath();
     ctx.ellipse(1, 2, carLen * 0.52, carWid * 0.48, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // ── 1. CHASIS PRINCIPAL AERODINÁMICO ──
-    ctx.fillStyle = car.team.color;
-    ctx.beginPath();
-    ctx.moveTo(carLen * 0.60, 0); // Morro afilado
-    ctx.lineTo(carLen * 0.40, -carWid * 0.15);
-    ctx.lineTo(carLen * 0.15, -carWid * 0.35);
-    ctx.lineTo(-carLen * 0.25, -carWid * 0.45);
-    ctx.lineTo(-carLen * 0.50, -carWid * 0.40);
-    ctx.lineTo(-carLen * 0.50, carWid * 0.40);
-    ctx.lineTo(-carLen * 0.25, carWid * 0.45);
-    ctx.lineTo(carLen * 0.15, carWid * 0.35);
-    ctx.lineTo(carLen * 0.40, carWid * 0.15);
-    ctx.closePath();
-    ctx.fill();
+    const sprite = null; // SpriteManager.getSprite(car.id);
 
-    // Alerón delantero (Front wing)
-    ctx.fillStyle = car.team.accentColor || '#111827';
-    ctx.fillRect(carLen * 0.50, -carWid * 0.40, 2.5 * scale, carWid * 0.80);
+    if (sprite) {
+      // ── RENDERIZADO CON SPRITE 2D ──
+      ctx.save();
+      ctx.rotate(-Math.PI / 2);
+      const spriteW = carWid * 2.5; 
+      const spriteH = carLen * 2.2;
+      ctx.drawImage(sprite as any, -spriteW / 2, -spriteH / 2, spriteW, spriteH);
+      ctx.restore();
 
-    // Acento secundario del equipo
-    ctx.fillStyle = car.team.accentColor || '#111827';
-    ctx.beginPath();
-    ctx.moveTo(0, -carWid * 0.38);
-    ctx.lineTo(-carLen * 0.38, -carWid * 0.36);
-    ctx.lineTo(-carLen * 0.38, carWid * 0.36);
-    ctx.lineTo(0, carWid * 0.38);
-    ctx.closePath();
-    ctx.fill();
+      // Pintar el aro del compuesto del neumático sobre las ruedas del sprite
+      const tireColor = car.tires.compound === 'soft' ? '#e10600' : (car.tires.compound === 'medium' ? '#ffd700' : '#ffffff');
+      if (zoom > 1.1) {
+        ctx.fillStyle = tireColor;
+        const wheelLen = 5.8 * scale;
+        // Ajuste fino para que encaje exactamente sobre los neumáticos del sprite 2D
+        const frontX = carLen * 0.45;
+        const rearX = -carLen * 0.60;
+        const lateralY = carWid * 0.88;
+        const bandThickness = 1.0 * scale;
+        
+        ctx.fillRect(frontX, -lateralY, wheelLen * 0.7, bandThickness);
+        ctx.fillRect(frontX, lateralY - bandThickness, wheelLen * 0.7, bandThickness);
+        ctx.fillRect(rearX, -lateralY, wheelLen * 0.7, bandThickness);
+        ctx.fillRect(rearX, lateralY - bandThickness, wheelLen * 0.7, bandThickness);
+      }
 
-    // ── 2. RUEDAS (4 NEUMÁTICOS CON AROS DE COMPUESTO) ──
-    const tireColor = car.tires.compound === 'soft' ? '#e10600' : (car.tires.compound === 'medium' ? '#ffd700' : '#ffffff');
-    ctx.fillStyle = '#18181b';
-    const wheelLen = 5.8 * scale;
-    const wheelWid = 2.5 * scale;
+      // DRS Glow Effect over sprite
+      if (car.drsActive) {
+        ctx.fillStyle = '#00ff66';
+        ctx.globalAlpha = 0.8;
+        ctx.fillRect(-carLen * 0.55, -carWid * 0.35, 1.5 * scale, carWid * 0.70);
+        ctx.globalAlpha = 1.0;
+      }
 
-    ctx.fillRect(carLen * 0.22, -carWid * 0.65, wheelLen, wheelWid);
-    ctx.fillRect(carLen * 0.22, carWid * 0.65 - wheelWid, wheelLen, wheelWid);
-    ctx.fillRect(-carLen * 0.42, -carWid * 0.65, wheelLen, wheelWid);
-    ctx.fillRect(-carLen * 0.42, carWid * 0.65 - wheelWid, wheelLen, wheelWid);
+    } else {
+      // ── RENDERIZADO VECTORIAL F1 DETALLADO ──
+      // Usaremos escalas para modelar con precisión las partes del coche
+      // Dimensiones de referencia: Eje X = Largo (morro a la derecha), Eje Y = Ancho
+      const cl = carLen * 0.95; // Centro a morro
+      const cw = carWid * 0.8; // Mitad del ancho
 
-    if (zoom > 1.1) {
-      ctx.fillStyle = tireColor;
-      ctx.fillRect(carLen * 0.24, -carWid * 0.65 + 0.6, wheelLen * 0.8, 0.8 * scale);
-      ctx.fillRect(carLen * 0.24, carWid * 0.65 - 1.4, wheelLen * 0.8, 0.8 * scale);
-      ctx.fillRect(-carLen * 0.40, -carWid * 0.65 + 0.6, wheelLen * 0.8, 0.8 * scale);
-      ctx.fillRect(-carLen * 0.40, carWid * 0.65 - 1.4, wheelLen * 0.8, 0.8 * scale);
+      // 1. NEUMÁTICOS (Color negro con brillo y línea del compuesto)
+      const wheelW = cl * 0.35;
+      const wheelH = cw * 0.45;
+      const tireColor = '#1a1a1a';
+      let compoundColor = '#ffffff';
+      if (car.tires.compound === 'soft') compoundColor = '#e10600';
+      if (car.tires.compound === 'medium') compoundColor = '#ffd700';
+      
+      const drawWheel = (wx: number, wy: number) => {
+        ctx.fillStyle = tireColor;
+        ctx.beginPath();
+        ctx.roundRect(wx - wheelW/2, wy - wheelH/2, wheelW, wheelH, 1.5 * scale);
+        ctx.fill();
+        if (zoom > 1.1) {
+          ctx.fillStyle = compoundColor;
+          ctx.fillRect(wx - wheelW/4, wy - 0.5*scale, wheelW/2, 1*scale);
+        }
+      };
+
+      // Ruedas
+      drawWheel(cl * 0.55, cw * 1.15);
+      drawWheel(cl * 0.55, -cw * 1.15);
+      drawWheel(-cl * 0.65, cw * 1.15);
+      drawWheel(-cl * 0.65, -cw * 1.15);
+
+      // 2. SUSPENSIONES (Líneas finas oscuras conectando ruedas al chasis)
+      ctx.strokeStyle = '#222';
+      ctx.lineWidth = 1.5 * scale;
+      ctx.beginPath();
+      // Delanteras
+      ctx.moveTo(cl * 0.40, 0); ctx.lineTo(cl * 0.55, cw * 1.15);
+      ctx.moveTo(cl * 0.40, 0); ctx.lineTo(cl * 0.55, -cw * 1.15);
+      // Traseras
+      ctx.moveTo(-cl * 0.5, 0); ctx.lineTo(-cl * 0.65, cw * 1.15);
+      ctx.moveTo(-cl * 0.5, 0); ctx.lineTo(-cl * 0.65, -cw * 1.15);
+      ctx.stroke();
+
+      // 3. SUELO / FONDO PLANO (Negro/Carbono debajo de los sidepods)
+      ctx.fillStyle = '#111';
+      ctx.beginPath();
+      ctx.roundRect(-cl * 0.5, -cw * 0.95, cl * 1.1, cw * 1.9, 2 * scale);
+      ctx.fill();
+
+      // 4. CHASIS PRINCIPAL (Color del equipo)
+      // Morro (afilado), Sidepods (anchos), Tapa del motor (estrechándose atrás)
+      ctx.fillStyle = car.team.color;
+      ctx.beginPath();
+      ctx.moveTo(cl * 0.85, -cw * 0.2); // Punta del morro (arriba)
+      ctx.lineTo(cl * 0.4, -cw * 0.3);  // Base del morro
+      ctx.lineTo(cl * 0.2, -cw * 0.9);  // Inicio sidepods
+      ctx.lineTo(-cl * 0.2, -cw * 0.8); // Fin sidepods
+      ctx.lineTo(-cl * 0.7, -cw * 0.3); // Tapa motor (arriba)
+      ctx.lineTo(-cl * 0.7, cw * 0.3);  // Tapa motor (abajo)
+      ctx.lineTo(-cl * 0.2, cw * 0.8);  // Fin sidepods
+      ctx.lineTo(cl * 0.2, cw * 0.9);   // Inicio sidepods
+      ctx.lineTo(cl * 0.4, cw * 0.3);   // Base del morro
+      ctx.lineTo(cl * 0.85, cw * 0.2);  // Punta del morro (abajo)
+      ctx.closePath();
+      ctx.fill();
+
+      // 5. DETALLES AERODINÁMICOS (Color de acento del equipo)
+      ctx.fillStyle = car.team.accentColor || '#111827';
+      // Alerón Delantero
+      ctx.beginPath();
+      ctx.roundRect(cl * 0.8, -cw * 1.25, cl * 0.18, cw * 2.5, 1 * scale);
+      ctx.fill();
+      // Endplates delantero
+      ctx.fillRect(cl * 0.78, -cw * 1.25, cl * 0.22, cw * 0.2);
+      ctx.fillRect(cl * 0.78, cw * 1.05, cl * 0.22, cw * 0.2);
+
+      // Alerón Trasero
+      ctx.fillStyle = car.drsActive ? '#00ff66' : (car.team.accentColor || '#111827');
+      ctx.beginPath();
+      ctx.roundRect(-cl * 0.85, -cw * 0.8, cl * 0.2, cw * 1.6, 1 * scale);
+      ctx.fill();
+      // Endplates trasero
+      ctx.fillRect(-cl * 0.9, -cw * 0.8, cl * 0.3, cw * 0.2);
+      ctx.fillRect(-cl * 0.9, cw * 0.6, cl * 0.3, cw * 0.2);
+
+      // Halo
+      ctx.strokeStyle = '#111'; // Halo de carbono negro
+      ctx.lineWidth = 1.2 * scale;
+      ctx.beginPath();
+      ctx.arc(cl * 0.05, 0, cw * 0.35, -Math.PI/2, Math.PI/2);
+      ctx.stroke();
+
+      // Casco del piloto (Color de acento vibrante)
+      ctx.fillStyle = isSelected ? '#ffd700' : '#f8fafc';
+      ctx.beginPath();
+      ctx.arc(cl * 0.05, 0, cw * 0.2, 0, Math.PI * 2);
+      ctx.fill();
+
+      // T-Cam (Negra)
+      ctx.fillStyle = '#000';
+      ctx.fillRect(-cl * 0.15, -cw * 0.1, cl * 0.15, cw * 0.2);
     }
-
-    // ── 3. COCKPIT, HALO Y CASCO ──
-    ctx.fillStyle = '#0a0a0a';
-    ctx.beginPath();
-    ctx.ellipse(carLen * 0.05, 0, carLen * 0.13, carWid * 0.18, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = isSelected ? '#ffd700' : '#f8fafc';
-    ctx.beginPath();
-    ctx.arc(carLen * 0.06, 0, carWid * 0.14, 0, Math.PI * 2);
-    ctx.fill();
-
-    // ── 4. ALERÓN TRASERO Y DRS ──
-    ctx.fillStyle = car.drsActive ? '#00ff66' : car.team.color;
-    ctx.fillRect(-carLen * 0.52, -carWid * 0.48, 2.2 * scale, carWid * 0.96);
-
-    ctx.strokeStyle = 'rgba(0, 0, 0, 0.5)';
-    ctx.lineWidth = 0.8;
-    ctx.stroke();
 
     ctx.restore();
 

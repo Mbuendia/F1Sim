@@ -290,7 +290,7 @@ export const App: React.FC = () => {
         )}
 
         <div className={styles.topBarOverlay}>
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
             <button 
               className={styles.homeBtn} 
               onClick={() => setCurrentView('home')}
@@ -299,7 +299,6 @@ export const App: React.FC = () => {
               <ArrowLeft size={14} />
               <span>GPs</span>
             </button>
-            <RaceHeader circuit={activeCircuitSpec} />
             <button
               className={styles.cameraBadge}
               onClick={handleCycleCameraMode}
@@ -307,6 +306,67 @@ export const App: React.FC = () => {
             >
               <CameraIcon size={12} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} />
               <span>{cameraMode.toUpperCase()}</span>
+            </button>
+            {/* Botón DEV para probar el Safety Car */}
+            <button
+              className={styles.cameraBadge}
+              style={{ borderColor: simulation.safetyCar.isDeployed ? '#22c55e' : '#fbbf24', color: simulation.safetyCar.isDeployed ? '#22c55e' : '#fbbf24' }}
+              onClick={() => {
+                if (!simulation.safetyCar.isDeployed) {
+                  const leader = simulation.cars.find(c => c.currentPosition === 1);
+                  simulation.safetyCar.isDeployed = true;
+                  simulation.safetyCar.mode = 'deploying';
+                  // SC spawnea exactamente en la salida de boxes
+                  const leaderProgress = leader?.progress || 0;
+                  const leaderT = leaderProgress % 1;
+                  const baseLap = leaderT < 0.05 ? Math.floor(leaderProgress) : Math.ceil(leaderProgress);
+                  simulation.safetyCar.progress = baseLap + 0.05;
+                  simulation.safetyCar.trackT = ((simulation.safetyCar.progress % 1) + 1) % 1;
+                  simulation.safetyCar.currentSpeedKmh = 80;
+                  simulation.safetyCar.lapCount = 0;
+                  simulation.safetyCar.targetLaps = 999;
+                  simulation.safetyCar.triggerReason = 'PRUEBA MANUAL (DEV)';
+                  simulation.raceFlagState = 'sc';
+                } else {
+                  // Forzar que el SC se vaya
+                  simulation.safetyCar.mode = 'returning';
+                  // Limpiamos los incidentes artificialmente si los hay
+                  simulation.incidents = [];
+                }
+              }}
+              title={simulation.safetyCar.isDeployed ? "Retirar Safety Car (Dev)" : "Desplegar Safety Car (Dev)"}
+            >
+              <span>{simulation.safetyCar.isDeployed ? '🟢 RETIRAR SC' : '🚨 TEST SC'}</span>
+            </button>
+            {/* Botón DEV para probar la Bandera Roja */}
+            <button
+              className={styles.cameraBadge}
+              style={{ borderColor: '#e10600', color: '#e10600' }}
+              onClick={() => {
+                // Escoger coche al azar
+                const runningCars = simulation.cars.filter(c => c.status === 'running');
+                if (runningCars.length > 0) {
+                  const randomCar = runningCars[Math.floor(Math.random() * runningCars.length)];
+                  randomCar.status = 'out';
+                  const failureTypes = ['💥 ACCIDENTE GRAVE', '🔥 INCENDIO MOTOR', '💥 CHOQUE MÚLTIPLE'];
+                  randomCar.dnfReason = failureTypes[Math.floor(Math.random() * failureTypes.length)];
+                  randomCar.isRetiredVisible = true;
+                  randomCar.smokeOpacity = 1.0;
+                  randomCar.retireTimer = 60;
+                  
+                  // Forzar bandera roja directamente
+                  simulation.raceFlagState = 'red';
+                  simulation.safetyCar.isDeployed = false;
+                  simulation.safetyCar.mode = 'idle';
+                  for (const c of simulation.cars) {
+                    if (c.status === 'running') c.pitStop.isPitting = true;
+                  }
+                  simulation.triggerD20LuckRoll('red');
+                }
+              }}
+              title="Forzar Bandera Roja (Dev)"
+            >
+              <span>🔴 TEST RED FLAG</span>
             </button>
           </div>
 
@@ -391,6 +451,7 @@ export const App: React.FC = () => {
             overallBestS2={bestS2}
             overallBestS3={bestS3}
             weather={weather}
+            circuit={activeCircuitSpec}
           />
         )}
       </div>

@@ -4,7 +4,7 @@ export class IncidentModel {
   private static nextId = 1;
   
   // Registrar un nuevo incidente cuando un coche se retira
-  static registerIncident(car: CarState, type: 'dnf' | 'crash' | 'spin'): TrackIncident {
+  static registerIncident(car: CarState, type: 'dnf' | 'crash' | 'major_crash' | 'spin'): TrackIncident {
     // Determinar en qué sector está basado en car.trackT
     let sector: 1 | 2 | 3 = 1;
     if (car.trackT >= 0.33 && car.trackT < 0.66) sector = 2;
@@ -16,6 +16,8 @@ export class IncidentModel {
       clearTimer = 12 + Math.random() * 8; // 12-20s
     } else if (type === 'crash') {
       clearTimer = 25 + Math.random() * 15; // 25-40s
+    } else if (type === 'major_crash') {
+      clearTimer = 45 + Math.random() * 35; // 45-80s (Bandera roja garantizada)
     } else if (type === 'spin') {
       clearTimer = 8 + Math.random() * 4; // 8-12s
     }

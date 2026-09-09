@@ -163,9 +163,15 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
       for (const car of simulation.cars) {
         if (car.status === 'finished') continue;
         const normT = ((car.progress % 1) + 1) % 1;
-        const ptIdx = Math.floor(normT * totalPts) % totalPts;
+        const exactIdx = normT * totalPts;
+        const ptIdx = Math.floor(exactIdx) % totalPts;
+        const nextIdx = (ptIdx + 1) % totalPts;
+        const frac = exactIdx - Math.floor(exactIdx);
         const pt = points[ptIdx] || points[0];
-        const screenPos = camera.worldToScreen(pt.x, pt.y);
+        const ptNext = points[nextIdx] || points[0];
+        const interpX = pt.x + (ptNext.x - pt.x) * frac;
+        const interpY = pt.y + (ptNext.y - pt.y) * frac;
+        const screenPos = camera.worldToScreen(interpX, interpY);
 
         const dist = Math.hypot(screenPos.x - clickX, screenPos.y - clickY);
         if (dist < minDistance) {
@@ -229,7 +235,8 @@ function renderLeftMinimap(
   const mmW = 180;
   const mmH = 115;
   const mmX = 20;
-  const mmY = camera.screenHeight - mmH - 24;
+  // Subimos el minimapa para evitar que se solape con el dock inferior
+  const mmY = camera.screenHeight - mmH - 120;
   const b = simulation.activeTrack.bounds;
 
   ctx.fillStyle = 'rgba(8, 12, 20, 0.92)';
@@ -265,15 +272,23 @@ function renderLeftMinimap(
     ctx.stroke();
   }
 
-  // Puntos de los coches en el minimapa
+  // Puntos de los coches en el minimapa (con interpolación anti-jitter)
   for (const car of simulation.cars) {
     if (car.status === 'finished') continue;
     const normT = ((car.progress % 1) + 1) % 1;
-    const ptIdx = Math.floor(normT * points.length) % points.length;
+    const totalPts = points.length;
+    const exactIdx = normT * totalPts;
+    const ptIdx = Math.floor(exactIdx) % totalPts;
+    const nextIdx = (ptIdx + 1) % totalPts;
+    const frac = exactIdx - Math.floor(exactIdx);
     const pt = points[ptIdx] || points[0];
+    const ptNext = points[nextIdx] || points[0];
 
-    const cx = mmOffsetX + (pt.x - b.minX) * mmScale;
-    const cy = mmOffsetY + (pt.y - b.minY) * mmScale;
+    const interpX = pt.x + (ptNext.x - pt.x) * frac;
+    const interpY = pt.y + (ptNext.y - pt.y) * frac;
+
+    const cx = mmOffsetX + (interpX - b.minX) * mmScale;
+    const cy = mmOffsetY + (interpY - b.minY) * mmScale;
 
     ctx.fillStyle = car.team.color;
     ctx.beginPath();

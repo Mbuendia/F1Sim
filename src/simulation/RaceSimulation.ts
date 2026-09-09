@@ -80,6 +80,9 @@ export class RaceSimulation {
   vscActive: boolean = false;
   vscTimer: number = 0;
   vscDuration: number = 0;
+  
+  // Para controlar que no adelanten hasta pasar meta tras el SC
+  scEndingLap: number | null = null;
 
   constructor(circuitId: string = 'barcelona') {
     this.circuitId = circuitId;
@@ -199,6 +202,9 @@ export class RaceSimulation {
         drsActive: false,
         drsEligible: false,
 
+        brakeTempCelsius: 350,   // Temperatura de frenos al arrancar (calentados en formation lap)
+        engineTempCelsius: 95,   // Temperatura de motor al arrancar (ya caliente)
+
         currentLap: 0,
         lapStartTime: 0,
         lastLapTime: null,
@@ -258,6 +264,8 @@ export class RaceSimulation {
       this.cars.forEach((car, idx) => {
         car.progress = -((idx + 1) * 0.0035);
         car.speed = 0.007;
+        car.lateralOffset = idx % 2 === 0 ? 0.65 : -0.65;
+        car.targetLateralOffset = car.lateralOffset;
       });
     }
   }
@@ -360,14 +368,27 @@ export class RaceSimulation {
 
       if (car.currentLap > 3 && Math.random() < dnfStepChance) {
         car.status = 'out';
-        const failureTypes = ['💥 FALLO MOTOR V6', '⚙️ CAJA DE CAMBIOS', '🔌 FALLO MGU-K / HÍBRIDO', '💧 PÉRDIDA PRESIÓN HIDRÁULICA'];
-        car.dnfReason = failureTypes[Math.floor(Math.random() * failureTypes.length)];
+        
+        let incidentType: 'dnf' | 'crash' | 'major_crash' = 'dnf';
+        const crashRoll = Math.random();
+        
+        if (crashRoll < 0.05) {
+          incidentType = 'major_crash';
+          car.dnfReason = '💥 ACCIDENTE GRAVE';
+        } else if (crashRoll < 0.20) {
+          incidentType = 'crash';
+          car.dnfReason = '💥 ACCIDENTE CONTRA MURO';
+        } else {
+          const failureTypes = ['🔥 FALLO MOTOR V6', '⚙️ CAJA DE CAMBIOS', '🔌 FALLO MGU-K', '💧 PRESIÓN HIDRÁULICA'];
+          car.dnfReason = failureTypes[Math.floor(Math.random() * failureTypes.length)];
+        }
+
         // ── Activar efectos visuales de retirada ──
         car.isRetiredVisible = true;
-        car.smokeOpacity = 1.0;
+        car.smokeOpacity = incidentType === 'dnf' ? 1.0 : 0.4; // Menos humo en choques puros
         car.retireTimer = 15 + Math.random() * 10; // 15-25s hasta que la grúa se lo lleve
         // ── Registrar incidente y evaluar respuesta ──
-        const incident = IncidentModel.registerIncident(car, 'dnf');
+        const incident = IncidentModel.registerIncident(car, incidentType);
         this.incidents.push(incident);
 
         this.latestDnf = {
@@ -388,12 +409,21 @@ export class RaceSimulation {
         const response = SafetyCarModel.evaluateResponse(
           incident, activeIncidents, car.currentLap, this.totalLaps, this.safetyCar.isDeployed
         );
-        if (response === 'sc') {
+        if (response === 'red') {
+          this.raceFlagState = 'red';
+          this.triggerD20LuckRoll('red');
+          // Forzar a todos los coches a hacer pitstop (bandera roja)
+          for (const c of this.cars) {
+            if (c.status === 'running') {
+              c.pitStop.isPitting = true;
+            }
+          }
+        } else if (response === 'sc' && this.raceFlagState !== 'red') {
           const leaderProgress = leaderCar ? leaderCar.progress : 0;
           SafetyCarModel.deploy(this.safetyCar, `Abandono de ${car.driver.code}`, leaderProgress, this.raceTimeSec);
           this.raceFlagState = 'sc';
           this.triggerD20LuckRoll('sc');
-        } else if (response === 'vsc') {
+        } else if (response === 'vsc' && this.raceFlagState !== 'red') {
           this.raceFlagState = 'vsc';
           this.vscActive = true;
           this.vscTimer = 0;
@@ -409,11 +439,16 @@ export class RaceSimulation {
         car.tires.health = 0;
       }
 
-      // 1. Pit Stop Update
-      const isHandlingPit = PitStopModel.updatePitStop(car, dt, lapDistanceMeters, this.activeTrack, this.totalLaps);
-
+        // Actualizar Pit Stops
+        const isHandlingPit = PitStopModel.updatePitStop(
+          car, dt, lapDistanceMeters, this.activeTrack, this.totalLaps,
+          this.raceFlagState, this.safetyCar.mode, this.safetyCar.progress
+        );
+      
       if (isHandlingPit) {
         car.hasPuncture = false;
+        
+        const prevProgress = car.progress;
         car.speed = (car.currentSpeedKmh / 3.6) / lapDistanceMeters;
         car.progress += (dt * (car.currentSpeedKmh / 3.6)) / lapDistanceMeters;
         car.trackT = ((car.progress % 1) + 1) % 1;
@@ -421,6 +456,27 @@ export class RaceSimulation {
         car.lateralOffset = 0;
         car.targetLateralOffset = 0;
         car.isBlueFlagged = false;
+
+        const prevLap = Math.floor(Math.max(0, prevProgress));
+        const currLap = Math.floor(Math.max(0, car.progress));
+        if (currLap > prevLap && prevProgress >= 0) {
+          car.currentLap = currLap;
+          car.tires.lapsOnTire += 1;
+          if (car.lapStartTime > 0) {
+            car.lastLapTime = this.raceTimeSec - car.lapStartTime;
+          }
+          car.lapStartTime = this.raceTimeSec;
+          car.sectorStartTime = this.raceTimeSec;
+          car.currentSector = 1;
+          
+          if (car.currentLap >= this.totalLaps && !this.leaderFinished) {
+            this.leaderFinished = true;
+            car.status = 'finished';
+          } else if (this.leaderFinished) {
+            car.status = 'finished';
+          }
+        }
+        
         continue;
       }
 
@@ -531,16 +587,31 @@ export class RaceSimulation {
 
       // ── RESTRICCIONES DE VELOCIDAD BAJO SC / VSC / BANDERA AMARILLA ──
       const scMaxSpeed = SafetyCarModel.getMaxAllowedSpeed(this.raceFlagState, this.safetyCar.mode);
+      const leader = this.cars.find(c => c.currentPosition === 1);
+      // Cualquiera que esté a más de 15% de vuelta del líder puede ir más rápido para alcanzar el pelotón (desdoblarse o reagruparse)
+      const isCatchingPack = leader ? (leader.progress - car.progress) >= 0.15 : false;
+
       if (scMaxSpeed !== null) {
-        targetKmh = Math.min(targetKmh, scMaxSpeed);
-        // Prohibir adelantamientos bajo SC/VSC
-        car.isOvertaking = false;
-        car.targetLateralOffset = 0;
+        if (isCatchingPack && this.safetyCar.isDeployed) {
+          // Los coches lejos del pelotón pueden ir a 220 km/h para alcanzar la cola del SC
+          targetKmh = Math.min(targetKmh, 220);
+        } else {
+          targetKmh = Math.min(targetKmh, scMaxSpeed);
+          // Prohibir adelantamientos bajo SC/VSC al pelotón normal
+          car.isOvertaking = false;
+          car.targetLateralOffset = 0;
+        }
       }
       // Bandera amarilla local: reducir velocidad en el sector afectado
       const carSector: 1 | 2 | 3 = normalizedT < 0.33 ? 1 : normalizedT < 0.66 ? 2 : 3;
       if (this.sectorFlags[carSector - 1] !== 'green' && this.raceFlagState === 'green') {
         targetKmh = Math.min(targetKmh, targetKmh * 0.75);
+      }
+
+      // El líder (y el resto) no pueden acelerar a velocidad de carrera completa hasta pasar la meta en la resalida
+      const isWaitingForScRestartLine = this.scEndingLap !== null && car.currentLap <= this.scEndingLap;
+      if (isWaitingForScRestartLine) {
+        targetKmh = Math.min(targetKmh, 120); // Velocidad dictada por el líder hasta la meta
       }
 
       // Aceleración vs Frenada
@@ -580,17 +651,29 @@ export class RaceSimulation {
       const hasOvertakePace = (effectivePace + tireDeltaAdvantage) > 1.002;
       const rareCornerOvertakeChance = Math.random() < 0.00008 && tireResult.gripMultiplier > 1.04;
 
+      // Ya está definida arriba isWaitingForScRestartLine
       if (carAhead && !carAhead.pitStop.isPitting && !car.isBlueFlagged && carAhead.status === 'running') {
         const deltaProgress = carAhead.progress - car.progress;
 
         if (deltaProgress > 0 && deltaProgress < minSafeSpacing) {
-          if ((canOvertakeHere || rareCornerOvertakeChance) && hasOvertakePace) {
+          // Si está lejos bajo SC, SIEMPRE puede adelantar para desdoblarse/alcanzar
+          const isCatchingPackUnderSc = isCatchingPack && this.safetyCar.isDeployed;
+          const wantsToOvertake = ((canOvertakeHere || rareCornerOvertakeChance) && hasOvertakePace) || isCatchingPackUnderSc;
+
+          if (wantsToOvertake && !isWaitingForScRestartLine) {
             car.isOvertaking = true;
             car.targetLateralOffset = car.id % 2 === 0 ? 0.55 : -0.55;
           } else {
             car.isOvertaking = false;
             car.targetLateralOffset = 0;
-            car.currentSpeedKmh = Math.min(car.currentSpeedKmh, carAhead.currentSpeedKmh * 0.99);
+            
+            // Si estamos en resalida de SC, forzamos un muro físico entre los coches para que hagan una fila india perfecta
+            if (isWaitingForScRestartLine && deltaProgress < 0.0025) {
+               car.progress = carAhead.progress - 0.0025;
+               car.currentSpeedKmh = Math.min(car.currentSpeedKmh, carAhead.currentSpeedKmh);
+            } else {
+               car.currentSpeedKmh = Math.min(car.currentSpeedKmh, carAhead.currentSpeedKmh * 0.99);
+            }
             car.speed = (car.currentSpeedKmh / 3.6) / lapDistanceMeters;
           }
         } else if (deltaProgress >= minSafeSpacing) {
@@ -608,6 +691,21 @@ export class RaceSimulation {
 
       const prevProgress = car.progress;
       car.progress += car.speed * dt;
+
+      // HARD BLOCKING DEL SAFETY CAR: Nadie puede físicamente adelantar al SC, SALVO LOS DOBLADOS
+      if (this.safetyCar.isDeployed && this.safetyCar.mode !== 'idle' && this.safetyCar.mode !== 'in') {
+        const scBlockDistance = 0.005;
+        const leader = this.cars.find(c => c.currentPosition === 1);
+        const isCatchingPack = leader ? (leader.progress - car.progress) >= 0.15 : false;
+        
+        const relativeDiff = car.progress - this.safetyCar.progress;
+        // Si el coche NO está lejos, y está justo intentando adelantar al SC en esta misma vuelta (hasta +0.02 por delante)
+        if (!isCatchingPack && relativeDiff > -scBlockDistance && relativeDiff < 0.02) {
+           car.progress = this.safetyCar.progress - scBlockDistance;
+           car.currentSpeedKmh = Math.min(car.currentSpeedKmh, this.safetyCar.currentSpeedKmh);
+           car.speed = (car.currentSpeedKmh / 3.6) / lapDistanceMeters;
+        }
+      }
 
       this.updateCarSectors(car, normalizedT);
 
@@ -688,8 +786,46 @@ export class RaceSimulation {
       const baseRpm = 9500 + (kmh / 355) * 3800 + (throttleVal > 80 ? 400 : 0);
       const finalRpm = Math.min(13600, Math.max(8000, Math.round(baseRpm)));
 
-      // Temperatura de frenos realista
-      const targetBrakeTemp = brakeVal > 20 ? 820 : 380;
+      // ── MODELO TERMODINÁMICO CONTINUO DE FRENOS ──
+      // Frenada fuerte calienta los discos de carbono hasta 800-1050°C
+      // En recta con ventilación aerodinámica se enfrían gradualmente a ~300-400°C
+      const brakeThermalInput = brakeVal > 0
+        ? 350 + brakeVal * 7.5 + (car.currentSpeedKmh / 350) * 200  // Más calor a alta velocidad
+        : 0;
+      const brakeAmbientTarget = 280 + (car.currentSpeedKmh / 350) * 80; // Refrigeración por aire
+      const brakeCoolingRate = car.currentSpeedKmh > 100 ? 2.5 : 1.2; // Más aire = más enfriamiento
+      
+      if (brakeThermalInput > car.brakeTempCelsius) {
+        // Calentamiento rápido durante frenada (los discos se calientan instantáneamente)
+        car.brakeTempCelsius += (brakeThermalInput - car.brakeTempCelsius) * Math.min(1.0, dt * 8.0);
+      } else {
+        // Enfriamiento gradual por convección aerodinámica
+        car.brakeTempCelsius += (brakeAmbientTarget - car.brakeTempCelsius) * Math.min(1.0, dt * brakeCoolingRate);
+      }
+      car.brakeTempCelsius = Math.max(250, Math.min(1080, car.brakeTempCelsius));
+
+      // ── MODELO TERMODINÁMICO CONTINUO DE MOTOR V6 TURBO HÍBRIDO ──
+      // Push/Overtake mode genera más calor; Low mode enfría activamente
+      let engineHeatInput = 95; // Temperatura base del motor
+      if (car.engineMode === 'push') engineHeatInput = 108;
+      else if (car.engineMode === 'overtake') engineHeatInput = 118;
+      else if (car.engineMode === 'low') engineHeatInput = 88;
+
+      // RPM altas y slipstream calientan más
+      engineHeatInput += (finalRpm - 10000) / 3600 * 4; // +4°C a 13600 RPM
+      if (car.currentSpeedKmh > 300) engineHeatInput += 3; // Carga térmica alta velocidad
+      
+      // Enfriamiento: radiadores más efectivos a velocidad alta
+      const engineCoolRate = 0.8 + (car.currentSpeedKmh / 350) * 0.6;
+      car.engineTempCelsius += (engineHeatInput - car.engineTempCelsius) * Math.min(1.0, dt * engineCoolRate);
+      car.engineTempCelsius = Math.max(80, Math.min(135, car.engineTempCelsius));
+
+      // ── PENALIZACIÓN POR SOBRECALENTAMIENTO DE MOTOR ──
+      // Por encima de 115°C el motor pierde potencia progresivamente
+      if (car.engineTempCelsius > 115) {
+        const overheatPenalty = 1.0 - ((car.engineTempCelsius - 115) / 20) * 0.08; // Hasta -8% a 135°C
+        effectivePace *= Math.max(0.92, overheatPenalty);
+      }
 
       car.stats = {
         pushLaps: Math.floor(car.currentLap * 0.35),
@@ -699,8 +835,8 @@ export class RaceSimulation {
         willMakeToEndWithoutPit: projectedLapsLeft >= lapsToEnd,
         optimalPitLap: car.currentLap + projectedLapsLeft,
         overtakesMade: Math.max(0, car.gridPosition - car.currentPosition),
-        brakeTempCelsius: targetBrakeTemp,
-        engineTempCelsius: Math.round(101 + (car.currentSpeedKmh / 350) * 8)
+        brakeTempCelsius: Math.round(car.brakeTempCelsius),
+        engineTempCelsius: Math.round(car.engineTempCelsius)
       };
 
       car.telemetry = {
@@ -747,8 +883,11 @@ export class RaceSimulation {
       if (this.safetyCar.mode === 'leading') {
         SafetyCarModel.compactField(this.cars, this.safetyCar.progress, dt);
       }
-      // SC ha entrado en boxes → transición a bandera verde
+      // SC ha entrado en boxes → preparamos bandera verde
       if (this.safetyCar.mode === 'in') {
+        const leader = this.cars.sort((a, b) => b.progress - a.progress)[0];
+        // Establecemos la vuelta a partir de la cual se podrá adelantar
+        this.scEndingLap = leader ? Math.floor(leader.progress) : null;
         this.raceFlagState = 'green';
         this.drsDisabledLaps = 2; // DRS deshabilitado durante 2 vueltas tras SC
       }
@@ -765,13 +904,53 @@ export class RaceSimulation {
     }
 
     // 5. Actualizar estado global de bandera
-    if (!this.safetyCar.isDeployed && !this.vscActive) {
+    if (this.raceFlagState === 'red') {
+      // Retirar Safety Car inmediatamente si estaba en pista
+      if (this.safetyCar.isDeployed) {
+        this.safetyCar.isDeployed = false;
+        this.safetyCar.mode = 'idle';
+      }
+      
+      const allCleared = IncidentModel.isTrackClear(this.incidents);
+      if (allCleared) {
+        // Reiniciar carrera tras bandera roja (standing start)
+        this.raceFlagState = 'green';
+        this.drsDisabledLaps = 2;
+
+        const activeCars = this.cars.filter(c => c.status === 'running' || c.status === 'pit').sort((a, b) => a.currentPosition - b.currentPosition);
+        
+        // Poner a todos los coches en parrilla con la vuelta actual retenida
+        const currentLapVal = activeCars.length > 0 ? Math.floor(activeCars[0].progress) : 0;
+        
+        activeCars.forEach((car, idx) => {
+          // Durante la bandera roja los mecánicos cambian neumáticos (alta probabilidad)
+          if (Math.random() < 0.85) {
+            car.tires.health = 100;
+            car.tires.lapsOnTire = 0;
+          }
+          
+          car.status = 'running';
+          car.pitStop.isPitting = false;
+          car.isInPitLane = false;
+          car.currentSpeedKmh = 0;
+          car.speed = 0;
+          car.progress = currentLapVal - ((idx + 1) * 0.0035);
+          car.trackT = ((car.progress % 1) + 1) % 1;
+          car.lateralOffset = idx % 2 === 0 ? 0.65 : -0.65;
+          car.targetLateralOffset = car.lateralOffset;
+        });
+
+        // Activar semáforos
+        this.lightState = 'grid-ready';
+        this.lightsTimer = 0;
+      }
+    } else if (!this.safetyCar.isDeployed && !this.vscActive) {
       const hasActiveIncidents = !IncidentModel.isTrackClear(this.incidents);
       if (hasActiveIncidents) {
         // Determinar severidad por sector
         const hasDoubleYellow = this.sectorFlags.some(f => f === 'double-yellow');
         this.raceFlagState = hasDoubleYellow ? 'double-yellow' : 'yellow';
-      } else if (this.raceFlagState !== 'green') {
+      } else if (this.raceFlagState !== 'green' && this.raceFlagState !== 'sc') {
         this.raceFlagState = 'green';
       }
     }
@@ -854,10 +1033,14 @@ export class RaceSimulation {
         car.progress += 0.0025 * dt;
         car.currentSpeedKmh = Math.max(20, Math.round((gridTargetProgress - car.progress) * 5000));
         car.telemetry.speedKmh = car.currentSpeedKmh;
+        // Posicionarse en zig-zag para la parrilla
+        car.targetLateralOffset = idx % 2 === 0 ? 0.65 : -0.65;
       } else {
         car.progress = gridTargetProgress;
         car.currentSpeedKmh = 0;
         car.telemetry.speedKmh = 0;
+        car.lateralOffset = idx % 2 === 0 ? 0.65 : -0.65;
+        car.targetLateralOffset = car.lateralOffset;
       }
     });
 
@@ -867,6 +1050,8 @@ export class RaceSimulation {
     if (lastCar.progress >= lastCarTarget - 0.0005) {
       this.cars.forEach((car, idx) => {
         car.progress = -((idx + 1) * 0.0035);
+        car.lateralOffset = idx % 2 === 0 ? 0.65 : -0.65;
+        car.targetLateralOffset = car.lateralOffset;
         car.currentLap = 0;
         car.lapStartTime = 0;
       });

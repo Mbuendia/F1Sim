@@ -38,8 +38,8 @@ const RaceFlagsHUD: React.FC<RaceFlagsHUDProps> = ({ raceFlagState, sectorFlags,
     if (safetyCar.mode === 'deploying') {
       subtext = `Desplegando Safety Car — ${safetyCar.triggerReason}`;
     } else if (safetyCar.mode === 'leading') {
-      subtext = `Vuelta ${safetyCar.lapCount + 1} de ${safetyCar.targetLaps} — ${safetyCar.triggerReason}`;
-    } else if (safetyCar.mode === 'returning') {
+      subtext = `Liderando pelotón — Vueltas bajo SC: ${safetyCar.lapCount} — ${safetyCar.triggerReason}`;
+    } else if (safetyCar.mode === 'returning' || safetyCar.mode === 'in') {
       subtext = 'Safety Car entrando en boxes — Preparar restart';
     }
   } else if (raceFlagState === 'vsc') {

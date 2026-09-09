@@ -50,11 +50,10 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
     if (index === 0) return 'LÍDER';
     if (car.pitStop.isPitting) return 'PIT';
 
-    const carFloorLap = Math.max(0, Math.floor(car.progress));
-    const lapsBehind = leaderFloorLap - carFloorLap;
-
-    if (lapsBehind >= 1) {
-      return lapsBehind === 1 ? '+1 LAP' : `+${lapsBehind} LAPS`;
+    const progressDiff = leaderProgress - car.progress;
+    if (progressDiff >= 0.95) {
+      const lapsBehindStr = Math.floor(progressDiff);
+      return lapsBehindStr === 1 ? '+1 LAP' : `+${lapsBehindStr} LAPS`;
     }
 
     if (car.gapToLeaderSec >= 60) {

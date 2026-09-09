@@ -15,6 +15,8 @@ import {
   Zap
 } from 'lucide-react';
 import { animate } from 'animejs';
+import { CircuitSpec } from '../data/circuits';
+import { RaceHeader } from './RaceHeader';
 
 export interface RightStatsPanelProps {
   car: CarState | null;
@@ -24,6 +26,7 @@ export interface RightStatsPanelProps {
   overallBestS2: number | null;
   overallBestS3: number | null;
   weather?: TrackWeatherState;
+  circuit?: CircuitSpec;
 }
 
 export type RightPanelTab = 'car_telemetry' | 'track_weather';
@@ -36,6 +39,7 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
   overallBestS2,
   overallBestS3,
   weather,
+  circuit,
 }) => {
   const [activeTab, setActiveTab] = useState<RightPanelTab>('car_telemetry');
   const panelRef = useRef<HTMLDivElement>(null);
@@ -618,6 +622,15 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
                 </span>
                 <span className={styles.weatherBoxSub}>Dirección: {weather.windDirection} (Ráfagas)</span>
                 <span className={styles.weatherBoxSub}>Incidencia: Frontal T1</span>
+              </div>
+
+              {/* Radar de Lluvia Visual y GP Info */}
+              <div className={styles.weatherCard}>
+                <RaceHeader circuit={circuit} />
+                
+                <div style={{ marginTop: '16px' }}>
+                  <span className={styles.cardTitle}>RADAR DOPPLER GPS</span>
+                </div>
               </div>
 
               {/* Temp Pista */}

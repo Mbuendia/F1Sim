@@ -56,9 +56,9 @@ export const TEAMS: Record<string, Team> = {
     id: 'mercedes',
     name: 'Mercedes-AMG PETRONAS F1 Team',
     shortName: 'Mercedes',
-    color: '#27F4D2',
-    accentColor: '#082621',
-    textColor: '#000000',
+    color: '#27F4D2', // Petronas Green
+    accentColor: '#000000', // Black
+    textColor: '#ffffff',
     carPerformance: 0.995,
     aerodynamics: 0.994,
     enginePower: 0.996,
@@ -73,8 +73,8 @@ export const TEAMS: Record<string, Team> = {
     id: 'astonmartin',
     name: 'Aston Martin Aramco F1 Team',
     shortName: 'Aston Martin',
-    color: '#229971',
-    accentColor: '#07241a',
+    color: '#229971', // British Racing Green
+    accentColor: '#D3DA27', // Lime yellow
     textColor: '#ffffff',
     carPerformance: 0.993,
     aerodynamics: 0.992,
@@ -90,9 +90,9 @@ export const TEAMS: Record<string, Team> = {
     id: 'williams',
     name: 'Williams Racing',
     shortName: 'Williams',
-    color: '#64C4FF',
-    accentColor: '#0c2738',
-    textColor: '#000000',
+    color: '#005AFF', // Williams Blue
+    accentColor: '#000000',
+    textColor: '#ffffff',
     carPerformance: 0.991,
     aerodynamics: 0.989,
     enginePower: 0.996,
@@ -107,8 +107,8 @@ export const TEAMS: Record<string, Team> = {
     id: 'racingbulls',
     name: 'Visa Cash App RB F1 Team',
     shortName: 'Racing Bulls',
-    color: '#6692FF',
-    accentColor: '#0d1838',
+    color: '#1634CC', // VCARB Blue
+    accentColor: '#ffffff', // White
     textColor: '#ffffff',
     carPerformance: 0.990,
     aerodynamics: 0.989,
@@ -124,9 +124,9 @@ export const TEAMS: Record<string, Team> = {
     id: 'haas',
     name: 'MoneyGram Haas F1 Team',
     shortName: 'Haas',
-    color: '#E6002B',
-    accentColor: '#2b0008',
-    textColor: '#ffffff',
+    color: '#FFFFFF', // White/Black
+    accentColor: '#E6002B', // Red
+    textColor: '#000000',
     carPerformance: 0.989,
     aerodynamics: 0.987,
     enginePower: 0.995,
@@ -141,9 +141,9 @@ export const TEAMS: Record<string, Team> = {
     id: 'alpine',
     name: 'BWT Alpine F1 Team',
     shortName: 'Alpine',
-    color: '#FF87BC',
-    accentColor: '#360920',
-    textColor: '#ffffff',
+    color: '#FF87BC', // BWT Pink
+    accentColor: '#0090FF', // Alpine Blue
+    textColor: '#000000',
     carPerformance: 0.988,
     aerodynamics: 0.987,
     enginePower: 0.990,
@@ -158,8 +158,8 @@ export const TEAMS: Record<string, Team> = {
     id: 'sauber',
     name: 'Stake F1 Team Kick Sauber',
     shortName: 'Kick Sauber',
-    color: '#52E252',
-    accentColor: '#0d300d',
+    color: '#52E252', // Neon Green
+    accentColor: '#000000', // Black
     textColor: '#000000',
     carPerformance: 0.986,
     aerodynamics: 0.985,

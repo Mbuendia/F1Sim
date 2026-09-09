@@ -5,10 +5,17 @@ import { TrackDefinition } from '../data/barcelonaTrack';
 export class PitStopModel {
   static readonly PIT_SPEED_LIMIT_KMH = 80;
 
-  static shouldEnterPit(car: CarState): boolean {
+  static shouldEnterPit(car: CarState, raceFlagState?: string, scMode?: string): boolean {
     if (car.hasPuncture) return true;
     if (car.tires.health <= 5.0 && !car.pitStop.isPitting) {
       return true;
+    }
+    // Parada estratégica bajo Safety Car (solo si el SC está liderando, no entrando ni saliendo)
+    if (raceFlagState === 'sc' && scMode === 'leading' && car.tires.health < 60 && !car.pitStop.isPitting) {
+      // Un coche decide parar bajo SC si sus neumáticos están desgastados, perdiendo mucha menos penalización de tiempo
+      if (Math.random() < 0.02) { // Probabilidad por frame (~30% de chance total en una vuelta de SC)
+        return true;
+      }
     }
     return false;
   }
@@ -18,14 +25,17 @@ export class PitStopModel {
     dt: number,
     lapDistanceMeters: number,
     track: TrackDefinition | undefined,
-    totalLaps: number
+    totalLaps: number,
+    raceFlagState?: string,
+    scMode?: string,
+    scProgress?: number
   ): boolean {
     const pit = car.pitStop;
     const pitEntryThreshold = track ? track.pitEntryT : 0.94;
 
     const inEntryWindow = car.trackT >= pitEntryThreshold || car.trackT <= 0.01;
     
-    if (!pit.isPitting && this.shouldEnterPit(car) && inEntryWindow) {
+    if (!pit.isPitting && this.shouldEnterPit(car, raceFlagState, scMode) && inEntryWindow) {
       pit.isPitting = true;
       car.isInPitLane = true;
       pit.pitLaneProgress = 0.0;
@@ -46,21 +56,30 @@ export class PitStopModel {
     }
 
     if (pit.isPitting) {
-      // Transit progress rate calibrated for realistic 20-26s total pit lane time
-      // 0.40 in-lane transit (8.5s) + 2.0-3.5s tyre change + 0.59 out-lane transit (12.5s) = ~23.5s total
-      const pitTransitSpeed = 0.048;
+      const pitEntryT = track ? track.pitEntryT : 0.94;
+      const pitExitT = track ? track.pitExitT : 0.06;
+      const pitLength = (1.0 - pitEntryT) + pitExitT;
+      
+      // Distancia recorrida en boxes calculada físicamente a partir del trackT
+      let distanceInPit = 0;
+      if (car.trackT >= pitEntryT) {
+        distanceInPit = car.trackT - pitEntryT;
+      } else {
+        distanceInPit = (1.0 - pitEntryT) + car.trackT;
+      }
+      
+      pit.pitLaneProgress = Math.min(1.0, distanceInPit / pitLength);
 
-      if (pit.pitLaneProgress < 0.40) {
-        pit.pitLaneProgress += dt * pitTransitSpeed;
-        if (pit.pitLaneProgress < 0.04) {
-          // Decelerating into pit lane
+      if (pit.pitLaneProgress < 0.45) {
+        // Entrando al pit box
+        if (pit.pitLaneProgress < 0.05) {
           car.currentSpeedKmh = Math.max(this.PIT_SPEED_LIMIT_KMH, car.currentSpeedKmh - dt * 280);
         } else {
-          // Pit speed limiter active (80 km/h)
           car.currentSpeedKmh = this.PIT_SPEED_LIMIT_KMH;
         }
       } 
-      else if (pit.pitLaneProgress >= 0.40 && pit.currentStopTimer < pit.stopDuration) {
+      else if (pit.pitLaneProgress >= 0.45 && pit.currentStopTimer < pit.stopDuration) {
+        // Parada en el pit box (congelamos velocidad, la posición no avanza)
         pit.currentStopTimer += dt;
         car.currentSpeedKmh = 0;
         
@@ -79,47 +98,39 @@ export class PitStopModel {
             expectedLaps = nextCompound === 'medium' ? 24 : 16;
           } else {
             const r = Math.random();
-            if (r < 0.33) {
-              nextCompound = 'soft'; expectedLaps = 16;
-            } else if (r < 0.66) {
-              nextCompound = 'medium'; expectedLaps = 24;
-            } else {
-              nextCompound = 'hard'; expectedLaps = 36;
-            }
+            if (r < 0.33) { nextCompound = 'soft'; expectedLaps = 16; } 
+            else if (r < 0.66) { nextCompound = 'medium'; expectedLaps = 24; } 
+            else { nextCompound = 'hard'; expectedLaps = 36; }
           }
 
           car.tires = TireModel.createFreshTire(nextCompound);
           pit.totalPitStops += 1;
 
-          const newStint: StintLog = {
+          pit.stints.push({
             stintNumber: pit.stints.length + 1,
             compound: nextCompound,
             startLap: car.currentLap,
             endLap: car.currentLap + expectedLaps,
             expectedLaps
-          };
-          pit.stints.push(newStint);
-
-          pit.pitLaneProgress = 0.41;
+          });
+          
+          // Al terminar la parada, le damos un empujón para que despegue físicamente del pit box
+          car.currentSpeedKmh = 20; 
         }
       } 
-      else if (pit.pitLaneProgress >= 0.41 && pit.pitLaneProgress < 1.0) {
-        pit.pitLaneProgress += dt * pitTransitSpeed;
-        if (pit.pitLaneProgress > 0.94) {
-          // Re-accelerating out of pit exit
+      else if (pit.pitLaneProgress >= 0.45 && pit.currentStopTimer >= pit.stopDuration) {
+        // Saliendo del pit lane orgánicamente
+        if (pit.pitLaneProgress > 0.95) {
           car.currentSpeedKmh = Math.min(260, car.currentSpeedKmh + dt * 200);
         } else {
-          // Pit speed limiter active (80 km/h)
-          car.currentSpeedKmh = this.PIT_SPEED_LIMIT_KMH;
+          // Aceleración hasta el limitador (80 km/h)
+          car.currentSpeedKmh = Math.min(this.PIT_SPEED_LIMIT_KMH, car.currentSpeedKmh + dt * 100);
         }
 
         if (pit.pitLaneProgress >= 1.0) {
           pit.isPitting = false;
           car.isInPitLane = false;
           pit.pitLaneProgress = 0.0;
-          const pitExitT = track ? track.pitExitT : 0.06;
-          car.trackT = pitExitT;
-          car.progress = Math.floor(car.progress) + pitExitT;
         }
       }
       return true;

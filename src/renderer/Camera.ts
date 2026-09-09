@@ -163,11 +163,11 @@ export class Camera {
     }
 
     // Smooth lerp based on mode
-    let baseLerp = 8.5;
+    let baseLerp = 6.0;
     if (this.currentMode === 'overview') baseLerp = 5.0;
-    else if (this.currentMode === 'cinematic') baseLerp = 3.5;
-    else if (this.currentMode === 'onboard') baseLerp = 15.0;
-    else if (this.currentMode === 'helicopter') baseLerp = 6.0;
+    else if (this.currentMode === 'cinematic') baseLerp = 3.0;
+    else if (this.currentMode === 'onboard') baseLerp = 12.0;
+    else if (this.currentMode === 'helicopter') baseLerp = 5.0;
     else if (this.currentMode === 'free') baseLerp = 12.0;
 
     const lerpSpeed = baseLerp * dt;
