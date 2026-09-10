@@ -5,15 +5,28 @@ import { TrackDefinition } from '../data/barcelonaTrack';
 export class PitStopModel {
   static readonly PIT_SPEED_LIMIT_KMH = 80;
 
-  static shouldEnterPit(car: CarState, raceFlagState?: string, scMode?: string): boolean {
+  static shouldEnterPit(car: CarState, dt: number, raceFlagState?: string, scMode?: string): boolean {
     if (car.hasPuncture) return true;
     if (car.tires.health <= 5.0 && !car.pitStop.isPitting) {
+      return true;
+    }
+    // [FIX M10] Parada estratégica programada al alcanzar scheduledLap
+    if (
+      car.pitStop &&
+      car.pitStop.scheduledLap !== undefined &&
+      car.pitStop.scheduledLap > 0 &&
+      car.currentLap >= car.pitStop.scheduledLap &&
+      !car.pitStop.isPitting &&
+      car.pitStop.totalPitStops === 0
+    ) {
       return true;
     }
     // Parada estratégica bajo Safety Car (solo si el SC está liderando, no entrando ni saliendo)
     if (raceFlagState === 'sc' && scMode === 'leading' && car.tires.health < 60 && !car.pitStop.isPitting) {
       // Un coche decide parar bajo SC si sus neumáticos están desgastados, perdiendo mucha menos penalización de tiempo
-      if (Math.random() < 0.02) { // Probabilidad por frame (~30% de chance total en una vuelta de SC)
+      // [FIX A4] Math.random() debe escalarse por el dt (simulando 60 FPS = 0.016s)
+      // Si a 60 FPS (0.016s) el rate original era 0.02, la tasa por segundo es 0.02 / 0.016 = 1.25.
+      if (Math.random() < 1.25 * dt) { 
         return true;
       }
     }
@@ -33,9 +46,22 @@ export class PitStopModel {
     const pit = car.pitStop;
     const pitEntryThreshold = track ? track.pitEntryT : 0.94;
 
-    const inEntryWindow = car.trackT >= pitEntryThreshold || car.trackT <= 0.01;
+    const pitExitT = track ? track.pitExitT : 0.06;
+    const pitLength = pitExitT > pitEntryThreshold ? (pitExitT - pitEntryThreshold) : ((1.0 - pitEntryThreshold) + pitExitT);
+
+    // [FIX PitStop] Evitar el bypass de la línea de meta: la ventana es solo a partir del pitEntry
+    const inEntryWindow = car.trackT >= pitEntryThreshold;
+
+    // Si nos han forzado isPitting (ej. Bandera Roja) pero aún no hemos entrado físicamente al pitlane
+    if (pit.isPitting && !car.isInPitLane) {
+      if (inEntryWindow) {
+        car.isInPitLane = true;
+      } else {
+        return false; // Seguimos en pista hasta llegar a la entrada
+      }
+    }
     
-    if (!pit.isPitting && this.shouldEnterPit(car, raceFlagState, scMode) && inEntryWindow) {
+    if (!pit.isPitting && this.shouldEnterPit(car, dt, raceFlagState, scMode) && inEntryWindow) {
       pit.isPitting = true;
       car.isInPitLane = true;
       pit.pitLaneProgress = 0.0;
@@ -53,19 +79,32 @@ export class PitStopModel {
       }
       pit.stopDuration = Number(stopDuration.toFixed(2));
       pit.currentStopTimer = 0;
+      pit.lastStopDuration = null;
     }
 
-    if (pit.isPitting) {
-      const pitEntryT = track ? track.pitEntryT : 0.94;
-      const pitExitT = track ? track.pitExitT : 0.06;
-      const pitLength = (1.0 - pitEntryT) + pitExitT;
-      
-      // Distancia recorrida en boxes calculada físicamente a partir del trackT
+    if (pit.isPitting && car.isInPitLane) {
+      // [FIX M9] Si ya ha completado el tránsito del pit lane, restaurar a running
+      if (pit.pitLaneProgress >= 1.0) {
+        pit.isPitting = false;
+        car.isInPitLane = false;
+        pit.pitLaneProgress = 0.0;
+        car.status = 'running';
+        return true;
+      }
+
+      // [FIX M9] Establecer estado 'pit' mientras transita por el pit lane
+      car.status = 'pit';
+
+      // [FIX PitStop] Distancia recorrida en boxes con soporte para cualquier topología de circuito
       let distanceInPit = 0;
-      if (car.trackT >= pitEntryT) {
-        distanceInPit = car.trackT - pitEntryT;
+      if (pitExitT > pitEntryThreshold) {
+        distanceInPit = Math.max(0, car.trackT - pitEntryThreshold);
       } else {
-        distanceInPit = (1.0 - pitEntryT) + car.trackT;
+        if (car.trackT >= pitEntryThreshold) {
+          distanceInPit = car.trackT - pitEntryThreshold;
+        } else {
+          distanceInPit = (1.0 - pitEntryThreshold) + car.trackT;
+        }
       }
       
       pit.pitLaneProgress = Math.min(1.0, distanceInPit / pitLength);
@@ -82,8 +121,11 @@ export class PitStopModel {
         // Parada en el pit box (congelamos velocidad, la posición no avanza)
         pit.currentStopTimer += dt;
         car.currentSpeedKmh = 0;
-        
-        if (pit.currentStopTimer >= pit.stopDuration) {
+      }
+
+      // Al completar o sobrepasar el tiempo de parada en el pit box
+      if (pit.pitLaneProgress >= 0.45 && pit.currentStopTimer >= pit.stopDuration) {
+        if (pit.lastStopDuration !== pit.stopDuration) {
           pit.lastStopDuration = pit.stopDuration;
           
           let nextCompound: TireCompound = 'hard';
@@ -104,7 +146,13 @@ export class PitStopModel {
           }
 
           car.tires = TireModel.createFreshTire(nextCompound);
+          car.hasPuncture = false; // [FIX A5] Clear puncture after tires are changed
           pit.totalPitStops += 1;
+
+          // [FIX A6] Cerrar el stint anterior
+          if (pit.stints.length > 0) {
+            pit.stints[pit.stints.length - 1].endLap = car.currentLap;
+          }
 
           pit.stints.push({
             stintNumber: pit.stints.length + 1,
@@ -117,8 +165,7 @@ export class PitStopModel {
           // Al terminar la parada, le damos un empujón para que despegue físicamente del pit box
           car.currentSpeedKmh = 20; 
         }
-      } 
-      else if (pit.pitLaneProgress >= 0.45 && pit.currentStopTimer >= pit.stopDuration) {
+
         // Saliendo del pit lane orgánicamente
         if (pit.pitLaneProgress > 0.95) {
           car.currentSpeedKmh = Math.min(260, car.currentSpeedKmh + dt * 200);
@@ -131,6 +178,7 @@ export class PitStopModel {
           pit.isPitting = false;
           car.isInPitLane = false;
           pit.pitLaneProgress = 0.0;
+          car.status = 'running';
         }
       }
       return true;

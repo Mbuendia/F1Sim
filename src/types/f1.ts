@@ -1,6 +1,6 @@
 export type EngineMode = 'low' | 'standard' | 'push' | 'overtake';
 export type AggressionLevel = 'conservative' | 'balanced' | 'aggressive' | 'maximum';
-export type TireCompound = 'soft' | 'medium' | 'hard';
+export type TireCompound = 'soft' | 'medium' | 'hard' | 'intermediate' | 'wet';
 
 // ── SISTEMA DE BANDERAS Y SAFETY CAR ──
 export type RaceFlagState = 'green' | 'yellow' | 'double-yellow' | 'vsc' | 'sc' | 'red';
@@ -88,6 +88,10 @@ export interface TireState {
   wearRate: number;
   tempCelsius: number;
   isBlistered: boolean;
+  healthFL?: number;
+  healthFR?: number;
+  healthRL?: number;
+  healthRR?: number;
 }
 
 export interface TelemetryData {
@@ -98,13 +102,15 @@ export interface TelemetryData {
   rpm: number;
   drsActive: boolean;
   drsAvailable: boolean;
+  drsEligible?: boolean; // [FIX B6] Alias unificado de elegibilidad de DRS
   engineMode: EngineMode;
   aggression: AggressionLevel;
   fuelKg: number;
   fuelPerLap: number;
   batterySoc: number;
   ersDeploying: boolean;
-  tireWear: number;
+  tireWear: number; // Porcentaje de desgaste acumulado (0% = nueva, 100% = destruida)
+  tireHealth?: number; // [FIX B7] Salud restante (100% = nueva, 0% = destruida)
   tireHealthFL: number;
   tireHealthFR: number;
   tireHealthRL: number;

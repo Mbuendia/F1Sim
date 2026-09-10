@@ -124,6 +124,7 @@ export class RaceSimulation {
     this.vscActive = false;
     this.vscTimer = 0;
     this.vscDuration = 0;
+    this.scEndingLap = null; // [FIX C5] Reset scEndingLap en cada nueva carrera
 
     this.cars = STARTING_GRID_ORDER.map((driverId, idx) => {
       const driver = DRIVERS[driverId];
@@ -411,6 +412,8 @@ export class RaceSimulation {
         );
         if (response === 'red') {
           this.raceFlagState = 'red';
+          // [FIX C6] Desactivar VSC si estaba activo
+          this.vscActive = false; this.vscTimer = 0;
           this.triggerD20LuckRoll('red');
           // Forzar a todos los coches a hacer pitstop (bandera roja)
           for (const c of this.cars) {
@@ -422,6 +425,8 @@ export class RaceSimulation {
           const leaderProgress = leaderCar ? leaderCar.progress : 0;
           SafetyCarModel.deploy(this.safetyCar, `Abandono de ${car.driver.code}`, leaderProgress, this.raceTimeSec);
           this.raceFlagState = 'sc';
+          // [FIX C6] Desactivar VSC si estaba activo
+          this.vscActive = false; this.vscTimer = 0;
           this.triggerD20LuckRoll('sc');
         } else if (response === 'vsc' && this.raceFlagState !== 'red') {
           this.raceFlagState = 'vsc';
@@ -446,7 +451,6 @@ export class RaceSimulation {
         );
       
       if (isHandlingPit) {
-        car.hasPuncture = false;
         
         const prevProgress = car.progress;
         car.speed = (car.currentSpeedKmh / 3.6) / lapDistanceMeters;
@@ -487,8 +491,11 @@ export class RaceSimulation {
       const trackPoint = points[pointIndex] || points[0];
 
       const isBeingLapped = leaderCar && leaderCar.id !== car.id && (leaderCar.progress - car.progress) >= 0.85;
+      // [FIX A2] Buscar coche MÁS RÁPIDO que viene POR DETRÁS acercándose (su progress < car.progress pero está en una vuelta superior)
       const carApproachingBehind = this.cars.find(
-        c => c.id !== car.id && c.status === 'running' && c.progress > car.progress && (c.progress - car.progress) < 0.015 && (c.currentLap > car.currentLap)
+        c => c.id !== car.id && c.status === 'running' && !c.pitStop.isPitting
+          && c.currentLap > car.currentLap  // El coche está en una vuelta superior (nos está doblando)
+          && (car.progress - c.progress) > 0 && (car.progress - c.progress) < 0.05 // Está justo detrás acercándose
       );
 
       if (isBeingLapped && carApproachingBehind) {
@@ -587,9 +594,13 @@ export class RaceSimulation {
 
       // ── RESTRICCIONES DE VELOCIDAD BAJO SC / VSC / BANDERA AMARILLA ──
       const scMaxSpeed = SafetyCarModel.getMaxAllowedSpeed(this.raceFlagState, this.safetyCar.mode);
-      const leader = this.cars.find(c => c.currentPosition === 1);
-      // Cualquiera que esté a más de 15% de vuelta del líder puede ir más rápido para alcanzar el pelotón (desdoblarse o reagruparse)
-      const isCatchingPack = leader ? (leader.progress - car.progress) >= 0.15 : false;
+      // [FIX A1] isCatchingPack: comparar con el coche de delante, no con el líder.
+      // Solo si NO hay ningún coche no-pitting por delante a menos de 0.08 de vuelta
+      const nearestAheadOnTrack = this.cars.find(c => 
+        c.id !== car.id && c.status === 'running' && !c.pitStop.isPitting && !c.isInPitLane
+        && c.progress > car.progress && (c.progress - car.progress) < 0.08
+      );
+      const isCatchingPack = !nearestAheadOnTrack && scMaxSpeed !== null && this.safetyCar.isDeployed;
 
       if (scMaxSpeed !== null) {
         if (isCatchingPack && this.safetyCar.isDeployed) {
@@ -885,7 +896,7 @@ export class RaceSimulation {
       }
       // SC ha entrado en boxes → preparamos bandera verde
       if (this.safetyCar.mode === 'in') {
-        const leader = this.cars.sort((a, b) => b.progress - a.progress)[0];
+        const leader = [...this.cars].filter(c => c.status !== 'out').sort((a, b) => b.progress - a.progress)[0];
         // Establecemos la vuelta a partir de la cual se podrá adelantar
         this.scEndingLap = leader ? Math.floor(leader.progress) : null;
         this.raceFlagState = 'green';
@@ -957,6 +968,14 @@ export class RaceSimulation {
 
     // 6. Decrementar DRS disabled laps al cruzar el líder la meta
     // (se decrementa en la lógica de lap counting del líder, ya gestionado arriba)
+
+    // [FIX C5] Limpiar scEndingLap cuando todos los coches activos han cruzado la meta
+    if (this.scEndingLap !== null) {
+      const allCrossed = this.cars.every(c => c.status === 'out' || c.currentLap > this.scEndingLap!);
+      if (allCrossed) {
+        this.scEndingLap = null;
+      }
+    }
 
     this.updateLeaderboardPositions();
 

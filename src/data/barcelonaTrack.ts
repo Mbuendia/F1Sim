@@ -157,8 +157,8 @@ export const BARCELONA_CIRCUIT: TrackDefinition = {
   ],
   points,
   pitLanePoints,
-  pitEntryT: 0.96,
-  pitExitT: 0.05,
+  pitEntryT: 0.92, // [FIX A3] Matches pitLanePoints[0]
+  pitExitT: 0.11, // [FIX A3] Matches pitLanePoints[9]
   pitBoxT: 0.00,
   sector1EndT: 0.28,
   sector2EndT: 0.56,

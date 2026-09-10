@@ -2,35 +2,6 @@ import { CarState, SafetyCarState } from '../types/f1';
 import { TrackDefinition } from '../data/barcelonaTrack';
 import { Camera } from './Camera';
 
-class SpriteManager {
-  static sprites: HTMLImageElement[] = [];
-  static isLoaded: boolean = false;
-
-  static loadSprites() {
-    if (this.isLoaded) return;
-    
-    const base = import.meta.env.BASE_URL || '/';
-    const cleanBase = base.endsWith('/') ? base : `${base}/`;
-    
-    // Cargar 20 sprites de coches (uno para cada monoplaza, indexados del 0 al 19)
-    for (let i = 1; i <= 20; i++) {
-      const img = new Image();
-      img.src = `${cleanBase}racecars2d/cars/pitstop_car_${i}.png`;
-      this.sprites.push(img);
-    }
-    this.isLoaded = true;
-  }
-
-  static getSprite(index: number): HTMLImageElement | null {
-    if (!this.isLoaded) this.loadSprites();
-    const img = this.sprites[index % 20];
-    if (img && img.complete && img.naturalHeight !== 0) {
-      return img;
-    }
-    return null; // Fallback si no ha cargado
-  }
-}
-
 export class CarRenderer {
   /**
    * Renderiza todos los monoplazas sobre el trazado activo actual con diseño F1 aerodinámico
@@ -115,9 +86,10 @@ export class CarRenderer {
       if (car.status === 'out' && car.smokeOpacity > 0) {
         ctx.save();
         const smokeAlpha = car.smokeOpacity * 0.55;
+        const smokeAngle = angle + camera.rotation;
         for (let p = 0; p < 4; p++) {
-          const offsetX = -Math.cos(angle) * (12 + p * 8) * Math.max(0.9, camera.zoom * 1.1);
-          const offsetY = -Math.sin(angle) * (12 + p * 8) * Math.max(0.9, camera.zoom * 1.1);
+          const offsetX = -Math.cos(smokeAngle) * (12 + p * 8) * Math.max(0.9, camera.zoom * 1.1);
+          const offsetY = -Math.sin(smokeAngle) * (12 + p * 8) * Math.max(0.9, camera.zoom * 1.1);
           const radius = (6 + p * 5) * Math.max(0.9, camera.zoom * 0.8);
           const pAlpha = smokeAlpha * (1 - p * 0.22);
           ctx.fillStyle = `rgba(140, 140, 140, ${Math.max(0, pAlpha).toFixed(3)})`;
@@ -238,63 +210,43 @@ export class CarRenderer {
   ) {
     ctx.save();
     ctx.globalAlpha = opacity;
-    ctx.translate(x, y);
-    ctx.rotate(angle);
 
     const scale = Math.max(0.9, Math.min(3.2, zoom * 1.15));
     const carLen = 14 * scale;
     const carWid = 6 * scale;
 
-    // Sombra del coche general
+    // Sombra fija en pantalla (cae siempre hacia abajo y derecha: +2px, +3px)
     ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
     ctx.beginPath();
-    ctx.ellipse(1, 2, carLen * 0.52, carWid * 0.48, 0, 0, Math.PI * 2);
+    ctx.ellipse(x + 2 * scale, y + 3 * scale, carLen * 0.52, carWid * 0.48, angle, 0, Math.PI * 2);
     ctx.fill();
 
-    const sprite = null; // SpriteManager.getSprite(car.id);
+    ctx.translate(x, y);
+    ctx.rotate(angle);
 
-    if (sprite) {
-      // ── RENDERIZADO CON SPRITE 2D ──
-      ctx.save();
-      ctx.rotate(-Math.PI / 2);
-      const spriteW = carWid * 2.5; 
-      const spriteH = carLen * 2.2;
-      ctx.drawImage(sprite as any, -spriteW / 2, -spriteH / 2, spriteW, spriteH);
-      ctx.restore();
+    // ── RENDERIZADO VECTORIAL F1 DETALLADO (5 CAPAS ESTRICTAS) ──
+    const cl = carLen * 0.95; // Centro a morro
+    const cw = carWid * 0.8; // Mitad del ancho
 
-      // Pintar el aro del compuesto del neumático sobre las ruedas del sprite
-      const tireColor = car.tires.compound === 'soft' ? '#e10600' : (car.tires.compound === 'medium' ? '#ffd700' : '#ffffff');
-      if (zoom > 1.1) {
-        ctx.fillStyle = tireColor;
-        const wheelLen = 5.8 * scale;
-        // Ajuste fino para que encaje exactamente sobre los neumáticos del sprite 2D
-        const frontX = carLen * 0.45;
-        const rearX = -carLen * 0.60;
-        const lateralY = carWid * 0.88;
-        const bandThickness = 1.0 * scale;
-        
-        ctx.fillRect(frontX, -lateralY, wheelLen * 0.7, bandThickness);
-        ctx.fillRect(frontX, lateralY - bandThickness, wheelLen * 0.7, bandThickness);
-        ctx.fillRect(rearX, -lateralY, wheelLen * 0.7, bandThickness);
-        ctx.fillRect(rearX, lateralY - bandThickness, wheelLen * 0.7, bandThickness);
-      }
+      // 1. SUELO / FONDO PLANO (Negro/Carbono debajo de los sidepods)
+      ctx.fillStyle = '#111';
+      ctx.beginPath();
+      ctx.roundRect(-cl * 0.5, -cw * 0.95, cl * 1.1, cw * 1.9, 2 * scale);
+      ctx.fill();
 
-      // DRS Glow Effect over sprite
-      if (car.drsActive) {
-        ctx.fillStyle = '#00ff66';
-        ctx.globalAlpha = 0.8;
-        ctx.fillRect(-carLen * 0.55, -carWid * 0.35, 1.5 * scale, carWid * 0.70);
-        ctx.globalAlpha = 1.0;
-      }
+      // 2. SUSPENSIONES (Líneas finas oscuras conectando ruedas al chasis)
+      ctx.strokeStyle = '#222';
+      ctx.lineWidth = 1.5 * scale;
+      ctx.beginPath();
+      // Delanteras
+      ctx.moveTo(cl * 0.40, 0); ctx.lineTo(cl * 0.55, cw * 1.15);
+      ctx.moveTo(cl * 0.40, 0); ctx.lineTo(cl * 0.55, -cw * 1.15);
+      // Traseras
+      ctx.moveTo(-cl * 0.5, 0); ctx.lineTo(-cl * 0.65, cw * 1.15);
+      ctx.moveTo(-cl * 0.5, 0); ctx.lineTo(-cl * 0.65, -cw * 1.15);
+      ctx.stroke();
 
-    } else {
-      // ── RENDERIZADO VECTORIAL F1 DETALLADO ──
-      // Usaremos escalas para modelar con precisión las partes del coche
-      // Dimensiones de referencia: Eje X = Largo (morro a la derecha), Eje Y = Ancho
-      const cl = carLen * 0.95; // Centro a morro
-      const cw = carWid * 0.8; // Mitad del ancho
-
-      // 1. NEUMÁTICOS (Color negro con brillo y línea del compuesto)
+      // 3. NEUMÁTICOS (Color negro con brillo y línea del compuesto)
       const wheelW = cl * 0.35;
       const wheelH = cw * 0.45;
       const tireColor = '#1a1a1a';
@@ -313,29 +265,11 @@ export class CarRenderer {
         }
       };
 
-      // Ruedas
+      // 4 Ruedas completas
       drawWheel(cl * 0.55, cw * 1.15);
       drawWheel(cl * 0.55, -cw * 1.15);
       drawWheel(-cl * 0.65, cw * 1.15);
       drawWheel(-cl * 0.65, -cw * 1.15);
-
-      // 2. SUSPENSIONES (Líneas finas oscuras conectando ruedas al chasis)
-      ctx.strokeStyle = '#222';
-      ctx.lineWidth = 1.5 * scale;
-      ctx.beginPath();
-      // Delanteras
-      ctx.moveTo(cl * 0.40, 0); ctx.lineTo(cl * 0.55, cw * 1.15);
-      ctx.moveTo(cl * 0.40, 0); ctx.lineTo(cl * 0.55, -cw * 1.15);
-      // Traseras
-      ctx.moveTo(-cl * 0.5, 0); ctx.lineTo(-cl * 0.65, cw * 1.15);
-      ctx.moveTo(-cl * 0.5, 0); ctx.lineTo(-cl * 0.65, -cw * 1.15);
-      ctx.stroke();
-
-      // 3. SUELO / FONDO PLANO (Negro/Carbono debajo de los sidepods)
-      ctx.fillStyle = '#111';
-      ctx.beginPath();
-      ctx.roundRect(-cl * 0.5, -cw * 0.95, cl * 1.1, cw * 1.9, 2 * scale);
-      ctx.fill();
 
       // 4. CHASIS PRINCIPAL (Color del equipo)
       // Morro (afilado), Sidepods (anchos), Tapa del motor (estrechándose atrás)
@@ -389,7 +323,6 @@ export class CarRenderer {
       // T-Cam (Negra)
       ctx.fillStyle = '#000';
       ctx.fillRect(-cl * 0.15, -cw * 0.1, cl * 0.15, cw * 0.2);
-    }
 
     ctx.restore();
 

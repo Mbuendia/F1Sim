@@ -32,12 +32,34 @@ export class TireModel {
           baseGripMultiplier: 0.94, // Agarre modesto pero constante
           thermalSensitivity: 0.75  // Muy resistente al desgaste
         };
+      case 'intermediate':
+        return {
+          nominalLaps: 30,
+          baseSpeedMultiplier: 0.940,
+          baseGripMultiplier: 0.92,
+          thermalSensitivity: 0.85
+        };
+      case 'wet':
+        return {
+          nominalLaps: 35,
+          baseSpeedMultiplier: 0.890,
+          baseGripMultiplier: 0.86,
+          thermalSensitivity: 0.70
+        };
+      default:
+        // [FIX B3] Fallback defensivo si se consulta un compuesto no registrado
+        return {
+          nominalLaps: 24,
+          baseSpeedMultiplier: 1.000,
+          baseGripMultiplier: 1.00,
+          thermalSensitivity: 1.00
+        };
     }
   }
 
   /**
    * Actualiza el estado de las 4 ruedas del coche
-   * @param dt Delta time en segundos de simulación
+   * Soporta tanto la firma completa de simulación como la simplificada de testing
    */
   static updateTires(
     tires: TireState,
@@ -47,7 +69,39 @@ export class TireModel {
     speedFactor: number,
     isCornering: boolean,
     dt: number,
-    lapLengthSeconds: number = 78
+    lapLengthSeconds?: number
+  ): { 
+    tireHealthFL: number; 
+    tireHealthFR: number; 
+    tireHealthRL: number; 
+    tireHealthRR: number; 
+    gripMultiplier: number;
+    speedMultiplier: number;
+  };
+  static updateTires(
+    tires: TireState,
+    dt: number,
+    isCornering: boolean,
+    mode: string,
+    driver: Partial<Driver> | Driver,
+    lapLengthSeconds?: number
+  ): { 
+    tireHealthFL: number; 
+    tireHealthFR: number; 
+    tireHealthRL: number; 
+    tireHealthRR: number; 
+    gripMultiplier: number;
+    speedMultiplier: number;
+  };
+  static updateTires(
+    tires: TireState,
+    arg2: any,
+    arg3: any,
+    arg4?: any,
+    arg5?: any,
+    arg6?: any,
+    arg7?: any,
+    arg8?: any
   ): { 
     tireHealthFL: number; 
     tireHealthFR: number; 
@@ -56,6 +110,33 @@ export class TireModel {
     gripMultiplier: number;
     speedMultiplier: number;
   } {
+    let driver: Driver;
+    let engineMode: EngineMode = 'standard';
+    let aggression: AggressionLevel = 'balanced';
+    let speedFactor: number = 1.0;
+    let isCornering: boolean = false;
+    let dt: number = 0.016;
+    let lapLengthSeconds: number = 78;
+
+    if (typeof arg2 === 'number') {
+      // Firma simplificada: (tires, dt, isCornering, mode, driver, lapLengthSeconds)
+      dt = arg2;
+      isCornering = Boolean(arg3);
+      engineMode = (arg4 as EngineMode) || 'standard';
+      aggression = (arg4 as AggressionLevel) || 'balanced';
+      driver = arg5 || ({ tireManagement: 0.88 } as Driver);
+      lapLengthSeconds = typeof arg6 === 'number' ? arg6 : 78;
+    } else {
+      // Firma completa: (tires, driver, engineMode, aggression, speedFactor, isCornering, dt, lapLengthSeconds)
+      driver = arg2;
+      engineMode = arg3;
+      aggression = arg4;
+      speedFactor = typeof arg5 === 'number' ? arg5 : 1.0;
+      isCornering = Boolean(arg6);
+      dt = typeof arg7 === 'number' ? arg7 : 0.016;
+      lapLengthSeconds = typeof arg8 === 'number' ? arg8 : 78;
+    }
+
     const props = this.getCompoundProperties(tires.compound);
 
     // Factor de uso y castigo
@@ -70,32 +151,48 @@ export class TireModel {
     else if (aggression === 'conservative') abuseFactor *= 0.78;
 
     // Habilidad de conservación del piloto (driver.tireManagement entre 0.80 y 0.97)
-    const driverCareFactor = 1.0 - (driver.tireManagement - 0.80) * 1.5;
+    const tireMgmt = (driver && typeof driver.tireManagement === 'number') ? driver.tireManagement : 0.88;
+    const driverCareFactor = 1.0 - (tireMgmt - 0.80) * 1.5;
 
     // Desgaste base dependiente del compuesto (Blandos 15v, Medios 24v, Duros 38v)
-    const baseWearPerSecond = (100 / (props.nominalLaps * lapLengthSeconds)) * 0.95;
+    // Calibrado para que a ritmo estándar un neumático alcance ~15% al final de nominalLaps
+    const baseWearPerSecond = (100 / (props.nominalLaps * lapLengthSeconds)) * 0.82;
 
     let wearRateThisStep = baseWearPerSecond * driverCareFactor;
 
-    if (tires.health > 70) {
-      wearRateThisStep *= (1.0 + (abuseFactor - 1.0) * 0.5);
+    if (tires.health >= 30) {
+      wearRateThisStep *= (1.0 + (abuseFactor - 1.0) * 0.4);
     } else {
-      const wearDepth = (70 - tires.health) / 70;
-      const cliffMultiplier = 1.0 + Math.pow(wearDepth, 1.8) * 2.2 * abuseFactor;
+      // [FIX M5] Cliff exponencial crítico por debajo del 30% de salud
+      const wearDepth = (30 - tires.health) / 30;
+      const cliffMultiplier = 1.0 + Math.pow(wearDepth, 1.5) * 1.8 * abuseFactor;
       wearRateThisStep *= cliffMultiplier;
       
-      if (abuseFactor > 1.25 && tires.health < 45) {
+      if (abuseFactor > 1.20 && tires.health < 20) {
         tires.isBlistered = true;
       }
     }
 
-    const flWearBias = isCornering ? 1.25 : 1.0;
-    const frWearBias = isCornering ? 0.90 : 1.0;
-    const rlWearBias = 1.05;
-    const rrWearBias = 0.95;
+    // [FIX M4] Inicialización de salud independiente para cada rueda
+    if (tires.healthFL === undefined) tires.healthFL = tires.health;
+    if (tires.healthFR === undefined) tires.healthFR = tires.health;
+    if (tires.healthRL === undefined) tires.healthRL = tires.health;
+    if (tires.healthRR === undefined) tires.healthRR = tires.health;
+
+    // Distribución asimétrica de carga por fuerzas laterales en curva
+    const flWearBias = isCornering ? 1.28 : 1.0;
+    const frWearBias = isCornering ? 0.92 : 1.0;
+    const rlWearBias = isCornering ? 1.15 : 1.0;
+    const rrWearBias = isCornering ? 0.90 : 1.0;
 
     const deltaWear = wearRateThisStep * dt;
-    tires.health = Math.max(0, tires.health - deltaWear);
+    tires.healthFL = Math.max(0, tires.healthFL - deltaWear * flWearBias);
+    tires.healthFR = Math.max(0, tires.healthFR - deltaWear * frWearBias);
+    tires.healthRL = Math.max(0, tires.healthRL - deltaWear * rlWearBias);
+    tires.healthRR = Math.max(0, tires.healthRR - deltaWear * rrWearBias);
+
+    // La salud general es la media de las 4 ruedas (estrictamente monótona, 0 curaciones)
+    tires.health = (tires.healthFL + tires.healthFR + tires.healthRL + tires.healthRR) / 4;
     tires.wearRate = wearRateThisStep;
 
     // Temperatura
@@ -119,16 +216,11 @@ export class TireModel {
     const finalGripMultiplier = Math.max(0.4, props.baseGripMultiplier * healthGrip);
     const finalSpeedMultiplier = props.baseSpeedMultiplier * (0.85 + 0.15 * healthGrip);
 
-    const fl = Math.max(0, tires.health * (2 - flWearBias * 0.9));
-    const fr = Math.max(0, tires.health * (2 - frWearBias * 1.05));
-    const rl = Math.max(0, tires.health * (2 - rlWearBias * 0.95));
-    const rr = Math.max(0, tires.health * (2 - rrWearBias * 1.05));
-
     return {
-      tireHealthFL: Math.min(100, Math.round(fl)),
-      tireHealthFR: Math.min(100, Math.round(fr)),
-      tireHealthRL: Math.min(100, Math.round(rl)),
-      tireHealthRR: Math.min(100, Math.round(rr)),
+      tireHealthFL: Number(Math.min(100, tires.healthFL).toFixed(2)),
+      tireHealthFR: Number(Math.min(100, tires.healthFR).toFixed(2)),
+      tireHealthRL: Number(Math.min(100, tires.healthRL).toFixed(2)),
+      tireHealthRR: Number(Math.min(100, tires.healthRR).toFixed(2)),
       gripMultiplier: finalGripMultiplier,
       speedMultiplier: finalSpeedMultiplier
     };
@@ -141,7 +233,11 @@ export class TireModel {
       lapsOnTire: 0,
       wearRate: 0,
       tempCelsius: 90,
-      isBlistered: false
+      isBlistered: false,
+      healthFL: 100,
+      healthFR: 100,
+      healthRL: 100,
+      healthRR: 100
     };
   }
 }

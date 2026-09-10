@@ -3,12 +3,23 @@ import { TrackIncident, CarState, RaceFlagState } from '../types/f1';
 export class IncidentModel {
   private static nextId = 1;
   
-  // Registrar un nuevo incidente cuando un coche se retira
-  static registerIncident(car: CarState, type: 'dnf' | 'crash' | 'major_crash' | 'spin'): TrackIncident {
-    // Determinar en qué sector está basado en car.trackT
+  // [FIX B4] Reiniciar contador de incidentes entre carreras y tests
+  static reset(): void {
+    this.nextId = 1;
+  }
+
+  // Registrar un nuevo incidente cuando un coche se retira o hace un trompo
+  static registerIncident(
+    car: { id: number; driver: { code: string }; trackT: number; dnfReason?: string },
+    type: 'dnf' | 'crash' | 'major_crash' | 'spin',
+    track?: { sector1EndT?: number; sector2EndT?: number }
+  ): TrackIncident {
+    // [FIX M8] Determinar sector según los límites reales del circuito activo
+    const s1End = track?.sector1EndT ?? 0.33;
+    const s2End = track?.sector2EndT ?? 0.66;
     let sector: 1 | 2 | 3 = 1;
-    if (car.trackT >= 0.33 && car.trackT < 0.66) sector = 2;
-    else if (car.trackT >= 0.66) sector = 3;
+    if (car.trackT >= s1End && car.trackT < s2End) sector = 2;
+    else if (car.trackT >= s2End) sector = 3;
 
     // Configurar clearTimer según el tipo
     let clearTimer = 0;
@@ -31,7 +42,7 @@ export class IncidentModel {
       type,
       isCleared: false,
       clearTimer,
-      reason: car.dnfReason || 'Unknown',
+      reason: car.dnfReason || (type === 'spin' ? '🔄 TROMPO EN PISTA' : 'Unknown'),
     };
 
     return incident;

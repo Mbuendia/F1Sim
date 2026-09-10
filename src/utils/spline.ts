@@ -40,7 +40,9 @@ export function catmullRom(p0: Point2D, p1: Point2D, p2: Point2D, p3: Point2D, t
 
 export function computeTrackSpline(
   controlPoints: { x: number; y: number; speedLimit?: number; corner?: string }[],
-  samplesPerSegment: number = 24
+  samplesPerSegment: number = 24,
+  sector1EndT: number = 0.28,
+  sector2EndT: number = 0.56
 ): SplinePoint[] {
   const n = controlPoints.length;
   const rawPoints: { x: number; y: number; speedLimit: number; corner?: string }[] = [];
@@ -87,11 +89,11 @@ export function computeTrackSpline(
     while (dAngle < -Math.PI) dAngle += Math.PI * 2;
     const curvature = Math.abs(dAngle) / Math.max(0.001, dist);
 
-    // Determinar sector (S1: ~0% a 32%, S2: ~32% a 68%, S3: ~68% a 100%)
+    // [FIX M8] Determinar sector según límites del circuito
     const progressFrac = i / total;
     let sector: 1 | 2 | 3 = 1;
-    if (progressFrac > 0.68) sector = 3;
-    else if (progressFrac > 0.32) sector = 2;
+    if (progressFrac >= sector2EndT) sector = 3;
+    else if (progressFrac >= sector1EndT) sector = 2;
 
     // DRS zones en Barcelona:
     // Zona 1: Recta principal (progress ~ 0.88 a 1.0 y 0.0 a 0.08)

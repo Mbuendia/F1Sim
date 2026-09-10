@@ -22,8 +22,8 @@ export const TEAMS: Record<string, Team> = {
     id: 'redbull',
     name: 'Oracle Red Bull Racing',
     shortName: 'Red Bull',
-    color: '#1E41FF',
-    accentColor: '#0a1030',
+    color: '#041E42', // [FIX M7] Navy Blue Mate Oficial Red Bull
+    accentColor: '#E10600', // Red Bull Racing Red
     textColor: '#ffffff',
     carPerformance: 0.998,
     aerodynamics: 0.997,
@@ -58,7 +58,7 @@ export const TEAMS: Record<string, Team> = {
     shortName: 'Mercedes',
     color: '#27F4D2', // Petronas Green
     accentColor: '#000000', // Black
-    textColor: '#ffffff',
+    textColor: '#000000', // [FIX M6] Negro puro para contraste WCAG AAA (15.6:1)
     carPerformance: 0.995,
     aerodynamics: 0.994,
     enginePower: 0.996,
@@ -108,7 +108,7 @@ export const TEAMS: Record<string, Team> = {
     name: 'Visa Cash App RB F1 Team',
     shortName: 'Racing Bulls',
     color: '#1634CC', // VCARB Blue
-    accentColor: '#ffffff', // White
+    accentColor: '#E0E0E0', // [FIX M7] Plateado metálico
     textColor: '#ffffff',
     carPerformance: 0.990,
     aerodynamics: 0.989,

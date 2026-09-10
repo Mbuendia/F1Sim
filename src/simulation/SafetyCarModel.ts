@@ -64,13 +64,12 @@ export class SafetyCarModel {
   ): void {
     sc.isDeployed = true;
     sc.mode = 'deploying';
-    // SC spawnea exactamente en la salida de boxes (trackT = 0.05 aprox)
-    const leaderT = leaderProgress % 1;
-    const baseLap = Math.floor(leaderProgress);
-    // Si el líder ya ha pasado la salida de boxes (> 0.04), el SC sale en la salida de boxes de la SIGUIENTE vuelta
-    sc.progress = leaderT < 0.04 ? baseLap + 0.05 : baseLap + 1.05;
+    // [FIX C3] SC spawnea justo por delante del líder en la pista (no a una vuelta de distancia)
+    // El SC sale del pit lane y se coloca ligeramente por delante del líder
+    const safeLeaderProgress = Math.max(0, leaderProgress);
+    sc.progress = safeLeaderProgress + 0.03; // Justo delante del líder
     sc.trackT = ((sc.progress % 1) + 1) % 1;
-    sc.currentSpeedKmh = 80; // SC sale del pitlane lento
+    sc.currentSpeedKmh = 40; // SC sale del pitlane lento
     sc.lapCount = 0;
     sc.targetLaps = 2 + Math.floor(Math.random() * 2); // 2-3 vueltas
     sc.triggerReason = reason;
@@ -94,9 +93,11 @@ export class SafetyCarModel {
   ): void {
     if (!sc.isDeployed || sc.mode === 'idle' || sc.mode === 'in') return;
 
-    // Encontrar líder
-    const activeCars = cars.filter(c => c.status === 'running' || c.status === 'pit');
-    const leader = activeCars.sort((a, b) => b.progress - a.progress)[0];
+    // [FIX C7 parcial] No mutar el array original — usar copia
+    const activeCars = [...cars]
+      .filter(c => (c.status === 'running' || c.status === 'pit') && !c.pitStop.isPitting && !c.isInPitLane)
+      .sort((a, b) => b.progress - a.progress);
+    const leader = activeCars[0];
     if (!leader) return;
 
     const inStraight = SafetyCarModel.isScInStraight(sc.trackT);
@@ -106,9 +107,17 @@ export class SafetyCarModel {
       sc.progress += (sc.currentSpeedKmh / 3.6 / lapDistanceMeters) * dt;
       sc.trackT = ((sc.progress % 1) + 1) % 1;
       
-      // El líder le ha alcanzado y no lo ha adelantado (está justo detrás)
-      if (leader.progress > sc.progress - 0.02 && leader.progress <= sc.progress + 0.01) {
+      // [FIX C3] Transición más robusta: si el líder está cerca o ya nos ha pasado, transicionar
+      // El SC no debe quedarse esperando si el líder ya le adelantó
+      const leaderDist = leader.progress - sc.progress;
+      if (leaderDist > -0.05) {
+        // El líder está justo detrás, a la par, o ligeramente por delante → transicionar
         sc.mode = 'leading';
+        // Si el líder nos ha pasado, recolocamos el SC justo por delante
+        if (leaderDist > 0.01) {
+          sc.progress = leader.progress + 0.005;
+          sc.trackT = ((sc.progress % 1) + 1) % 1;
+        }
       }
     }
 
@@ -126,11 +135,20 @@ export class SafetyCarModel {
       }
       
       const allCleared = IncidentModel.isTrackClear(incidents);
-      // Solo se puede ir si el grupo está razonablemente compacto y los incidentes limpios
-      const lastCar = activeCars[activeCars.length - 1];
-      const fieldSpread = leader.progress - lastCar.progress;
       
-      if (allCleared && sc.lapCount >= sc.targetLaps && fieldSpread < 0.15) {
+      // [FIX C1] Calcular fieldSpread SOLO con coches en la vuelta del líder (no doblados)
+      // y excluir coches en boxes
+      const leadLapCars = activeCars.filter(c => {
+        const lapDiff = Math.floor(leader.progress) - Math.floor(c.progress);
+        return lapDiff === 0; // Solo coches en la misma vuelta que el líder
+      });
+      const lastLeadLapCar = leadLapCars[leadLapCars.length - 1];
+      const fieldSpread = lastLeadLapCar ? (leader.progress - lastLeadLapCar.progress) : 0;
+      
+      // [FIX C1] Timeout forzoso: si lleva +3 vueltas más de las target, se va sí o sí
+      const hardTimeout = sc.lapCount >= sc.targetLaps + 3;
+      
+      if ((allCleared && sc.lapCount >= sc.targetLaps && fieldSpread < 0.20) || hardTimeout) {
         sc.mode = 'returning';
       }
     }
@@ -140,7 +158,9 @@ export class SafetyCarModel {
       sc.progress += (sc.currentSpeedKmh / 3.6 / lapDistanceMeters) * dt;
       sc.trackT = ((sc.progress % 1) + 1) % 1;
       
-      if (sc.trackT > 0.96 && sc.trackT < 0.99) {
+      // [FIX C4] Ventana de entrada a boxes ampliada: >= pitEntry sin límite superior
+      // Usa 0.94 como pitEntryT genérico (Barcelona). Nunca se puede saltar.
+      if (sc.trackT >= 0.94) {
         sc.mode = 'in';
         sc.isDeployed = false;
         sc.currentSpeedKmh = 0;
@@ -148,7 +168,7 @@ export class SafetyCarModel {
     }
   }
 
-  // Aplicar restricciones de velocidad SC/VSC y Banderas Rojas
+  // [FIX C2] Aplicar restricciones de velocidad SC/VSC y Banderas Rojas
   static getMaxAllowedSpeed(
     raceFlagState: RaceFlagState,
     scMode: SafetyCarState['mode']
@@ -156,8 +176,9 @@ export class SafetyCarModel {
     if (raceFlagState === 'red') {
       return 80; // Velocidad muy lenta para volver a boxes
     }
-    if (raceFlagState === 'sc' && (scMode === 'leading' || scMode === 'deploying')) {
-      return 120; // Límite de F1 bajo SC, para que puedan alcanzar al SC que va a 100/110
+    // SC activo en CUALQUIER modo operativo (deploying, leading, returning) → limitar velocidad
+    if (raceFlagState === 'sc' && (scMode === 'leading' || scMode === 'deploying' || scMode === 'returning')) {
+      return scMode === 'returning' ? 140 : 120;
     }
     if (raceFlagState === 'vsc') {
       return 160;
@@ -180,13 +201,13 @@ export class SafetyCarModel {
         if (car.progress < targetProgress) {
           // Dejar que alcance naturalmente
         } else if (car.progress > targetProgress + 0.002) {
-          car.currentSpeedKmh = Math.min(car.currentSpeedKmh, 145);
+          car.currentSpeedKmh = Math.min(car.currentSpeedKmh, 120);
         }
       } else {
         const carAhead = activeCars[i - 1];
         const gap = carAhead.progress - car.progress;
         if (gap > targetGap * 2) {
-          car.currentSpeedKmh = Math.min(car.currentSpeedKmh + dt * 15, 155);
+          car.currentSpeedKmh = Math.min(car.currentSpeedKmh + dt * 15, 130);
         } else if (gap < targetGap) {
           car.currentSpeedKmh = Math.min(car.currentSpeedKmh, carAhead.currentSpeedKmh * 0.98);
         }
