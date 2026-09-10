@@ -29,8 +29,9 @@ Leyenda de Estado:
 | **Sprint 2** | SC Físico, Undercut/Overcut Orgánico, Monoplaza Vectorial 2D, Desdoblamiento | ✅ **COMPLETADO** |
 | **Sprint 2.1** | **Resolución de Bugs Críticos y Altos de Auditoría (C1-C7, A1-A6)** | ✅ **COMPLETADO (23/23 Tests PASS)** |
 | **Sprint 2.5** | **Deuda Técnica de Auditoría (M1-M10, B1-B7)** | ✅ **COMPLETADO (17/17 Tareas - 46 Tests PASS)** |
-| **Sprint 3** | **Track Layout & Weather (Escapatorias vs Muros, Lluvia, Charcos, Wet/Inter)** | 🟡 **REFINADO (Listo para validación)** |
-| **Sprint 4** | **Radar GPS en Vivo, Docking de Telemetría Avanzada, Audio Espacial** | ⏳ **BACKLOG** |
+| **Sprint 2.8** | **Salto de Calidad: Fidelidad de Simulación, Geometría y Muro Táctico (Q1-Q18)** | 🟡 **REFINADO (Listo para validación del usuario)** |
+| **Sprint 3** | **Audio, Telemetría Avanzada, Radar GPS & Clima (16 Subtareas)** | ⏳ **PLANIFICADO (A continuación de Sprint 2.8)** |
+| **Sprint 4** | **Épica: F1 Team Principal & Race Manager (12 Subtareas)** | ⏳ **BACKLOG** |
 
 ---
 
@@ -103,9 +104,109 @@ Los 13 bugs críticos y altos detectados en la auditoría fueron implementados y
 
 ---
 
-## 🟡 5. REFINAMIENTO DEL SPRINT 3: TRACK LAYOUT & WEATHER DYNAMICS
+## 🎯 5. SPRINT 2.8: SALTO DE CALIDAD, GEOMETRÍA Y DECISIONES DE MURO (18 TAREAS)
 
-*(El siguiente gran sprint tras limpiar la deuda técnica)*
+*(Sprint de consolidación previa al Sprint 3: alineación de geometrías, eliminación de solapamientos, carril de boxes continuo y control táctico real del Team Principal)*
+
+### 📐 Bloque A: Escala, Geometría y Cinemática Espacial (5 Tareas)
+* **Q1 — Calibración de Escala de Monoplaza y Anchura Real de Pista (Anti-Solapamiento):** `[ ] PENDIENTE`
+  * *Problema:* `CarRenderer.ts:34` y `RaceSimulation.ts:495`. Los coches se desplazan lateralmente demasiado poco para su ancho dibujado (`carWid = 6` vs `lateralOffset` estrecho), provocando solapamiento visual al rodar en paralelo.
+  * *Solución:* Parametrizar la anchura de pista (`trackHalfWidth`) y el ancho del monoplaza para garantizar un margen transversal de seguridad (> `1.2 * carWid`) entre coches en paralelo.
+  * *Test:* Verificación geométrica de que los bounding boxes no intersecan con `lateralOffset` opuestos.
+
+* **Q2 — Carril de Boxes con Entrada/Salida Propias y Continuidad Física:** `[ ] PENDIENTE`
+  * *Problema:* `svgTrackParser.ts:221`. El carril de boxes se genera desplazando puntos de la pista, incluidos los extremos, sin curvas de transición suaves (saltos al entrar y salir).
+  * *Solución:* Generar splines dedicados de deceleración en entrada (`pitEntryT`) y aceleración en salida (`pitExitT`), empalmando tangencialmente con la pista principal sin discontinuidades de primer orden (`C1`).
+  * *Test:* Comprobación de continuidad en derivadas `dx/dt`, `dy/dt` entre la pista principal y el carril de boxes.
+
+* **Q3 — Geometría Diferenciada para Muro, Carril Rápido y Cajones de Boxes:** `[ ] PENDIENTE`
+  * *Problema:* `TrackRenderer.ts:165`. El muro de boxes se dibuja sobre el centro del carril; los límites blancos reutilizan el centro de pista.
+  * *Solución:* Construir geometrías separadas: 1) borde exterior de pista, 2) muro divisor de boxes, 3) carril rápido (fast lane de 80 km/h) y 4) zona de trabajo con los 10 cajones de parada.
+  * *Test:* Comprobación de que las coordenadas del muro no colisionan con el carril rápido del pit lane.
+
+* **Q4 — Coordenada Cartesiana Única (Unificación Pista vs Boxes):** `[ ] PENDIENTE`
+  * *Problema:* `Camera.ts`, `CarRenderer.ts`, `Minimap`, detección de click en `App.tsx`. Cámara, minimapa y selección calculan la posición basándose en la pista principal aunque el coche esté en boxes.
+  * *Solución:* Almacenar en `CarState` una posición cartesiana real única `(worldX, worldY)` calculada tanto en pista como en boxes, compartida idénticamente por `CarRenderer`, `Camera.followCar`, `Minimap` y hit-testing de click.
+  * *Test:* Comprobación de que `Camera.targetX/Y` coincide exactamente con `(worldX, worldY)` del coche seleccionado durante toda la trayectoria de boxes.
+
+* **Q5 — Corrección de Doble Zoom en Meta y Nivel de Detalle (LOD) de Etiquetas:** `[ ] PENDIENTE`
+  * *Problema:* `TrackRenderer.ts:renderFinishLine`, `CarRenderer.ts`. La meta aplica el zoom dos veces (`scale * zoom`) creciendo desproporcionadamente. Las etiquetas de nombres saturan la pantalla.
+  * *Solución:* Desacoplar medidas fijas del circuito (metros) del factor de zoom de pantalla. Implementar LOD: círculos/números minimalistas en vista general; etiquetas detalladas en zoom cercano únicamente para el coche seleccionado y batallas activas (< 0.8s).
+  * *Test:* Verificar que las dimensiones de la línea de meta en píxeles de pantalla crecen de forma lineal con el zoom (no cuadrática).
+
+### 🏛️ Bloque B: Identidad de Circuitos (Barcelona & Mónaco de Referencia) (3 Tareas)
+* **Q6 — Escenario SVG por Capas con Identidad Real (Barcelona Permanente vs Mónaco Urbano):** `[ ] PENDIENTE`
+  * *Problema:* Las pistas son genéricas (bandas uniformes de hierba, grava y pianos alrededor de toda la vuelta sin importar el circuito).
+  * *Solución:* Estructura por capas: terreno base, escapatorias específicas (asfalto/grava en Barcelona vs muros contiguos sin grava en Mónaco), asfalto, pianos localizados en entradas/ápices/salidas, gradas y edificios emblemáticos.
+  * *Test:* Verificación de que Mónaco no genera franjas de grava y Barcelona utiliza zonas de escapatoria amplia acordes a su especificación.
+
+* **Q7 — Anchura de Pista Variable por Tramo y Capacidad de Adelantamiento:** `[ ] PENDIENTE`
+  * *Problema:* Anchura constante en toda la pista limita o falsea adelantamientos.
+  * *Solución:* Matriz de anchos de pista por tramo (`trackWidthMeters` en sectores del spline). Recta principal ancha (14m, hasta 3 coches en paralelo) vs curvas lentas o horquillas (8-10m, máximo 2 coches en paralelo).
+  * *Test:* Cálculo de capacidad de monoplazas en paralelo en función de la anchura del sector actual.
+
+* **Q8 — Trazada Ideal Engomada (Racing Line Exterior-Ápice-Exterior):** `[ ] PENDIENTE`
+  * *Problema:* Coches se mueven referenciados únicamente al centro geométrico del trazado.
+  * *Solución:* Trazada geométrica exterior-ápice-exterior precalculada para cada circuito. Acumulación progresiva de adherencia y engomado visual en la trazada seca vuelta a vuelta.
+  * *Test:* Comprobación de que la adherencia aumenta en la trazada ideal durante una carrera en seco.
+
+### 👔 Bloque C: Muro Táctico & Decisiones de Estrategia (100% Team Principal) (5 Tareas)
+* **Q9 — Órdenes de Boxes Vinculantes (Compuesto Elegido por el Jugador):** `[ ] PENDIENTE`
+  * *Problema:* `PitStopModel.ts`, el servicio puede sobrescribir el compuesto seleccionado aleatoriamente.
+  * *Solución:* La elección del Team Principal (Soft, Medium, Hard, Intermediate, Wet) es absoluta y prioritaria; el modelo de boxes monta exactamente el compuesto ordenado y lo registra en el historial de stints.
+  * *Test:* Llamada a boxes con compuesto específico (ej. 'hard') montando 'hard' en el 100% de los casos sin desvíos.
+
+* **Q10 — Punto de Compromiso (Pit Commitment Line) y Cancelación de Parada:** `[ ] PENDIENTE`
+  * *Problema:* No existe ventana delimitada de compromiso para anular una llamada a boxes.
+  * *Solución:* Definir línea de compromiso (`pitCommitmentT = pitEntryT - 0.05`). Antes de este punto, el botón de boxes permite "Abortar / Stay Out"; rebasado el punto, la entrada es irreversible.
+  * *Test:* Intentar cancelar parada antes y después de la línea de compromiso, validando el comportamiento esperado.
+
+* **Q11 — Gestión Dual de Pilotos del Equipo & Parada Doble (Double Stack):** `[ ] PENDIENTE`
+  * *Problema:* Falta de soporte táctico para ambos coches de la escudería en el muro.
+  * *Solución:* Panel dual de control de pilotos en HUD; detección de parada doble simultánea bajo SC con penalización de retraso en cola (espera de 3 a 5 segundos para el segundo coche en el cajón).
+  * *Test:* Dos coches entrando consecutivamente a boxes registrando el tiempo de espera adicional en el segundo monoplaza.
+
+* **Q12 — Modos de Ritmo del Piloto (Pace Modes: Push, Balanced, Save):** `[ ] PENDIENTE`
+  * *Problema:* Ausencia de órdenes de ritmo desde el muro para gestionar desgaste o consumo.
+  * *Solución:* 3 modos tácticos: Push (+0.3s ritmo, +40% degradación y consumo), Balanced (estándar), Save (-0.4s ritmo, -30% degradación, refrigeración térmica y ahorro de combustible).
+  * *Test:* Comparar desgaste de neumáticos y consumo de combustible tras 5 vueltas en Push vs Save.
+
+* **Q13 — Predictor de Ventana de Reincorporación (Rejoin & Undercut Window):** `[ ] PENDIENTE`
+  * *Problema:* El jugador no puede predecir el tráfico tras salir de boxes.
+  * *Solución:* Proyectar en la Timing Tower y el Minimapa una marca de "Posición Estimada de Reincorporación" calculada restando el `pitLaneTimeLoss` (~22s) al tiempo del coche actual.
+  * *Test:* Cálculo exacto de posición virtual de reincorporación frente a la clasificación en tiempo real.
+
+### 🏎️ Bloque D: Físicas Orgánicas, Banderas y Consistencia de Simulación (5 Tareas)
+* **Q14 — Eliminación de Asignaciones Directas de Posición en SC y Bandera Roja:** `[ ] PENDIENTE`
+  * *Problema:* En SC y red flag existen saltos forzados de `progress`.
+  * *Solución:* Realizar deceleraciones, agrupamiento y relanzamientos de forma 100% cinemática mediante velocidad, aceleración y distancia de seguridad sin alterar `progress` artificialmente.
+  * *Test:* Simulación de parada en parrilla bajo bandera roja mediante deceleración suave hasta `speed = 0` sin saltos discretos en `progress`.
+
+* **Q15 — Centralización de Reglas de Banderas Azules y Tráfico de Doblados:** `[ ] PENDIENTE`
+  * *Problema:* Fallos de lógica entre la posición en vuelta y la proximidad física en pista.
+  * *Solución:* Algoritmo unificado de banderas azules: cuando un coche con una o más vueltas de ventaja se encuentra a menos de 1.2s (delta métrico) detrás de un doblado, este último reduce su velocidad un 15% y se desplaza al exterior en recta.
+  * *Test:* Doblado cediendo el paso de forma fluida ante la aproximación del líder.
+
+* **Q16 — Modelo Dinámico de ERS, Combustible y Penalización Térmica en Agarre:** `[ ] PENDIENTE`
+  * *Problema:* `RaceSimulation.ts:834`, batería estática al 85%, clamp de 0.5 kg en combustible, penalización térmica tardía.
+  * *Solución:* Conectar el ERS al ciclo real (recuperación en frenada hasta 4MJ/vuelta, despliegue en aceleración), consumo continuo sin topes artificiales, y penalización térmica calculada directamente sobre el coeficiente de fricción de neumáticos.
+  * *Test:* Comprobar fluctuación del nivel de batería entre 20% y 100% a lo largo de una vuelta de carrera.
+
+* **Q17 — Rebalanceo del D20 de Suerte hacia el Reglamento FIA:** `[ ] PENDIENTE`
+  * *Problema:* `RaceSimulation.ts:1262`, el D20 monta neumáticos nuevos mágicamente en pista sin parar en boxes.
+  * *Solución:* Reemplazar la magia por ventajas de ingeniería y muro: 1) Parada en boxes perfecta asegurada (1.9s), 2) Eficiencia ERS +15%, 3) Ajuste de setup aerodinámico óptimo (+3 km/h en recta).
+  * *Test:* Validar que el D20 ya no cambia los neumáticos de un monoplaza mientras rueda por la pista.
+
+* **Q18 — Reconciliación de Dashboard, Timers de React y Reset Limpio:** `[ ] PENDIENTE`
+  * *Problema:* `D20LuckModal.tsx:71`, `IncidentModel.reset()` no invocado en `initRace()`, fórmula de SC urbano produce 6-9 vueltas en vez de mínimo 10.
+  * *Solución:* Ajustar targetLaps para SC urbano a mínimo 10 vueltas (`10 + Math.floor(Math.random() * 3)`); conectar `IncidentModel.reset()` en `initRace()`; estabilizar dependencias de hooks en `D20LuckModal` y `RaceSimulation`.
+  * *Test:* Verificar que en circuito urbano el SC tiene `targetLaps >= 10` y que `IncidentModel.nextId` es 1 al reiniciar la carrera.
+
+---
+
+## 🔮 6. SPRINT 3: AUDIO, TELEMETRÍA AVANZADA, RADAR GPS & CLIMA (16 TAREAS)
+
+*(Planificado para ejecución inmediata tras el Sprint 2.8)*
 
 ### 🏗️ T3.1: Escapatorias vs Muros (Zonas de Severidad y Duración de SC)
 * **Requisito del Usuario:** *"Si es un choque contra el muro y es un circuito urbano, Safety Car mínimo 10 vueltas. Si es un circuito abierto y tiene escapatorias, tendremos que sacar el Safety Car durante 2 o 3 vueltas."*
@@ -121,10 +222,10 @@ Los 13 bugs críticos y altos detectados en la auditoría fueron implementados y
      - Curva con grava: coche encallado ➔ grúa necesaria ➔ VSC o SC corto (2-3 vueltas).
   3. **Cálculo Dinámico de Duración del SC**:
      - Si el accidente es contra muro (`runoffType === 'wall'` o circuito `'street'`):
-       `sc.targetLaps = circuit.trackType === 'street' ? 6 + Math.floor(Math.random() * 4) : 4 + Math.floor(Math.random() * 3);`
+       `sc.targetLaps = circuit.trackType === 'street' ? 10 + Math.floor(Math.random() * 3) : 4 + Math.floor(Math.random() * 3);`
      - Si hay escapatoria:
        `sc.targetLaps = 2 + Math.floor(Math.random() * 2);`
-* **Estrategia de Test:** Test de incidentes en distintas coordenadas y tipos de circuito, comprobando que en circuitos callejeros con muro el SC programa entre 6 y 10 vueltas, mientras que en circuitos con escapatoria programa entre 2 y 3 vueltas.
+* **Estrategia de Test:** Test de incidentes en distintas coordenadas y tipos de circuito, comprobando que en circuitos callejeros con muro el SC programa mínimo 10 vueltas (10-12), mientras que en circuitos con escapatoria programa entre 2 y 3 vueltas.
 
 ---
 
@@ -142,10 +243,10 @@ Los 13 bugs críticos y altos detectados en la auditoría fueron implementados y
 
 ### 🛞 T3.3: Compuestos Intermedios y Wet (Físicas de Agua)
 * **Solución Técnica:**
-  1. **Integración Oficial de Compuestos**:
-     - Ampliar `TireCompound`: `'soft' | 'medium' | 'hard' | 'inter' | 'wet'`.
-     - `inter` (Intermedios - Verde Pirelli): temperatura óptima 70-90°C.
-     - `wet` (Lluvia Extrema - Azul Pirelli): temperatura óptima 60-80°C.
+   1. **Integración Oficial de Compuestos**:
+      - `TireCompound`: `'soft' | 'medium' | 'hard' | 'intermediate' | 'wet'` (con badge/etiqueta 'inter' en UI).
+      - `intermediate` (Intermedios - Verde Pirelli): temperatura óptima 70-90°C.
+      - `wet` (Lluvia Extrema - Azul Pirelli): temperatura óptima 60-80°C.
   2. **Mecánica de Grip y Aquaplaning**:
      - Slicks en mojado (`waterDepthMm > 1.0`): grip cae al 35%, riesgo de trompo se multiplica por 10.
      - Intermedios en seco (`waterDepthMm < 0.5`): sobrecalentamiento (> 125°C) y desgaste x4 (destrucción en 3-4 vueltas).
