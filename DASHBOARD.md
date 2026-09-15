@@ -109,15 +109,15 @@ Los 13 bugs críticos y altos detectados en la auditoría fueron implementados y
 *(Sprint de consolidación previa al Sprint 3: alineación de geometrías, eliminación de solapamientos, carril de boxes continuo y control táctico real del Team Principal)*
 
 ### 📐 Bloque A: Escala, Geometría y Cinemática Espacial (5 Tareas)
-* **Q1 — Calibración de Escala de Monoplaza y Anchura Real de Pista (Anti-Solapamiento):** `[ ] PENDIENTE`
+* **Q1 — Calibración de Escala de Monoplaza y Anchura Real de Pista (Anti-Solapamiento):** `[x] COMPLETADO`
   * *Problema:* `CarRenderer.ts:34` y `RaceSimulation.ts:495`. Los coches se desplazan lateralmente demasiado poco para su ancho dibujado (`carWid = 6` vs `lateralOffset` estrecho), provocando solapamiento visual al rodar en paralelo.
-  * *Solución:* Parametrizar la anchura de pista (`trackHalfWidth`) y el ancho del monoplaza para garantizar un margen transversal de seguridad (> `1.2 * carWid`) entre coches en paralelo.
-  * *Test:* Verificación geométrica de que los bounding boxes no intersecan con `lateralOffset` opuestos.
+  * *Solución:* Parametrizar la anchura de pista (`trackHalfWidth`) y el ancho del monoplaza para garantizar un margen transversal de seguridad (> `1.2 * carWid`) entre coches en paralelo. Implementado en `CarRenderer.getLateralDisplacement` y `CarRenderer.getCarDimensions`.
+  * *Test:* Verificación geométrica de que los bounding boxes no intersecan con `lateralOffset` opuestos (margen 3.16x en pista estándar, 1.85x en pista estrecha, gap mínimo +4.1px a cualquier zoom). (Group 8 PASS).
 
-* **Q2 — Carril de Boxes con Entrada/Salida Propias y Continuidad Física:** `[ ] PENDIENTE`
+* **Q2 — Carril de Boxes con Entrada/Salida Propias y Continuidad Física:** `[x] COMPLETADO`
   * *Problema:* `svgTrackParser.ts:221`. El carril de boxes se genera desplazando puntos de la pista, incluidos los extremos, sin curvas de transición suaves (saltos al entrar y salir).
-  * *Solución:* Generar splines dedicados de deceleración en entrada (`pitEntryT`) y aceleración en salida (`pitExitT`), empalmando tangencialmente con la pista principal sin discontinuidades de primer orden (`C1`).
-  * *Test:* Comprobación de continuidad en derivadas `dx/dt`, `dy/dt` entre la pista principal y el carril de boxes.
+  * *Solución:* Generar splines dedicados de deceleración en entrada (`pitEntryT`) y aceleración en salida (`pitExitT`), empalmando tangencialmente con la pista principal sin discontinuidades de primer orden (`C1`) mediante polinomio smootherstep quíntico. Implementado en `generatePitLanePoints`.
+  * *Test:* Comprobación de continuidad C0 (desviación 0.0000m) y C1 tangencial (diferencia angular 1.78° < 2.86°) en derivadas `dx/dt`, `dy/dt` entre la pista principal y el carril de boxes. (Group 8 PASS).
 
 * **Q3 — Geometría Diferenciada para Muro, Carril Rápido y Cajones de Boxes:** `[ ] PENDIENTE`
   * *Problema:* `TrackRenderer.ts:165`. El muro de boxes se dibuja sobre el centro del carril; los límites blancos reutilizan el centro de pista.

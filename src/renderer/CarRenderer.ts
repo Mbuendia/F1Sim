@@ -3,6 +3,41 @@ import { TrackDefinition } from '../data/barcelonaTrack';
 import { Camera } from './Camera';
 
 export class CarRenderer {
+  static readonly BASE_CAR_LEN = 14;
+  static readonly BASE_CAR_WID = 6;
+
+  /**
+   * Obtiene las dimensiones del monoplaza escaladas por el nivel de zoom
+   */
+  static getCarDimensions(zoom: number) {
+    const scale = Math.max(0.9, Math.min(3.2, zoom * 1.15));
+    return {
+      scale,
+      length: CarRenderer.BASE_CAR_LEN * scale,
+      width: CarRenderer.BASE_CAR_WID * scale
+    };
+  }
+
+  /**
+   * Calcula la semi-anchura de pista en coordenadas del mundo
+   */
+  static getTrackHalfWidth(trackWidthMeters: number = 24): number {
+    return (trackWidthMeters * 1.75) * 0.5;
+  }
+
+  /**
+   * Calcula el desplazamiento lateral físico anti-solapamiento (> 1.2 * carWid de separación)
+   */
+  static getLateralDisplacement(
+    lateralOffset: number,
+    trackWidthMeters: number = 24,
+    trackWidthCarsCapacity: number = 3
+  ): number {
+    const trackHalfWidth = CarRenderer.getTrackHalfWidth(trackWidthMeters);
+    const usableFraction = trackWidthCarsCapacity === 2 ? 0.72 : 0.82;
+    return lateralOffset * trackHalfWidth * usableFraction;
+  }
+
   /**
    * Renderiza todos los monoplazas sobre el trazado activo actual con diseño F1 aerodinámico
    */
@@ -66,8 +101,12 @@ export class CarRenderer {
 
         const nx = Math.cos(angle + Math.PI / 2);
         const ny = Math.sin(angle + Math.PI / 2);
-        // Distancia lateral amplia para evitar efecto tren
-        const lateralDist = car.lateralOffset * (13 / trackWidthCarsCapacity);
+        // Calibración anti-solapamiento garantizando separación física > 1.2 * carWid
+        const lateralDist = CarRenderer.getLateralDisplacement(
+          car.lateralOffset,
+          track.trackWidthMeters || 24,
+          trackWidthCarsCapacity
+        );
 
         worldX = interpX + nx * lateralDist;
         worldY = interpY + ny * lateralDist;
@@ -211,9 +250,7 @@ export class CarRenderer {
     ctx.save();
     ctx.globalAlpha = opacity;
 
-    const scale = Math.max(0.9, Math.min(3.2, zoom * 1.15));
-    const carLen = 14 * scale;
-    const carWid = 6 * scale;
+    const { scale, length: carLen, width: carWid } = CarRenderer.getCarDimensions(zoom);
 
     // Sombra fija en pantalla (cae siempre hacia abajo y derecha: +2px, +3px)
     ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';

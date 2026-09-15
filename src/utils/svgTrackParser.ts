@@ -1,4 +1,4 @@
-﻿import { SplinePoint, Point2D } from './spline';
+import { SplinePoint, Point2D } from './spline';
 import { TrackDefinition, CornerMarker } from '../data/barcelonaTrack';
 import { CircuitSpec } from '../data/circuits';
 import svgPathsJson from '../data/svgTrackPaths.json';
@@ -220,36 +220,9 @@ export function buildTrackFromSvg(circuit: CircuitSpec, sampleCount: number = 75
   // ── 4. GENERACIÓN DEL PIT LANE OFICIAL (CARRIL DE BOXES INTERIOR) ──
   const pitEntryT = circuit.pitEntryT !== undefined ? circuit.pitEntryT : 0.92;
   const pitExitT = circuit.pitExitT !== undefined ? circuit.pitExitT : 0.08;
-
-  const pitStartIdx = Math.floor(total * pitEntryT);
-  const pitEndIdx = Math.floor(total * pitExitT);
-  const pitLanePoints: Point2D[] = [];
-
   const pitOffset = circuit.pitOffset !== undefined ? circuit.pitOffset : 38;
-  if (pitStartIdx > pitEndIdx) {
-    for (let i = pitStartIdx; i < total; i++) {
-      const pt = splinePoints[i];
-      pitLanePoints.push({
-        x: pt.x + pt.normal.x * pitOffset,
-        y: pt.y + pt.normal.y * pitOffset
-      });
-    }
-    for (let i = 0; i <= pitEndIdx; i++) {
-      const pt = splinePoints[i];
-      pitLanePoints.push({
-        x: pt.x + pt.normal.x * pitOffset,
-        y: pt.y + pt.normal.y * pitOffset
-      });
-    }
-  } else {
-    for (let i = pitStartIdx; i <= pitEndIdx; i++) {
-      const pt = splinePoints[i];
-      pitLanePoints.push({
-        x: pt.x + pt.normal.x * pitOffset,
-        y: pt.y + pt.normal.y * pitOffset
-      });
-    }
-  }
+
+  const pitLanePoints = generatePitLanePoints(splinePoints, pitEntryT, pitExitT, pitOffset);
 
   // ── 5. CURVAS Y BORDES OFICIALES ──
   const corners: CornerMarker[] = [];
@@ -301,4 +274,71 @@ export function buildTrackFromSvg(circuit: CircuitSpec, sampleCount: number = 75
       maxY: maxY + 140
     }
   };
+}
+
+/**
+ * Genera el carril de boxes con curvas de deceleración en entrada (pitEntryT) y aceleración en salida (pitExitT),
+ * empalmando tangencialmente con la pista principal sin discontinuidades de primer orden (C1).
+ */
+export function generatePitLanePoints(
+  splinePoints: SplinePoint[],
+  pitEntryT: number = 0.92,
+  pitExitT: number = 0.08,
+  pitOffset: number = 38,
+  entryFrac: number = 0.28,
+  exitFrac: number = 0.28
+): Point2D[] {
+  const total = splinePoints.length;
+  if (total < 2) return [];
+
+  const pitStartIdx = Math.floor(total * pitEntryT) % total;
+  const pitEndIdx = Math.floor(total * pitExitT) % total;
+
+  const rawTrackPoints: SplinePoint[] = [];
+  if (pitStartIdx > pitEndIdx) {
+    for (let i = pitStartIdx; i < total; i++) {
+      rawTrackPoints.push(splinePoints[i]);
+    }
+    for (let i = 0; i <= pitEndIdx; i++) {
+      rawTrackPoints.push(splinePoints[i]);
+    }
+  } else {
+    for (let i = pitStartIdx; i <= pitEndIdx; i++) {
+      rawTrackPoints.push(splinePoints[i]);
+    }
+  }
+
+  const count = rawTrackPoints.length;
+  if (count < 2) return [];
+
+  const pitLanePoints: Point2D[] = [];
+
+  for (let k = 0; k < count; k++) {
+    const pt = rawTrackPoints[k];
+    const u = k / (count - 1); // 0.0 (entrada) a 1.0 (salida)
+
+    let currentOffset = pitOffset;
+
+    if (u < entryFrac) {
+      // Zona de deceleración y bifurcación tangencial (C1 continuo con smootherstep)
+      const tau = u / entryFrac;
+      const factor = tau * tau * tau * (tau * (tau * 6 - 15) + 10);
+      currentOffset = pitOffset * factor;
+    } else if (u > 1.0 - exitFrac) {
+      // Zona de aceleración y reincorporación tangencial (C1 continuo con smootherstep)
+      const tau = (1.0 - u) / exitFrac;
+      const factor = tau * tau * tau * (tau * (tau * 6 - 15) + 10);
+      currentOffset = pitOffset * factor;
+    } else {
+      // Zona de velocidad constante (80 km/h) y cajones de boxes
+      currentOffset = pitOffset;
+    }
+
+    pitLanePoints.push({
+      x: pt.x + pt.normal.x * currentOffset,
+      y: pt.y + pt.normal.y * currentOffset
+    });
+  }
+
+  return pitLanePoints;
 }
