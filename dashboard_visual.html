@@ -192,7 +192,7 @@
                 <div class="tokenCardTitle" style="color: #fbbf24;">🎯 Sprint 2.8 (Salto de Calidad)</div>
                 <div class="tokenValueRow">
                     <div>
-                        <div class="tokenGemini" style="color: #fbbf24;">18 Tareas</div>
+                        <div class="tokenGemini" style="color: #fbbf24;">39 Tareas</div>
                         <div class="tokenLabel">Refinado</div>
                     </div>
                     <div>
@@ -674,7 +674,7 @@
             <div class="sprintHeaderLeft">
                 <span class="chevron collapsed" id="chevron-sprint2_8">▼</span>
                 <span class="dot dotOrange"></span>
-                <span>Sprint 2.8 — 🎯 Salto de Calidad: Fidelidad de Simulación, Geometría y Muro Táctico (18 Tareas)</span>
+                <span>Sprint 2.8 — 🎯 Salto de Calidad: Fidelidad de Simulación, Geometría y Muro Táctico (39 Tareas)</span>
                 <span class="badgePending">2 / 18 Tareas (Refinado / Listo para Validación)</span>
             </div>
             <div class="sprintHeaderRight">
@@ -709,34 +709,34 @@
                 </div>
             </div>
 
-            <div class="task pending">
-                <input type="checkbox" id="t_q3">
+            <div class="task">
+                <input type="checkbox" id="t_q3" checked>
                 <div class="task-content">
                     <div class="task-title-row">
                         <div class="task-title"><span class="orderBadge">Q3</span><label for="t_q3">Q3. 🧱 Geometría Diferenciada para Muro, Carril Rápido y Cajones de Boxes</label></div>
-                        <div class="tokensRow"><span class="badgeToken tokLevelMed">🟡 Media</span><span class="badgeToken tokGemini">♊ TrackRenderer.ts:165</span></div>
+                        <div class="tokensRow"><span class="badgeProgress" style="font-size: 9.5px; padding: 2px 6px; border-radius: 4px;">COMPLETADO</span> <span class="badgeToken tokLevelMed">🟡 Media</span><span class="badgeToken tokGemini">♊ TrackRenderer.ts:165</span></div>
                     </div>
                     <div class="task-desc">Construir entidades geométricas separadas para: 1) borde exterior de pista, 2) muro divisor de boxes, 3) carril rápido (fast lane 80 km/h) y 4) zona de trabajo con los 10 cajones de parada.</div>
                 </div>
             </div>
 
-            <div class="task pending">
-                <input type="checkbox" id="t_q4">
+            <div class="task">
+                <input type="checkbox" id="t_q4" checked>
                 <div class="task-content">
                     <div class="task-title-row">
                         <div class="task-title"><span class="orderBadge">Q4</span><label for="t_q4">Q4. 📍 Coordenada Cartesiana Única (Unificación Pista vs Boxes)</label></div>
-                        <div class="tokensRow"><span class="badgeToken tokLevelHigh">🟠 Alta</span><span class="badgeToken tokGemini">♊ Camera.ts / CarRenderer.ts / Minimap / App.tsx</span></div>
+                        <div class="tokensRow"><span class="badgeProgress" style="font-size: 9.5px; padding: 2px 6px; border-radius: 4px;">COMPLETADO</span> <span class="badgeToken tokLevelHigh">🟠 Alta</span><span class="badgeToken tokGemini">♊ Camera.ts / CarRenderer.ts / Minimap / App.tsx</span></div>
                     </div>
                     <div class="task-desc">Almacenar en CarState una posición cartesiana real única (worldX, worldY) calculada tanto en pista como en el pit lane, compartida idénticamente por CarRenderer, Camera.followCar, Minimap y detección de click.</div>
                 </div>
             </div>
 
-            <div class="task pending">
-                <input type="checkbox" id="t_q5">
+            <div class="task">
+                <input type="checkbox" id="t_q5" checked>
                 <div class="task-content">
                     <div class="task-title-row">
                         <div class="task-title"><span class="orderBadge">Q5</span><label for="t_q5">Q5. 📏 Corrección de Doble Zoom en Meta y Nivel de Detalle (LOD) de Etiquetas</label></div>
-                        <div class="tokensRow"><span class="badgeToken tokLevelHigh">🟠 Alta</span><span class="badgeToken tokGemini">♊ TrackRenderer.ts / CarRenderer.ts</span></div>
+                        <div class="tokensRow"><span class="badgeProgress" style="font-size: 9.5px; padding: 2px 6px; border-radius: 4px;">COMPLETADO</span> <span class="badgeToken tokLevelHigh">🟠 Alta</span><span class="badgeToken tokGemini">♊ TrackRenderer.ts / CarRenderer.ts</span></div>
                     </div>
                     <div class="task-desc">Desacoplar metros físicos del circuito del multiplicador de zoom de pantalla para evitar gigantismo en la meta. Aplicar LOD a etiquetas de monoplazas según distancia y prioridad (seleccionado y batallas < 0.8s).</div>
                 </div>
@@ -756,6 +756,217 @@
                     <div class="task-desc">Estructura por capas diferenciadas: terreno, escapatorias reales (asfalto/grava en Barcelona vs muros contiguos sin grava en Mónaco), asfalto, pianos localizados en entradas/ápices/salidas, gradas y edificios emblemáticos.</div>
                 </div>
             </div>
+            <div class="task pending">
+                <input type="checkbox" id="t_q6_1">
+                <div class="task-content">
+                    <div class="task-title-row">
+                        <div class="task-title"><span class="orderBadge">Q6.1</span><label for="t_q6_1">Q6.1. 🎨 Escenario SVG por Capas: MONZA</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelMed">🟡 Media</span><span class="badgeToken tokGemini">♊ circuits.ts</span></div>
+                    </div>
+                    <div class="task-desc">Implementar identidad visual, terreno, escapatorias, asfalto, pianos, gradas y edificios emblemáticos para monza.</div>
+                </div>
+            </div>
+            <div class="task pending">
+                <input type="checkbox" id="t_q6_2">
+                <div class="task-content">
+                    <div class="task-title-row">
+                        <div class="task-title"><span class="orderBadge">Q6.2</span><label for="t_q6_2">Q6.2. 🎨 Escenario SVG por Capas: SILVERSTONE</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelMed">🟡 Media</span><span class="badgeToken tokGemini">♊ circuits.ts</span></div>
+                    </div>
+                    <div class="task-desc">Implementar identidad visual, terreno, escapatorias, asfalto, pianos, gradas y edificios emblemáticos para silverstone.</div>
+                </div>
+            </div>
+            <div class="task pending">
+                <input type="checkbox" id="t_q6_3">
+                <div class="task-content">
+                    <div class="task-title-row">
+                        <div class="task-title"><span class="orderBadge">Q6.3</span><label for="t_q6_3">Q6.3. 🎨 Escenario SVG por Capas: SPA</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelMed">🟡 Media</span><span class="badgeToken tokGemini">♊ circuits.ts</span></div>
+                    </div>
+                    <div class="task-desc">Implementar identidad visual, terreno, escapatorias, asfalto, pianos, gradas y edificios emblemáticos para spa.</div>
+                </div>
+            </div>
+            <div class="task pending">
+                <input type="checkbox" id="t_q6_4">
+                <div class="task-content">
+                    <div class="task-title-row">
+                        <div class="task-title"><span class="orderBadge">Q6.4</span><label for="t_q6_4">Q6.4. 🎨 Escenario SVG por Capas: SPIELBERG</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelMed">🟡 Media</span><span class="badgeToken tokGemini">♊ circuits.ts</span></div>
+                    </div>
+                    <div class="task-desc">Implementar identidad visual, terreno, escapatorias, asfalto, pianos, gradas y edificios emblemáticos para spielberg.</div>
+                </div>
+            </div>
+            <div class="task pending">
+                <input type="checkbox" id="t_q6_5">
+                <div class="task-content">
+                    <div class="task-title-row">
+                        <div class="task-title"><span class="orderBadge">Q6.5</span><label for="t_q6_5">Q6.5. 🎨 Escenario SVG por Capas: INTERLAGOS</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelMed">🟡 Media</span><span class="badgeToken tokGemini">♊ circuits.ts</span></div>
+                    </div>
+                    <div class="task-desc">Implementar identidad visual, terreno, escapatorias, asfalto, pianos, gradas y edificios emblemáticos para interlagos.</div>
+                </div>
+            </div>
+            <div class="task pending">
+                <input type="checkbox" id="t_q6_6">
+                <div class="task-content">
+                    <div class="task-title-row">
+                        <div class="task-title"><span class="orderBadge">Q6.6</span><label for="t_q6_6">Q6.6. 🎨 Escenario SVG por Capas: SUZUKA</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelMed">🟡 Media</span><span class="badgeToken tokGemini">♊ circuits.ts</span></div>
+                    </div>
+                    <div class="task-desc">Implementar identidad visual, terreno, escapatorias, asfalto, pianos, gradas y edificios emblemáticos para suzuka.</div>
+                </div>
+            </div>
+            <div class="task pending">
+                <input type="checkbox" id="t_q6_7">
+                <div class="task-content">
+                    <div class="task-title-row">
+                        <div class="task-title"><span class="orderBadge">Q6.7</span><label for="t_q6_7">Q6.7. 🎨 Escenario SVG por Capas: ZANDVOORT</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelMed">🟡 Media</span><span class="badgeToken tokGemini">♊ circuits.ts</span></div>
+                    </div>
+                    <div class="task-desc">Implementar identidad visual, terreno, escapatorias, asfalto, pianos, gradas y edificios emblemáticos para zandvoort.</div>
+                </div>
+            </div>
+            <div class="task pending">
+                <input type="checkbox" id="t_q6_8">
+                <div class="task-content">
+                    <div class="task-title-row">
+                        <div class="task-title"><span class="orderBadge">Q6.8</span><label for="t_q6_8">Q6.8. 🎨 Escenario SVG por Capas: LAS-VEGAS</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelMed">🟡 Media</span><span class="badgeToken tokGemini">♊ circuits.ts</span></div>
+                    </div>
+                    <div class="task-desc">Implementar identidad visual, terreno, escapatorias, asfalto, pianos, gradas y edificios emblemáticos para las-vegas.</div>
+                </div>
+            </div>
+            <div class="task pending">
+                <input type="checkbox" id="t_q6_9">
+                <div class="task-content">
+                    <div class="task-title-row">
+                        <div class="task-title"><span class="orderBadge">Q6.9</span><label for="t_q6_9">Q6.9. 🎨 Escenario SVG por Capas: BAHRAIN</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelMed">🟡 Media</span><span class="badgeToken tokGemini">♊ circuits.ts</span></div>
+                    </div>
+                    <div class="task-desc">Implementar identidad visual, terreno, escapatorias, asfalto, pianos, gradas y edificios emblemáticos para bahrain.</div>
+                </div>
+            </div>
+            <div class="task pending">
+                <input type="checkbox" id="t_q6_10">
+                <div class="task-content">
+                    <div class="task-title-row">
+                        <div class="task-title"><span class="orderBadge">Q6.10</span><label for="t_q6_10">Q6.10. 🎨 Escenario SVG por Capas: BAKU</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelMed">🟡 Media</span><span class="badgeToken tokGemini">♊ circuits.ts</span></div>
+                    </div>
+                    <div class="task-desc">Implementar identidad visual, terreno, escapatorias, asfalto, pianos, gradas y edificios emblemáticos para baku.</div>
+                </div>
+            </div>
+            <div class="task pending">
+                <input type="checkbox" id="t_q6_11">
+                <div class="task-content">
+                    <div class="task-title-row">
+                        <div class="task-title"><span class="orderBadge">Q6.11</span><label for="t_q6_11">Q6.11. 🎨 Escenario SVG por Capas: MELBOURNE</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelMed">🟡 Media</span><span class="badgeToken tokGemini">♊ circuits.ts</span></div>
+                    </div>
+                    <div class="task-desc">Implementar identidad visual, terreno, escapatorias, asfalto, pianos, gradas y edificios emblemáticos para melbourne.</div>
+                </div>
+            </div>
+            <div class="task pending">
+                <input type="checkbox" id="t_q6_12">
+                <div class="task-content">
+                    <div class="task-title-row">
+                        <div class="task-title"><span class="orderBadge">Q6.12</span><label for="t_q6_12">Q6.12. 🎨 Escenario SVG por Capas: MIAMI</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelMed">🟡 Media</span><span class="badgeToken tokGemini">♊ circuits.ts</span></div>
+                    </div>
+                    <div class="task-desc">Implementar identidad visual, terreno, escapatorias, asfalto, pianos, gradas y edificios emblemáticos para miami.</div>
+                </div>
+            </div>
+            <div class="task pending">
+                <input type="checkbox" id="t_q6_13">
+                <div class="task-content">
+                    <div class="task-title-row">
+                        <div class="task-title"><span class="orderBadge">Q6.13</span><label for="t_q6_13">Q6.13. 🎨 Escenario SVG por Capas: SHANGHAI</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelMed">🟡 Media</span><span class="badgeToken tokGemini">♊ circuits.ts</span></div>
+                    </div>
+                    <div class="task-desc">Implementar identidad visual, terreno, escapatorias, asfalto, pianos, gradas y edificios emblemáticos para shanghai.</div>
+                </div>
+            </div>
+            <div class="task pending">
+                <input type="checkbox" id="t_q6_14">
+                <div class="task-content">
+                    <div class="task-title-row">
+                        <div class="task-title"><span class="orderBadge">Q6.14</span><label for="t_q6_14">Q6.14. 🎨 Escenario SVG por Capas: JEDDAH</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelMed">🟡 Media</span><span class="badgeToken tokGemini">♊ circuits.ts</span></div>
+                    </div>
+                    <div class="task-desc">Implementar identidad visual, terreno, escapatorias, asfalto, pianos, gradas y edificios emblemáticos para jeddah.</div>
+                </div>
+            </div>
+            <div class="task pending">
+                <input type="checkbox" id="t_q6_15">
+                <div class="task-content">
+                    <div class="task-title-row">
+                        <div class="task-title"><span class="orderBadge">Q6.15</span><label for="t_q6_15">Q6.15. 🎨 Escenario SVG por Capas: MARINA-BAY</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelMed">🟡 Media</span><span class="badgeToken tokGemini">♊ circuits.ts</span></div>
+                    </div>
+                    <div class="task-desc">Implementar identidad visual, terreno, escapatorias, asfalto, pianos, gradas y edificios emblemáticos para marina-bay.</div>
+                </div>
+            </div>
+            <div class="task pending">
+                <input type="checkbox" id="t_q6_16">
+                <div class="task-content">
+                    <div class="task-title-row">
+                        <div class="task-title"><span class="orderBadge">Q6.16</span><label for="t_q6_16">Q6.16. 🎨 Escenario SVG por Capas: LUSAIL</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelMed">🟡 Media</span><span class="badgeToken tokGemini">♊ circuits.ts</span></div>
+                    </div>
+                    <div class="task-desc">Implementar identidad visual, terreno, escapatorias, asfalto, pianos, gradas y edificios emblemáticos para lusail.</div>
+                </div>
+            </div>
+            <div class="task pending">
+                <input type="checkbox" id="t_q6_17">
+                <div class="task-content">
+                    <div class="task-title-row">
+                        <div class="task-title"><span class="orderBadge">Q6.17</span><label for="t_q6_17">Q6.17. 🎨 Escenario SVG por Capas: YAS-MARINA</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelMed">🟡 Media</span><span class="badgeToken tokGemini">♊ circuits.ts</span></div>
+                    </div>
+                    <div class="task-desc">Implementar identidad visual, terreno, escapatorias, asfalto, pianos, gradas y edificios emblemáticos para yas-marina.</div>
+                </div>
+            </div>
+            <div class="task pending">
+                <input type="checkbox" id="t_q6_18">
+                <div class="task-content">
+                    <div class="task-title-row">
+                        <div class="task-title"><span class="orderBadge">Q6.18</span><label for="t_q6_18">Q6.18. 🎨 Escenario SVG por Capas: HUNGARORING</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelMed">🟡 Media</span><span class="badgeToken tokGemini">♊ circuits.ts</span></div>
+                    </div>
+                    <div class="task-desc">Implementar identidad visual, terreno, escapatorias, asfalto, pianos, gradas y edificios emblemáticos para hungaroring.</div>
+                </div>
+            </div>
+            <div class="task pending">
+                <input type="checkbox" id="t_q6_19">
+                <div class="task-content">
+                    <div class="task-title-row">
+                        <div class="task-title"><span class="orderBadge">Q6.19</span><label for="t_q6_19">Q6.19. 🎨 Escenario SVG por Capas: MEXICO-CITY</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelMed">🟡 Media</span><span class="badgeToken tokGemini">♊ circuits.ts</span></div>
+                    </div>
+                    <div class="task-desc">Implementar identidad visual, terreno, escapatorias, asfalto, pianos, gradas y edificios emblemáticos para mexico-city.</div>
+                </div>
+            </div>
+            <div class="task pending">
+                <input type="checkbox" id="t_q6_20">
+                <div class="task-content">
+                    <div class="task-title-row">
+                        <div class="task-title"><span class="orderBadge">Q6.20</span><label for="t_q6_20">Q6.20. 🎨 Escenario SVG por Capas: MONTREAL</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelMed">🟡 Media</span><span class="badgeToken tokGemini">♊ circuits.ts</span></div>
+                    </div>
+                    <div class="task-desc">Implementar identidad visual, terreno, escapatorias, asfalto, pianos, gradas y edificios emblemáticos para montreal.</div>
+                </div>
+            </div>
+            <div class="task pending">
+                <input type="checkbox" id="t_q6_21">
+                <div class="task-content">
+                    <div class="task-title-row">
+                        <div class="task-title"><span class="orderBadge">Q6.21</span><label for="t_q6_21">Q6.21. 🎨 Escenario SVG por Capas: AUSTIN</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelMed">🟡 Media</span><span class="badgeToken tokGemini">♊ circuits.ts</span></div>
+                    </div>
+                    <div class="task-desc">Implementar identidad visual, terreno, escapatorias, asfalto, pianos, gradas y edificios emblemáticos para austin.</div>
+                </div>
+            </div>
+
 
             <div class="task pending">
                 <input type="checkbox" id="t_q7">
@@ -912,16 +1123,287 @@
         </div>
 
         <div class="sprintBody collapsed" id="body-sprint2_9">
-            <div class="task pending">
+                        <div class="task pending">
                 <input type="checkbox" id="t_r01">
                 <div class="task-content">
                     <div class="task-title-row">
-                        <div class="task-title"><span class="orderBadge">R01-R28</span><label for="t_r01">Reglamento FIA 2025 y Sensación de Carrera (Entregas A-E)</label></div>
-                        <div class="tokensRow"><span class="badgePending" style="font-size: 9.5px; padding: 2px 6px; border-radius: 4px;">PENDIENTE DE IMPLEMENTACIÓN</span></div>
+                        <div class="task-title"><span class="orderBadge">R01</span><label for="t_r01">R01. 📋 Perfil de reglas y procedencia</label></div>
+                        <div class="tokensRow"><span class="badgePending" style="font-size: 9.5px; padding: 2px 6px; border-radius: 4px;">PENDIENTE</span></div>
                     </div>
-                    <div class="task-desc">Planificación actual. Incluye perfil de reglas (R01), cronometraje (R02), base inicial de datos y geometría de circuitos (R03), y otras tareas documentadas en DASHBOARD.md. Implementación pendiente de autorización y trabajo en rama sprint/2.9.</div>
+                    <div class="task-desc">Implementación y pruebas relacionadas con Perfil de reglas y procedencia. Ver detalle en DASHBOARD.md.</div>
                 </div>
             </div>
+            <div class="task pending">
+                <input type="checkbox" id="t_r02">
+                <div class="task-content">
+                    <div class="task-title-row">
+                        <div class="task-title"><span class="orderBadge">R02</span><label for="t_r02">R02. 📋 Cronometraje y reproducibilidad</label></div>
+                        <div class="tokensRow"><span class="badgePending" style="font-size: 9.5px; padding: 2px 6px; border-radius: 4px;">PENDIENTE</span></div>
+                    </div>
+                    <div class="task-desc">Implementación y pruebas relacionadas con Cronometraje y reproducibilidad. Ver detalle en DASHBOARD.md.</div>
+                </div>
+            </div>
+            <div class="task pending">
+                <input type="checkbox" id="t_r03">
+                <div class="task-content">
+                    <div class="task-title-row">
+                        <div class="task-title"><span class="orderBadge">R03</span><label for="t_r03">R03. 📋 Base inicial de datos, líneas y unidades (Barcelona/Mónaco)</label></div>
+                        <div class="tokensRow"><span class="badgePending" style="font-size: 9.5px; padding: 2px 6px; border-radius: 4px;">PENDIENTE</span></div>
+                    </div>
+                    <div class="task-desc">Implementación y pruebas relacionadas con Base inicial de datos, líneas y unidades (Barcelona/Mónaco). Ver detalle en DASHBOARD.md.</div>
+                </div>
+            </div>
+            <div class="task pending">
+                <input type="checkbox" id="t_r04">
+                <div class="task-content">
+                    <div class="task-title-row">
+                        <div class="task-title"><span class="orderBadge">R04</span><label for="t_r04">R04. 📋 Integración funcional de DRS</label></div>
+                        <div class="tokensRow"><span class="badgePending" style="font-size: 9.5px; padding: 2px 6px; border-radius: 4px;">PENDIENTE</span></div>
+                    </div>
+                    <div class="task-desc">Implementación y pruebas relacionadas con Integración funcional de DRS. Ver detalle en DASHBOARD.md.</div>
+                </div>
+            </div>
+            <div class="task pending">
+                <input type="checkbox" id="t_r05">
+                <div class="task-content">
+                    <div class="task-title-row">
+                        <div class="task-title"><span class="orderBadge">R05</span><label for="t_r05">R05. 📋 Aerodinámica y balance de fuerzas</label></div>
+                        <div class="tokensRow"><span class="badgePending" style="font-size: 9.5px; padding: 2px 6px; border-radius: 4px;">PENDIENTE</span></div>
+                    </div>
+                    <div class="task-desc">Implementación y pruebas relacionadas con Aerodinámica y balance de fuerzas. Ver detalle en DASHBOARD.md.</div>
+                </div>
+            </div>
+            <div class="task pending">
+                <input type="checkbox" id="t_r06">
+                <div class="task-content">
+                    <div class="task-title-row">
+                        <div class="task-title"><span class="orderBadge">R06</span><label for="t_r06">R06. 📋 Inventario de neumáticos y legalidad</label></div>
+                        <div class="tokensRow"><span class="badgePending" style="font-size: 9.5px; padding: 2px 6px; border-radius: 4px;">PENDIENTE</span></div>
+                    </div>
+                    <div class="task-desc">Implementación y pruebas relacionadas con Inventario de neumáticos y legalidad. Ver detalle en DASHBOARD.md.</div>
+                </div>
+            </div>
+            <div class="task pending">
+                <input type="checkbox" id="t_r07">
+                <div class="task-content">
+                    <div class="task-title-row">
+                        <div class="task-title"><span class="orderBadge">R07</span><label for="t_r07">R07. 📋 Órdenes, cajas y stock de neumáticos</label></div>
+                        <div class="tokensRow"><span class="badgePending" style="font-size: 9.5px; padding: 2px 6px; border-radius: 4px;">PENDIENTE</span></div>
+                    </div>
+                    <div class="task-desc">Implementación y pruebas relacionadas con Órdenes, cajas y stock de neumáticos. Ver detalle en DASHBOARD.md.</div>
+                </div>
+            </div>
+            <div class="task pending">
+                <input type="checkbox" id="t_r08">
+                <div class="task-content">
+                    <div class="task-title-row">
+                        <div class="task-title"><span class="orderBadge">R08</span><label for="t_r08">R08. 📋 Muro, salidas seguras, sanciones y pit cerrado</label></div>
+                        <div class="tokensRow"><span class="badgePending" style="font-size: 9.5px; padding: 2px 6px; border-radius: 4px;">PENDIENTE</span></div>
+                    </div>
+                    <div class="task-desc">Implementación y pruebas relacionadas con Muro, salidas seguras, sanciones y pit cerrado. Ver detalle en DASHBOARD.md.</div>
+                </div>
+            </div>
+            <div class="task pending">
+                <input type="checkbox" id="t_r09">
+                <div class="task-content">
+                    <div class="task-title-row">
+                        <div class="task-title"><span class="orderBadge">R09</span><label for="t_r09">R09. 📋 Retiradas por daños y banderas azules</label></div>
+                        <div class="tokensRow"><span class="badgePending" style="font-size: 9.5px; padding: 2px 6px; border-radius: 4px;">PENDIENTE</span></div>
+                    </div>
+                    <div class="task-desc">Implementación y pruebas relacionadas con Retiradas por daños y banderas azules. Ver detalle en DASHBOARD.md.</div>
+                </div>
+            </div>
+            <div class="task pending">
+                <input type="checkbox" id="t_r10">
+                <div class="task-content">
+                    <div class="task-title-row">
+                        <div class="task-title"><span class="orderBadge">R10</span><label for="t_r10">R10. 📋 Safety Car completo</label></div>
+                        <div class="tokensRow"><span class="badgePending" style="font-size: 9.5px; padding: 2px 6px; border-radius: 4px;">PENDIENTE</span></div>
+                    </div>
+                    <div class="task-desc">Implementación y pruebas relacionadas con Safety Car completo. Ver detalle en DASHBOARD.md.</div>
+                </div>
+            </div>
+            <div class="task pending">
+                <input type="checkbox" id="t_r11">
+                <div class="task-content">
+                    <div class="task-title-row">
+                        <div class="task-title"><span class="orderBadge">R11</span><label for="t_r11">R11. 📋 VSC completo</label></div>
+                        <div class="tokensRow"><span class="badgePending" style="font-size: 9.5px; padding: 2px 6px; border-radius: 4px;">PENDIENTE</span></div>
+                    </div>
+                    <div class="task-desc">Implementación y pruebas relacionadas con VSC completo. Ver detalle en DASHBOARD.md.</div>
+                </div>
+            </div>
+            <div class="task pending">
+                <input type="checkbox" id="t_r12">
+                <div class="task-content">
+                    <div class="task-title-row">
+                        <div class="task-title"><span class="orderBadge">R12</span><label for="t_r12">R12. 📋 Bandera Roja y suspensión de carrera</label></div>
+                        <div class="tokensRow"><span class="badgePending" style="font-size: 9.5px; padding: 2px 6px; border-radius: 4px;">PENDIENTE</span></div>
+                    </div>
+                    <div class="task-desc">Implementación y pruebas relacionadas con Bandera Roja y suspensión de carrera. Ver detalle en DASHBOARD.md.</div>
+                </div>
+            </div>
+            <div class="task pending">
+                <input type="checkbox" id="t_r13">
+                <div class="task-content">
+                    <div class="task-title-row">
+                        <div class="task-title"><span class="orderBadge">R13</span><label for="t_r13">R13. 📋 Penalizaciones, fin de carrera y clasificación</label></div>
+                        <div class="tokensRow"><span class="badgePending" style="font-size: 9.5px; padding: 2px 6px; border-radius: 4px;">PENDIENTE</span></div>
+                    </div>
+                    <div class="task-desc">Implementación y pruebas relacionadas con Penalizaciones, fin de carrera y clasificación. Ver detalle en DASHBOARD.md.</div>
+                </div>
+            </div>
+            <div class="task pending">
+                <input type="checkbox" id="t_r14">
+                <div class="task-content">
+                    <div class="task-title-row">
+                        <div class="task-title"><span class="orderBadge">R14</span><label for="t_r14">R14. 📋 Consumo de combustible</label></div>
+                        <div class="tokensRow"><span class="badgePending" style="font-size: 9.5px; padding: 2px 6px; border-radius: 4px;">PENDIENTE</span></div>
+                    </div>
+                    <div class="task-desc">Implementación y pruebas relacionadas con Consumo de combustible. Ver detalle en DASHBOARD.md.</div>
+                </div>
+            </div>
+            <div class="task pending">
+                <input type="checkbox" id="t_r15">
+                <div class="task-content">
+                    <div class="task-title-row">
+                        <div class="task-title"><span class="orderBadge">R15</span><label for="t_r15">R15. 📋 ERS (batería, MGU-K)</label></div>
+                        <div class="tokensRow"><span class="badgePending" style="font-size: 9.5px; padding: 2px 6px; border-radius: 4px;">PENDIENTE</span></div>
+                    </div>
+                    <div class="task-desc">Implementación y pruebas relacionadas con ERS (batería, MGU-K). Ver detalle en DASHBOARD.md.</div>
+                </div>
+            </div>
+            <div class="task pending">
+                <input type="checkbox" id="t_r16">
+                <div class="task-content">
+                    <div class="task-title-row">
+                        <div class="task-title"><span class="orderBadge">R16</span><label for="t_r16">R16. 📋 Penalización térmica y Heat Hazard</label></div>
+                        <div class="tokensRow"><span class="badgePending" style="font-size: 9.5px; padding: 2px 6px; border-radius: 4px;">PENDIENTE</span></div>
+                    </div>
+                    <div class="task-desc">Implementación y pruebas relacionadas con Penalización térmica y Heat Hazard. Ver detalle en DASHBOARD.md.</div>
+                </div>
+            </div>
+            <div class="task pending">
+                <input type="checkbox" id="t_r17">
+                <div class="task-content">
+                    <div class="task-title-row">
+                        <div class="task-title"><span class="orderBadge">R17</span><label for="t_r17">R17. 📋 Rendimiento de equipos</label></div>
+                        <div class="tokensRow"><span class="badgePending" style="font-size: 9.5px; padding: 2px 6px; border-radius: 4px;">PENDIENTE</span></div>
+                    </div>
+                    <div class="task-desc">Implementación y pruebas relacionadas con Rendimiento de equipos. Ver detalle en DASHBOARD.md.</div>
+                </div>
+            </div>
+            <div class="task pending">
+                <input type="checkbox" id="t_r18">
+                <div class="task-content">
+                    <div class="task-title-row">
+                        <div class="task-title"><span class="orderBadge">R18</span><label for="t_r18">R18. 📋 Desarrollo aerodinámico y Parc Fermé</label></div>
+                        <div class="tokensRow"><span class="badgePending" style="font-size: 9.5px; padding: 2px 6px; border-radius: 4px;">PENDIENTE</span></div>
+                    </div>
+                    <div class="task-desc">Implementación y pruebas relacionadas con Desarrollo aerodinámico y Parc Fermé. Ver detalle en DASHBOARD.md.</div>
+                </div>
+            </div>
+            <div class="task pending">
+                <input type="checkbox" id="t_r19">
+                <div class="task-content">
+                    <div class="task-title-row">
+                        <div class="task-title"><span class="orderBadge">R19</span><label for="t_r19">R19. 📋 Uso de PU por piloto/temporada</label></div>
+                        <div class="tokensRow"><span class="badgePending" style="font-size: 9.5px; padding: 2px 6px; border-radius: 4px;">PENDIENTE</span></div>
+                    </div>
+                    <div class="task-desc">Implementación y pruebas relacionadas con Uso de PU por piloto/temporada. Ver detalle en DASHBOARD.md.</div>
+                </div>
+            </div>
+            <div class="task pending">
+                <input type="checkbox" id="t_r20">
+                <div class="task-content">
+                    <div class="task-title-row">
+                        <div class="task-title"><span class="orderBadge">R20</span><label for="t_r20">R20. 📋 Sesiones de clasificación y parrilla</label></div>
+                        <div class="tokensRow"><span class="badgePending" style="font-size: 9.5px; padding: 2px 6px; border-radius: 4px;">PENDIENTE</span></div>
+                    </div>
+                    <div class="task-desc">Implementación y pruebas relacionadas con Sesiones de clasificación y parrilla. Ver detalle en DASHBOARD.md.</div>
+                </div>
+            </div>
+            <div class="task pending">
+                <input type="checkbox" id="t_r21">
+                <div class="task-content">
+                    <div class="task-title-row">
+                        <div class="task-title"><span class="orderBadge">R21</span><label for="t_r21">R21. 📋 Sprint, distancias, resultados y campeonato</label></div>
+                        <div class="tokensRow"><span class="badgePending" style="font-size: 9.5px; padding: 2px 6px; border-radius: 4px;">PENDIENTE</span></div>
+                    </div>
+                    <div class="task-desc">Implementación y pruebas relacionadas con Sprint, distancias, resultados y campeonato. Ver detalle en DASHBOARD.md.</div>
+                </div>
+            </div>
+            <div class="task pending">
+                <input type="checkbox" id="t_r22">
+                <div class="task-content">
+                    <div class="task-title-row">
+                        <div class="task-title"><span class="orderBadge">R22</span><label for="t_r22">R22. 📋 Clima y lluvia dinámica</label></div>
+                        <div class="tokensRow"><span class="badgePending" style="font-size: 9.5px; padding: 2px 6px; border-radius: 4px;">PENDIENTE</span></div>
+                    </div>
+                    <div class="task-desc">Implementación y pruebas relacionadas con Clima y lluvia dinámica. Ver detalle en DASHBOARD.md.</div>
+                </div>
+            </div>
+            <div class="task pending">
+                <input type="checkbox" id="t_r23">
+                <div class="task-content">
+                    <div class="task-title-row">
+                        <div class="task-title"><span class="orderBadge">R23</span><label for="t_r23">R23. 📋 Presentación visual de físicas</label></div>
+                        <div class="tokensRow"><span class="badgePending" style="font-size: 9.5px; padding: 2px 6px; border-radius: 4px;">PENDIENTE</span></div>
+                    </div>
+                    <div class="task-desc">Implementación y pruebas relacionadas con Presentación visual de físicas. Ver detalle en DASHBOARD.md.</div>
+                </div>
+            </div>
+            <div class="task pending">
+                <input type="checkbox" id="t_r24">
+                <div class="task-content">
+                    <div class="task-title-row">
+                        <div class="task-title"><span class="orderBadge">R24</span><label for="t_r24">R24. 📋 Telemetría del muro y estadísticas</label></div>
+                        <div class="tokensRow"><span class="badgePending" style="font-size: 9.5px; padding: 2px 6px; border-radius: 4px;">PENDIENTE</span></div>
+                    </div>
+                    <div class="task-desc">Implementación y pruebas relacionadas con Telemetría del muro y estadísticas. Ver detalle en DASHBOARD.md.</div>
+                </div>
+            </div>
+            <div class="task pending">
+                <input type="checkbox" id="t_r25">
+                <div class="task-content">
+                    <div class="task-title-row">
+                        <div class="task-title"><span class="orderBadge">R25</span><label for="t_r25">R25. 📋 Órdenes del muro estratégicas</label></div>
+                        <div class="tokensRow"><span class="badgePending" style="font-size: 9.5px; padding: 2px 6px; border-radius: 4px;">PENDIENTE</span></div>
+                    </div>
+                    <div class="task-desc">Implementación y pruebas relacionadas con Órdenes del muro estratégicas. Ver detalle en DASHBOARD.md.</div>
+                </div>
+            </div>
+            <div class="task pending">
+                <input type="checkbox" id="t_r26">
+                <div class="task-content">
+                    <div class="task-title-row">
+                        <div class="task-title"><span class="orderBadge">R26</span><label for="t_r26">R26. 📋 Sucesos D20 y reglas limitantes</label></div>
+                        <div class="tokensRow"><span class="badgePending" style="font-size: 9.5px; padding: 2px 6px; border-radius: 4px;">PENDIENTE</span></div>
+                    </div>
+                    <div class="task-desc">Implementación y pruebas relacionadas con Sucesos D20 y reglas limitantes. Ver detalle en DASHBOARD.md.</div>
+                </div>
+            </div>
+            <div class="task pending">
+                <input type="checkbox" id="t_r27">
+                <div class="task-content">
+                    <div class="task-title-row">
+                        <div class="task-title"><span class="orderBadge">R27</span><label for="t_r27">R27. 📋 Fixtures y tests de regresión cruzada</label></div>
+                        <div class="tokensRow"><span class="badgePending" style="font-size: 9.5px; padding: 2px 6px; border-radius: 4px;">PENDIENTE</span></div>
+                    </div>
+                    <div class="task-desc">Implementación y pruebas relacionadas con Fixtures y tests de regresión cruzada. Ver detalle en DASHBOARD.md.</div>
+                </div>
+            </div>
+            <div class="task pending">
+                <input type="checkbox" id="t_r28">
+                <div class="task-content">
+                    <div class="task-title-row">
+                        <div class="task-title"><span class="orderBadge">R28</span><label for="t_r28">R28. 📋 Estado versionado y persistencia del juego</label></div>
+                        <div class="tokensRow"><span class="badgePending" style="font-size: 9.5px; padding: 2px 6px; border-radius: 4px;">PENDIENTE</span></div>
+                    </div>
+                    <div class="task-desc">Implementación y pruebas relacionadas con Estado versionado y persistencia del juego. Ver detalle en DASHBOARD.md.</div>
+                </div>
+            </div>
+
         </div>
 
         <!-- =================== SPRINT 3 (AUDIO, TELEMETRÍA Y CLIMA - 16 SUBTAREAS) =================== -->

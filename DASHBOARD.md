@@ -37,7 +37,7 @@ Leyenda de Estado:
 | **Sprint 2** | SC Físico, Undercut/Overcut Orgánico, Monoplaza Vectorial 2D, Desdoblamiento | ✅ **COMPLETADO** |
 | **Sprint 2.1** | **Resolución de Bugs Críticos y Altos de Auditoría (C1-C7, A1-A6)** | ✅ **COMPLETADO (23/23 Tests PASS)** |
 | **Sprint 2.5** | **Deuda Técnica de Auditoría (M1-M10, B1-B7)** | ✅ **COMPLETADO (17/17 Tareas - 46 Tests PASS)** |
-| **Sprint 2.8** | **Salto de Calidad: Fidelidad de Simulación, Geometría, Muro Táctico y revisión DRS (Q1-Q19)** | 🟡 **Q1-Q5 aprobadas localmente; 232 tests PASS; Q6-Q19 pendientes, implementación en pausa** |
+| **Sprint 2.8** | **Salto de Calidad: Fidelidad de Simulación, Geometría, Muro Táctico y revisión DRS (Q1-Q19)** | 🟡 **Q1-Q5 aprobadas localmente; Q6-Q19 pendientes, Q6 expandida a todos los circuitos (Q6.1-Q6.21)** |
 | **Sprint 2.9** | **Reglamento FIA 2025, identidad técnica de equipos y experiencia de carrera (R01-R28)** | 🟡 **PLANIFICACIÓN ACTUAL — integración/publicación autorizadas; implementación pendiente de autorización** |
 | **Sprint 3** | **Audio, Telemetría Avanzada, Radar GPS & Clima (4 tareas definidas; desglose histórico de 16 incompleto)** | ⏳ **PLANIFICADO (Después del Sprint 2.9; coordinar clima con R22)** |
 | **Sprint 4** | **Épica: F1 Team Principal & Race Manager (estimación histórica de 12 tareas sin desglose)** | ⏳ **BACKLOG — requiere definición antes de implementar** |
@@ -188,7 +188,7 @@ Los 13 bugs críticos y altos detectados en la auditoría fueron implementados y
   * *Corrección de integración detectada en revisión:* el efecto de animación de `RaceCanvas` debe renovarse cuando cambia `selectedCarId`; de lo contrario, cámara y telemetría siguen al nuevo coche pero el renderer conserva la selección inicial y no muestra su etiqueta/halo. Verificados en navegador el cambio Norris → Verstappen y la vuelta a vista general sin etiqueta ni halo de selección, sin errores de consola.
   * *Resultado final local (17/09/2026):* meta con ancho/grosor lineales y ajedrezado visible; distancia de etiquetas de curva corregida; LOD y colocación sin solapamientos en `CarLabels.ts`; actualización de selección conectada al bucle de `RaceCanvas`. **232 pruebas PASS, 0 FAIL** (80 nuevas para Q5), build correcto y documentos sincronizados. Las regresiones Q1 siguen midiendo la huella vectorial; los símbolos de vista general se verifican aparte y no modifican las físicas ni las posiciones Q4. Revisadas en navegador la vista general, la meta y el seguimiento cercano en Barcelona. Los límites de zoom, giros, batallas, alertas y pelotones densos se comprueban con contextos Canvas instrumentados; no se declara revisión visual de todos los circuitos. Persiste únicamente el aviso previo de tamaño del bundle en build. Implementación finalizada y OK local recibido el 17/09/2026. El usuario solicita completar el contexto del backlog y no empezar Q6; esta entrega documental no incluye commit/push.
 
-### 🏛️ Bloque B: Identidad de Circuitos (Barcelona & Mónaco de Referencia) (3 Tareas)
+### 🏛️ Bloque B: Identidad de Circuitos (24 Tareas)
 * **Q6 — Escenario SVG por Capas con Identidad Real (Barcelona Permanente vs Mónaco Urbano):** `[ ] PENDIENTE`
   * *Problema:* Las pistas son genéricas (bandas uniformes de hierba, grava y pianos alrededor de toda la vuelta sin importar el circuito).
   * *Solución:* Estructura por capas: terreno base, escapatorias específicas (asfalto/grava en Barcelona vs muros contiguos sin grava en Mónaco), asfalto, pianos localizados en entradas/ápices/salidas, gradas y edificios emblemáticos.
@@ -196,6 +196,91 @@ Los 13 bugs críticos y altos detectados en la auditoría fueron implementados y
   * *Contexto de código:* `TrackRenderer.renderTrack` pinta hoy bandas cerradas de hierba/grava/pianos y una banda central oscura en toda la vuelta. `CircuitSpec` no tiene zonas de escenario ni `trackType`. El SVG proporciona el centro del trazado, no un plano de superficies; los comentarios «oficial FIA» del renderer no validan el arte.
   * *Implementación a preparar cuando se autorice:* definir datos por circuito con intervalos normalizados, lado respecto al sentido de marcha, superficie y polígonos/elementos decorativos. Transformarlos al mismo mundo que `activeTrack`, después de resolver sentido/meta. Orden de capas estable: terreno y escapatorias, pista, marcas/pianos, boxes y elementos periféricos; conservar coches/etiquetas legibles. Cachear lo estático, no recalcular polígonos en cada frame. Barcelona y Mónaco son las primeras referencias; otros circuitos deben tener un fallback explícito, sin heredar decoraciones del anterior.
   * *Límite y aceptación ampliada:* sin cambiar físicas, anchura Q7, trayectoria Q8 ni posiciones de DRS. No certificar edificios, superficies o dimensiones sin fuente; identificar arte aproximado. Probar los polígonos realmente dibujados, lateralidad, cruce de meta y cambio de circuito. Revisar ambas pistas a zoom general/cercano y cámara girada: sin franjas de grava en Mónaco, sin pianos continuos, sin tapar boxes, meta, coches ni selección. Medir coste del dibujo antes/después con el mismo escenario. **No empezada por petición expresa del usuario.**
+
+* **Q6.1 — Escenario SVG por Capas: MONZA:** `[ ] PENDIENTE`
+  * *Problema:* Falta identidad visual real para este circuito.
+  * *Solución:* Añadir terreno, escapatorias, pianos, gradas y edificios.
+
+* **Q6.2 — Escenario SVG por Capas: SILVERSTONE:** `[ ] PENDIENTE`
+  * *Problema:* Falta identidad visual real para este circuito.
+  * *Solución:* Añadir terreno, escapatorias, pianos, gradas y edificios.
+
+* **Q6.3 — Escenario SVG por Capas: SPA:** `[ ] PENDIENTE`
+  * *Problema:* Falta identidad visual real para este circuito.
+  * *Solución:* Añadir terreno, escapatorias, pianos, gradas y edificios.
+
+* **Q6.4 — Escenario SVG por Capas: SPIELBERG:** `[ ] PENDIENTE`
+  * *Problema:* Falta identidad visual real para este circuito.
+  * *Solución:* Añadir terreno, escapatorias, pianos, gradas y edificios.
+
+* **Q6.5 — Escenario SVG por Capas: INTERLAGOS:** `[ ] PENDIENTE`
+  * *Problema:* Falta identidad visual real para este circuito.
+  * *Solución:* Añadir terreno, escapatorias, pianos, gradas y edificios.
+
+* **Q6.6 — Escenario SVG por Capas: SUZUKA:** `[ ] PENDIENTE`
+  * *Problema:* Falta identidad visual real para este circuito.
+  * *Solución:* Añadir terreno, escapatorias, pianos, gradas y edificios.
+
+* **Q6.7 — Escenario SVG por Capas: ZANDVOORT:** `[ ] PENDIENTE`
+  * *Problema:* Falta identidad visual real para este circuito.
+  * *Solución:* Añadir terreno, escapatorias, pianos, gradas y edificios.
+
+* **Q6.8 — Escenario SVG por Capas: LAS-VEGAS:** `[ ] PENDIENTE`
+  * *Problema:* Falta identidad visual real para este circuito.
+  * *Solución:* Añadir terreno, escapatorias, pianos, gradas y edificios.
+
+* **Q6.9 — Escenario SVG por Capas: BAHRAIN:** `[ ] PENDIENTE`
+  * *Problema:* Falta identidad visual real para este circuito.
+  * *Solución:* Añadir terreno, escapatorias, pianos, gradas y edificios.
+
+* **Q6.10 — Escenario SVG por Capas: BAKU:** `[ ] PENDIENTE`
+  * *Problema:* Falta identidad visual real para este circuito.
+  * *Solución:* Añadir terreno, escapatorias, pianos, gradas y edificios.
+
+* **Q6.11 — Escenario SVG por Capas: MELBOURNE:** `[ ] PENDIENTE`
+  * *Problema:* Falta identidad visual real para este circuito.
+  * *Solución:* Añadir terreno, escapatorias, pianos, gradas y edificios.
+
+* **Q6.12 — Escenario SVG por Capas: MIAMI:** `[ ] PENDIENTE`
+  * *Problema:* Falta identidad visual real para este circuito.
+  * *Solución:* Añadir terreno, escapatorias, pianos, gradas y edificios.
+
+* **Q6.13 — Escenario SVG por Capas: SHANGHAI:** `[ ] PENDIENTE`
+  * *Problema:* Falta identidad visual real para este circuito.
+  * *Solución:* Añadir terreno, escapatorias, pianos, gradas y edificios.
+
+* **Q6.14 — Escenario SVG por Capas: JEDDAH:** `[ ] PENDIENTE`
+  * *Problema:* Falta identidad visual real para este circuito.
+  * *Solución:* Añadir terreno, escapatorias, pianos, gradas y edificios.
+
+* **Q6.15 — Escenario SVG por Capas: MARINA-BAY:** `[ ] PENDIENTE`
+  * *Problema:* Falta identidad visual real para este circuito.
+  * *Solución:* Añadir terreno, escapatorias, pianos, gradas y edificios.
+
+* **Q6.16 — Escenario SVG por Capas: LUSAIL:** `[ ] PENDIENTE`
+  * *Problema:* Falta identidad visual real para este circuito.
+  * *Solución:* Añadir terreno, escapatorias, pianos, gradas y edificios.
+
+* **Q6.17 — Escenario SVG por Capas: YAS-MARINA:** `[ ] PENDIENTE`
+  * *Problema:* Falta identidad visual real para este circuito.
+  * *Solución:* Añadir terreno, escapatorias, pianos, gradas y edificios.
+
+* **Q6.18 — Escenario SVG por Capas: HUNGARORING:** `[ ] PENDIENTE`
+  * *Problema:* Falta identidad visual real para este circuito.
+  * *Solución:* Añadir terreno, escapatorias, pianos, gradas y edificios.
+
+* **Q6.19 — Escenario SVG por Capas: MEXICO-CITY:** `[ ] PENDIENTE`
+  * *Problema:* Falta identidad visual real para este circuito.
+  * *Solución:* Añadir terreno, escapatorias, pianos, gradas y edificios.
+
+* **Q6.20 — Escenario SVG por Capas: MONTREAL:** `[ ] PENDIENTE`
+  * *Problema:* Falta identidad visual real para este circuito.
+  * *Solución:* Añadir terreno, escapatorias, pianos, gradas y edificios.
+
+* **Q6.21 — Escenario SVG por Capas: AUSTIN:** `[ ] PENDIENTE`
+  * *Problema:* Falta identidad visual real para este circuito.
+  * *Solución:* Añadir terreno, escapatorias, pianos, gradas y edificios.
+
 
 * **Q7 — Anchura de Pista Variable por Tramo y Capacidad de Adelantamiento:** `[ ] PENDIENTE`
   * *Problema:* Anchura constante en toda la pista limita o falsea adelantamientos.
@@ -299,7 +384,11 @@ Los 13 bugs críticos y altos detectados en la auditoría fueron implementados y
   * *Dependencias y cierre:* R01-R03 definen contratos reutilizables; R04 añade integración visual y escenarios de aceptación sobre Q19, sin implementar el DRS dos veces. Primera referencia Barcelona/Mónaco con notas oficiales de evento pendientes de aportar/verificar. Registrar cualquier geometría provisional como estimada. **Esta tarea aún no corrige el DRS en el juego.**
   * *Puntos de entrada y frontera de entrega:* modificar `DrsZoneSpec`/`CircuitSpec`, parser, `CarState`, `DRSModel` y llamada real de `RaceSimulation`; consumidores en `CarRenderer` y telemetría solo leen estado. Los contratos mínimos de cruces/evento/permisos necesarios para Q19 no cierran automáticamente R01-R03. Preparar fixtures de detección verificados o explícitamente sintéticos antes de sustituir la lógica; sin datos reales suficientes, indicar el límite de la entrega. R04 completa explicación visual/animación y R05 el efecto aerodinámico; Q19 no debe introducir otro bonus de velocidad.
 
-**Reconciliación de propuestas anteriores con el Sprint 2.9:** Q3 debe permitir límite de boxes por evento (80 km/h por defecto) y fast lane de hasta 3.5 m; Q10 necesita una línea de compromiso basada en geometría, no una supuesta distancia FIA universal de 0.05 vueltas. Los modificadores de Q11/Q12/Q15 y las recompensas Q17 son propuestas de diseño, no constantes reglamentarias. Q17 queda sujeto a R26: no montar piezas ni alterar límites del ERS durante una vuelta. Q18 y T3.1 mantienen el requisito personalizado de SC urbano mínimo 10 vueltas; no se atribuye a la FIA. El perfil reglamentario alternativo de R10 requiere aprobación antes de cambiar ese comportamiento.
+**Reconciliación de propuestas anteriores con el Sprint 2.9:** Q3: `[x] COMPLETADO`
+Q4: `[x] COMPLETADO`
+Q5: `[x] COMPLETADO`
+
+Q3 debe permitir límite de boxes por evento (80 km/h por defecto) y fast lane de hasta 3.5 m; Q10 necesita una línea de compromiso basada en geometría, no una supuesta distancia FIA universal de 0.05 vueltas. Los modificadores de Q11/Q12/Q15 y las recompensas Q17 son propuestas de diseño, no constantes reglamentarias. Q17 queda sujeto a R26: no montar piezas ni alterar límites del ERS durante una vuelta. Q18 y T3.1 mantienen el requisito personalizado de SC urbano mínimo 10 vueltas; no se atribuye a la FIA. El perfil reglamentario alternativo de R10 requiere aprobación antes de cambiar ese comportamiento.
 
 ---
 
