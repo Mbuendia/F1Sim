@@ -1,0 +1,1597 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Visual F1 Simulator - Épica F1 Manager & Motor 3D</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; padding: 20px; background-color: #0b1120; color: #f1f5f9; }
+        .container { max-width: 1040px; margin: 0 auto; background: #1e293b; padding: 30px; border-radius: 14px; box-shadow: 0 12px 30px rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.1); }
+        .headerRow { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #334155; padding-bottom: 16px; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+        h1 { margin: 0; font-size: 22px; color: #38bdf8; display: flex; align-items: center; gap: 10px; }
+        
+        /* ── SUMMARY TOKENS CARDS ── */
+        .tokenSummaryGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; margin-bottom: 20px; }
+        .tokenCard { background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 12px; text-align: center; }
+        .tokenCard.highlight { border-color: rgba(56, 189, 248, 0.4); background: rgba(14, 116, 144, 0.15); }
+        .tokenCard.epicManager { border-color: rgba(6, 182, 212, 0.4); background: rgba(8, 145, 178, 0.15); }
+        .tokenCard.epic3D { border-color: rgba(59, 130, 246, 0.4); background: rgba(37, 99, 235, 0.15); }
+        .tokenCardTitle { font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px; color: #94a3b8; font-weight: 700; margin-bottom: 4px; }
+        .tokenValueRow { display: flex; justify-content: space-around; align-items: baseline; gap: 6px; margin-top: 4px; }
+        .tokenGemini { color: #38bdf8; font-size: 15px; font-weight: 800; }
+        .tokenClaude { color: #f97316; font-size: 15px; font-weight: 800; }
+        .tokenLabel { font-size: 9px; color: #64748b; font-weight: 600; }
+
+        /* ── TIMELINE & QUOTA CARDS ── */
+        .timelineGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin-bottom: 25px; }
+        .timelineCard { background: rgba(15, 23, 42, 0.9); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; padding: 14px 16px; position: relative; overflow: hidden; }
+        .timelineCard.hybrid { border-color: rgba(34, 197, 94, 0.4); background: rgba(6, 78, 59, 0.2); }
+        .timelineCard.fast { border-color: rgba(56, 189, 248, 0.4); background: rgba(14, 116, 144, 0.15); }
+        .timelineCard.relaxed { border-color: rgba(168, 85, 247, 0.4); background: rgba(88, 28, 135, 0.15); }
+        .timelineBadge { font-size: 10px; font-weight: 800; text-transform: uppercase; padding: 2px 8px; border-radius: 12px; display: inline-block; margin-bottom: 6px; }
+        .tbGreen { background: rgba(34, 197, 94, 0.2); color: #4ade80; border: 1px solid #22c55e; }
+        .tbBlue { background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid #0284c7; }
+        .tbPurple { background: rgba(168, 85, 247, 0.2); color: #c084fc; border: 1px solid #9333ea; }
+        .timelineTitle { font-size: 14px; font-weight: 800; color: #f8fafc; margin-bottom: 4px; }
+        .timelineDuration { font-size: 20px; font-weight: 900; color: #38bdf8; margin: 4px 0; }
+        .timelineDesc { font-size: 11.5px; color: #94a3b8; line-height: 1.45; }
+
+        /* ── STRATEGY RECOMMENDATION BOX ── */
+        .strategyBox { background: rgba(15, 23, 42, 0.9); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 10px; padding: 16px 20px; margin-bottom: 25px; }
+        .strategyTitle { font-size: 13.5px; font-weight: 800; color: #38bdf8; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+        .strategyGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        @media (max-width: 700px) { .strategyGrid { grid-template-columns: 1fr; } }
+        .strategyCol { background: rgba(30, 41, 59, 0.6); padding: 12px; border-radius: 8px; border-left: 3px solid #38bdf8; }
+        .strategyCol.claude { border-left-color: #f97316; }
+        .strategyColTitle { font-size: 12.5px; font-weight: 700; color: #f8fafc; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+        .strategyColDesc { font-size: 11.5px; color: #94a3b8; line-height: 1.45; }
+        .taskTagList { margin-top: 6px; font-size: 11px; font-weight: 700; }
+        .tagGemini { color: #38bdf8; }
+        .tagClaude { color: #fb923c; }
+
+        /* ── TOOLBAR GLOBAL CONTROLS ── */
+        .toolbarControls { display: flex; align-items: center; justify-content: space-between; background: rgba(15, 23, 42, 0.9); border: 1px solid #334155; border-radius: 8px; padding: 8px 14px; margin: 25px 0 15px 0; flex-wrap: wrap; gap: 10px; }
+        .toolbarLeft { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #cbd5e1; font-weight: 700; }
+        .toolbarRight { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .toolbarBtn { background: rgba(30, 41, 59, 0.8); color: #cbd5e1; border: 1px solid #475569; border-radius: 6px; padding: 6px 12px; font-size: 11.5px; font-weight: 700; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; }
+        .toolbarBtn:hover { background: #38bdf8; color: #0b1120; border-color: #38bdf8; }
+        .toolbarBtn.activeSprintBtn { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border-color: #f59e0b; }
+        .toolbarBtn.activeSprintBtn:hover { background: #f59e0b; color: #0b1120; }
+
+        /* ── SPRINTS ACCORDION ── */
+        .sprintHeader { margin: 18px 0 10px 0; font-size: 14.5px; font-weight: 700; color: #cbd5e1; background: rgba(30, 41, 59, 0.6); border: 1px solid #334155; border-radius: 8px; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; cursor: pointer; user-select: none; transition: all 0.2s; }
+        .sprintHeader:hover { background: rgba(51, 65, 85, 0.8); border-color: rgba(56, 189, 248, 0.4); }
+        .sprintHeader.activeSprint { border-color: #f59e0b; background: rgba(245, 158, 11, 0.12); }
+        .sprintHeaderLeft { display: flex; align-items: center; gap: 8px; }
+        .sprintHeaderRight { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; color: #94a3b8; }
+        .chevron { display: inline-block; transition: transform 0.25s ease; font-size: 11px; color: #94a3b8; margin-right: 4px; }
+        .chevron.collapsed { transform: rotate(-90deg); }
+        .sprintBody { display: block; transition: all 0.3s ease; }
+        .sprintBody.collapsed { display: none; }
+
+        .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+        .dotGreen { background: #22c55e; }
+        .dotOrange { background: #f59e0b; }
+        .dotPurple { background: #a855f7; }
+        .dotBlue { background: #3b82f6; }
+        .dotCyan { background: #06b6d4; }
+        .dotPink { background: #ec4899; }
+        .dotGold { background: #eab308; }
+
+        .badgeProgress { background: #22c55e; color: #022c22; font-weight: 800; padding: 3px 10px; border-radius: 20px; font-size: 11.5px; }
+        .badgePending { background: #f59e0b; color: #451a03; font-weight: 800; padding: 3px 10px; border-radius: 20px; font-size: 11.5px; }
+        .badgeFuture { background: #a855f7; color: #2e1065; font-weight: 800; padding: 3px 10px; border-radius: 20px; font-size: 11.5px; }
+        .badgeEpicManager { background: #0891b2; color: #ecfeff; font-weight: 800; padding: 3px 10px; border-radius: 20px; font-size: 11.5px; }
+        .badgeEpic3D { background: #2563eb; color: #eff6ff; font-weight: 800; padding: 3px 10px; border-radius: 20px; font-size: 11.5px; }
+        .badgeIdea { background: #db2777; color: #fdf2f8; font-weight: 800; padding: 3px 10px; border-radius: 20px; font-size: 11.5px; }
+        .badgeVoice { background: #ca8a04; color: #fefce8; font-weight: 800; padding: 3px 10px; border-radius: 20px; font-size: 11.5px; }
+
+        /* ── TASKS ── */
+        .task { display: flex; align-items: flex-start; margin-bottom: 12px; padding: 12px 14px; background: rgba(15, 23, 42, 0.75); border: 1px solid rgba(255, 255, 255, 0.08); border-left: 4px solid #22c55e; border-radius: 8px; transition: all 0.2s; }
+        .task:hover { background: rgba(30, 41, 59, 0.95); }
+        .task.pending { border-left-color: #38bdf8; }
+        .task.geminiFocus { border-left-color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); background: rgba(14, 116, 144, 0.12); }
+        .task.future { border-left-color: #a855f7; }
+        .task.manager { border-left-color: #06b6d4; }
+        .task.threeD { border-left-color: #3b82f6; }
+        .task.idea { border-left-color: #ec4899; }
+        .task.voice { border-left-color: #eab308; background: rgba(30, 27, 75, 0.4); }
+        .task input { margin-top: 4px; margin-right: 14px; width: 18px; height: 18px; cursor: pointer; accent-color: #22c55e; }
+        .task.pending input { accent-color: #38bdf8; }
+        .task.manager input { accent-color: #06b6d4; }
+        .task.threeD input { accent-color: #3b82f6; }
+        .task.idea input { accent-color: #ec4899; }
+        .task.voice input { accent-color: #eab308; }
+        .task-content { flex: 1; }
+        .task-title-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; flex-wrap: wrap; gap: 8px; }
+        .task-title { font-weight: bold; font-size: 13.5px; color: #f8fafc; display: flex; align-items: center; gap: 8px; }
+        .task-title label { cursor: pointer; }
+        .task-desc { font-size: 12px; color: #94a3b8; line-height: 1.4; }
+
+        /* ── TOKEN & MODEL BADGES ── */
+        .tokensRow { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+        .badgeToken { font-size: 9.5px; font-weight: 700; padding: 2px 6px; border-radius: 4px; font-family: 'Consolas', monospace; display: flex; align-items: center; gap: 4px; }
+        .tokGemini { background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.25); }
+        .tokClaude { background: rgba(249, 115, 22, 0.12); color: #fb923c; border: 1px solid rgba(249, 115, 22, 0.25); }
+        .tokModelRecGemini { background: rgba(14, 165, 233, 0.2); color: #38bdf8; border: 1px solid #0284c7; font-weight: 800; }
+        .tokModelRecClaude { background: rgba(234, 88, 12, 0.2); color: #fb923c; border: 1px solid #ea580c; font-weight: 800; }
+        .tokLevelLow { background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.3); }
+        .tokLevelMed { background: rgba(250, 204, 21, 0.15); color: #fde047; border: 1px solid rgba(250, 204, 21, 0.3); }
+        .tokLevelHigh { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+        .tagCompleted { font-size: 10px; background: rgba(34, 197, 94, 0.15); color: #22c55e; padding: 2px 6px; border-radius: 4px; font-weight: 700; }
+        .orderBadge { font-size: 10.5px; background: rgba(255,255,255,0.08); color: #cbd5e1; padding: 1px 5px; border-radius: 3px; font-weight: 600; }
+        .badgeFocusGemini { font-size: 9.5px; font-weight: 800; background: rgba(56, 189, 248, 0.25); color: #38bdf8; border: 1px solid #38bdf8; padding: 2px 6px; border-radius: 4px; }
+
+        /* ── CONFIRMED DECISION BOX ── */
+        .decisionBox { background: rgba(15, 23, 42, 0.95); border: 2px solid rgba(234, 179, 8, 0.4); border-radius: 12px; padding: 18px 22px; margin: 25px 0 10px 0; }
+        .decisionHeader { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; border-bottom: 1px solid rgba(234, 179, 8, 0.3); padding-bottom: 10px; margin-bottom: 14px; }
+        .decisionTitle { font-size: 15px; font-weight: 800; color: #facc15; display: flex; align-items: center; gap: 8px; }
+        .decisionSubtitle { font-size: 12px; color: #94a3b8; margin-top: 2px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="headerRow">
+            <h1>🏎️ Dashboard Visual - F1 Simulator</h1>
+            <span class="badgeProgress" style="font-size: 13px;">55 / 125 COMPLETADAS (44%)</span>
+        </div>
+
+        <!-- ── LEYES FUNDAMENTALES DEL PROYECTO (BIBLIA PARA IA) ── -->
+        <div style="background: rgba(15, 23, 42, 0.95); border: 2px solid #38bdf8; border-radius: 10px; padding: 14px 18px; margin-bottom: 20px;">
+            <div style="font-size: 13.5px; font-weight: 800; color: #38bdf8; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+                <span>📜 REGLAS DE ORO OBLIGATORIAS PARA TODOS LOS MODELOS DE IA</span>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; font-size: 11.5px; line-height: 1.45;">
+                <div style="background: rgba(30, 41, 59, 0.7); padding: 8px 12px; border-radius: 6px; border-left: 3px solid #22c55e;">
+                    <strong style="color: #4ade80;">1. 🧪 Testing Obligatorio:</strong> Cada cambio de código debe incluir y pasar su test automatizado en <code>test-suite.mjs</code>.
+                </div>
+                <div style="background: rgba(30, 41, 59, 0.7); padding: 8px 12px; border-radius: 6px; border-left: 3px solid #f59e0b;">
+                    <strong style="color: #fbbf24;">2. 📋 Refinamiento Previo:</strong> Toda tarea debe refinarse aquí y ser validada por el usuario antes de codificar.
+                </div>
+                <div style="background: rgba(30, 41, 59, 0.7); padding: 8px 12px; border-radius: 6px; border-left: 3px solid #38bdf8;">
+                    <strong style="color: #38bdf8;">3. 🎮 100% Team Principal:</strong> Simulador de muro de boxes táctico. Cero conducción arcade.
+                </div>
+                <div style="background: rgba(30, 41, 59, 0.7); padding: 8px 12px; border-radius: 6px; border-left: 3px solid #c084fc;">
+                    <strong style="color: #c084fc;">4. 🏎️ Físicas Orgánicas:</strong> Sin teleportaciones ni hacks. Pérdida en boxes y adelantamientos 100% matemáticos.
+                </div>
+            </div>
+        </div>
+
+        <!-- ── RESUMEN DE ESTIMACIÓN DE CONSUMO DE TOKENS ── -->
+        <div class="tokenSummaryGrid">
+            <div class="tokenCard highlight">
+                <div class="tokenCardTitle">🔥 Gran Total Pendiente</div>
+                <div class="tokenValueRow">
+                    <div>
+                        <div class="tokenGemini">~1.75M</div>
+                        <div class="tokenLabel">Gemini Flash</div>
+                    </div>
+                    <div>
+                        <div class="tokenClaude">~2.40M</div>
+                        <div class="tokenLabel">Claude Opus</div>
+                    </div>
+                </div>
+            </div>
+            <div class="tokenCard" style="border-color: rgba(34, 197, 94, 0.4); background: rgba(6, 78, 59, 0.2);">
+                <div class="tokenCardTitle">⚡ Sprint 2 & 2.5 (Completados)</div>
+                <div class="tokenValueRow">
+                    <div>
+                        <div class="tokenGemini" style="color: #4ade80;">43 / 43</div>
+                        <div class="tokenLabel">100% DONE</div>
+                    </div>
+                    <div>
+                        <div class="tokenClaude" style="color: #4ade80;">46 Tests</div>
+                        <div class="tokenLabel">Automated PASS</div>
+                    </div>
+                </div>
+            </div>
+            <div class="tokenCard" style="border-color: rgba(245, 158, 11, 0.5); background: rgba(245, 158, 11, 0.12);">
+                <div class="tokenCardTitle" style="color: #fbbf24;">🎯 Sprint 2.8 (Salto de Calidad)</div>
+                <div class="tokenValueRow">
+                    <div>
+                        <div class="tokenGemini" style="color: #fbbf24;">18 Tareas</div>
+                        <div class="tokenLabel">Refinado</div>
+                    </div>
+                    <div>
+                        <div class="tokenClaude" style="color: #fbbf24;">4 Bloques</div>
+                        <div class="tokenLabel">Auditoría IA</div>
+                    </div>
+                </div>
+            </div>
+            <div class="tokenCard">
+                <div class="tokenCardTitle">🔮 Sprint 3 (16 Tareas)</div>
+                <div class="tokenValueRow">
+                    <div>
+                        <div class="tokenGemini">~249k</div>
+                        <div class="tokenLabel">Gemini Flash</div>
+                    </div>
+                    <div>
+                        <div class="tokenClaude">~341k</div>
+                        <div class="tokenLabel">Claude Opus</div>
+                    </div>
+                </div>
+            </div>
+            <div class="tokenCard epicManager">
+                <div class="tokenCardTitle">👔 Épica F1 Manager (12 Tareas)</div>
+                <div class="tokenValueRow">
+                    <div>
+                        <div class="tokenGemini">~480k</div>
+                        <div class="tokenLabel">Gemini Flash</div>
+                    </div>
+                    <div>
+                        <div class="tokenClaude">~660k</div>
+                        <div class="tokenLabel">Claude Opus</div>
+                    </div>
+                </div>
+            </div>
+            <div class="tokenCard epic3D">
+                <div class="tokenCardTitle">🌐 Épica 3D (10 Tareas)</div>
+                <div class="tokenValueRow">
+                    <div>
+                        <div class="tokenGemini">~495k</div>
+                        <div class="tokenLabel">Gemini Flash</div>
+                    </div>
+                    <div>
+                        <div class="tokenClaude">~680k</div>
+                        <div class="tokenLabel">Claude Opus</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── ESTIMACIÓN DE TIEMPO EN SEMANAS & CICLOS DE CUOTA ── -->
+        <div class="timelineGrid">
+            <div class="timelineCard hybrid">
+                <span class="timelineBadge tbGreen">🚀 Recomendado</span>
+                <div class="timelineTitle">Enfoque Mixto Híbrido</div>
+                <div class="timelineDuration">1.5 a 2 Semanas</div>
+                <div class="timelineDesc">
+                    <strong>Gemini 3.7 Flash</strong> para UI/CSS/HUDs (22 tareas, sin gastar cuota de Claude) + <strong>Claude Opus/Sonnet</strong> para Físicas, I+D y 3D (22 tareas en bloques de 5h).
+                </div>
+            </div>
+            <div class="timelineCard fast">
+                <span class="timelineBadge tbBlue">⚡ Modo Turbo</span>
+                <div class="timelineTitle">Intensivo Gemini Flash</div>
+                <div class="timelineDuration">~1 Semana (5-7 días)</div>
+                <div class="timelineDesc">
+                    Aprovecha el reinicio diario de Gemini (00:00 UTC / 02:00 CET) con 4M TPM y sin esperas. Ritmo de 5 a 8 tareas resueltas al día de forma continua.
+                </div>
+            </div>
+            <div class="timelineCard relaxed">
+                <span class="timelineBadge tbPurple">☕ Ritmo Moderado</span>
+                <div class="timelineTitle">Sesiones de 1-2h al día</div>
+                <div class="timelineDuration">3 a 4 Semanas</div>
+                <div class="timelineDesc">
+                    1 a 2 tareas por día respetando los límites de ventana rodante de 5 horas de Claude Pro sin sobrepasar los topes de mensajes.
+                </div>
+            </div>
+        </div>
+
+        <!-- ── GUÍA ESTRATÉGICA DE ASIGNACIÓN DE MODELOS ── -->
+        <div class="strategyBox">
+            <div class="strategyTitle">💡 Guía de Asignación de Modelos por Complejidad y Gasto de Tokens</div>
+            <div class="strategyGrid">
+                <div class="strategyCol">
+                    <div class="strategyColTitle"><span class="tagGemini">♊ Usar Gemini 3.7 Flash</span> (Máxima Eficiencia & Rapidez)</div>
+                    <div class="strategyColDesc">Ideal para UI/CSS, telemetría dual, audio manager, widgets meteorológicos, reinicio de carrera, inbox, HUD Dual Driver Cards, sliders de Pace/Fuel/ERS y mapping SVG.</div>
+                    <div class="taskTagList tagGemini">Tareas: T23, T21, T20, T26, T19, T22, T27, T18.1, T18.2, T18.4, T17.1, T17.3, T14.1, T14.3, T31, T32, T34, T37, T38, T40, T43, T50</div>
+                </div>
+                <div class="strategyCol claude">
+                    <div class="strategyColTitle"><span class="tagClaude">🧠 Usar Claude / Pro Thinking</span> (Lógica de Simulación, 3D & Algoritmos)</div>
+                    <div class="strategyColDesc">Ideal para I+D con horas CFD, micro-sectores deltaT, sintetizador procedural V6, hidrodinámica de pista mojada, extrusión 3D Three.js y shaders WebGL.</div>
+                    <div class="taskTagList tagClaude">Tareas: T24, T29, T25, T30, T28, T18.3, T17.2, T14.2, T33, T35, T36, T39, T41, T42, T44, T45, T46, T47, T48, T49, T51, T52</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── BARRA DE CONTROL GLOBAL DE ACORDEÓN ── -->
+        <div class="toolbarControls">
+            <div class="toolbarLeft">
+                <span>📁 Control de Vistas:</span>
+            </div>
+            <div class="toolbarRight">
+                <button class="toolbarBtn activeSprintBtn" onclick="focusActiveSprint()">⚡ Abrir Sprint 2.8 (Salto de Calidad & Muro)</button>
+                <button class="toolbarBtn" onclick="expandAllSprints()">📂 Desplegar Todo</button>
+                <button class="toolbarBtn" onclick="collapseAllSprints()">📁 Comprimir Todo</button>
+            </div>
+        </div>
+
+        <!-- =================== SPRINT 2 (COMPLETADO AL 100%) =================== -->
+        <div class="sprintHeader" onclick="toggleSprint('sprint2')">
+            <div class="sprintHeaderLeft">
+                <span class="chevron collapsed" id="chevron-sprint2">▼</span>
+                <span class="dot dotGreen"></span>
+                <span>Sprint 2 — Físicas Core, SC & Monoplazas (26 Tareas)</span>
+                <span class="badgeProgress">26 / 26 Completadas (100%)</span>
+            </div>
+            <div class="sprintHeaderRight">
+                <span>Completadas: <strong>26</strong> | Pendientes: <strong>0</strong></span>
+            </div>
+        </div>
+
+        <div class="sprintBody collapsed" id="body-sprint2">
+            <div class="task">
+                <input type="checkbox" id="t15" checked>
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">#1</span><label for="t15">15. 🚨 Coche de Seguridad (Safety Car) en Pista</label></div><span class="tagCompleted">COMPLETADO</span></div>
+                    <div class="task-desc">Despliegue de Aston Martin Vantage Safety Car físico en pista, VSC, compactación de pelotón y reinicio.</div>
+                </div>
+            </div>
+
+            <div class="task">
+                <input type="checkbox" id="t16" checked>
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">#2</span><label for="t16">16. 🏴 Sistema de Abandono y Banderas</label></div><span class="tagCompleted">COMPLETADO</span></div>
+                    <div class="task-desc">Gestión completa de averías mecánicas con humo, desvanecimiento por grúa, banderas amarillas por sector y RaceFlagsHUD.</div>
+                </div>
+            </div>
+
+            <div class="task">
+                <input type="checkbox" id="t23" checked>
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">#3</span><label for="t23">23. ⌨️ Corrección de Tecla ESC y Deselección de Piloto</label></div><span class="tagCompleted">COMPLETADO</span></div>
+                    <div class="task-desc">Restablecer inmediatamente la cámara a la visión general completa del circuito (Overview) al pulsar ESC o deseleccionar en Leaderboard y Dock.</div>
+                </div>
+            </div>
+
+            <div class="task">
+                <input type="checkbox" id="t21" checked>
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">#4</span><label for="t21">21. ⏱️ Desacoplar Velocidad de Semáforos del Multiplicador</label></div><span class="tagCompleted">COMPLETADO</span></div>
+                    <div class="task-desc">Cadencia fija y constante de 1.0s de tiempo real por cada luz roja de salida desacoplada del speedMultiplier con dtRaw.</div>
+                </div>
+            </div>
+
+            <div class="task">
+                <input type="checkbox" id="t20" checked>
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">#5</span><label for="t20">20. 🚦 Corrección de Visibilidad del Semáforo al Iniciar GP</label></div><span class="tagCompleted">COMPLETADO</span></div>
+                    <div class="task-desc">Modal oculta durante el estado idle y la vuelta de formación; se abre exclusivamente al estar los 20 monoplazas colocados en parrilla (grid-ready).</div>
+                </div>
+            </div>
+
+            <div class="task">
+                <input type="checkbox" id="t26" checked>
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">#6</span><label for="t26">26. 📐 Resize Dinámico del Canvas al Ocultar/Mostrar Paneles</label></div><span class="tagCompleted">COMPLETADO</span></div>
+                    <div class="task-desc">ResizeObserver en el contenedor del canvas que redimensiona y recentra el circuito al instante al colapsar o expandir las barras laterales.</div>
+                </div>
+            </div>
+
+            <div class="task">
+                <input type="checkbox" id="t19" checked>
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">#7</span><label for="t19">19. 📢 Modal de Notificación de DNF en Pantalla</label></div><span class="tagCompleted">COMPLETADO</span></div>
+                    <div class="task-desc">Tarjeta flotante animada en esquina superior derecha cada vez que un monoplaza abandona, con bandera SVG, piloto, escudería, vuelta, sector y motivo de avería.</div>
+                </div>
+            </div>
+
+            <div class="task">
+                <input type="checkbox" id="t22" checked>
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">#8</span><label for="t22">22. 🎨 Reparar Landing Page (Neumático y Título)</label></div><span class="tagCompleted">COMPLETADO</span></div>
+                    <div class="task-desc">Sustituida animación frágil por Three.js WebGL 3D, neumático Pirelli P Zero interactivo y botón 'ENTRAR AL PADDOCK'.</div>
+                </div>
+            </div>
+
+            <div class="task">
+                <input type="checkbox" id="t22_1" checked>
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">#9</span><label for="t22_1">22.1. 🌐 Setup Three.js WebGL Canvas & Contexto 3D</label></div><span class="tagCompleted">COMPLETADO</span></div>
+                    <div class="task-desc">Three.js WebGL canvas, PerspectiveCamera, antialiasing, tone mapping ACESFilmic e iluminación de estudio F1.</div>
+                </div>
+            </div>
+
+            <div class="task">
+                <input type="checkbox" id="t22_2" checked>
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">#10</span><label for="t22_2">22.2. 🏎️ Geometría 3D Procedural del Neumático F1 18"</label></div><span class="tagCompleted">COMPLETADO</span></div>
+                    <div class="task-desc">Modelado 3D de toroide de 18", flancos cóncavos, banda de rodadura y hombros con textura de caucho negro mate MeshStandardMaterial.</div>
+                </div>
+            </div>
+
+            <div class="task">
+                <input type="checkbox" id="t22_3" checked>
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">#11</span><label for="t22_3">22.3. 🎨 Shaders & Texturas PBR de Compuestos Pirelli</label></div><span class="tagCompleted">COMPLETADO</span></div>
+                    <div class="task-desc">Mapeo UV procedural para la franja oficial (Rojo Soft, Amarillo Medium, Blanco Hard, Verde Inter, Azul Wet) con selector interactivo.</div>
+                </div>
+            </div>
+
+            <div class="task">
+                <input type="checkbox" id="t22_4" checked>
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">#12</span><label for="t22_4">22.4. ⚙️ Llanta 3D Forjada de 5 Radios, Disco Carbono & Pinza Brembo</label></div><span class="tagCompleted">COMPLETADO</span></div>
+                    <div class="task-desc">Llanta forjada con 5 radios dobles, tuerca monotuerca central roja, disco perforado de carbono-cerámica y pinza de freno Brembo.</div>
+                </div>
+            </div>
+
+            <div class="task">
+                <input type="checkbox" id="t22_5" checked>
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">#13</span><label for="t22_5">22.5. 🖱️ Interactividad Parallax 3D con Inclinación al Mover el Ratón</label></div><span class="tagCompleted">COMPLETADO</span></div>
+                    <div class="task-desc">Inclinación elástica suave del conjunto rueda/llanta (lerp en rotation.x y rotation.y) siguiendo en tiempo real la posición del cursor en pantalla.</div>
+                </div>
+            </div>
+
+            <div class="task">
+                <input type="checkbox" id="t22_6" checked>
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">#14</span><label for="t22_6">22.6. 🎬 Cinemática de Rodadura, Partículas de Humo y Transición</label></div><span class="tagCompleted">COMPLETADO</span></div>
+                    <div class="task-desc">Entrada cinemática rodando desde el fondo, partículas y aceleración turbo con zoom-through hacia el Paddock al pulsar 'ENTRAR'.</div>
+                </div>
+            </div>
+
+            <div class="task">
+                <input type="checkbox" id="t24" checked>
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">#15</span><label for="t24">24. 🏎️ Corregir Geometría del Pit Lane de Silverstone</label></div><span class="tagCompleted">COMPLETADO</span></div>
+                    <div class="task-desc">Eliminado el trazado en 'X' al alinear los waypoints de boxes de Silverstone (pitEntryT: 0.36, pitExitT: 0.46) con la recta The Wing (0.42).</div>
+                </div>
+            </div>
+
+            <div class="task">
+                <input type="checkbox" id="t27" checked>
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">#16</span><label for="t27">27. 🏁 Integración de Banderas Oficiales SVG de Pilotos y Circuitos</label></div><span class="tagCompleted">COMPLETADO</span></div>
+                    <div class="task-desc">Corregido FlagIcon.tsx para usar BASE_URL de Vite (/F1Sim/flags/iso.svg) y fallback emoji si falla la red, visible en pilotos, circuitos, Leaderboard y HUD.</div>
+                </div>
+            </div>
+
+            <div class="task">
+                <input type="checkbox" id="t14_0" checked>
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">#17</span><label for="t14_0">14.0 🗂️ Sidebar Derecho con Pestañas (🏎️ Telemetría Coche / 🌧️ Pista & Radar GPS)</label></div><span class="tagCompleted">COMPLETADO</span></div>
+                    <div class="task-desc">Eliminada cabecera redundante de piloto (ya visible en el HUD inferior) e integradas pestañas dinámicas con transición suave para alternar telemetría y meteorología.</div>
+                </div>
+            </div>
+
+            <div class="task">
+                <input type="checkbox" id="t14_1" checked>
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">#18</span><label for="t14_1">14.1 🌤️ Widget de Estado de Pista, Temperaturas & Grip</label></div><span class="tagCompleted">COMPLETADO</span></div>
+                    <div class="task-desc">Monitor en vivo de nivel de agua en mm y %, temperatura de asfalto y aire, grip real por sectores y vector de viento.</div>
+                </div>
+            </div>
+
+            <div class="task">
+                <input type="checkbox" id="t18_4" checked>
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">#19</span><label for="t18_4">18.4 🔄 Botón de Reinicio con Activación de Secuencia de Salida</label></div><span class="tagCompleted">COMPLETADO</span></div>
+                    <div class="task-desc">Al pulsar "Reiniciar", restablecer el estado y lanzar automáticamente la vuelta de formación y confirmación de parrilla sin dejar el simulador bloqueado en 'idle'.</div>
+                </div>
+            </div>
+
+            <div class="task">
+                <input type="checkbox" id="t31_luck" checked>
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">#20</span><label for="t31_luck">31. 🎲 Modal de Evento de Suerte con Dado D20 (Safety Car / Bandera Roja)</label></div><span class="tagCompleted">COMPLETADO</span></div>
+                    <div class="task-desc">Tirada animada del dado D20 de 20 caras al salir SC/VSC, selección del compuesto óptimo para las condiciones de pista y regeneración del 100% de salud de neumáticos.</div>
+                </div>
+            </div>
+
+            <div class="task">
+                <input type="checkbox" id="t33_hud" checked>
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">#21</span><label for="t33_hud">33. 📐 Fix de Centrado Dinámico y Responsivo del HUD Inferior</label></div><span class="tagCompleted">COMPLETADO</span></div>
+                    <div class="task-desc">Centrado matemático perfecto del dock de telemetría inferior entre ambos sidebars, adaptándose de forma fluida al colapsar o desplegar paneles.</div>
+                </div>
+            </div>
+
+            <div class="task">
+                <input type="checkbox" id="t34_homebtn" checked>
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">#22</span><label for="t34_homebtn">34. 🔘 Fix de Estilo Visual del Botón 'Volver a GPs' en la Barra Superior</label></div><span class="tagCompleted">COMPLETADO</span></div>
+                    <div class="task-desc">Corregida la clase .homeBtn en App.module.css con tipografía Orbitron, borde iluminado, icono alineado y hover en rojo competición.</div>
+                </div>
+            </div>
+
+            <!-- FÍSICAS AVANZADAS SPRINT 2 (4 TAREAS - 100% COMPLETADAS) -->
+            <div class="task">
+                <input type="checkbox" id="t29" checked>
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">#23</span><label for="t29">29. 🏎️ Suavizado y Fluidez de Movimiento a x1 (Anti-Jitter)</label></div><span class="tagCompleted">COMPLETADO</span></div>
+                    <div class="task-desc">Interpolación suave de posición y ángulo sub-punto entre waypoints del trazado en CarRenderer y minimapa.</div>
+                </div>
+            </div>
+
+            <div class="task">
+                <input type="checkbox" id="t25" checked>
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">#24</span><label for="t25">25. 🔴 Sistema y Probabilidad de Banderas Rojas</label></div><span class="tagCompleted">COMPLETADO</span></div>
+                    <div class="task-desc">Suspensión total ante colisiones graves (major_crash), retorno a boxes a 80 km/h, tirada D20 y standing restart.</div>
+                </div>
+            </div>
+
+            <div class="task">
+                <input type="checkbox" id="t30" checked>
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">#25</span><label for="t30">30. 🌡️ Modelo Termodinámico Continuo (Frenos, Neumáticos y Motor)</label></div><span class="tagCompleted">COMPLETADO</span></div>
+                    <div class="task-desc">Simulación térmica continua de frenos (350-1050°C), motor V6 Turbo (95-120°C) y ventana óptima de neumáticos.</div>
+                </div>
+            </div>
+
+            <div class="task">
+                <input type="checkbox" id="t28" checked>
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">#26</span><label for="t28">28. 🏎️ Modelado Vectorial de Monoplazas 2025</label></div><span class="tagCompleted">COMPLETADO</span></div>
+                    <div class="task-desc">Diseño procedural vectorial de alta precisión en Canvas con halo, alerones, suspensiones y colores oficiales 2025.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- =================== SPRINT 2.1 (AUDITORÍA FÍSICAS CRÍTICAS - COMPLETADO AL 100%) =================== -->
+        <div class="sprintHeader" onclick="toggleSprint('sprint2_1')">
+            <div class="sprintHeaderLeft">
+                <span class="chevron collapsed" id="chevron-sprint2_1">▼</span>
+                <span class="dot dotGreen"></span>
+                <span>Sprint 2.1 — Correcciones Críticas de Auditoría (13 Tareas)</span>
+                <span class="badgeProgress">13 / 13 Completadas (100% - 23 Tests PASS)</span>
+            </div>
+            <div class="sprintHeaderRight">
+                <span>Completadas: <strong>13</strong> | Pendientes: <strong>0</strong></span>
+            </div>
+        </div>
+
+        <div class="sprintBody collapsed" id="body-sprint2_1">
+            <div class="task"><input type="checkbox" checked><div class="task-content"><div class="task-title-row"><div class="task-title"><span class="orderBadge">C1</span><label>Safety Car Infinito Eliminado (fieldSpread lead-lap + timeout)</label></div><span class="tagCompleted">COMPLETADO</span></div><div class="task-desc">El SC ya no se bloquea por monoplazas doblados y garantiza su retirada con hardTimeout (targetLaps + 3).</div></div></div>
+            <div class="task"><input type="checkbox" checked><div class="task-content"><div class="task-title-row"><div class="task-title"><span class="orderBadge">C2</span><label>Restricción de Velocidad en Retirada de SC (140 km/h)</label></div><span class="tagCompleted">COMPLETADO</span></div><div class="task-desc">Corregido scMaxSpeed en modo returning para evitar aceleraciones descontroladas a 340 km/h hacia el SC.</div></div></div>
+            <div class="task"><input type="checkbox" checked><div class="task-content"><div class="task-title-row"><div class="task-title"><span class="orderBadge">C3</span><label>Spawn de SC sin Teleportación de Vuelta y sin Deadlock</label></div><span class="tagCompleted">COMPLETADO</span></div><div class="task-desc">El SC spawnea en leaderProgress + 0.03 y transiciona a leading sin quedarse a 40 km/h eternamente.</div></div></div>
+            <div class="task"><input type="checkbox" checked><div class="task-content"><div class="task-title-row"><div class="task-title"><span class="orderBadge">C4</span><label>Ventana de Entrada a Boxes Ampliada (trackT >= 0.94)</label></div><span class="tagCompleted">COMPLETADO</span></div><div class="task-desc">El SC ya no se salta la entrada a boxes ante caídas de FPS o multiplicadores de velocidad altos.</div></div></div>
+            <div class="task"><input type="checkbox" checked><div class="task-content"><div class="task-title-row"><div class="task-title"><span class="orderBadge">C5</span><label>Reset Limpio de scEndingLap al Reiniciar y tras Relanzamiento</label></div><span class="tagCompleted">COMPLETADO</span></div><div class="task-desc">Limpieza automática a null cuando todos los monoplazas activos cruzan la línea de meta.</div></div></div>
+            <div class="task"><input type="checkbox" checked><div class="task-content"><div class="task-title-row"><div class="task-title"><span class="orderBadge">C6</span><label>Desactivación Inmediata de VSC al Desplegar SC o Bandera Roja</label></div><span class="tagCompleted">COMPLETADO</span></div><div class="task-desc">Previene banderas verdes prematuras mientras el Safety Car físico permanece en pista.</div></div></div>
+            <div class="task"><input type="checkbox" checked><div class="task-content"><div class="task-title-row"><div class="task-title"><span class="orderBadge">C7</span><label>Eliminación de Mutaciones In-Place en Ordenaciones de Coches</label></div><span class="tagCompleted">COMPLETADO</span></div><div class="task-desc">Sustituido this.cars.sort() por copias inmutables [...this.cars].sort().</div></div></div>
+            <div class="task"><input type="checkbox" checked><div class="task-content"><div class="task-title-row"><div class="task-title"><span class="orderBadge">A1</span><label>Cálculo de isCatchingPack Referenciado al Coche Delantero</label></div><span class="tagCompleted">COMPLETADO</span></div><div class="task-desc">Evita que monoplazas en cola de pelotón aceleren a 220 km/h contra los coches precedentes.</div></div></div>
+            <div class="task"><input type="checkbox" checked><div class="task-content"><div class="task-title-row"><div class="task-title"><span class="orderBadge">A2</span><label>Corrección de Lógica Invertida en Banderas Azules</label></div><span class="tagCompleted">COMPLETADO</span></div><div class="task-desc">Detección correcta de monoplazas doblando que se aproximan por detrás.</div></div></div>
+            <div class="task"><input type="checkbox" checked><div class="task-content"><div class="task-title-row"><div class="task-title"><span class="orderBadge">A3</span><label>Calibración Geométrica de Boxes Barcelona (pitEntryT: 0.92, pitExitT: 0.11)</label></div><span class="tagCompleted">COMPLETADO</span></div><div class="task-desc">Alineación exacta con pitLanePoints eliminando saltos visuales de 300px al entrar y salir de boxes.</div></div></div>
+            <div class="task"><input type="checkbox" checked><div class="task-content"><div class="task-title-row"><div class="task-title"><span class="orderBadge">A4</span><label>Probabilidad de Parada en Boxes Desacoplada de los FPS</label></div><span class="tagCompleted">COMPLETADO</span></div><div class="task-desc">Escalado continuo por dt para mantener la misma probabilidad estratégica a 30, 60 o 144 FPS.</div></div></div>
+            <div class="task"><input type="checkbox" checked><div class="task-content"><div class="task-title-row"><div class="task-title"><span class="orderBadge">A5</span><label>Reparación de Pinchazos Tras el Cambio de Ruedas</label></div><span class="tagCompleted">COMPLETADO</span></div><div class="task-desc">El pinchazo permanece activo durante el carril y se elimina al completar el stopDuration en el cajón.</div></div></div>
+            <div class="task"><input type="checkbox" checked><div class="task-content"><div class="task-title-row"><div class="task-title"><span class="orderBadge">A6</span><label>Cierre Real del endLap del Stint Anterior</label></div><span class="tagCompleted">COMPLETADO</span></div><div class="task-desc">Al montar un compuesto nuevo, el stint previo registra endLap = car.currentLap en el historial.</div></div></div>
+        </div>
+
+        <!-- =================== SPRINT 2.5 (DEUDA TÉCNICA - 17/17 COMPLETADAS - 46 TESTS PASS) =================== -->
+        <div class="sprintHeader" onclick="toggleSprint('sprint2_5')">
+            <div class="sprintHeaderLeft">
+                <span class="chevron collapsed" id="chevron-sprint2_5">▼</span>
+                <span class="dot dotGreen"></span>
+                <span>Sprint 2.5 — Deuda Técnica & Refinamiento (17 Tareas)</span>
+                <span class="badgeProgress">17 / 17 Completadas (100% - 46 Tests PASS)</span>
+            </div>
+            <div class="sprintHeaderRight">
+                <span>Completadas: <strong>17</strong> | Pendientes: <strong>0</strong></span>
+            </div>
+        </div>
+
+        <div class="sprintBody collapsed" id="body-sprint2_5">
+            <!-- BLOQUE A: VISUAL MONOPLAZAS (COMPLETADO) -->
+            <div class="task">
+                <input type="checkbox" id="t_m1" checked>
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">M1</span><label for="t_m1">M1. 🏎️ Reordenación de Capas (Z-Order) en Monoplaza Vectorial 2D</label></div>
+                        <span class="tagCompleted">COMPLETADO</span></div>
+                    <div class="task-desc">Dibujar en orden estricto: 1) Fondo plano, 2) Suspensiones, 3) Neumáticos + compuesto, 4) Chasis, 5) Alerones/Halo/Casco.</div>
+                </div>
+            </div>
+
+            <div class="task">
+                <input type="checkbox" id="t_m2" checked>
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">M2</span><label for="t_m2">M2. 🌑 Sombra del Monoplaza Fija en Pantalla (Desacoplada de Rotación)</label></div>
+                        <span class="tagCompleted">COMPLETADO</span></div>
+                    <div class="task-desc">Proyectar sombra elíptica antes de la rotación local para que caiga de forma uniforme en coordenadas de pantalla.</div>
+                </div>
+            </div>
+
+            <div class="task">
+                <input type="checkbox" id="t_m3" checked>
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">M3</span><label for="t_m3">M3. 💨 Humo de Monoplaza Retirado con Compensación de Rotación de Cámara</label></div>
+                        <span class="tagCompleted">COMPLETADO</span></div>
+                    <div class="task-desc">Sumar camera.rotation al cálculo de offsets de las partículas de humo para evitar expulsión lateral.</div>
+                </div>
+            </div>
+
+            <!-- BLOQUE B: FÍSICAS DE NEUMÁTICOS Y BOXES (COMPLETADO) -->
+            <div class="task">
+                <input type="checkbox" id="t_m4" checked>
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">M4</span><label for="t_m4">M4. 🛞 Desgaste Individual de Neumáticos sin Curación Mágica en Curva</label></div>
+                        <span class="tagCompleted">COMPLETADO</span></div>
+                    <div class="task-desc">Salud FL/FR/RL/RR persistente en TireState con degradación monótona asimétrica según apoyos laterales G.</div>
+                </div>
+            </div>
+
+            <div class="task">
+                <input type="checkbox" id="t_m5" checked>
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">M5</span><label for="t_m5">M5. 📉 Recalibración del Cliff de Degradación Térmica</label></div>
+                        <span class="tagCompleted">COMPLETADO</span></div>
+                    <div class="task-desc">Activar el cliff crítico solo por debajo del 30% de salud para que los blandos alcancen las 15 vueltas nominales.</div>
+                </div>
+            </div>
+
+            <div class="task">
+                <input type="checkbox" id="t_m9" checked>
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">M9</span><label for="t_m9">M9. 🅿️ Asignación Activa del Estado 'pit' en car.status</label></div>
+                        <span class="tagCompleted">COMPLETADO</span></div>
+                    <div class="task-desc">Establecer car.status = 'pit' al entrar al pit lane y restaurar 'running' al incorporarse a pista.</div>
+                </div>
+            </div>
+
+            <div class="task">
+                <input type="checkbox" id="t_m10" checked>
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">M10</span><label for="t_m10">M10. 🎯 Activación de Paradas Estratégicas Programadas (scheduledLap)</label></div>
+                        <span class="tagCompleted">COMPLETADO</span></div>
+                    <div class="task-desc">Ejecutar paradas planificadas cuando car.currentLap >= car.pitStop.scheduledLap.</div>
+                </div>
+            </div>
+
+            <!-- BLOQUE C: EQUIPOS Y SECTORES (COMPLETADO) -->
+            <div class="task">
+                <input type="checkbox" id="t_m6" checked>
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">M6</span><label for="t_m6">M6. 👁️ Accesibilidad y Contraste de Mercedes (WCAG AAA)</label></div>
+                        <span class="tagCompleted">COMPLETADO</span></div>
+                    <div class="task-desc">Cambiar textColor de Mercedes a negro (#000000) para alcanzar ratio de contraste 15.6:1.</div>
+                </div>
+            </div>
+
+            <div class="task">
+                <input type="checkbox" id="t_m7" checked>
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">M7</span><label for="t_m7">M7. 🎨 Diferenciación Cromática Red Bull (#041E42) vs Racing Bulls (#1634CC)</label></div>
+                        <span class="tagCompleted">COMPLETADO</span></div>
+                    <div class="task-desc">Red Bull a azul marino mate con acento rojo; Racing Bulls a azul metálico con acento plateado.</div>
+                </div>
+            </div>
+
+            <div class="task">
+                <input type="checkbox" id="t_m8" checked>
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">M8</span><label for="t_m8">M8. 🏁 Consolidación de Sectores desde activeTrack</label></div>
+                        <span class="tagCompleted">COMPLETADO</span></div>
+                    <div class="task-desc">Eliminar límites de sectores hardcodeados en spline.ts e IncidentModel.ts en favor de activeTrack.</div>
+                </div>
+            </div>
+
+            <!-- BLOQUE D: LIMPIEZA DE CÓDIGO MUERTO (COMPLETADO) -->
+            <div class="task"><input type="checkbox" id="t_b1" checked><div class="task-content"><div class="task-title-row"><div class="task-title"><span class="orderBadge">B1</span><label for="t_b1">B1. Limpieza de SpriteManager no utilizado en CarRenderer</label></div><span class="tagCompleted">COMPLETADO</span></div><div class="task-desc">Retirar código muerto de carga de sprites no usados.</div></div></div>
+            <div class="task"><input type="checkbox" id="t_b2" checked><div class="task-content"><div class="task-title-row"><div class="task-title"><span class="orderBadge">B2</span><label for="t_b2">B2. Retiro de Parámetro Huérfano speedFactor en TireModel</label></div><span class="tagCompleted">COMPLETADO</span></div><div class="task-desc">Limpieza de firma en updateTires.</div></div></div>
+            <div class="task"><input type="checkbox" id="t_b3" checked><div class="task-content"><div class="task-title-row"><div class="task-title"><span class="orderBadge">B3</span><label for="t_b3">B3. Protección Fallback en getCompoundProperties</label></div><span class="tagCompleted">COMPLETADO</span></div><div class="task-desc">Evitar crash si se consulta un compuesto no registrado.</div></div></div>
+            <div class="task"><input type="checkbox" id="t_b4" checked><div class="task-content"><div class="task-title-row"><div class="task-title"><span class="orderBadge">B4</span><label for="t_b4">B4. Método Estático IncidentModel.reset()</label></div><span class="tagCompleted">COMPLETADO</span></div><div class="task-desc">Reset del contador nextId entre carreras y tests.</div></div></div>
+            <div class="task"><input type="checkbox" id="t_b5" checked><div class="task-content"><div class="task-title-row"><div class="task-title"><span class="orderBadge">B5</span><label for="t_b5">B5. Generación de Incidentes de Tipo 'spin'</label></div><span class="tagCompleted">COMPLETADO</span></div><div class="task-desc">Conectar trompos con pérdida temporal de tiempo.</div></div></div>
+            <div class="task"><input type="checkbox" id="t_b6" checked><div class="task-content"><div class="task-title-row"><div class="task-title"><span class="orderBadge">B6</span><label for="t_b6">B6. Unificación drsEligible vs drsAvailable en f1.ts</label></div><span class="tagCompleted">COMPLETADO</span></div><div class="task-desc">Consolidar tipos duplicados.</div></div></div>
+            <div class="task"><input type="checkbox" id="t_b7" checked><div class="task-content"><div class="task-title-row"><div class="task-title"><span class="orderBadge">B7</span><label for="t_b7">B7. Clarificación Semántica tireWear vs tireHealth</label></div><span class="tagCompleted">COMPLETADO</span></div><div class="task-desc">Unificar que el porcentaje siempre representa salud restante (100% = nueva).</div></div></div>
+        </div>
+
+        <!-- =================== SPRINT 2.8 (SALTO DE CALIDAD & FIDELIDAD - 18 TAREAS) =================== -->
+        <div class="sprintHeader" onclick="toggleSprint('sprint2_8')">
+            <div class="sprintHeaderLeft">
+                <span class="chevron collapsed" id="chevron-sprint2_8">▼</span>
+                <span class="dot dotOrange"></span>
+                <span>Sprint 2.8 — 🎯 Salto de Calidad: Fidelidad de Simulación, Geometría y Muro Táctico (18 Tareas)</span>
+                <span class="badgePending">2 / 18 Tareas (Refinado / Listo para Validación)</span>
+            </div>
+            <div class="sprintHeaderRight">
+                <span>Completadas: <strong>2</strong> | Pendientes: <strong>16</strong></span>
+            </div>
+        </div>
+
+        <div class="sprintBody collapsed" id="body-sprint2_8">
+            <!-- BLOQUE A: ESCALA, GEOMETRÍA Y CINEMÁTICA ESPACIAL -->
+            <div style="font-size: 12px; font-weight: 800; color: #38bdf8; margin: 10px 0 6px 4px; text-transform: uppercase; letter-spacing: 0.5px;">
+                📐 Bloque A: Escala, Geometría y Cinemática Espacial (5 Tareas)
+            </div>
+            <div class="task">
+                <input type="checkbox" id="t_q1" checked>
+                <div class="task-content">
+                    <div class="task-title-row">
+                        <div class="task-title"><span class="orderBadge">Q1</span><label for="t_q1">Q1. 🏎️ Calibración de Escala de Monoplaza y Anchura de Pista (Anti-Solapamiento)</label></div>
+                        <div class="tokensRow"><span class="badgePending" style="font-size: 9.5px; padding: 2px 6px; border-radius: 4px;">PENDIENTE DE REVISIÓN</span> <span class="badgeToken tokLevelHigh">🔴 Muy Alta</span><span class="badgeToken tokGemini">♊ CarRenderer.ts:34 / RaceSimulation.ts:495</span></div>
+                    </div>
+                    <div class="task-desc">Unificar tamaño visual del monoplaza, anchura de pista (trackHalfWidth) y desplazamiento lateral (lateralOffset) para que dos coches en paralelo mantengan distancia de seguridad transversal sin solaparse.</div>
+                </div>
+            </div>
+
+            <div class="task">
+                <input type="checkbox" id="t_q2" checked>
+                <div class="task-content">
+                    <div class="task-title-row">
+                        <div class="task-title"><span class="orderBadge">Q2</span><label for="t_q2">Q2. 🛣️ Carril de Boxes con Entrada/Salida Propias y Continuidad Física</label></div>
+                        <div class="tokensRow"><span class="badgePending" style="font-size: 9.5px; padding: 2px 6px; border-radius: 4px;">PENDIENTE DE REVISIÓN</span> <span class="badgeToken tokLevelHigh">🔴 Muy Alta</span><span class="badgeToken tokGemini">♊ svgTrackParser.ts:221</span></div>
+                    </div>
+                    <div class="task-desc">Sustituir el desplazamiento ciego de puntos por splines dedicados de desaceleración en entrada (pitEntryT) y aceleración en salida (pitExitT) con empalme tangencial continuo y suave sin saltos de coordenadas.</div>
+                </div>
+            </div>
+
+            <div class="task pending">
+                <input type="checkbox" id="t_q3">
+                <div class="task-content">
+                    <div class="task-title-row">
+                        <div class="task-title"><span class="orderBadge">Q3</span><label for="t_q3">Q3. 🧱 Geometría Diferenciada para Muro, Carril Rápido y Cajones de Boxes</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelMed">🟡 Media</span><span class="badgeToken tokGemini">♊ TrackRenderer.ts:165</span></div>
+                    </div>
+                    <div class="task-desc">Construir entidades geométricas separadas para: 1) borde exterior de pista, 2) muro divisor de boxes, 3) carril rápido (fast lane 80 km/h) y 4) zona de trabajo con los 10 cajones de parada.</div>
+                </div>
+            </div>
+
+            <div class="task pending">
+                <input type="checkbox" id="t_q4">
+                <div class="task-content">
+                    <div class="task-title-row">
+                        <div class="task-title"><span class="orderBadge">Q4</span><label for="t_q4">Q4. 📍 Coordenada Cartesiana Única (Unificación Pista vs Boxes)</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelHigh">🟠 Alta</span><span class="badgeToken tokGemini">♊ Camera.ts / CarRenderer.ts / Minimap / App.tsx</span></div>
+                    </div>
+                    <div class="task-desc">Almacenar en CarState una posición cartesiana real única (worldX, worldY) calculada tanto en pista como en el pit lane, compartida idénticamente por CarRenderer, Camera.followCar, Minimap y detección de click.</div>
+                </div>
+            </div>
+
+            <div class="task pending">
+                <input type="checkbox" id="t_q5">
+                <div class="task-content">
+                    <div class="task-title-row">
+                        <div class="task-title"><span class="orderBadge">Q5</span><label for="t_q5">Q5. 📏 Corrección de Doble Zoom en Meta y Nivel de Detalle (LOD) de Etiquetas</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelHigh">🟠 Alta</span><span class="badgeToken tokGemini">♊ TrackRenderer.ts / CarRenderer.ts</span></div>
+                    </div>
+                    <div class="task-desc">Desacoplar metros físicos del circuito del multiplicador de zoom de pantalla para evitar gigantismo en la meta. Aplicar LOD a etiquetas de monoplazas según distancia y prioridad (seleccionado y batallas < 0.8s).</div>
+                </div>
+            </div>
+
+            <!-- BLOQUE B: IDENTIDAD DE CIRCUITOS (BARCELONA & MÓNACO) -->
+            <div style="font-size: 12px; font-weight: 800; color: #a855f7; margin: 14px 0 6px 4px; text-transform: uppercase; letter-spacing: 0.5px;">
+                🏛️ Bloque B: Identidad de Circuitos — Barcelona Permanente vs Mónaco Urbano (3 Tareas)
+            </div>
+            <div class="task pending">
+                <input type="checkbox" id="t_q6">
+                <div class="task-content">
+                    <div class="task-title-row">
+                        <div class="task-title"><span class="orderBadge">Q6</span><label for="t_q6">Q6. 🏛️ Escenario SVG por Capas con Identidad Real (Barcelona vs Mónaco)</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelMed">🟡 Media</span><span class="badgeToken tokGemini">♊ circuits.ts / barcelonaTrack.ts</span></div>
+                    </div>
+                    <div class="task-desc">Estructura por capas diferenciadas: terreno, escapatorias reales (asfalto/grava en Barcelona vs muros contiguos sin grava en Mónaco), asfalto, pianos localizados en entradas/ápices/salidas, gradas y edificios emblemáticos.</div>
+                </div>
+            </div>
+
+            <div class="task pending">
+                <input type="checkbox" id="t_q7">
+                <div class="task-content">
+                    <div class="task-title-row">
+                        <div class="task-title"><span class="orderBadge">Q7</span><label for="t_q7">Q7. 📐 Anchura de Pista Variable por Tramo y Capacidad de Adelantamiento</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelMed">🟡 Media</span><span class="badgeToken tokGemini">♊ spline.ts / circuits.ts</span></div>
+                    </div>
+                    <div class="task-desc">Definir anchura dinámica por sectores (ej. recta principal ancha 14m para 3 coches en paralelo vs curvas lentas o horquillas de 8-10m limitadas a 2 coches), condicionando la viabilidad matemática de adelantamiento.</div>
+                </div>
+            </div>
+
+            <div class="task pending">
+                <input type="checkbox" id="t_q8">
+                <div class="task-content">
+                    <div class="task-title-row">
+                        <div class="task-title"><span class="orderBadge">Q8</span><label for="t_q8">Q8. 🏎️ Trazada Ideal Engomada (Racing Line Exterior-Ápice-Exterior)</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelLow">🟢 Baja</span><span class="badgeToken tokGemini">♊ TrackRenderer.ts / TireModel.ts</span></div>
+                    </div>
+                    <div class="task-desc">Generar la trayectoria óptima geométrica exterior-ápice-exterior para cada circuito, con acumulación progresiva de adherencia y engomado visual negro sobre el asfalto vuelta tras vuelta.</div>
+                </div>
+            </div>
+
+            <!-- BLOQUE C: MURO TÁCTICO & ESTRATEGIA (100% TEAM PRINCIPAL) -->
+            <div style="font-size: 12px; font-weight: 800; color: #06b6d4; margin: 14px 0 6px 4px; text-transform: uppercase; letter-spacing: 0.5px;">
+                👔 Bloque C: Muro Táctico & Decisiones de Estrategia (5 Tareas)
+            </div>
+            <div class="task pending">
+                <input type="checkbox" id="t_q9">
+                <div class="task-content">
+                    <div class="task-title-row">
+                        <div class="task-title"><span class="orderBadge">Q9</span><label for="t_q9">Q9. 🛑 Órdenes de Boxes Vinculantes (Compuesto Elegido por el Jugador)</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelHigh">🟠 Alta</span><span class="badgeToken tokGemini">♊ PitStopModel.ts / BottomTelemetryDock.tsx</span></div>
+                    </div>
+                    <div class="task-desc">Hacer que la orden de parada y el compuesto seleccionado por el usuario (Soft, Medium, Hard, Inter, Wet) gobiernen de forma estricta la parada y el historial de stints sin selecciones aleatorias automáticas.</div>
+                </div>
+            </div>
+
+            <div class="task pending">
+                <input type="checkbox" id="t_q10">
+                <div class="task-content">
+                    <div class="task-title-row">
+                        <div class="task-title"><span class="orderBadge">Q10</span><label for="t_q10">Q10. ⚠️ Punto de Compromiso (Pit Commitment Line) y Cancelación de Parada</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelMed">🟡 Media</span><span class="badgeToken tokGemini">♊ PitStopModel.ts / RaceSimulation.ts</span></div>
+                    </div>
+                    <div class="task-desc">Establecer una línea de compromiso antes de pitEntryT donde el jugador puede abortar la parada ('Stay Out'). Una vez rebasada dicha línea, la entrada a boxes es irreversible.</div>
+                </div>
+            </div>
+
+            <div class="task pending">
+                <input type="checkbox" id="t_q11">
+                <div class="task-content">
+                    <div class="task-title-row">
+                        <div class="task-title"><span class="orderBadge">Q11</span><label for="t_q11">Q11. 👥 Gestión Dual de Pilotos del Equipo & Parada Doble (Double Stack)</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelHigh">🟠 Alta</span><span class="badgeToken tokGemini">♊ PitStopModel.ts / App.tsx</span></div>
+                    </div>
+                    <div class="task-desc">Panel de gestión simultánea para los dos coches de la escudería, con soporte para parada doble bajo Safety Car y penalización realista de espera en cola (3 a 5 segundos) para el segundo piloto.</div>
+                </div>
+            </div>
+
+            <div class="task pending">
+                <input type="checkbox" id="t_q12">
+                <div class="task-content">
+                    <div class="task-title-row">
+                        <div class="task-title"><span class="orderBadge">Q12</span><label for="t_q12">Q12. 🕹️ Modos de Ritmo del Piloto (Pace Modes: Push, Balanced, Save)</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelMed">🟡 Media</span><span class="badgeToken tokGemini">♊ RaceSimulation.ts / TireModel.ts</span></div>
+                    </div>
+                    <div class="task-desc">Selector táctico de 3 modos: Push (+0.3s ritmo, +40% degradación y consumo), Balanced (estándar), Save (-0.4s ritmo, -30% degradación, refrigeración térmica y ahorro de combustible).</div>
+                </div>
+            </div>
+
+            <div class="task pending">
+                <input type="checkbox" id="t_q13">
+                <div class="task-content">
+                    <div class="task-title-row">
+                        <div class="task-title"><span class="orderBadge">Q13</span><label for="t_q13">Q13. ⏱️ Predictor de Ventana de Reincorporación (Rejoin & Undercut Window)</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelMed">🟡 Media</span><span class="badgeToken tokGemini">♊ Leaderboard.tsx / RaceSimulation.ts</span></div>
+                    </div>
+                    <div class="task-desc">Calcular y proyectar en la torre de tiempos y el minimapa la posición virtual en la que reaparecería el monoplaza tras realizar una parada (descontando ~22s de pit loss de Barcelona).</div>
+                </div>
+            </div>
+
+            <!-- BLOQUE D: FÍSICAS ORGÁNICAS, BANDERAS Y CONSISTENCIA -->
+            <div style="font-size: 12px; font-weight: 800; color: #f59e0b; margin: 14px 0 6px 4px; text-transform: uppercase; letter-spacing: 0.5px;">
+                🏎️ Bloque D: Físicas Orgánicas, Banderas y Consistencia de Simulación (5 Tareas)
+            </div>
+            <div class="task pending">
+                <input type="checkbox" id="t_q14">
+                <div class="task-content">
+                    <div class="task-title-row">
+                        <div class="task-title"><span class="orderBadge">Q14</span><label for="t_q14">Q14. 🚀 Eliminación de Asignaciones Directas de Posición en SC y Bandera Roja</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelHigh">🟠 Alta</span><span class="badgeToken tokGemini">♊ SafetyCarModel.ts / RaceSimulation.ts</span></div>
+                    </div>
+                    <div class="task-desc">Sustituir asignaciones forzadas de progress por cinemática continua de frenado y aceleración (currentSpeedKmh, delta de distancia y aceleración por dt) sin saltos discretos ni teletransportes.</div>
+                </div>
+            </div>
+
+            <div class="task pending">
+                <input type="checkbox" id="t_q15">
+                <div class="task-content">
+                    <div class="task-title-row">
+                        <div class="task-title"><span class="orderBadge">Q15</span><label for="t_q15">Q15. 🏴 Centralización de Reglas de Banderas Azules y Tráfico de Doblados</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelHigh">🟠 Alta</span><span class="badgeToken tokGemini">♊ RaceSimulation.ts</span></div>
+                    </div>
+                    <div class="task-desc">Centralizar las reglas de banderas azules basándose en distancia real en metros en el spline entre el líder y el doblado, provocando deceleración suave (-15%) y apertura al exterior en recta sin brusquedades.</div>
+                </div>
+            </div>
+
+            <div class="task pending">
+                <input type="checkbox" id="t_q16">
+                <div class="task-content">
+                    <div class="task-title-row">
+                        <div class="task-title"><span class="orderBadge">Q16</span><label for="t_q16">Q16. 🔋 Modelo Dinámico de ERS, Combustible y Penalización Térmica en Agarre</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelMed">🟡 Media</span><span class="badgeToken tokGemini">♊ RaceSimulation.ts:834 / FuelModel.ts</span></div>
+                    </div>
+                    <div class="task-desc">Desbloquear la batería del 85% fijo para regenerar en frenada y desplegar en aceleración; eliminar el clamp de 0.5 kg de combustible; aplicar penalización térmica directamente sobre la fricción de curva.</div>
+                </div>
+            </div>
+
+            <div class="task pending">
+                <input type="checkbox" id="t_q17">
+                <div class="task-content">
+                    <div class="task-title-row">
+                        <div class="task-title"><span class="orderBadge">Q17</span><label for="t_q17">Q17. 🎲 Rebalanceo del D20 de Suerte hacia el Reglamento FIA</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelMed">🟡 Media</span><span class="badgeToken tokGemini">♊ RaceSimulation.ts:1262</span></div>
+                    </div>
+                    <div class="task-desc">Eliminar el cambio mágico de neumáticos en pista. Reconvertir la recompensa del D20 a ventajas reglamentarias: parada perfecta asegurada (1.9s), +15% de eficiencia en despliegue ERS o ajuste óptimo de alerón (+3 km/h).</div>
+                </div>
+            </div>
+
+            <div class="task pending">
+                <input type="checkbox" id="t_q18">
+                <div class="task-content">
+                    <div class="task-title-row">
+                        <div class="task-title"><span class="orderBadge">Q18</span><label for="t_q18">Q18. 🔄 Reconciliación de Dashboard, Timers de React y Reset Limpio</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelLow">🟢 Baja</span><span class="badgeToken tokGemini">♊ D20LuckModal.tsx:71 / RaceSimulation.ts</span></div>
+                    </div>
+                    <div class="task-desc">Conectar IncidentModel.reset() en initRace(); asegurar mínimo 10 vueltas para SC en circuito urbano según normativa; estabilizar timers en React para evitar reinicios por re-render.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- =================== SPRINT 3 (AUDIO, TELEMETRÍA Y CLIMA - 16 SUBTAREAS) =================== -->
+        <div class="sprintHeader" onclick="toggleSprint('sprint3')">
+            <div class="sprintHeaderLeft">
+                <span class="chevron collapsed" id="chevron-sprint3">▼</span>
+                <span class="dot dotPurple"></span>
+                <span>Sprint 3 — 🔮 Audio, Telemetría Avanzada, Radar GPS & Clima (16 Subtareas)</span>
+                <span class="badgeProgress">3 / 16 Subtareas (19%)</span>
+            </div>
+            <div class="sprintHeaderRight">
+                <span>Completadas: <strong>3</strong> | Pendientes: <strong>13</strong></span>
+            </div>
+        </div>
+
+        <div class="sprintBody collapsed" id="body-sprint3">
+            <!-- SECCIÓN A: METEOROLOGÍA AVANZADA, CHARCOS, LLUVIA & BANDERAS ROJAS -->
+            <div class="task">
+                <input type="checkbox" id="t14_7" checked>
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">#1</span><label for="t14_7">14.7 💧 Generación Visual de Charcos de Agua Dinámicos en Pista (Standing Water)</label></div><span class="tagCompleted">COMPLETADO</span></div>
+                    <div class="task-desc">Charcos de agua translúcidos y reflectantes sobre asfalto mojado en puntos bajos y curvas lentas con oscurecimiento PBR del asfalto.</div>
+                </div>
+            </div>
+
+            <div class="task">
+                <input type="checkbox" id="t14_10" checked>
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">#2</span><label for="t14_10">14.10 🏎️ Ampliación de Pista & Maniobras Laterales Multitrayectoria (Anti-Trenecito)</label></div><span class="tagCompleted">COMPLETADO</span></div>
+                    <div class="task-desc">Ensanche del carril lateral y mayor separación entre monoplazas para permitir adelantamientos paralelos y evitar el efecto trenecito.</div>
+                </div>
+            </div>
+
+            <div class="task">
+                <input type="checkbox" id="t14_11" checked>
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">#3</span><label for="t14_11">14.11 🎥 Cámara Libre 360° con Control de Ratón (Click & Drag Orbit, Pan & Zoom)</label></div><span class="tagCompleted">COMPLETADO</span></div>
+                    <div class="task-desc">Rotación libre 360° de la pista arrastrando el ratón con click izquierdo, desplazamiento panorámico con click derecho, zoom continuo con rueda y brújula con reset en doble click.</div>
+                </div>
+            </div>
+
+            <div class="task pending">
+                <input type="checkbox" id="t14_8">
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">#4</span><label for="t14_8">14.8 🔴 Protocolo FIA de Bandera Roja por Diluvio Extremo / Tormenta</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelHigh">🟠 Alto</span><span class="badgeToken tokGemini">♊ ~36k</span><span class="badgeToken tokClaude">🟠 ~50k</span><span class="badgeToken tokModelRecClaude">🧠 Rec: Claude / Pro</span></div></div>
+                    <div class="task-desc">Suspensión total de la carrera si el agua supera 4.8 mm o intensidad > 85%, entrada ordenada a boxes, congelación de cronómetro y procedimiento de relanzamiento tras amainar la tormenta.</div>
+                </div>
+            </div>
+
+            <div class="task pending">
+                <input type="checkbox" id="t14_9">
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">#5</span><label for="t14_9">14.9 🏁 Texturizado Realista de Asfalto PBR, Trazada Engomada Dinámica y Pianos 3D</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelMed">🟡 Medio</span><span class="badgeToken tokGemini">♊ ~26k</span><span class="badgeToken tokClaude">🟠 ~35k</span><span class="badgeToken tokModelRecGemini">🤖 Rec: Gemini Flash</span></div></div>
+                    <div class="task-desc">Grano de asfalto rugoso, acumulación progresiva de goma negra en la trazada ideal vuelta a vuelta y biselado con relieve en los bordillos.</div>
+                </div>
+            </div>
+
+            <div class="task pending">
+                <input type="checkbox" id="t14_2">
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">#6</span><label for="t14_2">14.2 🛰️ Radar Meteorológico GPS en Vivo con Nubes Dinámicas</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelMed">🟡 Medio</span><span class="badgeToken tokGemini">♊ ~26k</span><span class="badgeToken tokClaude">🟠 ~36k</span><span class="badgeToken tokModelRecGemini">🤖 Rec: Gemini Flash</span></div></div>
+                    <div class="task-desc">Radar geolocalizado en las coordenadas GPS del GP con barrido giratorio, baliza y nubes procedurales desplazándose según el viento.</div>
+                </div>
+            </div>
+
+            <div class="task pending">
+                <input type="checkbox" id="t14_3">
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">#7</span><label for="t14_3">14.3 💧 Curva y Gráfico de Previsión de Cantidad de Lluvia (5/10/15/30 min)</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelLow">🟢 Bajo</span><span class="badgeToken tokGemini">♊ ~22k</span><span class="badgeToken tokClaude">🟠 ~30k</span><span class="badgeToken tokModelRecGemini">🤖 Rec: Gemini Flash</span></div></div>
+                    <div class="task-desc">Gráfico temporal de intensidad de precipitación (mm/min esperados) para anticipar ventanas óptimas de cambio de neumáticos (Slicks ➔ Inter ➔ Wet).</div>
+                </div>
+            </div>
+
+            <div class="task pending">
+                <input type="checkbox" id="t14_4">
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">#8</span><label for="t14_4">14.4 💨 Anemómetro de Viento & Efecto Físico en Rectas/Curvas</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelLow">🟢 Bajo</span><span class="badgeToken tokGemini">♊ ~18k</span><span class="badgeToken tokClaude">🟠 ~24k</span><span class="badgeToken tokModelRecGemini">🤖 Rec: Gemini Flash</span></div></div>
+                    <div class="task-desc">Rosa de los vientos interactiva con ráfagas e incidencia en velocidad punta (viento a favor/en contra) y estabilidad aerodinámica en curvas rápidas.</div>
+                </div>
+            </div>
+
+            <div class="task pending">
+                <input type="checkbox" id="t14_5">
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">#9</span><label for="t14_5">14.5 🌧️ Efectos Visuales 2D de Lluvia en Canvas & Spray de Monoplazas</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelMed">🟡 Medio</span><span class="badgeToken tokGemini">♊ ~28k</span><span class="badgeToken tokClaude">🟠 ~38k</span><span class="badgeToken tokModelRecGemini">🤖 Rec: Gemini Flash</span></div></div>
+                    <div class="task-desc">Capa de renderizado 2D para gotas de lluvia con ángulo según viento, oscurecimiento y reflejos en el asfalto mojado, y estelas de spray de agua detrás de cada difusor.</div>
+                </div>
+            </div>
+
+            <div class="task pending">
+                <input type="checkbox" id="t14_6">
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">#10</span><label for="t14_6">14.6 🏁 Física de Neumáticos de Lluvia (Intermedios vs Wet) & Punto de Cruce</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelHigh">🟠 Alto</span><span class="badgeToken tokGemini">♊ ~40k</span><span class="badgeToken tokClaude">🟠 ~56k</span><span class="badgeToken tokModelRecClaude">🧠 Rec: Claude / Pro</span></div></div>
+                    <div class="task-desc">Simulación continua de milímetros de agua en pista (0mm a 6mm), pérdida progresiva de adherencia, aquaplaning en slicks y degradación térmica de lluvia en asfalto seco.</div>
+                </div>
+            </div>
+
+            <!-- SECCIÓN B: TELEMETRÍA COMPARATIVA -->
+            <div class="task pending">
+                <input type="checkbox" id="t18_1">
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">#11</span><label for="t18_1">18.1 📊 Selector y Layout de Telemetría Comparativa Dual</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelLow">🟢 Bajo</span><span class="badgeToken tokGemini">♊ ~15k</span><span class="badgeToken tokClaude">🟠 ~20k</span><span class="badgeToken tokModelRecGemini">🤖 Rec: Gemini Flash</span></div></div>
+                    <div class="task-desc">Modal y dock de control para seleccionar 2 pilotos rivales (ej. Verstappen vs Alonso) con tarjetas de escudería, tiempos de referencia y selector de canales.</div>
+                </div>
+            </div>
+
+            <div class="task pending">
+                <input type="checkbox" id="t18_2">
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">#12</span><label for="t18_2">18.2 📈 Gráficas Superpuestas en Tiempo Real (Speed, Throttle, Brake, RPM)</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelMed">🟡 Medio</span><span class="badgeToken tokGemini">♊ ~25k</span><span class="badgeToken tokClaude">🟠 ~34k</span><span class="badgeToken tokModelRecGemini">🤖 Rec: Gemini Flash</span></div></div>
+                    <div class="task-desc">Componente de telemetría continua con curvas superpuestas: velocidad (km/h), pedal de acelerador (0-100%), presión de frenado, marcha actual y RPM del motor.</div>
+                </div>
+            </div>
+
+            <div class="task pending">
+                <input type="checkbox" id="t18_3">
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">#13</span><label for="t18_3">18.3 ⏱️ Micro-Sectores & Delta Time Continuo (+/- 0.000s)</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelMed">🟡 Medio</span><span class="badgeToken tokGemini">♊ ~35k</span><span class="badgeToken tokClaude">🟠 ~48k</span><span class="badgeToken tokModelRecClaude">🧠 Rec: Claude / Pro</span></div></div>
+                    <div class="task-desc">Partición de la pista en 25 mini-sectores (morado récord, verde personal, amarillo lento) y cálculo matemático continuo del delta de tiempo en cada metro.</div>
+                </div>
+            </div>
+
+            <!-- SECCIÓN C: AUDIO Y EFECTOS DE SONIDO -->
+            <div class="task pending">
+                <input type="checkbox" id="t17_1">
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">#14</span><label for="t17_1">17.1 🔊 Audio Manager Central & Control de Volumen / Mute en UI</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelLow">🟢 Bajo</span><span class="badgeToken tokGemini">♊ ~16k</span><span class="badgeToken tokClaude">🟠 ~22k</span><span class="badgeToken tokModelRecGemini">🤖 Rec: Gemini Flash</span></div></div>
+                    <div class="task-desc">Inicialización de AudioContext en el primer click de usuario, panel de ajustes en HUD con sliders de Volumen General, Motor, Pista y Radio con persistencia local.</div>
+                </div>
+            </div>
+
+            <div class="task pending">
+                <input type="checkbox" id="t17_2">
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">#15</span><label for="t17_2">17.2 🏎️ Sintetizador Procedural de Motor V6 Híbrido & Cambios</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelHigh">🟠 Alto</span><span class="badgeToken tokGemini">♊ ~38k</span><span class="badgeToken tokClaude">🟠 ~52k</span><span class="badgeToken tokModelRecClaude">🧠 Rec: Claude / Pro</span></div></div>
+                    <div class="task-desc">Generación procedural con osciladores Web Audio API modulando frecuencia y distorsión armónica según las RPM del coche seguido (10.5k a 15k RPM) y 'pops' de cambio.</div>
+                </div>
+            </div>
+
+            <div class="task pending">
+                <input type="checkbox" id="t17_3">
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">#16</span><label for="t17_3">17.3 🚦 Efectos de Sonido de Pista (Semáforos, Bloqueos, Pianos & Radio)</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelMed">🟡 Medio</span><span class="badgeToken tokGemini">♊ ~22k</span><span class="badgeToken tokClaude">🟠 ~30k</span><span class="badgeToken tokModelRecGemini">🤖 Rec: Gemini Flash</span></div></div>
+                    <div class="task-desc">Efectos de audio interactivos: pitidos de los 5 semáforos rojos y apagado, chirrido de neumáticos al bloquear en frenada fuerte, traqueteo al pisar pianos y tono de radio (*bzzzt*).</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- =================== SPRINT 4 (ÉPICA: F1 TEAM PRINCIPAL & RACE MANAGER - 12 SUBTAREAS) =================== -->
+        <div class="sprintHeader" onclick="toggleSprint('sprint4')">
+            <div class="sprintHeaderLeft">
+                <span class="chevron collapsed" id="chevron-sprint4">▼</span>
+                <span class="dot dotCyan"></span>
+                <span>Sprint 4 — 👔 Épica: F1 Team Principal & Race Manager (12 Subtareas)</span>
+                <span class="badgeEpicManager">0 / 12 Subtareas</span>
+            </div>
+            <div class="sprintHeaderRight">
+                <span>Est. Épica Manager: <strong>~480k (Gemini)</strong> / <strong>~660k (Claude)</strong></span>
+            </div>
+        </div>
+
+        <div class="sprintBody collapsed" id="body-sprint4">
+            <div class="task manager">
+                <input type="checkbox" id="t31">
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">#18</span><label for="t31">31. 🏢 M1.1: Hub Central de Escudería, Finanzas & Cost Cap</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelMed">🟡 Medio</span><span class="badgeToken tokGemini">♊ ~32k</span><span class="badgeToken tokClaude">🟠 ~44k</span><span class="badgeToken tokModelRecGemini">🤖 Rec: Gemini Flash</span></div></div>
+                    <div class="task-desc">Panel principal del Team Principal: límite presupuestario anual de 135M$, balance semanal, patrocinadores con objetivos de carrera y moral de la junta directiva.</div>
+                </div>
+            </div>
+
+            <div class="task manager">
+                <input type="checkbox" id="t32">
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">#19</span><label for="t32">32. 📩 M1.2: Bandeja de Entrada (Inbox), Correos & Decisiones</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelMed">🟡 Medio</span><span class="badgeToken tokGemini">♊ ~35k</span><span class="badgeToken tokClaude">🟠 ~48k</span><span class="badgeToken tokModelRecGemini">🤖 Rec: Gemini Flash</span></div></div>
+                    <div class="task-desc">Sistema de correos de la FIA (normativas/sanciones), quejas o demandas salariales de pilotos, peticiones de patrocinadores e informes de prensa post-GP.</div>
+                </div>
+            </div>
+
+            <div class="task manager">
+                <input type="checkbox" id="t33">
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">#20</span><label for="t33">33. 🔬 M1.3: I+D de Piezas, CFD & Túnel de Viento</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelHigh">🟠 Alto</span><span class="badgeToken tokGemini">♊ ~55k</span><span class="badgeToken tokClaude">🟠 ~75k</span><span class="badgeToken tokModelRecClaude">🧠 Rec: Claude / Pro</span></div></div>
+                    <div class="task-desc">Diseño y fabricación de 6 componentes clave (Alerón Del/Tras, Fondo Plano Venturi, Sidepods, Chasis, Suspensión) con límites de horas CFD según ranking FIA.</div>
+                </div>
+            </div>
+
+            <div class="task manager">
+                <input type="checkbox" id="t34">
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">#21</span><label for="t34">34. 👨‍💼 M1.4: Gestión de Personal & Entrenamiento de Mecánicos</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelMed">🟡 Medio</span><span class="badgeToken tokGemini">♊ ~30k</span><span class="badgeToken tokClaude">🟠 ~42k</span><span class="badgeToken tokModelRecGemini">🤖 Rec: Gemini Flash</span></div></div>
+                    <div class="task-desc">Contratación y salarios de Jefes Técnicos, Ingenieros de Pista de cada monoplaza y programa de entrenamiento de mecánicos para evitar fallos de tuerca en boxes.</div>
+                </div>
+            </div>
+
+            <div class="task manager">
+                <input type="checkbox" id="t35">
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">#22</span><label for="t35">35. 🔍 M1.5: Mercado de Fichajes, Scouting & Contratos de Pilotos</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelHigh">🟠 Alto</span><span class="badgeToken tokGemini">♊ ~45k</span><span class="badgeToken tokClaude">🟠 ~62k</span><span class="badgeToken tokModelRecClaude">🧠 Rec: Claude / Pro</span></div></div>
+                    <div class="task-desc">Red de ojeo de pilotos de F1 y jóvenes promesas de F2/F3; negociación de contratos, primas por puntos/podio, cláusulas de rescisión y sustitución de pilotos.</div>
+                </div>
+            </div>
+
+            <div class="task manager">
+                <input type="checkbox" id="t36">
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">#23</span><label for="t36">36. 📋 M1.6: Planificador de Estrategia Pre-Carrera & Stints</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelHigh">🟠 Alto</span><span class="badgeToken tokGemini">♊ ~42k</span><span class="badgeToken tokClaude">🟠 ~58k</span><span class="badgeToken tokModelRecClaude">🧠 Rec: Claude / Pro</span></div></div>
+                    <div class="task-desc">Gráfico visual de stints para planificar paradas (Soft/Med/Hard), ventanas de parada óptimas, cálculo de pérdida de tiempo en pit lane y delta de tráfico.</div>
+                </div>
+            </div>
+
+            <div class="task manager">
+                <input type="checkbox" id="t37">
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">#24</span><label for="t37">37. 🎮 M1.7: HUD de Carrera F1 Manager: Dual Driver Live Cards</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelHigh">🔴 Muy Alto</span><span class="badgeToken tokGemini">♊ ~62k</span><span class="badgeToken tokClaude">🟠 ~85k</span><span class="badgeToken tokModelRecGemini">🤖 Rec: Gemini Flash</span></div></div>
+                    <div class="task-desc">Tarjetas gemelas inferiores idénticas a F1 Manager para gestionar simultáneamente a ambos pilotos mediante clicks: ritmo (Pace), combustible (Fuel) y ERS (Deploy/Recharge).</div>
+                </div>
+            </div>
+
+            <div class="task manager">
+                <input type="checkbox" id="t38">
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">#25</span><label for="t38">38. 🌤️ M1.8: Panel de Telemetría Ambiental & Engomado de Pista</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelMed">🟡 Medio</span><span class="badgeToken tokGemini">♊ ~28k</span><span class="badgeToken tokClaude">🟠 ~38k</span><span class="badgeToken tokModelRecGemini">🤖 Rec: Gemini Flash</span></div></div>
+                    <div class="task-desc">Caja superior derecha con temperatura de asfalto/ambiente, nivel de engomado dinámico (Very Low → Saturated), radar meteorológico a 3/5/10 min y grip.</div>
+                </div>
+            </div>
+
+            <div class="task manager">
+                <input type="checkbox" id="t39">
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">#26</span><label for="t39">39. 📻 M1.9: Órdenes de Equipo & Radio del Ingeniero Interactiva</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelMed">🟡 Medio</span><span class="badgeToken tokGemini">♊ ~34k</span><span class="badgeToken tokClaude">🟠 ~46k</span><span class="badgeToken tokModelRecClaude">🧠 Rec: Claude / Pro</span></div></div>
+                    <div class="task-desc">Instrucciones tácticas en carrera por clicks: "Intercambiar posición", "No luchar entre compañeros", "Hacer tapón", "Push to pass", con confirmaciones de radio del piloto.</div>
+                </div>
+            </div>
+
+            <div class="task manager">
+                <input type="checkbox" id="t40">
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">#27</span><label for="t40">40. 🛑 M1.10: Paradas en Boxes en Carrera & Doble Parada (Stacking)</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelHigh">🟠 Alto</span><span class="badgeToken tokGemini">♊ ~40k</span><span class="badgeToken tokClaude">🟠 ~55k</span><span class="badgeToken tokModelRecGemini">🤖 Rec: Gemini Flash</span></div></div>
+                    <div class="task-desc">Llamada a boxes inmediata con botón "Box this lap", elección reactiva de neumático ante Safety Car o lluvia súbita, y gestión de doble parada (Double Stack).</div>
+                </div>
+            </div>
+
+            <div class="task manager">
+                <input type="checkbox" id="t41">
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">#28</span><label for="t41">41. 🔧 M1.11: Minijuego de Reglajes de Monoplaza (Car Setup)</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelMed">🟡 Medio</span><span class="badgeToken tokGemini">♊ ~32k</span><span class="badgeToken tokClaude">🟠 ~44k</span><span class="badgeToken tokModelRecClaude">🧠 Rec: Claude / Pro</span></div></div>
+                    <div class="task-desc">Ajuste de reglajes en Entrenamientos Libres con sliders: carga aerodinámica, dureza de suspensión, ángulo de caída (camber), convergencia (toe) y feedback de confianza del piloto (0-100%).</div>
+                </div>
+            </div>
+
+            <div class="task manager">
+                <input type="checkbox" id="t42">
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">#29</span><label for="t42">42. 🏆 M1.12: Fin de Semana Completo (Libres, Q1/Q2/Q3 & Mundial)</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelHigh">🔴 Muy Alto</span><span class="badgeToken tokGemini">♊ ~55k</span><span class="badgeToken tokClaude">🟠 ~75k</span><span class="badgeToken tokModelRecClaude">🧠 Rec: Claude / Pro</span></div></div>
+                    <div class="task-desc">Estructura completa de fin de semana con clasificación eliminatoria Q1/Q2/Q3, tráfico en vuelta lanzada, ceremonia de podio y puntuación del Mundial de Constructores y Pilotos.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- =================== SPRINT 5 (ÉPICA: MOTOR 3D THREE.JS - 10 SUBTAREAS) =================== -->
+        <div class="sprintHeader" onclick="toggleSprint('sprint5')">
+            <div class="sprintHeaderLeft">
+                <span class="chevron collapsed" id="chevron-sprint5">▼</span>
+                <span class="dot dotBlue"></span>
+                <span>Sprint 5 — 🌐 Épica: Motor 3D & WebGL Three.js (10 Subtareas)</span>
+                <span class="badgeEpic3D">0 / 10 Subtareas</span>
+            </div>
+            <div class="sprintHeaderRight">
+                <span>Est. Épica 3D: <strong>~495k (Gemini)</strong> / <strong>~680k (Claude)</strong></span>
+            </div>
+        </div>
+
+        <div class="sprintBody collapsed" id="body-sprint5">
+            <div class="task threeD">
+                <input type="checkbox" id="t43">
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">#30</span><label for="t43">43. 🧱 E1.1: Setup WebGL Three.js & Switcher 2D ↔ 3D</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelMed">🟡 Medio</span><span class="badgeToken tokGemini">♊ ~35k</span><span class="badgeToken tokClaude">🟠 ~48k</span><span class="badgeToken tokModelRecGemini">🤖 Rec: Gemini Flash</span></div></div>
+                    <div class="task-desc">Inicialización de WebGLRenderer con antialiasing SMAA, tone mapping ACESFilmic, loop desacoplado a 60/120 FPS y toggle 2D/3D instantáneo.</div>
+                </div>
+            </div>
+
+            <div class="task threeD">
+                <input type="checkbox" id="t44">
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">#31</span><label for="t44">44. 🛣️ E1.2: Extrusión 3D de Asfalto con Texturas PBR</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelHigh">🔴 Muy Alto</span><span class="badgeToken tokGemini">♊ ~62k</span><span class="badgeToken tokClaude">🟠 ~85k</span><span class="badgeToken tokModelRecClaude">🧠 Rec: Claude / Pro</span></div></div>
+                    <div class="task-desc">Generación procedural de malla 3D de pista continua a partir de splines CatmullRom con mapas Normal/Roughness/AO y líneas UV.</div>
+                </div>
+            </div>
+
+            <div class="task threeD">
+                <input type="checkbox" id="t45">
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">#32</span><label for="t45">45. 🏁 E1.3: Pianos 3D Curvados, Bordillos y Drenajes</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelHigh">🟠 Alto</span><span class="badgeToken tokGemini">♊ ~45k</span><span class="badgeToken tokClaude">🟠 ~62k</span><span class="badgeToken tokModelRecClaude">🧠 Rec: Claude / Pro</span></div></div>
+                    <div class="task-desc">Pianos 3D biselados con relieve real alternando franjas rojas/blancas, salchichas disuasorias amarillas y rejillas metálicas.</div>
+                </div>
+            </div>
+
+            <div class="task threeD">
+                <input type="checkbox" id="t46">
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">#33</span><label for="t46">46. ⛰️ E1.4: Malla de Elevación Real & Terreno Exterior</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelHigh">🟠 Alto</span><span class="badgeToken tokGemini">♊ ~52k</span><span class="badgeToken tokClaude">🟠 ~72k</span><span class="badgeToken tokModelRecClaude">🧠 Rec: Claude / Pro</span></div></div>
+                    <div class="task-desc">Desnivel topográfico real en eje Z (subidas de Spa, Austin, Interlagos) con colinas de césped, escapatorias de grava y asfalto exterior.</div>
+                </div>
+            </div>
+
+            <div class="task threeD">
+                <input type="checkbox" id="t47">
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">#34</span><label for="t47">47. 🏢 E1.5: Entorno 3D: Pit Building, Gradas & Vallas</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelHigh">🟠 Alto</span><span class="badgeToken tokGemini">♊ ~48k</span><span class="badgeToken tokClaude">🟠 ~66k</span><span class="badgeToken tokModelRecClaude">🧠 Rec: Claude / Pro</span></div></div>
+                    <div class="task-desc">Edificios de boxes y paddock 3D, barreras Tecpro/Armco, muros de neumáticos, vallas metálicas perimetrales y puentes publicitarios.</div>
+                </div>
+            </div>
+
+            <div class="task threeD">
+                <input type="checkbox" id="t48">
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">#35</span><label for="t48">48. 🏎️ E1.6: Modelos 3D glTF PBR de Monoplazas 2026</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelHigh">🔴 Muy Alto</span><span class="badgeToken tokGemini">♊ ~65k</span><span class="badgeToken tokClaude">🟠 ~89k</span><span class="badgeToken tokModelRecClaude">🧠 Rec: Claude / Pro</span></div></div>
+                    <div class="task-desc">Monoplazas F1 3D detallados con halo de titanio, fondo plano Venturi y materiales PBR auténticos para las 10 escuderías con Pirelli.</div>
+                </div>
+            </div>
+
+            <div class="task threeD">
+                <input type="checkbox" id="t49">
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">#36</span><label for="t49">49. 🔄 E1.7: Animación de Dirección, Suspensión & DRS</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelHigh">🟠 Alto</span><span class="badgeToken tokGemini">♊ ~46k</span><span class="badgeToken tokClaude">🟠 ~64k</span><span class="badgeToken tokModelRecClaude">🧠 Rec: Claude / Pro</span></div></div>
+                    <div class="task-desc">Giro de ruedas delanteras articuladas, cabeceo/balanceo de suspensión en frenadas y baches, y apertura mecánica del flap DRS.</div>
+                </div>
+            </div>
+
+            <div class="task threeD">
+                <input type="checkbox" id="t50">
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">#37</span><label for="t50">50. 🎥 E1.8: Sistema de 5 Cámaras 3D Cinemáticas</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelMed">🟡 Medio</span><span class="badgeToken tokGemini">♊ ~36k</span><span class="badgeToken tokClaude">🟠 ~50k</span><span class="badgeToken tokModelRecGemini">🤖 Rec: Gemini Flash</span></div></div>
+                    <div class="task-desc">Cámara Cockpit interior con halo, T-Cam sobre toma de aire con FOV dinámico, Chase Cam con inercia elástica, TV Broadcast en pista y Drone orbital libre.</div>
+                </div>
+            </div>
+
+            <div class="task threeD">
+                <input type="checkbox" id="t51">
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">#38</span><label for="t51">51. ☀️ E1.9: Iluminación Solar, Sombras & Skybox HDR</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelHigh">🟠 Alto</span><span class="badgeToken tokGemini">♊ ~54k</span><span class="badgeToken tokClaude">🟠 ~74k</span><span class="badgeToken tokModelRecClaude">🧠 Rec: Claude / Pro</span></div></div>
+                    <div class="task-desc">Iluminación IBL con mapas HDR de cielo despejado, atardecer y modo nocturno con focos artificiales para GPs nocturnos (Singapur, Baréin).</div>
+                </div>
+            </div>
+
+            <div class="task threeD">
+                <input type="checkbox" id="t52">
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">#39</span><label for="t52">52. ✨ E1.10: Shaders de Chispas, Humo, Lluvia & Skid Marks</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelHigh">🟠 Alto</span><span class="badgeToken tokGemini">♊ ~55k</span><span class="badgeToken tokClaude">🟠 ~76k</span><span class="badgeToken tokModelRecClaude">🧠 Rec: Claude / Pro</span></div></div>
+                    <div class="task-desc">Partículas de chispas de titanio en fondo plano a 300+ km/h, marcas de goma quemada, luz trasera de lluvia LED y spray volumétrico.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- =================== IDEAS A VALORAR (BACKEND & COMUNIDAD) =================== -->
+        <div class="sprintHeader" onclick="toggleSprint('ideasBackend')">
+            <div class="sprintHeaderLeft">
+                <span class="chevron collapsed" id="chevron-ideasBackend">▼</span>
+                <span class="dot dotPink"></span>
+                <span>💡 Ideas & Backlog a Valorar (Backend, Multijugador & Ecosistema)</span>
+                <span class="badgeIdea">8 Propuestas a Valorar</span>
+            </div>
+            <div class="sprintHeaderRight">
+                <span>Estado: <strong>Planificación & Brainstorming</strong></span>
+            </div>
+        </div>
+
+        <div class="sprintBody collapsed" id="body-ideasBackend">
+            <div class="task idea">
+                <input type="checkbox" id="idea-b1" disabled>
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">IDEA-1</span><label for="idea-b1">🔐 B1: Auth, Perfil de Usuario & Sincronización en Nube</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelMed">🟡 Backend / Auth</span><span class="badgeToken tokModelRecGemini">🤖 Supabase / OAuth</span></div></div>
+                    <div class="task-desc">Login social (Google, Discord, Steam o email), perfiles de usuario, sincronización de partidas guardadas en la nube, vitrina de trofeos y garaje personalizado.</div>
+                </div>
+            </div>
+
+            <div class="task idea">
+                <input type="checkbox" id="idea-b2" disabled>
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">IDEA-2</span><label for="idea-b2">🏆 B2: Liga Fantasy Multijugador con Pilotos Únicos</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelHigh">🟠 Competitivo</span><span class="badgeToken tokModelRecClaude">🧠 Lógica de Mercado</span></div></div>
+                    <div class="task-desc">Ligas privadas entre amigos con pilotos exclusivos (solo 1 usuario tiene a Verstappen en esa liga), mercado de fichajes con pujas ciegas en vivo y cláusulas de rescisión.</div>
+                </div>
+            </div>
+
+            <div class="task idea">
+                <input type="checkbox" id="idea-b3" disabled>
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">IDEA-3</span><label for="idea-b3">🌤️ B3: Clima Real en Vivo Conectado a APIs Meteorológicas</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelMed">🟡 Integración API</span><span class="badgeToken tokModelRecGemini">🤖 OpenWeather / NOAA</span></div></div>
+                    <div class="task-desc">Conexión con estaciones meteorológicas en vivo en cada circuito (Silverstone, Spa, Monza...). Si llueve en Spa en la vida real ahora mismo, el simulador corre automáticamente bajo lluvia real.</div>
+                </div>
+            </div>
+
+            <div class="task idea">
+                <input type="checkbox" id="idea-b4" disabled>
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">IDEA-4</span><label for="idea-b4">🗄️ B4: Base de Datos Relacional Centralizada</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelMed">🟡 Arquitectura</span><span class="badgeToken tokModelRecGemini">🤖 PostgreSQL / FastAPI</span></div></div>
+                    <div class="task-desc">Migrar datos estáticos de equipos, pilotos, circuitos y telemetrías a una base de datos relacional (PostgreSQL/Supabase) con API REST para actualizarlos dinámicamente sin re-desplegar.</div>
+                </div>
+            </div>
+
+            <div class="task idea">
+                <input type="checkbox" id="idea-b5" disabled>
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">IDEA-5</span><label for="idea-b5">⚡ B5: Evaluación de Arquitectura SSR (Next.js / Astro)</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelMed">🟡 SEO & Carga</span><span class="badgeToken tokModelRecGemini">🤖 SSR / ISR</span></div></div>
+                    <div class="task-desc">Valorar Server-Side Rendering para carga instantánea de fichas de pilotos y circuitos, indexación SEO y generación de enlaces directos compartibles con vista previa de telemetría de carrera.</div>
+                </div>
+            </div>
+
+            <div class="task idea">
+                <input type="checkbox" id="idea-b6" disabled>
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">IDEA-6</span><label for="idea-b6">🏃‍♂️ B6: F1 Driver GPS Academy ("F1 Go" - Geolocalización)</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelHigh">🔴 Gamificación GPS</span><span class="badgeToken tokModelRecClaude">🧠 Geolocalización</span></div></div>
+                    <div class="task-desc">Mini-app GPS móvil: sal a correr o caminar en la vida real para acumular puntos de Resistencia Física y Reflejos para tu piloto. Visita kartódromos reales en tu ciudad para desbloquear patrocinadores raros y cartas de I+D.</div>
+                </div>
+            </div>
+
+            <div class="task idea">
+                <input type="checkbox" id="idea-b7" disabled>
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">IDEA-7</span><label for="idea-b7">⏱️ B7: Leaderboard Mundial de Hotlap con Anti-Cheat</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelMed">🟡 Comunidad</span><span class="badgeToken tokModelRecClaude">🧠 Verificación Telemetría</span></div></div>
+                    <div class="task-desc">Ranking global de vueltas rápidas por circuito y clima con validación en servidor de la telemetría comprimida para garantizar que no hubo hacks de velocidad ni atajos ilegales.</div>
+                </div>
+            </div>
+
+            <div class="task idea">
+                <input type="checkbox" id="idea-b8" disabled>
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">IDEA-8</span><label for="idea-b8">🌐 B8: Multijugador en Tiempo Real & Modo Espectador</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelHigh">🔴 Redes / Sockets</span><span class="badgeToken tokModelRecClaude">🧠 WebSockets / WebRTC</span></div></div>
+                    <div class="task-desc">Salas multijugador donde varios usuarios gestionan sus escuderías en la misma carrera en vivo, con chat de radio en tiempo real y retransmisión estilo televisión para espectadores.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- =================== ÉPICA ESPECIAL BRAINSTORM: F1 VOICE AI & REALISTIC TEAM RADIO =================== -->
+        <div class="sprintHeader" onclick="toggleSprint('voiceAI')">
+            <div class="sprintHeaderLeft">
+                <span class="chevron collapsed" id="chevron-voiceAI">▼</span>
+                <span class="dot dotGold"></span>
+                <span>🎙️ Épica Especial Brainstorm: F1 Voice AI & Realistic Team Radio</span>
+                <span class="badgeVoice">6 Subtareas de Control por Voz</span>
+            </div>
+            <div class="sprintHeaderRight">
+                <span>Stack: <strong>Whisper.wasm + Gemini Agent + Kokoro.js</strong></span>
+            </div>
+        </div>
+
+        <div class="sprintBody collapsed" id="body-voiceAI">
+            <div class="task voice">
+                <input type="checkbox" id="idea-v1" disabled>
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">VOICE-1</span><label for="idea-v1">📦 V1: Arquitectura de Web Workers & Pipeline WebAssembly</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelMed">🟡 Infraestructura Web</span><span class="badgeToken tokModelRecGemini">🤖 Transformers.js / WASM</span></div></div>
+                    <div class="task-desc">Configuración de hilos secundarios (Web Workers) para ejecutar modelos de IA localmente en el navegador sin bloquear el loop de simulación a 60 FPS, con caché persistente en IndexedDB (~120 MB de descarga única total).</div>
+                </div>
+            </div>
+
+            <div class="task voice">
+                <input type="checkbox" id="idea-v2" disabled>
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">VOICE-2</span><label for="idea-v2">🎙️ V2: Whisper.wasm STT & Captura Push-To-Talk con Filtro DSP</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelHigh">🔴 STT Local WebAssembly</span><span class="badgeToken tokModelRecClaude">🧠 Whisper-Tiny + Web Audio</span></div></div>
+                    <div class="task-desc">Modelo Whisper-tiny en WebAssembly en el navegador del usuario para transcribir la voz al pulsar el botón PTT en pantalla, con procesado previo de filtro paso banda de radio militar (300Hz-3.4kHz) y sonido estático (*bzzzt-click*).</div>
+                </div>
+            </div>
+
+            <div class="task voice">
+                <input type="checkbox" id="idea-v3" disabled>
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">VOICE-3</span><label for="idea-v3">🧠 V3: Agente de Ingeniero de F1 con Gemini (System Prompt & Contexto)</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelHigh">🔴 Agente LLM / Prompt</span><span class="badgeToken tokModelRecClaude">🧠 Gemini 2.0 Flash Agent</span></div></div>
+                    <div class="task-desc">System prompt hiperrealista para que la IA actúe como un ingeniero de pista de F1 de élite: lenguaje conciso (&lt;15 palabras), terminología oficial ("Copy", "Box now", "Plan B") e inyección del estado en vivo de carrera (vueltas, gaps, neumáticos, lluvia).</div>
+                </div>
+            </div>
+
+            <div class="task voice">
+                <input type="checkbox" id="idea-v4" disabled>
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">VOICE-4</span><label for="idea-v4">🚨 V4: Disparadores Proactivos de Radio (Safety Car, Lluvia & Undercuts)</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelMed">🟡 Lógica de Eventos</span><span class="badgeToken tokModelRecGemini">🤖 Event Dispatcher</span></div></div>
+                    <div class="task-desc">Módulo que detecta eventos críticos en la carrera (accidente con Safety Car, lluvia inminente en radar, desgaste crítico de neumáticos) y dispara automáticamente una llamada proactiva del ingeniero al Team Principal por radio.</div>
+                </div>
+            </div>
+
+            <div class="task voice">
+                <input type="checkbox" id="idea-v5" disabled>
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">VOICE-5</span><label for="idea-v5">📻 V5: Kokoro.js Neural TTS WebAssembly + Mezcla de Motor V6</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelHigh">🔴 TTS Neuronal Local</span><span class="badgeToken tokModelRecClaude">🧠 Kokoro-82M WASM</span></div></div>
+                    <div class="task-desc">Síntesis de voz neuronal local en inglés británico con Kokoro.js, sobre la que se mezcla en tiempo real en Web Audio API el rugido del motor V6 híbrido acelerando de fondo proporcionalmente a las RPM.</div>
+                </div>
+            </div>
+
+            <div class="task voice">
+                <input type="checkbox" id="idea-v6" disabled>
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">VOICE-6</span><label for="idea-v6">👨‍💼 V6: Personalidades Icónicas por Equipo & Overlay TV Oficial</label></div>
+                        <div class="tokensRow"><span class="badgeToken tokLevelMed">🟡 UI & Diálogos</span><span class="badgeToken tokModelRecGemini">🤖 Canvas / HUD TV</span></div></div>
+                    <div class="task-desc">Base de datos de ingenieros reales (Gianpiero, Bono, Bryan Bozzi) con sus frases célebres ("Simply lovely", "Hammer time", "We are checking") y banner animado en el HUD superior con ondas de audio y subtítulos en directo.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- =================== SPRINT 1 (COMPLETADO) =================== -->
+        <div class="sprintHeader" onclick="toggleSprint('sprint1')">
+            <div class="sprintHeaderLeft">
+                <span class="chevron collapsed" id="chevron-sprint1">▼</span>
+                <span class="dot dotGreen"></span>
+                <span>Sprint 1 — Core & UI Fixes (Completado)</span>
+                <span class="badgeProgress">13 / 13 Completadas (100%)</span>
+            </div>
+            <div class="sprintHeaderRight">
+                <span>Estado: <strong>Completado</strong></span>
+            </div>
+        </div>
+
+        <div class="sprintBody collapsed" id="body-sprint1">
+            <div class="task">
+                <input type="checkbox" id="t1" checked>
+                <div class="task-content"><div class="task-title-row"><div class="task-title"><label for="t1">1. Bandera de pilotos y circuitos</label></div><span class="tagCompleted">COMPLETADO</span></div><div class="task-desc">Banderas oficiales renderizadas simétricamente en listas y fichas.</div></div>
+            </div>
+            <div class="task">
+                <input type="checkbox" id="t2" checked>
+                <div class="task-content"><div class="task-title-row"><div class="task-title"><label for="t2">2. Arreglar flickering de la selección de circuitos</label></div><span class="tagCompleted">COMPLETADO</span></div><div class="task-desc">Eliminado el evento onMouseEnter en las listas. Selección con click.</div></div>
+            </div>
+            <div class="task">
+                <input type="checkbox" id="t3" checked>
+                <div class="task-content"><div class="task-title-row"><div class="task-title"><label for="t3">3. Agregar toggles e información en circuitos</label></div><span class="tagCompleted">COMPLETADO</span></div><div class="task-desc">Pestañas: Trazado & Ficha, Zonas DRS & Estrategia, y Meteorología & Asfalto.</div></div>
+            </div>
+            <div class="task">
+                <input type="checkbox" id="t4" checked>
+                <div class="task-content"><div class="task-title-row"><div class="task-title"><label for="t4">4. Agregar toggles e información en pilotos</label></div><span class="tagCompleted">COMPLETADO</span></div><div class="task-desc">Pestañas: Atributos & Ficha, Estrategia & Estilo, y Rendimiento 2026.</div></div>
+            </div>
+            <div class="task">
+                <input type="checkbox" id="t5" checked>
+                <div class="task-content"><div class="task-title-row"><div class="task-title"><label for="t5">5. Cambiar flujo de inicio: Vuelta de Formación</label></div><span class="tagCompleted">COMPLETADO</span></div><div class="task-desc">Entrada directa a pista, calentamiento en zig-zag y confirmación en parrilla.</div></div>
+            </div>
+            <div class="task">
+                <input type="checkbox" id="t6" checked>
+                <div class="task-content"><div class="task-title-row"><div class="task-title"><label for="t6">6. Tipos de zoom y cámaras</label></div><span class="tagCompleted">COMPLETADO</span></div><div class="task-desc">5 modos de cámara (Overview, Follow, Cinematic, Onboard, Helicopter).</div></div>
+            </div>
+            <div class="task">
+                <input type="checkbox" id="t7" checked>
+                <div class="task-content"><div class="task-title-row"><div class="task-title"><label for="t7">7. Rehacer los coches</label></div><span class="tagCompleted">COMPLETADO</span></div><div class="task-desc">Chasis aerodinámico optimizado, alerón delantero y proporciones escaladas.</div></div>
+            </div>
+            <div class="task">
+                <input type="checkbox" id="t8" checked>
+                <div class="task-content"><div class="task-title-row"><div class="task-title"><label for="t8">8. Landing page con Anime.js + neumático</label></div><span class="tagCompleted">COMPLETADO</span></div><div class="task-desc">Portada animada con neumático Pirelli y partículas.</div></div>
+            </div>
+            <div class="task">
+                <input type="checkbox" id="t9" checked>
+                <div class="task-content"><div class="task-title-row"><div class="task-title"><label for="t9">9. Reorganización y más datos de circuitos</label></div><span class="tagCompleted">COMPLETADO</span></div><div class="task-desc">Datos de telemetría (desnivel, tiempo en pit lane, probabilidad de SC).</div></div>
+            </div>
+            <div class="task">
+                <input type="checkbox" id="t10" checked>
+                <div class="task-content"><div class="task-title-row"><div class="task-title"><label for="t10">10. Ocultar sidebars (Izquierda y Derecha)</label></div><span class="tagCompleted">COMPLETADO</span></div><div class="task-desc">Botones retráctiles para colapsar y expandir los paneles laterales.</div></div>
+            </div>
+            <div class="task">
+                <input type="checkbox" id="t11" checked>
+                <div class="task-content"><div class="task-title-row"><div class="task-title"><label for="t11">11. Z-Index / Superposición de paneles en carrera</label></div><span class="tagCompleted">COMPLETADO</span></div><div class="task-desc">Z-Index corregido y margen dinámico del dock de telemetría inferior.</div></div>
+            </div>
+            <div class="task">
+                <input type="checkbox" id="t12" checked>
+                <div class="task-content"><div class="task-title-row"><div class="task-title"><label for="t12">12. Escalar coches y ancho de pista por circuito</label></div><span class="tagCompleted">COMPLETADO</span></div><div class="task-desc">2 monoplazas en urbanos estrechos y 3 en trazados permanentes.</div></div>
+            </div>
+            <div class="task">
+                <input type="checkbox" id="t13" checked>
+                <div class="task-content"><div class="task-title-row"><div class="task-title"><label for="t13">13. Componente dedicado y físicas de Pit Lane</label></div><span class="tagCompleted">COMPLETADO</span></div><div class="task-desc">Tiempo total en boxes calibrado a 20-26s con variabilidad de paradas.</div></div>
+            </div>
+        </div>
+
+        <!-- =================== 🎙️ DECISIONES TÉCNICAS CONFIRMADAS =================== -->
+        <div class="decisionBox" style="border-color: rgba(34, 197, 94, 0.4); background: rgba(6, 78, 59, 0.15);">
+            <div class="decisionHeader" style="border-bottom-color: rgba(34, 197, 94, 0.3);">
+                <div>
+                    <div class="decisionTitle" style="color: #4ade80;">✅ Stack Técnico Confirmado: F1 Voice AI & Team Radio</div>
+                    <div class="decisionSubtitle">Arquitectura 100% Client-Side en WebAssembly con 0€ de coste de servidor.</div>
+                </div>
+                <span class="badgeProgress">100% Local WASM (0€)</span>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; font-size: 12px;">
+                <div style="background: rgba(15, 23, 42, 0.8); padding: 10px; border-radius: 6px; border-left: 3px solid #38bdf8;">
+                    <div style="color: #94a3b8; font-size: 10px; font-weight: 700;">1. STT (Reconocimiento de Voz)</div>
+                    <div style="color: #f8fafc; font-weight: 800; margin-top: 2px;">Whisper.wasm (~39 MB Local)</div>
+                </div>
+                <div style="background: rgba(15, 23, 42, 0.8); padding: 10px; border-radius: 6px; border-left: 3px solid #f97316;">
+                    <div style="color: #94a3b8; font-size: 10px; font-weight: 700;">2. IA / LLM del Ingeniero</div>
+                    <div style="color: #f8fafc; font-weight: 800; margin-top: 2px;">Gemini 2.0 Flash Agent (&lt;15 palabras)</div>
+                </div>
+                <div style="background: rgba(15, 23, 42, 0.8); padding: 10px; border-radius: 6px; border-left: 3px solid #eab308;">
+                    <div style="color: #94a3b8; font-size: 10px; font-weight: 700;">3. TTS (Voz del Ingeniero)</div>
+                    <div style="color: #f8fafc; font-weight: 800; margin-top: 2px;">Kokoro.js WASM + Audio V6 DSP</div>
+                </div>
+                <div style="background: rgba(15, 23, 42, 0.8); padding: 10px; border-radius: 6px; border-left: 3px solid #a855f7;">
+                    <div style="color: #94a3b8; font-size: 10px; font-weight: 700;">4. Disparador de Radio</div>
+                    <div style="color: #f8fafc; font-weight: 800; margin-top: 2px;">Botón PTT en Pantalla (Click)</div>
+                </div>
+                <div style="background: rgba(15, 23, 42, 0.8); padding: 10px; border-radius: 6px; border-left: 3px solid #06b6d4;">
+                    <div style="color: #94a3b8; font-size: 10px; font-weight: 700;">5. Idioma & Estilo</div>
+                    <div style="color: #f8fafc; font-weight: 800; margin-top: 2px;">Inglés Oficial F1 ("Box this lap")</div>
+                </div>
+                <div style="background: rgba(15, 23, 42, 0.8); padding: 10px; border-radius: 6px; border-left: 3px solid #ec4899;">
+                    <div style="color: #94a3b8; font-size: 10px; font-weight: 700;">6. Personalidad & Proactividad</div>
+                    <div style="color: #f8fafc; font-weight: 800; margin-top: 2px;">Ingenieros Icónicos + Llamadas Proactivas</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── SCRIPTS PARA EL ACORDEÓN / PLEGAR Y DESPLEGAR ── -->
+    <script>
+        const allSprintIds = ['sprint1', 'sprint2', 'sprint2_1', 'sprint2_5', 'sprint2_8', 'sprint3', 'sprint4', 'sprint5', 'ideasBackend', 'voiceAI'];
+
+        function toggleSprint(id) {
+            const body = document.getElementById('body-' + id);
+            const chevron = document.getElementById('chevron-' + id);
+            if (!body) return;
+
+            const isCollapsed = body.classList.contains('collapsed');
+            if (isCollapsed) {
+                body.classList.remove('collapsed');
+                if (chevron) chevron.classList.remove('collapsed');
+            } else {
+                body.classList.add('collapsed');
+                if (chevron) chevron.classList.add('collapsed');
+            }
+        }
+
+        function expandAllSprints() {
+            allSprintIds.forEach(id => {
+                const body = document.getElementById('body-' + id);
+                const chevron = document.getElementById('chevron-' + id);
+                if (body) body.classList.remove('collapsed');
+                if (chevron) chevron.classList.remove('collapsed');
+            });
+        }
+
+        function collapseAllSprints() {
+            allSprintIds.forEach(id => {
+                const body = document.getElementById('body-' + id);
+                const chevron = document.getElementById('chevron-' + id);
+                if (body) body.classList.add('collapsed');
+                if (chevron) chevron.classList.add('collapsed');
+            });
+        }
+
+        function focusActiveSprint() {
+            collapseAllSprints();
+            const body = document.getElementById('body-sprint2_8');
+            const chevron = document.getElementById('chevron-sprint2_8');
+            if (body) body.classList.remove('collapsed');
+            if (chevron) chevron.classList.remove('collapsed');
+            
+            const header = document.querySelector('.sprintHeader.activeSprint');
+            if (header) header.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    </script>
+</body>
+</html>
