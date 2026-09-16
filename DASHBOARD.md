@@ -17,11 +17,11 @@
 
 ## 🧭 2. ROADMAP Y ESTADO GLOBAL DE SPRINTS
 
-**Orden vigente:** Sprint **2.8** · Tarea actual **Q5** · Siguiente **Q6**.
+**Orden vigente:** Sprint **2.9** · Tarea actual **R01** · Siguiente **R02**.
 
-Q1-Q5 están completadas y aprobadas en local. **Instrucción vigente del usuario (17/09/2026): revisar y documentar las tareas pendientes; NO empezar Q6.** Q5 permanece como última tarea atendida y Q6 como siguiente candidata, en pausa hasta nueva indicación. El OK de Q5 no se interpreta en esta revisión documental como una orden de commit/push. Después siguen Q7-Q18 y Q19 (DRS), cuya prioridad técnica P0 no la adelanta automáticamente. Dashboard e index deben mantenerse sincronizados.
+**Alcance vigente: exclusivamente planificación del próximo Sprint 2.9.** El usuario solicita integrar esta planificación desde `codex/planificacion` en `main` y subirla al remoto; no autoriza implementar mecánicas. R01/R02 señalan el orden propuesto de la primera entrega y siguen pendientes. Q1-Q5 están completadas; Q6-Q19 siguen pendientes y el Sprint 2.8 permanece en pausa. **Q6 queda expresamente excluida**, también del trabajo de escenarios que se solapaba con R23. No continuar ni refinar Sprint 2.8 en esta entrega. Los registros históricos posteriores no sustituyen este alcance.
 
-**Actualización posterior del usuario:** «pushea los cambios». Queda autorizado el commit y push de Q5 y del contexto documental de las tareas pendientes. Q6 continúa en pausa; esta autorización de subida no amplía el alcance de implementación. Las referencias posteriores a cambios sin commit describen la fotografía anterior a esta entrega.
+**Registro de publicación anterior:** Q5 y el contexto documental del backlog se subieron en `0577e76`. Las referencias posteriores a Q5 sin commit describen una fotografía anterior. La autorización actual de integración/publicación corresponde solo a la planificación de Sprint 2.9.
 
 ```
 Leyenda de Estado:
@@ -37,7 +37,7 @@ Leyenda de Estado:
 | **Sprint 2.1** | **Resolución de Bugs Críticos y Altos de Auditoría (C1-C7, A1-A6)** | ✅ **COMPLETADO (23/23 Tests PASS)** |
 | **Sprint 2.5** | **Deuda Técnica de Auditoría (M1-M10, B1-B7)** | ✅ **COMPLETADO (17/17 Tareas - 46 Tests PASS)** |
 | **Sprint 2.8** | **Salto de Calidad: Fidelidad de Simulación, Geometría, Muro Táctico y revisión DRS (Q1-Q19)** | 🟡 **Q1-Q5 aprobadas localmente; 232 tests PASS; Q6-Q19 pendientes, implementación en pausa** |
-| **Sprint 2.9** | **Reglamento FIA 2025, identidad técnica de equipos y experiencia de carrera (R01-R28)** | 🟡 **REFINADO — planificación pendiente de aprobación para implementar** |
+| **Sprint 2.9** | **Reglamento FIA 2025, identidad técnica de equipos y experiencia de carrera (R01-R28)** | 🟡 **PLANIFICACIÓN ACTUAL — integración/publicación autorizadas; implementación pendiente de autorización** |
 | **Sprint 3** | **Audio, Telemetría Avanzada, Radar GPS & Clima (4 tareas definidas; desglose histórico de 16 incompleto)** | ⏳ **PLANIFICADO (Después del Sprint 2.9; coordinar clima con R22)** |
 | **Sprint 4** | **Épica: F1 Team Principal & Race Manager (estimación histórica de 12 tareas sin desglose)** | ⏳ **BACKLOG — requiere definición antes de implementar** |
 
@@ -304,7 +304,31 @@ Los 13 bugs críticos y altos detectados en la auditoría fueron implementados y
 
 ## 🏎️ 6. SPRINT 2.9: REGLAMENTO FIA 2025 Y SENSACIÓN DE CARRERA (28 TAREAS)
 
-**Estado: `[ ] REFINADO — PENDIENTE DE APROBACIÓN PARA IMPLEMENTAR`.** Investigación y planificación solicitadas por el usuario, documentadas el 16/09/2026. Este cambio no implementa nuevas reglas. Objetivo: que el jugador entienda por qué un coche alcanza a otro, cuándo puede adelantar y qué coste tienen sus decisiones sobre neumáticos, energía, combustible y evolución del equipo. Se conservan las seis Reglas de Oro y la experiencia 100% Team Principal.
+**Estado: `[ ] REFINADO — PENDIENTE DE APROBACIÓN PARA IMPLEMENTAR`.** Investigación inicial documentada el 16/09/2026; planificación acotada posteriormente por el usuario a Sprint 2.9 y autorizada para integrar/publicar en main. Este cambio no implementa nuevas reglas. Objetivo: que el jugador entienda por qué un coche alcanza a otro, cuándo puede adelantar y qué coste tienen sus decisiones sobre neumáticos, energía, combustible y evolución del equipo. Se conservan las seis Reglas de Oro y la experiencia 100% Team Principal.
+
+### 6.0 Alcance acordado y primera entrega propuesta
+
+Se mantienen **las 28 tareas R01-R28 y las cinco entregas A-E**. Esta revisión concreta su planificación, no cierra ninguna tarea ni reanuda las Q pendientes. Los contratos propuestos deben contrastarse con el código cuando se autorice implementar; la presencia de una interfaz o una prueba sintética no acredita una mecánica completa.
+
+| Entrega | Contenido conservado | Límite de la planificación actual |
+|---|---|---|
+| **A — Reglas, cronometraje, circuito y DRS** | R01-R04 | Primera entrega acotada a R01, R02 y la parte inicial de R03 descrita debajo. R04 depende de Q19 pendiente: no prometer DRS corregido como resultado de ese primer bloque. |
+| **B — Rendimiento y recursos** | R05, R06, R14-R17 | Reglas comunes y diferencias técnicas de equipos; dependencias Q7/Q8/Q16 documentadas, no presupuestas ni implementadas en esta revisión. |
+| **C — Carrera y estrategia** | R07-R13, R22, R25; resultado de una carrera de R21 | Incluir clasificación/puntos de una carrera sin esperar al campeonato. Órdenes, boxes y continuidad dependen de Q9-Q15/Q18 donde corresponda; reconocer esas carencias antes de autorizar cada bloque. |
+| **D — Fin de semana y temporada** | R18-R21, R26 | R21 amplía el resultado de carrera con campeonato, sin contarlo como tarea nueva. Q17 permanece como dependencia de R26, no se considera entregada. |
+| **E — Presentación y verificación transversal** | R23, R24, R27, R28 | R27 acompaña desde el inicio; definir el esquema R28 temprano sin declarar guardado completado. R23 excluye los nuevos escenarios por capas de Q6. |
+
+**Primera entrega propuesta, pendiente de autorización para codificar:**
+
+1. **R01 — Perfil de reglas y procedencia.** Especificar edición/perfil, unidades, datos de evento y ajustes del juego separados. Ubicaciones iniciales: `src/types/f1.ts`, `src/data/circuits.ts` y constantes dispersas de los modelos. Contrato verificable: dato con origen/unidad, perfil inválido rechazado y comportamiento personalizado existente conservado mientras no se apruebe otro. No aplicar todas las reglas FIA solo por centralizar sus constantes.
+2. **R02 — Cronometraje y reproducibilidad.** Definir reloj, cruce de líneas interpolado y tráfico físico separado de clasificación, paso estable y RNG reproducible. Integración prevista en `RaceSimulation.update/advanceSimulation`, sectores y gaps; fixtures con meta, doblados, rutas de boxes y varios cruces por paso. La comparación a distintas tasas/velocidades debe declarar tolerancias y evidenciar los límites; no dar por resuelta toda la física por una semilla fija.
+3. **R03 — Solo base inicial de datos/líneas/unidades.** Documentar y validar la geometría existente de Barcelona/Mónaco: sentido, meta, normalización, distancias y transformación mundo/metros, líneas/rutas y esquema de procedencia. No redibujar escenarios, añadir edificios, escapatorias ni pianos Q6, ni implementar anchura variable Q7/trazada Q8. Datos de detección no verificados se mantienen provisionales o en fixtures sintéticos identificados; esta fase parcial no cierra R03 ni convierte esos puntos en oficiales.
+
+**Trabajo transversal de ese bloque:** R27 aporta fixtures y comparaciones desde el comienzo, apoyándose en `test-suite.mjs`; R28 define el contrato de snapshot versionado (perfil/evento, reloj, RNG y referencias de estado que habrá que persistir). Esquema no equivale a botones de guardar/cargar, migraciones ni continuidad validada: R27 y R28 conservan estado pendiente hasta cumplir sus criterios completos.
+
+**Puerta de salida del primer bloque futuro:** evidencias de validación del perfil, cronometraje reproducible, cruces/convenciones y geometría existente documentada; dashboard/index sincronizados, pruebas y build correctos. Registrar qué parte de R03 quedó entregada y lo que falta. Ni R04, ni Q19, ni guardado completo se declaran resueltos con este hito. Antes de programar debe existir una autorización de implementación distinta de esta orden de publicar la planificación.
+
+**Dependencias pendientes del Sprint 2.8:** Q19 bloquea la integración funcional de DRS en R04; Q7/Q8 afectan R03/R05/R23; Q9-Q13 afectan R07/R08/R25; Q14/Q15 afectan R09/R10/R12; Q16 afecta R14-R16; Q17 afecta R26 y Q18 afecta R28. Son referencias para planificar contratos o límites de una entrega, no autorización para implementar esas Q ni declararlas cumplidas. Si una R necesita una Q ausente, acotar el resultado y pedir decisión de alcance al llegar a esa dependencia. **Q6 no se recupera indirectamente a través de R03 o R23.**
 
 ### 6.1 Fuentes, alcance y trazabilidad
 
@@ -496,9 +520,9 @@ Todas las tareas siguientes están **pendientes**. P0 = corregir validez del nú
 
 #### Entrega E — Presentación, honestidad de telemetría y validación
 
-* **R23 — SVG/Canvas que explica la física (P1; Q4-Q8/R03-R16):** `[ ]`
-  * Pistas por capas con pianos, escapatorias, muros, pit y señalización donde corresponde; detección DRS diferenciada de activación. Monoplaza con proporciones coherentes, neumáticos traseros mayores, flap móvil, daño visible, luces y contacto de suelo. LOD de etiquetas, cámara/minimapa/selección compartiendo coordenadas y transiciones suaves.
-  * *Aceptación:* Barcelona y Mónaco reconocibles, sin grava genérica en urbano, coches paralelos y boxes a distintos zooms; flap/luces corresponden al estado, chispas al roce, colores legibles sin depender solo de rojo/verde. Medir rendimiento con 20 coches y lluvia en equipo de referencia.
+* **R23 — SVG/Canvas que explica la física (P1; Q4/Q5, Q7/Q8 pendientes, R03-R16; Q6 excluida):** `[ ]`
+  * Usar geometría y escenario existentes para explicar el estado físico: detección DRS diferenciada de activación cuando Q19/R04 estén disponibles; flap, daño, luces y contacto de suelo vinculados al motor. Preservar proporciones, LOD, cámara/minimapa/selección compartiendo coordenadas y transiciones suaves. Nuevos escenarios por capas, edificios, escapatorias y pianos localizados de Q6 quedan fuera de esta planificación.
+  * *Aceptación:* coherencia de las señales con el estado real, coches y boxes a distintos zooms sobre Barcelona/Mónaco existentes, colores legibles sin depender solo de rojo/verde y coste medido con 20 coches/lluvia cuando exista ese estado. La eliminación de grava genérica en Mónaco y el rediseño de identidad visual siguen en Q6 excluida; no son criterios que obliguen a implementarla para cerrar R23. Q7/Q8 pendientes limitan las verificaciones que dependan de su geometría.
 * **R24 — Telemetría y mensajes de muro basados en eventos (P1; R02/R04/R07-R16):** `[ ]`
   * Mostrar gap real, permiso DRS y causa, energía recuperada/desplegada/restante, combustible previsto y reserva, neumáticos disponibles/obligatorios, delta VSC, sanciones, daños y estado de mejoras. Sustituir porcentajes ficticios de Push/ahorro y puestos ganados como contador de adelantamientos por registros reales.
   * *Aceptación:* cada cifra reconstruible desde eventos; misma información en panel/torre/minimapa; diferenciar adelantamiento en pista, ganancia por pit y sanción; pocas alertas prioritarias y explicaciones claras sin inundar al jugador de artículos.
@@ -511,8 +535,8 @@ Todas las tareas siguientes están **pendientes**. P0 = corregir validez del nú
 
 ### 6.6 Secuencia, dependencias y límite de alcance
 
-1. **Primero, Sprint 2.8:** Q1-Q5 aprobadas en local. Q6-Q19 siguen pendientes y no deben iniciarse durante este relevo documental; reanudar solo por nueva indicación del usuario. Q19 requerirá los contratos mínimos R01-R03; su prioridad técnica no autoriza adelantarla sin acuerdo del usuario. Las correcciones Q1/Q2 ya aprobadas no acreditan las nuevas físicas. Resolver el servicio común de reglas R13 antes de integrar sanciones con boxes, y la base de sesiones R20 antes de reanudaciones R12; no esperar a la temporada completa para ello.
-2. **2.9-A:** cronometraje, datos de evento y prueba del DRS. Primer hito visible: el adelantamiento deja de alterar indebidamente el permiso y el muro explica la medición.
+1. **Alcance actual: planificar Sprint 2.9**, sin continuar ni refinar Sprint 2.8. Q1-Q5 completadas; Q6-Q19 pendientes. Q6 excluida. Las dependencias técnicas entre Q y R no cambian esos estados ni autorizan implementarlas. La secuencia anterior que exigía continuar primero todas las Q queda sustituida, a efectos de esta planificación, por la primera entrega acotada de 6.0.
+2. **2.9-A:** proponer R01, R02 y únicamente la base inicial de R03, con R27 transversal y esquema R28. Hito: perfil, cronometraje y validación de datos/geometría existente verificables. R04 y la demostración de permiso DRS correcto quedan condicionados a resolver Q19 con autorización independiente; no forman parte del resultado prometido de este primer bloque.
 3. **2.9-B:** recursos finitos y comportamiento por equipo. Hito: decidir ahorrar/empujar cambia energía, temperaturas y ritmo de forma comprobable.
 4. **2.9-C:** estrategia, incidentes y resultado reglamentario de una carrera completa (incluye la parte de resultados de R21). Hito: Mónaco exige estrategia legal, SC/VSC/roja y sanciones tienen consecuencias coherentes.
 5. **2.9-D:** fin de semana y evolución de temporada. Hito: mejoras y uso de piezas tienen fechas, costes y restricciones, con diferencias legítimas entre equipos.
@@ -572,7 +596,7 @@ Complementa, no sustituye, las reglas y escenarios de 6.3/6.5. **No hay módulos
 | **R20** | `StartLightState`, `startRaceSequence`, formación/parking/luces, `STARTING_GRID_ORDER`, HomeScreen. | Entregar primero tipo de sesión y procedimientos salida/reanudación reutilizables por R12; no esperar a terminar campeonato. Después clasificación/sprint y restricciones conectadas a R07/R13/R18. No confundir IDs de tareas Q1/Q2/Q3 con tandas de clasificación. Modo GP directo mantiene entrada rápida con origen de parrilla visible. |
 | **R21** | `leaderFinished`, `isFinished`, `podiumCars`, `PodiumModal` y historial `f1_race_history` en `App`. | Separar cierre físico por coche, resultado provisional, aplicación de sanciones y resultado final. Primer bloque: carrera y puntos reglamentarios; después acumulación/desempate del campeonato. No usar podio provisional como resultado persistido definitivo; guardar identificador del evento/perfil. Probar doblado que acaba después del líder y corrección posterior. |
 | **R22** | `TrackWeatherState` ya incluye agua/condición; `updateWeather` solo oscila temperatura/viento; visuales de charcos ya existen. | Servicio meteorológico único, inicialmente mínimo, con estado por tramo y escenario reproducible; devuelve temperatura/agua/visibilidad al grip y Dirección. Previsión derivada con incertidumbre y sin acceso del estratega al futuro. T3.2 amplía frentes/radar y T3.4 presentación sobre este mismo estado. Probar estabilidad temporal, pausa y cambio de circuito. |
-| **R23** | Q1-Q8, `TrackRenderer`, `CarRenderer`, `CarLabels`, `RaceCanvas`, minimapa/cámara. | Auditoría de coherencia entre estados R03-R16 y presentación; no rehacer Q3/Q4/Q5. DRS, daños, luces, agua y superficies consumen datos, sin producir reglas. Presupuesto visual con 20 coches, zoom/rotación y lluvia, comparación de coste en equipo y viewport declarados. Si faltan física/datos de una señal, no dibujar un efecto que afirme que existen. |
+| **R23** | Q1-Q5 existentes, Q7/Q8 pendientes; `TrackRenderer`, `CarRenderer`, `CarLabels`, `RaceCanvas`, minimapa/cámara. Q6 excluida. | Auditoría de coherencia entre estados R03-R16 y presentación sobre geometría existente; no rehacer Q3/Q4/Q5 ni incorporar escenarios Q6. DRS, daños, luces y agua consumen datos, sin producir reglas. Presupuesto visual con 20 coches, zoom/rotación y lluvia, comparación de coste en equipo y viewport declarados. Si faltan física/datos de una señal, no dibujar un efecto que afirme que existen. |
 | **R24** | `DriverStatsSummary`, bloque stats/telemetría en `RaceSimulation`, `RightStatsPanel`, `TelemetryPanel`, `BottomTelemetryDock`, `Leaderboard`. | Registro de eventos R02/R09 más estado físico como única fuente. Distinguir valor medido, estimación y no disponible; eliminar porcentajes de Push/ahorro inventados y ganancias de parrilla contadas como adelantamientos. Probar mismo dato en paneles, prioridad/expiración de mensajes y reinicio de contadores. |
 | **R25** | Órdenes Q9-Q13, decisión de parar en `PitStopModel`, heurística que fuerza `push` en motor. | Estratega lee snapshot e información observable, propone órdenes al mismo API que jugador; no escribe compuestos/recursos directamente. Prioridad del jugador y restricciones físicas/reglamentarias resueltas explícitamente. Probar forecast incierto, cancelación, compañero y dos paradas con la misma semilla, sin usar incidentes futuros. |
 | **R26** | Resultado Q17, `D20LuckEvent`, `triggerD20LuckRoll`/`applyLuckEventReward`, `D20LuckModal`. | Configuración explícita de variante, catálogo legal e información sobre qué hace la recompensa. Reutilizar idempotencia/beneficios pendientes de Q17; apagar variante sin dejar bonos activos en perfil FIA. Comparar con/sin D20 a recursos iguales y comprobar texto frente a efecto consumido. |

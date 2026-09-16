@@ -14,6 +14,8 @@ export interface DrsZoneSpec {
   endT: number;
 }
 
+import type { TrackType } from './scenarioTypes';
+
 export interface CircuitSpec {
   id: string;
   name: string;
@@ -24,6 +26,8 @@ export interface CircuitSpec {
   countryFlag: string;
   svgFile: string;
   direction: 'clockwise' | 'anti-clockwise';
+  /** Tipo de circuito: permanente, urbano o híbrido */
+  trackType: TrackType;
   lapLengthMeters: number;
   totalLaps: number;
   turns: number;
@@ -57,6 +61,7 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
   barcelona: {
     id: 'barcelona',
     name: 'Circuit de Barcelona-Catalunya',
+    trackType: 'permanent',
     pitEntryT: 0.9,
       pitExitT: 0.15,
       startOffsetT: 0.12,
@@ -95,6 +100,7 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
   monza: {
     id: 'monza',
     name: 'Autodromo Nazionale Monza',
+      trackType: 'permanent',
       pitEntryT: 0.9,
       pitExitT: 0.12,
       startOffsetT: 0.76,
@@ -133,6 +139,7 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
   silverstone: {
     id: 'silverstone',
     name: 'Silverstone Circuit',
+    trackType: 'permanent',
     pitEntryT: 0.36,
     pitExitT: 0.46,
     pitOffset: 28,
@@ -172,6 +179,7 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
   spa: {
     id: 'spa',
     name: 'Circuit de Spa-Francorchamps',
+      trackType: 'permanent',
       pitEntryT: 0.92,
       pitExitT: 0.1,
       startOffsetT: 0.05,
@@ -211,6 +219,7 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
     id: 'monaco',
     trackWidthCars: 2,
     name: 'Circuit de Monaco',
+      trackType: 'street',
       pitEntryT: 0.92,
       pitExitT: 0.1,
       startOffsetT: 0.6,
@@ -248,6 +257,7 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
   spielberg: {
     id: 'spielberg',
     name: 'Red Bull Ring',
+      trackType: 'permanent',
     pitEntryT: 0.9,
       pitExitT: 0.1,
       startOffsetT: 0.86,
@@ -287,6 +297,7 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
   interlagos: {
     id: 'interlagos',
     name: 'Autódromo José Carlos Pace',
+      trackType: 'permanent',
     officialGpName: 'Grande Prêmio de São Paulo',
     location: 'São Paulo',
     country: 'Brasil',
@@ -325,6 +336,7 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
   suzuka: {
     id: 'suzuka',
     name: 'Suzuka International Racing Course',
+      trackType: 'permanent',
       pitEntryT: 0.9,
       pitExitT: 0.1,
       startOffsetT: 0.62,
@@ -363,6 +375,7 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
     id: 'zandvoort',
     trackWidthCars: 2,
     name: 'Circuit Zandvoort',
+      trackType: 'permanent',
       pitEntryT: 0.9,
       pitExitT: 0.1,
       startOffsetT: 0.75,
@@ -402,6 +415,7 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
     id: 'las-vegas',
     trackWidthCars: 2,
     name: 'Las Vegas Strip Circuit',
+      trackType: 'street',
     pitEntryT: 0.9,
       pitExitT: 0.1,
       startOffsetT: 0.42,
@@ -440,6 +454,7 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
   bahrain: {
     id: 'bahrain',
     name: 'Bahrain International Circuit',
+      trackType: 'permanent',
       pitEntryT: 0.9,
       pitExitT: 0.1,
       startOffsetT: 0.88,
@@ -480,6 +495,7 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
     id: 'baku',
     trackWidthCars: 2,
     name: 'Baku City Circuit',
+      trackType: 'street',
       pitEntryT: 0.9,
       pitExitT: 0.1,
       startOffsetT: 0.88,
@@ -518,6 +534,7 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
   melbourne: {
     id: 'melbourne',
     name: 'Albert Park Circuit',
+      trackType: 'hybrid',
       pitEntryT: 0.92,
       pitExitT: 0.1,
       startOffsetT: 0.64,
@@ -559,6 +576,7 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
     id: 'miami',
     trackWidthCars: 2,
     name: 'Miami International Autodrome',
+      trackType: 'hybrid',
       pitEntryT: 0.9,
       pitExitT: 0.1,
       startOffsetT: 0.75,
@@ -598,6 +616,7 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
   shanghai: {
     id: 'shanghai',
     name: 'Shanghai International Circuit',
+      trackType: 'permanent',
       pitEntryT: 0.9,
       pitExitT: 0.1,
       startOffsetT: 0.28,
@@ -637,6 +656,7 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
     id: 'jeddah',
     trackWidthCars: 2,
     name: 'Jeddah Corniche Circuit',
+      trackType: 'street',
       pitEntryT: 0.9,
       pitExitT: 0.1,
       startOffsetT: 0.07,
@@ -677,6 +697,7 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
     id: 'marina-bay',
     trackWidthCars: 2,
     name: 'Marina Bay Street Circuit',
+      trackType: 'street',
     pitEntryT: 0.9,
       pitExitT: 0.1,
       startOffsetT: 0.05,
@@ -717,6 +738,7 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
   lusail: {
     id: 'lusail',
     name: 'Lusail International Circuit',
+      trackType: 'permanent',
     pitEntryT: 0.9,
       pitExitT: 0.1,
       startOffsetT: 0.04,
@@ -754,6 +776,7 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
   'yas-marina': {
     id: 'yas-marina',
     name: 'Yas Marina Circuit',
+      trackType: 'permanent',
     pitEntryT: 0.9,
       pitExitT: 0.1,
       startOffsetT: 0.05,
@@ -792,6 +815,7 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
   hungaroring: {
     id: 'hungaroring',
     name: 'Hungaroring',
+      trackType: 'permanent',
       pitEntryT: 0.9,
       pitExitT: 0.1,
       startOffsetT: 0.22,
@@ -830,6 +854,7 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
   'mexico-city': {
     id: 'mexico-city',
     name: 'Autódromo Hermanos Rodríguez',
+      trackType: 'permanent',
     pitEntryT: 0.9,
       pitExitT: 0.1,
       startOffsetT: 0.14,
@@ -869,6 +894,7 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
   montreal: {
     id: 'montreal',
     name: 'Circuit Gilles-Villeneuve',
+      trackType: 'hybrid',
       pitEntryT: 0.92,
       pitExitT: 0.1,
       startOffsetT: 0.18,
@@ -908,6 +934,7 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
   austin: {
     id: 'austin',
     name: 'Circuit of the Americas',
+      trackType: 'permanent',
     pitEntryT: 0.9,
       pitExitT: 0.1,
       startOffsetT: 0.96,

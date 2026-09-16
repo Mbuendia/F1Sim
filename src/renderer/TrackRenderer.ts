@@ -3,10 +3,15 @@ import { Camera } from './Camera';
 import { TrackWeatherState } from '../types/f1';
 import { TEAMS } from '../data/teams';
 import { buildPitLaneGeometry, PitLaneGeometry } from '../utils/pitLaneGeometry';
+import { getScenario } from '../data/scenarioRegistry';
+import { buildScenarioGeometry, ScenarioGeometry } from '../utils/scenarioGeometry';
 import type { Point2D } from '../utils/spline';
 
 export class TrackRenderer {
   private static geometryCache = new WeakMap<TrackDefinition, PitLaneGeometry>();
+  private static scenarioCache = new WeakMap<TrackDefinition, ScenarioGeometry>();
+  /** Último circuitId usado para invalidar la caché de escenario al cambiar de circuito */
+  private static lastCircuitId: string = '';
 
   private static geometryFor(track: TrackDefinition): PitLaneGeometry {
     let geometry = this.geometryCache.get(track);
@@ -15,6 +20,21 @@ export class TrackRenderer {
       this.geometryCache.set(track, geometry);
     }
     return geometry;
+  }
+
+  private static scenarioFor(track: TrackDefinition, circuitId: string): ScenarioGeometry {
+    // Invalidar la caché si cambiamos de circuito (evita herencia de escenario)
+    if (circuitId !== this.lastCircuitId) {
+      this.scenarioCache = new WeakMap<TrackDefinition, ScenarioGeometry>();
+      this.lastCircuitId = circuitId;
+    }
+    let scenarioGeo = this.scenarioCache.get(track);
+    if (!scenarioGeo) {
+      const scenario = getScenario(circuitId);
+      scenarioGeo = buildScenarioGeometry(track, scenario);
+      this.scenarioCache.set(track, scenarioGeo);
+    }
+    return scenarioGeo;
   }
 
   private static path(ctx: CanvasRenderingContext2D, points: Point2D[], camera: Camera, closed = false) {
@@ -26,15 +46,20 @@ export class TrackRenderer {
     });
     if (closed) ctx.closePath();
   }
+
   /**
-   * Renderiza el circuito oficial FIA con pista ancha, asfalto realista, charcos de lluvia dinámicos, pit lane y meta
+   * Renderiza el circuito con escenario por capas diferenciado según el tipo de circuito.
+   * Barcelona (permanente): hierba + grava/asfalto localizado + pianos en curvas.
+   * Mónaco (urbano): fondo urbano + barreras armco/hormigón + pianos mínimos.
+   * Otros (fallback): bandas uniformes legacy (cero regresión visual).
    */
   static renderTrack(
     ctx: CanvasRenderingContext2D,
     track: TrackDefinition,
     camera: Camera,
     _dpr: number,
-    weather?: TrackWeatherState
+    weather?: TrackWeatherState,
+    circuitId: string = 'barcelona'
   ) {
     const points = track.points;
     const n = points.length;
@@ -57,49 +82,43 @@ export class TrackRenderer {
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
 
-    // ── 1. ÁREA PERIMETRAL / ESCAPATORIAS / GRAVA ──
-    buildPath();
-    ctx.strokeStyle = '#181e1a'; // Hierba exterior
-    ctx.lineWidth = trackWidth + 40 * zoom;
-    ctx.stroke();
+    const scenarioGeo = this.scenarioFor(track, circuitId);
+    const isLegacy = scenarioGeo.runoffPolygons.length === 0
+                  && scenarioGeo.kerbSegments.length === 0
+                  && scenarioGeo.barrierLines.length === 0;
 
-    buildPath();
-    ctx.strokeStyle = '#5a4f3a'; // Grava oficial
-    ctx.lineWidth = trackWidth + 18 * zoom;
-    ctx.stroke();
+    if (isLegacy) {
+      // ── RENDERIZADO LEGACY (fallback para circuitos sin escenario) ──
+      // Reproduce exactamente el comportamiento original: bandas uniformes
+      this.renderLegacyLayers(ctx, buildPath, trackWidth, zoom);
+    } else {
+      // ── RENDERIZADO POR CAPAS (Q6) ──
+      this.renderScenarioLayers(ctx, track, camera, scenarioGeo, buildPath, trackWidth, zoom);
+    }
 
-    // ── 2. PIANOS OFICIALES FIA (KERBS ROJOS Y BLANCOS) ──
-    buildPath();
-    ctx.strokeStyle = '#d90429'; // Rojo vibrante
-    ctx.lineWidth = trackWidth + 8 * zoom;
-    ctx.stroke();
-
-    ctx.save();
-    ctx.setLineDash([12 * zoom, 12 * zoom]);
-    ctx.strokeStyle = '#ffffff'; // Blanco
-    ctx.lineWidth = trackWidth + 8 * zoom;
-    buildPath();
-    ctx.stroke();
-    ctx.restore();
-
-    // ── 3. ASFALTO BASE DEL CIRCUITO (MÁS OSCURO Y BRILLANTE SI LLUEVE) ──
+    // ── ASFALTO BASE DEL CIRCUITO (común a ambos modos) ──
     buildPath();
     ctx.strokeStyle = isWet ? '#161922' : '#272b35';
     ctx.lineWidth = trackWidth;
     ctx.stroke();
 
-    // ── 4. TRAZADA ENGOMADA (RACING LINE) ──
+    // ── TRAZADA ENGOMADA (RACING LINE) ──
     buildPath();
     ctx.strokeStyle = isWet ? '#0d1017' : '#14161c';
     ctx.lineWidth = trackWidth * 0.54;
     ctx.stroke();
 
-    // ── 5. CHARCOS DE AGUA DINÁMICOS EN PISTA (SI HAY LLUVIA) ──
+    // ── CHARCOS DE AGUA DINÁMICOS ──
     if (isWet && waterDepth > 0.2) {
       this.renderRainPuddles(ctx, track, camera, waterDepth);
     }
 
-    // ── 6. LÍNEAS DE LÍMITES DE PISTA BLANCAS ──
+    // ── BARRERAS (solo escenario Q6, se pintan encima del asfalto) ──
+    if (!isLegacy) {
+      this.renderBarriers(ctx, scenarioGeo, camera, zoom);
+    }
+
+    // ── LÍNEAS DE LÍMITES DE PISTA BLANCAS ──
     ctx.save();
     ctx.strokeStyle = isWet ? 'rgba(255, 255, 255, 0.55)' : 'rgba(255, 255, 255, 0.75)';
     ctx.lineWidth = 0.8 * zoom;
@@ -109,16 +128,153 @@ export class TrackRenderer {
     }
     ctx.restore();
 
-    // ── 7. PIT LANE COMPLETO & MURO DE BOXES ──
+    // ── PIT LANE COMPLETO & MURO DE BOXES ──
     this.renderPitLane(ctx, track, camera);
 
-    // ── 8. LÍNEA DE META OFICIAL AJEDREZADA & PÓRTICO FIA ──
+    // ── LÍNEA DE META OFICIAL AJEDREZADA & PÓRTICO FIA ──
     this.renderStartFinishLine(ctx, track, camera);
 
-    // ── 9. ETIQUETAS DE CURVAS OFICIALES ──
+    // ── ETIQUETAS DE CURVAS OFICIALES ──
     if (zoom >= 0.70) {
       this.renderCornerLabels(ctx, track, camera);
     }
+  }
+
+  /**
+   * Renderizado legacy: bandas uniformes de hierba, grava y pianos
+   * alrededor de todo el circuito. Idéntico al comportamiento pre-Q6.
+   */
+  private static renderLegacyLayers(
+    ctx: CanvasRenderingContext2D,
+    buildPath: () => void,
+    trackWidth: number,
+    zoom: number
+  ) {
+    // 1. Hierba exterior
+    buildPath();
+    ctx.strokeStyle = '#181e1a';
+    ctx.lineWidth = trackWidth + 40 * zoom;
+    ctx.stroke();
+
+    // 2. Grava oficial
+    buildPath();
+    ctx.strokeStyle = '#5a4f3a';
+    ctx.lineWidth = trackWidth + 18 * zoom;
+    ctx.stroke();
+
+    // 3. Pianos rojos
+    buildPath();
+    ctx.strokeStyle = '#d90429';
+    ctx.lineWidth = trackWidth + 8 * zoom;
+    ctx.stroke();
+
+    // 4. Pianos blancos ajedrezados
+    ctx.save();
+    ctx.setLineDash([12 * zoom, 12 * zoom]);
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = trackWidth + 8 * zoom;
+    buildPath();
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  /**
+   * Renderizado por capas Q6: terreno base, escapatorias localizadas,
+   * pianos solo en curvas. Cada zona es un polígono/path independiente.
+   */
+  private static renderScenarioLayers(
+    ctx: CanvasRenderingContext2D,
+    track: TrackDefinition,
+    camera: Camera,
+    scenarioGeo: ScenarioGeometry,
+    buildPath: () => void,
+    trackWidth: number,
+    zoom: number
+  ) {
+    // ── 0. TERRENO BASE ──
+    // Para circuitos con escenario, pintamos la banda perimetral con el color de terreno
+    buildPath();
+    ctx.strokeStyle = scenarioGeo.terrainColor;
+    ctx.lineWidth = trackWidth + 40 * zoom;
+    ctx.stroke();
+
+    // ── 1. GRAVA GLOBAL (solo si el circuito tiene grava general) ──
+    if (scenarioGeo.hasGravelGlobal) {
+      buildPath();
+      ctx.strokeStyle = '#5a4f3a';
+      ctx.lineWidth = trackWidth + 18 * zoom;
+      ctx.stroke();
+    }
+
+    // ── 2. ESCAPATORIAS LOCALIZADAS ──
+    ctx.save();
+    for (const runoff of scenarioGeo.runoffPolygons) {
+      this.path(ctx, runoff.points, camera, true);
+      ctx.fillStyle = runoff.color;
+      ctx.fill();
+    }
+    ctx.restore();
+
+    // ── 3. PIANOS LOCALIZADOS (solo en curvas) ──
+    ctx.save();
+    ctx.lineCap = 'butt';
+    ctx.lineJoin = 'round';
+    const kerbWidth = 8 * zoom;
+
+    for (const kerb of scenarioGeo.kerbSegments) {
+      if (kerb.points.length < 2) continue;
+
+      // Piano rojo base
+      this.path(ctx, kerb.points, camera);
+      ctx.strokeStyle = '#d90429';
+      ctx.lineWidth = kerbWidth;
+      ctx.stroke();
+
+      // Patrón ajedrezado blanco encima
+      ctx.save();
+      ctx.setLineDash([12 * zoom, 12 * zoom]);
+      this.path(ctx, kerb.points, camera);
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = kerbWidth;
+      ctx.stroke();
+      ctx.restore();
+    }
+    ctx.restore();
+  }
+
+  /**
+   * Renderiza barreras/muros de contención (armco, hormigón, tecpro).
+   * Se pintan encima del asfalto para que sean visibles.
+   */
+  private static renderBarriers(
+    ctx: CanvasRenderingContext2D,
+    scenarioGeo: ScenarioGeometry,
+    camera: Camera,
+    zoom: number
+  ) {
+    ctx.save();
+    ctx.lineCap = 'butt';
+    ctx.lineJoin = 'round';
+
+    for (const barrier of scenarioGeo.barrierLines) {
+      if (barrier.points.length < 2) continue;
+      this.path(ctx, barrier.points, camera);
+      ctx.strokeStyle = barrier.color;
+      ctx.lineWidth = barrier.width * zoom;
+      ctx.stroke();
+
+      // Efecto de reflejo metálico para armco
+      if (barrier.type === 'armco') {
+        ctx.save();
+        this.path(ctx, barrier.points, camera);
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+        ctx.lineWidth = barrier.width * 0.4 * zoom;
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    ctx.restore();
   }
 
   /**
