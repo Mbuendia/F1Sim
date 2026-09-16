@@ -154,6 +154,9 @@
                 <div style="background: rgba(30, 41, 59, 0.7); padding: 8px 12px; border-radius: 6px; border-left: 3px solid #c084fc;">
                     <strong style="color: #c084fc;">4. 🏎️ Físicas Orgánicas:</strong> Sin teleportaciones ni hacks. Pérdida en boxes y adelantamientos 100% matemáticos.
                 </div>
+                <div style="background: rgba(30, 41, 59, 0.7); padding: 8px 12px; border-radius: 6px; border-left: 3px solid #eab308; grid-column: 1 / -1;">
+                    <strong style="color: #eab308;">5. 🌿 Ramas por Sprint (GitHub):</strong> Cada sprint incompleto tiene su rama (ej. <code>sprint/2.8</code>, <code>sprint/2.9</code>). Toda IA debe cambiarse a la rama del sprint para trabajar en él. El sprint no acaba hasta que tenga todos los cambios y sea validado por el usuario.
+                </div>
             </div>
         </div>
 
@@ -895,6 +898,32 @@
             </div>
         </div>
 
+        <!-- =================== SPRINT 2.9 (REGLAMENTO FIA 2025 Y SENSACIÓN DE CARRERA - 28 TAREAS) =================== -->
+        <div class="sprintHeader" onclick="toggleSprint('sprint2_9')">
+            <div class="sprintHeaderLeft">
+                <span class="chevron collapsed" id="chevron-sprint2_9">▼</span>
+                <span class="dot dotCyan"></span>
+                <span>Sprint 2.9 — 🏁 Reglamento FIA 2025 y Sensación de Carrera (28 Tareas)</span>
+                <span class="badgePending">0 / 28 Tareas (Planificado)</span>
+            </div>
+            <div class="sprintHeaderRight">
+                <span>Completadas: <strong>0</strong> | Pendientes: <strong>28</strong></span>
+            </div>
+        </div>
+
+        <div class="sprintBody collapsed" id="body-sprint2_9">
+            <div class="task pending">
+                <input type="checkbox" id="t_r01">
+                <div class="task-content">
+                    <div class="task-title-row">
+                        <div class="task-title"><span class="orderBadge">R01-R28</span><label for="t_r01">Reglamento FIA 2025 y Sensación de Carrera (Entregas A-E)</label></div>
+                        <div class="tokensRow"><span class="badgePending" style="font-size: 9.5px; padding: 2px 6px; border-radius: 4px;">PENDIENTE DE IMPLEMENTACIÓN</span></div>
+                    </div>
+                    <div class="task-desc">Planificación actual. Incluye perfil de reglas (R01), cronometraje (R02), base inicial de datos y geometría de circuitos (R03), y otras tareas documentadas en DASHBOARD.md. Implementación pendiente de autorización y trabajo en rama sprint/2.9.</div>
+                </div>
+            </div>
+        </div>
+
         <!-- =================== SPRINT 3 (AUDIO, TELEMETRÍA Y CLIMA - 16 SUBTAREAS) =================== -->
         <div class="sprintHeader" onclick="toggleSprint('sprint3')">
             <div class="sprintHeaderLeft">
@@ -1547,7 +1576,7 @@
 
     <!-- ── SCRIPTS PARA EL ACORDEÓN / PLEGAR Y DESPLEGAR ── -->
     <script>
-        const allSprintIds = ['sprint1', 'sprint2', 'sprint2_1', 'sprint2_5', 'sprint2_8', 'sprint3', 'sprint4', 'sprint5', 'ideasBackend', 'voiceAI'];
+        const allSprintIds = ['sprint1', 'sprint2', 'sprint2_1', 'sprint2_5', 'sprint2_8', 'sprint2_9', 'sprint3', 'sprint4', 'sprint5', 'ideasBackend', 'voiceAI'];
 
         function toggleSprint(id) {
             const body = document.getElementById('body-' + id);
