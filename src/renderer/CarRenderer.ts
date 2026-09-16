@@ -7,14 +7,20 @@ export class CarRenderer {
   static readonly BASE_CAR_WID = 6;
 
   /**
-   * Obtiene las dimensiones del monoplaza escaladas por el nivel de zoom
+   * Dimensiones en pantalla. La huella incluye ruedas y alerones, no solo el chasis.
+   * El tamaño en el mundo es constante: alejar la cámara no agranda el coche respecto al asfalto.
    */
-  static getCarDimensions(zoom: number) {
-    const scale = Math.max(0.9, Math.min(3.2, zoom * 1.15));
+  static getCarDimensions(zoom: number, trackWidthMeters: number = 24, trackWidthCarsCapacity: number = 3) {
+    // cw = carWid * 0.8; las ruedas alcanzan +/- (1.15 + 0.45 / 2) * cw.
+    const footprintWidthFactor = 2 * 0.8 * (1.15 + 0.45 / 2);
+    const laneSpacing = CarRenderer.getLateralDisplacement(0.55, trackWidthMeters, trackWidthCarsCapacity);
+    const worldScale = Math.min(1.15, laneSpacing / (1.25 * CarRenderer.BASE_CAR_WID * footprintWidthFactor));
+    const scale = worldScale * zoom;
     return {
       scale,
       length: CarRenderer.BASE_CAR_LEN * scale,
-      width: CarRenderer.BASE_CAR_WID * scale
+      width: CarRenderer.BASE_CAR_WID * scale,
+      footprintWidth: CarRenderer.BASE_CAR_WID * footprintWidthFactor * scale,
     };
   }
 
@@ -26,7 +32,7 @@ export class CarRenderer {
   }
 
   /**
-   * Calcula el desplazamiento lateral físico anti-solapamiento (> 1.2 * carWid de separación)
+   * Desplazamiento lateral en el mundo; getCarDimensions adapta la huella al espacio disponible.
    */
   static getLateralDisplacement(
     lateralOffset: number,
@@ -60,17 +66,23 @@ export class CarRenderer {
 
     const points = track.points;
     const totalPts = points.length;
+    const dimensions = CarRenderer.getCarDimensions(camera.zoom, track.trackWidthMeters || 24, trackWidthCarsCapacity);
 
     for (const car of sorted) {
       let worldX = 0;
       let worldY = 0;
       let angle = 0;
+      const normalize = (t: number) => ((t % 1) + 1) % 1;
+      const pitSpan = normalize(track.pitExitT - track.pitEntryT);
+      const pitProgress = pitSpan > 0 ? normalize(car.progress - track.pitEntryT) / pitSpan : Infinity;
 
-      if (car.isInPitLane && track.pitLanePoints.length > 0) {
+      // pitLaneProgress pertenece al paso anterior del motor. Usar la posición
+      // actual evita retrasos al entrar y saltos al reincorporarse a la pista.
+      if (car.isInPitLane && track.pitLanePoints.length >= 2 && pitProgress <= 1 + 1e-9) {
         const pitPts = track.pitLanePoints;
-        const pitProgress = car.pitStop.pitLaneProgress;
-        const pIndex = Math.min(pitPts.length - 2, Math.floor(pitProgress * (pitPts.length - 1)));
-        const frac = (pitProgress * (pitPts.length - 1)) - pIndex;
+        const pitIndex = Math.min(1, pitProgress) * (pitPts.length - 1);
+        const pIndex = Math.min(pitPts.length - 2, Math.floor(pitIndex));
+        const frac = pitIndex - pIndex;
         const p1 = pitPts[pIndex];
         const p2 = pitPts[pIndex + 1] || p1;
         worldX = p1.x + (p2.x - p1.x) * frac;
@@ -101,7 +113,7 @@ export class CarRenderer {
 
         const nx = Math.cos(angle + Math.PI / 2);
         const ny = Math.sin(angle + Math.PI / 2);
-        // Calibración anti-solapamiento garantizando separación física > 1.2 * carWid
+        // Mismo ancho de pista/capacidad que la huella completa del monoplaza.
         const lateralDist = CarRenderer.getLateralDisplacement(
           car.lateralOffset,
           track.trackWidthMeters || 24,
@@ -142,7 +154,7 @@ export class CarRenderer {
       // ── OPACIDAD DEL COCHE RETIRADO (FADING ANTES DE GRÚA) ──
       const retiredOpacity = car.status === 'out' ? Math.max(0.25, Math.min(1.0, car.retireTimer / 10)) : 1.0;
 
-      this.drawSingleCar(ctx, screen.x, screen.y, angle + camera.rotation, car, camera.zoom, isSelected, retiredOpacity);
+      this.drawSingleCar(ctx, screen.x, screen.y, angle + camera.rotation, car, camera.zoom, isSelected, dimensions, retiredOpacity);
     }
 
     // ── RENDERIZADO DEL SAFETY CAR FÍSICO ──
@@ -245,12 +257,13 @@ export class CarRenderer {
     car: CarState,
     zoom: number,
     isSelected: boolean,
+    dimensions: ReturnType<typeof CarRenderer.getCarDimensions>,
     opacity: number = 1.0
   ) {
     ctx.save();
     ctx.globalAlpha = opacity;
 
-    const { scale, length: carLen, width: carWid } = CarRenderer.getCarDimensions(zoom);
+    const { scale, length: carLen, width: carWid } = dimensions;
 
     // Sombra fija en pantalla (cae siempre hacia abajo y derecha: +2px, +3px)
     ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';

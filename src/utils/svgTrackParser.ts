@@ -277,8 +277,8 @@ export function buildTrackFromSvg(circuit: CircuitSpec, sampleCount: number = 75
 }
 
 /**
- * Genera el carril de boxes con curvas de deceleración en entrada (pitEntryT) y aceleración en salida (pitExitT),
- * empalmando tangencialmente con la pista principal sin discontinuidades de primer orden (C1).
+ * Muestrea el intervalo exacto de boxes, incluidas entradas/salidas entre puntos del trazado.
+ * Smootherstep suaviza la separación lateral en los empalmes; la velocidad depende del motor.
  */
 export function generatePitLanePoints(
   splinePoints: SplinePoint[],
@@ -291,52 +291,54 @@ export function generatePitLanePoints(
   const total = splinePoints.length;
   if (total < 2) return [];
 
-  const pitStartIdx = Math.floor(total * pitEntryT) % total;
-  const pitEndIdx = Math.floor(total * pitExitT) % total;
-
-  const rawTrackPoints: SplinePoint[] = [];
-  if (pitStartIdx > pitEndIdx) {
-    for (let i = pitStartIdx; i < total; i++) {
-      rawTrackPoints.push(splinePoints[i]);
-    }
-    for (let i = 0; i <= pitEndIdx; i++) {
-      rawTrackPoints.push(splinePoints[i]);
-    }
-  } else {
-    for (let i = pitStartIdx; i <= pitEndIdx; i++) {
-      rawTrackPoints.push(splinePoints[i]);
-    }
+  const normalize = (t: number) => ((t % 1) + 1) % 1;
+  const entryT = normalize(pitEntryT);
+  const exitT = normalize(pitExitT);
+  const span = normalize(exitT - entryT);
+  if (!Number.isFinite(span) || span < 1e-12) return [];
+  if (!Number.isFinite(pitOffset) || !Number.isFinite(entryFrac) || !Number.isFinite(exitFrac) ||
+      entryFrac <= 0 || exitFrac <= 0 || entryFrac + exitFrac > 1) {
+    throw new RangeError('El carril de boxes necesita un offset finito y transiciones positivas que no se solapen.');
   }
-
-  const count = rawTrackPoints.length;
-  if (count < 2) return [];
+  // Todos los intervalos tienen el mismo delta de trackT, como espera el renderer.
+  const segments = Math.max(2, Math.ceil(span * total - 1e-9));
 
   const pitLanePoints: Point2D[] = [];
 
-  for (let k = 0; k < count; k++) {
-    const pt = rawTrackPoints[k];
-    const u = k / (count - 1); // 0.0 (entrada) a 1.0 (salida)
+  for (let k = 0; k <= segments; k++) {
+    const u = k / segments;
+    const t = k === segments ? exitT : normalize(entryT + span * u);
+    const index = t * total;
+    const i = Math.floor(index);
+    const fraction = index - i;
+    const a = splinePoints[i % total];
+    const b = splinePoints[(i + 1) % total];
+    const x = a.x + (b.x - a.x) * fraction;
+    const y = a.y + (b.y - a.y) * fraction;
+    const nx = a.normal.x + (b.normal.x - a.normal.x) * fraction;
+    const ny = a.normal.y + (b.normal.y - a.normal.y) * fraction;
+    const normalLength = Math.hypot(nx, ny) || 1;
 
     let currentOffset = pitOffset;
 
     if (u < entryFrac) {
-      // Zona de deceleración y bifurcación tangencial (C1 continuo con smootherstep)
+      // Bifurcación lateral suave; no altera la velocidad del coche.
       const tau = u / entryFrac;
       const factor = tau * tau * tau * (tau * (tau * 6 - 15) + 10);
       currentOffset = pitOffset * factor;
     } else if (u > 1.0 - exitFrac) {
-      // Zona de aceleración y reincorporación tangencial (C1 continuo con smootherstep)
+      // Reincorporación lateral suave.
       const tau = (1.0 - u) / exitFrac;
       const factor = tau * tau * tau * (tau * (tau * 6 - 15) + 10);
       currentOffset = pitOffset * factor;
     } else {
-      // Zona de velocidad constante (80 km/h) y cajones de boxes
+      // Separación nominal de la zona de servicio.
       currentOffset = pitOffset;
     }
 
     pitLanePoints.push({
-      x: pt.x + pt.normal.x * currentOffset,
-      y: pt.y + pt.normal.y * currentOffset
+      x: x + (nx / normalLength) * currentOffset,
+      y: y + (ny / normalLength) * currentOffset
     });
   }
 

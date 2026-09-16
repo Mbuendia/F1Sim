@@ -29,8 +29,9 @@ Leyenda de Estado:
 | **Sprint 2** | SC Físico, Undercut/Overcut Orgánico, Monoplaza Vectorial 2D, Desdoblamiento | ✅ **COMPLETADO** |
 | **Sprint 2.1** | **Resolución de Bugs Críticos y Altos de Auditoría (C1-C7, A1-A6)** | ✅ **COMPLETADO (23/23 Tests PASS)** |
 | **Sprint 2.5** | **Deuda Técnica de Auditoría (M1-M10, B1-B7)** | ✅ **COMPLETADO (17/17 Tareas - 46 Tests PASS)** |
-| **Sprint 2.8** | **Salto de Calidad: Fidelidad de Simulación, Geometría y Muro Táctico (Q1-Q18)** | 🟡 **REFINADO (Listo para validación del usuario)** |
-| **Sprint 3** | **Audio, Telemetría Avanzada, Radar GPS & Clima (16 Subtareas)** | ⏳ **PLANIFICADO (A continuación de Sprint 2.8)** |
+| **Sprint 2.8** | **Salto de Calidad: Fidelidad de Simulación, Geometría, Muro Táctico y revisión DRS (Q1-Q19)** | 🟡 **EN CURSO (Q1-Q2 aprobadas, 80 tests PASS; Q3-Q19 pendientes)** |
+| **Sprint 2.9** | **Reglamento FIA 2025, identidad técnica de equipos y experiencia de carrera (R01-R28)** | 🟡 **REFINADO — planificación pendiente de aprobación para implementar** |
+| **Sprint 3** | **Audio, Telemetría Avanzada, Radar GPS & Clima (16 Subtareas)** | ⏳ **PLANIFICADO (Después del Sprint 2.9; coordinar clima con R22)** |
 | **Sprint 4** | **Épica: F1 Team Principal & Race Manager (12 Subtareas)** | ⏳ **BACKLOG** |
 
 ---
@@ -104,20 +105,31 @@ Los 13 bugs críticos y altos detectados en la auditoría fueron implementados y
 
 ---
 
-## 🎯 5. SPRINT 2.8: SALTO DE CALIDAD, GEOMETRÍA Y DECISIONES DE MURO (18 TAREAS)
+## 🎯 5. SPRINT 2.8: SALTO DE CALIDAD, GEOMETRÍA Y DECISIONES DE MURO (19 TAREAS)
 
 *(Sprint de consolidación previa al Sprint 3: alineación de geometrías, eliminación de solapamientos, carril de boxes continuo y control táctico real del Team Principal)*
 
-### 📐 Bloque A: Escala, Geometría y Cinemática Espacial (5 Tareas)
-* **Q1 — Calibración de Escala de Monoplaza y Anchura Real de Pista (Anti-Solapamiento):** `[x] COMPLETADO`
-  * *Problema:* `CarRenderer.ts:34` y `RaceSimulation.ts:495`. Los coches se desplazan lateralmente demasiado poco para su ancho dibujado (`carWid = 6` vs `lateralOffset` estrecho), provocando solapamiento visual al rodar en paralelo.
-  * *Solución:* Parametrizar la anchura de pista (`trackHalfWidth`) y el ancho del monoplaza para garantizar un margen transversal de seguridad (> `1.2 * carWid`) entre coches en paralelo. Implementado en `CarRenderer.getLateralDisplacement` y `CarRenderer.getCarDimensions`.
-  * *Test:* Verificación geométrica de que los bounding boxes no intersecan con `lateralOffset` opuestos (margen 3.16x en pista estándar, 1.85x en pista estrecha, gap mínimo +4.1px a cualquier zoom). (Group 8 PASS).
+**Revisión del 15/09/2026, solicitada por el usuario antes de subir cambios:** alcance limitado a las implementaciones Q1 y Q2 del commit `6b30e57`, sus pruebas y esta documentación. **El usuario ha dado el OK local y autorizado la subida.** Q3-Q19 no se consideran implementadas. La ampliación documental del 16/09/2026 incorpora Q19 y el Sprint 2.9; su planificación no implica autorización para implementar nuevas mecánicas.
 
-* **Q2 — Carril de Boxes con Entrada/Salida Propias y Continuidad Física:** `[x] COMPLETADO`
+* **Refinamiento de Q1:** las pruebas originales medían `carWid`, pero las ruedas dibujadas ocupan 2.2 veces esa medida. Además, comparar únicamente desplazamientos opuestos no verifica el adelantamiento a un coche centrado. Calibrar el tamaño completo (ruedas y alerones incluidos) contra la separación lateral disponible, con un margen de 1.25, y escalarlo linealmente con el zoom para evitar solapamientos al alejar la cámara. Probar la geometría que emite el renderer, pistas de capacidad 2/3, coche centrado y coches en carriles opuestos.
+* **Refinamiento de Q2:** `floor(t * númeroDePuntos)` truncaba los extremos cuando entrada/salida caían entre muestras (por ejemplo, salida de Barcelona en 0.15 con 750 puntos). Muestrear el intervalo exacto con interpolación, conservar extremos y normales, y verificar tanto tramos que cruzan meta como tramos interiores, incluida Silverstone. La envolvente smootherstep suaviza el desplazamiento lateral; por sí sola no demuestra continuidad de velocidad ni un perfil de frenado físico. Los tests deben expresar esta limitación y distinguir coordenadas del mundo de metros reales.
+* **Integración de Q2 en el dibujo:** el motor actualiza `pitLaneProgress` antes de avanzar `progress`; dibujarlo directamente deja el coche un paso atrás. Derivar la interpolación visual del `progress` actual y volver a la pista al superar la salida, aunque `isInPitLane` aún conserve el estado del paso previo. Probar entrada, tránsito y salida con un estado de boxes deliberadamente retrasado, sin mutar la posición física.
+* **Validación realizada antes de la aprobación:** `node test-suite.mjs`, `npm run build` y revisión de una carrera en el navegador local. Tras el OK del usuario, quedan autorizados el commit y el push de estas correcciones y de la planificación solicitada.
+
+**Resultado de la revisión:** la suite pasa **80 pruebas, 0 fallos** (54 previas + 26 nuevas). Antes de corregir el código, las primeras pruebas de regresión reprodujeron 15 fallos que la suite anterior no detectaba. `npm run build` pasa; conserva un aviso de bundle superior a 500 kB. `git diff --check` pasa. En navegador se verificaron entrada al paddock, selección, formación, salida y seguimiento de una carrera en Barcelona hasta la vuelta 3, sin errores de consola. Se dejó la carrera pausada en `http://127.0.0.1:3000/F1Sim/`; posteriormente el usuario dio su OK y pidió subir los cambios.
+
+**Límites de esta validación:** las regresiones geométricas usan trazados sintéticos y un contexto Canvas que registra el dibujo real. No equivalen a una carrera completa en cada circuito ni a un modelo de colisiones; la separación comprobada corresponde a carriles estabilizados. El perfil de velocidad de boxes y las dependencias Q3/Q4/Q14 siguen fuera de estas correcciones. El OK visual del usuario se ha recibido; no amplía el alcance de las pruebas.
+
+### 📐 Bloque A: Escala, Geometría y Cinemática Espacial (5 Tareas)
+* **Q1 — Calibración de Escala de Monoplaza y Anchura Real de Pista (Anti-Solapamiento):** `[x] CORREGIDO, PROBADO Y APROBADO POR EL USUARIO`
+  * *Problema:* `CarRenderer.ts:34` y `RaceSimulation.ts:495`. Los coches se desplazan lateralmente demasiado poco para su ancho dibujado (`carWid = 6` vs `lateralOffset` estrecho), provocando solapamiento visual al rodar en paralelo.
+  * *Solución:* `getCarDimensions` calibra la huella completa (ruedas y alerones incluidos) con la separación de `getLateralDisplacement`, dejando un margen de 1.25 respecto a un coche centrado. El renderer utiliza esas dimensiones según anchura/capacidad y escala linealmente con el zoom.
+  * *Test:* Groups 8 y 9 PASS. Registro de rectángulos realmente dibujados para coches centrados, carriles opuestos y offset 0.85, anchos 16/24, capacidad 2/3, zoom 0.25–8 y rotaciones 0°, 90° y -0.7 radianes. Huellas separadas y dentro del asfalto en los casos comprobados.
+
+* **Q2 — Carril de Boxes con Entrada/Salida Propias y Continuidad Física:** `[x] CORREGIDO, PROBADO Y APROBADO POR EL USUARIO`
   * *Problema:* `svgTrackParser.ts:221`. El carril de boxes se genera desplazando puntos de la pista, incluidos los extremos, sin curvas de transición suaves (saltos al entrar y salir).
-  * *Solución:* Generar splines dedicados de deceleración en entrada (`pitEntryT`) y aceleración en salida (`pitExitT`), empalmando tangencialmente con la pista principal sin discontinuidades de primer orden (`C1`) mediante polinomio smootherstep quíntico. Implementado en `generatePitLanePoints`.
-  * *Test:* Comprobación de continuidad C0 (desviación 0.0000m) y C1 tangencial (diferencia angular 1.78° < 2.86°) en derivadas `dx/dt`, `dy/dt` entre la pista principal y el carril de boxes. (Group 8 PASS).
+  * *Solución:* `generatePitLanePoints` interpola los extremos exactos y las normales sobre un intervalo uniforme, con separación lateral smootherstep quíntica. El renderer utiliza `progress` actual para evitar desfase de un paso y conserva la posición al regresar a la ruta principal. Esto corrige la continuidad geométrica; no sustituye la simulación de frenado/aceleración.
+  * *Test:* Groups 8 y 9 PASS. Extremos coincidentes con tolerancia 1e-7 unidades del mundo en intervalos entre muestras, con/sin cruce de meta y offset negativo; comparación angular de segmentos menor de 0.05 radianes en los escenarios sintéticos (aproximación tangencial, no prueba de derivada analítica C1). Pruebas del renderer para entrada, tránsito y salida con `pitLaneProgress` retrasado y retorno sin retención visual.
 
 * **Q3 — Geometría Diferenciada para Muro, Carril Rápido y Cajones de Boxes:** `[ ] PENDIENTE`
   * *Problema:* `TrackRenderer.ts:165`. El muro de boxes se dibuja sobre el centro del carril; los límites blancos reutilizan el centro de pista.
@@ -180,7 +192,7 @@ Los 13 bugs críticos y altos detectados en la auditoría fueron implementados y
 * **Q14 — Eliminación de Asignaciones Directas de Posición en SC y Bandera Roja:** `[ ] PENDIENTE`
   * *Problema:* En SC y red flag existen saltos forzados de `progress`.
   * *Solución:* Realizar deceleraciones, agrupamiento y relanzamientos de forma 100% cinemática mediante velocidad, aceleración y distancia de seguridad sin alterar `progress` artificialmente.
-  * *Test:* Simulación de parada en parrilla bajo bandera roja mediante deceleración suave hasta `speed = 0` sin saltos discretos en `progress`.
+  * *Test:* Simulación de retorno y parada en el carril rápido de boxes bajo bandera roja mediante deceleración suave hasta `speed = 0`, sin saltos discretos en `progress`. La parrilla se reserva para la excepción de seguridad del artículo 57.2 (ver R12).
 
 * **Q15 — Centralización de Reglas de Banderas Azules y Tráfico de Doblados:** `[ ] PENDIENTE`
   * *Problema:* Fallos de lógica entre la posición en vuelta y la proximidad física en pista.
@@ -189,8 +201,8 @@ Los 13 bugs críticos y altos detectados en la auditoría fueron implementados y
 
 * **Q16 — Modelo Dinámico de ERS, Combustible y Penalización Térmica en Agarre:** `[ ] PENDIENTE`
   * *Problema:* `RaceSimulation.ts:834`, batería estática al 85%, clamp de 0.5 kg en combustible, penalización térmica tardía.
-  * *Solución:* Conectar el ERS al ciclo real (recuperación en frenada hasta 4MJ/vuelta, despliegue en aceleración), consumo continuo sin topes artificiales, y penalización térmica calculada directamente sobre el coeficiente de fricción de neumáticos.
-  * *Test:* Comprobar fluctuación del nivel de batería entre 20% y 100% a lo largo de una vuelta de carrera.
+  * *Solución refinada con FIA 2025:* Conectar el ERS al ciclo real: **MGU-K → ES máximo 2 MJ/vuelta; ES → MGU-K máximo 4 MJ/vuelta; MGU-K ±120 kW**, con contabilidad separada del MGU-H y ventana de carga del ES de 4 MJ (T5.3.2). Consumo continuo sin reserva artificial infinita y penalización térmica aplicada antes de integrar el movimiento. Desarrollo completo y dependencias en R14-R16.
+  * *Test:* Conservación de energía, saturación y agotamiento, límites por flujo/vuelta, reset reglamentario al entrar en boxes y ausencia de energía creada por cambios de modo. No exigir oscilaciones arbitrarias de SOC del 20% al 100%.
 
 * **Q17 — Rebalanceo del D20 de Suerte hacia el Reglamento FIA:** `[ ] PENDIENTE`
   * *Problema:* `RaceSimulation.ts:1262`, el D20 monta neumáticos nuevos mágicamente en pista sin parar en boxes.
@@ -202,11 +214,267 @@ Los 13 bugs críticos y altos detectados en la auditoría fueron implementados y
   * *Solución:* Ajustar targetLaps para SC urbano a mínimo 10 vueltas (`10 + Math.floor(Math.random() * 3)`); conectar `IncidentModel.reset()` en `initRace()`; estabilizar dependencias de hooks en `D20LuckModal` y `RaceSimulation`.
   * *Test:* Verificar que en circuito urbano el SC tiene `targetLaps >= 10` y que `IncidentModel.nextId` es 1 al reiniciar la carrera.
 
+### 🚦 Bloque E: Revisión Prioritaria de DRS (1 Tarea)
+
+* **Q19 — DRS medido en detección, permiso persistente y apertura reglamentaria:** `[ ] PENDIENTE — P0, SOLICITADO POR EL USUARIO`
+  * *Problema reproducible en el código:* `RaceSimulation.ts` decide `drsActive` cada paso usando el gap actual y `trackPoint.isDrsZone`; no existe medición guardada al cruzar detección. Un adelantamiento cambia el coche de referencia y puede encender/apagar el DRS indebidamente. `DrsZoneSpec` solo tiene inicio y fin de zona. Además, `DRSModel.ts` admite 1.05 s, mientras el motor usa 1.0 s y no llama al modelo importado; hay dos criterios distintos.
+  * *Regla:* S22.1, pp. 23-24: en carrera/sprint, menos de 1 s en un punto de detección predeterminado; apertura solo en zonas autorizadas; una vuelta completada tras salida o periodo de SC; cierre en la primera frenada; veto de Dirección de Carrera. La FIA puede modificar el umbral. La restricción de proximidad es de carrera/sprint, no de libres/clasificación. T3.10.10, pp. 33-34: dos posiciones del flap, transición menor de 400 ms.
+  * *Solución propuesta:* unificar la lógica en un servicio con `DetectionPoint` independiente y relación detección → una o varias zonas. Registrar tiempos interpolados de cruce y un permiso por coche/detección/paso, con rival observado, gap y causa de denegación. Comparar el tráfico físico en la misma ruta, incluidos doblados, sin usar el puesto de clasificación ni `progress * 77.8` como cronómetro. Conservar el permiso de las zonas asociadas aunque cambien el gap o el orden después de detectar; renovarlo en la siguiente detección correspondiente. Procesar cruces en orden temporal, también en meta y con simulación acelerada. No inventar la posición de detección restando una distancia fija a la zona.
+  * *Activación:* distinguir `enabledByRaceControl`, `eligibleAtDetection`, `inActivationZone`, petición del piloto IA y flap realmente abierto. Cerrar por frenada, salida de zona o veto; conservar la causa en telemetría. Revisar los actuales contadores de 2 vueltas tras SC y 1 tras VSC: el artículo 22 exige una vuelta tras SC, pero no establece una espera adicional de una vuelta tras VSC. Evitar errores entre vuelta en curso y vueltas completadas.
+  * *Tests obligatorios:* gap 0.999/1.000/1.001 s; entrar en detección a 1.2 s y acercarse luego a 0.5 s no autoriza; detectar a 0.8 s y separarse después a 1.3 s conserva permiso; adelantar después de detectar no lo crea ni lo borra; líder detrás de doblado; dos zonas con detección compartida y con detecciones independientes; zona que cruza meta; freno; SC/VSC/roja; libres/clasificación; reinicio; pasos grandes que cruzan detección y activación. Probar el camino real de `RaceSimulation`, no solo el helper.
+  * *Dependencias y cierre:* R01-R03 definen contratos reutilizables; R04 añade integración visual y escenarios de aceptación sobre Q19, sin implementar el DRS dos veces. Primera referencia Barcelona/Mónaco con notas oficiales de evento pendientes de aportar/verificar. Registrar cualquier geometría provisional como estimada. **Esta tarea aún no corrige el DRS en el juego.**
+
+**Reconciliación de propuestas anteriores con el Sprint 2.9:** Q3 debe permitir límite de boxes por evento (80 km/h por defecto) y fast lane de hasta 3.5 m; Q10 necesita una línea de compromiso basada en geometría, no una supuesta distancia FIA universal de 0.05 vueltas. Los modificadores de Q11/Q12/Q15 y las recompensas Q17 son propuestas de diseño, no constantes reglamentarias. Q17 queda sujeto a R26: no montar piezas ni alterar límites del ERS durante una vuelta. Q18 y T3.1 mantienen el requisito personalizado de SC urbano mínimo 10 vueltas; no se atribuye a la FIA. El perfil reglamentario alternativo de R10 requiere aprobación antes de cambiar ese comportamiento.
+
 ---
 
-## 🔮 6. SPRINT 3: AUDIO, TELEMETRÍA AVANZADA, RADAR GPS & CLIMA (16 TAREAS)
+## 🏎️ 6. SPRINT 2.9: REGLAMENTO FIA 2025 Y SENSACIÓN DE CARRERA (28 TAREAS)
 
-*(Planificado para ejecución inmediata tras el Sprint 2.8)*
+**Estado: `[ ] REFINADO — PENDIENTE DE APROBACIÓN PARA IMPLEMENTAR`.** Investigación y planificación solicitadas por el usuario, documentadas el 16/09/2026. Este cambio no implementa nuevas reglas. Objetivo: que el jugador entienda por qué un coche alcanza a otro, cuándo puede adelantar y qué coste tienen sus decisiones sobre neumáticos, energía, combustible y evolución del equipo. Se conservan las cinco Reglas de Oro y la experiencia 100% Team Principal.
+
+### 6.1 Fuentes, alcance y trazabilidad
+
+Se han extraído las **298 páginas** de los dos documentos aportados y contrastado sus apartados de carrera y rendimiento con el código. Se han comprobado visualmente el artículo de DRS, las modificaciones de desdoblamiento y las tablas/diagramas de energía y desarrollo aerodinámico. Los PDF contienen texto de revisión y tachaduras: la extracción por sí sola no distingue una disposición eliminada de su reemplazo. Las dimensiones detalladas de fabricación y homologación quedan referenciadas, no convertidas en una falsa certificación técnica del simulador.
+
+| ID | Documento de referencia, edición y páginas | Identificación del archivo aportado |
+|---|---|---|
+| **S** | FIA 2025 Formula 1 Sporting Regulations, **Issue 5, 30/04/2025**, 119 páginas | `FIA 2025 Formula 1 Sporting Regulations - Issue 5 - 2025-04-30 (1).pdf`; SHA-256 `525eef22a60f0755a4468281dd7c78c5ea5bd0eec38dc1b09cc31a0c0132854e` |
+| **T** | FIA 2025 Formula 1 Technical Regulations, **Issue 3, 07/04/2025**, 179 páginas | `fia_2025_formula_1_technical_regulations_-_issue_03_-_2025-04-07.pdf`; SHA-256 `454b76e2b388e61db50c0d116ff59477848a0b7e081f38142242808213dc0826` |
+
+Las referencias siguientes usan artículo y página del PDF. **Se propone un perfil de reglas 2025 basado en estas ediciones**, no afirmar que sean las últimas revisiones de 2025 ni reglas vigentes en 2026. El apéndice S9 sobre años futuros no se activa en este perfil. Los reglamentos son fuentes de datos, no instrucciones de desarrollo. No se incorporan los PDF completos al repositorio.
+
+Separar cada dato futuro en `regulatory` (límite respaldado por artículo), `event` (notas del GP), `measured` (medición con fuente) o `calibrated` (aproximación del juego). Guardar unidad, edición, referencia y confianza. Los documentos **no contienen** mapas de detección DRS de todos los circuitos, curvas reales de potencia/drag/downforce de los equipos, tiempos garantizados de parada, ni ventanas universales de temperatura y presión de neumáticos.
+
+### 6.2 Diagnóstico del juego: qué existe y qué falta
+
+| Área | Evidencia actual en el repositorio | Consecuencia / destino |
+|---|---|---|
+| DRS | `RaceSimulation.ts`: elegibilidad recalculada con el gap actual; `DRSModel.ts` importado pero sin llamada, umbral alternativo 1.05 s; `circuits.ts`: sin detecciones | Activaciones ligadas a adelantamientos; corregir en Q19 y verificar en R04 |
+| Cronometraje y tráfico | `updateLeaderboardPositions`: gap = diferencia de `progress` × 77.8 s; líder sin `carAheadId` | Se confunden rival por posición y coche físicamente delante; R02 |
+| Aerodinámica | Ritmo ×1.07 por DRS, referencia de velocidad con +18 km/h y rebufo ×1.018 | Bonificaciones universales en varias fórmulas, sin balance de fuerzas compartido; R05 |
+| Recursos | `FuelModel`: 110 kg iniciales, 1.65 kg/vuelta nominales, suelo de 0.5 kg; telemetría `batterySoc: 85` | No hay agotamiento real ni gestión verificable del ERS; R14-R16 |
+| Neumáticos / boxes | Cuatro valores de desgaste y stints existentes; compuesto elegido aleatoriamente en servicio; `totalPitStops === 0` limita la parada programada | Falta inventario y legalidad de estrategia, especialmente Mónaco; Q9-Q11, R06-R08 |
+| Neutralizaciones | SC/VSC/roja existentes; contadores DRS globales, compactación/reposición de `progress`, roja con cambio de salud aleatorio | Motor parcialmente implementado, requiere procedimientos y continuidad; Q14-Q18, R09-R12 |
+| Equipos | `teams.ts`: diez equipos con ratings, motor, fiabilidad y media de pit stop; ritmo dependiente de `carPerformance` | Hay diferenciación inicial, no perfiles técnicos completos con evoluciones versionadas; R17-R19 |
+| Sesiones / resultados | Parrilla `STARTING_GRID_ORDER`, semáforos y vuelta rápida; sin módulos completos de clasificación deportiva, penalizaciones o temporada | R13, R20-R21; no confundir Q1/Q2 de tareas geométricas con sesiones de clasificación |
+| Muro y estadísticas | Órdenes incompletas; `pushLaps` por porcentaje de vueltas, adelantamientos por puestos ganados desde parrilla | Deben proceder de eventos reales; R24-R25 |
+| D20 / clima | D20 puede renovar neumáticos en pista; tipos inter/wet y meteorología no equivalen a un modelo de agua completo | Q17, R22 y R26; aprovechar T3.2-T3.4 sin duplicar motores |
+
+Los estados históricos «completado» certifican las pruebas de aquel momento, no el cumplimiento integral del reglamento. Las carencias anteriores requieren pruebas de integración antes de cerrar su tarea.
+
+### 6.3 Registro de datos deportivos que afectan a la partida
+
+| Regla / fuente | Datos y condiciones a conservar | Aplicación |
+|---|---|---|
+| **DRS — S22.1, pp. 23-24** | Menos de 1 s en detección en carrera/sprint; umbral modificable por FIA; solo zonas de activación; una vuelta después de salida/SC; cierre al frenar; autorización y veto de Dirección. Si se deshabilita durante Q1/Q2/Q3 o SQ1/SQ2/SQ3, permanece así el resto de ese periodo | Q19, R04. Un adelantamiento posterior no vuelve a medir la detección |
+| **Seguridad — S26, pp. 28-30** | Retirar coches con daño peligroso; luces reglamentarias con inter/wet; Heat Hazard por previsión de índice térmico >31 °C o decisión del director. No confundir índice térmico con temperatura ambiente | R09, R16, R23 |
+| **PU por piloto/temporada — S28.1-28.4, p. 31** | 4 ICE, 4 TC, 4 MGU-H, 4 MGU-K, 2 ES, 2 CE y 8 de cada uno de los cuatro elementos de escape. Primer exceso por tipo: 10 puestos; siguientes: 5. Se considera usado al salir de boxes; sustituto hereda el cupo | R19; aplicar acumulación y orden de parrilla de S42 |
+| **Inventario de neumáticos — S30.1-30.5, pp. 32-37** | Fin de semana normal sin ensayo adicional: 13 slicks (2 H / 3 M / 8 S), 5 inter y 2 wet por piloto; sprint: 12 slicks (2 H / 4 M / 6 S), 5 inter y 2 wet. Mónaco: 3 wet. Ensayos adicionales y devoluciones tienen excepciones que requieren tabla por sesión | R07, R20; las etiquetas H/M/S son relativas a la selección del evento |
+| **Compuestos de carrera — S30.5m, p. 37** | Sin usar inter/wet: al menos dos especificaciones slick diferentes, una de ellas obligatoria para carrera. Exención de esa obligación al usar inter/wet. Aplicar a carrera, no inventar obligación equivalente para sprint | R07 y mensajes preventivos al muro |
+| **Mónaco — S30.5m, p. 37** | Al menos **tres juegos** durante la carrera, también con lluvia; además dos especificaciones slick si no usa inter/wet. No equivale jurídicamente a exigir dos entradas a boxes: un cambio durante suspensión puede contar cuando el juego se utilice | R07, R12, R25 |
+| **Incumplimiento de neumáticos — S30.5m, p. 37** | Carrera terminada normalmente: DSQ. Suspendida sin reinicio: +30 s si incumple lo exigible; Mónaco +30 s por incumplir dos especificaciones cuando sean exigibles o tres juegos, y +30 s adicionales si solo utilizó un juego | R07, R13, R21; evitar duplicar indebidamente el primer +30 |
+| **Wet bajo SC — S30.5n, S49.1 y S58.1, pp. 37, 60, 69** | Wet obligatorio en los supuestos de formación/reanudación indicados cuando se ordene; conservar mandato y periodo de aplicación, no imponer wet automáticamente a todo SC | R10, R12, R22 |
+| **Boxes — S34.1-34.7, pp. 41-42** | Entrada/salida ligadas a líneas SC1/SC2; fast lane máximo 3.5 m; un puesto de parada por equipo; 80 km/h, modificable por evento; no marcha atrás propulsada | Q3/Q10/Q11, R03, R08 |
+| **Salida insegura / pit cerrado — S34.14-34.15, pp. 42-43; S53.1, p. 62** | Comprobar salida segura, semáforo y restricciones; cierre excepcional de entrada con acceso para reparaciones esenciales según artículo | R08, R13; cola real de dos pilotos |
+| **Combustible — S36.2, p. 44** | No añadir ni retirar desde salida para reconocimiento hasta señal de final; la suspensión no autoriza repostar | R12, R14 |
+| **Clasificación — S39, pp. 46-48** | Con 20 coches: Q1/Q2/Q3 de 18/15/12 min; descansos 7/8 min; eliminados 5/5. SQ1/SQ2/SQ3 de 12/10/8 min; descansos 7/7. Igual tiempo: prioridad a quien lo marcó primero. 107% en Q1/SQ1 salvo pista declarada mojada, con decisión de comisarios para participar | R20. Parametrizar eliminaciones según tamaño de parrilla |
+| **Parc fermé — S40, pp. 48-52; S60, p. 73** | Ventanas separadas SQ→sprint y Q→carrera; catálogo de trabajos permitidos, sustitución equivalente y ajustes autorizados. Incumplimiento de S40.9: salida desde boxes. Sin mejoras libres entre clasificación y carrera | R18, R20 |
+| **Formación/salidas — S43-S52, pp. 53-62** | Secuencia y luces, salida abortada, vuelta adicional, salida desde boxes, salida parada/lanzada y condiciones de lluvia. No reducir toda reanudación a una nueva parrilla | R20 y R12 |
+| **Sanciones — S54.3-54.4, pp. 63-64** | 5/10 s: cumplir antes de trabajar en siguiente parada, incluso SC/VSC, o sumar al final si no vuelve a parar. Drive-through / stop-go de 10 s: plazo de no más de dos cruces de meta antes de entrar, ajustado por neutralización; no servir bajo SC/VSC salvo excepción de estar entrando para cumplirla | R13 y R08 |
+| **Sanciones tardías — S54.3, p. 63** | Si se imponen en últimas tres vueltas o después del final: 5/10/20/30 s según penalización de 5 s/10 s/drive-through/stop-go; incidentes requieren determinación, no una sanción universal por contacto | R13, R21 |
+| **SC — S55, pp. 64-67** | Reducción mediante tiempos mínimos, fila normalmente a ≤10 longitudes, excepciones de adelantamiento, desdoblamiento autorizado de todos los elegibles, mensaje «in this lap», sin adelantar hasta cruzar la línea tras retorno. Cuenta vueltas; final con SC sin adelantamientos | R10. Duración ligada a seguridad; no fija 10 vueltas en urbano |
+| **VSC — S56, pp. 67-68** | Delta mínimo por sector de comisarios y líneas SC, también al verde; excepciones de paso por boxes/problema. Aviso de final y verde entre 10 y 15 s después; no reagrupar pelotón | R11. Sectores de comisarios no son los tres sectores cronometrados |
+| **Pit bajo neutralización — S55.12 y S56.4, pp. 66-67** | En carrera/sprint, entrada para cambiar neumáticos, con la excepción indicada cuando el SC guía por boxes; coordinar con servicio de sanciones y órdenes específicas | R08, R10-R13 |
+| **Roja — S57-S58, pp. 68-72** | Retorno lento a fast lane, salida cerrada, orden en último punto fiable; parrilla solo por excepción. Trabajos permitidos incluyen neumáticos y reparación de daño genuino; aviso mínimo de 10 min para reanudar; salida parada/lanzada. El cronometraje continúa y el tiempo de suspensión se contabiliza con sus límites | R12, R20-R21 |
+| **Final y clasificación — S58.14, S59, S61-S62, pp. 72-74** | Final por distancia/tiempo; vuelta de cierre de cada coche; vueltas completas y orden de llegada; clasificar si alcanza `floor(0.9 × vueltas del ganador)`. Puede haber retirado clasificado. Suspensión definitiva: retroceso reglamentario a la penúltima vuelta anterior a la vuelta de suspensión | R21; separar DNF, NC y DSQ |
+| **Duración — S5.3-S5.4, pp. 3-4** | Carrera: vueltas mínimas para superar 305 km, Mónaco 260 km; límite 2 h, total con suspensión hasta 3 h y procedimiento de final correspondiente. Sprint: superar 100 km, 1 h / 1.5 h. Reducción por formación tras SC: vueltas del SC menos una | R20-R21. Modo de carrera corta del juego debe identificarse como adaptación |
+| **Puntos — S6.4-6.6 y S7, pp. 4-6** | GP: 25/18/15/12/10/8/6/4/2/1; sprint: 8/7/6/5/4/3/2/1. Sin punto extra de vuelta rápida. Carreras cortas: <25% = 6/4/3/2/1; 25–<50% = 13/10/8/6/5/4/3/2/1; 50–<75% = 19/14/12/9/8/6/5/3/2/1; ≥75% completos. Exigir mínimo de vueltas y dos vueltas sin SC/VSC de S6.5; sprint suspendido: ≥50% y dos vueltas sin SC/VSC. Desempates S7 | R21; consultar condiciones de carrera suspendida, no aplicar puntos reducidos a una carrera corta configurada sin declararlo |
+| **Desarrollo aerodinámico — S ap. 7.6, p. 108** | Coeficiente ATR según puesto 1→10+/nuevo: 70/75/80/85/90/95/100/105/110/115%. Base por periodo: 320 tandas, 80 h de viento, 400 h de ocupación; CFD 2000 nuevas geometrías y 6 MAUh. Primeros tres periodos según campeonato anterior, siguientes tres según clasificación al cierre del tercero | R18; más recursos de investigación no garantizan más rendimiento |
+
+### 6.4 Registro técnico común y diferencias entre coches
+
+| Sistema / fuente | Restricción o dato verificado | Traducción a simulación y aspecto visual |
+|---|---|---|
+| **Geometría — T3.4, p. 15** | Carrocería dentro de ±1000 mm, con excepciones expresas de neumáticos/llantas/tapas; batalla ≤3600 mm | Dimensiones físicas separadas del zoom. No interpretar 3600 mm como longitud total del coche |
+| **Suelo — T3.5.9, p. 19** | Plank nuevo 10 ±0.2 mm; mínimo por desgaste 9 mm en puntos reglamentarios | Altura/setup, roce, desgaste acumulado e inspección; chispas condicionadas por contacto real, no decorativas permanentes |
+| **DRS mecánico — T3.10.10, pp. 33-34** | Dos posiciones, transición <400 ms, abertura reglamentaria hasta 85 mm (condiciones geométricas completas en artículo) | Animación del flap ligada a estado mecánico, menor resistencia aerodinámica, cierre y posible avería; no +7% de velocidad universal |
+| **Masa — T2.4, T4, pp. 8, 47-48** | Mínimo sin combustible 800 kg, sujeto a ajustes por neumáticos y Heat Hazard. Piloto/asiento/equipo y lastre de referencia ≥82 kg, ya dentro de masa del coche. Heat Hazard +5 kg en carrera/sprint, +2 kg otras sesiones | Masa real = coche/piloto/lastre + combustible; no sumar al mínimo los 82 kg por segunda vez. Reparto en Q/SQ: ejes ≥0.446/0.539 del mínimo según condiciones de T4.2 |
+| **Motor — T5.2, pp. 52-53** | V6 a 90°, cuatro tiempos, 1600 cc (+0/−10); flujo ≤100 kg/h; bajo 10500 rpm, Q≤0.009N+5.5 kg/h; aplicar también curva de carga parcial de T5.2.5 | Curva de par/consumo, tracción y temperatura. No se deduce una potencia real de cada fabricante ni un objetivo de rpm constante |
+| **ERS — T5.3.2, pp. 53-54, diagrama** | MGU-K→ES ≤2 MJ/vuelta; ES→MGU-K ≤4 MJ/vuelta; ventana entre carga máxima/mínima del ES ≤4 MJ; potencia MGU-K ±120 kW. MGU-H tiene flujos sin ese límite energético por vuelta, sujetos al resto del sistema | Contadores separados, integración kW×s→kJ, pérdidas explícitas; 4 MJ de descarga del ES no es límite de toda energía que pueda recibir el MGU-K desde MGU-H |
+| **ERS en salida y pit — T5.3.2, pp. 53-54** | En salida parada, MGU-K solo tras alcanzar 100 km/h, salvo coches que salen/reanudan desde boxes. Aumento de energía almacenada estacionado en boxes durante Q o parada de carrera ≤100 kJ. Vuelta energética termina/comienza en inicio de pit lane al entrar | Eventos específicos para contadores; evitar batería llena instantáneamente en parada o doble reset al cruzar meta de boxes |
+| **Máquinas eléctricas — T5.3.3-5.3.4, p. 55** | MGU-K ≤120 kW, ≤200 Nm referidos según artículo, ≤50000 rpm, masa ≥7 kg; MGU-H ≤125000 rpm, masa ≥4 kg; corrección de eficiencia de control 0.95 en T5.3.2 | Límites comunes al homologar perfiles. La corrección reglamentaria de medición no sustituye el modelo de pérdidas físicas |
+| **Muestra/combustible — T6.5.2, p. 68; T16.4.4, p. 132** | Muestra de 1 litro disponible; si no vuelve por sus medios, combustible adicional equivalente al retorno según FIA. Etanol sostenible avanzado mínimo 10% en masa | Reserva estratégica calculada con densidad, sin crear combustible. Los 110 kg iniciales actuales son un parámetro del juego, no un máximo acreditado por estos artículos |
+| **Electrónica / radio — T8.6-8.7, p. 76** | Telemetría coche→equipo; prohibición general de telemetría equipo→coche, con excepciones FIA; entradas del piloto | Órdenes del muro se interpretan como radio al piloto IA, con confirmación, no control remoto directo ni conducción manual |
+| **Transmisión — T9.2.2 y T9.7-T9.9, pp. 82, 86-87** | Sin control de tracción; ocho marchas hacia delante y marcha atrás; cambios solicitados por piloto, con límites temporales | Piloto IA maneja acelerador/cambio; bloqueo, patinaje y pérdida de tracción posibles. Telemetría coherente con velocidad/relación |
+| **Suspensión/neumáticos — T10, pp. 88-95** | Restricciones de suspensión/dirección; llantas de suministro estándar. T10.8: ancho delantero 345–375 mm, trasero 440–470 mm; diámetro máximo slick 725 mm / mojado 735 mm, medidos según condiciones del artículo | Diferenciar ejes en SVG/Canvas; balance mecánico y apoyo exterior. 1.4 bar del método dimensional no es presión operativa obligatoria |
+| **Neumáticos — T10.8, pp. 93-94; S30.5a, p. 34** | Uso como suministrados, sin tratamientos; calentamiento permitido bajo condiciones; prescripciones del proveedor/evento | Inventario, mantas y temperatura al montar. Presiones, temperatura y crossover del juego deben llevar fuente/calibración, no atribuirse a FIA por defecto |
+| **Frenos — T11, pp. 96-97** | Dos circuitos, sin ABS; discos ≤32 mm de espesor, delanteros 325–330 mm, traseros 275–280 mm; control trasero permitido bajo condiciones de T11.6; sin refrigeración líquida | Frenada, bloqueo, reparto, temperatura y recuperación conectados. Evitar bonus de frenado sin carga/grip o doble cómputo de regeneración |
+| **Homologación / seguridad — T12-T15, pp. 98-129** | Célula, estructuras de impacto, halo, retenciones, luces, refrigeración del piloto y materiales | Componentes legales como base de diseño; daño funcional y retirada. No simular lesiones ni afirmar que un dibujo pasa ensayos FIA |
+| **Componentes — T17 y ap. 5, pp. 135-141, 172-179** | Categorías LTC/SSC/TRC/OSC y sus perímetros | Catálogo de desarrollo propio, estándar, transferible y abierto; evitar mejoras de piezas estándar prohibidas |
+| **PU homologada — T ap. 3-4, pp. 162-171** | Un dossier por fabricante; igualdad de especificación/operación a clientes con excepciones previstas. Cambios de fiabilidad/seguridad/coste/suministro requieren aprobación; no desarrollo libre de potencia | Separar proveedor de motor de integración del chasis; calendario de piezas aprobadas, sin inventar motores inferiores para clientes |
+
+**Datos de equipos ya presentes en `src/data/teams.ts` (inventario, no mediciones FIA):**
+
+| Equipo | PU configurada | Rendimiento / aero / motor | Fiabilidad | Media de parada (s) |
+|---|---|---|---|---|
+| McLaren | Mercedes-AMG | .999 / .998 / .996 | .99 | 2.1 |
+| Red Bull | Honda RBPT | .998 / .997 / .998 | .98 | 2.0 |
+| Ferrari | Ferrari | .997 / .996 / .999 | .98 | 2.2 |
+| Mercedes | Mercedes-AMG | .995 / .994 / .996 | .99 | 2.3 |
+| Aston Martin | Mercedes-AMG | .993 / .992 / .994 | .98 | 2.4 |
+| Williams | Mercedes-AMG | .991 / .989 / .996 | .98 | 2.3 |
+| Racing Bulls | Honda RBPT | .990 / .989 / .993 | .97 | 2.4 |
+| Haas | Ferrari | .989 / .987 / .995 | .97 | 2.4 |
+| Alpine | Renault | .988 / .987 / .990 | .97 | 2.5 |
+| Sauber | Ferrari | .986 / .985 / .990 | .96 | 2.6 |
+
+El código también asigna 1045/1030/1038/1015 `horsepower` por fabricante, respectivamente Mercedes/Honda/Ferrari/Renault. Estos números y nombres de modelos no quedan validados por los PDF. Antes de usarlos físicamente hay que documentar unidad (hp/CV/kW), procedencia, año y conversión. No trasladar el orden de este rating a una clasificación garantizada en todos los circuitos.
+
+**Perfil propuesto por equipo y versión:** carga por velocidad/altura, resistencia con DRS abierto/cerrado, sensibilidad a aire sucio, balance y agarre mecánico, eficiencia de refrigeración, gestión térmica/desgaste, masa legal y lastre, fiabilidad por componente, eficacia de recuperación y ejecución de boxes. Todos comparten los límites reglamentarios. Los clientes de una PU comparten su base homologada; diferencias de instalación, drag, masa, refrigeración y uso pueden cambiar el rendimiento del coche completo. Cada mejora debe registrar componente, efecto, contrapartida, coste/plazo de juego, homologación, GP de entrada y unidades disponibles para cada piloto. No inventar coeficientes reales de cada equipo a partir del reglamento.
+
+### 6.5 Backlog de implementación y criterios de aceptación
+
+Todas las tareas siguientes están **pendientes**. P0 = corregir validez del núcleo; P1 = estrategia y sensación; P2 = profundidad de fin de semana/temporada. Las prioridades no autorizan empezar a programar.
+
+#### Entrega A — Reglas, circuito y DRS verificables
+
+* **R01 — Perfil de reglas versionado y procedencia (P0):** `[ ]`
+  * Crear `RuleSet2025` y contratos de evento, con unidades explícitas y artículos del registro anterior. Separar configuración reglamentaria, decisiones de Dirección y ajustes de dificultad. Mantener el perfil personalizado existente hasta aprobar cambios de comportamiento.
+  * *Aceptación:* fixtures de estas dos ediciones, límites validados y mensajes que identifican perfil/año. No importar cambios 2026, ayudas arcade o constantes sin origen como reglas FIA.
+* **R02 — Cronometraje por cruces y tráfico físico (P0):** `[ ]`
+  * Sustituir los 77.8 s universales para gaps reglamentarios por pasos por líneas con timestamp interpolado. Separar clasificación por vueltas, vecino físico en pista y tráfico de boxes. Paso de simulación estable, RNG con semilla y orden de actualización sin ventaja por índice de coche.
+  * *Aceptación:* vueltas perdidas, líder doblando, adelantamientos, pit y cruce de meta; mismo resultado reglamentario a 30/60/144 FPS y x1/x4/x16. No perder eventos por atravesar varias líneas en un paso.
+* **R03 — Datos de evento y geometría con unidades (P0):** `[ ]`
+  * Extender `CircuitSpec`/`TrackDefinition` con detecciones, zonas asociadas, límites de velocidad, líneas SC1/SC2, sectores de comisarios, límites de pista, entrada/salida y cajones. Una transformación SVG→metros compartida con cámara/minimapa/hit-testing (Q4/Q7). Auditar trazado, sentido, meta y número de curvas del año elegido.
+  * *Aceptación:* Barcelona y Mónaco de referencia; intervalos que cruzan meta, dirección inversa y pit que no cruza meta. Datos no verificados llevan estado provisional. Obtener notas y mapas oficiales de cada GP antes de declarar una detección «real».
+* **R04 — Integración y lectura visual del DRS (P0; depende de Q19/R01-R03):** `[ ]`
+  * Reutilizar Q19 como implementación única. Mostrar punto de detección, segmento de activación y estados «sin permiso / permiso obtenido / abierto / bloqueado» con motivo y gap detectado. Animar flap según estado real T3.10.10; piloto IA solicita apertura, el usuario dirige desde el muro.
+  * *Aceptación:* todos los escenarios Q19 probados entrando por `RaceSimulation`, contador real de usos y revisión visual de adelantamiento antes/después de detección. No cerrar esta tarea solo porque cambie el badge de DRS.
+
+#### Entrega B — Coches con comportamiento propio y recursos finitos
+
+* **R05 — Aerodinámica, rebufo y adelantamiento físico (P1; A):** `[ ]`
+  * Usar un único cálculo de drag, carga, tracción y potencia para obtener aceleración/velocidad. DRS reduce drag; el rebufo ayuda en recta y el aire sucio perjudica apoyo/refrigeración según distancia y offset. Conectar Q7/Q8 para elegir trayectoria viable y dejar espacio.
+  * *Aceptación:* maniobra sin salto, sin aumento instantáneo de velocidad ni multiplicadores duplicados; comparación con/sin DRS a igual masa/energía; efecto distinto entre recta y curva. Coeficientes calibrados, nunca «ganancia FIA garantizada».
+* **R06 — Cuatro neumáticos con temperatura, carga y desgaste (P1; R05):** `[ ]`
+  * Grip dependiente de compuesto, temperatura, carga, presión y agua; transferencia de apoyo según signo de curva, desgaste irreversible, calentamiento tras parada, bloqueo/flat spot y pinchazo. Conservar estado por rueda e historial, también al reutilizar un juego.
+  * *Aceptación:* curvas izquierda/derecha cargan rueda exterior correcta; out-lap fría cuesta tiempo; Push aumenta exigencia y riesgo; enfriar no repara desgaste. Prueba de undercut/overcut dependiente de tráfico y calentamiento, sin victoria programada.
+* **R14 — Masa, combustible y reserva para muestra (P0; R01-R02):** `[ ]`
+  * Retirar el suelo infinito de 0.5 kg; integrar consumo limitado por flujo/carga, masa y efecto sobre aceleración/frenada. Calcular combustible inicial por distancia y estrategia, guardar reserva de muestra con densidad y combustible de retorno. Agotamiento provoca pérdida de propulsión/retirada física.
+  * *Aceptación:* conservación de masa, cero combustible sin negativos, ahorro real con lift-and-coast, diferencia entre stint cargado y ligero; ninguna parada o roja reposta. Validar masa mínima y Heat Hazard sin doble cómputo del piloto.
+* **R15 — ERS energético 2025 completo (P0; R02/R14, amplía Q16):** `[ ]`
+  * Libro de flujos MGU-K/MGU-H/ES, SOC y pérdidas; mapas de despliegue acordes al circuito y modo de muro. Límites de energía, potencia, salida y recarga de boxes del registro. La energía disponible y temperatura limitan la demanda; no exigir consumo uniforme toda la vuelta.
+  * *Aceptación:* 2 MJ de recuperación K→ES, 4 MJ ES→K, 120 kW y saturación; caso de flujo H→K; reinicio energético al entrar a pit sin doble reset; parada ≤100 kJ en condiciones aplicables; salida parada antes/después de 100 km/h. Comprobar balance de energía en carrera completa.
+* **R16 — Motor, frenos, transmisión, refrigeración y daño (P1; R05/R06/R14/R15):** `[ ]`
+  * Calcular consecuencias térmicas antes del movimiento; ocho relaciones coherentes, frenada hidráulica/regenerativa compartida, bloqueo y patinaje sin ABS/TC. Daño de alerón/suelo modifica carga/drag; conducción con daño peligroso activa retirada. Modelo de roce del plank y comprobación de mínimo de 9 mm. Incluir Heat Hazard y refrigeración del piloto a nivel de equipamiento/masa.
+  * *Aceptación:* frenos fríos/calientes producen efectos coherentes, batería llena limita regeneración, seguir otro coche afecta refrigeración; reparar solo partes permitidas y en lugar autorizado. Desgaste de suelo y daños persistentes, sin retiradas aleatorias desligadas del estado.
+* **R17 — Identidad de los diez equipos y paquetes por circuito (P1; R05/R06/R14-R16):** `[ ]`
+  * Migrar ratings a los perfiles de 6.4 con versión por equipo/GP/piloto; chasis, PU común y setup separados. Exponer fortalezas, debilidades y contrapartidas comprensibles: alta carga vs velocidad punta, refrigeración vs drag, calentamiento vs degradación.
+  * *Aceptación:* repetir pruebas de recta, curva rápida/lenta, stint y tráfico con mismo piloto/condiciones. Diferencias explicables por parámetros, no por nombre/posición; paquete de baja carga no debe mejorar toda curva y toda recta. Cada coeficiente real necesita fuente; los demás se etiquetan como calibración.
+
+#### Entrega C — Carrera, estrategia y decisiones reglamentarias
+
+* **R07 — Juegos de neumáticos e inventario legal (P0; R01/R06, Q9):** `[ ]`
+  * Identificar juegos, compuesto nominal/relativo, estado y asignación; aplicar cupos/devoluciones por sesión, dos especificaciones cuando proceda y tres juegos de Mónaco. No confundir juegos, compuestos y número de paradas; contar uso según S30.5c, incluidos cambios bajo roja cuando se utilicen.
+  * *Aceptación:* seco normal, inter/wet, Mónaco seco/mojado, suspensión definitiva, juego reutilizado y stock agotado. Avisar con antelación y aplicar DSQ/+30/+60 solo en supuestos correctos, no cambiar neumáticos automáticamente para evitar sanción.
+* **R08 — Boxes reglamentarios y doble parada (P0; R03/R07/R13, Q3/Q9-Q11):** `[ ]`
+  * Entrar mediante cruce de línea, respetar limitador, frenar al cajón y acelerar por ruta propia. Un cajón/servicio compartido por equipo; segundo coche espera el recurso ocupado. Compuesto elegido vinculante; paradas sucesivas, reparaciones, sanción antes del servicio y liberación segura con tráfico/semáforo.
+  * *Aceptación:* overspeed en ambos límites, cancelación antes/después del compromiso, double-stack con espera calculada, dos o más paradas programadas y pit cerrado. La pérdida se mide por tránsito/servicio/cola, no 22 s para todos los circuitos.
+* **R09 — Dirección de Carrera, banderas locales y límites (P0; R02/R03):** `[ ]`
+  * Unificar permisos de adelantar/velocidad/DRS y prioridad verde→amarillas→VSC/SC→roja; sectores de comisarios independientes del cronometraje. Banderas azules con tráfico físico, retorno seguro tras salida de pista y devolución de ventaja. Evaluar incidentes con causa/responsabilidad registrada.
+  * *Aceptación:* prohibición no sobrescrita después por lógica de adelantamiento, salida de sector restaura permisos, doblado no se teleporta ni cede en zona peligrosa. Detalles de banderas/conducta dependientes de Código Deportivo/Apéndices H/L quedan pendientes de esas fuentes, no se inventa un baremo universal.
+* **R10 — SC, desdoblamiento y relanzamiento (P0; R02/R03/R09, Q14/Q15):** `[ ]`
+  * Estado explícito despliegue→recogida→fila→desdoblamiento autorizado→retirada→cruce individual de línea. Insertar SC desde su ruta, agrupar por cinemática, aplicar deltas, excepciones de boxes y lista de doblados elegibles en el instante reglamentario. Luces/mensajes coherentes y DRS tras una vuelta.
+  * *Aceptación:* todos los doblados elegibles, último coche aún sin cruzar línea, SC entrando/saliendo, SC en última vuelta, otro incidente durante retirada. En perfil FIA, final por condiciones seguras; en perfil personalizado, conservar mínimo urbano 10 vueltas solicitado. No cambiar el perfil por defecto sin aprobación.
+* **R11 — VSC con deltas y final anunciado (P0; R02/R03/R09):** `[ ]`
+  * Tiempo mínimo por sector/SC1/SC2, sin compactar; final anunciado y espera reproducible de 10–15 s hasta verde, control de delta al verde y restricciones de pit/adelantamiento. No aplicar automáticamente la espera DRS de SC a VSC.
+  * *Aceptación:* gaps no colapsan artificialmente, atajo/overspeed no permite ganar tiempo, pit válido y casos de excepción; VSC→SC→roja limpia temporizadores y conserva reloj.
+* **R12 — Suspensión y reanudación completas (P0; R08-R11/R20):** `[ ]`
+  * Reducir velocidad y retornar a fast lane; conservar orden en último punto fiable y separar coche en garaje/entrada/pista. Ofrecer trabajos permitidos, elección de neumáticos y tiempo mínimo de aviso. Reanudar parada o lanzada según condiciones; excepción de parrilla explícita, sin reset global de salud o combustible.
+  * *Aceptación:* roja antes/después de entrar a boxes, vuelta parcial, doble suspensión, mojado, reparación legal y orden de reinicio; relojes de carrera/suspensión correctos. Ningún coche cambia de coordenadas por asignación de `progress`.
+* **R13 — Comisarios y sanciones ejecutables (P0; R01/R02):** `[ ]`
+  * Modelo independiente de infracción, investigación, decisión y cumplimiento; 5/10 s, drive-through, stop-go, puestos y DSQ. Emitir artículo, motivo y plazo; procesar sanciones de neumáticos/boxes/recursos desde el mismo servicio.
+  * *Aceptación:* servir antes de tocar coche, no duplicar penalización al finalizar, plazos con SC/VSC, imposición tardía, retirada y reclasificación. Diferenciar infracción objetiva de contacto que requiere juicio; política de comisarios del juego documentada.
+* **R22 — Clima físico mínimo y decisiones de seguridad (P1; R06/R09/R12):** `[ ]`
+  * Adelantar de T3.2/T3.3 únicamente el estado funcional necesario: lluvia, agua por tramo, temperatura, visibilidad, secado y compatibilidad de neumáticos. Fuente única para grip, Dirección de Carrera, radar y previsión; escenario determinista, previsión con incertidumbre para jugador/IA.
+  * *Aceptación:* seco→lluvia→secado, cambio inter/wet, pérdida de visibilidad que bloquea DRS o neutraliza, estrategia sin conocimiento del futuro. Crossover y temperaturas son calibraciones, no cifras FIA. Arte final de reflejos/spray y audio queda coordinado con Sprint 3.
+* **R25 — Estrategia IA y muro con dos pilotos (P1; Q9-Q13/R07-R17/R22):** `[ ]`
+  * Órdenes de ritmo, energía, ahorro y pit con acuse del piloto IA; prioridad del jugador respetada. Prever tráfico, inventario, neutralización y cola del compañero; estimación de reincorporación con intervalo de incertidumbre. Rivales usan las mismas reglas y recursos.
+  * *Aceptación:* llamada de segundo stint, cancelar a tiempo, double-stack, undercut que falla por tráfico, ahorro para llegar y respuesta a lluvia. Sin pit obligatorio aleatorio que sobrescriba al jugador; sin ventaja de conocer futuros incidentes.
+
+#### Entrega D — Fin de semana y evolución de equipos
+
+* **R18 — Mejoras, setup, parc fermé y desarrollo ATR (P2; R01/R17):** `[ ]`
+  * Catálogo versionado LTC/SSC/TRC/OSC; investigación/producción e instalación con fechas, unidades para cada coche y contrapartidas. ATR según tabla de 6.3 como presupuesto de desarrollo; no convertir más túnel en bonus garantizado. Validar dossier PU y cambios autorizados; bloquear cambios de setup fuera de excepciones de parc fermé.
+  * *Aceptación:* mejora disponible para un piloto, paquete retrasado, reglamento común pese a equipo distinto; mismo proveedor no vende deliberadamente una PU de inferior especificación. Cambio de suspensión en parc fermé produce salida de boxes; ajuste permitido no la produce. Costes/plazos son diseño del juego; el reglamento financiero no está entre los PDF aportados.
+* **R19 — Vida de componentes y cupos de temporada (P2; R13/R16/R18/R21):** `[ ]`
+  * Pool por piloto, seriales, kilometraje/ciclos, daños, mantenimiento permitido y elección de sustitución. Separar límite de unidades de homologación de mejoras. Registrar transferencia a piloto sustituto y primer uso al salir del pit.
+  * *Aceptación:* cuarto/quinto ICE, tercer ES, múltiples excesos y arrastre entre eventos; +10/+5 por tipo y algoritmo S42 para parrilla. No inventar un cupo antiguo de cajas de cambio: S29 figura VOID en esta edición; gestionar vida mecánica aparte.
+* **R20 — Sesiones de clasificación, sprint y salidas (P2; R01/R02/R07/R13/R18):** `[ ]`
+  * Estado de fin de semana con sesiones, tiempos, eliminaciones, parc fermé, neumáticos SQ según S30.5, clasificación y sanciones de parrilla. Formación, luces y salidas/reanudaciones mediante procedimientos reutilizables; modo GP directo conserva acceso rápido y declara parrilla prefijada cuando se use.
+  * *Aceptación:* tiempos iguales, vueltas borradas, 107% seco/mojado, pilotos sin tiempo, sprint, salida abortada, pit start, formación mojada y MGU-K bloqueado en salida parada hasta condición válida. No simular físicamente minutos de espera a tiempo real si el usuario avanza la sesión.
+* **R21 — Final, clasificación y campeonato (P0 para resultado; P2 para temporada; R02/R13):** `[ ]`
+  * Bandera a cuadros por líder y cierre al paso de cada coche, límite temporal y suspensión definitiva; clasificación por vueltas/tiempo corregida por sanciones. Tabla de puntos 2025, carreras suspendidas, constructores y desempates; vueltas rápidas informativas sin punto adicional.
+  * *Aceptación:* doblados, retirado con distancia suficiente, NC, DSQ, fin por tiempo, fronteras 25/50/75%, falta de dos vueltas sin SC/VSC, sprint <50% y final bajo SC. Guardar provisional/final y explicación de diferencias.
+* **R26 — D20 compatible con gestión y reglas (P1; Q17/R01/R18):** `[ ]`
+  * Reformular como variante opcional identificada: información del ingeniero, preparación o reducción acotada de riesgo de ejecución. Modo FIA determinista sin recompensas mágicas. Beneficios nunca crean neumáticos/combustible, exceden potencia/energía o instalan aerodinámica durante carrera/parc fermé.
+  * *Aceptación:* comparar estado físico antes/después de tirada en pista; cero cambios de juego montado o piezas. Registrar causa y alcance; sustituir la propuesta de «+3 km/h por setup instantáneo» por efecto legal pendiente de aprobación.
+
+#### Entrega E — Presentación, honestidad de telemetría y validación
+
+* **R23 — SVG/Canvas que explica la física (P1; Q4-Q8/R03-R16):** `[ ]`
+  * Pistas por capas con pianos, escapatorias, muros, pit y señalización donde corresponde; detección DRS diferenciada de activación. Monoplaza con proporciones coherentes, neumáticos traseros mayores, flap móvil, daño visible, luces y contacto de suelo. LOD de etiquetas, cámara/minimapa/selección compartiendo coordenadas y transiciones suaves.
+  * *Aceptación:* Barcelona y Mónaco reconocibles, sin grava genérica en urbano, coches paralelos y boxes a distintos zooms; flap/luces corresponden al estado, chispas al roce, colores legibles sin depender solo de rojo/verde. Medir rendimiento con 20 coches y lluvia en equipo de referencia.
+* **R24 — Telemetría y mensajes de muro basados en eventos (P1; R02/R04/R07-R16):** `[ ]`
+  * Mostrar gap real, permiso DRS y causa, energía recuperada/desplegada/restante, combustible previsto y reserva, neumáticos disponibles/obligatorios, delta VSC, sanciones, daños y estado de mejoras. Sustituir porcentajes ficticios de Push/ahorro y puestos ganados como contador de adelantamientos por registros reales.
+  * *Aceptación:* cada cifra reconstruible desde eventos; misma información en panel/torre/minimapa; diferenciar adelantamiento en pista, ganancia por pit y sanción; pocas alertas prioritarias y explicaciones claras sin inundar al jugador de artículos.
+* **R27 — Banco de escenarios y calibración de experiencia (P0/P1; todas las entregas):** `[ ]`
+  * Añadir pruebas por comportamiento a `test-suite.mjs`, fixtures con semilla y carreras completas de referencia. Comparar baseline antes/después: cronometraje, continuidad, adelantamientos, pit loss, energía, temperatura y resultado. Validar geometría real además de escenarios sintéticos.
+  * *Aceptación:* suite y build PASS; cero usos DRS sin permiso, cero recursos creados, cero adelantamientos ilegales no detectados, cero saltos de posición; invariancia de reglas con FPS/velocidad de simulación. Objetivo inicial de precisión de cruce ≤1 ms en fixtures; calibración de tiempos por circuito frente a fuentes identificadas, sin prometer precisión no medida. Revisión humana de carreras seca/mojada/SC/roja antes de publicar nuevas mecánicas.
+* **R28 — Guardado, reinicio y calidad de datos (P1; R01/R02, Q18):** `[ ]`
+  * Snapshot versionado: semilla, reloj, órdenes, permisos DRS, inventario, energía/contadores, sanciones, eventos, mejoras y temporada. Reinicio limpia timers, IDs y permisos. Validador de circuitos/unidades y migraciones con diagnóstico de datos faltantes.
+  * *Aceptación:* guardar/cargar antes de detección, durante pit, SC/VSC/roja y tras fin; continuar con mismo resultado. Cambiar circuito no hereda DRS ni incidentes, y datos provisionales nunca pasan a oficiales silenciosamente.
+
+### 6.6 Secuencia, dependencias y límite de alcance
+
+1. **Primero, Sprint 2.8:** cerrar Q19 con los contratos mínimos R01-R03; continuar Q3-Q18 según prioridad aprobada. Las correcciones Q1/Q2 ya aprobadas no acreditan las nuevas físicas. Resolver el servicio común de reglas R13 antes de integrar sanciones con boxes, y la base de sesiones R20 antes de reanudaciones R12; no esperar a la temporada completa para ello.
+2. **2.9-A:** cronometraje, datos de evento y prueba del DRS. Primer hito visible: el adelantamiento deja de alterar indebidamente el permiso y el muro explica la medición.
+3. **2.9-B:** recursos finitos y comportamiento por equipo. Hito: decidir ahorrar/empujar cambia energía, temperaturas y ritmo de forma comprobable.
+4. **2.9-C:** estrategia, incidentes y resultado reglamentario de una carrera completa (incluye la parte de resultados de R21). Hito: Mónaco exige estrategia legal, SC/VSC/roja y sanciones tienen consecuencias coherentes.
+5. **2.9-D:** fin de semana y evolución de temporada. Hito: mejoras y uso de piezas tienen fechas, costes y restricciones, con diferencias legítimas entre equipos.
+6. **2.9-E y verificación transversal:** presentación y mensajes se incorporan a cada entrega; benchmark, guardado y aceptación final cierran el sprint. No aplazar todas las pruebas a la última fase. Publicar solo el bloque que haya recibido OK local.
+
+**No es una promesa de implementar 28 tareas en una sesión:** son cinco entregas revisables de una épica 2.9. Las fases D de temporada pueden ejecutarse después del núcleo de carrera, sin marcar el sprint completo antes de tiempo. Compartir implementaciones con Q9-Q19 y T3.2-T3.4; no mantener motores alternativos de DRS, clima o boxes.
+
+**Datos externos todavía necesarios:** notas del director/mapas oficiales por GP y año (detecciones, zonas y líneas); prescripciones del proveedor de neumáticos (compuestos, presiones, mantas); Código Deportivo Internacional y apéndices H/L para detalle de banderas/conducta; clasificación de constructores para ATR; fuentes de rendimiento público para calibrar cada equipo. El mapa SVG, una URL oficial genérica o el PDF general no sustituyen esos datos. La falta de un mapa puede resolverse con fixtures sintéticos para probar lógica, pero no con coordenadas inventadas etiquetadas «FIA».
+
+**Cobertura de los documentos y lo que se difiere conscientemente:**
+
+| Apartados | Tratamiento en el proyecto |
+|---|---|
+| S1-S9 | Perfil/edición, participantes, licencias, campeonato y desempates: R01/R20/R21; trámites y contratos no son una mecánica de carrera |
+| S10-S21 | Ensayos, organización, seguros, oficiales, comunicaciones, protestas, medios y componentes cubiertos: conservar referencia; mensajes R09/R13 y desarrollo R18; burocracia/media fuera del núcleo |
+| S22-S28 | DRS, personal/cierres de fábrica, seguridad, coches y PU: Q19/R04/R16/R18/R19; calendario de cierres para expansión de gestión |
+| S29/S41 | VOID: no reconstruir normas antiguas bajo estos números |
+| S30-S40 | Neumáticos, verificaciones, sustitución de pilotos, conducción, boxes, pesaje, combustible, sesiones y parc fermé: R06-R09/R13-R20 |
+| S42-S58 | Parrillas, salidas, carrera, incidentes y neutralizaciones: R09-R13/R20 |
+| S59-S64 | Final, parc fermé, clasificación, podio y equipamiento: R16/R21/R23; protocolo completo de prensa/podio fuera del núcleo |
+| S ap. 1-6 | Datos del evento, inscripción, contratos, tasas, podio y suministro PU: referencias R01/R03/R18-R21; formularios/comercial se difieren |
+| S ap. 7-8 | Restricciones aerodinámicas y bancos de PU: R18; ATR numérico recogido, granularidad industrial del banco se difiere a gestión avanzada |
+| S ap. 9 | Cambios de años futuros: excluidos del perfil 2025 |
+| T1-T3 y ap. 1-2 | Marco, coordenadas, volúmenes, aero y dibujos: R01/R03/R05/R16/R23. Geometría simplificada legal como referencia, no solver CAD de homologación |
+| T4-T8 | Masa, PU, combustible, aceite/refrigeración y electrónica: R14-R17/R24 |
+| T9-T11 | Transmisión, suspensión, ruedas/neumáticos y frenos: R06/R16/R23 |
+| T12-T16 | Chasis, pruebas de impacto, seguridad, materiales y química de combustibles/aceites: base homologada R16/R18; no reproducir laboratorio, crash tests ni análisis químico |
+| T17 y ap. 3-5 | Clasificación, perímetro y homologación de componentes/PU: R17-R19; conservar trazabilidad de piezas y desarrollo permitido |
+
+**Criterio de cierre del Sprint 2.9:** 28 tareas con evidencia de aceptación y pruebas ejecutables, datos oficiales separados de calibración, documentación de simplificaciones, build correcto y OK del usuario sobre el bloque jugable en local. Las reglas críticas y los resultados deben ser explicables desde el registro de carrera. Hasta entonces permanece planificado/en curso, aunque una parte visual esté terminada.
+
+---
+
+## 🔮 7. SPRINT 3: AUDIO, TELEMETRÍA AVANZADA, RADAR GPS & CLIMA (16 TAREAS)
+
+*(Planificado tras el Sprint 2.9. Coordinar con R22-R24: reutilizar estado de clima/telemetría y completar aquí presentación meteorológica, audio y radar avanzado.)*
 
 ### 🏗️ T3.1: Escapatorias vs Muros (Zonas de Severidad y Duración de SC)
 * **Requisito del Usuario:** *"Si es un choque contra el muro y es un circuito urbano, Safety Car mínimo 10 vueltas. Si es un circuito abierto y tiene escapatorias, tendremos que sacar el Safety Car durante 2 o 3 vueltas."*
@@ -268,11 +536,11 @@ Los 13 bugs críticos y altos detectados en la auditoría fueron implementados y
 
 ---
 
-## 🧪 6. COMANDOS DE EJECUCIÓN Y VERIFICACIÓN
+## 🧪 8. COMANDOS DE EJECUCIÓN Y VERIFICACIÓN
 
 ```bash
 # Ejecutar suite de pruebas de simulación:
-node C:/Users/Usuario/.gemini/antigravity/brain/1d588c5d-02ad-48dc-b465-762f65caa9f5/scratch/test-suite.mjs
+node test-suite.mjs
 
 # Compilación TypeScript y empaquetado Vite:
 npm run build
