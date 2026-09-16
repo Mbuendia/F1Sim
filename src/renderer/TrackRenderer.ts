@@ -242,7 +242,8 @@ export class TrackRenderer {
   private static renderStartFinishLine(ctx: CanvasRenderingContext2D, track: TrackDefinition, camera: Camera) {
     const startPoint = track.points[0];
     const zoom = camera.zoom;
-    const trackWidth = (track.trackWidthMeters || 26) * 1.75 * zoom;
+    // Medidas del mundo: worldToScreen aplica el zoom a los extremos.
+    const trackWidth = (track.trackWidthMeters || 26) * 1.75;
     const hw = trackWidth / 2;
 
     const nx = Math.cos(startPoint.angle + Math.PI / 2);
@@ -252,6 +253,7 @@ export class TrackRenderer {
     const p2 = camera.worldToScreen(startPoint.x - nx * hw, startPoint.y - ny * hw);
 
     ctx.save();
+    ctx.lineCap = 'butt';
 
     // 1. Línea de meta ajedrezada (Checkered Line)
     const segments = 10;
@@ -267,21 +269,13 @@ export class TrackRenderer {
       ctx.moveTo(sx1, sy1);
       ctx.lineTo(sx2, sy2);
       ctx.strokeStyle = s % 2 === 0 ? '#ffffff' : '#000000';
-      ctx.lineWidth = Math.max(3.5, 5 * zoom);
+      ctx.lineWidth = 5 * zoom;
       ctx.stroke();
     }
 
-    // 2. Líneas blancas de parrilla
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = Math.max(2.0, 2.5 * zoom);
-    ctx.beginPath();
-    ctx.moveTo(p1.x, p1.y);
-    ctx.lineTo(p2.x, p2.y);
-    ctx.stroke();
-
-    // 3. Letrero de START / FINISH en el asfalto
+    // Letrero de lectura: tipografía acotada en pantalla, independiente del asfalto.
     const centerScreen = camera.worldToScreen(startPoint.x, startPoint.y);
-    ctx.font = `900 ${Math.max(9, 10 * zoom)}px 'Orbitron', sans-serif`;
+    ctx.font = `900 ${Math.max(9, Math.min(14, 10 * zoom))}px 'Orbitron', sans-serif`;
     ctx.fillStyle = '#ffffff';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'bottom';
@@ -292,7 +286,7 @@ export class TrackRenderer {
     // 4. Faro oficial rojo en el lateral
     ctx.fillStyle = '#e10600';
     ctx.beginPath();
-    ctx.arc(p1.x, p1.y, Math.max(4, 5.5 * zoom), 0, Math.PI * 2);
+    ctx.arc(p1.x, p1.y, 5.5 * zoom, 0, Math.PI * 2);
     ctx.fill();
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 1.5 * zoom;
@@ -308,7 +302,7 @@ export class TrackRenderer {
     for (const corner of track.corners) {
       const pointIdx = Math.floor(corner.t * track.points.length) % track.points.length;
       const pt = track.points[pointIdx];
-      const hw = ((track.trackWidthMeters || 26) * 1.75 * zoom) / 2 + 18 * zoom;
+      const hw = ((track.trackWidthMeters || 26) * 1.75) / 2 + 18;
 
       const nx = Math.cos(pt.angle + Math.PI / 2);
       const ny = Math.sin(pt.angle + Math.PI / 2);

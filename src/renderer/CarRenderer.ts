@@ -2,6 +2,7 @@ import { CarState, SafetyCarState } from '../types/f1';
 import { TrackDefinition } from '../data/barcelonaTrack';
 import { Camera } from './Camera';
 import { getTrackHalfWidth, getLateralDisplacement, isCarVisible } from '../utils/carPosition';
+import { OVERVIEW_ZOOM, renderCarLabels } from './CarLabels';
 
 export class CarRenderer {
   static readonly BASE_CAR_LEN = 14;
@@ -112,13 +113,33 @@ export class CarRenderer {
       // ── OPACIDAD DEL COCHE RETIRADO (FADING ANTES DE GRÚA) ──
       const retiredOpacity = car.status === 'out' ? Math.max(0.25, Math.min(1.0, car.retireTimer / 10)) : 1.0;
 
-      this.drawSingleCar(ctx, screen.x, screen.y, angle + camera.rotation, car, camera.zoom, isSelected, dimensions, retiredOpacity);
+      if (camera.zoom <= OVERVIEW_ZOOM) {
+        this.drawOverviewCar(ctx, screen.x, screen.y, car, isSelected, retiredOpacity);
+      } else {
+        this.drawSingleCar(ctx, screen.x, screen.y, angle + camera.rotation, car, camera.zoom, isSelected, dimensions, retiredOpacity);
+      }
     }
+
+    renderCarLabels(ctx, activeCars, camera, selectedCarId, dimensions.length);
 
     // ── RENDERIZADO DEL SAFETY CAR FÍSICO ──
     if (safetyCar && safetyCar.isDeployed && safetyCar.mode !== 'idle' && safetyCar.mode !== 'in') {
       this.drawSafetyCar(ctx, safetyCar, track, camera);
     }
+  }
+
+  private static drawOverviewCar(ctx: CanvasRenderingContext2D, x: number, y: number,
+    car: CarState, selected: boolean, opacity: number) {
+    ctx.save();
+    ctx.globalAlpha = opacity;
+    ctx.fillStyle = car.team.color;
+    ctx.strokeStyle = car.status === 'out' ? '#ef4444' : car.isBlueFlagged ? '#38bdf8' : selected ? '#ffd700' : '#101722';
+    ctx.lineWidth = selected || car.isBlueFlagged || car.status === 'out' ? 2 : 1;
+    ctx.beginPath();
+    ctx.arc(x, y, selected ? 4 : 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
   }
 
   private static drawSafetyCar(
@@ -335,64 +356,17 @@ export class CarRenderer {
     ctx.restore();
 
     // ── EFECTO DE GLOW SI ESTÁ SELECCIONADO ──
-    if (isSelected) {
+    if (isSelected || car.isBlueFlagged || car.status === 'out') {
       ctx.save();
-      ctx.strokeStyle = car.team.color;
+      ctx.strokeStyle = car.status === 'out' ? '#ef4444' : car.isBlueFlagged ? '#38bdf8' : car.team.color;
       ctx.lineWidth = 2.5;
-      ctx.shadowColor = car.team.color;
-      ctx.shadowBlur = 18;
+      ctx.shadowColor = ctx.strokeStyle;
+      ctx.shadowBlur = isSelected ? 18 : 0;
       ctx.beginPath();
       ctx.arc(x, y, 16 * scale, 0, Math.PI * 2);
       ctx.stroke();
       ctx.restore();
     }
 
-    // ── ETIQUETA DEL PILOTO O BANDERA AZUL O DNF ──
-    ctx.save();
-    ctx.globalAlpha = opacity;
-    if (car.status === 'out') {
-      const dnfLabel = `❌ DNF ${car.driver.code}`;
-      ctx.font = `bold ${Math.max(7, 8 * scale)}px 'Orbitron', sans-serif`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'bottom';
-      ctx.fillStyle = '#ef4444';
-      ctx.strokeStyle = '#000000';
-      ctx.lineWidth = 3.0;
-      ctx.strokeText(dnfLabel, x, y - 14 * scale);
-      ctx.fillText(dnfLabel, x, y - 14 * scale);
-    } else if (car.isBlueFlagged) {
-      const flagLabel = `🟦 BLUE FLAG`;
-      ctx.font = `bold ${Math.max(7, 8 * scale)}px 'Orbitron', sans-serif`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'bottom';
-      ctx.fillStyle = '#38bdf8';
-      ctx.strokeStyle = '#000000';
-      ctx.lineWidth = 3.0;
-      ctx.strokeText(flagLabel, x, y - 14 * scale);
-      ctx.fillText(flagLabel, x, y - 14 * scale);
-    } else if (zoom > 1.2) {
-      const label = `${car.driver.code} (P${car.currentPosition})`;
-      ctx.font = `bold ${Math.max(8, 9 * scale)}px 'Orbitron', sans-serif`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'bottom';
-      
-      ctx.strokeStyle = '#000000';
-      ctx.lineWidth = 3.5;
-      ctx.strokeText(label, x, y - 13 * scale);
-
-      ctx.fillStyle = isSelected ? '#ffd700' : car.team.color;
-      ctx.fillText(label, x, y - 13 * scale);
-    } else {
-      const label = `P${car.currentPosition}`;
-      ctx.font = `bold 8px 'Orbitron', sans-serif`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'bottom';
-      ctx.fillStyle = '#ffffff';
-      ctx.strokeStyle = '#000000';
-      ctx.lineWidth = 3.0;
-      ctx.strokeText(label, x, y - 10);
-      ctx.fillText(label, x, y - 10);
-    }
-    ctx.restore();
   }
 }

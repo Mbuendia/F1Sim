@@ -114,7 +114,7 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
       resizeObserver.disconnect();
       window.removeEventListener('resize', handleResize);
     };
-  }, [simulation, camera, simulation.circuitId]);
+  }, [simulation, camera, simulation.circuitId, selectedCarId]);
 
   // ── MANEJADORES DE RATÓN: ROTACIÓN 360°, PAN Y ZOOM ──
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
