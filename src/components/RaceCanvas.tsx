@@ -92,7 +92,7 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
       ctx.fillStyle = '#14181f';
       ctx.fillRect(0, 0, camera.screenWidth, camera.screenHeight);
 
-      TrackRenderer.renderTrack(ctx, simulation.activeTrack, camera, dpr, simulation.weather);
+      TrackRenderer.renderTrack(ctx, simulation.activeTrack, camera, dpr, simulation.weather, simulation.circuitId);
 
       const circuitSpec = OFFICIAL_CIRCUITS[simulation.circuitId];
       const trackWidthCarsCapacity = circuitSpec?.trackWidthCars ?? 3;
