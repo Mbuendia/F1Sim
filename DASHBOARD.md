@@ -11,10 +11,15 @@
 3. **🎮 100% Team Principal / Gestión**: El usuario es el director de equipo desde el muro de boxes (UI y ratón). Prohibido implementar mecánicas de conducción manual o controles de pilotaje arcade.
 4. **🏎️ Físicas Orgánicas sin Saltos**: Prohibido teleportar coches hacia adelante o usar hacks de posición estáticos. Todo adelantamiento, doblaje, relanzamiento y parada en boxes debe calcularse matemáticamente por velocidad, `progress` y `trackT`.
 5. **🔒 Mutaciones Prohibidas**: Prohibido mutar arrays de estado in-place (`this.cars.sort` directo). Los estados de bandera (SC, VSC, Red Flag) deben ser coherentes y limpiar temporizadores previos al escalar.
+6. **🔄 Dashboard e index siempre alineados**: Al añadir, eliminar, reordenar o cambiar el estado de una tarea, es obligatorio actualizar **`DASHBOARD.md` e `index.html` en el mismo cambio**. El dashboard conserva el detalle; el bloque JSON `project-task-index` del index refleja roadmap, tareas y orden vigente, sin mostrarse en la interfaz del juego. Toda tarea nueva debe tener ID único y casilla de estado. Ejecutar `npm run sync:tasks` para regenerarlo y `npm run check:tasks` para comprobarlo; la compilación debe fallar si están desalineados. No confundir prioridad técnica con autorización para saltar tareas: un cambio del orden acordado requiere indicarlo y obtener el OK del usuario.
 
 ---
 
 ## 🧭 2. ROADMAP Y ESTADO GLOBAL DE SPRINTS
+
+**Orden vigente:** Sprint **2.8** · Tarea actual **Q5** · Siguiente **Q6**.
+
+Q1-Q4 están completadas y aprobadas. El usuario ha autorizado subir Q3-Q4 el 16/09/2026. Q5 es la siguiente tarea pendiente de implementación; después siguen Q6-Q18 y Q19 (DRS), cuya prioridad técnica P0 no la adelanta automáticamente. Dashboard e index deben mantenerse sincronizados.
 
 ```
 Leyenda de Estado:
@@ -29,7 +34,7 @@ Leyenda de Estado:
 | **Sprint 2** | SC Físico, Undercut/Overcut Orgánico, Monoplaza Vectorial 2D, Desdoblamiento | ✅ **COMPLETADO** |
 | **Sprint 2.1** | **Resolución de Bugs Críticos y Altos de Auditoría (C1-C7, A1-A6)** | ✅ **COMPLETADO (23/23 Tests PASS)** |
 | **Sprint 2.5** | **Deuda Técnica de Auditoría (M1-M10, B1-B7)** | ✅ **COMPLETADO (17/17 Tareas - 46 Tests PASS)** |
-| **Sprint 2.8** | **Salto de Calidad: Fidelidad de Simulación, Geometría, Muro Táctico y revisión DRS (Q1-Q19)** | 🟡 **EN CURSO (Q1-Q2 aprobadas, 80 tests PASS; Q3-Q19 pendientes)** |
+| **Sprint 2.8** | **Salto de Calidad: Fidelidad de Simulación, Geometría, Muro Táctico y revisión DRS (Q1-Q19)** | 🟡 **EN CURSO (Q1-Q4 completadas y aprobadas, 152 tests PASS; Q5-Q19 pendientes)** |
 | **Sprint 2.9** | **Reglamento FIA 2025, identidad técnica de equipos y experiencia de carrera (R01-R28)** | 🟡 **REFINADO — planificación pendiente de aprobación para implementar** |
 | **Sprint 3** | **Audio, Telemetría Avanzada, Radar GPS & Clima (16 Subtareas)** | ⏳ **PLANIFICADO (Después del Sprint 2.9; coordinar clima con R22)** |
 | **Sprint 4** | **Épica: F1 Team Principal & Race Manager (12 Subtareas)** | ⏳ **BACKLOG** |
@@ -131,15 +136,22 @@ Los 13 bugs críticos y altos detectados en la auditoría fueron implementados y
   * *Solución:* `generatePitLanePoints` interpola los extremos exactos y las normales sobre un intervalo uniforme, con separación lateral smootherstep quíntica. El renderer utiliza `progress` actual para evitar desfase de un paso y conserva la posición al regresar a la ruta principal. Esto corrige la continuidad geométrica; no sustituye la simulación de frenado/aceleración.
   * *Test:* Groups 8 y 9 PASS. Extremos coincidentes con tolerancia 1e-7 unidades del mundo en intervalos entre muestras, con/sin cruce de meta y offset negativo; comparación angular de segmentos menor de 0.05 radianes en los escenarios sintéticos (aproximación tangencial, no prueba de derivada analítica C1). Pruebas del renderer para entrada, tránsito y salida con `pitLaneProgress` retrasado y retorno sin retención visual.
 
-* **Q3 — Geometría Diferenciada para Muro, Carril Rápido y Cajones de Boxes:** `[ ] PENDIENTE`
+* **Q3 — Geometría Diferenciada para Muro, Carril Rápido y Cajones de Boxes:** `[x] COMPLETADO — APROBADO POR EL USUARIO`
   * *Problema:* `TrackRenderer.ts:165`. El muro de boxes se dibuja sobre el centro del carril; los límites blancos reutilizan el centro de pista.
   * *Solución:* Construir geometrías separadas: 1) borde exterior de pista, 2) muro divisor de boxes, 3) carril rápido (fast lane de 80 km/h) y 4) zona de trabajo con los 10 cajones de parada.
   * *Test:* Comprobación de que las coordenadas del muro no colisionan con el carril rápido del pit lane.
+  * *Refinamiento autorizado (16/09/2026):* generar geometría de dibujo en coordenadas del mundo: dos bordes de pista, bordes del carril rápido, plataforma de trabajo al lado opuesto de la pista, muro hacia la pista y diez cajones identificados por equipo. Orientar los cajones con la tangente y distribuirlos por distancia recorrida, no por índices fijos. Determinar el lado de boxes a partir de la ruta existente; conservar exactamente la trayectoria de entrada/salida Q2. Recortar el muro en incorporaciones y donde invada el asfalto o carril rápido, comprobando segmentos completos. Cachear geometría por trazado y aplicar zoom una sola vez.
+  * *Escala y alcance:* las cotas visuales siguen las unidades del mundo del renderer y el tamaño actual de los coches; no son una certificación del ancho FIA de 3.5 m. La calibración física por circuito queda en R03/Q7. Q3 dibuja cajones; el servicio físico por equipo, órdenes y double-stack siguen en Q9-Q11/R08. Mantener el límite actual de boxes de 80 km/h; la configuración por evento queda en R03/R08.
+  * *Validación:* regresiones ejecutables de separación muro/carril y muro/pista, cajones únicos y fuera del carril rápido, trazados curvos y ambos lados de boxes, entrada/salida sin barrera, geometría degenerada, dibujo real con distintos zoom/rotación y no mutación del trazado. Verificar Barcelona y Mónaco en navegador, además de `node test-suite.mjs`, comprobación documental y build. Dejar Q3 en revisión local hasta el OK; sin subida nueva hasta esa revisión.
+  * *Resultado local (16/09/2026):* geometría separada y cacheada implementada en `pitLaneGeometry.ts` y `TrackRenderer.ts`; diez cajones con color de equipo y nombres al acercarse. **124 pruebas PASS, 0 FAIL**, sincronización documental y build correctos (persiste el aviso de tamaño del bundle). Revisadas visualmente las vistas generales de Barcelona y Mónaco en el navegador local; zoom/rotación comprobados en las regresiones del renderer. Esta revisión no acredita una carrera completa, colisiones físicas ni fidelidad topográfica de los trazados. OK del usuario y autorización de commit/push recibidos el 16/09/2026.
 
-* **Q4 — Coordenada Cartesiana Única (Unificación Pista vs Boxes):** `[ ] PENDIENTE`
+* **Q4 — Coordenada Cartesiana Única (Unificación Pista vs Boxes):** `[x] COMPLETADO — APROBADO POR EL USUARIO`
   * *Problema:* `Camera.ts`, `CarRenderer.ts`, `Minimap`, detección de click en `App.tsx`. Cámara, minimapa y selección calculan la posición basándose en la pista principal aunque el coche esté en boxes.
   * *Solución:* Almacenar en `CarState` una posición cartesiana real única `(worldX, worldY)` calculada tanto en pista como en boxes, compartida idénticamente por `CarRenderer`, `Camera.followCar`, `Minimap` y hit-testing de click.
   * *Test:* Comprobación de que `Camera.targetX/Y` coincide exactamente con `(worldX, worldY)` del coche seleccionado durante toda la trayectoria de boxes.
+  * *Refinamiento autorizado (16/09/2026):* almacenar `worldX`, `worldY` y `worldAngle` en `CarState`. Tras cada paso del motor y al crear/reiniciar la parrilla, calcularlos con una única función pura que conserve la interpolación Q2 y el desplazamiento lateral Q1, usando el progreso actual. Cubrir formación, aparcamiento, pausa, retirados, boxes y reanudación tras roja. Renderer, modos de seguimiento, minimapa y selección por clic consumirán esos campos sin recalcular otra ruta. Mantener zoom y suavizado de cámara; centrar su objetivo en el coche también en boxes. Unificar la visibilidad de retirados/finalizados y dibujar la ruta de boxes en el minimapa.
+  * *Validación prevista:* coordenadas y continuidad en entrada/salida (incluido cruce de meta y estado de boxes retrasado), cámara durante toda la ruta, minimapa y clic con zoom/rotación y offsets laterales, inicialización/cambio de circuito y ramas del motor. Ejecutar regresiones Q1-Q3, pruebas Q4, sincronización y build. Dejar revisión local disponible, sin commit ni push.
+  * *Resultado local (16/09/2026):* implementados los campos compartidos y su cálculo en `carPosition.ts`/`RaceSimulation.ts`; consumidos por `CarRenderer`, `Camera`, `MinimapRenderer` y la selección en `RaceCanvas`. **152 pruebas PASS, 0 FAIL** (28 nuevas para Q4), incluyendo una parada completa con el motor y cuatro cámaras sobre 101 muestras de cada ruta de prueba. Build correcto; persiste el aviso previo de tamaño del bundle. Seguimiento y minimapa revisados en el navegador durante formación y carrera en Barcelona, sin errores de consola. Las comprobaciones exhaustivas de boxes son automatizadas sobre geometría sintética/fallback de Node; no equivalen a una carrera completa validada visualmente en todos los circuitos. OK del usuario y autorización de commit/push recibidos el 16/09/2026.
 
 * **Q5 — Corrección de Doble Zoom en Meta y Nivel de Detalle (LOD) de Etiquetas:** `[ ] PENDIENTE`
   * *Problema:* `TrackRenderer.ts:renderFinishLine`, `CarRenderer.ts`. La meta aplica el zoom dos veces (`scale * zoom`) creciendo desproporcionadamente. Las etiquetas de nombres saturan la pantalla.
@@ -230,7 +242,7 @@ Los 13 bugs críticos y altos detectados en la auditoría fueron implementados y
 
 ## 🏎️ 6. SPRINT 2.9: REGLAMENTO FIA 2025 Y SENSACIÓN DE CARRERA (28 TAREAS)
 
-**Estado: `[ ] REFINADO — PENDIENTE DE APROBACIÓN PARA IMPLEMENTAR`.** Investigación y planificación solicitadas por el usuario, documentadas el 16/09/2026. Este cambio no implementa nuevas reglas. Objetivo: que el jugador entienda por qué un coche alcanza a otro, cuándo puede adelantar y qué coste tienen sus decisiones sobre neumáticos, energía, combustible y evolución del equipo. Se conservan las cinco Reglas de Oro y la experiencia 100% Team Principal.
+**Estado: `[ ] REFINADO — PENDIENTE DE APROBACIÓN PARA IMPLEMENTAR`.** Investigación y planificación solicitadas por el usuario, documentadas el 16/09/2026. Este cambio no implementa nuevas reglas. Objetivo: que el jugador entienda por qué un coche alcanza a otro, cuándo puede adelantar y qué coste tienen sus decisiones sobre neumáticos, energía, combustible y evolución del equipo. Se conservan las seis Reglas de Oro y la experiencia 100% Team Principal.
 
 ### 6.1 Fuentes, alcance y trazabilidad
 
@@ -437,7 +449,7 @@ Todas las tareas siguientes están **pendientes**. P0 = corregir validez del nú
 
 ### 6.6 Secuencia, dependencias y límite de alcance
 
-1. **Primero, Sprint 2.8:** cerrar Q19 con los contratos mínimos R01-R03; continuar Q3-Q18 según prioridad aprobada. Las correcciones Q1/Q2 ya aprobadas no acreditan las nuevas físicas. Resolver el servicio común de reglas R13 antes de integrar sanciones con boxes, y la base de sesiones R20 antes de reanudaciones R12; no esperar a la temporada completa para ello.
+1. **Primero, Sprint 2.8:** Q1-Q4 completadas y aprobadas; continuar con Q5-Q18 y Q19 según el orden vigente del roadmap. Q19 requerirá los contratos mínimos R01-R03; su prioridad técnica no autoriza adelantarla sin acuerdo del usuario. Las correcciones Q1/Q2 ya aprobadas no acreditan las nuevas físicas. Resolver el servicio común de reglas R13 antes de integrar sanciones con boxes, y la base de sesiones R20 antes de reanudaciones R12; no esperar a la temporada completa para ello.
 2. **2.9-A:** cronometraje, datos de evento y prueba del DRS. Primer hito visible: el adelantamiento deja de alterar indebidamente el permiso y el muro explica la medición.
 3. **2.9-B:** recursos finitos y comportamiento por equipo. Hito: decidir ahorrar/empujar cambia energía, temperaturas y ritmo de forma comprobable.
 4. **2.9-C:** estrategia, incidentes y resultado reglamentario de una carrera completa (incluye la parte de resultados de R21). Hito: Mónaco exige estrategia legal, SC/VSC/roja y sanciones tienen consecuencias coherentes.
@@ -477,6 +489,7 @@ Todas las tareas siguientes están **pendientes**. P0 = corregir validez del nú
 *(Planificado tras el Sprint 2.9. Coordinar con R22-R24: reutilizar estado de clima/telemetría y completar aquí presentación meteorológica, audio y radar avanzado.)*
 
 ### 🏗️ T3.1: Escapatorias vs Muros (Zonas de Severidad y Duración de SC)
+* **T3.1 — Escapatorias vs Muros:** `[ ] PENDIENTE`
 * **Requisito del Usuario:** *"Si es un choque contra el muro y es un circuito urbano, Safety Car mínimo 10 vueltas. Si es un circuito abierto y tiene escapatorias, tendremos que sacar el Safety Car durante 2 o 3 vueltas."*
 * **Solución Técnica:**
   1. **Tipificación de Circuitos en `CircuitSpec`**:
@@ -498,6 +511,7 @@ Todas las tareas siguientes están **pendientes**. P0 = corregir validez del nú
 ---
 
 ### 🌧️ T3.2: Sistema Meteorológico Dinámico y Nubes Pasajeras
+* **T3.2 — Sistema Meteorológico Dinámico y Nubes Pasajeras:** `[ ] PENDIENTE`
 * **Solución Técnica:**
   1. **Simulación de Frentes Meteorológicos**:
      - Extender `TrackWeatherState` con evolución continua: `cloudCover` (0-100%), `rainIntensity` (0.0 a 1.0) y `waterDepthMm` (0.0 a 6.0 mm).
@@ -510,6 +524,7 @@ Todas las tareas siguientes están **pendientes**. P0 = corregir validez del nú
 ---
 
 ### 🛞 T3.3: Compuestos Intermedios y Wet (Físicas de Agua)
+* **T3.3 — Compuestos Intermedios y Wet:** `[ ] PENDIENTE`
 * **Solución Técnica:**
    1. **Integración Oficial de Compuestos**:
       - `TireCompound`: `'soft' | 'medium' | 'hard' | 'intermediate' | 'wet'` (con badge/etiqueta 'inter' en UI).
@@ -529,6 +544,7 @@ Todas las tareas siguientes están **pendientes**. P0 = corregir validez del nú
 ---
 
 ### 💦 T3.4: Renderizado Visual de Pista Mojada y Spray
+* **T3.4 — Renderizado Visual de Pista Mojada y Spray:** `[ ] PENDIENTE`
 * **Solución Técnica:**
   1. **Asfalto Húmedo y Reflejos**: En `TrackRenderer.ts`, modular el color del asfalto haciéndolo más oscuro y brillante con la acumulación de agua.
   2. **Efecto Spray de Agua en Monoplazas**: En `CarRenderer.ts`, cuando `waterDepthMm > 0.5`, generar partículas de estela de agua semitransparentes detrás del alerón trasero proporcional a la velocidad.
@@ -539,6 +555,10 @@ Todas las tareas siguientes están **pendientes**. P0 = corregir validez del nú
 ## 🧪 8. COMANDOS DE EJECUCIÓN Y VERIFICACIÓN
 
 ```bash
+# Sincronizar y comprobar roadmap/tareas entre DASHBOARD.md e index.html:
+npm run sync:tasks
+npm run check:tasks
+
 # Ejecutar suite de pruebas de simulación:
 node test-suite.mjs
 

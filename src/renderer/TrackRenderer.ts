@@ -1,8 +1,31 @@
 import { TrackDefinition } from '../data/barcelonaTrack';
 import { Camera } from './Camera';
 import { TrackWeatherState } from '../types/f1';
+import { TEAMS } from '../data/teams';
+import { buildPitLaneGeometry, PitLaneGeometry } from '../utils/pitLaneGeometry';
+import type { Point2D } from '../utils/spline';
 
 export class TrackRenderer {
+  private static geometryCache = new WeakMap<TrackDefinition, PitLaneGeometry>();
+
+  private static geometryFor(track: TrackDefinition): PitLaneGeometry {
+    let geometry = this.geometryCache.get(track);
+    if (!geometry) {
+      geometry = buildPitLaneGeometry(track, Object.values(TEAMS));
+      this.geometryCache.set(track, geometry);
+    }
+    return geometry;
+  }
+
+  private static path(ctx: CanvasRenderingContext2D, points: Point2D[], camera: Camera, closed = false) {
+    ctx.beginPath();
+    points.forEach((point, index) => {
+      const screen = camera.worldToScreen(point.x, point.y);
+      if (index === 0) ctx.moveTo(screen.x, screen.y);
+      else ctx.lineTo(screen.x, screen.y);
+    });
+    if (closed) ctx.closePath();
+  }
   /**
    * Renderiza el circuito oficial FIA con pista ancha, asfalto realista, charcos de lluvia dinámicos, pit lane y meta
    */
@@ -79,9 +102,11 @@ export class TrackRenderer {
     // ── 6. LÍNEAS DE LÍMITES DE PISTA BLANCAS ──
     ctx.save();
     ctx.strokeStyle = isWet ? 'rgba(255, 255, 255, 0.55)' : 'rgba(255, 255, 255, 0.75)';
-    ctx.lineWidth = Math.max(1.2, 1.8 * zoom);
-    buildPath();
-    ctx.stroke();
+    ctx.lineWidth = 0.8 * zoom;
+    for (const edge of this.geometryFor(track).trackEdges) {
+      this.path(ctx, edge, camera, true);
+      ctx.stroke();
+    }
     ctx.restore();
 
     // ── 7. PIT LANE COMPLETO & MURO DE BOXES ──
@@ -140,63 +165,77 @@ export class TrackRenderer {
   }
 
   private static renderPitLane(ctx: CanvasRenderingContext2D, track: TrackDefinition, camera: Camera) {
-    const pitPts = track.pitLanePoints;
-    if (!pitPts || pitPts.length < 2) return;
-
+    const geometry = this.geometryFor(track);
+    const pitPts = geometry.fastLane;
+    if (pitPts.length < 2) return;
     const zoom = camera.zoom;
-    const pitWidth = 16 * zoom;
-
     ctx.save();
-
-    // Asfalto del carril de boxes
-    ctx.beginPath();
-    const first = camera.worldToScreen(pitPts[0].x, pitPts[0].y);
-    ctx.moveTo(first.x, first.y);
-    for (let i = 1; i < pitPts.length; i++) {
-      const p = camera.worldToScreen(pitPts[i].x, pitPts[i].y);
-      ctx.lineTo(p.x, p.y);
-    }
-    ctx.strokeStyle = '#2d3340';
-    ctx.lineWidth = pitWidth;
-    ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
-    ctx.stroke();
-
-    // Línea amarilla central discontinua de boxes
-    ctx.strokeStyle = 'rgba(234, 179, 8, 0.75)';
-    ctx.lineWidth = 1.6 * zoom;
-    ctx.setLineDash([6 * zoom, 6 * zoom]);
-    ctx.stroke();
-
-    // Muro de boxes / Pit Wall
+    ctx.lineCap = 'butt';
     ctx.setLineDash([]);
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 2.0 * zoom;
+
+    // Plataforma de trabajo independiente, al lado de los garajes.
+    this.path(ctx, geometry.serviceArea, camera, true);
+    ctx.fillStyle = '#404753';
+    ctx.fill();
+
+    // El eje conservado de Q2 es exclusivamente el carril rápido.
+    this.path(ctx, pitPts, camera);
+    ctx.strokeStyle = '#242c38';
+    ctx.lineWidth = geometry.fastLaneWidth * zoom;
     ctx.stroke();
 
-    // Señalética de Entrada a Boxes
+    ctx.strokeStyle = '#d9dde5';
+    ctx.lineWidth = 0.45 * zoom;
+    for (const edge of geometry.fastLaneEdges) {
+      this.path(ctx, edge, camera);
+      ctx.stroke();
+    }
+
+    // Barreras únicamente donde caben entre pista y carril, sin cerrar los accesos.
+    ctx.beginPath();
+    for (const [start, end] of geometry.walls) {
+      const a = camera.worldToScreen(start.x, start.y);
+      const b = camera.worldToScreen(end.x, end.y);
+      ctx.moveTo(a.x, a.y);
+      ctx.lineTo(b.x, b.y);
+    }
+    ctx.strokeStyle = '#aeb9c8';
+    ctx.lineWidth = geometry.wallWidth * zoom;
+    ctx.stroke();
+
+    // Un cajón por equipo, orientado con la tangente de su zona de servicio.
+    for (const box of geometry.boxes) {
+      this.path(ctx, box.corners, camera, true);
+      ctx.fillStyle = `${box.team.color}55`;
+      ctx.fill();
+      ctx.strokeStyle = box.team.color;
+      ctx.lineWidth = 0.65 * zoom;
+      ctx.stroke();
+
+      if (zoom >= 1.2) {
+        const label = camera.worldToScreen(box.label.x, box.label.y);
+        ctx.save();
+        ctx.translate(label.x, label.y);
+        const angle = box.angle + camera.rotation;
+        ctx.rotate(Math.cos(angle) < 0 ? angle + Math.PI : angle);
+        ctx.font = `700 ${5 * zoom}px 'Rajdhani', sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = box.team.color;
+        ctx.fillText(box.team.shortName.toUpperCase(), 0, 0);
+        ctx.restore();
+      }
+    }
+
     const entryPt = camera.worldToScreen(pitPts[0].x, pitPts[0].y);
     ctx.fillStyle = 'rgba(234, 179, 8, 0.95)';
     ctx.font = `bold ${Math.max(9, 9 * zoom)}px 'Orbitron', sans-serif`;
     ctx.textAlign = 'center';
     ctx.fillText('PIT IN · 80 KM/H', entryPt.x, entryPt.y - 12 * zoom);
-
-    // Señalética de Salida de Boxes
     const exitPt = camera.worldToScreen(pitPts[pitPts.length - 1].x, pitPts[pitPts.length - 1].y);
     ctx.fillStyle = '#38bdf8';
     ctx.fillText('PIT OUT', exitPt.x, exitPt.y - 12 * zoom);
-
-    // Boxes de los equipos (puntos de parada)
-    const midIdx = Math.floor(pitPts.length * 0.45);
-    for (let b = -4; b <= 4; b++) {
-      const idx = midIdx + b * 2;
-      if (idx >= 0 && idx < pitPts.length) {
-        const boxPt = camera.worldToScreen(pitPts[idx].x, pitPts[idx].y);
-        ctx.fillStyle = '#ffd700';
-        ctx.fillRect(boxPt.x - 3 * zoom, boxPt.y - 4 * zoom, 6 * zoom, 8 * zoom);
-      }
-    }
-
     ctx.restore();
   }
 

@@ -8,6 +8,399 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script id="project-task-index" type="application/json">
+{
+  "source": "DASHBOARD.md",
+  "sha256": "1dc5ed48bd212ffa7aea4b996d99ec4b7a7192a20f2e16b517688424747d8ac9",
+  "activeSprint": "2.8",
+  "currentTask": "Q5",
+  "nextTask": "Q6",
+  "sprints": [
+    {
+      "name": "Sprint 1",
+      "scope": "Trazado SVG Barcelona, Core Loop, Timing Tower, 5 Modos de Cámara",
+      "status": "✅ COMPLETADO"
+    },
+    {
+      "name": "Sprint 2",
+      "scope": "SC Físico, Undercut/Overcut Orgánico, Monoplaza Vectorial 2D, Desdoblamiento",
+      "status": "✅ COMPLETADO"
+    },
+    {
+      "name": "Sprint 2.1",
+      "scope": "Resolución de Bugs Críticos y Altos de Auditoría (C1-C7, A1-A6)",
+      "status": "✅ COMPLETADO (23/23 Tests PASS)"
+    },
+    {
+      "name": "Sprint 2.5",
+      "scope": "Deuda Técnica de Auditoría (M1-M10, B1-B7)",
+      "status": "✅ COMPLETADO (17/17 Tareas - 46 Tests PASS)"
+    },
+    {
+      "name": "Sprint 2.8",
+      "scope": "Salto de Calidad: Fidelidad de Simulación, Geometría, Muro Táctico y revisión DRS (Q1-Q19)",
+      "status": "🟡 EN CURSO (Q1-Q4 completadas y aprobadas, 152 tests PASS; Q5-Q19 pendientes)"
+    },
+    {
+      "name": "Sprint 2.9",
+      "scope": "Reglamento FIA 2025, identidad técnica de equipos y experiencia de carrera (R01-R28)",
+      "status": "🟡 REFINADO — planificación pendiente de aprobación para implementar"
+    },
+    {
+      "name": "Sprint 3",
+      "scope": "Audio, Telemetría Avanzada, Radar GPS & Clima (16 Subtareas)",
+      "status": "⏳ PLANIFICADO (Después del Sprint 2.9; coordinar clima con R22)"
+    },
+    {
+      "name": "Sprint 4",
+      "scope": "Épica: F1 Team Principal & Race Manager (12 Subtareas)",
+      "status": "⏳ BACKLOG"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "M1",
+      "title": "Z-Order y Capas del Monoplaza Vectorial",
+      "status": "completed"
+    },
+    {
+      "id": "M2",
+      "title": "Sombra del Coche Desacoplada de la Rotación",
+      "status": "completed"
+    },
+    {
+      "id": "M3",
+      "title": "Humo de Retirada con Rotación de Cámara",
+      "status": "completed"
+    },
+    {
+      "id": "M4",
+      "title": "Desgaste Individual No Oscilante",
+      "status": "completed"
+    },
+    {
+      "id": "M5",
+      "title": "Recalibración del Cliff Térmico",
+      "status": "completed"
+    },
+    {
+      "id": "M9",
+      "title": "Estado `'pit'` en `car.status`",
+      "status": "completed"
+    },
+    {
+      "id": "M10",
+      "title": "Activación de Paradas Programadas (`scheduledLap`)",
+      "status": "completed"
+    },
+    {
+      "id": "M6",
+      "title": "Contraste de Mercedes (WCAG AAA)",
+      "status": "completed"
+    },
+    {
+      "id": "M7",
+      "title": "Diferenciación Red Bull vs Racing Bulls",
+      "status": "completed"
+    },
+    {
+      "id": "M8",
+      "title": "Unificación de Sectores",
+      "status": "completed"
+    },
+    {
+      "id": "B1",
+      "title": "Retiro de `SpriteManager`",
+      "status": "completed"
+    },
+    {
+      "id": "B2",
+      "title": "Limpieza de `speedFactor` en `TireModel`",
+      "status": "completed"
+    },
+    {
+      "id": "B3",
+      "title": "Fallback Seguro en `getCompoundProperties`",
+      "status": "completed"
+    },
+    {
+      "id": "B4",
+      "title": "Reset Estático `IncidentModel.reset()`",
+      "status": "completed"
+    },
+    {
+      "id": "B5",
+      "title": "Incidentes de Tipo `'spin'`",
+      "status": "completed"
+    },
+    {
+      "id": "B6",
+      "title": "Unificación `drsAvailable` y `drsEligible`",
+      "status": "completed"
+    },
+    {
+      "id": "B7",
+      "title": "Clarificación `tireWear` vs `tireHealth`",
+      "status": "completed"
+    },
+    {
+      "id": "Q1",
+      "title": "Calibración de Escala de Monoplaza y Anchura Real de Pista (Anti-Solapamiento)",
+      "status": "completed"
+    },
+    {
+      "id": "Q2",
+      "title": "Carril de Boxes con Entrada/Salida Propias y Continuidad Física",
+      "status": "completed"
+    },
+    {
+      "id": "Q3",
+      "title": "Geometría Diferenciada para Muro, Carril Rápido y Cajones de Boxes",
+      "status": "completed"
+    },
+    {
+      "id": "Q4",
+      "title": "Coordenada Cartesiana Única (Unificación Pista vs Boxes)",
+      "status": "completed"
+    },
+    {
+      "id": "Q5",
+      "title": "Corrección de Doble Zoom en Meta y Nivel de Detalle (LOD) de Etiquetas",
+      "status": "pending"
+    },
+    {
+      "id": "Q6",
+      "title": "Escenario SVG por Capas con Identidad Real (Barcelona Permanente vs Mónaco Urbano)",
+      "status": "pending"
+    },
+    {
+      "id": "Q7",
+      "title": "Anchura de Pista Variable por Tramo y Capacidad de Adelantamiento",
+      "status": "pending"
+    },
+    {
+      "id": "Q8",
+      "title": "Trazada Ideal Engomada (Racing Line Exterior-Ápice-Exterior)",
+      "status": "pending"
+    },
+    {
+      "id": "Q9",
+      "title": "Órdenes de Boxes Vinculantes (Compuesto Elegido por el Jugador)",
+      "status": "pending"
+    },
+    {
+      "id": "Q10",
+      "title": "Punto de Compromiso (Pit Commitment Line) y Cancelación de Parada",
+      "status": "pending"
+    },
+    {
+      "id": "Q11",
+      "title": "Gestión Dual de Pilotos del Equipo & Parada Doble (Double Stack)",
+      "status": "pending"
+    },
+    {
+      "id": "Q12",
+      "title": "Modos de Ritmo del Piloto (Pace Modes: Push, Balanced, Save)",
+      "status": "pending"
+    },
+    {
+      "id": "Q13",
+      "title": "Predictor de Ventana de Reincorporación (Rejoin & Undercut Window)",
+      "status": "pending"
+    },
+    {
+      "id": "Q14",
+      "title": "Eliminación de Asignaciones Directas de Posición en SC y Bandera Roja",
+      "status": "pending"
+    },
+    {
+      "id": "Q15",
+      "title": "Centralización de Reglas de Banderas Azules y Tráfico de Doblados",
+      "status": "pending"
+    },
+    {
+      "id": "Q16",
+      "title": "Modelo Dinámico de ERS, Combustible y Penalización Térmica en Agarre",
+      "status": "pending"
+    },
+    {
+      "id": "Q17",
+      "title": "Rebalanceo del D20 de Suerte hacia el Reglamento FIA",
+      "status": "pending"
+    },
+    {
+      "id": "Q18",
+      "title": "Reconciliación de Dashboard, Timers de React y Reset Limpio",
+      "status": "pending"
+    },
+    {
+      "id": "Q19",
+      "title": "DRS medido en detección, permiso persistente y apertura reglamentaria",
+      "status": "pending"
+    },
+    {
+      "id": "R01",
+      "title": "Perfil de reglas versionado y procedencia (P0)",
+      "status": "pending"
+    },
+    {
+      "id": "R02",
+      "title": "Cronometraje por cruces y tráfico físico (P0)",
+      "status": "pending"
+    },
+    {
+      "id": "R03",
+      "title": "Datos de evento y geometría con unidades (P0)",
+      "status": "pending"
+    },
+    {
+      "id": "R04",
+      "title": "Integración y lectura visual del DRS (P0; depende de Q19/R01-R03)",
+      "status": "pending"
+    },
+    {
+      "id": "R05",
+      "title": "Aerodinámica, rebufo y adelantamiento físico (P1; A)",
+      "status": "pending"
+    },
+    {
+      "id": "R06",
+      "title": "Cuatro neumáticos con temperatura, carga y desgaste (P1; R05)",
+      "status": "pending"
+    },
+    {
+      "id": "R14",
+      "title": "Masa, combustible y reserva para muestra (P0; R01-R02)",
+      "status": "pending"
+    },
+    {
+      "id": "R15",
+      "title": "ERS energético 2025 completo (P0; R02/R14, amplía Q16)",
+      "status": "pending"
+    },
+    {
+      "id": "R16",
+      "title": "Motor, frenos, transmisión, refrigeración y daño (P1; R05/R06/R14/R15)",
+      "status": "pending"
+    },
+    {
+      "id": "R17",
+      "title": "Identidad de los diez equipos y paquetes por circuito (P1; R05/R06/R14-R16)",
+      "status": "pending"
+    },
+    {
+      "id": "R07",
+      "title": "Juegos de neumáticos e inventario legal (P0; R01/R06, Q9)",
+      "status": "pending"
+    },
+    {
+      "id": "R08",
+      "title": "Boxes reglamentarios y doble parada (P0; R03/R07/R13, Q3/Q9-Q11)",
+      "status": "pending"
+    },
+    {
+      "id": "R09",
+      "title": "Dirección de Carrera, banderas locales y límites (P0; R02/R03)",
+      "status": "pending"
+    },
+    {
+      "id": "R10",
+      "title": "SC, desdoblamiento y relanzamiento (P0; R02/R03/R09, Q14/Q15)",
+      "status": "pending"
+    },
+    {
+      "id": "R11",
+      "title": "VSC con deltas y final anunciado (P0; R02/R03/R09)",
+      "status": "pending"
+    },
+    {
+      "id": "R12",
+      "title": "Suspensión y reanudación completas (P0; R08-R11/R20)",
+      "status": "pending"
+    },
+    {
+      "id": "R13",
+      "title": "Comisarios y sanciones ejecutables (P0; R01/R02)",
+      "status": "pending"
+    },
+    {
+      "id": "R22",
+      "title": "Clima físico mínimo y decisiones de seguridad (P1; R06/R09/R12)",
+      "status": "pending"
+    },
+    {
+      "id": "R25",
+      "title": "Estrategia IA y muro con dos pilotos (P1; Q9-Q13/R07-R17/R22)",
+      "status": "pending"
+    },
+    {
+      "id": "R18",
+      "title": "Mejoras, setup, parc fermé y desarrollo ATR (P2; R01/R17)",
+      "status": "pending"
+    },
+    {
+      "id": "R19",
+      "title": "Vida de componentes y cupos de temporada (P2; R13/R16/R18/R21)",
+      "status": "pending"
+    },
+    {
+      "id": "R20",
+      "title": "Sesiones de clasificación, sprint y salidas (P2; R01/R02/R07/R13/R18)",
+      "status": "pending"
+    },
+    {
+      "id": "R21",
+      "title": "Final, clasificación y campeonato (P0 para resultado; P2 para temporada; R02/R13)",
+      "status": "pending"
+    },
+    {
+      "id": "R26",
+      "title": "D20 compatible con gestión y reglas (P1; Q17/R01/R18)",
+      "status": "pending"
+    },
+    {
+      "id": "R23",
+      "title": "SVG/Canvas que explica la física (P1; Q4-Q8/R03-R16)",
+      "status": "pending"
+    },
+    {
+      "id": "R24",
+      "title": "Telemetría y mensajes de muro basados en eventos (P1; R02/R04/R07-R16)",
+      "status": "pending"
+    },
+    {
+      "id": "R27",
+      "title": "Banco de escenarios y calibración de experiencia (P0/P1; todas las entregas)",
+      "status": "pending"
+    },
+    {
+      "id": "R28",
+      "title": "Guardado, reinicio y calidad de datos (P1; R01/R02, Q18)",
+      "status": "pending"
+    },
+    {
+      "id": "T3.1",
+      "title": "Escapatorias vs Muros",
+      "status": "pending"
+    },
+    {
+      "id": "T3.2",
+      "title": "Sistema Meteorológico Dinámico y Nubes Pasajeras",
+      "status": "pending"
+    },
+    {
+      "id": "T3.3",
+      "title": "Compuestos Intermedios y Wet",
+      "status": "pending"
+    },
+    {
+      "id": "T3.4",
+      "title": "Renderizado Visual de Pista Mojada y Spray",
+      "status": "pending"
+    }
+  ]
+}
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -1,5 +1,6 @@
 import { TrackDefinition } from '../data/barcelonaTrack';
 import { CarState } from '../types/f1';
+import { isCarVisible } from '../utils/carPosition';
 
 export type CameraMode = 'overview' | 'follow' | 'cinematic' | 'onboard' | 'helicopter' | 'free';
 
@@ -126,39 +127,13 @@ export class Camera {
       }
     } else if (this.followingCarId !== null && this.currentMode !== 'free') {
       const car = cars.find(c => c.id === this.followingCarId);
-      if (car && car.status !== 'finished' && track) {
-        let pt = { x: 800, y: 450, angle: 0 };
-        const points = track.points;
-        if (points && points.length > 0) {
-          const normT = ((car.progress % 1) + 1) % 1;
-          const ptIdx = Math.floor(normT * points.length) % points.length;
-          pt = points[ptIdx] || points[0];
-
-          let lookaheadFactor = 16;
-          if (this.currentMode === 'cinematic') lookaheadFactor = 24;
-          else if (this.currentMode === 'onboard') lookaheadFactor = 6;
-          
-          const lookaheadIdx = (ptIdx + lookaheadFactor) % points.length;
-          const lookaheadPt = points[lookaheadIdx] || pt;
-
-          if (this.currentMode === 'cinematic') {
-            this.targetX = pt.x * 0.4 + lookaheadPt.x * 0.6;
-            this.targetY = pt.y * 0.4 + lookaheadPt.y * 0.6;
-            this.targetZoom = Camera.CINEMATIC_ZOOM;
-          } else if (this.currentMode === 'onboard') {
-            this.targetX = pt.x * 0.9 + lookaheadPt.x * 0.1;
-            this.targetY = pt.y * 0.9 + lookaheadPt.y * 0.1;
-            this.targetZoom = Camera.ONBOARD_ZOOM;
-          } else if (this.currentMode === 'helicopter') {
-            this.targetX = pt.x * 0.7 + lookaheadPt.x * 0.3;
-            this.targetY = pt.y * 0.7 + lookaheadPt.y * 0.3;
-            this.targetZoom = Camera.HELICOPTER_ZOOM;
-          } else { // follow
-            this.targetX = pt.x * 0.65 + lookaheadPt.x * 0.35;
-            this.targetY = pt.y * 0.65 + lookaheadPt.y * 0.35;
-            this.targetZoom = Camera.FOLLOW_ZOOM;
-          }
-        }
+      if (car && isCarVisible(car)) {
+        this.targetX = car.worldX;
+        this.targetY = car.worldY;
+        if (this.currentMode === 'cinematic') this.targetZoom = Camera.CINEMATIC_ZOOM;
+        else if (this.currentMode === 'onboard') this.targetZoom = Camera.ONBOARD_ZOOM;
+        else if (this.currentMode === 'helicopter') this.targetZoom = Camera.HELICOPTER_ZOOM;
+        else this.targetZoom = Camera.FOLLOW_ZOOM;
       }
     }
 

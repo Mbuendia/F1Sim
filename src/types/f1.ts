@@ -202,6 +202,10 @@ export interface CarState {
   previousPosition: number;
   progress: number;
   trackT: number;
+  // Posición/orientación compartida por dibujo, cámara, minimapa y selección.
+  worldX: number;
+  worldY: number;
+  worldAngle: number;
   isInPitLane: boolean;
   speed: number;
   currentSpeedKmh: number;

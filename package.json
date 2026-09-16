@@ -5,6 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "sync:tasks": "node scripts/sync-task-index.mjs",
+    "check:tasks": "node scripts/sync-task-index.mjs --check",
+    "prebuild": "npm run check:tasks",
     "build": "tsc -b && vite build",
     "preview": "vite preview"
   },

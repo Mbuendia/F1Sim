@@ -1,10 +1,26 @@
 import { CarState, SafetyCarState } from '../types/f1';
 import { TrackDefinition } from '../data/barcelonaTrack';
 import { Camera } from './Camera';
+import { getTrackHalfWidth, getLateralDisplacement, isCarVisible } from '../utils/carPosition';
 
 export class CarRenderer {
   static readonly BASE_CAR_LEN = 14;
   static readonly BASE_CAR_WID = 6;
+
+  static pickCarAtScreen(cars: CarState[], camera: Camera, x: number, y: number): number | null {
+    let selected: number | null = null;
+    let nearest = 35;
+    for (const car of cars) {
+      if (!isCarVisible(car)) continue;
+      const point = camera.worldToScreen(car.worldX, car.worldY);
+      const distance = Math.hypot(point.x - x, point.y - y);
+      if (distance < nearest) {
+        nearest = distance;
+        selected = car.id;
+      }
+    }
+    return selected;
+  }
 
   /**
    * Dimensiones en pantalla. La huella incluye ruedas y alerones, no solo el chasis.
@@ -28,7 +44,7 @@ export class CarRenderer {
    * Calcula la semi-anchura de pista en coordenadas del mundo
    */
   static getTrackHalfWidth(trackWidthMeters: number = 24): number {
-    return (trackWidthMeters * 1.75) * 0.5;
+    return getTrackHalfWidth(trackWidthMeters);
   }
 
   /**
@@ -39,9 +55,7 @@ export class CarRenderer {
     trackWidthMeters: number = 24,
     trackWidthCarsCapacity: number = 3
   ): number {
-    const trackHalfWidth = CarRenderer.getTrackHalfWidth(trackWidthMeters);
-    const usableFraction = trackWidthCarsCapacity === 2 ? 0.72 : 0.82;
-    return lateralOffset * trackHalfWidth * usableFraction;
+    return getLateralDisplacement(lateralOffset, trackWidthMeters, trackWidthCarsCapacity);
   }
 
   /**
@@ -56,7 +70,7 @@ export class CarRenderer {
     trackWidthCarsCapacity: number = 2,
     safetyCar?: SafetyCarState | null
   ) {
-    const activeCars = cars.filter(c => c.status !== 'finished' && !(c.status === 'out' && !c.isRetiredVisible));
+    const activeCars = cars.filter(isCarVisible);
 
     const sorted = [...activeCars].sort((a, b) => {
       if (a.id === selectedCarId) return 1;
@@ -64,66 +78,10 @@ export class CarRenderer {
       return a.progress - b.progress;
     });
 
-    const points = track.points;
-    const totalPts = points.length;
     const dimensions = CarRenderer.getCarDimensions(camera.zoom, track.trackWidthMeters || 24, trackWidthCarsCapacity);
 
     for (const car of sorted) {
-      let worldX = 0;
-      let worldY = 0;
-      let angle = 0;
-      const normalize = (t: number) => ((t % 1) + 1) % 1;
-      const pitSpan = normalize(track.pitExitT - track.pitEntryT);
-      const pitProgress = pitSpan > 0 ? normalize(car.progress - track.pitEntryT) / pitSpan : Infinity;
-
-      // pitLaneProgress pertenece al paso anterior del motor. Usar la posición
-      // actual evita retrasos al entrar y saltos al reincorporarse a la pista.
-      if (car.isInPitLane && track.pitLanePoints.length >= 2 && pitProgress <= 1 + 1e-9) {
-        const pitPts = track.pitLanePoints;
-        const pitIndex = Math.min(1, pitProgress) * (pitPts.length - 1);
-        const pIndex = Math.min(pitPts.length - 2, Math.floor(pitIndex));
-        const frac = pitIndex - pIndex;
-        const p1 = pitPts[pIndex];
-        const p2 = pitPts[pIndex + 1] || p1;
-        worldX = p1.x + (p2.x - p1.x) * frac;
-        worldY = p1.y + (p2.y - p1.y) * frac;
-        angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
-      } else {
-        const normT = ((car.progress % 1) + 1) % 1;
-        // ── INTERPOLACIÓN SUB-PUNTO PARA ANTI-JITTER ──
-        // En lugar de saltar de un punto discreto al siguiente, interpolamos
-        // entre los dos puntos adyacentes usando la fracción decimal
-        const exactIndex = normT * totalPts;
-        const ptIndex = Math.floor(exactIndex) % totalPts;
-        const nextIndex = (ptIndex + 1) % totalPts;
-        const frac = exactIndex - Math.floor(exactIndex);
-
-        const pt = points[ptIndex] || points[0];
-        const ptNext = points[nextIndex] || points[0];
-
-        // Interpolación lineal de posición
-        const interpX = pt.x + (ptNext.x - pt.x) * frac;
-        const interpY = pt.y + (ptNext.y - pt.y) * frac;
-
-        // Interpolación de ángulo con manejo de wraparound (-PI / +PI)
-        let angleDiff = ptNext.angle - pt.angle;
-        if (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
-        if (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
-        angle = pt.angle + angleDiff * frac;
-
-        const nx = Math.cos(angle + Math.PI / 2);
-        const ny = Math.sin(angle + Math.PI / 2);
-        // Mismo ancho de pista/capacidad que la huella completa del monoplaza.
-        const lateralDist = CarRenderer.getLateralDisplacement(
-          car.lateralOffset,
-          track.trackWidthMeters || 24,
-          trackWidthCarsCapacity
-        );
-
-        worldX = interpX + nx * lateralDist;
-        worldY = interpY + ny * lateralDist;
-      }
-
+      const { worldX, worldY, worldAngle: angle } = car;
       const screen = camera.worldToScreen(worldX, worldY);
 
       if (screen.x < -80 || screen.x > camera.screenWidth + 80 ||

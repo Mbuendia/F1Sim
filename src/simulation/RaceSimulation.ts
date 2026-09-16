@@ -23,6 +23,7 @@ import { DRSModel } from './DRSModel';
 import { PitStopModel } from './PitStopModel';
 import { SafetyCarModel } from './SafetyCarModel';
 import { IncidentModel } from './IncidentModel';
+import { calculateCarWorldPosition } from '../utils/carPosition';
 
 export class RaceSimulation {
   cars: CarState[] = [];
@@ -179,6 +180,9 @@ export class RaceSimulation {
         previousPosition: idx + 1,
         progress: initialProgress,
         trackT: ((initialProgress % 1) + 1) % 1,
+        worldX: 0,
+        worldY: 0,
+        worldAngle: 0,
         isInPitLane: false,
         speed: 0,
         currentSpeedKmh: 0,
@@ -256,6 +260,7 @@ export class RaceSimulation {
 
       return car;
     });
+    this.updateWorldPositions();
   }
 
   startRaceSequence() {
@@ -268,6 +273,7 @@ export class RaceSimulation {
         car.lateralOffset = idx % 2 === 0 ? 0.65 : -0.65;
         car.targetLateralOffset = car.lateralOffset;
       });
+      this.updateWorldPositions();
     }
   }
 
@@ -290,6 +296,19 @@ export class RaceSimulation {
   }
 
   update(dtRaw: number) {
+    this.advanceSimulation(dtRaw);
+    // Después de todas las ramas y ajustes del motor, antes de dibujar el frame.
+    this.updateWorldPositions();
+  }
+
+  private updateWorldPositions() {
+    const capacity = (OFFICIAL_CIRCUITS[this.circuitId] || OFFICIAL_CIRCUITS.barcelona).trackWidthCars;
+    for (const car of this.cars) {
+      Object.assign(car, calculateCarWorldPosition(car, this.activeTrack, capacity));
+    }
+  }
+
+  private advanceSimulation(dtRaw: number) {
     if (this.isPaused || this.isFinished) return;
 
     const dt = dtRaw * this.getEffectiveTimeScale();

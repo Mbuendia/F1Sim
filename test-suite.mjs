@@ -1,5 +1,7 @@
 // test-suite.mjs - Verification tests for Critical and High bug fixes
 import { createServer } from 'file:///c:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/index.js';
+import { readFileSync } from 'node:fs';
+import { buildTaskIndex, synchronizeIndex } from './scripts/sync-task-index.mjs';
 
 async function runTests() {
   console.log('🏁 Starting F1 Simulator Verification Test Suite...\n');
@@ -28,6 +30,9 @@ async function runTests() {
     const { RaceSimulation } = await server.ssrLoadModule('/src/simulation/RaceSimulation.ts');
     const { CarRenderer } = await server.ssrLoadModule('/src/renderer/CarRenderer.ts');
     const { generatePitLanePoints } = await server.ssrLoadModule('/src/utils/svgTrackParser.ts');
+    const { calculateCarWorldPosition } = await server.ssrLoadModule('/src/utils/carPosition.ts');
+    const { Camera } = await server.ssrLoadModule('/src/renderer/Camera.ts');
+    const { renderLeftMinimap } = await server.ssrLoadModule('/src/renderer/MinimapRenderer.ts');
 
     console.log('--- TEST GROUP 1: SafetyCarModel Fixes (C1, C2, C3, C4) ---');
 
@@ -596,10 +601,12 @@ async function runTests() {
           trackWidthMeters: width, pitLanePoints: [],
           points: [{ x: 0, y: 0, angle: 0 }, { x: 100, y: 0, angle: 0 }],
         };
-        CarRenderer.renderCars(ctx, [{
+        const drawnCar = {
           ...car, progress: 0, lateralOffset, status: 'running', isInPitLane: false,
           isBlueFlagged: false,
-        }], camera, null, track, capacity);
+        };
+        Object.assign(drawnCar, calculateCarWorldPosition(drawnCar, track, capacity));
+        CarRenderer.renderCars(ctx, [drawnCar], camera, null, track, capacity);
         return { min: Math.min(...transverse), max: Math.max(...transverse) };
       }
       for (const [width, capacity] of [[24, 3], [24, 2], [16, 2]]) {
@@ -673,10 +680,12 @@ async function runTests() {
         const ctx = new Proxy({ translate: (x, y) => { position = { x, y }; } }, {
           get: (target, key) => target[key] ?? (() => {}),
         });
-        CarRenderer.renderCars(ctx, [{
+        const drawnCar = {
           ...car, progress, isInPitLane, lateralOffset: 0, status: 'running',
           pitStop: { ...car.pitStop, pitLaneProgress: previousPitProgress },
-        }], {
+        };
+        Object.assign(drawnCar, calculateCarWorldPosition(drawnCar, track, 3));
+        CarRenderer.renderCars(ctx, [drawnCar], {
           zoom: 1, rotation: 0, screenWidth: 2000, screenHeight: 2000,
           worldToScreen: (x, y) => ({ x: x + 600, y: y + 600 }),
         }, null, track, 3);
@@ -696,6 +705,241 @@ async function runTests() {
         'Q2: Cambiar de ruta en la salida conserva la posición dibujada');
       assert(distance(renderPosition(1.151, true, 0.99), renderPosition(1.151, false, 0)) < 1e-7,
         'Q2: Superar la salida no retiene visualmente el coche cuando el estado de boxes llega un paso tarde');
+    }
+
+    console.log('\n--- TEST GROUP 10: Q3 — carriles, barreras y cajones de equipo ---');
+    {
+      const { buildPitLaneGeometry } = await server.ssrLoadModule('/src/utils/pitLaneGeometry.ts');
+      const { TrackRenderer } = await server.ssrLoadModule('/src/renderer/TrackRenderer.ts');
+      const { TEAMS } = await server.ssrLoadModule('/src/data/teams.ts');
+      const teams = Object.values(TEAMS);
+      const distanceToPath = (p, path, closed = false) => {
+        let best = Infinity;
+        for (let i = 1; i < path.length + (closed ? 1 : 0); i++) {
+          const a = path[i - 1], b = path[i % path.length];
+          const dx = b.x - a.x, dy = b.y - a.y;
+          const t = Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / (dx * dx + dy * dy || 1)));
+          best = Math.min(best, Math.hypot(p.x - a.x - t * dx, p.y - a.y - t * dy));
+        }
+        return best;
+      };
+      let referenceTrack;
+      for (const direction of [-1, 1]) {
+        for (const pitOffset of [-38, 38]) {
+          const points = Array.from({ length: 750 }, (_, i) => {
+            const a = direction * i / 750 * Math.PI * 2;
+            return { x: 500 * Math.cos(a), y: 500 * Math.sin(a), angle: a + direction * Math.PI / 2,
+              normal: { x: -direction * Math.cos(a), y: -direction * Math.sin(a) } };
+          });
+          const track = { points, trackWidthMeters: 24, corners: [], pitEntryT: 0.85, pitExitT: 0.1,
+            pitLanePoints: generatePitLanePoints(points, 0.85, 0.1, pitOffset) };
+          referenceTrack = track;
+          const before = JSON.stringify(track);
+          const geometry = buildPitLaneGeometry(track, teams);
+          const label = `sentido ${direction}, offset ${pitOffset}`;
+          assert(geometry.boxes.length === 10 && new Set(geometry.boxes.map(b => b.team.id)).size === 10, `Q3: Diez cajones, uno por equipo (${label})`);
+          assert(geometry.walls.length > 0 && geometry.walls.every(segment => {
+            const [a, b] = segment;
+            return [0, 0.25, 0.5, 0.75, 1].every(t => {
+              const p = { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
+              return distanceToPath(p, geometry.fastLane) > geometry.fastLaneWidth / 2 + geometry.wallWidth / 2 &&
+                distanceToPath(p, points, true) > 24 * 1.75 / 2 + geometry.wallWidth / 2;
+            });
+          }), `Q3: Muro separado del carril rápido y del asfalto (${label})`);
+          assert(geometry.boxes.every(box => box.corners.every(p => distanceToPath(p, geometry.fastLane) > geometry.fastLaneWidth / 2)),
+            `Q3: Cajones fuera del carril rápido (${label})`);
+          assert(geometry.boxes.every((box, i, boxes) => i === 0 || Math.hypot(box.center.x - boxes[i - 1].center.x, box.center.y - boxes[i - 1].center.y) > 12),
+            `Q3: Cajones consecutivos sin solapamiento (${label})`);
+          assert(geometry.walls.every(wall => wall.every(p => Math.hypot(p.x - track.pitLanePoints[0].x, p.y - track.pitLanePoints[0].y) > 20 &&
+            Math.hypot(p.x - track.pitLanePoints.at(-1).x, p.y - track.pitLanePoints.at(-1).y) > 20)), `Q3: Entrada y salida abiertas (${label})`);
+          assert(JSON.stringify(track) === before && geometry.fastLane[0] === track.pitLanePoints[0] && geometry.fastLane.at(-1) === track.pitLanePoints.at(-1),
+            `Q3: Ruta Q2 y estado originales intactos (${label})`);
+          assert(geometry.trackEdges.length === 2 && geometry.trackEdges.every(edge => edge.every((p, i) => Math.abs(Math.hypot(p.x - points[i].x, p.y - points[i].y) - 21) < 1e-7)),
+            `Q3: Dos bordes blancos en los límites, sin línea central falsa (${label})`);
+        }
+      }
+      for (const pitLanePoints of [[], [{ x: 0, y: 0 }], [{ x: 0, y: 0 }, { x: 0, y: 0 }]]) {
+        const geometry = buildPitLaneGeometry({ ...referenceTrack, pitLanePoints }, teams);
+        assert(geometry.walls.length === 0 && geometry.boxes.length === 0, 'Q3: Ruta vacía o degenerada no dibuja barreras/cajones inválidos');
+      }
+      for (const zoom of [0.25, 1, 4]) {
+        const rotation = 0.7;
+        let path = [];
+        const strokes = [], fills = [];
+        const ctx = new Proxy({
+          beginPath: () => { path = []; }, moveTo: (x, y) => path.push({ x, y }), lineTo: (x, y) => path.push({ x, y }),
+          stroke: () => strokes.push({ color: ctx.strokeStyle, width: ctx.lineWidth, points: [...path] }),
+          fill: () => fills.push({ color: ctx.fillStyle, points: [...path] }),
+        }, { get: (target, key) => target[key] ?? (() => {}) });
+        const camera = { zoom, rotation, worldToScreen: (x, y) => ({ x: zoom * (x * Math.cos(rotation) - y * Math.sin(rotation)), y: zoom * (x * Math.sin(rotation) + y * Math.cos(rotation)) }) };
+        TrackRenderer.renderTrack(ctx, referenceTrack, camera, 1);
+        const fast = strokes.find(s => s.color === '#242c38');
+        const wall = strokes.find(s => s.color === '#aeb9c8');
+        assert(fast?.width === 10 * zoom && wall?.width === zoom && wall.points.length > 0, `Q3: Renderer separa rutas y escala anchuras una vez (zoom ${zoom})`);
+        assert(teams.every(team => fills.filter(f => f.color === `${team.color}55`).length === 1), `Q3: Renderer dibuja los diez cajones de equipo (zoom ${zoom})`);
+        assert(strokes.filter(s => s.color === 'rgba(255, 255, 255, 0.75)').length === 2, `Q3: Renderer dibuja ambos límites de pista (zoom ${zoom})`);
+      }
+    }
+
+    console.log('\n--- TEST GROUP 11: Q4 — posición única y consumidores ---');
+    {
+      const base = new RaceSimulation('barcelona').cars[0];
+      const points = Array.from({ length: 750 }, (_, i) => {
+        const a = i / 750 * Math.PI * 2;
+        return { x: 500 * Math.cos(a), y: 500 * Math.sin(a), angle: a + Math.PI / 2,
+          normal: { x: -Math.cos(a), y: -Math.sin(a) } };
+      });
+      for (const [entry, exit, offset] of [[0.9, 0.15, 38], [0.361, 0.461, -28]]) {
+        const track = { points, pitEntryT: entry, pitExitT: exit, trackWidthMeters: 24,
+          pitLanePoints: generatePitLanePoints(points, entry, exit, offset) };
+        const span = (exit - entry + 1) % 1;
+        let routeCorrect = true, cameraCorrect = true;
+        for (let step = 0; step <= 100; step++) {
+          const u = step / 100;
+          const car = { ...base, progress: 3 + entry + span * u, isInPitLane: true, lateralOffset: 0.65 };
+          Object.assign(car, calculateCarWorldPosition(car, track));
+          const exact = u * (track.pitLanePoints.length - 1);
+          const index = Math.min(track.pitLanePoints.length - 2, Math.floor(exact));
+          const a = track.pitLanePoints[index], b = track.pitLanePoints[index + 1];
+          routeCorrect &&= Math.hypot(car.worldX - (a.x + (b.x - a.x) * (exact - index)),
+            car.worldY - (a.y + (b.y - a.y) * (exact - index))) < 1e-7;
+          for (const mode of ['follow', 'cinematic', 'onboard', 'helicopter']) {
+            const camera = new Camera();
+            camera.followCar(car.id);
+            camera.setMode(mode);
+            camera.update([car], 0.016, track);
+            cameraCorrect &&= camera.targetX === car.worldX && camera.targetY === car.worldY;
+          }
+        }
+        assert(routeCorrect, `Q4: Posición sobre toda la ruta de boxes ${entry}–${exit}, sin offset lateral de pista`);
+        assert(cameraCorrect, `Q4: Cuatro cámaras apuntan al coche en los 101 puntos de boxes ${entry}–${exit}`);
+      }
+
+      const straight = { points: [{ x: 0, y: 0, angle: 0 }, { x: 1000, y: 0, angle: 0 }],
+        pitLanePoints: [], trackWidthMeters: 16, pitEntryT: 0.9, pitExitT: 0.1 };
+      const lane = calculateCarWorldPosition({ progress: 0.125, lateralOffset: 0.65, isInPitLane: false }, straight, 2);
+      assert(lane.worldX === 250 && Math.abs(lane.worldY - 0.65 * 14 * 0.72) < 1e-9,
+        'Q4: Interpolación y desplazamiento lateral conservan el ancho/capacidad Q1');
+
+      // Los consumidores deben respetar la coordenada almacenada aunque progress apunte a otro sitio.
+      const car = { ...base, worldX: 72, worldY: 24, worldAngle: 0.31, progress: 0.6, lateralOffset: -0.7 };
+      for (const [zoom, rotation] of [[0.25, 0], [2.75, 0.8], [8, -1.2]]) {
+        const camera = new Camera();
+        Object.assign(camera, { x: car.worldX, y: car.worldY, zoom, rotation, screenWidth: 1000, screenHeight: 700 });
+        const screen = camera.worldToScreen(car.worldX, car.worldY);
+        const drawing = [];
+        const originalDraw = CarRenderer.drawSingleCar;
+        try {
+          CarRenderer.drawSingleCar = (_ctx, x, y, angle) => drawing.push({ x, y, angle });
+          CarRenderer.renderCars({}, [car], camera, null, straight, 2);
+        } finally { CarRenderer.drawSingleCar = originalDraw; }
+        assert(drawing.length === 1 && drawing[0].x === screen.x && drawing[0].y === screen.y && drawing[0].angle === car.worldAngle + rotation,
+          `Q4: Renderer consume posición/orientación almacenada (zoom ${zoom})`);
+        assert(CarRenderer.pickCarAtScreen([car], camera, screen.x, screen.y) === car.id &&
+          CarRenderer.pickCarAtScreen([car], camera, screen.x + 36, screen.y) === null,
+          `Q4: Clic en coche visible con zoom ${zoom} y rotación ${rotation}`);
+      }
+      const camera = new Camera();
+      camera.followCar(car.id);
+      const mapTrack = { ...straight, bounds: { minX: 0, maxX: 100, minY: 0, maxY: 100 },
+        pitLanePoints: [{ x: 20, y: 0 }, { x: 200, y: 100 }] };
+      const arcs = [], lines = [];
+      const ctx = new Proxy({ arc: (...args) => arcs.push(args), lineTo: (...args) => lines.push(args) },
+        { get: (target, key) => target[key] ?? (() => {}) });
+      const hidden = [
+        { ...car, id: 2, status: 'finished' },
+        { ...car, id: 3, status: 'out', isRetiredVisible: false },
+      ];
+      const retired = { ...car, id: 4, status: 'out', isRetiredVisible: true };
+      renderLeftMinimap(ctx, { cars: [car, ...hidden, retired], activeTrack: mapTrack }, camera);
+      // Bounds ampliados a 200x100: escala .75 y origen del mapa (35,585).
+      assert(arcs.length === 2 && arcs[0][0] === 35 + car.worldX * 0.75 &&
+        arcs[0][1] === 585 + car.worldY * 0.75 && arcs[0][2] === 4.5,
+        'Q4: Minimap real proyecta worldX/Y e incluye boxes en el encuadre');
+      assert(lines.some(([x, y]) => x === 185 && y === 660), 'Q4: Minimap dibuja el carril de boxes');
+      const screen = camera.worldToScreen(car.worldX, car.worldY);
+      assert(CarRenderer.pickCarAtScreen(hidden, camera, screen.x, screen.y) === null &&
+        CarRenderer.pickCarAtScreen([retired], camera, screen.x, screen.y) === retired.id,
+        'Q4: Clic y minimapa excluyen finalizados/retirados ocultos y conservan retirados visibles');
+    }
+
+    {
+      const sim = new RaceSimulation('barcelona');
+      const { OFFICIAL_CIRCUITS } = await server.ssrLoadModule('/src/data/circuits.ts');
+      const positionsAreCurrent = () => sim.cars.every(car => {
+        const expected = calculateCarWorldPosition(car, sim.activeTrack, OFFICIAL_CIRCUITS[sim.circuitId].trackWidthCars);
+        return ['worldX', 'worldY', 'worldAngle'].every(key => Number.isFinite(car[key]) && Math.abs(car[key] - expected[key]) < 1e-9);
+      });
+      assert(positionsAreCurrent(), 'Q4: Parrilla inicial tiene posiciones válidas antes del primer frame');
+      sim.startRaceSequence();
+      assert(positionsAreCurrent(), 'Q4: Empezar formación actualiza inmediatamente el offset de parrilla');
+      for (const phase of ['formation-lap', 'grid-parking', 'grid-ready', 'lights-1', 'racing']) {
+        sim.lightState = phase;
+        for (const car of sim.cars) { car.worldX = NaN; car.worldY = NaN; }
+        sim.update(0.016);
+        assert(positionsAreCurrent(), `Q4: Motor sincroniza al terminar la rama ${phase}`);
+      }
+      sim.lightState = 'racing';
+      const car = sim.cars[0];
+      Object.assign(car, { progress: 1.02, currentLap: 1, isInPitLane: true, status: 'pit' });
+      car.pitStop.isPitting = true;
+      car.pitStop.pitLaneProgress = 0;
+      const oldProgress = car.progress;
+      sim.update(0.02);
+      assert(car.progress > oldProgress && positionsAreCurrent(), 'Q4: Boxes se sincroniza después de avanzar, sin retraso de un paso');
+      Object.assign(car, { status: 'out', isRetiredVisible: true, currentSpeedKmh: 40 });
+      sim.update(0.02);
+      assert(positionsAreCurrent(), 'Q4: Retirados también mantienen su posición actual');
+      sim.isPaused = true;
+      const before = sim.cars.map(c => c.progress);
+      sim.update(0.5);
+      assert(positionsAreCurrent() && sim.cars.every((c, i) => c.progress === before[i]), 'Q4: Pausa conserva posición y progreso');
+      sim.isPaused = false;
+      sim.initRace();
+      sim.lightState = 'racing';
+      sim.raceFlagState = 'red';
+      sim.update(0.016);
+      assert(sim.lightState === 'grid-ready' && positionsAreCurrent(), 'Q4: Recolocación tras roja actualiza posición en el mismo frame');
+      sim.setCircuit('monaco');
+      assert(positionsAreCurrent(), 'Q4: Cambiar circuito reinicializa posiciones con su capacidad');
+      sim.initRace();
+      assert(positionsAreCurrent(), 'Q4: Reiniciar carrera no conserva posiciones del estado anterior');
+
+      // Recorrer una parada completa usando el motor, no solo muestras geométricas.
+      sim.setCircuit('barcelona');
+      sim.cars = [sim.cars[0]];
+      const pitCar = sim.cars[0];
+      Object.assign(pitCar, { progress: 1 + sim.activeTrack.pitEntryT, currentLap: 1 });
+      pitCar.pitStop.scheduledLap = 1;
+      sim.lightState = 'racing';
+      sim.setSpeed(32);
+      const camera = new Camera();
+      camera.followCar(pitCar.id);
+      let entered = false, stopped = false, exited = false, aligned = true;
+      for (let i = 0; i < 2000 && !exited; i++) {
+        sim.update(0.016);
+        camera.update(sim.cars, 0.016, sim.activeTrack);
+        entered ||= pitCar.isInPitLane;
+        stopped ||= pitCar.isInPitLane && pitCar.currentSpeedKmh === 0;
+        aligned &&= positionsAreCurrent() && camera.targetX === pitCar.worldX && camera.targetY === pitCar.worldY;
+        exited = entered && !pitCar.isInPitLane;
+      }
+      assert(entered && stopped && exited && aligned && pitCar.pitStop.totalPitStops === 1,
+        'Q4: Parada completa del motor mantiene cámara/posición alineadas en entrada, servicio y salida');
+    }
+
+    console.log('\n--- TEST GROUP 12: Regla de Oro 6 — sincronización documental ---');
+    {
+      const dashboard = readFileSync(new URL('./DASHBOARD.md', import.meta.url), 'utf8');
+      const html = readFileSync(new URL('./index.html', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
+      const metadata = JSON.parse(html.match(/<script id="project-task-index" type="application\/json">([\s\S]*?)<\/script>/)[1]);
+      assert(html === synchronizeIndex(html, buildTaskIndex(dashboard)), 'Documentación: dashboard e index completos y alineados');
+      const orderFixture = '**Orden vigente:** Sprint **2.8** · Tarea actual **Q3** · Siguiente **Q4**.\n* **Q3 — Boxes:** `[ ] EN CURSO`\n* **Q4 — Cámara:** `[ ]`\n* **Q19 — DRS:** `[ ]`';
+      const order = buildTaskIndex(orderFixture);
+      assert(order.currentTask === 'Q3' && order.nextTask === 'Q4' && order.tasks.some(t => t.id === 'Q19' && t.status === 'pending') && metadata.tasks.some(t => t.id === metadata.currentTask), 'Documentación: conserva el orden declarado y la tarea actual existe');
+      const changed = dashboard + '\n* **TEST-SYNC — Nueva tarea de prueba:** `[ ] PENDIENTE`\n';
+      assert(synchronizeIndex(html, buildTaskIndex(changed)) !== html, 'Documentación: añadir una tarea exige actualizar el index');
+      assert(JSON.stringify(buildTaskIndex(dashboard)) === JSON.stringify(buildTaskIndex(dashboard.replace(/\r?\n/g, '\r\n'))), 'Documentación: índice independiente de finales de línea Windows/Linux');
     }
 
     console.log('\n=============================================');

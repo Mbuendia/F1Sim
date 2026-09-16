@@ -4,6 +4,7 @@ import { RaceSimulation } from '../simulation/RaceSimulation';
 import { Camera } from '../renderer/Camera';
 import { TrackRenderer } from '../renderer/TrackRenderer';
 import { CarRenderer } from '../renderer/CarRenderer';
+import { renderLeftMinimap } from '../renderer/MinimapRenderer';
 import { OFFICIAL_CIRCUITS } from '../data/circuits';
 import { Compass, RotateCw } from 'lucide-react';
 
@@ -154,31 +155,7 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
       const clickX = e.clientX - rect.left;
       const clickY = e.clientY - rect.top;
 
-      let clickedCarId: number | null = null;
-      let minDistance = 35;
-
-      const points = simulation.activeTrack.points;
-      const totalPts = points.length;
-
-      for (const car of simulation.cars) {
-        if (car.status === 'finished') continue;
-        const normT = ((car.progress % 1) + 1) % 1;
-        const exactIdx = normT * totalPts;
-        const ptIdx = Math.floor(exactIdx) % totalPts;
-        const nextIdx = (ptIdx + 1) % totalPts;
-        const frac = exactIdx - Math.floor(exactIdx);
-        const pt = points[ptIdx] || points[0];
-        const ptNext = points[nextIdx] || points[0];
-        const interpX = pt.x + (ptNext.x - pt.x) * frac;
-        const interpY = pt.y + (ptNext.y - pt.y) * frac;
-        const screenPos = camera.worldToScreen(interpX, interpY);
-
-        const dist = Math.hypot(screenPos.x - clickX, screenPos.y - clickY);
-        if (dist < minDistance) {
-          minDistance = dist;
-          clickedCarId = car.id;
-        }
-      }
+      const clickedCarId = CarRenderer.pickCarAtScreen(simulation.cars, camera, clickX, clickY);
 
       if (clickedCarId !== null) {
         onSelectCar(clickedCarId);
@@ -225,74 +202,3 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
     </div>
   );
 };
-
-// ── RENDERIZADO DEL MINIMAPA A LA IZQUIERDA DEL TODO ──
-function renderLeftMinimap(
-  ctx: CanvasRenderingContext2D,
-  simulation: RaceSimulation,
-  camera: Camera
-) {
-  const mmW = 180;
-  const mmH = 115;
-  const mmX = 20;
-  // Subimos el minimapa para evitar que se solape con el dock inferior
-  const mmY = camera.screenHeight - mmH - 120;
-  const b = simulation.activeTrack.bounds;
-
-  ctx.fillStyle = 'rgba(8, 12, 20, 0.92)';
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.20)';
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.roundRect(mmX, mmY, mmW, mmH, 8);
-  ctx.fill();
-  ctx.stroke();
-
-  const scaleX = (mmW - 30) / (b.maxX - b.minX);
-  const scaleY = (mmH - 30) / (b.maxY - b.minY);
-  const mmScale = Math.min(scaleX, scaleY);
-
-  const mmOffsetX = mmX + (mmW - (b.maxX - b.minX) * mmScale) / 2;
-  const mmOffsetY = mmY + (mmH - (b.maxY - b.minY) * mmScale) / 2;
-
-  const points = simulation.activeTrack.points;
-  if (points.length > 0) {
-    ctx.beginPath();
-    const firstX = mmOffsetX + (points[0].x - b.minX) * mmScale;
-    const firstY = mmOffsetY + (points[0].y - b.minY) * mmScale;
-    ctx.moveTo(firstX, firstY);
-
-    for (let i = 1; i < points.length; i++) {
-      const px = mmOffsetX + (points[i].x - b.minX) * mmScale;
-      const py = mmOffsetY + (points[i].y - b.minY) * mmScale;
-      ctx.lineTo(px, py);
-    }
-    ctx.closePath();
-    ctx.strokeStyle = '#475569';
-    ctx.lineWidth = 3.5;
-    ctx.stroke();
-  }
-
-  // Puntos de los coches en el minimapa (con interpolación anti-jitter)
-  for (const car of simulation.cars) {
-    if (car.status === 'finished') continue;
-    const normT = ((car.progress % 1) + 1) % 1;
-    const totalPts = points.length;
-    const exactIdx = normT * totalPts;
-    const ptIdx = Math.floor(exactIdx) % totalPts;
-    const nextIdx = (ptIdx + 1) % totalPts;
-    const frac = exactIdx - Math.floor(exactIdx);
-    const pt = points[ptIdx] || points[0];
-    const ptNext = points[nextIdx] || points[0];
-
-    const interpX = pt.x + (ptNext.x - pt.x) * frac;
-    const interpY = pt.y + (ptNext.y - pt.y) * frac;
-
-    const cx = mmOffsetX + (interpX - b.minX) * mmScale;
-    const cy = mmOffsetY + (interpY - b.minY) * mmScale;
-
-    ctx.fillStyle = car.team.color;
-    ctx.beginPath();
-    ctx.arc(cx, cy, car.id === camera.followingCarId ? 4.5 : 2.5, 0, Math.PI * 2);
-    ctx.fill();
-  }
-}
