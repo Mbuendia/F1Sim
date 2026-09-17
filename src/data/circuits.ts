@@ -45,6 +45,8 @@ export interface CircuitSpec {
   safetyCarProbabilityPercent: number;
   officialWebsiteUrl: string;
   pitEntryT?: number;
+  /** Línea táctica calibrada para el juego, no dato FIA. */
+  pitCommitmentT?: number;
   pitExitT?: number;
   startOffsetT?: number;
   pitOffset?: number;
@@ -64,6 +66,7 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
     name: 'Circuit de Barcelona-Catalunya',
     trackType: 'permanent',
     pitEntryT: 0.9,
+    pitCommitmentT: 0.875,
       pitExitT: 0.15,
       startOffsetT: 0.12,
       officialGpName: 'Gran Premio de España',
@@ -217,6 +220,7 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
     statsF1Url: 'https://www.statsf1.com/en/circuit-spa-francorchamps.aspx'
     },
   monaco: {
+    pitCommitmentT: 0.89,
     id: 'monaco',
     trackWidthCars: 2,
     name: 'Circuit de Monaco',

@@ -8,6 +8,7 @@ import { StartLights } from './components/StartLights';
 import { RaceHeader } from './components/RaceHeader';
 import { Leaderboard } from './components/Leaderboard';
 import { BottomTelemetryDock } from './components/BottomTelemetryDock';
+import { BoxControls } from './components/BoxControls';
 import { RightStatsPanel } from './components/RightStatsPanel';
 import { PodiumModal } from './components/PodiumModal';
 import { HomeScreen } from './components/HomeScreen';
@@ -383,6 +384,7 @@ export const App: React.FC = () => {
 
         {/* ── HUD INFERIOR: CENTRADO DINÁMICAMENTE ── */}
         <div className={styles.bottomDockWrapper}>
+          <BoxControls key={favoriteCar.id + ':' + selectedCircuitId} car={favoriteCar} simulation={simulation} />
           <BottomTelemetryDock
             car={selectedCar || favoriteCar}
             onSelectCar={handleSelectCar}

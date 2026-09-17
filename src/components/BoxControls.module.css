@@ -1,0 +1,12 @@
+.controls { display:flex; flex-wrap:wrap; align-items:center; gap:8px 12px; padding:10px 14px; margin:0 auto 8px; max-width:1250px; width:96%; box-sizing:border-box; color:#f1f5f9; background:rgba(11,15,25,.97); border:1px solid #475569; border-radius:10px; font:13px 'Rajdhani',sans-serif; pointer-events:auto; }
+.identity { display:flex; flex-direction:column; margin-right:auto; }
+.identity strong { color:#fbbf24; }
+.identity span { color:#cbd5e1; }
+.controls label { display:flex; align-items:center; gap:6px; }
+.controls select,.controls button { font:inherit; color:#f8fafc; border:1px solid #64748b; background:#1e293b; padding:7px 10px; border-radius:5px; }
+.controls button { cursor:pointer; font-weight:700; }
+.controls button:disabled,.controls select:disabled { opacity:.45; cursor:default; }
+.controls button:focus-visible,.controls select:focus-visible { outline:2px solid #fbbf24; outline-offset:2px; }
+.message { width:100%; color:#cbd5e1; }
+.message span { color:#fbbf24; font-weight:700; }
+@media(max-width:700px) { .controls { font-size:12px; gap:6px; } .identity { width:100%; } }

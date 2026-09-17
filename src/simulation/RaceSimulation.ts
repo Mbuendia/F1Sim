@@ -24,6 +24,7 @@ import { FuelModel } from './FuelModel';
 import { EngineModel } from './EngineModel';
 import { DRSModel } from './DRSModel';
 import { PitStopModel } from './PitStopModel';
+import { commitmentT, nextCrossing, orderIsActive, updateOrderCommitment } from './BoxOrders';
 import { SafetyCarModel } from './SafetyCarModel';
 import { IncidentModel } from './IncidentModel';
 import { calculateCarWorldPosition } from '../utils/carPosition';
@@ -104,7 +105,10 @@ export class RaceSimulation {
     this.initRace();
   }
 
+  private nextBoxOrderId = 1;
+
   initRace() {
+    this.nextBoxOrderId = 1;
     this.raceTimeSec = 0;
     this.leaderLap = 0;
     this.isFinished = false;
@@ -300,7 +304,19 @@ export class RaceSimulation {
   }
 
   update(dtRaw: number) {
-    this.advanceSimulation(dtRaw);
+    // Pasos de <=50 ms simulados: los cruces se procesan también a x16/x32.
+    const steps = Math.max(1, Math.ceil(dtRaw * this.getEffectiveTimeScale() / 0.05));
+    for (let step = 0; step < steps; step++) {
+      const previous = this.cars.map(car => car.progress);
+      const racing = this.lightState === 'racing' && !this.isPaused && !this.isFinished;
+      this.advanceSimulation(dtRaw / steps);
+      if (racing) this.cars.forEach((car, index) => {
+        PitStopModel.processCrossings(car, previous[index], this.activeTrack,
+          dtRaw / steps * this.getEffectiveTimeScale(), this.raceFlagState, this.safetyCar.mode);
+        const order = car.pitStop.activeBoxOrder;
+        if (order?.status === 'consumed' && order.consumedAt === undefined) order.consumedAt = this.raceTimeSec;
+      });
+    }
     // Después de todas las ramas y ajustes del motor, antes de dibujar el frame.
     this.updateWorldPositions();
   }
@@ -1328,79 +1344,47 @@ export class RaceSimulation {
     this.weather.windSpeedKmh = Number((14.0 + Math.cos(this.raceTimeSec * 0.08) * 3.5).toFixed(1));
   }
 
-  // ── Q9: ÓRDENES DE BOXES VINCULANTES ──
-  
-  /**
-   * Issue a binding box order for a specific car.
-   * Player orders have absolute priority — if a player order already exists and is
-   * pending/accepted, an AI order will be rejected. A new player order replaces any
-   * existing order (including another player order).
-   * 
-   * The order goes through: pending → accepted → consumed.
-   * - pending: order created, car not yet in pit lane
-   * - accepted: car is committed to entering the pit lane
-   * - consumed: tire change completed with the ordered compound
-   */
+  // Órdenes del muro: aceptación no equivale a compromiso de entrada.
   issueBoxOrder(carId: number, compound: TireCompound, issuer: BoxOrderIssuer = 'player'): BoxOrder | null {
     const car = this.getCarById(carId);
-    if (!car || car.status !== 'running') return null;
-
-    // If car is already mid-service (past pit entry with tires being changed), reject
-    if (car.pitStop.isPitting && car.pitStop.pitLaneProgress >= 0.45 && car.pitStop.currentStopTimer > 0) {
-      return null;
+    if (!car || car.status !== 'running' || car.isInPitLane || car.pitStop.isPitting ||
+      this.lightState !== 'racing' || this.isFinished || this.raceFlagState === 'red' ||
+      !['soft', 'medium', 'hard', 'intermediate', 'wet'].includes(compound)) return null;
+    updateOrderCommitment(car);
+    const previous = car.pitStop.activeBoxOrder;
+    if (previous?.status === 'committed' || (issuer === 'ai' && car.pitStop.playerControlled)) return null;
+    if (orderIsActive(previous)) {
+      previous!.status = 'cancelled';
+      previous!.message = 'Sustituida por una nueva orden.';
     }
-
-    const existingOrder = car.pitStop.activeBoxOrder;
-
-    // AI cannot override a player order that's still active
-    if (issuer === 'ai' && existingOrder && existingOrder.issuer === 'player' && 
-        (existingOrder.status === 'pending' || existingOrder.status === 'accepted')) {
-      return null;
-    }
-
+    const commitmentProgress = nextCrossing(car.progress, commitmentT(this.activeTrack));
+    const entryProgress = nextCrossing(commitmentProgress, this.activeTrack.pitEntryT);
+    const deferred = entryProgress > nextCrossing(car.progress, this.activeTrack.pitEntryT) + 1e-10;
     const order: BoxOrder = {
-      id: `box_${carId}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-      carId,
-      issuer,
-      compound,
-      status: 'accepted',
-      createdAt: this.raceTimeSec,
+      id: 'box_' + carId + '_' + this.nextBoxOrderId++, carId, issuer, compound,
+      status: 'accepted', createdAt: this.raceTimeSec, commitmentProgress, entryProgress,
+      message: deferred ? 'Aceptada para la siguiente oportunidad: compromiso ya superado.' : 'Aceptada: puedes cancelar antes del compromiso.',
     };
-
     car.pitStop.activeBoxOrder = order;
     car.pitStop.targetCompound = compound;
-
-    // Schedule the pit stop for the next available lap if not already scheduled
-    if (!car.pitStop.isPitting) {
-      car.pitStop.scheduledLap = car.currentLap > 0 ? car.currentLap : 1;
-    }
-
+    if (issuer === 'player') car.pitStop.playerControlled = true;
+    // La orden sustituye la estrategia previa; no deja scheduledLap residual al cancelar.
+    car.pitStop.scheduledLap = 0;
     return order;
   }
 
-  /**
-   * Cancel a pending/accepted box order for a car.
-   * Cannot cancel a consumed order. Only cancels if the car hasn't entered the pit lane yet.
-   */
   cancelBoxOrder(carId: number): boolean {
     const car = this.getCarById(carId);
     if (!car) return false;
-
+    updateOrderCommitment(car);
     const order = car.pitStop.activeBoxOrder;
-    if (!order || order.status === 'consumed') return false;
-
-    // Can't cancel if already physically in pit lane
-    if (car.pitStop.isPitting || car.isInPitLane) return false;
-
-    car.pitStop.activeBoxOrder = null;
+    if (!order || order.status !== 'accepted' || car.isInPitLane || car.pitStop.isPitting || car.status !== 'running') return false;
+    order.status = 'cancelled';
+    order.message = 'Cancelada: sigue en pista. Pinchazo, desgaste crítico o roja pueden exigir otra entrada.';
     return true;
   }
 
-  /**
-   * Get the current box order for a car (if any).
-   */
   getBoxOrder(carId: number): BoxOrder | null {
-    const car = this.getCarById(carId);
-    return car?.pitStop.activeBoxOrder || null;
+    return this.getCarById(carId)?.pitStop.activeBoxOrder || null;
   }
 }

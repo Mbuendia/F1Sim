@@ -297,6 +297,9 @@ export function buildTrackFromSvg(circuit: CircuitSpec, sampleCount: number = 75
     points: splinePoints,
     pitLanePoints,
     pitEntryT,
+    // Fallback de decisión táctica a 120 m nominales de la entrada, no línea FIA.
+    pitCommitmentT: circuit.pitCommitmentT ?? ((pitEntryT - 120 / circuit.lapLengthMeters + 1) % 1),
+    pitCommitmentSource: 'calibrated',
     pitExitT,
     pitBoxT: 0.00,
     sector1EndT: 0.33,

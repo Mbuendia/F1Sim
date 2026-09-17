@@ -20,6 +20,8 @@ export interface TrackDefinition {
   points: SplinePoint[];
   pitLanePoints: Point2D[];
   pitEntryT: number;
+  pitCommitmentT?: number;
+  pitCommitmentSource?: 'calibrated';
   pitExitT: number;
   pitBoxT: number;
   sector1EndT: number;

@@ -18,11 +18,15 @@
 
 ## 🧭 2. ROADMAP Y ESTADO GLOBAL DE SPRINTS
 
-**Orden vigente:** Sprint **2.9** · Tarea actual **R01** · Siguiente **R02**.
+**Orden vigente:** Sprint **2.8** · Tarea actual **Q10** · Siguiente **Q11**.
 
-**Alcance vigente: exclusivamente planificación del próximo Sprint 2.9.** El usuario solicita integrar esta planificación desde `codex/planificacion` en `main` y subirla al remoto; no autoriza implementar mecánicas. R01/R02 señalan el orden propuesto de la primera entrega y siguen pendientes. Q1-Q5 están completadas; Q6-Q19 siguen pendientes y el Sprint 2.8 permanece en pausa. **Q6 queda expresamente excluida**, también del trabajo de escenarios que se solapaba con R23. No continuar ni refinar Sprint 2.8 en esta entrega. Los registros históricos posteriores no sustituyen este alcance.
+**Solicitud vigente: completar Q9 y Q10 en `sprint/2.8`, con commit/push autorizados expresamente el 18/09/2026.** Sustituye para esta entrega la planificación/publicación anterior de 2.9. No ampliar Q6, Q11 ni implementar reglas del Sprint 2.9.
 
-**Registro de publicación anterior:** Q5 y el contexto documental del backlog se subieron en `0577e76`. Las referencias posteriores a Q5 sin commit describen una fotografía anterior. La autorización actual de integración/publicación corresponde solo a la planificación de Sprint 2.9.
+**Refinamiento Q9/Q10 autorizado:** reutilizar la orden existente, añadir controles del muro para el piloto elegido en el paddock (mirar un rival no permite darle órdenes), acuse y compuesto vinculante. Orden aceptada/cancelable hasta cruce de compromiso, comprometida/irreversible después, consumida una sola vez al completar servicio. Llamada exactamente sobre la línea se considera posterior al cruce y espera la siguiente oportunidad. Línea calibrada por circuito (Barcelona/Mónaco explícitas; fallback por distancia previa a entrada, identificado como calibración, nunca FIA). Procesar intervalos de progreso, incluidos meta y pasos acelerados, con subpasos acotados; no reposicionar coches. La orden del jugador sustituye la programación automática y evita decisiones aleatorias de SC; cancelarla elimina esa solicitud, pero conserva entradas independientes por pinchazo/desgaste crítico o roja. Un único punto de servicio por equipo reutiliza Q11-1 sin añadir cola/doble gestión. Probar camino real del motor, cinco compuestos, dos servicios, límites/cancelación, emergencia, retirada/reset y UI; alinear también dashboard_visual.html.
+
+**Registro histórico de la solicitud anterior:** se planificó el Sprint 2.9 para publicación. Esa orden queda sustituida para el trabajo actual por Q9/Q10; no reanudar ahora su merge/push ni implementar sus R.
+
+**Registro de publicación anterior:** Q5 y el contexto documental del backlog se subieron en `0577e76`. Las referencias posteriores a Q5 sin commit describen una fotografía anterior. La nueva orden explícita del 18/09/2026 autoriza subir Q9/Q10 a sprint/2.8, sin merge a main.
 
 ```
 Leyenda de Estado:
@@ -37,8 +41,8 @@ Leyenda de Estado:
 | **Sprint 2** | SC Físico, Undercut/Overcut Orgánico, Monoplaza Vectorial 2D, Desdoblamiento | ✅ **COMPLETADO** |
 | **Sprint 2.1** | **Resolución de Bugs Críticos y Altos de Auditoría (C1-C7, A1-A6)** | ✅ **COMPLETADO (23/23 Tests PASS)** |
 | **Sprint 2.5** | **Deuda Técnica de Auditoría (M1-M10, B1-B7)** | ✅ **COMPLETADO (17/17 Tareas - 46 Tests PASS)** |
-| **Sprint 2.8** | **Salto de Calidad: Fidelidad de Simulación, Geometría, Muro Táctico y revisión DRS (Q1-Q19)** | 🟡 **Q1-Q5 aprobadas localmente; Q9-Q19 pendientes, Q6 expandida a todos los circuitos (Q6.1-Q6.21)** |
-| **Sprint 2.9** | **Reglamento FIA 2025, identidad técnica de equipos y experiencia de carrera (R01-R28)** | 🟡 **PLANIFICACIÓN ACTUAL — integración/publicación autorizadas; implementación pendiente de autorización** |
+| **Sprint 2.8** | **Salto de Calidad: Fidelidad de Simulación, Geometría, Muro Táctico y revisión DRS (Q1-Q19)** | 🟡 **Q1-Q8 y Q11-1 conservan su estado previo; Q9/Q10 implementadas y validadas; subida autorizada; Q11-Q19 pendientes; ampliaciones Q6.1-Q6.21 sin cambios** |
+| **Sprint 2.9** | **Reglamento FIA 2025, identidad técnica de equipos y experiencia de carrera (R01-R28)** | 🟡 **PLANIFICADO — sin implementación en esta entrega Q9/Q10** |
 | **Sprint 3** | **Audio, Telemetría Avanzada, Radar GPS & Clima (4 tareas definidas; desglose histórico de 16 incompleto)** | ⏳ **PLANIFICADO (Después del Sprint 2.9; coordinar clima con R22)** |
 | **Sprint 4** | **Épica: F1 Team Principal & Race Manager (estimación histórica de 12 tareas sin desglose)** | ⏳ **BACKLOG — requiere definición antes de implementar** |
 
@@ -299,20 +303,22 @@ Los 13 bugs críticos y altos detectados en la auditoría fueron implementados y
   * *Aceptación ampliada:* curva izquierda/derecha, enlazadas, adelantamiento y entrada/salida de boxes, continuidad de cámara/clic Q4. Engomado acotado a lo largo de varias vueltas, sin crecer durante pausa y sin regenerar neumáticos. Lluvia/lavado se integrarán con R22; no crear aquí otro motor meteorológico.
 
 ### 👔 Bloque C: Muro Táctico & Decisiones de Estrategia (100% Team Principal) (6 Tareas)
+
+**Resultado Q9/Q10 (18/09/2026):** 311 pruebas PASS, 0 FAIL (65 nuevas); compilación correcta, con aviso previo de bundle >500 kB. Probados los cinco compuestos, dos servicios sucesivos, prioridad, cancelación sin programación residual, llamada tardía, compromiso/meta/entrada en un frame a x16/x32, pinchazo, retirada, pausa y cambio de GP. En navegador: recorrido paddock→formación→salida, controles habilitados en carrera, aceptación y cancelación visibles para Alonso. La ejecución de los cinco compuestos y dos paradas está validada en el motor; no se afirma haber repetido todos esos casos mediante clics ni una carrera visual completa. Líneas calibradas (Barcelona 0.875, Mónaco 0.89; fallback nominal 120 m antes de entrada), sin acreditación FIA. Subpasos de hasta 50 ms simulados procesan cruces sin asignar posiciones; no garantizan determinismo integral del motor anterior. Q11/cola, Q6 y 2.9 no se amplían. Dashboard, índice y panel visual alineados; usuario autoriza commit/push a sprint/2.8.
 * **Q11-1 — Parada Dinámica por Cajón (Double Stack preparation):** `[x] COMPLETADO`
   * *Problema:* Todos los coches se detenían exactamente en el progreso de pit lane 0.45.
   * *Solución:* Asignar dinámicamente un progreso de parada por equipo (`0.3 + 0.4 * index/10`) y ajustar `test-suite.mjs`.
-  * *Test:* Modificada la suite de Q4, verificada parada física dinámica y asíncrona.
-* **Q9 — Órdenes de Boxes Vinculantes (Compuesto Elegido por el Jugador):** `[x] COMPLETADO`
+  * *Test:* Modificada la suite de Q4, verificada parada física dinámica y asíncrona. Q11-1 solo asigna un progreso de servicio por equipo; no implementa cola/doble gestión Q11. Q9/Q10 reutilizan `getBoxProgress` y rechazan cambios una vez comprometida la entrada, sin depender de 0.45.
+* **Q9 — Órdenes de Boxes Vinculantes (Compuesto Elegido por el Jugador):** `[x] COMPLETADO — SUBIDA AUTORIZADA`
   * *Problema:* `PitStopModel.ts`, el servicio puede sobrescribir el compuesto seleccionado aleatoriamente.
   * *Solución:* La elección del Team Principal (Soft, Medium, Hard, Intermediate, Wet) es absoluta y prioritaria; el modelo de boxes monta exactamente el compuesto ordenado y lo registra en el historial de stints.
   * *Test:* Llamada a boxes con compuesto específico (ej. 'hard') montando 'hard' en el 100% de los casos sin desvíos.
-  * *Contexto y archivos:* `PitStopState.targetCompound` ya existe, pero `PitStopModel.updatePitStop` sortea el compuesto al terminar el servicio. `shouldEnterPit` limita `scheduledLap` a la primera parada. Conectar una orden explícita en `RaceSimulation`, tipos en `f1.ts` y controles de muro en `App`/panel elegido; no basta con cambiar el texto del selector.
+  * *Revisión de la entrega previa:* existía API sin consumidores UI ni tests específicos. Completada ahora con `BoxControls` en App, destinatario fijo del paddock y acuses; `RaceSimulation` reutiliza la API, `BoxOrders` centraliza compromiso y `PitStopModel` monta el compuesto al completar servicio. La casilla histórica completada no acreditaba el recorrido completo; esta entrega añade integración y regresiones.
   * *Contrato y límites:* orden por coche con ID, emisor, compuesto y estado pendiente/aceptada/consumida; prioridad del jugador frente a IA, consumo exactamente una vez al completar servicio. Separar solicitud de parada, entrada física y cambio de ruedas; no renovar neumáticos al pulsar. Permitir segunda orden tras primera parada. R07 añadirá juegos/stock y R08 sanciones: prever rechazo explicado, sin sustitución silenciosa.
   * *Aceptación ampliada:* cinco compuestos por el camino real del motor, dos paradas sucesivas, SC, pinchazo, retirada y reinicio; selección, neumático montado, contador e historial de stints coinciden. La elección meteorológica óptima no forma parte de Q9.
 
-* **Q10 — Punto de Compromiso (Pit Commitment Line) y Cancelación de Parada:** `[ ] PENDIENTE`
-  * *Problema:* No existe ventana delimitada de compromiso para anular una llamada a boxes.
+* **Q10 — Punto de Compromiso (Pit Commitment Line) y Cancelación de Parada:** `[x] COMPLETADO — SUBIDA AUTORIZADA`
+  * *Problema corregido:* cancelar dejaba `scheduledLap` activo. Ahora la orden sustituye esa programación sin crear un disparador residual, conserva acuse cancelado y no se reactiva por decisión aleatoria bajo SC. Pinchazo, desgaste crítico o roja siguen siendo causas independientes.
   * *Solución:* Definir una línea de compromiso propia del circuito y una orden cancelable antes de cruzarla. La fórmula histórica `pitEntryT - 0.05` era un boceto; no usarla como dato FIA ni como valor universal. Antes de la línea, permitir "Abortar / Stay Out"; después, mostrar la entrada confirmada.
   * *Test:* Intentar cancelar parada antes y después de la línea de compromiso, validando el comportamiento esperado.
   * *Contexto y contrato:* ampliar la orden Q9, `CircuitSpec`, parser y `PitStopModel`. Detectar el cruce entre progreso previo y nuevo, también si la línea está antes de meta y entrada después. Una orden emitida después del compromiso se programa para la siguiente oportunidad válida; no saltar lateralmente a boxes. Documentar convención temporal cuando llamada/cancelación coinciden con el cruce; el motor devuelve acuse y motivo.

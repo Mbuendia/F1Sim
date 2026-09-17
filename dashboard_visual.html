@@ -992,27 +992,28 @@
 
             <!-- BLOQUE C: MURO TÁCTICO & ESTRATEGIA (100% TEAM PRINCIPAL) -->
             <div style="font-size: 12px; font-weight: 800; color: #06b6d4; margin: 14px 0 6px 4px; text-transform: uppercase; letter-spacing: 0.5px;">
-                👔 Bloque C: Muro Táctico & Decisiones de Estrategia (5 Tareas)
+                👔 Bloque C: Muro Táctico & Decisiones de Estrategia (6 Tareas) · Q9/Q10 completadas · 311 pruebas PASS
             </div>
-            <div class="task pending">
-                <input type="checkbox" id="t_q9">
+            <div class="task"><input type="checkbox" id="t_q11_1" checked><div class="task-content"><div class="task-title">Q11-1 · Progreso de cajón por equipo · COMPLETADO</div><div class="task-desc">Implementación previa conservada. Solo asigna el lugar de servicio; la cola y gestión dual Q11 siguen pendientes.</div></div></div>
+            <div class="task">
+                <input type="checkbox" id="t_q9" checked>
                 <div class="task-content">
                     <div class="task-title-row">
                         <div class="task-title"><span class="orderBadge">Q9</span><label for="t_q9">Q9. 🛑 Órdenes de Boxes Vinculantes (Compuesto Elegido por el Jugador)</label></div>
-                        <div class="tokensRow"><span class="badgeToken tokLevelHigh">🟠 Alta</span><span class="badgeToken tokGemini">♊ PitStopModel.ts / BottomTelemetryDock.tsx</span></div>
+                        <div class="tokensRow"><span class="badgeProgress">COMPLETADO · SUBIDA AUTORIZADA</span> <span class="badgeToken tokLevelHigh">🟠 Alta</span><span class="badgeToken tokGemini">♊ PitStopModel.ts / BottomTelemetryDock.tsx</span></div>
                     </div>
-                    <div class="task-desc">Hacer que la orden de parada y el compuesto seleccionado por el usuario (Soft, Medium, Hard, Inter, Wet) gobiernen de forma estricta la parada y el historial de stints sin selecciones aleatorias automáticas.</div>
+                    <div class="task-desc">IMPLEMENTADA Y VALIDADA: selector S/M/H/I/W, llamada vinculante para el piloto del paddock, aceptación y ejecución visibles. Prioridad sobre IA y dos servicios sucesivos con historial coherente.</div>
                 </div>
             </div>
 
-            <div class="task pending">
-                <input type="checkbox" id="t_q10">
+            <div class="task">
+                <input type="checkbox" id="t_q10" checked>
                 <div class="task-content">
                     <div class="task-title-row">
                         <div class="task-title"><span class="orderBadge">Q10</span><label for="t_q10">Q10. ⚠️ Punto de Compromiso (Pit Commitment Line) y Cancelación de Parada</label></div>
-                        <div class="tokensRow"><span class="badgeToken tokLevelMed">🟡 Media</span><span class="badgeToken tokGemini">♊ PitStopModel.ts / RaceSimulation.ts</span></div>
+                        <div class="tokensRow"><span class="badgeProgress">COMPLETADO · SUBIDA AUTORIZADA</span> <span class="badgeToken tokLevelMed">🟡 Media</span><span class="badgeToken tokGemini">♊ PitStopModel.ts / RaceSimulation.ts</span></div>
                     </div>
-                    <div class="task-desc">Establecer una línea de compromiso antes de pitEntryT donde el jugador puede abortar la parada ('Stay Out'). Una vez rebasada dicha línea, la entrada a boxes es irreversible.</div>
+                    <div class="task-desc">IMPLEMENTADA Y VALIDADA: cancelación antes del compromiso sin scheduledLap residual; después entrada confirmada. Llamada tardía espera otra oportunidad. Líneas calibradas por circuito, cruces de meta y pasos x16/x32.</div>
                 </div>
             </div>
 

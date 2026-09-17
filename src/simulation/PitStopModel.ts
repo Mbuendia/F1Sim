@@ -1,7 +1,8 @@
-import { CarState, TireCompound, StintLog, BoxOrder } from '../types/f1';
+import { CarState, TireCompound } from '../types/f1';
 import { TireModel } from './TireModel';
 import { TrackDefinition } from '../data/barcelonaTrack';
 import { TEAMS } from '../data/teams';
+import { nextCrossing, orderIsActive, updateOrderCommitment } from './BoxOrders';
 
 export class PitStopModel {
   static readonly PIT_SPEED_LIMIT_KMH = 80;
@@ -11,6 +12,7 @@ export class PitStopModel {
     if (car.tires.health <= 5.0 && !car.pitStop.isPitting) {
       return true;
     }
+    if (car.pitStop.playerControlled) return car.pitStop.activeBoxOrder?.status === 'committed';
     // [FIX M10] Parada estratégica programada al alcanzar scheduledLap
     if (
       car.pitStop &&
@@ -25,7 +27,7 @@ export class PitStopModel {
     if (
       car.pitStop &&
       car.pitStop.activeBoxOrder &&
-      car.pitStop.activeBoxOrder.status === 'accepted' &&
+      car.pitStop.activeBoxOrder.status === 'committed' &&
       !car.pitStop.isPitting
     ) {
       return true;
@@ -58,41 +60,7 @@ export class PitStopModel {
     const pitExitT = track ? track.pitExitT : 0.06;
     const pitLength = pitExitT > pitEntryThreshold ? (pitExitT - pitEntryThreshold) : ((1.0 - pitEntryThreshold) + pitExitT);
 
-    // [FIX PitStop] Evitar el bypass de la línea de meta: la ventana es solo a partir del pitEntry
-    const inEntryWindow = car.trackT >= pitEntryThreshold;
-
-    // Si nos han forzado isPitting (ej. Bandera Roja) pero aún no hemos entrado físicamente al pitlane
-    if (pit.isPitting && !car.isInPitLane) {
-      if (inEntryWindow) {
-        car.isInPitLane = true;
-      } else {
-        return false; // Seguimos en pista hasta llegar a la entrada
-      }
-    }
-    
-    if (!pit.isPitting && this.shouldEnterPit(car, dt, raceFlagState, scMode) && inEntryWindow) {
-      pit.isPitting = true;
-      car.isInPitLane = true;
-      pit.pitLaneProgress = 0.0;
-      // [Q9] Clear scheduledLap so it doesn't re-trigger after this stop completes
-      pit.scheduledLap = 0;
-
-      const roll = Math.random();
-      let stopDuration: number;
-      if (roll < 0.20) {
-        stopDuration = 1.8 + Math.random() * 0.4;
-      } else if (roll < 0.75) {
-        stopDuration = 2.2 + Math.random() * 0.8;
-      } else if (roll < 0.90) {
-        stopDuration = 3.0 + Math.random() * 1.0;
-      } else {
-        stopDuration = 4.0 + Math.random() * 4.0;
-      }
-      pit.stopDuration = Number(stopDuration.toFixed(2));
-      pit.currentStopTimer = 0;
-      pit.lastStopDuration = null;
-    }
-
+    // La entrada se decide por cruce de línea en processCrossings, nunca por una ventana >= t.
     if (pit.isPitting && car.isInPitLane) {
       // [FIX M9] Si ya ha completado el tránsito del pit lane, restaurar a running
       if (pit.pitLaneProgress >= 1.0) {
@@ -118,14 +86,12 @@ export class PitStopModel {
         }
       }
       
+      if (pit.entryProgress !== undefined) distanceInPit = Math.max(0, car.progress - pit.entryProgress);
       pit.pitLaneProgress = Math.min(1.0, distanceInPit / pitLength);
 
 
       // [Q11] Box específico por equipo en lugar de 0.45 fijo
-      const teamKeys = Object.keys(TEAMS);
-      const teamId = car.driver ? car.driver.teamId : undefined;
-      const teamIndex = teamId ? teamKeys.indexOf(teamId) : -1;
-      const boxProgress = teamIndex >= 0 ? 0.3 + (0.4 / teamKeys.length) * (teamIndex + 0.5) : 0.45;
+      const boxProgress = this.getBoxProgress(car);
 
       if (pit.pitLaneProgress < boxProgress) {
 
@@ -151,10 +117,11 @@ export class PitStopModel {
           let expectedLaps = 36;
 
           // [Q9] Si hay una orden de boxes vinculante, usarla con prioridad absoluta
-          if (pit.activeBoxOrder && (pit.activeBoxOrder.status === 'pending' || pit.activeBoxOrder.status === 'accepted')) {
+          if (pit.activeBoxOrder && pit.activeBoxOrder.status === 'committed') {
             nextCompound = pit.activeBoxOrder.compound;
             expectedLaps = this.getExpectedLapsForCompound(nextCompound);
             pit.activeBoxOrder.status = 'consumed';
+            pit.activeBoxOrder.message = 'Servicio completado: ' + nextCompound.toUpperCase() + ' montado.';
           } else {
             // Fallback AI: selección aleatoria según progreso de carrera
             const currentLap = car.currentLap;
@@ -216,6 +183,48 @@ export class PitStopModel {
     }
 
     return false;
+  }
+
+  static getBoxProgress(car: CarState): number {
+    const teams = Object.keys(TEAMS);
+    const index = teams.indexOf(car.driver?.teamId);
+    return index >= 0 ? 0.3 + 0.4 / teams.length * (index + 0.5) : 0.45;
+  }
+
+  static processCrossings(car: CarState, previousProgress: number, track: TrackDefinition,
+    dt: number, flag?: string, scMode?: string): void {
+    const pit = car.pitStop;
+    if (car.status === 'out' || car.status === 'finished') {
+      if (orderIsActive(pit.activeBoxOrder)) {
+        pit.activeBoxOrder!.status = 'rejected';
+        pit.activeBoxOrder!.message = 'Orden anulada: coche retirado o carrera terminada.';
+      }
+      return;
+    }
+    updateOrderCommitment(car);
+    if (car.isInPitLane || car.progress <= previousProgress) return;
+    const entry = nextCrossing(previousProgress, track.pitEntryT);
+    if (entry > car.progress + 1e-10) return;
+    const order = pit.activeBoxOrder;
+    const ordered = order?.status === 'committed' && order.entryProgress <= entry + 1e-10;
+    const emergency = car.hasPuncture || car.tires.health <= 5 || pit.isPitting;
+    const automatic = !pit.playerControlled && this.shouldEnterPit(car, dt, flag, scMode);
+    if (!ordered && !emergency && !automatic) return;
+    pit.isPitting = true;
+    car.isInPitLane = true;
+    car.status = 'pit';
+    pit.entryProgress = entry;
+    pit.pitLaneProgress = 0;
+    pit.scheduledLap = 0;
+    pit.currentStopTimer = 0;
+    pit.lastStopDuration = null;
+    const roll = Math.random();
+    pit.stopDuration = Number((roll < .2 ? 1.8 + Math.random() * .4 :
+      roll < .75 ? 2.2 + Math.random() * .8 : roll < .9 ? 3 + Math.random() : 4 + Math.random() * 4).toFixed(2));
+    if (orderIsActive(order)) {
+      order!.status = 'committed';
+      order!.message = emergency && !ordered ? 'Entrada de emergencia; se mantiene el compuesto solicitado.' : 'En boxes: compuesto confirmado.';
+    }
   }
 
   // [Q9] Expected laps per compound for stint history
