@@ -887,12 +887,16 @@ async function runTests() {
       }
       sim.lightState = 'racing';
       const car = sim.cars[0];
-      Object.assign(car, { progress: 1.02, currentLap: 1, isInPitLane: true, status: 'pit' });
+      Object.assign(car, { progress: 0.95, trackT: 0.95, currentLap: 1, isInPitLane: true, status: 'pit' });
       car.pitStop.isPitting = true;
       car.pitStop.pitLaneProgress = 0;
-      const oldProgress = car.progress;
-      sim.update(0.02);
-      assert(car.progress > oldProgress && positionsAreCurrent(), 'Q4: Boxes se sincroniza después de avanzar, sin retraso de un paso');
+        const oldProgress = car.progress;
+        sim.update(0.02);
+        const posOk = positionsAreCurrent();
+        if (!(car.progress > oldProgress) || !posOk) {
+          console.error(`Debug Q4: car.progress=${car.progress}, oldProgress=${oldProgress}, speed=${car.currentSpeedKmh}, pitLaneProgress=${car.pitStop.pitLaneProgress}, timer=${car.pitStop.currentStopTimer}, duration=${car.pitStop.stopDuration}`);
+        }
+        assert(car.progress > oldProgress && posOk, 'Q4: Boxes se sincroniza después de avanzar, sin retraso de un paso');
       Object.assign(car, { status: 'out', isRetiredVisible: true, currentSpeedKmh: 40 });
       sim.update(0.02);
       assert(positionsAreCurrent(), 'Q4: Retirados también mantienen su posición actual');
@@ -915,7 +919,7 @@ async function runTests() {
       sim.setCircuit('barcelona');
       sim.cars = [sim.cars[0]];
       const pitCar = sim.cars[0];
-      Object.assign(pitCar, { progress: 1 + sim.activeTrack.pitEntryT, currentLap: 1 });
+      Object.assign(pitCar, { progress: 1 + sim.activeTrack.pitEntryT, trackT: sim.activeTrack.pitEntryT, currentLap: 1 });
       pitCar.pitStop.scheduledLap = 1;
       sim.lightState = 'racing';
       sim.setSpeed(32);
@@ -927,8 +931,15 @@ async function runTests() {
         camera.update(sim.cars, 0.016, sim.activeTrack);
         entered ||= pitCar.isInPitLane;
         stopped ||= pitCar.isInPitLane && pitCar.currentSpeedKmh === 0;
-        aligned &&= positionsAreCurrent() && camera.targetX === pitCar.worldX && camera.targetY === pitCar.worldY;
+        const isAligned = positionsAreCurrent() && camera.targetX === pitCar.worldX && camera.targetY === pitCar.worldY;
+        if (!isAligned) {
+          console.error(`Debug Q4 full pit stop: posCurrent=${positionsAreCurrent()}, targetX=${camera.targetX}, worldX=${pitCar.worldX}, speed=${pitCar.currentSpeedKmh}, pitLaneProgress=${pitCar.pitStop.pitLaneProgress}`);
+        }
+        aligned &&= isAligned;
         exited = entered && !pitCar.isInPitLane;
+      }
+      if (!(entered && stopped && exited && aligned && pitCar.pitStop.totalPitStops === 1)) {
+        console.error(`Debug Q4 failed full pit stop: entered=${entered}, stopped=${stopped}, exited=${exited}, aligned=${aligned}, pitStops=${pitCar.pitStop.totalPitStops}`);
       }
       assert(entered && stopped && exited && aligned && pitCar.pitStop.totalPitStops === 1,
         'Q4: Parada completa del motor mantiene cámara/posición alineadas en entrada, servicio y salida');

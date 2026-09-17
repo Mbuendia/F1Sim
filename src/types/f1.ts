@@ -2,6 +2,21 @@ export type EngineMode = 'low' | 'standard' | 'push' | 'overtake';
 export type AggressionLevel = 'conservative' | 'balanced' | 'aggressive' | 'maximum';
 export type TireCompound = 'soft' | 'medium' | 'hard' | 'intermediate' | 'wet';
 
+// ── Q9: ÓRDENES DE BOXES VINCULANTES ──
+export type BoxOrderStatus = 'pending' | 'accepted' | 'consumed' | 'rejected';
+export type BoxOrderIssuer = 'player' | 'ai';
+
+export interface BoxOrder {
+  id: string;
+  carId: number;
+  issuer: BoxOrderIssuer;
+  compound: TireCompound;
+  status: BoxOrderStatus;
+  rejectionReason?: string;
+  createdAt: number;         // raceTimeSec when the order was created
+  consumedAt?: number;       // raceTimeSec when the order was consumed (tire change)
+}
+
 // ── SISTEMA DE BANDERAS Y SAFETY CAR ──
 export type RaceFlagState = 'green' | 'yellow' | 'double-yellow' | 'vsc' | 'sc' | 'red';
 
@@ -167,6 +182,7 @@ export interface PitStopState {
   lastStopDuration: number | null;
   targetCompound: TireCompound;
   stints: StintLog[];
+  activeBoxOrder: BoxOrder | null;   // Q9: Binding compound order
 }
 
 export type StartLightState = 

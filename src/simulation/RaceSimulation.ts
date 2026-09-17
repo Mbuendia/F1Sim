@@ -9,7 +9,10 @@ import {
   TrackIncident, 
   DnfNotification,
   TrackWeatherState,
-  D20LuckEvent
+  D20LuckEvent,
+  TireCompound,
+  BoxOrder,
+  BoxOrderIssuer
 } from '../types/f1';
 import { DRIVERS } from '../data/drivers';
 import { TEAMS, STARTING_GRID_ORDER } from '../data/teams';
@@ -241,6 +244,7 @@ export class RaceSimulation {
           totalPitStops: 0,
           lastStopDuration: null,
           targetCompound: 'hard',
+          activeBoxOrder: null,
           stints: [
             {
               stintNumber: 1,
@@ -1322,5 +1326,81 @@ export class RaceSimulation {
     this.weather.trackTempCelsius = Number((38.5 + tempOscillation).toFixed(1));
     this.weather.airTempCelsius = Number((24.2 + tempOscillation * 0.4).toFixed(1));
     this.weather.windSpeedKmh = Number((14.0 + Math.cos(this.raceTimeSec * 0.08) * 3.5).toFixed(1));
+  }
+
+  // ── Q9: ÓRDENES DE BOXES VINCULANTES ──
+  
+  /**
+   * Issue a binding box order for a specific car.
+   * Player orders have absolute priority — if a player order already exists and is
+   * pending/accepted, an AI order will be rejected. A new player order replaces any
+   * existing order (including another player order).
+   * 
+   * The order goes through: pending → accepted → consumed.
+   * - pending: order created, car not yet in pit lane
+   * - accepted: car is committed to entering the pit lane
+   * - consumed: tire change completed with the ordered compound
+   */
+  issueBoxOrder(carId: number, compound: TireCompound, issuer: BoxOrderIssuer = 'player'): BoxOrder | null {
+    const car = this.getCarById(carId);
+    if (!car || car.status !== 'running') return null;
+
+    // If car is already mid-service (past pit entry with tires being changed), reject
+    if (car.pitStop.isPitting && car.pitStop.pitLaneProgress >= 0.45 && car.pitStop.currentStopTimer > 0) {
+      return null;
+    }
+
+    const existingOrder = car.pitStop.activeBoxOrder;
+
+    // AI cannot override a player order that's still active
+    if (issuer === 'ai' && existingOrder && existingOrder.issuer === 'player' && 
+        (existingOrder.status === 'pending' || existingOrder.status === 'accepted')) {
+      return null;
+    }
+
+    const order: BoxOrder = {
+      id: `box_${carId}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      carId,
+      issuer,
+      compound,
+      status: 'accepted',
+      createdAt: this.raceTimeSec,
+    };
+
+    car.pitStop.activeBoxOrder = order;
+    car.pitStop.targetCompound = compound;
+
+    // Schedule the pit stop for the next available lap if not already scheduled
+    if (!car.pitStop.isPitting) {
+      car.pitStop.scheduledLap = car.currentLap > 0 ? car.currentLap : 1;
+    }
+
+    return order;
+  }
+
+  /**
+   * Cancel a pending/accepted box order for a car.
+   * Cannot cancel a consumed order. Only cancels if the car hasn't entered the pit lane yet.
+   */
+  cancelBoxOrder(carId: number): boolean {
+    const car = this.getCarById(carId);
+    if (!car) return false;
+
+    const order = car.pitStop.activeBoxOrder;
+    if (!order || order.status === 'consumed') return false;
+
+    // Can't cancel if already physically in pit lane
+    if (car.pitStop.isPitting || car.isInPitLane) return false;
+
+    car.pitStop.activeBoxOrder = null;
+    return true;
+  }
+
+  /**
+   * Get the current box order for a car (if any).
+   */
+  getBoxOrder(carId: number): BoxOrder | null {
+    const car = this.getCarById(carId);
+    return car?.pitStop.activeBoxOrder || null;
   }
 }

@@ -1,6 +1,7 @@
-import { CarState, TireCompound, StintLog } from '../types/f1';
+import { CarState, TireCompound, StintLog, BoxOrder } from '../types/f1';
 import { TireModel } from './TireModel';
 import { TrackDefinition } from '../data/barcelonaTrack';
+import { TEAMS } from '../data/teams';
 
 export class PitStopModel {
   static readonly PIT_SPEED_LIMIT_KMH = 80;
@@ -16,8 +17,16 @@ export class PitStopModel {
       car.pitStop.scheduledLap !== undefined &&
       car.pitStop.scheduledLap > 0 &&
       car.currentLap >= car.pitStop.scheduledLap &&
-      !car.pitStop.isPitting &&
-      car.pitStop.totalPitStops === 0
+      !car.pitStop.isPitting
+    ) {
+      return true;
+    }
+    // [Q9] Parada bajo orden de boxes vinculante aceptada
+    if (
+      car.pitStop &&
+      car.pitStop.activeBoxOrder &&
+      car.pitStop.activeBoxOrder.status === 'accepted' &&
+      !car.pitStop.isPitting
     ) {
       return true;
     }
@@ -65,6 +74,8 @@ export class PitStopModel {
       pit.isPitting = true;
       car.isInPitLane = true;
       pit.pitLaneProgress = 0.0;
+      // [Q9] Clear scheduledLap so it doesn't re-trigger after this stop completes
+      pit.scheduledLap = 0;
 
       const roll = Math.random();
       let stopDuration: number;
@@ -109,7 +120,15 @@ export class PitStopModel {
       
       pit.pitLaneProgress = Math.min(1.0, distanceInPit / pitLength);
 
-      if (pit.pitLaneProgress < 0.45) {
+
+      // [Q11] Box específico por equipo en lugar de 0.45 fijo
+      const teamKeys = Object.keys(TEAMS);
+      const teamId = car.driver ? car.driver.teamId : undefined;
+      const teamIndex = teamId ? teamKeys.indexOf(teamId) : -1;
+      const boxProgress = teamIndex >= 0 ? 0.3 + (0.4 / teamKeys.length) * (teamIndex + 0.5) : 0.45;
+
+      if (pit.pitLaneProgress < boxProgress) {
+
         // Entrando al pit box
         if (pit.pitLaneProgress < 0.05) {
           car.currentSpeedKmh = Math.max(this.PIT_SPEED_LIMIT_KMH, car.currentSpeedKmh - dt * 280);
@@ -117,33 +136,45 @@ export class PitStopModel {
           car.currentSpeedKmh = this.PIT_SPEED_LIMIT_KMH;
         }
       } 
-      else if (pit.pitLaneProgress >= 0.45 && pit.currentStopTimer < pit.stopDuration) {
+      else if (pit.pitLaneProgress >= boxProgress && pit.currentStopTimer < pit.stopDuration) {
         // Parada en el pit box (congelamos velocidad, la posición no avanza)
         pit.currentStopTimer += dt;
         car.currentSpeedKmh = 0;
       }
 
       // Al completar o sobrepasar el tiempo de parada en el pit box
-      if (pit.pitLaneProgress >= 0.45 && pit.currentStopTimer >= pit.stopDuration) {
+      if (pit.pitLaneProgress >= boxProgress && pit.currentStopTimer >= pit.stopDuration) {
         if (pit.lastStopDuration !== pit.stopDuration) {
           pit.lastStopDuration = pit.stopDuration;
           
           let nextCompound: TireCompound = 'hard';
           let expectedLaps = 36;
-          const currentLap = car.currentLap;
 
-          if (currentLap < totalLaps * 0.4) {
-            nextCompound = Math.random() > 0.5 ? 'medium' : 'hard';
-            expectedLaps = nextCompound === 'hard' ? 36 : 24;
-          } else if (currentLap > totalLaps * 0.7) {
-            nextCompound = Math.random() > 0.5 ? 'soft' : 'medium';
-            expectedLaps = nextCompound === 'medium' ? 24 : 16;
+          // [Q9] Si hay una orden de boxes vinculante, usarla con prioridad absoluta
+          if (pit.activeBoxOrder && (pit.activeBoxOrder.status === 'pending' || pit.activeBoxOrder.status === 'accepted')) {
+            nextCompound = pit.activeBoxOrder.compound;
+            expectedLaps = this.getExpectedLapsForCompound(nextCompound);
+            pit.activeBoxOrder.status = 'consumed';
           } else {
-            const r = Math.random();
-            if (r < 0.33) { nextCompound = 'soft'; expectedLaps = 16; } 
-            else if (r < 0.66) { nextCompound = 'medium'; expectedLaps = 24; } 
-            else { nextCompound = 'hard'; expectedLaps = 36; }
+            // Fallback AI: selección aleatoria según progreso de carrera
+            const currentLap = car.currentLap;
+
+            if (currentLap < totalLaps * 0.4) {
+              nextCompound = Math.random() > 0.5 ? 'medium' : 'hard';
+              expectedLaps = nextCompound === 'hard' ? 36 : 24;
+            } else if (currentLap > totalLaps * 0.7) {
+              nextCompound = Math.random() > 0.5 ? 'soft' : 'medium';
+              expectedLaps = nextCompound === 'medium' ? 24 : 16;
+            } else {
+              const r = Math.random();
+              if (r < 0.33) { nextCompound = 'soft'; expectedLaps = 16; } 
+              else if (r < 0.66) { nextCompound = 'medium'; expectedLaps = 24; } 
+              else { nextCompound = 'hard'; expectedLaps = 36; }
+            }
           }
+
+          // [Q9] Actualizar targetCompound para reflejar lo realmente montado
+          pit.targetCompound = nextCompound;
 
           car.tires = TireModel.createFreshTire(nextCompound);
           car.hasPuncture = false; // [FIX A5] Clear puncture after tires are changed
@@ -185,5 +216,17 @@ export class PitStopModel {
     }
 
     return false;
+  }
+
+  // [Q9] Expected laps per compound for stint history
+  static getExpectedLapsForCompound(compound: TireCompound): number {
+    switch (compound) {
+      case 'soft': return 16;
+      case 'medium': return 24;
+      case 'hard': return 36;
+      case 'intermediate': return 30;
+      case 'wet': return 25;
+      default: return 24;
+    }
   }
 }

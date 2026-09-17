@@ -298,8 +298,12 @@ Los 13 bugs críticos y altos detectados en la auditoría fueron implementados y
   * *Contrato propuesto:* precalcular offset ideal continuo a partir de curvas verificadas, con margen para la huella Q1/Q7 y unión suave en meta; componer ideal + maniobra sin salir de pista ni cambiar la ruta de boxes Q2. Acumular goma por distancia realmente recorrida y paso de coches, con saturación y estado reiniciable, independiente de FPS. El agarre alimenta el movimiento; la opacidad solo representa ese estado.
   * *Aceptación ampliada:* curva izquierda/derecha, enlazadas, adelantamiento y entrada/salida de boxes, continuidad de cámara/clic Q4. Engomado acotado a lo largo de varias vueltas, sin crecer durante pausa y sin regenerar neumáticos. Lluvia/lavado se integrarán con R22; no crear aquí otro motor meteorológico.
 
-### 👔 Bloque C: Muro Táctico & Decisiones de Estrategia (100% Team Principal) (5 Tareas)
-* **Q9 — Órdenes de Boxes Vinculantes (Compuesto Elegido por el Jugador):** `[ ] PENDIENTE`
+### 👔 Bloque C: Muro Táctico & Decisiones de Estrategia (100% Team Principal) (6 Tareas)
+* **Q11-1 — Parada Dinámica por Cajón (Double Stack preparation):** `[x] COMPLETADO`
+  * *Problema:* Todos los coches se detenían exactamente en el progreso de pit lane 0.45.
+  * *Solución:* Asignar dinámicamente un progreso de parada por equipo (`0.3 + 0.4 * index/10`) y ajustar `test-suite.mjs`.
+  * *Test:* Modificada la suite de Q4, verificada parada física dinámica y asíncrona.
+* **Q9 — Órdenes de Boxes Vinculantes (Compuesto Elegido por el Jugador):** `[x] COMPLETADO`
   * *Problema:* `PitStopModel.ts`, el servicio puede sobrescribir el compuesto seleccionado aleatoriamente.
   * *Solución:* La elección del Team Principal (Soft, Medium, Hard, Intermediate, Wet) es absoluta y prioritaria; el modelo de boxes monta exactamente el compuesto ordenado y lo registra en el historial de stints.
   * *Test:* Llamada a boxes con compuesto específico (ej. 'hard') montando 'hard' en el 100% de los casos sin desvíos.
