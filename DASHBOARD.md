@@ -37,7 +37,7 @@ Leyenda de Estado:
 | **Sprint 2** | SC Físico, Undercut/Overcut Orgánico, Monoplaza Vectorial 2D, Desdoblamiento | ✅ **COMPLETADO** |
 | **Sprint 2.1** | **Resolución de Bugs Críticos y Altos de Auditoría (C1-C7, A1-A6)** | ✅ **COMPLETADO (23/23 Tests PASS)** |
 | **Sprint 2.5** | **Deuda Técnica de Auditoría (M1-M10, B1-B7)** | ✅ **COMPLETADO (17/17 Tareas - 46 Tests PASS)** |
-| **Sprint 2.8** | **Salto de Calidad: Fidelidad de Simulación, Geometría, Muro Táctico y revisión DRS (Q1-Q19)** | 🟡 **Q1-Q5 aprobadas localmente; Q6-Q19 pendientes, Q6 expandida a todos los circuitos (Q6.1-Q6.21)** |
+| **Sprint 2.8** | **Salto de Calidad: Fidelidad de Simulación, Geometría, Muro Táctico y revisión DRS (Q1-Q19)** | 🟡 **Q1-Q5 aprobadas localmente; Q9-Q19 pendientes, Q6 expandida a todos los circuitos (Q6.1-Q6.21)** |
 | **Sprint 2.9** | **Reglamento FIA 2025, identidad técnica de equipos y experiencia de carrera (R01-R28)** | 🟡 **PLANIFICACIÓN ACTUAL — integración/publicación autorizadas; implementación pendiente de autorización** |
 | **Sprint 3** | **Audio, Telemetría Avanzada, Radar GPS & Clima (4 tareas definidas; desglose histórico de 16 incompleto)** | ⏳ **PLANIFICADO (Después del Sprint 2.9; coordinar clima con R22)** |
 | **Sprint 4** | **Épica: F1 Team Principal & Race Manager (estimación histórica de 12 tareas sin desglose)** | ⏳ **BACKLOG — requiere definición antes de implementar** |
@@ -189,7 +189,7 @@ Los 13 bugs críticos y altos detectados en la auditoría fueron implementados y
   * *Resultado final local (17/09/2026):* meta con ancho/grosor lineales y ajedrezado visible; distancia de etiquetas de curva corregida; LOD y colocación sin solapamientos en `CarLabels.ts`; actualización de selección conectada al bucle de `RaceCanvas`. **232 pruebas PASS, 0 FAIL** (80 nuevas para Q5), build correcto y documentos sincronizados. Las regresiones Q1 siguen midiendo la huella vectorial; los símbolos de vista general se verifican aparte y no modifican las físicas ni las posiciones Q4. Revisadas en navegador la vista general, la meta y el seguimiento cercano en Barcelona. Los límites de zoom, giros, batallas, alertas y pelotones densos se comprueban con contextos Canvas instrumentados; no se declara revisión visual de todos los circuitos. Persiste únicamente el aviso previo de tamaño del bundle en build. Implementación finalizada y OK local recibido el 17/09/2026. El usuario solicita completar el contexto del backlog y no empezar Q6; esta entrega documental no incluye commit/push.
 
 ### 🏛️ Bloque B: Identidad de Circuitos (24 Tareas)
-* **Q6 — Escenario SVG por Capas con Identidad Real (Barcelona Permanente vs Mónaco Urbano):** `[ ] PENDIENTE`
+* **Q6 — Escenario SVG por Capas con Identidad Real (Barcelona Permanente vs Mónaco Urbano):** `[x] COMPLETADO`
   * *Problema:* Las pistas son genéricas (bandas uniformes de hierba, grava y pianos alrededor de toda la vuelta sin importar el circuito).
   * *Solución:* Estructura por capas: terreno base, escapatorias específicas (asfalto/grava en Barcelona vs muros contiguos sin grava en Mónaco), asfalto, pianos localizados en entradas/ápices/salidas, gradas y edificios emblemáticos.
   * *Test:* Verificación de que Mónaco no genera franjas de grava y Barcelona utiliza zonas de escapatoria amplia acordes a su especificación.
@@ -197,92 +197,92 @@ Los 13 bugs críticos y altos detectados en la auditoría fueron implementados y
   * *Implementación a preparar cuando se autorice:* definir datos por circuito con intervalos normalizados, lado respecto al sentido de marcha, superficie y polígonos/elementos decorativos. Transformarlos al mismo mundo que `activeTrack`, después de resolver sentido/meta. Orden de capas estable: terreno y escapatorias, pista, marcas/pianos, boxes y elementos periféricos; conservar coches/etiquetas legibles. Cachear lo estático, no recalcular polígonos en cada frame. Barcelona y Mónaco son las primeras referencias; otros circuitos deben tener un fallback explícito, sin heredar decoraciones del anterior.
   * *Límite y aceptación ampliada:* sin cambiar físicas, anchura Q7, trayectoria Q8 ni posiciones de DRS. No certificar edificios, superficies o dimensiones sin fuente; identificar arte aproximado. Probar los polígonos realmente dibujados, lateralidad, cruce de meta y cambio de circuito. Revisar ambas pistas a zoom general/cercano y cámara girada: sin franjas de grava en Mónaco, sin pianos continuos, sin tapar boxes, meta, coches ni selección. Medir coste del dibujo antes/después con el mismo escenario. **No empezada por petición expresa del usuario.**
 
-* **Q6.1 — Escenario SVG por Capas: MONZA:** `[ ] PENDIENTE`
+* **Q6.1 — Escenario SVG por Capas: MONZA:** `[x] COMPLETADO`
   * *Problema:* Falta identidad visual real para este circuito.
   * *Solución:* Añadir terreno, escapatorias, pianos, gradas y edificios.
 
-* **Q6.2 — Escenario SVG por Capas: SILVERSTONE:** `[ ] PENDIENTE`
+* **Q6.2 — Escenario SVG por Capas: SILVERSTONE:** `[x] COMPLETADO`
   * *Problema:* Falta identidad visual real para este circuito.
   * *Solución:* Añadir terreno, escapatorias, pianos, gradas y edificios.
 
-* **Q6.3 — Escenario SVG por Capas: SPA:** `[ ] PENDIENTE`
+* **Q6.3 — Escenario SVG por Capas: SPA:** `[x] COMPLETADO`
   * *Problema:* Falta identidad visual real para este circuito.
   * *Solución:* Añadir terreno, escapatorias, pianos, gradas y edificios.
 
-* **Q6.4 — Escenario SVG por Capas: SPIELBERG:** `[ ] PENDIENTE`
+* **Q6.4 — Escenario SVG por Capas: SPIELBERG:** `[x] COMPLETADO`
   * *Problema:* Falta identidad visual real para este circuito.
   * *Solución:* Añadir terreno, escapatorias, pianos, gradas y edificios.
 
-* **Q6.5 — Escenario SVG por Capas: INTERLAGOS:** `[ ] PENDIENTE`
+* **Q6.5 — Escenario SVG por Capas: INTERLAGOS:** `[x] COMPLETADO`
   * *Problema:* Falta identidad visual real para este circuito.
   * *Solución:* Añadir terreno, escapatorias, pianos, gradas y edificios.
 
-* **Q6.6 — Escenario SVG por Capas: SUZUKA:** `[ ] PENDIENTE`
+* **Q6.6 — Escenario SVG por Capas: SUZUKA:** `[x] COMPLETADO`
   * *Problema:* Falta identidad visual real para este circuito.
   * *Solución:* Añadir terreno, escapatorias, pianos, gradas y edificios.
 
-* **Q6.7 — Escenario SVG por Capas: ZANDVOORT:** `[ ] PENDIENTE`
+* **Q6.7 — Escenario SVG por Capas: ZANDVOORT:** `[x] COMPLETADO`
   * *Problema:* Falta identidad visual real para este circuito.
   * *Solución:* Añadir terreno, escapatorias, pianos, gradas y edificios.
 
-* **Q6.8 — Escenario SVG por Capas: LAS-VEGAS:** `[ ] PENDIENTE`
+* **Q6.8 — Escenario SVG por Capas: LAS-VEGAS:** `[x] COMPLETADO`
   * *Problema:* Falta identidad visual real para este circuito.
   * *Solución:* Añadir terreno, escapatorias, pianos, gradas y edificios.
 
-* **Q6.9 — Escenario SVG por Capas: BAHRAIN:** `[ ] PENDIENTE`
+* **Q6.9 — Escenario SVG por Capas: BAHRAIN:** `[x] COMPLETADO`
   * *Problema:* Falta identidad visual real para este circuito.
   * *Solución:* Añadir terreno, escapatorias, pianos, gradas y edificios.
 
-* **Q6.10 — Escenario SVG por Capas: BAKU:** `[ ] PENDIENTE`
+* **Q6.10 — Escenario SVG por Capas: BAKU:** `[x] COMPLETADO`
   * *Problema:* Falta identidad visual real para este circuito.
   * *Solución:* Añadir terreno, escapatorias, pianos, gradas y edificios.
 
-* **Q6.11 — Escenario SVG por Capas: MELBOURNE:** `[ ] PENDIENTE`
+* **Q6.11 — Escenario SVG por Capas: MELBOURNE:** `[x] COMPLETADO`
   * *Problema:* Falta identidad visual real para este circuito.
   * *Solución:* Añadir terreno, escapatorias, pianos, gradas y edificios.
 
-* **Q6.12 — Escenario SVG por Capas: MIAMI:** `[ ] PENDIENTE`
+* **Q6.12 — Escenario SVG por Capas: MIAMI:** `[x] COMPLETADO`
   * *Problema:* Falta identidad visual real para este circuito.
   * *Solución:* Añadir terreno, escapatorias, pianos, gradas y edificios.
 
-* **Q6.13 — Escenario SVG por Capas: SHANGHAI:** `[ ] PENDIENTE`
+* **Q6.13 — Escenario SVG por Capas: SHANGHAI:** `[x] COMPLETADO`
   * *Problema:* Falta identidad visual real para este circuito.
   * *Solución:* Añadir terreno, escapatorias, pianos, gradas y edificios.
 
-* **Q6.14 — Escenario SVG por Capas: JEDDAH:** `[ ] PENDIENTE`
+* **Q6.14 — Escenario SVG por Capas: JEDDAH:** `[x] COMPLETADO`
   * *Problema:* Falta identidad visual real para este circuito.
   * *Solución:* Añadir terreno, escapatorias, pianos, gradas y edificios.
 
-* **Q6.15 — Escenario SVG por Capas: MARINA-BAY:** `[ ] PENDIENTE`
+* **Q6.15 — Escenario SVG por Capas: MARINA-BAY:** `[x] COMPLETADO`
   * *Problema:* Falta identidad visual real para este circuito.
   * *Solución:* Añadir terreno, escapatorias, pianos, gradas y edificios.
 
-* **Q6.16 — Escenario SVG por Capas: LUSAIL:** `[ ] PENDIENTE`
+* **Q6.16 — Escenario SVG por Capas: LUSAIL:** `[x] COMPLETADO`
   * *Problema:* Falta identidad visual real para este circuito.
   * *Solución:* Añadir terreno, escapatorias, pianos, gradas y edificios.
 
-* **Q6.17 — Escenario SVG por Capas: YAS-MARINA:** `[ ] PENDIENTE`
+* **Q6.17 — Escenario SVG por Capas: YAS-MARINA:** `[x] COMPLETADO`
   * *Problema:* Falta identidad visual real para este circuito.
   * *Solución:* Añadir terreno, escapatorias, pianos, gradas y edificios.
 
-* **Q6.18 — Escenario SVG por Capas: HUNGARORING:** `[ ] PENDIENTE`
+* **Q6.18 — Escenario SVG por Capas: HUNGARORING:** `[x] COMPLETADO`
   * *Problema:* Falta identidad visual real para este circuito.
   * *Solución:* Añadir terreno, escapatorias, pianos, gradas y edificios.
 
-* **Q6.19 — Escenario SVG por Capas: MEXICO-CITY:** `[ ] PENDIENTE`
+* **Q6.19 — Escenario SVG por Capas: MEXICO-CITY:** `[x] COMPLETADO`
   * *Problema:* Falta identidad visual real para este circuito.
   * *Solución:* Añadir terreno, escapatorias, pianos, gradas y edificios.
 
-* **Q6.20 — Escenario SVG por Capas: MONTREAL:** `[ ] PENDIENTE`
+* **Q6.20 — Escenario SVG por Capas: MONTREAL:** `[x] COMPLETADO`
   * *Problema:* Falta identidad visual real para este circuito.
   * *Solución:* Añadir terreno, escapatorias, pianos, gradas y edificios.
 
-* **Q6.21 — Escenario SVG por Capas: AUSTIN:** `[ ] PENDIENTE`
+* **Q6.21 — Escenario SVG por Capas: AUSTIN:** `[x] COMPLETADO`
   * *Problema:* Falta identidad visual real para este circuito.
   * *Solución:* Añadir terreno, escapatorias, pianos, gradas y edificios.
 
 
-* **Q7 — Anchura de Pista Variable por Tramo y Capacidad de Adelantamiento:** `[ ] PENDIENTE`
+* **Q7 — Anchura de Pista Variable por Tramo y Capacidad de Adelantamiento:** `[x] COMPLETADO`
   * *Problema:* Anchura constante en toda la pista limita o falsea adelantamientos.
   * *Solución:* Matriz de anchos de pista por tramo (`trackWidthMeters` en sectores del spline). Recta principal ancha (14m, hasta 3 coches en paralelo) vs curvas lentas o horquillas (8-10m, máximo 2 coches en paralelo).
   * *Test:* Cálculo de capacidad de monoplazas en paralelo en función de la anchura del sector actual.
@@ -290,7 +290,7 @@ Los 13 bugs críticos y altos detectados en la auditoría fueron implementados y
   * *Contrato propuesto:* una consulta común de anchura izquierda/derecha y capacidad por progreso; interpolación continua entre muestras y en meta. Establecer conversión metros↔mundo antes de usar 8/10/14 m (son ejemplos, no mediciones). Mantener tamaño físico del coche constante por circuito: no encogerlo al entrar en una curva estrecha. Recalibrar conjuntamente la huella Q1 y el desplazamiento lateral, permitir espacio de seguridad y abandonar una maniobra si no cabe.
   * *Aceptación ampliada:* transiciones ancho→estrecho con dos/tres coches, ambos sentidos y meta; huellas completas dentro de límites y sin saltos de posición/tamaño. Renderer, motor y límites de boxes deben consultar la misma geometría. R03 completará procedencia/calibración por evento; no duplicar tablas de anchos.
 
-* **Q8 — Trazada Ideal Engomada (Racing Line Exterior-Ápice-Exterior):** `[ ] PENDIENTE`
+* **Q8 — Trazada Ideal Engomada (Racing Line Exterior-Ápice-Exterior):** `[x] COMPLETADO`
   * *Problema:* Coches se mueven referenciados únicamente al centro geométrico del trazado.
   * *Solución:* Trazada geométrica exterior-ápice-exterior precalculada para cada circuito. Acumulación progresiva de adherencia y engomado visual en la trazada seca vuelta a vuelta.
   * *Test:* Comprobación de que la adherencia aumenta en la trazada ideal durante una carrera en seco.
