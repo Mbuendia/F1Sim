@@ -581,6 +581,30 @@ export class RaceSimulation {
         slipstreamBonus * 
         raceDayVariance;
 
+      // Q8: Dynamic Rubber Grip Accumulation
+      // If car is close to the ideal line, increase pace slightly.
+      const lateralDiff = Math.abs(car.lateralOffset - (trackPoint.idealLineOffset || 0));
+      const isOnIdealLine = lateralDiff < 0.25;
+      
+      if (isOnIdealLine) {
+        // Boost pace based on accumulated rubber grip (up to +2%)
+        effectivePace *= (1.0 + trackPoint.rubberGrip * 0.02);
+        
+        // Accumulate rubber (only if running normal race conditions)
+        if (this.raceFlagState === 'green') {
+          // Increment grip slowly (max 1.0)
+          trackPoint.rubberGrip = Math.min(1.0, trackPoint.rubberGrip + 0.00015 * dt);
+        }
+      } else {
+        // Penalty for driving offline (marbles/dirt)
+        effectivePace *= 0.985;
+      }
+
+      // Automatically try to follow the ideal racing line if not overtaking/blue flagged
+      if (!car.isOvertaking && !car.isBlueFlagged && this.raceFlagState === 'green' && !car.pitStop.isPitting && !car.isInPitLane) {
+        car.targetLateralOffset = trackPoint.idealLineOffset || 0;
+      }
+
       if (car.hasPuncture) {
         effectivePace *= 0.35;
       }

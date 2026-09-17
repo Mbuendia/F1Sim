@@ -97,16 +97,61 @@ export class TrackRenderer {
     }
 
     // ── ASFALTO BASE DEL CIRCUITO (común a ambos modos) ──
-    buildPath();
-    ctx.strokeStyle = isWet ? '#161922' : '#272b35';
-    ctx.lineWidth = trackWidth;
-    ctx.stroke();
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
 
-    // ── TRAZADA ENGOMADA (RACING LINE) ──
-    buildPath();
-    ctx.strokeStyle = isWet ? '#0d1017' : '#14161c';
-    ctx.lineWidth = trackWidth * 0.54;
-    ctx.stroke();
+    // Q7: Dynamic track width rendering
+    for (let i = 0; i < n; i++) {
+      const p1 = points[i];
+      const p2 = points[(i + 1) % n];
+      const sp1 = camera.worldToScreen(p1.x, p1.y);
+      const sp2 = camera.worldToScreen(p2.x, p2.y);
+      const segTrackWidthMeters = p1.trackWidthMeters || track.trackWidthMeters || 26;
+      const segWidthPx = segTrackWidthMeters * 1.75 * zoom;
+      
+      ctx.beginPath();
+      ctx.moveTo(sp1.x, sp1.y);
+      ctx.lineTo(sp2.x, sp2.y);
+      ctx.strokeStyle = isWet ? '#161922' : '#272b35';
+      ctx.lineWidth = segWidthPx;
+      ctx.stroke();
+    }
+
+    // ── TRAZADA ENGOMADA (RACING LINE) Q8 ──
+    // Q8: Ideal racing line with rubber grip accumulation
+    for (let i = 0; i < n; i++) {
+      const p1 = points[i];
+      const p2 = points[(i + 1) % n];
+      const hw1 = ((p1.trackWidthMeters || track.trackWidthMeters || 26) * 1.75) / 2;
+      const hw2 = ((p2.trackWidthMeters || track.trackWidthMeters || 26) * 1.75) / 2;
+      const offset1 = (p1.idealLineOffset || 0) * hw1;
+      const offset2 = (p2.idealLineOffset || 0) * hw2;
+      
+      const wx1 = p1.x + p1.normal.x * offset1;
+      const wy1 = p1.y + p1.normal.y * offset1;
+      const wx2 = p2.x + p2.normal.x * offset2;
+      const wy2 = p2.y + p2.normal.y * offset2;
+      
+      const sp1 = camera.worldToScreen(wx1, wy1);
+      const sp2 = camera.worldToScreen(wx2, wy2);
+      
+      ctx.beginPath();
+      ctx.moveTo(sp1.x, sp1.y);
+      ctx.lineTo(sp2.x, sp2.y);
+      
+      // Calculate opacity based on rubber grip (starts barely visible, gets darker)
+      const grip = p1.rubberGrip || 0;
+      const opacity = Math.min(1.0, 0.15 + grip * 0.7);
+      
+      if (isWet) {
+        ctx.strokeStyle = `rgba(13, 16, 23, ${opacity})`;
+      } else {
+        ctx.strokeStyle = `rgba(20, 22, 28, ${opacity})`;
+      }
+      
+      ctx.lineWidth = trackWidth * 0.54; // Keep uniform width for racing line
+      ctx.stroke();
+    }
 
     // ── CHARCOS DE AGUA DINÁMICOS ──
     if (isWet && waterDepth > 0.2) {

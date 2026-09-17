@@ -49,7 +49,6 @@ export interface CircuitSpec {
   startOffsetT?: number;
   pitOffset?: number;
   trackWidthMeters?: number;
-  trackWidthCars?: number;
   latitude: number;
   longitude: number;
   googleMapsUrl: string;

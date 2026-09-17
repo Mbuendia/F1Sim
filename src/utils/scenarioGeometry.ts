@@ -149,10 +149,56 @@ export function buildScenarioGeometry(
   const trackHalfWidth = ((track.trackWidthMeters || 26) * 1.75) / 2;
   const points = track.points;
 
+  // ── 0. PROCEDURAL GENERATION PARA CIRCUITOS SIN ESCENARIO (Q6) ──
+  let runoffs = scenario.runoffZones;
+  let kerbs = scenario.kerbs;
+  let barriers = scenario.barriers;
+
+  if (runoffs.length === 0 && kerbs.length === 0 && barriers.length === 0) {
+    const isStreet = track.name.toLowerCase().includes('street') || 
+                     track.name.toLowerCase().includes('monaco') || 
+                     track.name.toLowerCase().includes('marina') || 
+                     track.name.toLowerCase().includes('las vegas') || 
+                     track.name.toLowerCase().includes('jeddah') || 
+                     track.name.toLowerCase().includes('baku');
+    
+    // Auto-generar a partir de las curvas calibradas
+    runoffs = track.corners.map(c => ({
+      startT: Math.max(0, c.t - 0.025),
+      endT: Math.min(1, c.t + 0.035),
+      side: 'both' as TrackSide,
+      surface: isStreet ? 'asphalt' : 'gravel',
+      widthMultiplier: isStreet ? 1.2 : 1.5
+    }));
+
+    kerbs = track.corners.map(c => ({
+      startT: Math.max(0, c.t - 0.02),
+      endT: Math.min(1, c.t + 0.02),
+      side: 'both' as TrackSide,
+      style: 'standard'
+    }));
+
+    if (isStreet) {
+      // Los circuitos urbanos tienen muros continuos
+      barriers = [
+        { startT: 0, endT: 0.999, side: 'both', type: 'concrete', color: '#8a8a8a' }
+      ];
+    } else {
+      // Circuitos permanentes tienen barreras en zonas de frenada o curvas peligrosas
+      barriers = track.corners.map(c => ({
+        startT: Math.max(0, c.t - 0.03),
+        endT: Math.min(1, c.t + 0.04),
+        side: 'both' as TrackSide,
+        type: 'armco',
+        color: '#6b7280'
+      }));
+    }
+  }
+
   // ── 1. ESCAPATORIAS LOCALIZADAS ──
   const runoffPolygons: RunoffPolygon[] = [];
 
-  for (const zone of scenario.runoffZones) {
+  for (const zone of runoffs) {
     const indices = getPointRange(points, zone.startT, zone.endT);
     if (indices.length < 2) continue;
 
@@ -169,7 +215,7 @@ export function buildScenarioGeometry(
   // ── 2. PIANOS LOCALIZADOS ──
   const kerbSegments: KerbSegment[] = [];
 
-  for (const kerb of scenario.kerbs) {
+  for (const kerb of kerbs) {
     const indices = getPointRange(points, kerb.startT, kerb.endT);
     if (indices.length < 2) continue;
 
@@ -183,7 +229,7 @@ export function buildScenarioGeometry(
   // ── 3. BARRERAS ──
   const barrierLines: BarrierLine[] = [];
 
-  for (const barrier of scenario.barriers) {
+  for (const barrier of barriers) {
     const indices = getPointRange(points, barrier.startT, barrier.endT);
     if (indices.length < 2) continue;
 

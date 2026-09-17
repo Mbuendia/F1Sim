@@ -79,7 +79,7 @@ export class CarRenderer {
       return a.progress - b.progress;
     });
 
-    const dimensions = CarRenderer.getCarDimensions(camera.zoom, track.trackWidthMeters || 24, trackWidthCarsCapacity);
+    const defaultDimensions = CarRenderer.getCarDimensions(camera.zoom, track.trackWidthMeters || 24, trackWidthCarsCapacity);
 
     for (const car of sorted) {
       const { worldX, worldY, worldAngle: angle } = car;
@@ -89,6 +89,16 @@ export class CarRenderer {
           screen.y < -80 || screen.y > camera.screenHeight + 80) {
         continue;
       }
+
+      // Q7: Dynamic dimensions per segment
+      const normalize = (t: number) => ((t % 1) + 1) % 1;
+      const points = track.points || [];
+      const exactIndex = points.length > 0 ? normalize(car.progress) * points.length : 0;
+      const index = points.length > 0 ? Math.floor(exactIndex) % points.length : 0;
+      const pt = points[index];
+      const segmentWidth = pt?.trackWidthMeters ?? track.trackWidthMeters ?? 24;
+      const segmentCapacity = pt?.trackWidthCars ?? trackWidthCarsCapacity ?? 3;
+      const dimensions = CarRenderer.getCarDimensions(camera.zoom, segmentWidth, segmentCapacity);
 
       const isSelected = car.id === selectedCarId;
 
@@ -120,7 +130,7 @@ export class CarRenderer {
       }
     }
 
-    renderCarLabels(ctx, activeCars, camera, selectedCarId, dimensions.length);
+    renderCarLabels(ctx, activeCars, camera, selectedCarId, defaultDimensions.length);
 
     // ── RENDERIZADO DEL SAFETY CAR FÍSICO ──
     if (safetyCar && safetyCar.isDeployed && safetyCar.mode !== 'idle' && safetyCar.mode !== 'in') {

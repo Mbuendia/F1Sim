@@ -126,14 +126,29 @@ export function buildTrackFromSvg(circuit: CircuitSpec, sampleCount: number = 75
 
   // Suavizado de curvatura
   const smoothedCurvatures: number[] = [];
+  const smoothedSignedCurvatures: number[] = [];
   for (let i = 0; i < total; i++) {
     let sumC = 0;
+    let sumSignedC = 0;
     const windowSize = 5;
     for (let w = -windowSize; w <= windowSize; w++) {
       const idx = (i + w + total) % total;
       sumC += rawCurvatures[idx];
+      
+      const curr = worldPoints[idx];
+      const prev = worldPoints[(idx - 1 + total) % total];
+      const next = worldPoints[(idx + 1) % total];
+      
+      const a1 = Math.atan2(curr.y - prev.y, curr.x - prev.x);
+      const a2 = Math.atan2(next.y - curr.y, next.x - curr.x);
+      let dAng = a2 - a1;
+      while (dAng > Math.PI) dAng -= Math.PI * 2;
+      while (dAng < -Math.PI) dAng += Math.PI * 2;
+      
+      sumSignedC += dAng / Math.max(0.001, distances[idx]);
     }
     smoothedCurvatures.push(sumC / (windowSize * 2 + 1));
+    smoothedSignedCurvatures.push(sumSignedC / (windowSize * 2 + 1));
   }
 
   // Velocidades locales en función de la curvatura
@@ -200,6 +215,21 @@ export function buildTrackFromSvg(circuit: CircuitSpec, sampleCount: number = 75
       drsZoneId = isDrsZone ? 1 : undefined;
     }
 
+    const speedLimitFactor = finalSpeedLimits[i];
+    
+    // Q7: Variable track width
+    const baseTrackWidthMeters = circuit.trackWidthMeters || 24;
+    const baseTrackWidthCars = circuit.trackWidthCars || 3;
+    const widthModifier = 0.85 + (speedLimitFactor * 0.3); // from ~0.95 to 1.15
+    const segmentWidth = baseTrackWidthMeters * widthModifier;
+    const segmentCars = speedLimitFactor > 0.8 ? baseTrackWidthCars : Math.max(1, baseTrackWidthCars - 1);
+
+    // Q8: Ideal racing line with signed curvature
+    const signedCurvature = smoothedSignedCurvatures[i];
+    const turnIntensity = Math.max(-1, Math.min(1, signedCurvature * 25));
+    // Dynamic offset based on turn direction
+    let idealOffset = -turnIntensity * 0.70;
+
     splinePoints.push({
       x: curr.x,
       y: curr.y,
@@ -211,7 +241,11 @@ export function buildTrackFromSvg(circuit: CircuitSpec, sampleCount: number = 75
       isDrsZone,
       drsZoneId,
       isBrakingZone: isBrakingZones[i],
-      speedLimitFactor: finalSpeedLimits[i]
+      speedLimitFactor,
+      trackWidthMeters: segmentWidth,
+      trackWidthCars: segmentCars,
+      idealLineOffset: idealOffset,
+      rubberGrip: 0.0 // Grip starts at 0 and goes up to 1.0 across laps
     });
 
     accumDist += distances[i];

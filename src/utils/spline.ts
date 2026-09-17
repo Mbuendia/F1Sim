@@ -14,6 +14,10 @@ export interface SplinePoint extends Point2D {
   isBrakingZone: boolean;
   cornerName?: string;
   speedLimitFactor: number; // 0.35 (horquilla lenta) a 1.0 (recta a fondo)
+  trackWidthMeters: number;
+  trackWidthCars: number;
+  idealLineOffset: number;
+  rubberGrip: number;
 }
 
 /**
@@ -42,7 +46,9 @@ export function computeTrackSpline(
   controlPoints: { x: number; y: number; speedLimit?: number; corner?: string }[],
   samplesPerSegment: number = 24,
   sector1EndT: number = 0.28,
-  sector2EndT: number = 0.56
+  sector2EndT: number = 0.56,
+  baseTrackWidthMeters: number = 24,
+  baseTrackWidthCars: number = 3
 ): SplinePoint[] {
   const n = controlPoints.length;
   const rawPoints: { x: number; y: number; speedLimit: number; corner?: string }[] = [];
@@ -104,6 +110,21 @@ export function computeTrackSpline(
     const drsZoneId = isDrs1 ? 1 : (isDrs2 ? 2 : undefined);
 
     const isBrakingZone = curr.speedLimit < 0.65;
+    const speedLimitFactor = Math.min(1.0, Math.max(0.32, curr.speedLimit));
+    
+    // Q7: Variable track width (wider on straights, narrower in tight corners)
+    const widthModifier = 0.85 + (speedLimitFactor * 0.3); // from ~0.95 to 1.15
+    const segmentWidth = baseTrackWidthMeters * widthModifier;
+    const segmentCars = speedLimitFactor > 0.8 ? baseTrackWidthCars : Math.max(1, baseTrackWidthCars - 1);
+
+    // Q8: Ideal racing line (exterior -> apex -> exterior)
+    // Curvature is unsigned here, but we can compute signed curvature:
+    let signedCurvature = dAngle / Math.max(0.001, dist);
+    // Simple racing line mapping: if turning hard, apex is inside.
+    const turnIntensity = Math.max(-1, Math.min(1, signedCurvature * 20));
+    // When turnIntensity is positive (right turn), apex is on the right (-1 side approx).
+    // Let's create an offset that swings in for the apex.
+    let idealOffset = -turnIntensity * 0.75; 
 
     splinePoints.push({
       x: curr.x,
@@ -117,7 +138,11 @@ export function computeTrackSpline(
       drsZoneId,
       isBrakingZone,
       cornerName: curr.corner,
-      speedLimitFactor: Math.min(1.0, Math.max(0.32, curr.speedLimit))
+      speedLimitFactor,
+      trackWidthMeters: segmentWidth,
+      trackWidthCars: segmentCars,
+      idealLineOffset: idealOffset,
+      rubberGrip: 0.0 // Starts at 0
     });
 
     accumDistance += dist;
