@@ -249,6 +249,8 @@ export class RaceSimulation {
           lastStopDuration: null,
           targetCompound: 'hard',
           activeBoxOrder: null,
+          waitingForBox: false,
+          boxWaitTimer: 0,
           stints: [
             {
               stintNumber: 1,
@@ -486,7 +488,8 @@ export class RaceSimulation {
         // Actualizar Pit Stops
         const isHandlingPit = PitStopModel.updatePitStop(
           car, dt, lapDistanceMeters, this.activeTrack, this.totalLaps,
-          this.raceFlagState, this.safetyCar.mode, this.safetyCar.progress
+          this.raceFlagState, this.safetyCar.mode, this.safetyCar.progress,
+          this.cars
         );
       
       if (isHandlingPit) {

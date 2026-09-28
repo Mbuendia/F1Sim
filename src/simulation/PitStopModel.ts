@@ -44,6 +44,48 @@ export class PitStopModel {
     return false;
   }
 
+  // [Q11] Check if a teammate is currently being serviced at the shared box.
+  // Returns the teammate CarState if they are occupying the box, or null if box is free.
+  static getTeammateInBox(car: CarState, allCars: CarState[]): CarState | null {
+    const teamId = car.driver?.teamId;
+    if (!teamId) return null;
+    for (const other of allCars) {
+      if (other.id === car.id) continue;
+      if (other.driver?.teamId !== teamId) continue;
+      if (!other.isInPitLane || !other.pitStop.isPitting) continue;
+      const otherBoxProgress = this.getBoxProgress(other);
+      // Teammate is at or past the box, not waiting in queue, and still being serviced
+      if (other.pitStop.pitLaneProgress >= otherBoxProgress &&
+          !other.pitStop.waitingForBox &&
+          other.pitStop.currentStopTimer < other.pitStop.stopDuration) {
+        return other;
+      }
+    }
+    // Also resolve ties if both cars just arrived and neither is waiting yet:
+    // The car with the lower ID (or ahead on track) gets priority to prevent deadlock.
+    for (const other of allCars) {
+      if (other.id === car.id) continue;
+      if (other.driver?.teamId !== teamId) continue;
+      if (!other.isInPitLane || !other.pitStop.isPitting) continue;
+      const otherBoxProgress = this.getBoxProgress(other);
+      if (other.pitStop.pitLaneProgress >= otherBoxProgress &&
+          other.pitStop.currentStopTimer < other.pitStop.stopDuration) {
+         // Tie-breaker: if both are at the box and neither has started service (timer === 0),
+         // the one with higher pitLaneProgress (deeper in box) or lower ID wins.
+         if (car.pitStop.currentStopTimer === 0 && other.pitStop.currentStopTimer === 0) {
+            if (other.pitStop.pitLaneProgress > car.pitStop.pitLaneProgress) return other;
+            if (other.pitStop.pitLaneProgress === car.pitStop.pitLaneProgress && other.id < car.id) return other;
+         }
+      }
+    }
+    return null;
+  }
+
+  // [Q11] Check if a teammate is currently being serviced (public API for UI/tests).
+  static isBoxOccupied(car: CarState, allCars: CarState[]): boolean {
+    return this.getTeammateInBox(car, allCars) !== null;
+  }
+
   static updatePitStop(
     car: CarState,
     dt: number,
@@ -52,7 +94,8 @@ export class PitStopModel {
     totalLaps: number,
     raceFlagState?: string,
     scMode?: string,
-    scProgress?: number
+    scProgress?: number,
+    allCars?: CarState[]
   ): boolean {
     const pit = car.pitStop;
     const pitEntryThreshold = track ? track.pitEntryT : 0.94;
@@ -68,6 +111,8 @@ export class PitStopModel {
         car.isInPitLane = false;
         pit.pitLaneProgress = 0.0;
         car.status = 'running';
+        pit.waitingForBox = false;
+        pit.boxWaitTimer = 0;
         return true;
       }
 
@@ -101,15 +146,28 @@ export class PitStopModel {
         } else {
           car.currentSpeedKmh = this.PIT_SPEED_LIMIT_KMH;
         }
+        // [Q11] Clear waiting state while approaching (not yet at box)
+        pit.waitingForBox = false;
       } 
       else if (pit.pitLaneProgress >= boxProgress && pit.currentStopTimer < pit.stopDuration) {
-        // Parada en el pit box (congelamos velocidad, la posición no avanza)
+        // [Q11] Check if teammate is occupying the box
+        const teammateInBox = allCars ? this.getTeammateInBox(car, allCars) : null;
+        if (teammateInBox) {
+          // Teammate is being serviced — wait behind the box
+          pit.waitingForBox = true;
+          pit.boxWaitTimer += dt;
+          car.currentSpeedKmh = 0;
+          // Don't increment service timer while waiting
+          return true;
+        }
+        // Box is free — begin or continue service
+        pit.waitingForBox = false;
         pit.currentStopTimer += dt;
         car.currentSpeedKmh = 0;
       }
 
       // Al completar o sobrepasar el tiempo de parada en el pit box
-      if (pit.pitLaneProgress >= boxProgress && pit.currentStopTimer >= pit.stopDuration) {
+      if (pit.pitLaneProgress >= boxProgress && pit.currentStopTimer >= pit.stopDuration && !pit.waitingForBox) {
         if (pit.lastStopDuration !== pit.stopDuration) {
           pit.lastStopDuration = pit.stopDuration;
           
@@ -177,6 +235,8 @@ export class PitStopModel {
           car.isInPitLane = false;
           pit.pitLaneProgress = 0.0;
           car.status = 'running';
+          pit.waitingForBox = false;
+          pit.boxWaitTimer = 0;
         }
       }
       return true;
@@ -218,6 +278,8 @@ export class PitStopModel {
     pit.scheduledLap = 0;
     pit.currentStopTimer = 0;
     pit.lastStopDuration = null;
+    pit.waitingForBox = false;
+    pit.boxWaitTimer = 0;
     const roll = Math.random();
     pit.stopDuration = Number((roll < .2 ? 1.8 + Math.random() * .4 :
       roll < .75 ? 2.2 + Math.random() * .8 : roll < .9 ? 3 + Math.random() : 4 + Math.random() * 4).toFixed(2));

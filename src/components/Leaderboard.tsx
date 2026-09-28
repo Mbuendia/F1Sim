@@ -48,6 +48,7 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
     }
     if (car.hasPuncture) return 'PINCHAZO';
     if (index === 0) return 'LÍDER';
+    if (car.pitStop.waitingForBox) return 'QUEUE';
     if (car.pitStop.isPitting) return 'PIT';
 
     const progressDiff = leaderProgress - car.progress;

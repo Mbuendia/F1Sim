@@ -188,6 +188,9 @@ export interface PitStopState {
   activeBoxOrder: BoxOrder | null;   // Q9: Binding compound order
   playerControlled?: boolean;
   entryProgress?: number;
+  // Q11: Double stack — waiting state
+  waitingForBox: boolean;            // true when queued behind teammate at the shared box
+  boxWaitTimer: number;              // accumulated wait time (sim seconds) behind teammate
 }
 
 export type StartLightState = 

@@ -324,7 +324,7 @@ Los 13 bugs críticos y altos detectados en la auditoría fueron implementados y
   * *Contexto y contrato:* ampliar la orden Q9, `CircuitSpec`, parser y `PitStopModel`. Detectar el cruce entre progreso previo y nuevo, también si la línea está antes de meta y entrada después. Una orden emitida después del compromiso se programa para la siguiente oportunidad válida; no saltar lateralmente a boxes. Documentar convención temporal cuando llamada/cancelación coinciden con el cruce; el motor devuelve acuse y motivo.
   * *Aceptación ampliada:* cancelar justo antes/después, cruzar compromiso y entrada en un mismo paso, vuelta siguiente sin reactivación de orden cancelada y velocidad x16/x32. No confundir línea de decisión táctica con línea del limitador o SC1. Coordenadas no verificadas deben figurar como calibradas hasta R03.
 
-* **Q11 — Gestión Dual de Pilotos del Equipo & Parada Doble (Double Stack):** `[ ] PENDIENTE`
+* **Q11 — Gestión Dual de Pilotos del Equipo & Parada Doble (Double Stack):** `[x] COMPLETADO — SUBIDA AUTORIZADA`
   * *Problema:* Falta de soporte táctico para ambos coches de la escudería en el muro.
   * *Solución:* Panel dual de control de pilotos y un recurso de servicio compartido por equipo. El segundo coche espera lo que reste de ocupación del cajón; los 3–5 s históricos son un ejemplo de efecto, no un recargo fijo ni reglamentario.
   * *Test:* Dos coches entrando consecutivamente a boxes registrando el tiempo de espera adicional en el segundo monoplaza.

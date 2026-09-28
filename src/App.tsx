@@ -17,6 +17,8 @@ import RaceFlagsHUD from './components/RaceFlagsHUD';
 import { DnfNotificationModal } from './components/DnfNotificationModal';
 import { D20LuckModal } from './components/D20LuckModal';
 import { OFFICIAL_CIRCUITS } from './data/circuits';
+import { DRIVERS } from './data/drivers';
+import { TEAMS } from './data/teams';
 import { RaceResultHistory, StartLightState, CarState, RaceFlagState, SafetyCarState, DnfNotification, D20LuckEvent, TrackWeatherState } from './types/f1';
 import { RotateCw, Flag, ArrowLeft, ChevronLeft, ChevronRight, Camera as CameraIcon } from 'lucide-react';
 
@@ -224,7 +226,18 @@ export const App: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [currentView, handleSelectCar, handleSpeedChange, isPaused, handleCycleCameraMode]);
 
+
   const favoriteCar = simulation.cars.find(c => c.driver.id === selectedDriverId) || simulation.cars[0];
+  // [Q11] Resolve both team pilots for dual-panel BoxControls
+  const teamCars = useMemo(() => {
+    const driver = DRIVERS[selectedDriverId];
+    if (!driver) return [favoriteCar];
+    const team = TEAMS[driver.teamId];
+    if (!team) return [favoriteCar];
+    return team.drivers
+      .map(dId => cars.find(c => c.driver.id === dId))
+      .filter((c): c is CarState => c !== undefined);
+  }, [cars, selectedDriverId, favoriteCar]);
   const selectedCar = selectedCarId !== null ? simulation.getCarById(selectedCarId) || null : null;
   const activeCircuitSpec = OFFICIAL_CIRCUITS[selectedCircuitId] || OFFICIAL_CIRCUITS['barcelona'];
 
@@ -384,7 +397,7 @@ export const App: React.FC = () => {
 
         {/* ── HUD INFERIOR: CENTRADO DINÁMICAMENTE ── */}
         <div className={styles.bottomDockWrapper}>
-          <BoxControls key={favoriteCar.id + ':' + selectedCircuitId} car={favoriteCar} simulation={simulation} />
+          <BoxControls key={teamCars.map(c => c.id).join(':') + ':' + selectedCircuitId} car={favoriteCar} simulation={simulation} teamCars={teamCars} />
           <BottomTelemetryDock
             car={selectedCar || favoriteCar}
             onSelectCar={handleSelectCar}
