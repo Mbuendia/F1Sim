@@ -1,0 +1,288 @@
+{
+ "barcelona": {
+  "relation": "284540",
+  "relVersion": {
+   "version": 15,
+   "timestamp": "2026-09-20T21:20:20Z"
+  },
+  "pitWays": [
+   "178416733",
+   "178416729",
+   "33742214"
+  ],
+  "pitSource": "relation 284540 role pit_lane",
+  "fixmes": []
+ },
+ "monza": {
+  "relation": "284565",
+  "relVersion": {
+   "version": 33,
+   "timestamp": "2025-10-22T06:33:48Z"
+  },
+  "pitWays": [
+   "38168747"
+  ],
+  "pitSource": "relation 284565 role pit_lane",
+  "fixmes": []
+ },
+ "silverstone": {
+  "relation": "51160",
+  "relVersion": {
+   "version": 33,
+   "timestamp": "2026-09-24T07:09:06Z"
+  },
+  "pitWays": [
+   "227902927"
+  ],
+  "pitSource": "relation 51160 role pit_lane",
+  "fixmes": []
+ },
+ "spa": {
+  "relation": "284560",
+  "relVersion": {
+   "version": 23,
+   "timestamp": "2025-09-17T10:49:00Z"
+  },
+  "pitWays": [
+   "323851541"
+  ],
+  "pitSource": "relation 284560 role pit_lane",
+  "fixmes": []
+ },
+ "monaco": {
+  "relation": "148194",
+  "relVersion": {
+   "version": 61,
+   "timestamp": "2026-08-21T07:53:53Z"
+  },
+  "pitWays": [
+   "850261588"
+  ],
+  "pitSource": "relation 148194 role pit_lane",
+  "fixmes": []
+ },
+ "spielberg": {
+  "relation": "5309181",
+  "relVersion": {
+   "version": 8,
+   "timestamp": "2026-05-14T02:09:35Z"
+  },
+  "pitWays": [
+   "289111668"
+  ],
+  "pitSource": "ways etiquetadas pit (bbox)",
+  "fixmes": []
+ },
+ "interlagos": {
+  "relation": "6781071",
+  "relVersion": {
+   "version": 6,
+   "timestamp": "2026-05-14T05:17:37Z"
+  },
+  "pitWays": [
+   "33779109"
+  ],
+  "pitSource": "relation 6781071 role pit_lane",
+  "fixmes": []
+ },
+ "suzuka": {
+  "relation": "284570",
+  "relVersion": {
+   "version": 12,
+   "timestamp": "2021-11-14T02:01:55Z"
+  },
+  "pitWays": [
+   "120917578"
+  ],
+  "pitSource": "relation 284570 role pit_lane",
+  "fixmes": []
+ },
+ "zandvoort": {
+  "relation": "13545573",
+  "relVersion": {
+   "version": 11,
+   "timestamp": "2026-05-14T03:20:18Z"
+  },
+  "pitWays": [
+   "38144527"
+  ],
+  "pitSource": "ways etiquetadas pit (bbox)",
+  "fixmes": []
+ },
+ "las-vegas": {
+  "relation": "16696508",
+  "relVersion": {
+   "version": 24,
+   "timestamp": "2026-08-04T00:51:50Z"
+  },
+  "pitWays": [
+   "1223479152"
+  ],
+  "pitSource": "relation 16696508 role pit_lane",
+  "fixmes": [
+   "How do racers get from the Sphere onto Sands Avenue westbound if it's blocked off by a physical barrier?"
+  ]
+ },
+ "bahrain": {
+  "relation": "284538",
+  "relVersion": {
+   "version": 16,
+   "timestamp": "2026-03-10T11:30:53Z"
+  },
+  "pitWays": [
+   "187123422"
+  ],
+  "pitSource": "ways etiquetadas pit (bbox)",
+  "fixmes": []
+ },
+ "baku": {
+  "relation": "11266687",
+  "relVersion": {
+   "version": 39,
+   "timestamp": "2026-09-14T13:41:32Z"
+  },
+  "pitWays": [
+   "1513267145"
+  ],
+  "pitSource": "relation 11266687 role pit_lane",
+  "fixmes": []
+ },
+ "melbourne": {
+  "relation": "280443",
+  "relVersion": {
+   "version": 60,
+   "timestamp": "2025-03-10T23:17:16Z"
+  },
+  "pitWays": [
+   "28119448"
+  ],
+  "pitSource": "relation 280443 role pit_lane",
+  "fixmes": []
+ },
+ "miami": {
+  "relation": "20204222",
+  "relVersion": {
+   "version": 1,
+   "timestamp": "2026-02-12T17:03:16Z"
+  },
+  "pitWays": [
+   "1017340352"
+  ],
+  "pitSource": "ways etiquetadas pit (bbox)",
+  "fixmes": []
+ },
+ "shanghai": {
+  "relation": "2094941",
+  "relVersion": {
+   "version": 6,
+   "timestamp": "2026-08-04T06:35:16Z"
+  },
+  "pitWays": [
+   "107371138",
+   "107371147"
+  ],
+  "pitSource": "relation 2094941 role pit_lane",
+  "fixmes": []
+ },
+ "jeddah": {
+  "relation": null,
+  "relVersion": null,
+  "pitWays": [
+   "1121870473",
+   "1257884703",
+   "1257884704"
+  ],
+  "pitSource": "ways etiquetadas pit (bbox)",
+  "fixmes": [
+   "update when satellite imagery is available: v6 is some 234m too long"
+  ]
+ },
+ "marina-bay": {
+  "relation": "421263",
+  "relVersion": {
+   "version": 107,
+   "timestamp": "2026-05-14T04:17:07Z"
+  },
+  "pitWays": [
+   "100484287"
+  ],
+  "pitSource": "relation 421263 role pit_lane",
+  "fixmes": []
+ },
+ "lusail": {
+  "relation": "21297662",
+  "relVersion": {
+   "version": 4,
+   "timestamp": "2026-08-30T12:39:06Z"
+  },
+  "pitWays": [
+   "196193732",
+   "1037707300",
+   "1004121314",
+   "1299064755"
+  ],
+  "pitSource": "ways etiquetadas pit (bbox)",
+  "fixmes": []
+ },
+ "yas-marina": {
+  "relation": "11378665",
+  "relVersion": {
+   "version": 7,
+   "timestamp": "2026-01-21T15:50:48Z"
+  },
+  "pitWays": [
+   "176695254"
+  ],
+  "pitSource": "ways etiquetadas pit (bbox)",
+  "fixmes": []
+ },
+ "hungaroring": {
+  "relation": "284557",
+  "relVersion": {
+   "version": 16,
+   "timestamp": "2024-11-12T17:02:53Z"
+  },
+  "pitWays": [
+   "231417580"
+  ],
+  "pitSource": "relation 284557 role pit_lane",
+  "fixmes": []
+ },
+ "mexico-city": {
+  "relation": "16251935",
+  "relVersion": {
+   "version": 5,
+   "timestamp": "2026-05-14T05:06:40Z"
+  },
+  "pitWays": [
+   "638504647",
+   "772763791"
+  ],
+  "pitSource": "relation 16251935 role pit_lane",
+  "fixmes": []
+ },
+ "montreal": {
+  "relation": "284595",
+  "relVersion": {
+   "version": 19,
+   "timestamp": "2024-09-17T08:28:37Z"
+  },
+  "pitWays": [
+   "413000959"
+  ],
+  "pitSource": "relation 284595 role pit_lane",
+  "fixmes": []
+ },
+ "austin": {
+  "relation": "6537729",
+  "relVersion": {
+   "version": 13,
+   "timestamp": "2026-05-14T04:55:33Z"
+  },
+  "pitWays": [
+   "514836373"
+  ],
+  "pitSource": "relation 6537729 role pit_lane",
+  "fixmes": []
+ }
+}
