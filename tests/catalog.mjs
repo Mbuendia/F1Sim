@@ -471,5 +471,6 @@ export const modules = [
     ],
     "sprint": "2.8",
     "kind": "contract"
-  }
+  },
+  { "id": "pit-route", "tasks": ["Q20"], "sprint": "2.8", "kind": "contract" }
 ];

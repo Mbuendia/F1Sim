@@ -1,0 +1,6 @@
+{
+  "_nota": "Q20: referencias VERIFICABLES del pit lane real. No se han inventado datos: cada circuito queda en PENDIENTE_REFERENCIA hasta aportar plano/mapa u notas oficiales. Rellenar source, edition, direction, svgTransform, entryT y exitT (fracción de vuelta 0-1 sobre el SVG del circuito) y cambiar status a VERIFICADO. La tolerancia vive en tests/modules/pit-route.mjs y no debe relajarse para acomodar el dibujo.",
+  "barcelona": { "status": "PENDIENTE_REFERENCIA", "source": null, "edition": null, "direction": null, "svgTransform": null, "entryT": null, "exitT": null },
+  "monaco":    { "status": "PENDIENTE_REFERENCIA", "source": null, "edition": null, "direction": null, "svgTransform": null, "entryT": null, "exitT": null },
+  "suzuka":    { "status": "PENDIENTE_REFERENCIA", "source": null, "edition": null, "direction": null, "svgTransform": null, "entryT": null, "exitT": null }
+}

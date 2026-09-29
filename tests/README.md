@@ -23,7 +23,7 @@ Cada módulo se ejecuta en un proceso independiente y puede correrse solo. Una e
 | --- | --- |
 | Neutralización y estado de carrera | `safety-car`, `race-state`, `neutralization-motion`, `reset-lifecycle` |
 | Neumáticos, combustible y motor | `tires-strategy`, `resources`, `pace`, `pace-contract` |
-| Boxes y estrategia | `pit-stop`, `pit-lane`, `box-orders`, `double-stack`, `rejoin`, `rejoin-contract`, `box-ui` |
+| Boxes y estrategia | `pit-stop`, `pit-lane`, `pit-route`, `box-orders`, `double-stack`, `rejoin`, `rejoin-contract`, `box-ui` |
 | Geometría, coches, cámara y selección | `track-geometry`, `geometry-rendering`, `world-position`, `car-rendering`, `track-width`, `finish-line` |
 | Trazada y engomado | `racing-line`, `racing-line-geometry` |
 | Circuitos y escenario | `teams-sectors`, `scenarios`, `scenario-rendering`, `scenario-<circuito>` |

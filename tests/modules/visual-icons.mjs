@@ -268,5 +268,35 @@ export default async function run({ server, assert, test }) {
     assert(!html.includes('NaN') && !html.includes('undefined'),
       'F1CarSilhouette: sin NaN/undefined');
   });
-}
 
+  // ── Ampliación Q21 (inventario de superficies y accesibilidad), sin modificar las aserciones anteriores ──
+
+  await test('Q21: BoxControls conserva nombre accesible del selector por piloto', async () => {
+    const { BoxControls } = await server.ssrLoadModule('/src/components/BoxControls.tsx');
+    const sim = make('barcelona', 2);
+    const [car1, car2] = sim.cars;
+    car2.driver.teamId = car1.driver.teamId;
+    car2.team = structuredClone(car1.team);
+    const html = renderToStaticMarkup(createElement(BoxControls, { car: car1, simulation: sim, teamCars: sim.cars }));
+    for (const car of [car1, car2]) {
+      assert(html.includes(`aria-label="Compuesto para ${car.driver.code}"`),
+        `BoxControls: selector con nombre accesible para ${car.driver.code}`);
+    }
+  });
+
+  await test('Q21: ninguna superficie conserva los indicadores S/M/H/I/W heredados', async () => {
+    const { readFileSync } = await import('node:fs');
+    const read = f => readFileSync(new URL(`../../src/components/${f}`, import.meta.url), 'utf8');
+    const legacy = /getCompoundDotColor|getCompoundColor|tireDot|compoundPill|currentCompoundColor/;
+    for (const file of ['Leaderboard.tsx', 'BoxControls.tsx', 'BottomTelemetryDock.tsx', 'RightStatsPanel.tsx', 'TelemetryPanel.tsx']) {
+      assert(!legacy.test(read(file)), `${file}: sin punto/píldora de color heredado (usa CompoundBadge)`);
+    }
+  });
+
+  await test('Q21: D20LuckModal muestra el compuesto óptimo con CompoundBadge', async () => {
+    const { readFileSync } = await import('node:fs');
+    const source = readFileSync(new URL('../../src/components/D20LuckModal.tsx', import.meta.url), 'utf8');
+    assert(/CompoundBadge/.test(source), 'D20LuckModal: usa CompoundBadge para optimalCompound');
+    assert(!/styles\.compoundBadge/.test(source), 'D20LuckModal: sin badge de texto heredado');
+  });
+}
