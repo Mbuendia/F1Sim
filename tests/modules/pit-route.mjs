@@ -1,4 +1,4 @@
-// Q20 — Recorrido real y extremos de boxes en Barcelona, Mónaco y Suzuka.
+// Q20 — Recorrido real de boxes en Barcelona, Mónaco y Suzuka; extremos reales en todos los circuitos verificados.
 // Contrato ejecutable: ruta continua, extremos enlazados con la pista, cajones conectados, una única fuente de
 // posición (coche/cámara/minimapa/clic) y paradas completas sin saltos. La comparación con la geometría REAL usa
 // tests/fixtures/pit-lane-references.json; sin referencia verificada esos casos fallan (no hay skip ni datos inventados).
@@ -6,6 +6,10 @@ import { readFileSync } from 'node:fs';
 import { raceFactory } from '../support/race.mjs';
 
 const CIRCUITS = ['barcelona', 'monaco', 'suzuka'];
+// Ampliación autorizada (29/09/2026): extremos reales de boxes en los circuitos con referencia OSM verificada.
+// Lista explícita: un circuito sin referencia verificada que figure aquí falla, nunca se omite.
+const REFERENCE_CIRCUITS = [...CIRCUITS, 'monza', 'silverstone', 'spa', 'interlagos', 'zandvoort', 'melbourne',
+  'marina-bay', 'lusail', 'hungaroring', 'montreal'];
 const REFERENCE_TOLERANCE_T = 0.004;   // fracción de vuelta admitida entre referencia y extremo dibujado
 const JOIN_TOLERANCE = 1.0;            // unidades de mundo entre extremo de boxes y línea central de pista
 const references = JSON.parse(readFileSync(new URL('../fixtures/pit-lane-references.json', import.meta.url), 'utf8'));
@@ -129,6 +133,10 @@ export default async function run({ server, assert, test }) {
         assert(ratio < 3, `${circuit}: sin teletransportes entre pasos consecutivos`, `ratio ${ratio}`);
       } finally { Math.random = originalRandom; }
     });
+  }
+
+  for (const circuit of REFERENCE_CIRCUITS) {
+    const track = make(circuit).activeTrack;
 
     await test(`Q20 ${circuit}: geometría real verificable registrada y coincidente`, async () => {
       const ref = references[circuit];
