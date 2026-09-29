@@ -1,5 +1,5 @@
 {
-  "_nota": "Q20: referencias VERIFICABLES del pit lane real. entryT/exitT son la fracción de vuelta (0-1) sobre la pista que construye el juego con buildTrackFromSvg (750 muestras por longitud del path SVG, orientada según direction y desplazada por startOffsetT) de los puntos donde el pit lane se separa y se reincorpora a la pista (Reglamento Deportivo F1 FIA 2025, Issue 5, art. 34.1-34.2: pit entry road / pit exit road). Geometría real: OpenStreetMap (ODbL). Método: ajuste de semejanza OSM→mundo del juego (ICP, escala inicial por lapLengthMeters) y ajuste local rígido en ±400 m de cada extremo; t por proyección. Criterio VERIFICADO: residuo mediano local <= 5 m, extremo a <= 15 m de la pista del juego y |t global - t local| <= 0,002 vueltas; pit lane con sentido coherente con la carrera. Circuitos que no cumplen: PENDIENTE_REFERENCIA con motivo y valores candidatos solo informativos. La tolerancia vive en tests/modules/pit-route.mjs y no debe relajarse para acomodar el dibujo.",
+  "_nota": "Q20: referencias VERIFICABLES del pit lane real. entryT/exitT son la fracción de vuelta (0-1) sobre la pista que construye el juego con buildTrackFromSvg (750 muestras por longitud del path SVG, orientada según direction y desplazada por startOffsetT) de los puntos donde el pit lane se separa y se reincorpora a la pista (Reglamento Deportivo F1 FIA 2025, Issue 5, art. 34.1-34.2: pit entry road / pit exit road). Geometría real: OpenStreetMap (ODbL). Método: ajuste de semejanza OSM→mundo del juego (ICP, escala inicial por lapLengthMeters) y ajuste local rígido en ±400 m de cada extremo; t por proyección. Criterio VERIFICADO: residuo mediano local <= 5 m, extremo a <= 15 m de la pista del juego y |t global - t local| <= 0,002 vueltas; pit lane con sentido coherente con la carrera. Circuitos que no cumplen: PENDIENTE_REFERENCIA con motivo y valores candidatos solo informativos. La tolerancia vive en tests/modules/pit-route.mjs y no debe relajarse para acomodar el dibujo. Opción A (29/09/2026): pista real de bacinger/f1-circuits (MIT) para los circuitos cuyo SVG se desviaba > 5 m (redibujados como <id>-2026.svg) y para Jeddah (SVG conservado); el pit lane sigue siendo OSM proyectado sobre esa pista. Criterio: extremo <= 15 m y residuo local OSM/pista <= 5 m. Validación cruzada: en Barcelona, Silverstone y Hungaroring este método reproduce las referencias OSM con diferencia <= 0,0004 vueltas.",
   "barcelona": {
     "status": "VERIFICADO",
     "source": "OpenStreetMap relación 284540 (type=circuit); pit lane: vías 178416733, 178416729, 33742214 (relation 284540 role pit_lane); definición de entrada/salida: FIA 2025 F1 Sporting Regulations Issue 5 art. 34.1-34.2.",
@@ -116,28 +116,26 @@
     }
   },
   "spielberg": {
-    "status": "PENDIENTE_REFERENCIA",
-    "source": "OpenStreetMap relación 5309181 (type=circuit); pit lane: vías 289111668 (ways etiquetadas pit (bbox)); definición de entrada/salida: FIA 2025 F1 Sporting Regulations Issue 5 art. 34.1-34.2.",
-    "edition": "OSM relación v8 (2026-05-14), descargada 2026-09-29",
-    "direction": "clockwise; sentido del pit lane según oneway=yes de OSM, coherente con la pista del juego",
-    "svgTransform": "OSM (proyección equirectangular local en 47.2197,14.7647, metros, y hacia abajo) → mundo de spielberg-3.svg: rotación 21.98°, sin reflexión, escala x1.021 respecto a lapLengthMeters=4318; ajuste global mediana 5.4 m (cobertura p95 22 m)",
-    "entryT": null,
-    "exitT": null,
+    "status": "VERIFICADO",
+    "source": "Pista: bacinger/f1-circuits circuits/at-1969.geojson (MIT). Pit lane: OpenStreetMap vías 289111668 (ways etiquetadas pit (bbox)). Definición de entrada/salida: FIA 2025 F1 Sporting Regulations Issue 5 art. 34.1-34.2.",
+    "edition": "bacinger/f1-circuits master (último cambio 2026-02-05); OSM relación 5309181 v8 (2026-05-14); descargados 2026-09-29",
+    "direction": "clockwise; sentido del pit lane según oneway=yes de OSM, coherente con la pista",
+    "svgTransform": "spielberg-2026.svg generado desde el GeoJSON (Catmull-Rom) en el marco de spielberg-3.svg: rotación 22.41°, 2.2687 m por unidad SVG, empieza en el T=0 anterior (startOffsetT 0); T antiguo→nuevo por DTW (diferencia mediana de forma 8.1 m)",
+    "entryT": 0.1527,
+    "exitT": 0.4006,
     "evidence": {
+      "trackVsOsmMedianM": 2.4,
       "entry": {
-        "t": 0.1551,
-        "localResidualM": 5.9,
-        "distanceToTrackM": 6.1,
-        "globalLocalDeltaT": 0.0001
+        "t": 0.1527,
+        "distanceToTrackM": 1.8,
+        "localOsmResidualM": 2.4
       },
       "exit": {
-        "t": 0.4043,
-        "localResidualM": 4.9,
-        "distanceToTrackM": 2.8,
-        "globalLocalDeltaT": 0.0001
+        "t": 0.4006,
+        "distanceToTrackM": 0.3,
+        "localOsmResidualM": 1.3
       }
-    },
-    "reason": "Residuo local de la entrada 5,9 m (> 5 m): el SVG spielberg-3 se desvía de la geometría real junto a la entrada de boxes."
+    }
   },
   "interlagos": {
     "status": "VERIFICADO",
@@ -209,76 +207,70 @@
     }
   },
   "las-vegas": {
-    "status": "PENDIENTE_REFERENCIA",
-    "source": "OpenStreetMap relación 16696508 (type=circuit); pit lane: vías 1223479152 (relation 16696508 role pit_lane); definición de entrada/salida: FIA 2025 F1 Sporting Regulations Issue 5 art. 34.1-34.2.",
-    "edition": "OSM relación v24 (2026-08-04), descargada 2026-09-29",
-    "direction": "anti-clockwise; sentido del pit lane según oneway=yes de OSM, coherente con la pista del juego",
-    "svgTransform": "OSM (proyección equirectangular local en 36.1147,-115.1728, metros, y hacia abajo) → mundo de las-vegas-1.svg: rotación -89.6°, sin reflexión, escala x1.0007 respecto a lapLengthMeters=6201; ajuste global mediana 5.6 m (cobertura p95 18.2 m)",
-    "entryT": null,
-    "exitT": null,
+    "status": "VERIFICADO",
+    "source": "Pista: bacinger/f1-circuits circuits/us-2023.geojson (MIT). Pit lane: OpenStreetMap vías 1223479152 (relation 16696508 role pit_lane). Definición de entrada/salida: FIA 2025 F1 Sporting Regulations Issue 5 art. 34.1-34.2.",
+    "edition": "bacinger/f1-circuits master (último cambio 2026-02-05); OSM relación 16696508 v24 (2026-08-04); descargados 2026-09-29",
+    "direction": "anti-clockwise; sentido del pit lane según oneway=yes de OSM, coherente con la pista",
+    "svgTransform": "las-vegas-2026.svg generado desde el GeoJSON (Catmull-Rom) en el marco de las-vegas-1.svg: rotación -89.93°, 4.4891 m por unidad SVG, empieza en el T=0 anterior (startOffsetT 0); T antiguo→nuevo por DTW (diferencia mediana de forma 9.2 m)",
+    "entryT": 0.0254,
+    "exitT": 0.1087,
     "evidence": {
+      "trackVsOsmMedianM": 1.2,
       "entry": {
-        "t": 0.0253,
-        "localResidualM": 3.4,
-        "distanceToTrackM": 5.8,
-        "globalLocalDeltaT": 0.0021
+        "t": 0.0254,
+        "distanceToTrackM": 10.2,
+        "localOsmResidualM": 0.6
       },
       "exit": {
-        "t": 0.1109,
-        "localResidualM": 4.2,
-        "distanceToTrackM": 1.1,
-        "globalLocalDeltaT": 0.0021
+        "t": 0.1087,
+        "distanceToTrackM": 0,
+        "localOsmResidualM": 0.5
       }
-    },
-    "reason": "Diferencia entre ajuste global y local 0,0021 vueltas en entrada y salida (> 0,002): posición a lo largo de la recta no concluyente."
+    }
   },
   "bahrain": {
-    "status": "PENDIENTE_REFERENCIA",
-    "source": "OpenStreetMap relación 284538 (type=circuit); pit lane: vías 187123422 (ways etiquetadas pit (bbox)); definición de entrada/salida: FIA 2025 F1 Sporting Regulations Issue 5 art. 34.1-34.2.",
-    "edition": "OSM relación v16 (2026-03-10), descargada 2026-09-29",
-    "direction": "clockwise; sentido del pit lane según oneway=yes de OSM, coherente con la pista del juego",
-    "svgTransform": "OSM (proyección equirectangular local en 26.0325,50.5106, metros, y hacia abajo) → mundo de bahrain-1.svg: rotación -90.83°, sin reflexión, escala x1.0117 respecto a lapLengthMeters=5412; ajuste global mediana 13.7 m (cobertura p95 41.6 m)",
-    "entryT": null,
-    "exitT": null,
+    "status": "VERIFICADO",
+    "source": "Pista: bacinger/f1-circuits circuits/bh-2002.geojson (MIT). Pit lane: OpenStreetMap vías 187123422 (ways etiquetadas pit (bbox)). Definición de entrada/salida: FIA 2025 F1 Sporting Regulations Issue 5 art. 34.1-34.2.",
+    "edition": "bacinger/f1-circuits master (último cambio 2026-02-05); OSM relación 284538 v16 (2026-03-10); descargados 2026-09-29",
+    "direction": "clockwise; sentido del pit lane según oneway=yes de OSM, coherente con la pista",
+    "svgTransform": "bahrain-2026.svg generado desde el GeoJSON (Catmull-Rom) en el marco de bahrain-1.svg: rotación -92.79°, 2.7043 m por unidad SVG, empieza en el T=0 anterior (startOffsetT 0); T antiguo→nuevo por DTW (diferencia mediana de forma 18.6 m)",
+    "entryT": 0.1688,
+    "exitT": 0.3108,
     "evidence": {
+      "trackVsOsmMedianM": 1.9,
       "entry": {
-        "t": 0.177,
-        "localResidualM": 10.9,
-        "distanceToTrackM": 9.9,
-        "globalLocalDeltaT": 0.0033
+        "t": 0.1688,
+        "distanceToTrackM": 0.2,
+        "localOsmResidualM": 1.1
       },
       "exit": {
-        "t": 0.3156,
-        "localResidualM": 9,
-        "distanceToTrackM": 11.3,
-        "globalLocalDeltaT": 0.0015
+        "t": 0.3108,
+        "distanceToTrackM": 2.9,
+        "localOsmResidualM": 2.2
       }
-    },
-    "reason": "Residuo local 9-11 m: el SVG bahrain-1 no coincide con la geometría real en la zona de boxes."
+    }
   },
   "baku": {
-    "status": "PENDIENTE_REFERENCIA",
-    "source": "OpenStreetMap relación 11266687 (type=circuit); pit lane: vías 1513267145 (relation 11266687 role pit_lane); definición de entrada/salida: FIA 2025 F1 Sporting Regulations Issue 5 art. 34.1-34.2.",
-    "edition": "OSM relación v39 (2026-09-14), descargada 2026-09-29",
-    "direction": "anti-clockwise; sentido del pit lane según oneway=yes de OSM, coherente con la pista del juego",
-    "svgTransform": "OSM (proyección equirectangular local en 40.3725,49.8533, metros, y hacia abajo) → mundo de baku-1.svg: rotación -17.56°, sin reflexión, escala x1.0392 respecto a lapLengthMeters=6003; ajuste global mediana 22 m (cobertura p95 67.8 m)",
-    "entryT": null,
-    "exitT": null,
+    "status": "VERIFICADO",
+    "source": "Pista: bacinger/f1-circuits circuits/az-2016.geojson (MIT). Pit lane: OpenStreetMap vías 1513267145 (relation 11266687 role pit_lane). Definición de entrada/salida: FIA 2025 F1 Sporting Regulations Issue 5 art. 34.1-34.2.",
+    "edition": "bacinger/f1-circuits master (último cambio 2026-02-05); OSM relación 11266687 v39 (2026-09-14); descargados 2026-09-29",
+    "direction": "anti-clockwise; sentido del pit lane según oneway=yes de OSM, coherente con la pista",
+    "svgTransform": "baku-2026.svg generado desde el GeoJSON (Catmull-Rom) en el marco de baku-1.svg: rotación -17.35°, 3.9621 m por unidad SVG, empieza en el T=0 anterior (startOffsetT 0); T antiguo→nuevo por DTW (diferencia mediana de forma 25.1 m)",
+    "entryT": 0.9989,
+    "exitT": 0.1252,
     "evidence": {
+      "trackVsOsmMedianM": 2.2,
       "entry": {
-        "t": 0.9986,
-        "localResidualM": 15.9,
-        "distanceToTrackM": 13.5,
-        "globalLocalDeltaT": 0.0052
+        "t": 0.9989,
+        "distanceToTrackM": 0.2,
+        "localOsmResidualM": 1.6
       },
       "exit": {
-        "t": 0.1227,
-        "localResidualM": 18.7,
-        "distanceToTrackM": 11.2,
-        "globalLocalDeltaT": 0.0002
+        "t": 0.1252,
+        "distanceToTrackM": 8.1,
+        "localOsmResidualM": 1.3
       }
-    },
-    "reason": "Residuo local 16-19 m; la relación OSM está formada por ejes de calles públicas (calzadas dobles), no por el eje de la pista."
+    }
   },
   "melbourne": {
     "status": "VERIFICADO",
@@ -304,76 +296,70 @@
     }
   },
   "miami": {
-    "status": "PENDIENTE_REFERENCIA",
-    "source": "OpenStreetMap relación 20204222 (type=circuit); pit lane: vías 1017340352 (ways etiquetadas pit (bbox)); definición de entrada/salida: FIA 2025 F1 Sporting Regulations Issue 5 art. 34.1-34.2.",
-    "edition": "OSM relación v1 (2026-02-12), descargada 2026-09-29",
-    "direction": "anti-clockwise; sentido del pit lane según oneway=yes de OSM, coherente con la pista del juego",
-    "svgTransform": "OSM (proyección equirectangular local en 25.958,-80.2389, metros, y hacia abajo) → mundo de miami-1.svg: rotación 0.16°, sin reflexión, escala x0.9721 respecto a lapLengthMeters=5412; ajuste global mediana 8.1 m (cobertura p95 27.8 m)",
-    "entryT": null,
-    "exitT": null,
+    "status": "VERIFICADO",
+    "source": "Pista: bacinger/f1-circuits circuits/us-2022.geojson (MIT). Pit lane: OpenStreetMap vías 1017340352 (ways etiquetadas pit (bbox)). Definición de entrada/salida: FIA 2025 F1 Sporting Regulations Issue 5 art. 34.1-34.2.",
+    "edition": "bacinger/f1-circuits master (último cambio 2026-02-05); OSM relación 20204222 v1 (2026-02-12); descargados 2026-09-29",
+    "direction": "anti-clockwise; sentido del pit lane según oneway=yes de OSM, coherente con la pista",
+    "svgTransform": "miami-2026.svg generado desde el GeoJSON (Catmull-Rom) en el marco de miami-1.svg: rotación 0.06°, 3.5567 m por unidad SVG, empieza en el T=0 anterior (startOffsetT 0); T antiguo→nuevo por DTW (diferencia mediana de forma 12.8 m)",
+    "entryT": 0.1671,
+    "exitT": 0.3159,
     "evidence": {
+      "trackVsOsmMedianM": 1.1,
       "entry": {
-        "t": 0.1645,
-        "localResidualM": 5.9,
-        "distanceToTrackM": 4.4,
-        "globalLocalDeltaT": 0.0014
+        "t": 0.1671,
+        "distanceToTrackM": 1.6,
+        "localOsmResidualM": 1
       },
       "exit": {
-        "t": 0.3098,
-        "localResidualM": 7.7,
-        "distanceToTrackM": 0,
-        "globalLocalDeltaT": 0.0006
+        "t": 0.3159,
+        "distanceToTrackM": 1.9,
+        "localOsmResidualM": 1.3
       }
-    },
-    "reason": "Residuo local 6-8 m: la pista OSM disponible mezcla vías auxiliares con el nombre del circuito y el ajuste no es concluyente."
+    }
   },
   "shanghai": {
-    "status": "PENDIENTE_REFERENCIA",
-    "source": "OpenStreetMap relación 2094941 (type=circuit); pit lane: vías 107371138, 107371147 (relation 2094941 role pit_lane); definición de entrada/salida: FIA 2025 F1 Sporting Regulations Issue 5 art. 34.1-34.2.",
-    "edition": "OSM relación v6 (2026-08-04), descargada 2026-09-29",
-    "direction": "clockwise; sentido del pit lane deducido del sentido de carrera (vías OSM sin oneway), coherente con la pista del juego",
-    "svgTransform": "OSM (proyección equirectangular local en 31.3389,121.22, metros, y hacia abajo) → mundo de shanghai-1.svg: rotación 100.13°, sin reflexión, escala x1.0241 respecto a lapLengthMeters=5451; ajuste global mediana 10 m (cobertura p95 27.7 m)",
-    "entryT": null,
-    "exitT": null,
+    "status": "VERIFICADO",
+    "source": "Pista: bacinger/f1-circuits circuits/cn-2004.geojson (MIT). Pit lane: OpenStreetMap vías 107371138, 107371147 (relation 2094941 role pit_lane). Definición de entrada/salida: FIA 2025 F1 Sporting Regulations Issue 5 art. 34.1-34.2.",
+    "edition": "bacinger/f1-circuits master (último cambio 2026-02-05); OSM relación 2094941 v6 (2026-08-04); descargados 2026-09-29",
+    "direction": "clockwise; sentido del pit lane deducido del sentido de carrera, coherente con la pista",
+    "svgTransform": "shanghai-2026.svg generado desde el GeoJSON (Catmull-Rom) en el marco de shanghai-1.svg: rotación 100.01°, 2.7204 m por unidad SVG, empieza en el T=0 anterior (startOffsetT 0); T antiguo→nuevo por DTW (diferencia mediana de forma 12 m)",
+    "entryT": 0.0482,
+    "exitT": 0.1906,
     "evidence": {
+      "trackVsOsmMedianM": 2,
       "entry": {
-        "t": 0.0449,
-        "localResidualM": 8.2,
-        "distanceToTrackM": 17.5,
-        "globalLocalDeltaT": 0.0015
+        "t": 0.0482,
+        "distanceToTrackM": 4.1,
+        "localOsmResidualM": 2.3
       },
       "exit": {
-        "t": 0.191,
-        "localResidualM": 11.2,
-        "distanceToTrackM": 16.8,
-        "globalLocalDeltaT": 0.0002
+        "t": 0.1906,
+        "distanceToTrackM": 5.6,
+        "localOsmResidualM": 2.9
       }
-    },
-    "reason": "Residuo local 8-11 m y extremos a ~17 m de la pista del juego: el SVG shanghai-1 se desvía en la recta de boxes."
+    }
   },
   "jeddah": {
-    "status": "PENDIENTE_REFERENCIA",
-    "source": "OpenStreetMap vías highway=raceway \"Jeddah Corniche Circuit\" (sin relación de circuito); pit lane: vías 1121870473, 1257884703, 1257884704 (ways etiquetadas pit (bbox)); definición de entrada/salida: FIA 2025 F1 Sporting Regulations Issue 5 art. 34.1-34.2.",
-    "edition": "OSM descargado 2026-09-29",
-    "direction": "anti-clockwise; sentido del pit lane según oneway=yes de OSM, coherente con la pista del juego",
-    "svgTransform": "OSM (proyección equirectangular local en 21.6319,39.1044, metros, y hacia abajo) → mundo de jeddah-1.svg: rotación -111.21°, sin reflexión, escala x0.9868 respecto a lapLengthMeters=6174; ajuste global mediana 18.5 m (cobertura p95 152.5 m)",
-    "entryT": null,
-    "exitT": null,
+    "status": "VERIFICADO",
+    "source": "Pista: bacinger/f1-circuits circuits/sa-2021.geojson (MIT). Pit lane: OpenStreetMap vías 1121870473, 1257884703, 1257884704 (ways etiquetadas pit (bbox)). Definición de entrada/salida: FIA 2025 F1 Sporting Regulations Issue 5 art. 34.1-34.2.",
+    "edition": "bacinger/f1-circuits master (último cambio 2026-02-05); OSM (sin relación de circuito); descargados 2026-09-29",
+    "direction": "anti-clockwise; sentido del pit lane según oneway=yes de OSM, coherente con la pista",
+    "svgTransform": "GeoJSON → marco de jeddah-1.svg por semejanza (rotación -110.89°, 5.6416 m por unidad SVG; diferencia mediana de forma 2.4 m); el SVG se conserva",
+    "entryT": 0.9568,
+    "exitT": 0.0998,
     "evidence": {
+      "trackVsOsmMedianM": 1,
       "entry": {
-        "t": 0.9361,
-        "localResidualM": 3.4,
-        "distanceToTrackM": 3,
-        "globalLocalDeltaT": 0.0001
+        "t": 0.9568,
+        "distanceToTrackM": 1.2,
+        "localOsmResidualM": 1.2
       },
       "exit": {
-        "t": 0.7194,
-        "localResidualM": 11,
-        "distanceToTrackM": 0.7,
-        "globalLocalDeltaT": 0.0074
+        "t": 0.0998,
+        "distanceToTrackM": 3,
+        "localOsmResidualM": 1.5
       }
-    },
-    "reason": "Sin relación de circuito en OSM y con aviso fixme (un tramo dibujado ~234 m más largo); salida con residuo 11 m."
+    }
   },
   "marina-bay": {
     "status": "VERIFICADO",
@@ -443,7 +429,7 @@
         "globalLocalDeltaT": 0
       }
     },
-    "reason": "La salida de boxes (túnel) queda a 20,6 m de la pista del juego (> 15 m): el SVG yas-marina-2 se desvía en la reincorporación."
+    "reason": "La salida de boxes de OSM termina a 17-22 m de la pista (GeoJSON y SVG) en la reincorporación tras el túnel: extremo no concluyente (> 15 m). El SVG yas-marina-2 coincide con la geometría real (mediana 3,9 m), así que no se redibuja."
   },
   "hungaroring": {
     "status": "VERIFICADO",
@@ -469,28 +455,26 @@
     }
   },
   "mexico-city": {
-    "status": "PENDIENTE_REFERENCIA",
-    "source": "OpenStreetMap relación 16251935 (type=circuit); pit lane: vías 638504647, 772763791 (relation 16251935 role pit_lane); definición de entrada/salida: FIA 2025 F1 Sporting Regulations Issue 5 art. 34.1-34.2.",
-    "edition": "OSM relación v5 (2026-05-14), descargada 2026-09-29",
-    "direction": "clockwise; sentido del pit lane según oneway=yes de OSM, coherente con la pista del juego",
-    "svgTransform": "OSM (proyección equirectangular local en 19.4042,-99.0907, metros, y hacia abajo) → mundo de mexico-city-3.svg: rotación 0.41°, sin reflexión, escala x0.9567 respecto a lapLengthMeters=4304; ajuste global mediana 5.8 m (cobertura p95 29.7 m)",
-    "entryT": null,
-    "exitT": null,
+    "status": "VERIFICADO",
+    "source": "Pista: bacinger/f1-circuits circuits/mx-1962.geojson (MIT). Pit lane: OpenStreetMap vías 638504647, 772763791 (relation 16251935 role pit_lane). Definición de entrada/salida: FIA 2025 F1 Sporting Regulations Issue 5 art. 34.1-34.2.",
+    "edition": "bacinger/f1-circuits master (último cambio 2026-02-05); OSM relación 16251935 v5 (2026-05-14); descargados 2026-09-29",
+    "direction": "clockwise; sentido del pit lane según oneway=yes de OSM, coherente con la pista",
+    "svgTransform": "mexico-city-2026.svg generado desde el GeoJSON (Catmull-Rom) en el marco de mexico-city-3.svg: rotación 1.59°, 3.0484 m por unidad SVG, empieza en el T=0 anterior (startOffsetT 0); T antiguo→nuevo por DTW (diferencia mediana de forma 12.5 m)",
+    "entryT": 0.8099,
+    "exitT": 0.9975,
     "evidence": {
+      "trackVsOsmMedianM": 0.8,
       "entry": {
-        "t": 0.8158,
-        "localResidualM": 5.2,
-        "distanceToTrackM": 0.5,
-        "globalLocalDeltaT": 0.0015
+        "t": 0.8099,
+        "distanceToTrackM": 1.9,
+        "localOsmResidualM": 1.3
       },
       "exit": {
-        "t": 0.9956,
-        "localResidualM": 2.3,
-        "distanceToTrackM": 0.5,
-        "globalLocalDeltaT": 0.0002
+        "t": 0.9975,
+        "distanceToTrackM": 0.3,
+        "localOsmResidualM": 0.8
       }
-    },
-    "reason": "Escala global -4,3 % respecto a lapLengthMeters y residuo local de la entrada 5,2 m (> 5 m)."
+    }
   },
   "montreal": {
     "status": "VERIFICADO",
@@ -516,27 +500,25 @@
     }
   },
   "austin": {
-    "status": "PENDIENTE_REFERENCIA",
-    "source": "OpenStreetMap relación 6537729 (type=circuit); pit lane: vías 514836373 (relation 6537729 role pit_lane); definición de entrada/salida: FIA 2025 F1 Sporting Regulations Issue 5 art. 34.1-34.2.",
-    "edition": "OSM relación v13 (2026-05-14), descargada 2026-09-29",
-    "direction": "anti-clockwise; sentido del pit lane según oneway=yes de OSM, coherente con la pista del juego",
-    "svgTransform": "OSM (proyección equirectangular local en 30.1328,-97.6411, metros, y hacia abajo) → mundo de austin-1.svg: rotación -23.08°, sin reflexión, escala x1.0223 respecto a lapLengthMeters=5513; ajuste global mediana 9.2 m (cobertura p95 32.8 m)",
-    "entryT": null,
-    "exitT": null,
+    "status": "VERIFICADO",
+    "source": "Pista: bacinger/f1-circuits circuits/us-2012.geojson (MIT). Pit lane: OpenStreetMap vías 514836373 (relation 6537729 role pit_lane). Definición de entrada/salida: FIA 2025 F1 Sporting Regulations Issue 5 art. 34.1-34.2.",
+    "edition": "bacinger/f1-circuits master (último cambio 2026-02-05); OSM relación 6537729 v13 (2026-05-14); descargados 2026-09-29",
+    "direction": "anti-clockwise; sentido del pit lane según oneway=yes de OSM, coherente con la pista",
+    "svgTransform": "austin-2026.svg generado desde el GeoJSON (Catmull-Rom) en el marco de austin-1.svg: rotación -23°, 3.3909 m por unidad SVG, empieza en el T=0 anterior (startOffsetT 0); T antiguo→nuevo por DTW (diferencia mediana de forma 12.7 m)",
+    "entryT": 0.5045,
+    "exitT": 0.6877,
     "evidence": {
+      "trackVsOsmMedianM": 0.8,
       "entry": {
-        "t": 0.4993,
-        "localResidualM": 8.5,
-        "distanceToTrackM": 0.1,
-        "globalLocalDeltaT": 0.0009
+        "t": 0.5045,
+        "distanceToTrackM": 0.4,
+        "localOsmResidualM": 1
       },
       "exit": {
-        "t": 0.6884,
-        "localResidualM": 4.3,
-        "distanceToTrackM": 7.8,
-        "globalLocalDeltaT": 0.0038
+        "t": 0.6877,
+        "distanceToTrackM": 0.1,
+        "localOsmResidualM": 1.3
       }
-    },
-    "reason": "Residuo local de la entrada 8,5 m y diferencia global/local de la salida 0,0038 vueltas: el SVG austin-1 se desvía cerca de boxes."
+    }
   }
 }

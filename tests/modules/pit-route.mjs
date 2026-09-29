@@ -9,7 +9,9 @@ const CIRCUITS = ['barcelona', 'monaco', 'suzuka'];
 // Ampliación autorizada (29/09/2026): extremos reales de boxes en los circuitos con referencia OSM verificada.
 // Lista explícita: un circuito sin referencia verificada que figure aquí falla, nunca se omite.
 const REFERENCE_CIRCUITS = [...CIRCUITS, 'monza', 'silverstone', 'spa', 'interlagos', 'zandvoort', 'melbourne',
-  'marina-bay', 'lusail', 'hungaroring', 'montreal'];
+  'marina-bay', 'lusail', 'hungaroring', 'montreal',
+  // Opción A (29/09/2026): pista real de bacinger/f1-circuits; Jeddah conserva su SVG.
+  'spielberg', 'las-vegas', 'bahrain', 'baku', 'miami', 'shanghai', 'jeddah', 'mexico-city', 'austin'];
 const REFERENCE_TOLERANCE_T = 0.004;   // fracción de vuelta admitida entre referencia y extremo dibujado
 const JOIN_TOLERANCE = 1.0;            // unidades de mundo entre extremo de boxes y línea central de pista
 const references = JSON.parse(readFileSync(new URL('../fixtures/pit-lane-references.json', import.meta.url), 'utf8'));
