@@ -1,16 +1,28 @@
-// Q21 — Iconos SVG temáticos F1: Badge Pirelli y Silueta lateral de monoplaza.
-// Contrato: componentes React reutilizables con props tipadas, usados en todas las superficies.
+// Q21 (con Q24 absorbida) — Iconos de neumático coherentes en toda la aplicación y silueta F1.
+// Convención documental de referencia:
+// - Proveedor Pirelli F1 (P Zero seco / Cinturato lluvia): Soft (S, banda roja), Medium (M, banda amarilla),
+//   Hard (H, banda blanca), Intermediate (I, banda verde), Wet (W, banda azul).
+// - El Reglamento Deportivo FIA identifica los compuestos secos/mojados pero no prescribe códigos HEX de pantalla.
+// - Los códigos HEX siguientes constituyen la paleta visual del contrato de interfaz, no una certificación FIA.
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { raceFactory } from '../support/race.mjs';
 
-// Colores Pirelli 2025 (aproximación visual, no certificación FIA)
+// Paleta visual del contrato UI para los 5 compuestos Pirelli
 const PIRELLI_COLORS = {
   soft: '#e10600',
   medium: '#ffd700',
   hard: '#ffffff',
   intermediate: '#22c55e',
   wet: '#3b82f6'
+};
+
+const COMPOUND_NAMES = {
+  soft: /soft|blando/i,
+  medium: /medium|medio/i,
+  hard: /hard|duro/i,
+  intermediate: /intermediate|intermedio/i,
+  wet: /wet|lluvia/i
 };
 
 const ALL_COMPOUNDS = ['soft', 'medium', 'hard', 'intermediate', 'wet'];
@@ -63,6 +75,17 @@ export default async function run({ server, assert, test }) {
     }
   });
 
+  await test('Q21: CompoundBadge incluye data-compound y nombre completo accesible', async () => {
+    const { CompoundBadge } = await server.ssrLoadModule('/src/components/CompoundBadge.tsx');
+    for (const compound of ALL_COMPOUNDS) {
+      const html = renderToStaticMarkup(createElement(CompoundBadge, { compound }));
+      assert(html.includes(`data-compound="${compound}"`),
+        `CompoundBadge ${compound}: expone data-compound="${compound}"`);
+      assert(COMPOUND_NAMES[compound].test(html),
+        `CompoundBadge ${compound}: incluye nombre legible del compuesto (no depende solo de color/inicial)`);
+    }
+  });
+
   // ── F1CarSilhouette: Silueta lateral genérica ──
 
   await test('Q21: F1CarSilhouette exporta un componente React', async () => {
@@ -87,7 +110,7 @@ export default async function run({ server, assert, test }) {
     assert(html.includes('120'), 'F1CarSilhouette respeta prop de ancho');
   });
 
-  // ── Integración: CompoundBadge en los consumidores existentes ──
+  // ── Integración: CompoundBadge en todas las superficies inventariadas ──
 
   await test('Q21: Leaderboard usa CompoundBadge en lugar de punto de color', async () => {
     const { Leaderboard } = await server.ssrLoadModule('/src/components/Leaderboard.tsx');
@@ -103,6 +126,25 @@ export default async function run({ server, assert, test }) {
     assert(html.includes('compound-badge') || html.includes('CompoundBadge') ||
       (html.includes('<svg') && html.includes(PIRELLI_COLORS[sim.cars[0].tires.compound])),
       'Leaderboard: usa badge SVG de compuesto');
+  });
+
+  await test('Q21: Leaderboard distingue los 5 compuestos mediante CompoundBadge', async () => {
+    const { Leaderboard } = await server.ssrLoadModule('/src/components/Leaderboard.tsx');
+    const sim = make('barcelona', 5);
+    ALL_COMPOUNDS.forEach((compound, i) => {
+      sim.cars[i].currentPosition = i + 1;
+      sim.cars[i].tires.compound = compound;
+    });
+
+    const html = renderToStaticMarkup(createElement(Leaderboard, {
+      cars: sim.cars, selectedCarId: null, onSelectCar: () => {},
+      fastestLapDriverName: null, leaderLap: 2
+    }));
+
+    for (const compound of ALL_COMPOUNDS) {
+      assert(html.includes(`data-compound="${compound}"`),
+        `Leaderboard: muestra badge específico para ${compound}`);
+    }
   });
 
   await test('Q21: TelemetryPanel usa CompoundBadge', async () => {
@@ -136,6 +178,77 @@ export default async function run({ server, assert, test }) {
       'BoxControls: usa badge SVG en selector de compuesto');
   });
 
+  await test('Q21: BoxControls diferencia goma montada y solicitada para ambos pilotos', async () => {
+    const { BoxControls } = await server.ssrLoadModule('/src/components/BoxControls.tsx');
+    const sim = make('barcelona', 2);
+    const [car1, car2] = sim.cars;
+    car2.driver.teamId = car1.driver.teamId;
+    car2.team = structuredClone(car1.team);
+    car1.tires.compound = 'soft';
+    car2.tires.compound = 'medium';
+
+    sim.issueBoxOrder(car1.id, 'wet');
+
+    const html = renderToStaticMarkup(createElement(BoxControls, {
+      car: car1, simulation: sim, teamCars: sim.cars
+    }));
+
+    assert(html.includes('data-compound="soft"'), 'BoxControls: muestra badge de goma montada del piloto 1 (soft)');
+    assert(html.includes('data-compound="medium"'), 'BoxControls: muestra badge de goma montada del piloto 2 (medium)');
+    assert(html.includes('data-compound="wet"'), 'BoxControls: muestra badge de goma solicitada en la orden (wet)');
+    assert(ALL_COMPOUNDS.every(c => html.includes(`value="${c}"`)),
+      'BoxControls: conserva las 5 opciones de selección por teclado');
+  });
+
+  await test('Q21: BottomTelemetryDock muestra CompoundBadge para los 5 compuestos', async () => {
+    const { BottomTelemetryDock } = await server.ssrLoadModule('/src/components/BottomTelemetryDock.tsx');
+    const sim = make('barcelona', 1);
+    const car = sim.cars[0];
+
+    for (const compound of ALL_COMPOUNDS) {
+      car.tires.compound = compound;
+      const html = renderToStaticMarkup(createElement(BottomTelemetryDock, {
+        car, onSelectCar: () => {}
+      }));
+      assert(html.includes(`data-compound="${compound}"`),
+        `BottomTelemetryDock: muestra CompoundBadge para ${compound}`);
+    }
+  });
+
+  await test('Q21: RightStatsPanel muestra CompoundBadge en goma actual e historial de vueltas', async () => {
+    const { RightStatsPanel } = await server.ssrLoadModule('/src/components/RightStatsPanel.tsx');
+    const sim = make('barcelona', 1);
+    const car = sim.cars[0];
+    car.tires.compound = 'hard';
+    car.lapHistory = [
+      { lap: 1, lapTime: 81.2, sector1: 27.0, sector2: 27.0, sector3: 27.2, compound: 'soft', tireHealth: 92 },
+      { lap: 2, lapTime: 81.6, sector1: 27.1, sector2: 27.2, sector3: 27.3, compound: 'intermediate', tireHealth: 84 }
+    ];
+
+    const html = renderToStaticMarkup(createElement(RightStatsPanel, {
+      car, defaultCar: car, totalLaps: 66,
+      overallBestS1: 27.0, overallBestS2: 27.0, overallBestS3: 27.2
+    }));
+
+    assert(html.includes('data-compound="hard"'),
+      'RightStatsPanel: muestra badge del compuesto actual (hard)');
+    assert(html.includes('data-compound="soft"') && html.includes('data-compound="intermediate"'),
+      'RightStatsPanel: muestra badges de los compuestos históricos en lapHistory sin sobrescribirlos');
+  });
+
+  await test('Q21: PodiumModal integra F1CarSilhouette con el color de cada equipo', async () => {
+    const { PodiumModal } = await server.ssrLoadModule('/src/components/PodiumModal.tsx');
+    const sim = make('barcelona', 3);
+    sim.cars.forEach((c, i) => { c.currentPosition = i + 1; });
+
+    const html = renderToStaticMarkup(createElement(PodiumModal, {
+      podiumCars: sim.cars, onRestart: () => {}, onGoHome: () => {}
+    }));
+
+    assert(html.includes('data-car-silhouette') || html.includes('f1-car-silhouette'),
+      'PodiumModal: incluye silueta lateral de monoplaza F1');
+  });
+
   // ── Integridad de renderizado ──
 
   await test('Q21: CompoundBadge no produce NaN/undefined', async () => {
@@ -156,3 +269,4 @@ export default async function run({ server, assert, test }) {
       'F1CarSilhouette: sin NaN/undefined');
   });
 }
+

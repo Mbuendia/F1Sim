@@ -1,9 +1,12 @@
 // Q22 — CarChassisSvg: Chasis SVG cenital interactivo con neumáticos térmicos y DRS
-// Contrato: componente React reutilizable con props de desgaste por rueda, estado DRS y color de equipo.
+// Contrato: componente React reutilizable con props de desgaste por rueda, estado DRS y color de equipo,
+// integrado en TelemetryPanel consumiendo datos reales sin inventar desgaste individual.
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
+import { raceFactory } from '../support/race.mjs';
 
 export default async function run({ server, assert, test }) {
+  const make = await raceFactory(server);
 
   await test('Q22: CarChassisSvg exporta un componente React', async () => {
     const mod = await server.ssrLoadModule('/src/components/CarChassisSvg.tsx');
@@ -57,6 +60,27 @@ export default async function run({ server, assert, test }) {
     assert(htmlCliff.includes('#f97316'), 'Ruedas en cliff (25-40%): usan naranja (#f97316)');
   });
 
+  await test('Q22: Desgaste individual simultáneo y ausencia de falso aviso >=25%', async () => {
+    const { CarChassisSvg } = await server.ssrLoadModule('/src/components/CarChassisSvg.tsx');
+
+    // Las 4 ruedas en distintas fases simultáneamente
+    const htmlMixto = renderToStaticMarkup(createElement(CarChassisSvg, {
+      tireHealthFL: 92, tireHealthFR: 55, tireHealthRL: 32, tireHealthRR: 18,
+      compound: 'soft', drsActive: false, teamColor: '#e10600', accentColor: '#fff'
+    }));
+    for (const col of ['#22c55e', '#eab308', '#f97316', '#ef4444']) {
+      assert(htmlMixto.includes(col), `Desgaste individual simultáneo incluye color ${col}`);
+    }
+
+    // Sin ruedas por debajo de 25%, no debe activarse el aviso crítico
+    const htmlSinCritico = renderToStaticMarkup(createElement(CarChassisSvg, {
+      tireHealthFL: 90, tireHealthFR: 60, tireHealthRL: 35, tireHealthRR: 25,
+      compound: 'medium', drsActive: false, teamColor: '#0600ef', accentColor: '#fff'
+    }));
+    assert(!htmlSinCritico.includes('data-warning="true"') && !htmlSinCritico.includes('tire-warning'),
+      'Ruedas >=25%: no activan indicador de advertencia crítica');
+  });
+
   await test('Q22: Alerón trasero refleja estado DRS', async () => {
     const { CarChassisSvg } = await server.ssrLoadModule('/src/components/CarChassisSvg.tsx');
     const base = { tireHealthFL: 80, tireHealthFR: 80, tireHealthRL: 80, tireHealthRR: 80,
@@ -94,6 +118,32 @@ export default async function run({ server, assert, test }) {
     assert(html.includes(teamColor), 'El chasis utiliza el color del equipo');
   });
 
+  await test('Q22: TelemetryPanel integra CarChassisSvg con datos reales de telemetría y DRS', async () => {
+    const { TelemetryPanel } = await server.ssrLoadModule('/src/components/TelemetryPanel.tsx');
+    const sim = make('barcelona', 1);
+    const car = sim.cars[0];
+    car.telemetry.tireHealthFL = 18;
+    car.telemetry.tireHealthFR = 62;
+    car.telemetry.tireHealthRL = 34;
+    car.telemetry.tireHealthRR = 88;
+    car.telemetry.drsActive = true;
+
+    const html = renderToStaticMarkup(createElement(TelemetryPanel, {
+      car, onClose: () => {}
+    }));
+
+    for (const wheel of ['FL', 'FR', 'RL', 'RR']) {
+      assert(html.includes(`data-wheel="${wheel}"`),
+        `TelemetryPanel: integra rueda ${wheel} del CarChassisSvg`);
+    }
+    assert(html.includes('data-drs="open"') || html.includes('drs-open'),
+      'TelemetryPanel: propaga estado DRS activo al CarChassisSvg');
+    assert(html.includes('data-warning="true"') || html.includes('tire-warning'),
+      'TelemetryPanel: propaga advertencia de rueda crítica (<25%) al CarChassisSvg');
+    assert(html.includes('18%') && html.includes('62%') && html.includes('34%') && html.includes('88%'),
+      'TelemetryPanel: conserva lectura de porcentajes reales por rueda sin inventar datos');
+  });
+
   await test('Q22: No renderiza NaN ni undefined', async () => {
     const { CarChassisSvg } = await server.ssrLoadModule('/src/components/CarChassisSvg.tsx');
     const html = renderToStaticMarkup(createElement(CarChassisSvg, {
@@ -104,3 +154,4 @@ export default async function run({ server, assert, test }) {
       'Sin valores NaN ni undefined en el markup');
   });
 }
+
