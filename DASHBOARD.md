@@ -22,7 +22,9 @@
 
 ## 🧭 2. ROADMAP Y ESTADO GLOBAL DE SPRINTS
 
-**Orden vigente:** Sprint **2.8** · Tarea actual **Q10** · Siguiente **Q11**.
+**Orden vigente:** Sprint **2.8** · Tarea actual **Q20** · Siguiente **Q21**.
+
+**Actualización de orden — 29/09/2026:** Q10 y Q11 están completadas; el orden vigente pasa a Q20 (primera tarea de la solicitud vigente del 29/09) y después Q21. El usuario aporta las fuentes para las referencias de boxes de Q20 (ver la entrada Q20). Esta actualización es documental: no implementa Q20 ni rellena todavía la fixture de referencias.
 
 **Registro histórico de solicitud: completar Q9 y Q10 en `sprint/2.8`, con commit/push autorizados expresamente el 18/09/2026.** Sustituye para esta entrega la planificación/publicación anterior de 2.9. No ampliar Q6, Q11 ni implementar reglas del Sprint 2.9.
 
@@ -410,11 +412,13 @@ Los 13 bugs críticos y altos detectados en la auditoría fueron implementados y
 
 Registro original: `docs/reviews/resultados-usuario-2026-09-29.json`: 32 aprobaciones, 2 solicitudes de cambios y 2 bloqueos. La aprobación de una corrección parcial o evidencia técnica no cierra toda la tarea (especialmente Q19). Q13/Q16 se amplían en sus fichas; no crear tareas duplicadas.
 
-* **Q20 — Recorrido real y extremos de boxes en Barcelona, Mónaco y Suzuka:** `[ ] PLANIFICADO — CAMBIO CONFIRMADO`
+* **Q20 — Recorrido real y extremos de boxes en Barcelona, Mónaco y Suzuka:** `[ ] CONTRATO DE TESTS — FUENTES APORTADAS, REFERENCIAS PENDIENTES DE TRANSCRIBIR`
   * *Alcance:* Corregir ubicación real de entrada/salida y recorrido completo del pit lane en dibujo y circulación. La aprobación visual general de Suzuka se conserva, con esta incidencia de boxes separada.
   * *Datos/contrato:* Recopilar planos/mapas verificables del circuito y, cuando proceda, notas oficiales del evento; registrar fuente, edición/fecha, sentido y transformación al SVG. No generar un recorrido paralelo genérico para presentarlo como real. Si falta geometría verificable, registrar el bloqueo y pedir referencia antes de validar. Separar entrada/salida de ruta, compromiso, limitador y cajón: no mover todas esas líneas por inferencia.
   * *Aceptación:* Superponer referencia y ruta sobre Barcelona/Mónaco/Suzuka; verificar entrada/salida en lugar correcto, continuidad sin saltos, cajones conectados y coche/cámara/minimapa/clic compartiendo ruta. Mantener órdenes y cancelación Q9-Q11.
   * *Tests previos:* Ampliar pit-lane/world-position/box-orders; añadir fixtures específicos basados en referencias para los tres circuitos y revisión visual de una parada completa por circuito. Tests primero, sin relajar tolerancias para acomodar el dibujo.
+  * *Contrato registrado:* módulo `pit-route` (commit `ff366f2`) con `tests/fixtures/pit-lane-references.json` en `PENDIENTE_REFERENCIA`; estado actual 184 PASS / 14 FAIL (ruta única compartida, teletransportes y referencias).
+  * *Fuentes aportadas por el usuario (29/09/2026):* planos de racingcircuits.info y statsf1.com (URLs por circuito en `src/data/circuits.ts`), FIA 2025 Formula 1 Sporting Regulations Issue 5 (30/04/2025) y FIA 2025 Formula 1 Technical Regulations Issue 03 (07/04/2025). Pendiente: transcribir fuente, edición, sentido, transformación al SVG y entryT/exitT por circuito y marcar VERIFICADO solo con geometría comprobada.
 
 * **Q21 — Iconos de neumático coherentes en toda la aplicación:** `[ ] PLANIFICADO — CAMBIO CONFIRMADO`
   * *Alcance:* Sustituir representaciones aisladas S/M/H/I/W por una rueda con el color identificativo del compuesto en selector, muro, clasificación, telemetría, historial y demás superficies existentes.
