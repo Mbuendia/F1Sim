@@ -405,6 +405,18 @@
   color: #f97316;
 }
 
+.chassisRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.chassisRow .fourTiresGrid {
+  flex: 1;
+  margin-top: 0;
+}
+
 .fourTiresGrid {
   display: grid;
   grid-template-columns: 1fr 1fr;

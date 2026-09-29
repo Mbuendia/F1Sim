@@ -3,6 +3,8 @@ import styles from './TelemetryPanel.module.css';
 import { CarState } from '../types/f1';
 import { X, Gauge, Zap, Flame, Wind, Fuel, Shield, Sparkles, Trophy } from 'lucide-react';
 import { CompoundBadge } from './CompoundBadge';
+import { CarChassisSvg } from './CarChassisSvg';
+import { tireHealthColor } from '../utils/tireHealth';
 
 interface TelemetryPanelProps {
   car: CarState;
@@ -13,12 +15,8 @@ export const TelemetryPanel: React.FC<TelemetryPanelProps> = ({ car, onClose }) 
   const { driver, team, telemetry, tires, currentPosition, gapToLeaderSec } = car;
 
   // Color de salud de neumáticos
-  const getTireHealthColor = (health: number) => {
-    if (health > 70) return '#22c55e'; // Verde óptimo (fase lineal)
-    if (health > 40) return '#eab308'; // Amarillo alerta (fase no lineal)
-    if (health > 20) return '#f97316'; // Naranja cliff
-    return '#ef4444';                  // Rojo crítico
-  };
+  // Q22: mismos umbrales que el chasis cenital (crítico por debajo del 25 %).
+  const getTireHealthColor = tireHealthColor;
 
   // Modo motor label
   const getEngineModeDisplay = () => {
@@ -186,7 +184,13 @@ export const TelemetryPanel: React.FC<TelemetryPanelProps> = ({ car, onClose }) 
           )}
         </div>
 
-        {/* Desglose de las 4 ruedas */}
+        {/* Q22: chasis cenital con el desgaste real de cada rueda y el DRS, junto al desglose numérico */}
+        <div className={styles.chassisRow}>
+        <CarChassisSvg
+          tireHealthFL={telemetry.tireHealthFL} tireHealthFR={telemetry.tireHealthFR}
+          tireHealthRL={telemetry.tireHealthRL} tireHealthRR={telemetry.tireHealthRR}
+          compound={tires.compound} drsActive={telemetry.drsActive}
+          teamColor={team.color} accentColor={team.accentColor} width={64} />
         <div className={styles.fourTiresGrid}>
           <div className={styles.wheelBox}>
             <span className={styles.wheelName}>FL (Del. Izq)</span>
@@ -204,6 +208,7 @@ export const TelemetryPanel: React.FC<TelemetryPanelProps> = ({ car, onClose }) 
             <span className={styles.wheelName}>RR (Tras. Der)</span>
             <span className={styles.wheelPct} style={{ color: getTireHealthColor(telemetry.tireHealthRR) }}>{telemetry.tireHealthRR}%</span>
           </div>
+        </div>
         </div>
       </div>
 
