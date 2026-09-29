@@ -22,7 +22,7 @@
 
 ## 🧭 2. ROADMAP Y ESTADO GLOBAL DE SPRINTS
 
-**Orden vigente:** Sprint **2.8** · Tarea actual **Q20** · Siguiente **Q21**.
+**Orden vigente:** Sprint **2.8** · Tarea actual **Q21** · Siguiente **Q22**.
 
 **Actualización de orden — 29/09/2026:** Q10 y Q11 están completadas; el orden vigente pasa a Q20 (primera tarea de la solicitud vigente del 29/09) y después Q21. El usuario aporta las fuentes para las referencias de boxes de Q20 (ver la entrada Q20). Esta actualización es documental: no implementa Q20 ni rellena todavía la fixture de referencias.
 
@@ -412,7 +412,7 @@ Los 13 bugs críticos y altos detectados en la auditoría fueron implementados y
 
 Registro original: `docs/reviews/resultados-usuario-2026-09-29.json`: 32 aprobaciones, 2 solicitudes de cambios y 2 bloqueos. La aprobación de una corrección parcial o evidencia técnica no cierra toda la tarea (especialmente Q19). Q13/Q16 se amplían en sus fichas; no crear tareas duplicadas.
 
-* **Q20 — Recorrido real y extremos de boxes en Barcelona, Mónaco y Suzuka:** `[ ] EN REVISIÓN LOCAL — IMPLEMENTADO EN 23/23 CIRCUITOS, PENDIENTE REVISIÓN VISUAL DEL USUARIO`
+* **Q20 — Recorrido real y extremos de boxes en Barcelona, Mónaco y Suzuka:** `[x] COMPLETADO — 23/23 CIRCUITOS, REVISADO EN LOCAL POR EL USUARIO (29/09/2026)`
   * *Alcance:* Corregir ubicación real de entrada/salida y recorrido completo del pit lane en dibujo y circulación. La aprobación visual general de Suzuka se conserva, con esta incidencia de boxes separada.
   * *Datos/contrato:* Recopilar planos/mapas verificables del circuito y, cuando proceda, notas oficiales del evento; registrar fuente, edición/fecha, sentido y transformación al SVG. No generar un recorrido paralelo genérico para presentarlo como real. Si falta geometría verificable, registrar el bloqueo y pedir referencia antes de validar. Separar entrada/salida de ruta, compromiso, limitador y cajón: no mover todas esas líneas por inferencia.
   * *Aceptación:* Superponer referencia y ruta sobre Barcelona/Mónaco/Suzuka; verificar entrada/salida en lugar correcto, continuidad sin saltos, cajones conectados y coche/cámara/minimapa/clic compartiendo ruta. Mantener órdenes y cancelación Q9-Q11.
@@ -428,7 +428,7 @@ Registro original: `docs/reviews/resultados-usuario-2026-09-29.json`: 32 aprobac
   * *Opción A (autorizada 29/09/2026):* pista real de bacinger/f1-circuits (MIT, GeoJSON) validada contra OSM (mediana 0,8-2,4 m; en Barcelona/Silverstone/Hungaroring reproduce las referencias OSM con ≤ 0,0004 vueltas). Redibujados como `<id>-2026.svg` los 8 SVG que se desviaban > 5 m: Spielberg, Las Vegas, Bahrain, Bakú, Miami, Shanghai, México y Austin (8-25 m de desviación mediana). Cada dato en T (DRS, perfiles de curvas/barreras del escenario) se trasladó a su mismo punto físico por correspondencia monótona (DTW); T=0 se conserva (startOffsetT 0). Jeddah conserva su SVG (2,4 m) y recibe boxes reales. Los SVG originales de julesr0y se mantienen en `public/circuits`.
   * *Estado:* 22/23 circuitos con boxes reales verificados y trazado del pit lane OSM; `pit-route` 299 PASS / 0 FAIL; suite 861 PASS / 57 FAIL (solo contratos Q21-Q23). Yas Marina resuelto: la relación OSM solo incluía el primer tramo del pit lane; con la cadena completa (176695254 → túnel 176695255 → 176695253) la salida queda en 0.7328, a 7 m de la pista (SVG conservado, 3,9 m). 23/23 verificados; `pit-route` 304 PASS / 0 FAIL. Pendiente: revisión visual del usuario.
 
-* **Q21 — Iconos de neumático coherentes en toda la aplicación:** `[ ] PLANIFICADO — CAMBIO CONFIRMADO`
+* **Q21 — Iconos de neumático coherentes en toda la aplicación:** `[ ] EN CURSO — IMPLEMENTACIÓN AUTORIZADA 29/09/2026`
   * *Alcance:* Sustituir representaciones aisladas S/M/H/I/W por una rueda con el color identificativo del compuesto en selector, muro, clasificación, telemetría, historial y demás superficies existentes.
   * *Datos/contrato:* Inventariar consumidores; usar representación reutilizable con nombre del compuesto, tooltip y etiqueta accesible, sin depender solo del color. Verificar y documentar la convención oficial del proveedor/FIA para el perfil de temporada antes de fijar colores en tests; no atribuir códigos HEX arbitrarios a una norma.
   * *Aceptación:* Los cinco compuestos se distinguen y conservan selección por teclado, estados seleccionado/deshabilitado y nombre accesible. Icono de goma actual, solicitada e histórica refleja su propio dato; no cambia la lógica de boxes.
