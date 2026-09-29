@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import * as THREE from 'three';
 import styles from './F1Wheel3D.module.css';
+import { COMPOUND_STYLES } from '../utils/compounds';
 
 export type TireCompound = 'soft' | 'medium' | 'hard' | 'inter' | 'wet';
 
@@ -10,12 +11,15 @@ interface F1Wheel3DProps {
   className?: string;
 }
 
+// Q21: colores de la paleta única de compuestos (la rueda usa 'inter' como clave local).
+const wheelColor = (compound: keyof typeof COMPOUND_STYLES, label: string) =>
+  ({ hex: COMPOUND_STYLES[compound].color, num: parseInt(COMPOUND_STYLES[compound].color.slice(1), 16), label });
 const COMPOUND_COLORS: Record<TireCompound, { hex: string; num: number; label: string }> = {
-  soft: { hex: '#e10600', num: 0xe10600, label: 'SOFT (P ZERO ROJO)' },
-  medium: { hex: '#ffd700', num: 0xffd700, label: 'MEDIUM (P ZERO AMARILLO)' },
-  hard: { hex: '#ffffff', num: 0xffffff, label: 'HARD (P ZERO BLANCO)' },
-  inter: { hex: '#22c55e', num: 0x22c55e, label: 'INTERMEDIATE (CINTURATO VERDE)' },
-  wet: { hex: '#0284c7', num: 0x0284c7, label: 'WET (CINTURATO AZUL)' },
+  soft: wheelColor('soft', 'SOFT (P ZERO ROJO)'),
+  medium: wheelColor('medium', 'MEDIUM (P ZERO AMARILLO)'),
+  hard: wheelColor('hard', 'HARD (P ZERO BLANCO)'),
+  inter: wheelColor('intermediate', 'INTERMEDIATE (CINTURATO VERDE)'),
+  wet: wheelColor('wet', 'WET (CINTURATO AZUL)'),
 };
 
 /**

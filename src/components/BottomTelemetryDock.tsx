@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { animate } from 'animejs';
 import { FlagIcon } from './FlagIcon';
+import { CompoundBadge } from './CompoundBadge';
 
 export interface BottomTelemetryDockProps {
   car: CarState | null;
@@ -45,17 +46,6 @@ export const BottomTelemetryDock: React.FC<BottomTelemetryDockProps> = ({
 
   const { driver, team, telemetry, tires, currentPosition, aheadInfo, behindInfo } = car;
   const rpmPercent = Math.min(100, Math.max(0, ((telemetry.rpm - 8000) / (13500 - 8000)) * 100));
-
-  const getCompoundColor = (compound: string) => {
-    switch (compound) {
-      case 'soft': return '#e10600';
-      case 'medium': return '#ffd700';
-      case 'hard': return '#ffffff';
-      default: return '#cbd5e1';
-    }
-  };
-
-  const compoundColor = getCompoundColor(tires.compound);
 
   return (
     <div ref={dockRef} className={styles.dockContainer}>
@@ -126,14 +116,10 @@ export const BottomTelemetryDock: React.FC<BottomTelemetryDockProps> = ({
         {/* Neumáticos */}
         <div className={styles.tireCluster}>
           <div className={styles.tireTopRow}>
-            <div 
-              className={styles.compoundPill} 
-              style={{ 
-                backgroundColor: compoundColor, 
-                color: tires.compound === 'hard' ? '#000000' : '#ffffff' 
-              }}
-            >
-              {tires.compound.toUpperCase()} ({tires.lapsOnTire} VUELTAS)
+            <div className={styles.compoundInfo}>
+              <CompoundBadge compound={tires.compound} size={20} showName
+                detail={`${tires.lapsOnTire} vueltas`} />
+              <span>({tires.lapsOnTire} VUELTAS)</span>
             </div>
             <div className={styles.tireHealthText} style={{ color: tires.health < 25 ? '#ef4444' : '#22c55e' }}>
               {Math.round(tires.health)}% VIDA

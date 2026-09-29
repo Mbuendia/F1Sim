@@ -3,6 +3,8 @@ import type { CarState, TireCompound } from '../types/f1';
 import type { RaceSimulation } from '../simulation/RaceSimulation';
 import styles from './BoxControls.module.css';
 import { PaceControls } from './PaceControls';
+import { CompoundBadge } from './CompoundBadge';
+import { COMPOUND_STYLES, TIRE_COMPOUNDS } from '../utils/compounds';
 
 // [Q11] Panel dual de pilotos del equipo — controles independientes de boxes para ambos coches.
 export function BoxControls({ car, simulation, teamCars }: {
@@ -59,8 +61,8 @@ export function BoxControls({ car, simulation, teamCars }: {
                 {statusBadge && <span className={`${styles.badge} ${statusClass}`}>{statusBadge}</span>}
               </div>
               <div className={styles.pilotTire}>
-                <span className={`${styles.tireDot} ${styles['tire_' + p.tires.compound]}`}></span>
-                <span>{p.tires.compound.charAt(0).toUpperCase()} · V{p.currentLap} · {Math.round(p.tires.health)}%</span>
+                <CompoundBadge compound={p.tires.compound} size={16} detail={`montado · salud ${Math.round(p.tires.health)}%`} />
+                <span>V{p.currentLap} · {Math.round(p.tires.health)}%</span>
                 <span className={styles.stops}>Stops: {p.pitStop.totalPitStops}</span>
               </div>
               {isWaiting && (
@@ -73,12 +75,11 @@ export function BoxControls({ car, simulation, teamCars }: {
                 <select aria-label={`Compuesto para ${p.driver.code}`} value={compound}
                   disabled={!available || locked}
                   onChange={e => setCompoundFor(p.id, e.target.value as TireCompound)}>
-                  <option value="soft">S</option>
-                  <option value="medium">M</option>
-                  <option value="hard">H</option>
-                  <option value="intermediate">I</option>
-                  <option value="wet">W</option>
+                  {TIRE_COMPOUNDS.map(c => (
+                    <option key={c} value={c}>{COMPOUND_STYLES[c].letter} · {COMPOUND_STYLES[c].name}</option>
+                  ))}
                 </select>
+                <CompoundBadge compound={compound} size={18} detail="selección para la orden" />
                 <button disabled={!available || locked} onClick={() => {
                   const issued = simulation.issueBoxOrder(p.id, compound);
                   setFeedbackFor(p.id, issued ? '' : 'Rechazada');
@@ -90,7 +91,7 @@ export function BoxControls({ car, simulation, teamCars }: {
               <div className={styles.message} role="status" aria-live="polite">
                 {feedback || (p.status === 'out' || p.status === 'finished' ? 'No disponible.' : order?.message) ||
                   (available ? 'Sin orden.' : '')}
-                {order && <span> {order.compound.toUpperCase()} · {order.status === 'consumed' ? 'EJECUTADA' :
+                {order && <span> <CompoundBadge compound={order.compound} size={14} detail="solicitado" /> {order.compound.toUpperCase()} · {order.status === 'consumed' ? 'EJECUTADA' :
                   order.status === 'committed' ? 'CONFIRMADA' : order.status === 'cancelled' ? 'CANCELADA' :
                   order.status === 'rejected' ? 'RECHAZADA' : 'ACEPTADA'}</span>}
               </div>

@@ -14,12 +14,6 @@
 .badgeDnf { background:#450a0a; color:#fca5a5; }
 .badgeFinished { background:#1c1917; color:#a8a29e; }
 .pilotTire { display:flex; align-items:center; gap:6px; font-size:12px; color:#cbd5e1; }
-.tireDot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
-.tire_soft { background:#e10600; }
-.tire_medium { background:#fbbf24; }
-.tire_hard { background:#f1f5f9; }
-.tire_intermediate { background:#22c55e; }
-.tire_wet { background:#3b82f6; }
 .stops { margin-left:auto; color:#94a3b8; }
 .waitInfo { font-size:12px; color:#fde68a; }
 .orderRow { display:flex; gap:4px; align-items:center; }

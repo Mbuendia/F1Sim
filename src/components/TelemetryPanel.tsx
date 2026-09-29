@@ -2,6 +2,7 @@ import React from 'react';
 import styles from './TelemetryPanel.module.css';
 import { CarState } from '../types/f1';
 import { X, Gauge, Zap, Flame, Wind, Fuel, Shield, Sparkles, Trophy } from 'lucide-react';
+import { CompoundBadge } from './CompoundBadge';
 
 interface TelemetryPanelProps {
   car: CarState;
@@ -160,7 +161,7 @@ export const TelemetryPanel: React.FC<TelemetryPanelProps> = ({ car, onClose }) 
         <div className={styles.tireHeader}>
           <div className={styles.tireTitle}>
             <span>ESTADO DE NEUMÁTICOS</span>
-            <span className={styles.compoundTag}>COMPUESTO: {tires.compound.toUpperCase()}</span>
+            <span className={styles.compoundTag}>COMPUESTO: <CompoundBadge compound={tires.compound} size={16} showName /></span>
           </div>
           <span className={styles.tireGlobalPct} style={{ color: getTireHealthColor(telemetry.tireWear) }}>
             {telemetry.tireWear}%

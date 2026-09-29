@@ -283,12 +283,14 @@
   gap: 10px;
 }
 
-.compoundPill {
+.compoundInfo {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-family: 'Orbitron', sans-serif;
   font-size: 11px;
   font-weight: 900;
-  padding: 2px 8px;
-  border-radius: 4px;
+  color: #e2e8f0;
 }
 
 .tireHealthText {

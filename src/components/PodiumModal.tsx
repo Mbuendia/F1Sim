@@ -4,6 +4,7 @@ import { CarState } from '../types/f1';
 import { Trophy, RotateCcw, Home, Sparkles } from 'lucide-react';
 import { animate, stagger } from 'animejs';
 import { FlagIcon } from './FlagIcon';
+import { F1CarSilhouette } from './F1CarSilhouette';
 
 interface PodiumModalProps {
   podiumCars: CarState[];
@@ -116,6 +117,7 @@ export const PodiumModal: React.FC<PodiumModalProps> = ({ podiumCars, onRestart,
           <div className={`${styles.podiumStep} ${styles.stepP2}`}>
             <div className={styles.driverCard} style={{ borderTopColor: p2.team.color }}>
               <div className={styles.trophyIcon}><Trophy size={32} color="#cbd5e1" /></div>
+              <F1CarSilhouette teamColor={p2.team.color} width={96} label={`Monoplaza de ${p2.team.name}`} />
               
               <div 
                 className={styles.teamBadge} 
@@ -146,6 +148,7 @@ export const PodiumModal: React.FC<PodiumModalProps> = ({ podiumCars, onRestart,
             <div className={styles.winnerCrown}><Sparkles size={20} color="#ffd700" /> GANADOR DEL GP <Sparkles size={20} color="#ffd700" /></div>
             <div className={`${styles.driverCard} ${styles.winnerCard}`} style={{ borderTopColor: p1.team.color }}>
               <div className={styles.trophyIcon}><Trophy size={44} color="#ffd700" /></div>
+              <F1CarSilhouette teamColor={p1.team.color} width={120} label={`Monoplaza de ${p1.team.name}`} />
               
               <div 
                 className={styles.teamBadge} 
@@ -175,6 +178,7 @@ export const PodiumModal: React.FC<PodiumModalProps> = ({ podiumCars, onRestart,
           <div className={`${styles.podiumStep} ${styles.stepP3}`}>
             <div className={styles.driverCard} style={{ borderTopColor: p3.team.color }}>
               <div className={styles.trophyIcon}><Trophy size={30} color="#cd7f32" /></div>
+              <F1CarSilhouette teamColor={p3.team.color} width={96} label={`Monoplaza de ${p3.team.name}`} />
               
               <div 
                 className={styles.teamBadge} 

@@ -4,6 +4,7 @@ import { CarState } from '../types/f1';
 import { Timer, AlertTriangle } from 'lucide-react';
 import { animate, stagger } from 'animejs';
 import { FlagIcon } from './FlagIcon';
+import { CompoundBadge } from './CompoundBadge';
 
 interface LeaderboardProps {
   cars: CarState[];
@@ -65,15 +66,6 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
     return `+${car.gapToLeaderSec.toFixed(1)}s`;
   };
 
-  const getCompoundDotColor = (compound: string) => {
-    switch (compound) {
-      case 'soft': return '#e10600';
-      case 'medium': return '#ffd700';
-      case 'hard': return '#ffffff';
-      default: return '#ffd700';
-    }
-  };
-
   return (
     <div ref={containerRef} className={styles.towerContainer}>
       <div className={styles.header}>
@@ -127,11 +119,8 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
               <div className={styles.tireCell}>
                 {!isOut && (
                   <>
-                    <span
-                      className={styles.tireDot}
-                      style={{ backgroundColor: getCompoundDotColor(car.tires.compound) }}
-                      title={`Neumático ${car.tires.compound.toUpperCase()} - Salud: ${Math.round(car.tires.health)}%`}
-                    />
+                    <CompoundBadge compound={car.tires.compound} size={16}
+                      detail={`Salud ${Math.round(car.tires.health)}%`} />
                     {car.pitStop.totalPitStops > 0 && (
                       <span className={styles.pitCountBadge}>{car.pitStop.totalPitStops}P</span>
                     )}

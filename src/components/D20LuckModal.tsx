@@ -3,6 +3,7 @@ import styles from './D20LuckModal.module.css';
 import { D20LuckEvent } from '../types/f1';
 import { Sparkles, Dices, ShieldAlert, CheckCircle2, Zap } from 'lucide-react';
 import { FlagIcon } from './FlagIcon';
+import { CompoundBadge } from './CompoundBadge';
 import { animate } from 'animejs';
 
 interface D20LuckModalProps {
@@ -155,8 +156,8 @@ export const D20LuckModal: React.FC<D20LuckModalProps> = ({
 
             <div className={styles.optimalTireRow}>
               <span className={styles.tiresLabel}>Compuesto Óptimo Equipado:</span>
-              <span className={`${styles.compoundBadge} ${styles[event.optimalCompound]}`}>
-                {event.optimalCompound.toUpperCase()} (100% SALUD)
+              <span className={styles.optimalCompound}>
+                <CompoundBadge compound={event.optimalCompound} size={18} showName detail="100% de salud" /> (100% SALUD)
               </span>
             </div>
           </div>
