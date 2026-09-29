@@ -22,7 +22,7 @@
 
 ## 🧭 2. ROADMAP Y ESTADO GLOBAL DE SPRINTS
 
-**Orden vigente:** Sprint **2.8** · Tarea actual **Q22** · Siguiente **Q23**.
+**Orden vigente:** Sprint **2.8** · Tarea actual **Q23** · Siguiente **Q12**.
 
 **Actualización de orden — 29/09/2026:** Q10 y Q11 están completadas; el orden vigente pasa a Q20 (primera tarea de la solicitud vigente del 29/09) y después Q21. El usuario aporta las fuentes para las referencias de boxes de Q20 (ver la entrada Q20). Esta actualización es documental: no implementa Q20 ni rellena todavía la fixture de referencias.
 
@@ -448,11 +448,15 @@ Registro original: `docs/reviews/resultados-usuario-2026-09-29.json`: 32 aprobac
   * *Tests previos:* visual-chassis; contrato ya publicado, pendiente de implementación y revisión visual.
   * *Implementación (30/09/2026):* `CarChassisSvg` cenital (morro arriba): pontones en botella de Coca-Cola, fondo plano, alerones, halo; cuatro ruedas `data-wheel` con el desgaste real del motor (`telemetry.tireHealthFL/FR/RL/RR`, TireModel) y la banda del compuesto; pulso SVG (`data-warning`) solo por debajo del 25 %; flap DRS separado y marcado (`data-drs`) desde `telemetry.drsActive`. Umbrales compartidos en `src/utils/tireHealth.ts` (> 70 / > 40 / ≥ 25 / < 25); `TelemetryPanel` los usa también para los porcentajes (antes crítico por debajo del 20 %) y muestra el chasis junto al desglose numérico.
   * *Resultado:* `visual-chassis` 27 PASS / 0 FAIL (antes 1/14); suite 958 PASS / 7 FAIL (solo contrato Q23). Vista previa: `scratch/q22-preview.html`.
+  * *Integración visible (30/09/2026):* `TelemetryPanel` no se monta en ninguna vista del juego (componente sin uso, cubierto solo por tests); el chasis se integra también en el dock inferior (`BottomTelemetryDock`), la telemetría visible en carrera, con el desglose FL/FR/RL/RR en rejilla 2×2 y los umbrales compartidos (antes rojo < 30 %).
 
-* **Q23 — Animaciones e indicadores de clasificación y telemetría:** `[ ] CONTRATO DE TESTS — IMPLEMENTACIÓN PENDIENTE`
+* **Q23 — Animaciones e indicadores de clasificación y telemetría:** `[ ] EN REVISIÓN LOCAL — IMPLEMENTADO 30/09/2026, PENDIENTE REVISIÓN VISUAL DEL USUARIO`
   * *Alcance:* Indicadores de posición ganada/perdida y boxes en Leaderboard; marcadores para animación de velocidad/RPM y entrada del panel de telemetría.
   * *Aceptación:* Conservar lectura y funcionalidad existente y renderizado SSR sin DOM. Los marcadores de tests no certifican por sí solos la animación: revisar movimiento y actualización en navegador antes de aceptar.
   * *Tests previos:* visual-animations; contrato ya publicado, pendiente de implementación y revisión visual.
+  * *Implementación (30/09/2026):* Leaderboard: indicador ▲/▼ con el número de puestos (`data-pos-change`, `data-pos-delta`) superpuesto bajo la posición (sin alterar la altura de la fila) y animado con Anime.js; como el motor solo conserva `previousPosition` durante el paso del adelantamiento, la torre recuerda cada cambio 4 s. Coches en boxes: etiqueta PIT/QUEUE con pulso (`data-pit-status`). Telemetría: odómetros de velocidad y RPM (`useTweenedNumber`, interpolación entre refrescos; valor exacto en SSR) en `TelemetryPanel` y en el dock visible; entrada deslizante (`data-animate`) al abrir o cambiar de piloto.
+  * *Verificación en navegador:* en carrera real (Barcelona, 32x) se observaron ▲1/▲2/▼1 durante ~3-4 s tras cada adelantamiento y el pulso PIT en los coches en boxes. El movimiento de los odómetros no pudo observarse: el panel del navegador de la sesión congela requestAnimationFrame cuando no está visible. Pendiente de la revisión visual del usuario.
+  * *Resultado:* `visual-animations` 10 PASS / 0 FAIL (antes 3/7); suite completa 965 PASS / 0 FAIL.
 
 **Reconciliación de propuestas anteriores con el Sprint 2.9:** Q3: `[x] COMPLETADO`
 Q4: `[x] COMPLETADO`
