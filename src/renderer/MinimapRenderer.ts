@@ -1,6 +1,6 @@
 import type { RaceSimulation } from '../simulation/RaceSimulation';
 import type { Camera } from './Camera';
-import { isCarVisible } from '../utils/carPosition';
+import { getPitRoute, isCarVisible } from '../utils/carPosition';
 
 // ── RENDERIZADO DEL MINIMAPA A LA IZQUIERDA DEL TODO ──
 export function renderLeftMinimap(
@@ -15,7 +15,9 @@ export function renderLeftMinimap(
   const mmY = camera.screenHeight - mmH - 120;
   const bounds = simulation.activeTrack.bounds;
   const b = { ...bounds };
-  for (const point of simulation.activeTrack.pitLanePoints) {
+  // Ruta de boxes del motor (fuente única), no una ruta propia.
+  const pitRoute = getPitRoute(simulation.activeTrack);
+  for (const point of pitRoute) {
     b.minX = Math.min(b.minX, point.x);
     b.maxX = Math.max(b.maxX, point.x);
     b.minY = Math.min(b.minY, point.y);
@@ -56,9 +58,9 @@ export function renderLeftMinimap(
   }
 
   // La ruta de boxes permite situar el marcador fuera de la pista principal.
-  if (simulation.activeTrack.pitLanePoints.length > 1) {
+  if (pitRoute.length > 1) {
     ctx.beginPath();
-    simulation.activeTrack.pitLanePoints.forEach((point, index) => {
+    pitRoute.forEach((point, index) => {
       const x = mmOffsetX + (point.x - b.minX) * mmScale;
       const y = mmOffsetY + (point.y - b.minY) * mmScale;
       if (index === 0) ctx.moveTo(x, y);

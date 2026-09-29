@@ -1,26 +1,19 @@
 import { TrackDefinition } from '../data/barcelonaTrack';
 import { Camera } from './Camera';
 import { TrackWeatherState } from '../types/f1';
-import { TEAMS } from '../data/teams';
-import { buildPitLaneGeometry, PitLaneGeometry } from '../utils/pitLaneGeometry';
+import { getPitLaneGeometry, PitLaneGeometry } from '../utils/pitLaneGeometry';
 import { getScenario } from '../data/scenarioRegistry';
 import { buildScenarioGeometry, ScenarioGeometry } from '../utils/scenarioGeometry';
 import type { Point2D } from '../utils/spline';
 import { calculateCarWorldPosition } from '../utils/carPosition';
 
 export class TrackRenderer {
-  private static geometryCache = new WeakMap<TrackDefinition, PitLaneGeometry>();
   private static scenarioCache = new WeakMap<TrackDefinition, ScenarioGeometry>();
   /** Último circuitId usado para invalidar la caché de escenario al cambiar de circuito */
   private static lastCircuitId: string = '';
 
   private static geometryFor(track: TrackDefinition): PitLaneGeometry {
-    let geometry = this.geometryCache.get(track);
-    if (!geometry) {
-      geometry = buildPitLaneGeometry(track, Object.values(TEAMS));
-      this.geometryCache.set(track, geometry);
-    }
-    return geometry;
+    return getPitLaneGeometry(track);
   }
 
   private static scenarioFor(track: TrackDefinition, circuitId: string): ScenarioGeometry {

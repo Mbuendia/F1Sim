@@ -29,7 +29,10 @@ import { PitStopModel } from './PitStopModel';
 import { commitmentT, nextCrossing, orderIsActive, updateOrderCommitment } from './BoxOrders';
 import { SafetyCarModel } from './SafetyCarModel';
 import { IncidentModel } from './IncidentModel';
-import { calculateCarWorldPosition } from '../utils/carPosition';
+import { calculateCarWorldPosition, lapsToPitEntry, limitLateralChange } from '../utils/carPosition';
+
+// Q20: distancia previa a la entrada de boxes en la que un coche que va a parar se coloca en el eje.
+const PIT_APPROACH_METERS = 250;
 
 export class RaceSimulation {
   cars: CarState[] = [];
@@ -815,7 +818,16 @@ export class RaceSimulation {
         car.targetLateralOffset = this.raceFlagState === 'green' ? (trackPoint.idealLineOffset || 0) : 0;
       }
 
-      car.lateralOffset += (car.targetLateralOffset - car.lateralOffset) * Math.min(1.0, dt * 4.0);
+      // Q20: con la parada decidida, llegar a la entrada por el eje (la ruta de boxes sale de la línea central).
+      const pitPlan = car.pitStop;
+      const pitDecided = pitPlan.isPitting || car.hasPuncture || car.tires.health <= 5 || pitPlan.activeBoxOrder?.status === 'committed';
+      if (pitDecided && !car.isInPitLane && lapsToPitEntry(this.activeTrack, car.progress) * lapDistanceMeters < PIT_APPROACH_METERS) {
+        car.isOvertaking = false;
+        car.targetLateralOffset = 0;
+      }
+      // Q20: sin deslizamientos laterales más rápidos que el avance (evita saltos a baja velocidad).
+      car.lateralOffset += limitLateralChange((car.targetLateralOffset - car.lateralOffset) * Math.min(1.0, dt * 4.0),
+        this.activeTrack, dt * car.currentSpeedKmh / 3.6, trackPoint);
 
       // Limit forward displacement; never repair spacing by moving a car backwards.
       if (this.safetyCar.isDeployed && this.safetyCar.mode !== 'idle' && this.safetyCar.mode !== 'in') {

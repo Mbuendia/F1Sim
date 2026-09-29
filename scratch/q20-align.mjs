@@ -185,3 +185,20 @@ export async function run(ids) {
   }
   return results;
 }
+
+// Ruta del pit lane en coordenadas SVG crudas (inversa de la normalización de buildTrackFromSvg).
+import { sampleSvgPath } from '../src/utils/svgPathSampler.ts';
+import svgPaths from '../src/data/svgTrackPaths.json';
+export function pitRoutesSvg(ids) {
+  const out = {};
+  for (const id of ids) {
+    const g = geo[id], spec = OFFICIAL_CIRCUITS[id];
+    if (!g || !g.pit) continue;
+    const raw = sampleSvgPath(svgPaths[spec.svgFile], 750);
+    const xs = raw.map(p => p.x), ys = raw.map(p => p.y);
+    const minX = Math.min(...xs), minY = Math.min(...ys), w = Math.max(1, Math.max(...xs) - minX), h = Math.max(1, Math.max(...ys) - minY);
+    const scale = Math.min(1900 / w, 1150 / h), ox = 100 + (1900 - w * scale) / 2, oy = 90 + (1150 - h * scale) / 2;
+    out[id] = g.pit.map(([x, y]) => [+((x - ox) / scale + minX).toFixed(3), +((y - oy) / scale + minY).toFixed(3)]);
+  }
+  return out;
+}

@@ -3,6 +3,8 @@ import { TrackDefinition, CornerMarker } from '../data/barcelonaTrack';
 import { CircuitSpec } from '../data/circuits';
 import svgPathsJson from '../data/svgTrackPaths.json';
 import { setIdealRacingLine } from './racingLine';
+import { sampleSvgPath } from './svgPathSampler';
+import pitLaneRoutes from '../data/pitLaneRoutes.json';
 
 const svgPathsMap: Record<string, string> = svgPathsJson as any;
 
@@ -13,21 +15,11 @@ const svgPathsMap: Record<string, string> = svgPathsJson as any;
 export function buildTrackFromSvg(circuit: CircuitSpec, sampleCount: number = 750): TrackDefinition {
   const pathD = svgPathsMap[circuit.svgFile] || '';
 
-  const rawPoints: { x: number; y: number }[] = [];
-
-  if (typeof document !== 'undefined' && pathD) {
+  // Muestreo por longitud de arco sin DOM: la misma geometría en navegador y en Node (tests).
+  let rawPoints: { x: number; y: number }[] = [];
+  if (pathD) {
     try {
-      const svgPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      svgPath.setAttribute('d', pathD);
-      const totalLen = svgPath.getTotalLength();
-
-      if (totalLen > 0) {
-        for (let i = 0; i < sampleCount; i++) {
-          const dist = (i / sampleCount) * totalLen;
-          const pt = svgPath.getPointAtLength(dist);
-          rawPoints.push({ x: pt.x, y: pt.y });
-        }
-      }
+      rawPoints = sampleSvgPath(pathD, sampleCount);
     } catch (e) {
       console.warn('Error sampling SVG path:', e);
     }
@@ -259,7 +251,13 @@ export function buildTrackFromSvg(circuit: CircuitSpec, sampleCount: number = 75
   const pitExitT = circuit.pitExitT !== undefined ? circuit.pitExitT : 0.08;
   const pitOffset = circuit.pitOffset !== undefined ? circuit.pitOffset : 38;
 
-  const pitLanePoints = generatePitLanePoints(splinePoints, pitEntryT, pitExitT, pitOffset);
+  // Q20: trazado real (OSM) cuando existe referencia verificada; si no, carril genérico.
+  const realRoute = (pitLaneRoutes as unknown as Record<string, { points?: number[][] }>)[circuit.id]?.points;
+  const pitLanePoints = realRoute && realRoute.length >= 2
+    ? buildRealPitLanePoints(
+        realRoute.map(([x, y]) => ({ x: (x - minRawX) * scale + offsetX, y: (y - minRawY) * scale + offsetY })),
+        worldPoints, pitEntryT, pitExitT)
+    : generatePitLanePoints(splinePoints, pitEntryT, pitExitT, pitOffset);
 
   // ── 5. CURVAS Y BORDES OFICIALES ──
   const corners: CornerMarker[] = [];
@@ -385,4 +383,77 @@ export function generatePitLanePoints(
   }
 
   return pitLanePoints;
+}
+
+/**
+ * Q20: convierte el trazado real del pit lane (ya en coordenadas de mundo) en la ruta del motor.
+ * Los extremos se anclan exactamente a la línea central en pitEntryT/pitExitT mediante una
+ * transición gradual (sin quiebros); después se suaviza y se remuestrea a paso uniforme para que
+ * el avance en boxes sea proporcional a la distancia recorrida.
+ */
+export function buildRealPitLanePoints(route: Point2D[], centerline: Point2D[], pitEntryT: number, pitExitT: number): Point2D[] {
+  const n = centerline.length;
+  if (n < 2 || route.length < 2) return [];
+  const distance = (a: Point2D, b: Point2D) => Math.hypot(a.x - b.x, a.y - b.y);
+  const centerAt = (t: number): Point2D => {
+    const x = (((t % 1) + 1) % 1) * n, i = Math.floor(x) % n, f = x - Math.floor(x);
+    const a = centerline[i], b = centerline[(i + 1) % n];
+    return { x: a.x + (b.x - a.x) * f, y: a.y + (b.y - a.y) * f };
+  };
+  const cumulative = (points: Point2D[]) => points.reduce<number[]>((acc, p, i) => {
+    acc.push(i === 0 ? 0 : acc[i - 1] + distance(p, points[i - 1]));
+    return acc;
+  }, []);
+  const entry = centerAt(pitEntryT), exit = centerAt(pitExitT);
+
+  // Orientar de entrada a salida con independencia del sentido en que se trazó la vía.
+  let points = route.filter((p, i) => i === 0 || distance(p, route[i - 1]) > 1e-6);
+  if (distance(points[points.length - 1], entry) < distance(points[0], entry)) points = [...points].reverse();
+
+  // Separación y reincorporación tangentes: cerca de cada extremo la ruta se funde con la línea
+  // central (a la misma distancia recorrida), de modo que sale y entra en la pista sin quiebro.
+  let perimeter = 0;
+  for (let i = 0; i < n; i++) perimeter += distance(centerline[i], centerline[(i + 1) % n]);
+  const along = cumulative(points), total = along[along.length - 1];
+  const blend = Math.max(1e-6, Math.min(total * 0.15, 60));
+  const weight = (u: number) => (u >= 1 ? 1 : u * u * (3 - 2 * u));
+  points = points.map((p, i) => {
+    const fromEntry = along[i], toExit = total - along[i];
+    if (fromEntry < blend) {
+      const q = centerAt(pitEntryT + fromEntry / perimeter), w = weight(fromEntry / blend);
+      return { x: q.x + (p.x - q.x) * w, y: q.y + (p.y - q.y) * w };
+    }
+    if (toExit < blend) {
+      const q = centerAt(pitExitT - toExit / perimeter), w = weight(toExit / blend);
+      return { x: q.x + (p.x - q.x) * w, y: q.y + (p.y - q.y) * w };
+    }
+    return p;
+  });
+
+  // Suavizado Chaikin conservando los extremos.
+  for (let iteration = 0; iteration < 3; iteration++) {
+    const smoothed: Point2D[] = [points[0]];
+    for (let i = 0; i < points.length - 1; i++) {
+      const a = points[i], b = points[i + 1];
+      if (i > 0) smoothed.push({ x: a.x * 0.75 + b.x * 0.25, y: a.y * 0.75 + b.y * 0.25 });
+      if (i < points.length - 2) smoothed.push({ x: a.x * 0.25 + b.x * 0.75, y: a.y * 0.25 + b.y * 0.75 });
+    }
+    smoothed.push(points[points.length - 1]);
+    points = smoothed;
+  }
+
+  // Remuestreo uniforme con el paso medio de la pista.
+  const s = cumulative(points), length = s[s.length - 1];
+  const count = Math.max(10, Math.ceil(length / (perimeter / n)));
+  const result: Point2D[] = [];
+  let k = 1;
+  for (let j = 0; j <= count; j++) {
+    const target = (j / count) * length;
+    while (k < points.length - 1 && s[k] < target) k++;
+    const span = s[k] - s[k - 1] || 1, f = Math.max(0, Math.min(1, (target - s[k - 1]) / span));
+    result.push({ x: points[k - 1].x + (points[k].x - points[k - 1].x) * f, y: points[k - 1].y + (points[k].y - points[k - 1].y) * f });
+  }
+  result[0] = entry;
+  result[result.length - 1] = exit;
+  return result;
 }
