@@ -231,9 +231,11 @@
    "timestamp": "2026-01-21T15:50:48Z"
   },
   "pitWays": [
-   "176695254"
+   "176695254",
+   "176695255",
+   "176695253"
   ],
-  "pitSource": "ways etiquetadas pit (bbox)",
+  "pitSource": "cadena OSM Pit Lane hasta la unión con la pista (incluye túnel 176695255)",
   "fixmes": []
  },
  "hungaroring": {

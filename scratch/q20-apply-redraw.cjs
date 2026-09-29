@@ -4,10 +4,12 @@ const path = require('path');
 const root = path.join(__dirname, '..');
 const read = p => fs.readFileSync(path.join(root, p), 'utf8');
 const write = (p, s) => fs.writeFileSync(path.join(root, p), s);
-const R = JSON.parse(read('scratch/q20-redraw.json'));
+// Q20_ONLY=<id> aplica un único circuito con SVG conservado desde scratch/q20-redraw-<id>.json (sin tocar los demás).
+const ONLY = process.env.Q20_ONLY;
+const R = JSON.parse(read(ONLY ? `scratch/q20-redraw-${ONLY.split('-')[0]}.json` : 'scratch/q20-redraw.json'));
 const meta = JSON.parse(read('scratch/q20-meta.json'));
-const REDRAW = ['spielberg', 'las-vegas', 'bahrain', 'baku', 'miami', 'shanghai', 'mexico-city', 'austin'];
-const KEEP_SVG = ['jeddah'];
+const REDRAW = ONLY ? [] : ['spielberg', 'las-vegas', 'bahrain', 'baku', 'miami', 'shanghai', 'mexico-city', 'austin'];
+const KEEP_SVG = ONLY ? [ONLY] : ['jeddah'];
 const r4 = v => Math.round(v * 10000) / 10000;
 const r3 = v => Math.round(v * 1000) / 1000;
 
@@ -120,12 +122,13 @@ for (const id of [...REDRAW, ...KEEP_SVG]) {
   if (e.entry.distanceToTrackM > 15 || e.exit.distanceToTrackM > 15 || e.entry.localOsmResidualM > 5 || e.exit.localOsmResidualM > 5)
     throw new Error(`${id} no cumple el criterio de verificación`);
 }
-refs['yas-marina'].reason = 'La salida de boxes de OSM termina a 17-22 m de la pista (GeoJSON y SVG) en la reincorporación tras el túnel: extremo no concluyente (> 15 m). El SVG yas-marina-2 coincide con la geometría real (mediana 3,9 m), así que no se redibuja.';
-refs._nota += ' Opción A (29/09/2026): pista real de bacinger/f1-circuits (MIT) para los circuitos cuyo SVG se desviaba > 5 m (redibujados como <id>-2026.svg) y para Jeddah (SVG conservado); el pit lane sigue siendo OSM proyectado sobre esa pista. Criterio: extremo <= 15 m y residuo local OSM/pista <= 5 m. Validación cruzada: en Barcelona, Silverstone y Hungaroring este método reproduce las referencias OSM con diferencia <= 0,0004 vueltas.';
+if (!ONLY) refs['yas-marina'].reason = 'La salida de boxes de OSM termina a 17-22 m de la pista (GeoJSON y SVG) en la reincorporación tras el túnel: extremo no concluyente (> 15 m). El SVG yas-marina-2 coincide con la geometría real (mediana 3,9 m), así que no se redibuja.';
+if (!ONLY) refs._nota += ' Opción A (29/09/2026): pista real de bacinger/f1-circuits (MIT) para los circuitos cuyo SVG se desviaba > 5 m (redibujados como <id>-2026.svg) y para Jeddah (SVG conservado); el pit lane sigue siendo OSM proyectado sobre esa pista. Criterio: extremo <= 15 m y residuo local OSM/pista <= 5 m. Validación cruzada: en Barcelona, Silverstone y Hungaroring este método reproduce las referencias OSM con diferencia <= 0,0004 vueltas.';
 
 write('src/data/circuits.ts', circuits);
 write('src/data/scenarioCalendar.ts', calendar);
-write('src/data/svgTrackPaths.json', JSON.stringify(svgPaths, null, 2) + '\n');
+// Nota: al redibujar se reformatea el JSON; en el commit se reinsertaron solo las claves nuevas con el formato original.
+if (!ONLY) write('src/data/svgTrackPaths.json', JSON.stringify(svgPaths, null, 2) + '\n');
 write('src/data/pitLaneRoutes.json', JSON.stringify(routes) + '\n');
 write('tests/fixtures/pit-lane-references.json', JSON.stringify(refs, null, 2) + '\n');
 for (const [id, c] of report) console.log(id.padEnd(12), c);
