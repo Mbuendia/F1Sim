@@ -1,7 +1,7 @@
 import { createServer } from 'vite';
 const server = await createServer({ root: process.cwd(), server: { middlewareMode: true }, optimizeDeps: { noDiscovery: true, include: [] }, logLevel: 'error' });
 const { RaceSimulation } = await server.ssrLoadModule('/src/simulation/RaceSimulation.ts');
-for (const c of ['barcelona','monza','silverstone','spa','monaco','interlagos','suzuka','zandvoort','melbourne','marina-bay','lusail','hungaroring','montreal']) {
+for (const c of Object.keys(JSON.parse((await import('node:fs')).readFileSync('src/data/pitLaneRoutes.json','utf8'))).filter(k => k !== '_nota')) {
   const t = new RaceSimulation(c).activeTrack, r = t.pitLanePoints, P = t.points;
   let len = 0; for (let i = 1; i < r.length; i++) len += Math.hypot(r[i].x - r[i-1].x, r[i].y - r[i-1].y);
   let per = 0; for (let i = 0; i < P.length; i++) per += Math.hypot(P[(i+1)%P.length].x - P[i].x, P[(i+1)%P.length].y - P[i].y);
