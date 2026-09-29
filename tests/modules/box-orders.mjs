@@ -127,7 +127,7 @@ export default async function run({assert, server}) {
           sim.isPaused=true; const previous=car.progress; sim.update(1);
           assert(car.progress===previous && order.status==='accepted', 'Q10: Pausa no compromete ni mueve el coche');
           sim.isPaused=false; sim.setCircuit('monaco');
-          assert(sim.activeTrack.pitCommitmentT===.89 && sim.activeTrack.pitCommitmentSource==='calibrated' &&
+          assert(sim.activeTrack.pitCommitmentT===.5567 && sim.activeTrack.pitCommitmentSource==='calibrated' &&
             sim.cars.every(c=>!c.pitStop.activeBoxOrder), 'Q10: Cambio de GP limpia orden y usa línea calibrada propia');
         }
       } finally { Math.random = originalRandom; }

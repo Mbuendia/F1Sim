@@ -12,7 +12,8 @@ export default async function run({assert, server}) {
         const setup = () => {
           const sim = new RaceSimulation('barcelona');
           sim.lightState = 'racing'; sim.isPaused = false; sim.totalLaps = 30;
-          sim.activeTrack = { ...sim.activeTrack, pitEntryT: 0.9, pitExitT: 0.15 };
+          // Q20 (revisión autorizada 29/09/2026): el escenario forzado incluye su línea de compromiso.
+          sim.activeTrack = { ...sim.activeTrack, pitEntryT: 0.9, pitExitT: 0.15, pitCommitmentT: 0.875 };
           
           const mclarenCars = sim.cars.filter(c => c.driver.teamId === 'mclaren');
           const redbullCars = sim.cars.filter(c => c.driver.teamId === 'redbull');

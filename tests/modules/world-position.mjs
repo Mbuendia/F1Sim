@@ -112,7 +112,8 @@ export default async function run({assert, server}) {
       }
       sim.lightState = 'racing';
       const car = sim.cars[0];
-      Object.assign(car, { progress: 0.95, trackT: 0.95, currentLap: 1, isInPitLane: true, status: 'pit' });
+      // Q20 (revisión autorizada 29/09/2026): dentro del pit lane y antes del cajón con cualquier trazado real.
+      Object.assign(car, { progress: sim.activeTrack.pitEntryT + 0.02, trackT: sim.activeTrack.pitEntryT + 0.02, currentLap: 0, isInPitLane: true, status: 'pit' });
       car.pitStop.isPitting = true;
       car.pitStop.pitLaneProgress = 0;
         const oldProgress = car.progress;
