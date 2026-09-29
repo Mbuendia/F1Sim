@@ -1,0 +1,203 @@
+{
+ "_nota": "Q19: leyenda DRS literal de los planos oficiales 'Event Notes - Circuit Map' del Director de Carrera FIA, temporada 2025 (fia.com, documentos de cada GP). Transcripción automática (pdftotext) salvo 'leido', leído en el plano renderizado porque la leyenda es imagen. D = punto de detección, A = inicio de zona de activación.",
+ "barcelona": {
+  "event": "Spanish Grand Prix",
+  "D1": "86m before turn 9",
+  "D2": "Safety Car Line 1",
+  "A1": "40m after turn 9",
+  "A2": "162m after turn 14",
+  "document": "https://www.fia.com/system/files/decision-document/2025_spanish_grand_prix_-_race_director_event_notes_-_circuit_map_pit_lane_quarantine_zone_and_red_zones.pdf"
+ },
+ "monza": {
+  "event": "Italian Grand Prix",
+  "D1": "95m before Turn 7",
+  "A1": "170m after Turn 7",
+  "D2": "20m after Turn 11",
+  "A2": "12m after finish line",
+  "document": "https://www.fia.com/system/files/decision-document/2025_italian_grand_prix_-_event_notes_-_circuit_map_pit_lane_emergency_exit_map_quarantine_zone_and_red_zones.pdf"
+ },
+ "silverstone": {
+  "event": "British Grand Prix",
+  "D1": "25m before Turn 3",
+  "D2": "Turn 11",
+  "A1": "30m after Turn 5",
+  "A2": "Turn 14",
+  "document": "https://www.fia.com/system/files/decision-document/2025_british_grand_prix_-_event_notes_-_circuit_map_v2.pdf"
+ },
+ "spa": {
+  "event": "Belgian Grand Prix",
+  "D1": "240m before Turn 2",
+  "D2": "160m before Turn 18",
+  "A1": "305m after Turn 4",
+  "A2": "30m after Turn 19",
+  "document": "https://www.fia.com/system/files/decision-document/2025_belgian_grand_prix_-_event_notes_-_circuit_map_pit_lane_emergency_exits_quarantine_zone_and_red_zones.pdf"
+ },
+ "monaco": {
+  "event": "Monaco Grand Prix",
+  "D1": "80m after Turn 16",
+  "A1": "18m after Turn 19",
+  "document": "https://www.fia.com/system/files/decision-document/2025_monaco_grand_prix_-_race_directors_event_notes_-_circuit_map_pit_lane_map_ers_battery_containment_area_red_zones.pdf"
+ },
+ "spielberg": {
+  "event": "Austrian Grand Prix",
+  "D1": "160m before T1",
+  "A1": "102m after T1",
+  "D2": "40m before T3",
+  "A2": "100m after T3",
+  "D3": "120m before T10",
+  "A3": "106m after T10",
+  "document": "https://www.fia.com/system/files/decision-document/2025_austrian_grand_prix_-_event_notes_-_circuit_map_pit_lane_emergency_exit_map_quarantine_zone_red_zones.pdf"
+ },
+ "interlagos": {
+  "event": "São Paulo Grand Prix",
+  "D1": "Apex of Turn 2",
+  "A1": "30m after Turn 3",
+  "D2": "30m after Turn 13",
+  "A2": "160m before Turn 15",
+  "document": "https://www.fia.com/system/files/decision-document/2025_sao_paulo_grand_prix_-_event_notes_-_circuit_map_pit_lane_drawing_emergency_exits_map_quarantine_zone_and_red_zones_map.pdf"
+ },
+ "suzuka": {
+  "event": "Japanese Grand Prix",
+  "leido": true,
+  "D1": "40m after Turn 15",
+  "A1": "100m before control line",
+  "document": "https://www.fia.com/system/files/decision-document/2025_japanese_grand_prix_-_event_notes_-_circuit_map_pit_lane_quarantine_and_red_zone.pdf"
+ },
+ "zandvoort": {
+  "event": "Dutch Grand Prix",
+  "D1": "At entry to turn 10",
+  "D2": "20m after turn 12",
+  "A1": "50m after turn 10",
+  "A2": "40m after turn 13",
+  "document": "https://www.fia.com/system/files/decision-document/2025_dutch_grand_prix_-_event_notes_-_circuit_map_pit_lane_map_emergency_exit_map_quarantine_zone_and_red_zones_.pdf"
+ },
+ "las-vegas": {
+  "event": "Las Vegas Grand Prix",
+  "D1": "10m After T2",
+  "D2": "710m After T12",
+  "A1": "20m After T4",
+  "A2": "870m Before T14",
+  "document": "https://www.fia.com/system/files/decision-document/2025_las_vegas_grand_prix_-_event_notes_-_circuit_map_v2_pit_lane_drawing_emergency_map_exits_quarantine_zone_and_red_zones.pdf"
+ },
+ "bahrain": {
+  "event": "Bahrain Grand Prix",
+  "leido": true,
+  "D1": "50m before T1",
+  "D2": "10m before T9",
+  "D3": "110m before T14",
+  "A1": "23m after T3",
+  "A2": "50m after T10",
+  "A3": "250m after T15",
+  "document": "https://www.fia.com/system/files/decision-document/2025_bahrain_grand_prix_-_event_notes_-_circuit_map_v4.pdf"
+ },
+ "baku": {
+  "event": "Azerbaijan Grand Prix",
+  "D1": "SC2 before Turn 2",
+  "D2": "On Turn 20",
+  "A1": "54m after Turn 2",
+  "A2": "347m after Turn 20",
+  "document": "https://www.fia.com/system/files/decision-document/2025_azerbaijan_grand_prix_-_event_notes_-_circuit_map_pit_lane_quarantine_zone_and_red_zone.pdf"
+ },
+ "melbourne": {
+  "event": "Australian Grand Prix",
+  "leido": true,
+  "D1": "40m after T6",
+  "D2": "90m before T13",
+  "A1": "130m after TSP1",
+  "A2": "100m after T10",
+  "A3": "30m after T14",
+  "A4": "30m after T2",
+  "A1_interpretacion": "130m after Turn 8",
+  "A1_motivo": "'TSP1' no figura en la leyenda; en el plano la activación 1 está en la recta tras la curva 8 (Lakeside Drive)",
+  "document": "https://www.fia.com/system/files/decision-document/2025_australian_grand_prix_-_event_notes_-_circuit_map_pit_lane_and_quarantine_zone.pdf"
+ },
+ "miami": {
+  "event": "Miami Grand Prix",
+  "leido": true,
+  "D1": "90m after turn 8",
+  "D2": "70m after turn 16",
+  "D3": "15m after turn 17",
+  "A1": "30m after turn 9",
+  "A2": "525m after turn 16",
+  "A3": "On turn 19 apex",
+  "document": "https://www.fia.com/system/files/decision-document/2025_miami_grand_prix_-_event_notes_-_circuit_map_pit_lane_quarantine_zone_emergency_exits_and_red_zones_.pdf"
+ },
+ "shanghai": {
+  "event": "Chinese Grand Prix",
+  "leido": true,
+  "D1": "on turn 12",
+  "A1": "375m after turn 13",
+  "D2": "35m before turn 16",
+  "A2": "98m after turn 16",
+  "document": "https://www.fia.com/system/files/decision-document/2025_chinese_grand_prix_-_event_notes_-_circuit_map_pit_lane_and_quarantine_zone.pdf"
+ },
+ "jeddah": {
+  "event": "Saudi Arabian Grand Prix",
+  "leido": true,
+  "D1": "On exit to turn 17",
+  "D2": "On entry to turn 22",
+  "D3": "On exit to turn 27",
+  "A1": "On exit to turn 19",
+  "A2": "On entry to turn 25",
+  "A3": "240m after turn 27",
+  "document": "https://www.fia.com/system/files/decision-document/2025_saudi_arabian_grand_prix_-_event_notes_-_circuit_map_pit_lane_and_quarantine_zone.pdf"
+ },
+ "marina-bay": {
+  "event": "Singapore Grand Prix",
+  "D1": "T4",
+  "D2": "102m before T13",
+  "D3": "105m after apex T17",
+  "A1": "48m after T5",
+  "A2": "78m after T13",
+  "A3": "100m after T14",
+  "A4": "Exit T19",
+  "document": "https://www.fia.com/system/files/decision-document/2025_singapore_grand_prix_-_event_notes_-_circuit_map_pit_lane_emergency_exits_map_and_quarantine_zone.pdf"
+ },
+ "lusail": {
+  "event": "Qatar Grand Prix",
+  "D1": "40m After Turn 15",
+  "A1": "305m After Turn 16",
+  "document": "https://www.fia.com/system/files/decision-document/2025_qatar_grand_prix_-_event_notes_-_circuit_map._pit_lane_drawing_emergency_exits_map_ers_battery_containment_area_red_zones_map.pdf"
+ },
+ "yas-marina": {
+  "event": "Abu Dhabi Grand Prix",
+  "D1": "250m before Turn 5",
+  "D2": "50m after Turn 7",
+  "A1": "260m after Turn 5",
+  "A2": "165m after Turn 7",
+  "document": "https://www.fia.com/system/files/decision-document/2025_abu_dhabi_grand_prix_-_event_notes_-_circuit_map_pit_lane_drawing_emergency_exits_map_quarantine_zone_and_red_zones.pdf"
+ },
+ "hungaroring": {
+  "event": "Hungarian Grand Prix",
+  "D1": "5m before Turn 14",
+  "A1": "40m after Turn 14",
+  "A2": "6m after Turn 1",
+  "document": "https://www.fia.com/system/files/decision-document/2025_hungarian_grand_prix_-_event_notes_-_circuit_map_pit_lane_emergency_exits_map_quarantine_zone_and_red_zones.pdf"
+ },
+ "mexico-city": {
+  "event": "Mexico City Grand Prix",
+  "D1": "70m after Turn 9",
+  "A1": "80m after Turn 11",
+  "D2": "Exit Turn 15",
+  "A2": "240m after Turn 17",
+  "A3": "115m after Turn 3",
+  "document": "https://www.fia.com/system/files/decision-document/2025_mexico_city_grand_prix_-_event_notes_-_circuit_map_pit_lane_drawing_emergency_exits_map_and_quarantine_zone_area.pdf"
+ },
+ "montreal": {
+  "event": "Canadian Grand Prix",
+  "D1": "15m after Turn 5",
+  "A1": "95m after Turn 7",
+  "D2": "110m after Turn 9",
+  "A2": "155m before Turn 12",
+  "A3": "70m after Turn 14",
+  "document": "https://www.fia.com/system/files/decision-document/2025_canadian_grand_prix_-_event_notes_-_circuit_map_pit_lane_emergency_exits_map_ers_battery_containment_area_red_zones.pdf"
+ },
+ "austin": {
+  "event": "United States Grand Prix",
+  "D1": "150m after turn 10",
+  "D2": "65m after turn 18",
+  "A1": "345m after turn 11",
+  "A2": "80m after turn 20",
+  "document": "https://www.fia.com/system/files/decision-document/2025_united_states_grand_prix_-_event_notes_-_circuit_map_pit_lane_drawing_emergency_exits_map_quarantine_zone_map_red_zones_map.pdf"
+ }
+}

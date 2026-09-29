@@ -1,0 +1,1602 @@
+{
+ "_nota": "Q19: puntos de detección DRS y activaciones oficiales FIA 2025 transformados a la pista del juego. Texto literal del plano \"Event Notes - Circuit Map\" del Director de Carrera (URL por circuito); posición de las curvas numeradas y de la línea de cronometraje: datos de circuito del cronometraje oficial F1 (api.multiviewer.app, circuitKey 2025), ajustados a buildTrackFromSvg (semejanza + ICP; fitMedianM). Referencias no métricas (entrada/salida de curva, líneas SC, interpretación) marcadas con approx y source calibrated. Fin de zona: frenada de la siguiente curva lenta, sin pasar de la siguiente detección/activación (el flap se cierra al frenar). Generado con scratch/q19-drs.mjs.",
+ "barcelona": {
+  "event": "Spanish Grand Prix",
+  "document": "https://www.fia.com/system/files/decision-document/2025_spanish_grand_prix_-_race_director_event_notes_-_circuit_map_pit_lane_quarantine_zone_and_red_zones.pdf",
+  "readFromImage": false,
+  "circuitKey": 15,
+  "fitMedianM": 1.9,
+  "points": {
+   "D1": {
+    "text": "86m before turn 9",
+    "t": 0.5366,
+    "approx": null,
+    "offTrackM": 3.2
+   },
+   "D2": {
+    "text": "Safety Car Line 1",
+    "t": 0.8343,
+    "approx": "línea SC1 ≈ inicio de la entrada a boxes (pitEntryT)",
+    "offTrackM": 0
+   },
+   "A1": {
+    "text": "40m after turn 9",
+    "t": 0.5641,
+    "approx": null,
+    "offTrackM": 0.9
+   },
+   "A2": {
+    "text": "162m after turn 14",
+    "t": 0.9015,
+    "approx": null,
+    "offTrackM": 0.7
+   }
+  },
+  "drsZoneSpecs": [
+   {
+    "id": 1,
+    "name": "A1 · 40m after turn 9",
+    "startT": 0.5641,
+    "endT": 0.6547
+   },
+   {
+    "id": 2,
+    "name": "A2 · 162m after turn 14",
+    "startT": 0.9015,
+    "endT": 0.0867
+   }
+  ],
+  "drsDetections": [
+   {
+    "id": "D1",
+    "t": 0.5366,
+    "zoneIds": [
+     1
+    ],
+    "source": "verified"
+   },
+   {
+    "id": "D2",
+    "t": 0.8343,
+    "zoneIds": [
+     2
+    ],
+    "source": "calibrated"
+   }
+  ]
+ },
+ "monza": {
+  "event": "Italian Grand Prix",
+  "document": "https://www.fia.com/system/files/decision-document/2025_italian_grand_prix_-_event_notes_-_circuit_map_pit_lane_emergency_exit_map_quarantine_zone_and_red_zones.pdf",
+  "readFromImage": false,
+  "circuitKey": 39,
+  "fitMedianM": 2.5,
+  "points": {
+   "D1": {
+    "text": "95m before Turn 7",
+    "t": 0.4126,
+    "approx": null,
+    "offTrackM": 2.6
+   },
+   "A1": {
+    "text": "170m after Turn 7",
+    "t": 0.4585,
+    "approx": null,
+    "offTrackM": 1.4
+   },
+   "D2": {
+    "text": "20m after Turn 11",
+    "t": 0.8393,
+    "approx": null,
+    "offTrackM": 0.9
+   },
+   "A2": {
+    "text": "12m after finish line",
+    "t": 0.9347,
+    "approx": null,
+    "offTrackM": 3.5
+   }
+  },
+  "drsZoneSpecs": [
+   {
+    "id": 1,
+    "name": "A1 · 170m after Turn 7",
+    "startT": 0.4585,
+    "endT": 0.588
+   },
+   {
+    "id": 2,
+    "name": "A2 · 12m after finish line",
+    "startT": 0.9347,
+    "endT": 0.0653
+   }
+  ],
+  "drsDetections": [
+   {
+    "id": "D1",
+    "t": 0.4126,
+    "zoneIds": [
+     1
+    ],
+    "source": "verified"
+   },
+   {
+    "id": "D2",
+    "t": 0.8393,
+    "zoneIds": [
+     2
+    ],
+    "source": "verified"
+   }
+  ]
+ },
+ "silverstone": {
+  "event": "British Grand Prix",
+  "document": "https://www.fia.com/system/files/decision-document/2025_british_grand_prix_-_event_notes_-_circuit_map_v2.pdf",
+  "readFromImage": false,
+  "circuitKey": 2,
+  "fitMedianM": 3.8,
+  "points": {
+   "D1": {
+    "text": "25m before Turn 3",
+    "t": 0.6626,
+    "approx": null,
+    "offTrackM": 3.9
+   },
+   "D2": {
+    "text": "Turn 11",
+    "t": 0.1529,
+    "approx": null,
+    "offTrackM": 12
+   },
+   "A1": {
+    "text": "30m after Turn 5",
+    "t": 0.7356,
+    "approx": null,
+    "offTrackM": 3.6
+   },
+   "A2": {
+    "text": "Turn 14",
+    "t": 0.2284,
+    "approx": null,
+    "offTrackM": 5.1
+   }
+  },
+  "drsZoneSpecs": [
+   {
+    "id": 1,
+    "name": "A1 · 30m after Turn 5",
+    "startT": 0.7356,
+    "endT": 0.828
+   },
+   {
+    "id": 2,
+    "name": "A2 · Turn 14",
+    "startT": 0.2284,
+    "endT": 0.3507
+   }
+  ],
+  "drsDetections": [
+   {
+    "id": "D1",
+    "t": 0.6626,
+    "zoneIds": [
+     1
+    ],
+    "source": "verified"
+   },
+   {
+    "id": "D2",
+    "t": 0.1529,
+    "zoneIds": [
+     2
+    ],
+    "source": "verified"
+   }
+  ]
+ },
+ "spa": {
+  "event": "Belgian Grand Prix",
+  "document": "https://www.fia.com/system/files/decision-document/2025_belgian_grand_prix_-_event_notes_-_circuit_map_pit_lane_emergency_exits_quarantine_zone_and_red_zones.pdf",
+  "readFromImage": false,
+  "circuitKey": 7,
+  "fitMedianM": 2.3,
+  "points": {
+   "D1": {
+    "text": "240m before Turn 2",
+    "t": 0.017,
+    "approx": null,
+    "offTrackM": 1
+   },
+   "D2": {
+    "text": "160m before Turn 18",
+    "t": 0.8389,
+    "approx": null,
+    "offTrackM": 3.2
+   },
+   "A1": {
+    "text": "305m after Turn 4",
+    "t": 0.1256,
+    "approx": null,
+    "offTrackM": 0.6
+   },
+   "A2": {
+    "text": "30m after Turn 19",
+    "t": 0.8765,
+    "approx": null,
+    "offTrackM": 0.2
+   }
+  },
+  "drsZoneSpecs": [
+   {
+    "id": 1,
+    "name": "A1 · 305m after Turn 4",
+    "startT": 0.1256,
+    "endT": 0.2187
+   },
+   {
+    "id": 2,
+    "name": "A2 · 30m after Turn 19",
+    "startT": 0.8765,
+    "endT": 0.9267
+   }
+  ],
+  "drsDetections": [
+   {
+    "id": "D1",
+    "t": 0.017,
+    "zoneIds": [
+     1
+    ],
+    "source": "verified"
+   },
+   {
+    "id": "D2",
+    "t": 0.8389,
+    "zoneIds": [
+     2
+    ],
+    "source": "verified"
+   }
+  ]
+ },
+ "monaco": {
+  "event": "Monaco Grand Prix",
+  "document": "https://www.fia.com/system/files/decision-document/2025_monaco_grand_prix_-_race_directors_event_notes_-_circuit_map_pit_lane_map_ers_battery_containment_area_red_zones.pdf",
+  "readFromImage": false,
+  "circuitKey": 22,
+  "fitMedianM": 2,
+  "points": {
+   "D1": {
+    "text": "80m after Turn 16",
+    "t": 0.5345,
+    "approx": null,
+    "offTrackM": 1.1
+   },
+   "A1": {
+    "text": "18m after Turn 19",
+    "t": 0.6067,
+    "approx": null,
+    "offTrackM": 1.8
+   }
+  },
+  "drsZoneSpecs": [
+   {
+    "id": 1,
+    "name": "A1 · 18m after Turn 19",
+    "startT": 0.6067,
+    "endT": 0.732
+   }
+  ],
+  "drsDetections": [
+   {
+    "id": "D1",
+    "t": 0.5345,
+    "zoneIds": [
+     1
+    ],
+    "source": "verified"
+   }
+  ]
+ },
+ "spielberg": {
+  "event": "Austrian Grand Prix",
+  "document": "https://www.fia.com/system/files/decision-document/2025_austrian_grand_prix_-_event_notes_-_circuit_map_pit_lane_emergency_exit_map_quarantine_zone_red_zones.pdf",
+  "readFromImage": false,
+  "circuitKey": 19,
+  "fitMedianM": 2.2,
+  "points": {
+   "D1": {
+    "text": "160m before T1",
+    "t": 0.3308,
+    "approx": null,
+    "offTrackM": 2.8
+   },
+   "A1": {
+    "text": "102m after T1",
+    "t": 0.3918,
+    "approx": null,
+    "offTrackM": 1.5
+   },
+   "D2": {
+    "text": "40m before T3",
+    "t": 0.5757,
+    "approx": null,
+    "offTrackM": 3.3
+   },
+   "A2": {
+    "text": "100m after T3",
+    "t": 0.6094,
+    "approx": null,
+    "offTrackM": 2.6
+   },
+   "D3": {
+    "text": "120m before T10",
+    "t": 0.1581,
+    "approx": null,
+    "offTrackM": 0.2
+   },
+   "A3": {
+    "text": "106m after T10",
+    "t": 0.2121,
+    "approx": null,
+    "offTrackM": 2.1
+   }
+  },
+  "drsZoneSpecs": [
+   {
+    "id": 1,
+    "name": "A1 · 102m after T1",
+    "startT": 0.3918,
+    "endT": 0.5587
+   },
+   {
+    "id": 2,
+    "name": "A2 · 100m after T3",
+    "startT": 0.6094,
+    "endT": 0.7493
+   },
+   {
+    "id": 3,
+    "name": "A3 · 106m after T10",
+    "startT": 0.2121,
+    "endT": 0.3308
+   }
+  ],
+  "drsDetections": [
+   {
+    "id": "D1",
+    "t": 0.3308,
+    "zoneIds": [
+     1
+    ],
+    "source": "verified"
+   },
+   {
+    "id": "D2",
+    "t": 0.5757,
+    "zoneIds": [
+     2
+    ],
+    "source": "verified"
+   },
+   {
+    "id": "D3",
+    "t": 0.1581,
+    "zoneIds": [
+     3
+    ],
+    "source": "verified"
+   }
+  ]
+ },
+ "interlagos": {
+  "event": "São Paulo Grand Prix",
+  "document": "https://www.fia.com/system/files/decision-document/2025_sao_paulo_grand_prix_-_event_notes_-_circuit_map_pit_lane_drawing_emergency_exits_map_quarantine_zone_and_red_zones_map.pdf",
+  "readFromImage": false,
+  "circuitKey": 14,
+  "fitMedianM": 2.3,
+  "points": {
+   "D1": {
+    "text": "Apex of Turn 2",
+    "t": 0.3015,
+    "approx": null,
+    "offTrackM": 8.2
+   },
+   "A1": {
+    "text": "30m after Turn 3",
+    "t": 0.3514,
+    "approx": null,
+    "offTrackM": 2.5
+   },
+   "D2": {
+    "text": "30m after Turn 13",
+    "t": 0.9884,
+    "approx": null,
+    "offTrackM": 0.3
+   },
+   "A2": {
+    "text": "160m before Turn 15",
+    "t": 0.0983,
+    "approx": null,
+    "offTrackM": 2
+   }
+  },
+  "drsZoneSpecs": [
+   {
+    "id": 1,
+    "name": "A1 · 30m after Turn 3",
+    "startT": 0.3514,
+    "endT": 0.4987
+   },
+   {
+    "id": 2,
+    "name": "A2 · 160m before Turn 15",
+    "startT": 0.0983,
+    "endT": 0.2493
+   }
+  ],
+  "drsDetections": [
+   {
+    "id": "D1",
+    "t": 0.3015,
+    "zoneIds": [
+     1
+    ],
+    "source": "verified"
+   },
+   {
+    "id": "D2",
+    "t": 0.9884,
+    "zoneIds": [
+     2
+    ],
+    "source": "verified"
+   }
+  ]
+ },
+ "suzuka": {
+  "event": "Japanese Grand Prix",
+  "document": "https://www.fia.com/system/files/decision-document/2025_japanese_grand_prix_-_event_notes_-_circuit_map_pit_lane_quarantine_and_red_zone.pdf",
+  "readFromImage": true,
+  "circuitKey": 46,
+  "fitMedianM": 2.4,
+  "points": {
+   "D1": {
+    "text": "40m after Turn 15",
+    "t": 0.8301,
+    "approx": null,
+    "offTrackM": 5.5
+   },
+   "A1": {
+    "text": "100m before control line",
+    "t": 0.9481,
+    "approx": null,
+    "offTrackM": 0.7
+   }
+  },
+  "drsZoneSpecs": [
+   {
+    "id": 1,
+    "name": "A1 · 100m before control line",
+    "startT": 0.9481,
+    "endT": 0.0853
+   }
+  ],
+  "drsDetections": [
+   {
+    "id": "D1",
+    "t": 0.8301,
+    "zoneIds": [
+     1
+    ],
+    "source": "verified"
+   }
+  ]
+ },
+ "zandvoort": {
+  "event": "Dutch Grand Prix",
+  "document": "https://www.fia.com/system/files/decision-document/2025_dutch_grand_prix_-_event_notes_-_circuit_map_pit_lane_map_emergency_exit_map_quarantine_zone_and_red_zones_.pdf",
+  "readFromImage": false,
+  "circuitKey": 55,
+  "fitMedianM": 2.1,
+  "points": {
+   "D1": {
+    "text": "At entry to turn 10",
+    "t": 0.9132,
+    "approx": "entrada de curva ≈ 50 m antes del vértice",
+    "offTrackM": 4.5
+   },
+   "D2": {
+    "text": "20m after turn 12",
+    "t": 0.0904,
+    "approx": null,
+    "offTrackM": 0.5
+   },
+   "A1": {
+    "text": "50m after turn 10",
+    "t": 0.9349,
+    "approx": null,
+    "offTrackM": 2.4
+   },
+   "A2": {
+    "text": "40m after turn 13",
+    "t": 0.1672,
+    "approx": null,
+    "offTrackM": 1.4
+   }
+  },
+  "drsZoneSpecs": [
+   {
+    "id": 1,
+    "name": "A1 · 50m after turn 10",
+    "startT": 0.9349,
+    "endT": 0.036
+   },
+   {
+    "id": 2,
+    "name": "A2 · 40m after turn 13",
+    "startT": 0.1672,
+    "endT": 0.392
+   }
+  ],
+  "drsDetections": [
+   {
+    "id": "D1",
+    "t": 0.9132,
+    "zoneIds": [
+     1
+    ],
+    "source": "calibrated"
+   },
+   {
+    "id": "D2",
+    "t": 0.0904,
+    "zoneIds": [
+     2
+    ],
+    "source": "verified"
+   }
+  ]
+ },
+ "las-vegas": {
+  "event": "Las Vegas Grand Prix",
+  "document": "https://www.fia.com/system/files/decision-document/2025_las_vegas_grand_prix_-_event_notes_-_circuit_map_v2_pit_lane_drawing_emergency_map_exits_quarantine_zone_and_red_zones.pdf",
+  "readFromImage": false,
+  "circuitKey": 152,
+  "fitMedianM": 3.7,
+  "points": {
+   "D1": {
+    "text": "10m After T2",
+    "t": 0.1167,
+    "approx": null,
+    "offTrackM": 0.8
+   },
+   "D2": {
+    "text": "710m After T12",
+    "t": 0.6884,
+    "approx": null,
+    "offTrackM": 0.6
+   },
+   "A1": {
+    "text": "20m After T4",
+    "t": 0.1695,
+    "approx": null,
+    "offTrackM": 7.2
+   },
+   "A2": {
+    "text": "870m Before T14",
+    "t": 0.7478,
+    "approx": null,
+    "offTrackM": 2.9
+   }
+  },
+  "drsZoneSpecs": [
+   {
+    "id": 1,
+    "name": "A1 · 20m After T4",
+    "startT": 0.1695,
+    "endT": 0.2853
+   },
+   {
+    "id": 2,
+    "name": "A2 · 870m Before T14",
+    "startT": 0.7478,
+    "endT": 0.864
+   }
+  ],
+  "drsDetections": [
+   {
+    "id": "D1",
+    "t": 0.1167,
+    "zoneIds": [
+     1
+    ],
+    "source": "verified"
+   },
+   {
+    "id": "D2",
+    "t": 0.6884,
+    "zoneIds": [
+     2
+    ],
+    "source": "verified"
+   }
+  ]
+ },
+ "bahrain": {
+  "event": "Bahrain Grand Prix",
+  "document": "https://www.fia.com/system/files/decision-document/2025_bahrain_grand_prix_-_event_notes_-_circuit_map_v4.pdf",
+  "readFromImage": true,
+  "circuitKey": 63,
+  "fitMedianM": 2.3,
+  "points": {
+   "D1": {
+    "text": "50m before T1",
+    "t": 0.3311,
+    "approx": null,
+    "offTrackM": 2.2
+   },
+   "D2": {
+    "text": "10m before T9",
+    "t": 0.6922,
+    "approx": null,
+    "offTrackM": 1.3
+   },
+   "D3": {
+    "text": "110m before T14",
+    "t": 0.0974,
+    "approx": null,
+    "offTrackM": 3.4
+   },
+   "A1": {
+    "text": "23m after T3",
+    "t": 0.3856,
+    "approx": null,
+    "offTrackM": 2.5
+   },
+   "A2": {
+    "text": "50m after T10",
+    "t": 0.7216,
+    "approx": null,
+    "offTrackM": 2.8
+   },
+   "A3": {
+    "text": "250m after T15",
+    "t": 0.1793,
+    "approx": null,
+    "offTrackM": 0.2
+   }
+  },
+  "drsZoneSpecs": [
+   {
+    "id": 1,
+    "name": "A1 · 23m after T3",
+    "startT": 0.3856,
+    "endT": 0.472
+   },
+   {
+    "id": 2,
+    "name": "A2 · 50m after T10",
+    "startT": 0.7216,
+    "endT": 0.836
+   },
+   {
+    "id": 3,
+    "name": "A3 · 250m after T15",
+    "startT": 0.1793,
+    "endT": 0.3173
+   }
+  ],
+  "drsDetections": [
+   {
+    "id": "D1",
+    "t": 0.3311,
+    "zoneIds": [
+     1
+    ],
+    "source": "verified"
+   },
+   {
+    "id": "D2",
+    "t": 0.6922,
+    "zoneIds": [
+     2
+    ],
+    "source": "verified"
+   },
+   {
+    "id": "D3",
+    "t": 0.0974,
+    "zoneIds": [
+     3
+    ],
+    "source": "verified"
+   }
+  ]
+ },
+ "baku": {
+  "event": "Azerbaijan Grand Prix",
+  "document": "https://www.fia.com/system/files/decision-document/2025_azerbaijan_grand_prix_-_event_notes_-_circuit_map_pit_lane_quarantine_zone_and_red_zone.pdf",
+  "readFromImage": false,
+  "circuitKey": 144,
+  "fitMedianM": 2.1,
+  "points": {
+   "D1": {
+    "text": "SC2 before Turn 2",
+    "t": 0.1252,
+    "approx": "línea SC2 ≈ reincorporación de boxes (pitExitT)",
+    "offTrackM": 0
+   },
+   "D2": {
+    "text": "On Turn 20",
+    "t": 0.8907,
+    "approx": null,
+    "offTrackM": 6.5
+   },
+   "A1": {
+    "text": "54m after Turn 2",
+    "t": 0.1732,
+    "approx": null,
+    "offTrackM": 1.4
+   },
+   "A2": {
+    "text": "347m after Turn 20",
+    "t": 0.9488,
+    "approx": null,
+    "offTrackM": 1.6
+   }
+  },
+  "drsZoneSpecs": [
+   {
+    "id": 1,
+    "name": "A1 · 54m after Turn 2",
+    "startT": 0.1732,
+    "endT": 0.2827
+   },
+   {
+    "id": 2,
+    "name": "A2 · 347m after Turn 20",
+    "startT": 0.9488,
+    "endT": 0.08
+   }
+  ],
+  "drsDetections": [
+   {
+    "id": "D1",
+    "t": 0.1252,
+    "zoneIds": [
+     1
+    ],
+    "source": "calibrated"
+   },
+   {
+    "id": "D2",
+    "t": 0.8907,
+    "zoneIds": [
+     2
+    ],
+    "source": "verified"
+   }
+  ]
+ },
+ "melbourne": {
+  "event": "Australian Grand Prix",
+  "document": "https://www.fia.com/system/files/decision-document/2025_australian_grand_prix_-_event_notes_-_circuit_map_pit_lane_and_quarantine_zone.pdf",
+  "readFromImage": true,
+  "circuitKey": 10,
+  "fitMedianM": 2.5,
+  "points": {
+   "D1": {
+    "text": "40m after T6",
+    "t": 0.8064,
+    "approx": null,
+    "offTrackM": 4
+   },
+   "D2": {
+    "text": "90m before T13",
+    "t": 0.305,
+    "approx": null,
+    "offTrackM": 2.4
+   },
+   "A1": {
+    "text": "130m after TSP1",
+    "t": 0.8839,
+    "approx": "interpretación: 'TSP1' no figura en la leyenda; en el plano la activación 1 está en la recta tras la curva 8 (Lakeside Drive)",
+    "offTrackM": 0.3
+   },
+   "A2": {
+    "text": "100m after T10",
+    "t": 0.1099,
+    "approx": null,
+    "offTrackM": 2.1
+   },
+   "A3": {
+    "text": "30m after T14",
+    "t": 0.3591,
+    "approx": null,
+    "offTrackM": 3.8
+   },
+   "A4": {
+    "text": "30m after T2",
+    "t": 0.5322,
+    "approx": null,
+    "offTrackM": 4.7
+   }
+  },
+  "drsZoneSpecs": [
+   {
+    "id": 1,
+    "name": "A1 · 130m after TSP1",
+    "startT": 0.8839,
+    "endT": 0.0587
+   },
+   {
+    "id": 2,
+    "name": "A2 · 100m after T10",
+    "startT": 0.1099,
+    "endT": 0.1973
+   },
+   {
+    "id": 3,
+    "name": "A3 · 30m after T14",
+    "startT": 0.3591,
+    "endT": 0.484
+   },
+   {
+    "id": 4,
+    "name": "A4 · 30m after T2",
+    "startT": 0.5322,
+    "endT": 0.6227
+   }
+  ],
+  "drsDetections": [
+   {
+    "id": "D1",
+    "t": 0.8064,
+    "zoneIds": [
+     1,
+     2
+    ],
+    "source": "verified"
+   },
+   {
+    "id": "D2",
+    "t": 0.305,
+    "zoneIds": [
+     3,
+     4
+    ],
+    "source": "verified"
+   }
+  ]
+ },
+ "miami": {
+  "event": "Miami Grand Prix",
+  "document": "https://www.fia.com/system/files/decision-document/2025_miami_grand_prix_-_event_notes_-_circuit_map_pit_lane_quarantine_zone_emergency_exits_and_red_zones_.pdf",
+  "readFromImage": true,
+  "circuitKey": 151,
+  "fitMedianM": 2.4,
+  "points": {
+   "D1": {
+    "text": "90m after turn 8",
+    "t": 0.5524,
+    "approx": null,
+    "offTrackM": 3
+   },
+   "D2": {
+    "text": "70m after turn 16",
+    "t": 0.9017,
+    "approx": null,
+    "offTrackM": 2.6
+   },
+   "D3": {
+    "text": "15m after turn 17",
+    "t": 0.1363,
+    "approx": null,
+    "offTrackM": 1.2
+   },
+   "A1": {
+    "text": "30m after turn 9",
+    "t": 0.6387,
+    "approx": null,
+    "offTrackM": 2.3
+   },
+   "A2": {
+    "text": "525m after turn 16",
+    "t": 0.9848,
+    "approx": null,
+    "offTrackM": 0.7
+   },
+   "A3": {
+    "text": "On turn 19 apex",
+    "t": 0.1984,
+    "approx": null,
+    "offTrackM": 5.1
+   }
+  },
+  "drsZoneSpecs": [
+   {
+    "id": 1,
+    "name": "A1 · 30m after turn 9",
+    "startT": 0.6387,
+    "endT": 0.7813
+   },
+   {
+    "id": 2,
+    "name": "A2 · 525m after turn 16",
+    "startT": 0.9848,
+    "endT": 0.108
+   },
+   {
+    "id": 3,
+    "name": "A3 · On turn 19 apex",
+    "startT": 0.1984,
+    "endT": 0.276
+   }
+  ],
+  "drsDetections": [
+   {
+    "id": "D1",
+    "t": 0.5524,
+    "zoneIds": [
+     1
+    ],
+    "source": "verified"
+   },
+   {
+    "id": "D2",
+    "t": 0.9017,
+    "zoneIds": [
+     2
+    ],
+    "source": "verified"
+   },
+   {
+    "id": "D3",
+    "t": 0.1363,
+    "zoneIds": [
+     3
+    ],
+    "source": "verified"
+   }
+  ]
+ },
+ "shanghai": {
+  "event": "Chinese Grand Prix",
+  "document": "https://www.fia.com/system/files/decision-document/2025_chinese_grand_prix_-_event_notes_-_circuit_map_pit_lane_and_quarantine_zone.pdf",
+  "readFromImage": true,
+  "circuitKey": 49,
+  "fitMedianM": 0.6,
+  "points": {
+   "D1": {
+    "text": "on turn 12",
+    "t": 0.6943,
+    "approx": null,
+    "offTrackM": 2.3
+   },
+   "A1": {
+    "text": "375m after turn 13",
+    "t": 0.8004,
+    "approx": null,
+    "offTrackM": 0.7
+   },
+   "D2": {
+    "text": "35m before turn 16",
+    "t": 0.0442,
+    "approx": null,
+    "offTrackM": 0.5
+   },
+   "A2": {
+    "text": "98m after turn 16",
+    "t": 0.0681,
+    "approx": null,
+    "offTrackM": 1.3
+   }
+  },
+  "drsZoneSpecs": [
+   {
+    "id": 1,
+    "name": "A1 · 375m after turn 13",
+    "startT": 0.8004,
+    "endT": 0.956
+   },
+   {
+    "id": 2,
+    "name": "A2 · 98m after turn 16",
+    "startT": 0.0681,
+    "endT": 0.2027
+   }
+  ],
+  "drsDetections": [
+   {
+    "id": "D1",
+    "t": 0.6943,
+    "zoneIds": [
+     1
+    ],
+    "source": "verified"
+   },
+   {
+    "id": "D2",
+    "t": 0.0442,
+    "zoneIds": [
+     2
+    ],
+    "source": "verified"
+   }
+  ]
+ },
+ "jeddah": {
+  "event": "Saudi Arabian Grand Prix",
+  "document": "https://www.fia.com/system/files/decision-document/2025_saudi_arabian_grand_prix_-_event_notes_-_circuit_map_pit_lane_and_quarantine_zone.pdf",
+  "readFromImage": true,
+  "circuitKey": 149,
+  "fitMedianM": 2.7,
+  "points": {
+   "D1": {
+    "text": "On exit to turn 17",
+    "t": 0.5352,
+    "approx": "salida de curva ≈ 50 m después del vértice",
+    "offTrackM": 3.9
+   },
+   "D2": {
+    "text": "On entry to turn 22",
+    "t": 0.6942,
+    "approx": "entrada de curva ≈ 50 m antes del vértice",
+    "offTrackM": 0.7
+   },
+   "D3": {
+    "text": "On exit to turn 27",
+    "t": 0.9182,
+    "approx": "salida de curva ≈ 50 m después del vértice",
+    "offTrackM": 0.4
+   },
+   "A1": {
+    "text": "On exit to turn 19",
+    "t": 0.6039,
+    "approx": "salida de curva ≈ 50 m después del vértice",
+    "offTrackM": 2.3
+   },
+   "A2": {
+    "text": "On entry to turn 25",
+    "t": 0.7804,
+    "approx": "entrada de curva ≈ 50 m antes del vértice",
+    "offTrackM": 3.3
+   },
+   "A3": {
+    "text": "240m after turn 27",
+    "t": 0.9487,
+    "approx": null,
+    "offTrackM": 0.9
+   }
+  },
+  "drsZoneSpecs": [
+   {
+    "id": 1,
+    "name": "A1 · On exit to turn 19",
+    "startT": 0.6039,
+    "endT": 0.6942
+   },
+   {
+    "id": 2,
+    "name": "A2 · On entry to turn 25",
+    "startT": 0.7804,
+    "endT": 0.884
+   },
+   {
+    "id": 3,
+    "name": "A3 · 240m after turn 27",
+    "startT": 0.9487,
+    "endT": 0.0613
+   }
+  ],
+  "drsDetections": [
+   {
+    "id": "D1",
+    "t": 0.5352,
+    "zoneIds": [
+     1
+    ],
+    "source": "calibrated"
+   },
+   {
+    "id": "D2",
+    "t": 0.6942,
+    "zoneIds": [
+     2
+    ],
+    "source": "calibrated"
+   },
+   {
+    "id": "D3",
+    "t": 0.9182,
+    "zoneIds": [
+     3
+    ],
+    "source": "calibrated"
+   }
+  ]
+ },
+ "marina-bay": {
+  "event": "Singapore Grand Prix",
+  "document": "https://www.fia.com/system/files/decision-document/2025_singapore_grand_prix_-_event_notes_-_circuit_map_pit_lane_emergency_exits_map_and_quarantine_zone.pdf",
+  "readFromImage": false,
+  "circuitKey": 61,
+  "fitMedianM": 4.4,
+  "points": {
+   "D1": {
+    "text": "T4",
+    "t": 0.1471,
+    "approx": null,
+    "offTrackM": 0.7
+   },
+   "D2": {
+    "text": "102m before T13",
+    "t": 0.598,
+    "approx": null,
+    "offTrackM": 12.3
+   },
+   "D3": {
+    "text": "105m after apex T17",
+    "t": 0.9171,
+    "approx": null,
+    "offTrackM": 1.6
+   },
+   "A1": {
+    "text": "48m after T5",
+    "t": 0.2075,
+    "approx": null,
+    "offTrackM": 0.7
+   },
+   "A2": {
+    "text": "78m after T13",
+    "t": 0.6385,
+    "approx": null,
+    "offTrackM": 0.2
+   },
+   "A3": {
+    "text": "100m after T14",
+    "t": 0.7571,
+    "approx": null,
+    "offTrackM": 0.2
+   },
+   "A4": {
+    "text": "Exit T19",
+    "t": 0.9844,
+    "approx": "salida de curva ≈ 50 m después del vértice",
+    "offTrackM": 6.5
+   }
+  },
+  "drsZoneSpecs": [
+   {
+    "id": 1,
+    "name": "A1 · 48m after T5",
+    "startT": 0.2075,
+    "endT": 0.3373
+   },
+   {
+    "id": 2,
+    "name": "A2 · 78m after T13",
+    "startT": 0.6385,
+    "endT": 0.7067
+   },
+   {
+    "id": 3,
+    "name": "A3 · 100m after T14",
+    "startT": 0.7571,
+    "endT": 0.86
+   },
+   {
+    "id": 4,
+    "name": "A4 · Exit T19",
+    "startT": 0.9844,
+    "endT": 0.064
+   }
+  ],
+  "drsDetections": [
+   {
+    "id": "D1",
+    "t": 0.1471,
+    "zoneIds": [
+     1
+    ],
+    "source": "verified"
+   },
+   {
+    "id": "D2",
+    "t": 0.598,
+    "zoneIds": [
+     2,
+     3
+    ],
+    "source": "verified"
+   },
+   {
+    "id": "D3",
+    "t": 0.9171,
+    "zoneIds": [
+     4
+    ],
+    "source": "verified"
+   }
+  ]
+ },
+ "lusail": {
+  "event": "Qatar Grand Prix",
+  "document": "https://www.fia.com/system/files/decision-document/2025_qatar_grand_prix_-_event_notes_-_circuit_map._pit_lane_drawing_emergency_exits_map_ers_battery_containment_area_red_zones_map.pdf",
+  "readFromImage": false,
+  "circuitKey": 150,
+  "fitMedianM": 2.7,
+  "points": {
+   "D1": {
+    "text": "40m After Turn 15",
+    "t": 0.7487,
+    "approx": null,
+    "offTrackM": 1.5
+   },
+   "A1": {
+    "text": "305m After Turn 16",
+    "t": 0.8861,
+    "approx": null,
+    "offTrackM": 5.7
+   }
+  },
+  "drsZoneSpecs": [
+   {
+    "id": 1,
+    "name": "A1 · 305m After Turn 16",
+    "startT": 0.8861,
+    "endT": 0.0427
+   }
+  ],
+  "drsDetections": [
+   {
+    "id": "D1",
+    "t": 0.7487,
+    "zoneIds": [
+     1
+    ],
+    "source": "verified"
+   }
+  ]
+ },
+ "yas-marina": {
+  "event": "Abu Dhabi Grand Prix",
+  "document": "https://www.fia.com/system/files/decision-document/2025_abu_dhabi_grand_prix_-_event_notes_-_circuit_map_pit_lane_drawing_emergency_exits_map_quarantine_zone_and_red_zones.pdf",
+  "readFromImage": false,
+  "circuitKey": 70,
+  "fitMedianM": 2.8,
+  "points": {
+   "D1": {
+    "text": "250m before Turn 5",
+    "t": 0.7982,
+    "approx": null,
+    "offTrackM": 2.3
+   },
+   "D2": {
+    "text": "50m after Turn 7",
+    "t": 0.0923,
+    "approx": null,
+    "offTrackM": 1.7
+   },
+   "A1": {
+    "text": "260m after Turn 5",
+    "t": 0.8917,
+    "approx": null,
+    "offTrackM": 4.1
+   },
+   "A2": {
+    "text": "165m after Turn 7",
+    "t": 0.1138,
+    "approx": null,
+    "offTrackM": 4.4
+   }
+  },
+  "drsZoneSpecs": [
+   {
+    "id": 1,
+    "name": "A1 · 260m after Turn 5",
+    "startT": 0.8917,
+    "endT": 0.0427
+   },
+   {
+    "id": 2,
+    "name": "A2 · 165m after Turn 7",
+    "startT": 0.1138,
+    "endT": 0.2387
+   }
+  ],
+  "drsDetections": [
+   {
+    "id": "D1",
+    "t": 0.7982,
+    "zoneIds": [
+     1
+    ],
+    "source": "verified"
+   },
+   {
+    "id": "D2",
+    "t": 0.0923,
+    "zoneIds": [
+     2
+    ],
+    "source": "verified"
+   }
+  ]
+ },
+ "hungaroring": {
+  "event": "Hungarian Grand Prix",
+  "document": "https://www.fia.com/system/files/decision-document/2025_hungarian_grand_prix_-_event_notes_-_circuit_map_pit_lane_emergency_exits_map_quarantine_zone_and_red_zones.pdf",
+  "readFromImage": false,
+  "circuitKey": 4,
+  "fitMedianM": 2.3,
+  "points": {
+   "D1": {
+    "text": "5m before Turn 14",
+    "t": 0.5776,
+    "approx": null,
+    "offTrackM": 2.5
+   },
+   "A1": {
+    "text": "40m after Turn 14",
+    "t": 0.5884,
+    "approx": null,
+    "offTrackM": 3.4
+   },
+   "A2": {
+    "text": "6m after Turn 1",
+    "t": 0.7908,
+    "approx": null,
+    "offTrackM": 4
+   }
+  },
+  "drsZoneSpecs": [
+   {
+    "id": 1,
+    "name": "A1 · 40m after Turn 14",
+    "startT": 0.5884,
+    "endT": 0.7587
+   },
+   {
+    "id": 2,
+    "name": "A2 · 6m after Turn 1",
+    "startT": 0.7908,
+    "endT": 0.8733
+   }
+  ],
+  "drsDetections": [
+   {
+    "id": "D1",
+    "t": 0.5776,
+    "zoneIds": [
+     1,
+     2
+    ],
+    "source": "verified"
+   }
+  ]
+ },
+ "mexico-city": {
+  "event": "Mexico City Grand Prix",
+  "document": "https://www.fia.com/system/files/decision-document/2025_mexico_city_grand_prix_-_event_notes_-_circuit_map_pit_lane_drawing_emergency_exits_map_and_quarantine_zone_area.pdf",
+  "readFromImage": false,
+  "circuitKey": 65,
+  "fitMedianM": 2.5,
+  "points": {
+   "D1": {
+    "text": "70m after Turn 9",
+    "t": 0.5345,
+    "approx": null,
+    "offTrackM": 1
+   },
+   "A1": {
+    "text": "80m after Turn 11",
+    "t": 0.6045,
+    "approx": null,
+    "offTrackM": 4.8
+   },
+   "D2": {
+    "text": "Exit Turn 15",
+    "t": 0.7978,
+    "approx": "salida de curva ≈ 50 m después del vértice",
+    "offTrackM": 1.8
+   },
+   "A2": {
+    "text": "240m after Turn 17",
+    "t": 0.8855,
+    "approx": null,
+    "offTrackM": 5.5
+   },
+   "A3": {
+    "text": "115m after Turn 3",
+    "t": 0.2091,
+    "approx": null,
+    "offTrackM": 1.9
+   }
+  },
+  "drsZoneSpecs": [
+   {
+    "id": 1,
+    "name": "A1 · 80m after Turn 11",
+    "startT": 0.6045,
+    "endT": 0.692
+   },
+   {
+    "id": 2,
+    "name": "A2 · 240m after Turn 17",
+    "startT": 0.8855,
+    "endT": 0.124
+   },
+   {
+    "id": 3,
+    "name": "A3 · 115m after Turn 3",
+    "startT": 0.2091,
+    "endT": 0.3187
+   }
+  ],
+  "drsDetections": [
+   {
+    "id": "D1",
+    "t": 0.5345,
+    "zoneIds": [
+     1
+    ],
+    "source": "verified"
+   },
+   {
+    "id": "D2",
+    "t": 0.7978,
+    "zoneIds": [
+     2,
+     3
+    ],
+    "source": "calibrated"
+   }
+  ]
+ },
+ "montreal": {
+  "event": "Canadian Grand Prix",
+  "document": "https://www.fia.com/system/files/decision-document/2025_canadian_grand_prix_-_event_notes_-_circuit_map_pit_lane_emergency_exits_map_ers_battery_containment_area_red_zones.pdf",
+  "readFromImage": false,
+  "circuitKey": 23,
+  "fitMedianM": 2.1,
+  "points": {
+   "D1": {
+    "text": "15m after Turn 5",
+    "t": 0.4686,
+    "approx": null,
+    "offTrackM": 5.4
+   },
+   "A1": {
+    "text": "95m after Turn 7",
+    "t": 0.5608,
+    "approx": null,
+    "offTrackM": 2.1
+   },
+   "D2": {
+    "text": "110m after Turn 9",
+    "t": 0.7402,
+    "approx": null,
+    "offTrackM": 3
+   },
+   "A2": {
+    "text": "155m before Turn 12",
+    "t": 0.9264,
+    "approx": null,
+    "offTrackM": 2.4
+   },
+   "A3": {
+    "text": "70m after Turn 14",
+    "t": 0.1512,
+    "approx": null,
+    "offTrackM": 3.3
+   }
+  },
+  "drsZoneSpecs": [
+   {
+    "id": 1,
+    "name": "A1 · 95m after Turn 7",
+    "startT": 0.5608,
+    "endT": 0.668
+   },
+   {
+    "id": 2,
+    "name": "A2 · 155m before Turn 12",
+    "startT": 0.9264,
+    "endT": 0.1013
+   },
+   {
+    "id": 3,
+    "name": "A3 · 70m after Turn 14",
+    "startT": 0.1512,
+    "endT": 0.264
+   }
+  ],
+  "drsDetections": [
+   {
+    "id": "D1",
+    "t": 0.4686,
+    "zoneIds": [
+     1
+    ],
+    "source": "verified"
+   },
+   {
+    "id": "D2",
+    "t": 0.7402,
+    "zoneIds": [
+     2,
+     3
+    ],
+    "source": "verified"
+   }
+  ]
+ },
+ "austin": {
+  "event": "United States Grand Prix",
+  "document": "https://www.fia.com/system/files/decision-document/2025_united_states_grand_prix_-_event_notes_-_circuit_map_pit_lane_drawing_emergency_exits_map_quarantine_zone_map_red_zones_map.pdf",
+  "readFromImage": false,
+  "circuitKey": 9,
+  "fitMedianM": 2.5,
+  "points": {
+   "D1": {
+    "text": "150m after turn 10",
+    "t": 0.9985,
+    "approx": null,
+    "offTrackM": 2.4
+   },
+   "D2": {
+    "text": "65m after turn 18",
+    "t": 0.451,
+    "approx": null,
+    "offTrackM": 2.9
+   },
+   "A1": {
+    "text": "345m after turn 11",
+    "t": 0.1042,
+    "approx": null,
+    "offTrackM": 0.4
+   },
+   "A2": {
+    "text": "80m after turn 20",
+    "t": 0.5624,
+    "approx": null,
+    "offTrackM": 4.2
+   }
+  },
+  "drsZoneSpecs": [
+   {
+    "id": 1,
+    "name": "A1 · 345m after turn 11",
+    "startT": 0.1042,
+    "endT": 0.2333
+   },
+   {
+    "id": 2,
+    "name": "A2 · 80m after turn 20",
+    "startT": 0.5624,
+    "endT": 0.6653
+   }
+  ],
+  "drsDetections": [
+   {
+    "id": "D1",
+    "t": 0.9985,
+    "zoneIds": [
+     1
+    ],
+    "source": "verified"
+   },
+   {
+    "id": "D2",
+    "t": 0.451,
+    "zoneIds": [
+     2
+    ],
+    "source": "verified"
+   }
+  ]
+ }
+}

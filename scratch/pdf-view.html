@@ -1,0 +1,21 @@
+<!doctype html><meta charset="utf-8"><title>Plano FIA</title>
+<body style="margin:0;background:#fff">
+<canvas id="c"></canvas>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+// Visor temporal: ?file=<nombre>&page=<n>&scale=<s>&x=<0-1>&y=<0-1>&w=<0-1>&h=<0-1> (recorte opcional)
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+const q = new URLSearchParams(location.search);
+(async () => {
+  const pdf = await pdfjsLib.getDocument('fia-maps/' + q.get('file') + '.pdf').promise;
+  document.title = q.get('file') + ' ' + pdf.numPages + ' páginas';
+  const page = await pdf.getPage(+(q.get('page') || 2));
+  const vp = page.getViewport({ scale: +(q.get('scale') || 1.5) });
+  const full = document.createElement('canvas'); full.width = vp.width; full.height = vp.height;
+  await page.render({ canvasContext: full.getContext('2d'), viewport: vp }).promise;
+  const x = +(q.get('x') || 0) * vp.width, y = +(q.get('y') || 0) * vp.height, w = +(q.get('w') || 1) * vp.width, h = +(q.get('h') || 1) * vp.height;
+  const c = document.getElementById('c'); c.width = w; c.height = h;
+  c.getContext('2d').drawImage(full, x, y, w, h, 0, 0, w, h);
+  window.__done = true;
+})().catch(e => { document.title = 'ERROR ' + e; window.__done = true; });
+</script>
