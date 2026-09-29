@@ -4,6 +4,7 @@ import { CarState } from '../types/f1';
 import { 
   Zap,
   Gauge, 
+  Battery,
   ChevronUp, 
   ChevronDown
 } from 'lucide-react';
@@ -156,6 +157,20 @@ export const BottomTelemetryDock: React.FC<BottomTelemetryDockProps> = ({
           <div className={styles.statItem}>
             <Gauge size={13} color="#38bdf8" />
             <span>MODO: {telemetry.engineMode.toUpperCase()}</span>
+          </div>
+          {/* Q16: estado real del almacenamiento de energía (ES) y del despliegue MGU-K */}
+          <div className={styles.statItem} data-ers-soc={Math.round(telemetry.batterySoc)} data-ers-deploying={String(telemetry.ersDeploying)}
+            title={`Batería ERS: ${Math.round(telemetry.batterySoc)}% (${(telemetry.batterySoc / 25).toFixed(2)} de 4 MJ)${telemetry.ersDeploying ? ' · desplegando' : ''}`}>
+            <Battery size={13} color={telemetry.batterySoc > 50 ? '#22c55e' : telemetry.batterySoc > 20 ? '#eab308' : '#ef4444'} />
+            <span>ERS</span>
+            <span className={styles.ersBar}>
+              <span className={styles.ersFill} style={{
+                width: `${Math.max(0, Math.min(100, telemetry.batterySoc))}%`,
+                backgroundColor: telemetry.batterySoc > 50 ? '#22c55e' : telemetry.batterySoc > 20 ? '#eab308' : '#ef4444',
+              }} />
+            </span>
+            <span>{Math.round(telemetry.batterySoc)}%</span>
+            {telemetry.ersDeploying && <span className={styles.ersDeploy}>DESPLIEGUE</span>}
           </div>
         </div>
       </div>
