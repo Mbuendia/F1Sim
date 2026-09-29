@@ -408,28 +408,26 @@
     }
   },
   "yas-marina": {
-    "status": "PENDIENTE_REFERENCIA",
-    "source": "OpenStreetMap relación 11378665 (type=circuit); pit lane: vías 176695254 (ways etiquetadas pit (bbox)); definición de entrada/salida: FIA 2025 F1 Sporting Regulations Issue 5 art. 34.1-34.2.",
-    "edition": "OSM relación v7 (2026-01-21), descargada 2026-09-29",
-    "direction": "anti-clockwise; sentido del pit lane según oneway=yes de OSM, coherente con la pista del juego",
-    "svgTransform": "OSM (proyección equirectangular local en 24.4672,54.6031, metros, y hacia abajo) → mundo de yas-marina-2.svg: rotación -0.07°, sin reflexión, escala x0.9994 respecto a lapLengthMeters=5281; ajuste global mediana 2.6 m (cobertura p95 4.6 m)",
-    "entryT": null,
-    "exitT": null,
+    "status": "VERIFICADO",
+    "source": "Pista: bacinger/f1-circuits circuits/ae-2009.geojson (MIT). Pit lane: OpenStreetMap vías 176695254, 176695255, 176695253 (cadena OSM Pit Lane hasta la unión con la pista (incluye túnel 176695255)). Definición de entrada/salida: FIA 2025 F1 Sporting Regulations Issue 5 art. 34.1-34.2.",
+    "edition": "bacinger/f1-circuits master (último cambio 2026-02-05); OSM relación 11378665 v7 (2026-01-21); descargados 2026-09-29",
+    "direction": "anti-clockwise; sentido del pit lane según oneway=yes de OSM, coherente con la pista",
+    "svgTransform": "GeoJSON → marco de yas-marina-2.svg por semejanza (rotación -0.29°, 3.6452 m por unidad SVG; diferencia mediana de forma 3.9 m); el SVG se conserva",
+    "entryT": 0.5179,
+    "exitT": 0.7328,
     "evidence": {
+      "trackVsOsmMedianM": 0.8,
       "entry": {
-        "t": 0.5191,
-        "localResidualM": 2.7,
+        "t": 0.5179,
         "distanceToTrackM": 0.2,
-        "globalLocalDeltaT": 0.0001
+        "localOsmResidualM": 0.8
       },
       "exit": {
-        "t": 0.6447,
-        "localResidualM": 2.3,
-        "distanceToTrackM": 20.6,
-        "globalLocalDeltaT": 0
+        "t": 0.7328,
+        "distanceToTrackM": 7,
+        "localOsmResidualM": 0.9
       }
-    },
-    "reason": "La salida de boxes de OSM termina a 17-22 m de la pista (GeoJSON y SVG) en la reincorporación tras el túnel: extremo no concluyente (> 15 m). El SVG yas-marina-2 coincide con la geometría real (mediana 3,9 m), así que no se redibuja."
+    }
   },
   "hungaroring": {
     "status": "VERIFICADO",

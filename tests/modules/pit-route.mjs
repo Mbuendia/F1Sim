@@ -11,7 +11,9 @@ const CIRCUITS = ['barcelona', 'monaco', 'suzuka'];
 const REFERENCE_CIRCUITS = [...CIRCUITS, 'monza', 'silverstone', 'spa', 'interlagos', 'zandvoort', 'melbourne',
   'marina-bay', 'lusail', 'hungaroring', 'montreal',
   // Opción A (29/09/2026): pista real de bacinger/f1-circuits; Jeddah conserva su SVG.
-  'spielberg', 'las-vegas', 'bahrain', 'baku', 'miami', 'shanghai', 'jeddah', 'mexico-city', 'austin'];
+  'spielberg', 'las-vegas', 'bahrain', 'baku', 'miami', 'shanghai', 'jeddah', 'mexico-city', 'austin',
+  // Yas Marina: cadena completa del pit lane OSM (incluye el túnel de salida).
+  'yas-marina'];
 const REFERENCE_TOLERANCE_T = 0.004;   // fracción de vuelta admitida entre referencia y extremo dibujado
 const JOIN_TOLERANCE = 1.0;            // unidades de mundo entre extremo de boxes y línea central de pista
 const references = JSON.parse(readFileSync(new URL('../fixtures/pit-lane-references.json', import.meta.url), 'utf8'));
