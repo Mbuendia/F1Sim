@@ -83,6 +83,7 @@
 .posCell {
   width: 26px;
   text-align: center;
+  position: relative;
 }
 
 .posNum {
@@ -173,4 +174,44 @@
 .leaderText {
   color: #ffd700;
   font-weight: 900;
+}
+
+/* Q23: cambio de posición (▲ gana / ▼ pierde) y coche en boxes */
+/* Superpuesto bajo el número: no altera la altura de la fila; centrado sin transform (lo usa Anime.js). */
+.posChange {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -9px;
+  text-align: center;
+  white-space: nowrap;
+  pointer-events: none;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 8px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.posUp {
+  color: #22c55e;
+}
+
+.posDown {
+  color: #ef4444;
+}
+
+.pitPulse {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 10px;
+  font-weight: 900;
+  color: #0b0f17;
+  background: #facc15;
+  border-radius: 3px;
+  padding: 1px 5px;
+  animation: pitPulse 1.1s ease-in-out infinite;
+}
+
+@keyframes pitPulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(250, 204, 21, 0.6); }
+  50% { opacity: 0.55; box-shadow: 0 0 6px 2px rgba(250, 204, 21, 0.35); }
 }

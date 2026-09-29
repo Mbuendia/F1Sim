@@ -10,6 +10,9 @@ import {
 import { animate } from 'animejs';
 import { FlagIcon } from './FlagIcon';
 import { CompoundBadge } from './CompoundBadge';
+import { CarChassisSvg } from './CarChassisSvg';
+import { tireHealthColor } from '../utils/tireHealth';
+import { useTweenedNumber } from '../utils/useTweenedNumber';
 
 export interface BottomTelemetryDockProps {
   car: CarState | null;
@@ -22,6 +25,9 @@ export const BottomTelemetryDock: React.FC<BottomTelemetryDockProps> = ({
 }) => {
   const dockRef = useRef<HTMLDivElement>(null);
   const prevCarIdRef = useRef<number | null>(null);
+  // Q23: odómetros (antes del retorno anticipado: los hooks no pueden ser condicionales).
+  const speedShown = Math.round(useTweenedNumber(car?.telemetry.speedKmh ?? 0));
+  const rpmShown = Math.round(useTweenedNumber(car?.telemetry.rpm ?? 0));
 
   useEffect(() => {
     if (car && car.id !== prevCarIdRef.current && dockRef.current) {
@@ -48,7 +54,7 @@ export const BottomTelemetryDock: React.FC<BottomTelemetryDockProps> = ({
   const rpmPercent = Math.min(100, Math.max(0, ((telemetry.rpm - 8000) / (13500 - 8000)) * 100));
 
   return (
-    <div ref={dockRef} className={styles.dockContainer}>
+    <div ref={dockRef} className={styles.dockContainer} data-animate="slide-in">
       {/* ── 1. COCHE DE DELANTE ── */}
       <div className={styles.relativeCarCard}>
         <div className={styles.relativeHeader}>
@@ -98,8 +104,8 @@ export const BottomTelemetryDock: React.FC<BottomTelemetryDockProps> = ({
 
         {/* Velocidad y Tacómetro */}
         <div className={styles.speedCluster}>
-          <div className={styles.speedDigits}>
-            {telemetry.speedKmh} <span className={styles.kmhUnit}>KM/H</span>
+          <div className={styles.speedDigits} data-odometer="speed">
+            {speedShown} <span className={styles.kmhUnit}>KM/H</span>
           </div>
           <div className={styles.gearPill}>
             <span className={styles.gearLabel}>GEAR</span>
@@ -108,8 +114,8 @@ export const BottomTelemetryDock: React.FC<BottomTelemetryDockProps> = ({
           <div className={styles.rpmBar}>
             <div className={styles.rpmProgress} style={{ width: `${rpmPercent}%` }} />
           </div>
-          <span style={{ fontSize: '9px', color: '#94a3b8', marginTop: '2px', fontFamily: 'Orbitron' }}>
-            {telemetry.rpm.toLocaleString()} RPM
+          <span data-odometer="rpm" style={{ fontSize: '9px', color: '#94a3b8', marginTop: '2px', fontFamily: 'Orbitron' }}>
+            {rpmShown.toLocaleString()} RPM
           </span>
         </div>
 
@@ -125,11 +131,18 @@ export const BottomTelemetryDock: React.FC<BottomTelemetryDockProps> = ({
               {Math.round(tires.health)}% VIDA
             </div>
           </div>
-          <div className={styles.fourWheelsRow}>
-            <span style={{ color: telemetry.tireHealthFL < 30 ? '#ef4444' : '#94a3b8' }}>FL:{Math.round(telemetry.tireHealthFL)}%</span>
-            <span style={{ color: telemetry.tireHealthFR < 30 ? '#ef4444' : '#94a3b8' }}>FR:{Math.round(telemetry.tireHealthFR)}%</span>
-            <span style={{ color: telemetry.tireHealthRL < 30 ? '#ef4444' : '#94a3b8' }}>RL:{Math.round(telemetry.tireHealthRL)}%</span>
-            <span style={{ color: telemetry.tireHealthRR < 30 ? '#ef4444' : '#94a3b8' }}>RR:{Math.round(telemetry.tireHealthRR)}%</span>
+          <div className={styles.wheelsWithChassis}>
+            <CarChassisSvg
+              tireHealthFL={telemetry.tireHealthFL} tireHealthFR={telemetry.tireHealthFR}
+              tireHealthRL={telemetry.tireHealthRL} tireHealthRR={telemetry.tireHealthRR}
+              compound={tires.compound} drsActive={telemetry.drsActive}
+              teamColor={team.color} accentColor={team.accentColor} width={26} />
+            <div className={styles.fourWheelsRow}>
+              <span style={{ color: tireHealthColor(telemetry.tireHealthFL) }}>FL:{Math.round(telemetry.tireHealthFL)}%</span>
+              <span style={{ color: tireHealthColor(telemetry.tireHealthFR) }}>FR:{Math.round(telemetry.tireHealthFR)}%</span>
+              <span style={{ color: tireHealthColor(telemetry.tireHealthRL) }}>RL:{Math.round(telemetry.tireHealthRL)}%</span>
+              <span style={{ color: tireHealthColor(telemetry.tireHealthRR) }}>RR:{Math.round(telemetry.tireHealthRR)}%</span>
+            </div>
           </div>
         </div>
 

@@ -21,6 +21,11 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
   fastestLapDriverName
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  // Q23: el motor solo conserva previousPosition durante el paso del adelantamiento; la torre recuerda
+  // cada cambio unos segundos para que el indicador sea visible y anima su aparición.
+  const lastPositions = useRef(new Map<number, number>());
+  const recentChanges = useRef(new Map<number, { delta: number; at: number }>());
+  const POSITION_CHANGE_MS = 4000;
 
   useEffect(() => {
     if (containerRef.current) {
@@ -33,6 +38,27 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
       });
     }
   }, []);
+
+  useEffect(() => {
+    const now = Date.now();
+    for (const car of cars) {
+      const last = lastPositions.current.get(car.id);
+      if (last !== undefined && last !== car.currentPosition && car.status !== 'out') {
+        recentChanges.current.set(car.id, { delta: last - car.currentPosition, at: now });
+        if (containerRef.current) {
+          animate(`[data-pos-car="${car.id}"]`, { scale: [1.8, 1], opacity: [0, 1], duration: 450, ease: 'outBack' });
+        }
+      }
+      lastPositions.current.set(car.id, car.currentPosition);
+    }
+  });
+
+  const positionDelta = (car: CarState): number => {
+    const fromEngine = (car.previousPosition ?? car.currentPosition) - car.currentPosition;
+    if (fromEngine !== 0) return fromEngine;
+    const recent = recentChanges.current.get(car.id);
+    return recent && Date.now() - recent.at < POSITION_CHANGE_MS ? recent.delta : 0;
+  };
 
   const sortedCars = [...cars].sort((a, b) => a.currentPosition - b.currentPosition);
   const leader = sortedCars.find(c => c.status !== 'out') || sortedCars[0];
@@ -79,6 +105,8 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
           const isFastest = fastestLapDriverName === `${car.driver.firstName} ${car.driver.lastName}`;
           const isLeader = idx === 0 && car.status !== 'out';
           const isOut = car.status === 'out';
+          const delta = isOut ? 0 : positionDelta(car);
+          const pitStatus = isOut ? null : car.pitStop.waitingForBox ? 'queue' : (car.pitStop.isPitting || car.isInPitLane) ? 'pitting' : null;
 
           return (
             <div
@@ -91,6 +119,15 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
               {/* Posición */}
               <div className={styles.posCell}>
                 <span className={styles.posNum}>{isOut ? 'DNF' : car.currentPosition}</span>
+                {delta !== 0 && (
+                  <span
+                    className={`position-change ${delta > 0 ? 'pos-up' : 'pos-down'} ${styles.posChange} ${delta > 0 ? styles.posUp : styles.posDown}`}
+                    data-pos-change={delta > 0 ? 'up' : 'down'}
+                    data-pos-delta={delta > 0 ? `+${delta}` : `${delta}`}
+                    data-pos-car={car.id}
+                    title={delta > 0 ? `Gana ${delta} ${delta === 1 ? 'puesto' : 'puestos'}` : `Pierde ${-delta} ${delta === -1 ? 'puesto' : 'puestos'}`}
+                  >{delta > 0 ? '▲' : '▼'}{Math.abs(delta)}</span>
+                )}
               </div>
 
               {/* Barra color equipo */}
@@ -130,9 +167,15 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
 
               {/* Gap */}
               <div className={styles.gapCell}>
-                <span className={`${styles.gapText} ${isLeader ? styles.leaderText : ''} ${isOut ? styles.outText : ''}`} style={{ color: isOut ? '#ef4444' : (car.hasPuncture ? '#f59e0b' : undefined) }}>
-                  {formatGap(car, idx)}
-                </span>
+                {pitStatus ? (
+                  <span className={`pit-pulse ${styles.pitPulse}`} data-pit-status={pitStatus}>
+                    {pitStatus === 'queue' ? 'QUEUE' : 'PIT'}
+                  </span>
+                ) : (
+                  <span className={`${styles.gapText} ${isLeader ? styles.leaderText : ''} ${isOut ? styles.outText : ''}`} style={{ color: isOut ? '#ef4444' : (car.hasPuncture ? '#f59e0b' : undefined) }}>
+                    {formatGap(car, idx)}
+                  </span>
+                )}
               </div>
             </div>
           );

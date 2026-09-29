@@ -345,3 +345,17 @@
   background: rgba(255, 255, 255, 0.08);
   color: #94a3b8;
 }
+
+/* Q22: chasis cenital junto al desglose por rueda */
+.wheelsWithChassis {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Desglose 2×2 (FL FR / RL RR) alineado con las ruedas del chasis */
+.wheelsWithChassis .fourWheelsRow {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 2px 10px;
+}

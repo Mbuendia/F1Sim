@@ -1,4 +1,6 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
+import { animate } from 'animejs';
+import { useTweenedNumber } from '../utils/useTweenedNumber';
 import styles from './TelemetryPanel.module.css';
 import { CarState } from '../types/f1';
 import { X, Gauge, Zap, Flame, Wind, Fuel, Shield, Sparkles, Trophy } from 'lucide-react';
@@ -13,6 +15,13 @@ interface TelemetryPanelProps {
 
 export const TelemetryPanel: React.FC<TelemetryPanelProps> = ({ car, onClose }) => {
   const { driver, team, telemetry, tires, currentPosition, gapToLeaderSec } = car;
+  // Q23: odómetros de velocidad/RPM y entrada deslizante al abrir el panel o cambiar de piloto.
+  const speedShown = Math.round(useTweenedNumber(telemetry.speedKmh));
+  const rpmShown = Math.round(useTweenedNumber(telemetry.rpm));
+  const panelRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (panelRef.current) animate(panelRef.current, { translateX: [28, 0], opacity: [0, 1], duration: 320, ease: 'outQuad' });
+  }, [car.id]);
 
   // Color de salud de neumáticos
   // Q22: mismos umbrales que el chasis cenital (crítico por debajo del 25 %).
@@ -42,7 +51,7 @@ export const TelemetryPanel: React.FC<TelemetryPanelProps> = ({ car, onClose }) 
   const aggInfo = getAggressionDisplay();
 
   return (
-    <div className={styles.panel}>
+    <div ref={panelRef} className={`${styles.panel} telemetry-animate`} data-animate="slide-in">
       {/* Header del piloto */}
       <div className={styles.driverHeader} style={{ borderLeftColor: team.color }}>
         <div className={styles.driverIdentity}>
@@ -118,14 +127,14 @@ export const TelemetryPanel: React.FC<TelemetryPanelProps> = ({ car, onClose }) 
       <div className={styles.telemetryGrid}>
         {/* Velocidad y Marcha */}
         <div className={styles.cardSpeed}>
-          <div className={styles.speedValue}>{telemetry.speedKmh} <span className={styles.speedUnit}>KM/H</span></div>
+          <div className={styles.speedValue} data-odometer="speed">{speedShown} <span className={styles.speedUnit}>KM/H</span></div>
           <div className={styles.gearDisplay}>
             <span className={styles.gearLabel}>MARCHA</span>
             <span className={styles.gearNum}>{telemetry.gear}</span>
           </div>
           <div className={styles.rpmContainer}>
             <div className={styles.rpmFill} style={{ width: `${Math.min(100, (telemetry.rpm / 14000) * 100)}%` }} />
-            <span className={styles.rpmText}>{telemetry.rpm} RPM</span>
+            <span className={styles.rpmText} data-odometer="rpm">{rpmShown} RPM</span>
           </div>
         </div>
 
