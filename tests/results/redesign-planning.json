@@ -1,0 +1,39 @@
+{
+  "summary": {
+    "passed": 4,
+    "failed": 0
+  },
+  "results": [
+    {
+      "id": "documentation",
+      "tasks": [],
+      "sprint": null,
+      "kind": "regression",
+      "passed": 4,
+      "failed": 0,
+      "assertions": [
+        {
+          "name": "Documentación: dashboard e index completos y alineados",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Documentación: conserva el orden declarado y la tarea actual existe",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Documentación: añadir una tarea exige actualizar el index",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Documentación: índice independiente de finales de línea Windows/Linux",
+          "pass": true,
+          "details": ""
+        }
+      ],
+      "errors": []
+    }
+  ]
+}

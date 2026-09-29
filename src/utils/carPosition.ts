@@ -47,10 +47,9 @@ export function calculateCarWorldPosition(car: CarRouteState, track: TrackDefini
   const worldAngle = a.angle + angleDifference * fraction;
   
   // Q7: Dynamic track width and capacity per segment
-  const segmentWidth = a.trackWidthMeters ?? track.trackWidthMeters ?? 24;
-  const segmentCapacity = a.trackWidthCars ?? capacity ?? 3;
-  
-  const lateral = getLateralDisplacement(car.lateralOffset, segmentWidth, segmentCapacity);
+  const lateralA = getLateralDisplacement(car.lateralOffset, a.trackWidthMeters ?? track.trackWidthMeters ?? 24, a.trackWidthCars ?? capacity);
+  const lateralB = getLateralDisplacement(car.lateralOffset, b.trackWidthMeters ?? track.trackWidthMeters ?? 24, b.trackWidthCars ?? capacity);
+  const lateral = lateralA + (lateralB - lateralA) * fraction;
   return {
     worldX: a.x + (b.x - a.x) * fraction + Math.cos(worldAngle + Math.PI / 2) * lateral,
     worldY: a.y + (b.y - a.y) * fraction + Math.sin(worldAngle + Math.PI / 2) * lateral,

@@ -1,0 +1,259 @@
+{
+  "sprint": "2.8",
+  "exportedAt": "2026-09-29T14:01:13.268Z",
+  "note": "Aceptación personal; no modifica el estado del sprint",
+  "reviews": [
+    {
+      "id": "Q12",
+      "title": "Modos de ritmo de ambos pilotos",
+      "scope": "Revisión principal",
+      "status": "approved",
+      "notes": ""
+    },
+    {
+      "id": "Q9",
+      "title": "Compuesto de la parada",
+      "scope": "Función existente",
+      "status": "changes",
+      "notes": "en vez de poner el tipo de rueda con S M H etc cambiarlo por una rueda con el color de neumatico marcado en la reglamentacion de la FIA\n"
+    },
+    {
+      "id": "Q10",
+      "title": "Cancelar antes del compromiso",
+      "scope": "Función existente",
+      "status": "approved",
+      "notes": ""
+    },
+    {
+      "id": "Q11",
+      "title": "Dos pilotos y doble parada",
+      "scope": "Función existente",
+      "status": "approved",
+      "notes": ""
+    },
+    {
+      "id": "Q1–Q5",
+      "title": "Coches, boxes, cámara y etiquetas",
+      "scope": "Regresión de funciones aprobadas",
+      "status": "approved",
+      "notes": ""
+    },
+    {
+      "id": "Q6",
+      "title": "Barcelona y Mónaco",
+      "scope": "Revisión visual",
+      "status": "changes",
+      "notes": "Las lineas de boxes no estan bien en ambos circuitos, en suzuka tampoco"
+    },
+    {
+      "id": "Q7",
+      "title": "Anchura y tamaño del coche",
+      "scope": "Corrección parcial",
+      "status": "approved",
+      "notes": ""
+    },
+    {
+      "id": "Q8",
+      "title": "Trazada y goma",
+      "scope": "Corrección parcial",
+      "status": "approved",
+      "notes": ""
+    },
+    {
+      "id": "Q14",
+      "title": "SC y reanudación sin retrocesos",
+      "scope": "Corrección parcial",
+      "status": "approved",
+      "notes": ""
+    },
+    {
+      "id": "Q15",
+      "title": "Banderas azules al aproximarse un líder",
+      "scope": "Corrección parcial",
+      "status": "approved",
+      "notes": ""
+    },
+    {
+      "id": "Q16",
+      "title": "Combustible, batería y temperatura",
+      "scope": "Corrección parcial",
+      "status": "blocked",
+      "notes": ""
+    },
+    {
+      "id": "Q17",
+      "title": "Evento D20 sin recursos mágicos",
+      "scope": "Corrección parcial",
+      "status": "approved",
+      "notes": ""
+    },
+    {
+      "id": "Q18",
+      "title": "Reinicio y cambio de circuito",
+      "scope": "Corrección parcial",
+      "status": "approved",
+      "notes": ""
+    },
+    {
+      "id": "Q13",
+      "title": "Predictor de reincorporación",
+      "scope": "Solo evidencia técnica",
+      "status": "blocked",
+      "notes": ""
+    },
+    {
+      "id": "Q19",
+      "title": "Permisos DRS y cierre al frenar",
+      "scope": "Solo evidencia técnica",
+      "status": "approved",
+      "notes": ""
+    },
+    {
+      "id": "Q6.1",
+      "title": "Escenario Monza",
+      "scope": "Revisión visual",
+      "status": "approved",
+      "notes": ""
+    },
+    {
+      "id": "Q6.2",
+      "title": "Escenario Silverstone",
+      "scope": "Revisión visual",
+      "status": "approved",
+      "notes": ""
+    },
+    {
+      "id": "Q6.3",
+      "title": "Escenario Spa",
+      "scope": "Revisión visual",
+      "status": "approved",
+      "notes": ""
+    },
+    {
+      "id": "Q6.4",
+      "title": "Escenario Spielberg",
+      "scope": "Revisión visual",
+      "status": "approved",
+      "notes": ""
+    },
+    {
+      "id": "Q6.5",
+      "title": "Escenario Interlagos",
+      "scope": "Revisión visual",
+      "status": "approved",
+      "notes": ""
+    },
+    {
+      "id": "Q6.6",
+      "title": "Escenario Suzuka",
+      "scope": "Revisión visual",
+      "status": "approved",
+      "notes": ""
+    },
+    {
+      "id": "Q6.7",
+      "title": "Escenario Zandvoort",
+      "scope": "Revisión visual",
+      "status": "approved",
+      "notes": ""
+    },
+    {
+      "id": "Q6.8",
+      "title": "Escenario Las Vegas",
+      "scope": "Revisión visual",
+      "status": "approved",
+      "notes": ""
+    },
+    {
+      "id": "Q6.9",
+      "title": "Escenario Bahrain",
+      "scope": "Revisión visual",
+      "status": "approved",
+      "notes": ""
+    },
+    {
+      "id": "Q6.10",
+      "title": "Escenario Baku",
+      "scope": "Revisión visual",
+      "status": "approved",
+      "notes": ""
+    },
+    {
+      "id": "Q6.11",
+      "title": "Escenario Melbourne",
+      "scope": "Revisión visual",
+      "status": "approved",
+      "notes": ""
+    },
+    {
+      "id": "Q6.12",
+      "title": "Escenario Miami",
+      "scope": "Revisión visual",
+      "status": "approved",
+      "notes": ""
+    },
+    {
+      "id": "Q6.13",
+      "title": "Escenario Shanghai",
+      "scope": "Revisión visual",
+      "status": "approved",
+      "notes": ""
+    },
+    {
+      "id": "Q6.14",
+      "title": "Escenario Jeddah",
+      "scope": "Revisión visual",
+      "status": "approved",
+      "notes": ""
+    },
+    {
+      "id": "Q6.15",
+      "title": "Escenario Marina Bay",
+      "scope": "Revisión visual",
+      "status": "approved",
+      "notes": ""
+    },
+    {
+      "id": "Q6.16",
+      "title": "Escenario Lusail",
+      "scope": "Revisión visual",
+      "status": "approved",
+      "notes": ""
+    },
+    {
+      "id": "Q6.17",
+      "title": "Escenario Yas Marina",
+      "scope": "Revisión visual",
+      "status": "approved",
+      "notes": ""
+    },
+    {
+      "id": "Q6.18",
+      "title": "Escenario Hungaroring",
+      "scope": "Revisión visual",
+      "status": "approved",
+      "notes": ""
+    },
+    {
+      "id": "Q6.19",
+      "title": "Escenario Mexico City",
+      "scope": "Revisión visual",
+      "status": "approved",
+      "notes": ""
+    },
+    {
+      "id": "Q6.20",
+      "title": "Escenario Montreal",
+      "scope": "Revisión visual",
+      "status": "approved",
+      "notes": ""
+    },
+    {
+      "id": "Q6.21",
+      "title": "Escenario Austin",
+      "scope": "Revisión visual",
+      "status": "approved",
+      "notes": ""
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+
+> f1-barcelona-simulator@1.0.0 prebuild
+> npm run check:tasks
+
+
+> f1-barcelona-simulator@1.0.0 check:tasks
+> node scripts/sync-task-index.mjs --check
+
+Dashboard e index alineados.
+
+> f1-barcelona-simulator@1.0.0 build
+> tsc -b && vite build
+
+vite v6.4.3 building for production...
+transforming...
+✓ 1704 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                    14.51 kB │ gzip:   4.09 kB
+dist/assets/index-BhDIRYj8.css     57.00 kB │ gzip:  11.18 kB
+dist/assets/index-DhQ2yFAK.js   1,069.47 kB │ gzip: 306.77 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 5.73s

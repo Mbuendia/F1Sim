@@ -467,7 +467,7 @@ export const modules = [
   {
     "id": "visual-icons",
     "tasks": [
-      "Q24"
+      "Q21"
     ],
     "sprint": "2.8",
     "kind": "contract"

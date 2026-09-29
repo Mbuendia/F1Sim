@@ -1,0 +1,8 @@
+name = "f1_tests"
+description = "Contrato previo de tests, cobertura y validación modular."
+developer_instructions = """
+Lee AGENTS.md y .ai/roles/tests.md desde la raíz del repositorio y aplica ese contrato.
+Si eres delegado, no crees subagentes ni repitas el despliegue de cuatro roles.
+Hereda modelo y permisos. Mantén alcance y contexto breves. No alteres tests acordados para hacer pasar implementación.
+"""
+

@@ -1,0 +1,3365 @@
+{
+  "summary": {
+    "passed": 444,
+    "failed": 83
+  },
+  "results": [
+    {
+      "id": "safety-car",
+      "tasks": [
+        "C1",
+        "C2",
+        "C3",
+        "C4"
+      ],
+      "sprint": null,
+      "kind": "regression",
+      "passed": 10,
+      "failed": 0,
+      "assertions": [
+        {
+          "name": "C1: SC transitions to \"returning\" despite lapped car on track (fieldSpread lead lap only)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "C1 Fallback: SC transitions to \"returning\" on hardTimeout (lapCount >= targetLaps + 3)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "C2: Returning mode speed is 140 km/h (not null)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "C2: Leading mode speed is 120 km/h",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "C2: Red flag speed is 80 km/h",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "C3: SC is deployed",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "C3: SC spawns just ahead of leader (4.780 vs 4.780)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "C3: SC transitions deploying -> leading when leader reaches/overtakes it (no deadlock)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "C3: SC repositions ahead of leader",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "C4: SC transitions to \"in\" and despawns when trackT >= 0.94 without skipping window",
+          "pass": true,
+          "details": ""
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "pit-stop",
+      "tasks": [
+        "A3",
+        "A4",
+        "A5",
+        "A6"
+      ],
+      "sprint": null,
+      "kind": "regression",
+      "passed": 9,
+      "failed": 0,
+      "assertions": [
+        {
+          "name": "A3: Barcelona pitEntryT is 0.92 (actual: 0.92)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "A3: Barcelona pitExitT is 0.11 (actual: 0.11)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "A4: Puncture immediately triggers shouldEnterPit",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "A4: Severely worn tire (<= 5%) triggers shouldEnterPit",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "A5: Puncture NOT cleared while tires are still being changed",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "A5: Puncture successfully cleared after tire change",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "A6: New stint added",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "A6: Previous stint endLap properly closed to lap 5 (got: 5)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "PitStop: Car before pit entry window cannot enter pit lane yet",
+          "pass": true,
+          "details": ""
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "race-state",
+      "tasks": [
+        "C5",
+        "C6",
+        "C7",
+        "A1",
+        "A2"
+      ],
+      "sprint": null,
+      "kind": "regression",
+      "passed": 4,
+      "failed": 0,
+      "assertions": [
+        {
+          "name": "C5: sim.scEndingLap is null on initRace",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "C5: sim.scEndingLap is automatically cleared to null when all cars finish restart lap",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "C6: vscActive and vscTimer reset upon SC deployment",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "C7: sim.cars array order is not mutated in-place when SC goes in",
+          "pass": true,
+          "details": ""
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "car-rendering",
+      "tasks": [
+        "M1",
+        "M2",
+        "M3"
+      ],
+      "sprint": null,
+      "kind": "regression",
+      "passed": 3,
+      "failed": 0,
+      "assertions": [
+        {
+          "name": "M1: Z-Order de capas vectorial correcto (Floor -> Suspensions -> Wheels -> Chassis -> Wings/Halo)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "M2: Sombra del coche proyectada en pantalla antes de rotar el monoplaza",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "M3: Humo de retirada utiliza ángulo compuesto (angle + camera.rotation)",
+          "pass": true,
+          "details": ""
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "tires-strategy",
+      "tasks": [
+        "M4",
+        "M5",
+        "M9",
+        "M10"
+      ],
+      "sprint": null,
+      "kind": "regression",
+      "passed": 7,
+      "failed": 0,
+      "assertions": [
+        {
+          "name": "M4: Cero curación mágica detectada en las 4 ruedas (estrictamente monótono)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "M4: Neumático exterior sufre mayor desgaste en curva (FL: 98.68% < FR: 99.05%)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "M5: Salud al final de 15 vueltas nominales está en rango óptimo (esperado: 5-25%, obtenido: 16.5%)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "M9: car.status se establece en \"pit\" mientras está en el pit lane",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "M9: car.status se restaura a \"running\" al incorporarse a la pista",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "M10: Parada estratégica se activa automáticamente al alcanzar scheduledLap",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "M10: No entra antes de alcanzar la vuelta programada",
+          "pass": true,
+          "details": ""
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "teams-sectors",
+      "tasks": [
+        "M6",
+        "M7",
+        "M8"
+      ],
+      "sprint": null,
+      "kind": "regression",
+      "passed": 8,
+      "failed": 0,
+      "assertions": [
+        {
+          "name": "M6: Mercedes textColor es negro (#000000) para ratio WCAG AAA (obtenido: #000000)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "M7: Red Bull utiliza azul marino mate oficial #041E42 (obtenido: #041E42)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "M7: Racing Bulls utiliza azul eléctrico VCARB #1634CC (obtenido: #1634CC)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "M7: Colores de Red Bull y Racing Bulls están claramente diferenciados",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "M8: Punto al 10% corresponde a Sector 1 (obtenido: 1)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "M8: Punto al 35% corresponde a Sector 2 con límite 0.20 (obtenido: 2)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "M8: Punto al 75% corresponde a Sector 3 con límite 0.60 (obtenido: 3)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "M8: IncidentModel asigna Sector 2 para trackT 0.30 usando límites del circuito (obtenido: 2)",
+          "pass": true,
+          "details": ""
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "robustness",
+      "tasks": [
+        "B1",
+        "B3",
+        "B4",
+        "B5"
+      ],
+      "sprint": null,
+      "kind": "regression",
+      "passed": 5,
+      "failed": 0,
+      "assertions": [
+        {
+          "name": "B1: SpriteManager obsoleto eliminado de CarRenderer.ts",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "B3: getCompoundProperties devuelve fallback seguro en caso de compuesto no registrado",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "B4: IncidentModel.reset() reinicia el ID de incidentes a 1 (obtenido: 1)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "B5: Tipo de incidente \"spin\" registrado correctamente",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "B5: Temporizador de spin entre 8s y 12s (obtenido: 10.2s)",
+          "pass": true,
+          "details": ""
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "track-geometry",
+      "tasks": [
+        "Q1",
+        "Q2"
+      ],
+      "sprint": "2.8",
+      "kind": "regression",
+      "passed": 8,
+      "failed": 0,
+      "assertions": [
+        {
+          "name": "Q1: Separación del coche centrado supera 1.2 veces la huella completa (obtenido: 1.25x)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q1: Huellas transversales disjuntas en zoom 0.5–4.5 (gap mínimo: +5.7px)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q1: Margen en pista estrecha sobre huella completa (obtenido: 2.50x)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q2: Continuidad C0 en entrada de boxes (desviación: 0.0000 unidades del mundo)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q2: Continuidad C0 en salida de boxes (desviación: 0.0000 unidades del mundo)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q2: Continuidad C1 tangencial en entrada de boxes (diferencia angular: 1.81°)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q2: Continuidad C1 tangencial en salida de boxes (diferencia angular: 1.81°)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q2: Carril central de boxes mantiene separación nominal de 38 unidades del mundo (obtenido: 38.0)",
+          "pass": true,
+          "details": ""
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "geometry-rendering",
+      "tasks": [
+        "Q1",
+        "Q2"
+      ],
+      "sprint": "2.8",
+      "kind": "regression",
+      "passed": 26,
+      "failed": 0,
+      "assertions": [
+        {
+          "name": "Q1: Ruedas/alerones separados del coche centrado (24m, capacidad 3, zoom 0.25–8 y rotaciones)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q1: Dibujo real separado en carriles opuestos (24m, capacidad 3)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q1: Monoplaza completo dentro del asfalto con offset 0.85 (24m, capacidad 3)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q1: Huella declarada coincide con ruedas y alerones realmente dibujados (24m, capacidad 3)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q1: Ruedas/alerones separados del coche centrado (24m, capacidad 2, zoom 0.25–8 y rotaciones)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q1: Dibujo real separado en carriles opuestos (24m, capacidad 2)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q1: Monoplaza completo dentro del asfalto con offset 0.85 (24m, capacidad 2)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q1: Huella declarada coincide con ruedas y alerones realmente dibujados (24m, capacidad 2)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q1: Ruedas/alerones separados del coche centrado (16m, capacidad 2, zoom 0.25–8 y rotaciones)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q1: Dibujo real separado en carriles opuestos (16m, capacidad 2)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q1: Monoplaza completo dentro del asfalto con offset 0.85 (16m, capacidad 2)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q1: Huella declarada coincide con ruedas y alerones realmente dibujados (16m, capacidad 2)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q2: Extremos exactos entre muestras, entrada 0.9 / salida 0.15",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q2: Dirección de entrada/salida suave en intervalo 0.9–0.15",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q2: Todas las muestras son finitas en 0.9–0.15",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q2: Extremos exactos entre muestras, entrada 0.361 / salida 0.461",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q2: Dirección de entrada/salida suave en intervalo 0.361–0.461",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q2: Todas las muestras son finitas en 0.361–0.461",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q2: Extremos exactos entre muestras, entrada 0.9237 / salida 0.1011",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q2: Dirección de entrada/salida suave en intervalo 0.9237–0.1011",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q2: Todas las muestras son finitas en 0.9237–0.1011",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q2: Pista vacía no genera un carril inválido",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q2: El dibujo en boxes usa el progreso actual, aunque pitLaneProgress esté retrasado",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q2: Activar la ruta de boxes en la entrada no desplaza el coche",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q2: Cambiar de ruta en la salida conserva la posición dibujada",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q2: Superar la salida no retiene visualmente el coche cuando el estado de boxes llega un paso tarde",
+          "pass": true,
+          "details": ""
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "pit-lane",
+      "tasks": [
+        "Q3",
+        "Q11-1"
+      ],
+      "sprint": "2.8",
+      "kind": "regression",
+      "passed": 40,
+      "failed": 0,
+      "assertions": [
+        {
+          "name": "Q3: Diez cajones, uno por equipo (sentido -1, offset -38)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q3: Muro separado del carril rápido y del asfalto (sentido -1, offset -38)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q3: Cajones fuera del carril rápido (sentido -1, offset -38)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q3: Cajones consecutivos sin solapamiento (sentido -1, offset -38)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q3: Entrada y salida abiertas (sentido -1, offset -38)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q3: Ruta Q2 y estado originales intactos (sentido -1, offset -38)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q3: Dos bordes blancos en los límites, sin línea central falsa (sentido -1, offset -38)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q3: Diez cajones, uno por equipo (sentido -1, offset 38)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q3: Muro separado del carril rápido y del asfalto (sentido -1, offset 38)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q3: Cajones fuera del carril rápido (sentido -1, offset 38)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q3: Cajones consecutivos sin solapamiento (sentido -1, offset 38)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q3: Entrada y salida abiertas (sentido -1, offset 38)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q3: Ruta Q2 y estado originales intactos (sentido -1, offset 38)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q3: Dos bordes blancos en los límites, sin línea central falsa (sentido -1, offset 38)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q3: Diez cajones, uno por equipo (sentido 1, offset -38)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q3: Muro separado del carril rápido y del asfalto (sentido 1, offset -38)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q3: Cajones fuera del carril rápido (sentido 1, offset -38)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q3: Cajones consecutivos sin solapamiento (sentido 1, offset -38)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q3: Entrada y salida abiertas (sentido 1, offset -38)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q3: Ruta Q2 y estado originales intactos (sentido 1, offset -38)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q3: Dos bordes blancos en los límites, sin línea central falsa (sentido 1, offset -38)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q3: Diez cajones, uno por equipo (sentido 1, offset 38)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q3: Muro separado del carril rápido y del asfalto (sentido 1, offset 38)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q3: Cajones fuera del carril rápido (sentido 1, offset 38)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q3: Cajones consecutivos sin solapamiento (sentido 1, offset 38)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q3: Entrada y salida abiertas (sentido 1, offset 38)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q3: Ruta Q2 y estado originales intactos (sentido 1, offset 38)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q3: Dos bordes blancos en los límites, sin línea central falsa (sentido 1, offset 38)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q3: Ruta vacía o degenerada no dibuja barreras/cajones inválidos",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q3: Ruta vacía o degenerada no dibuja barreras/cajones inválidos",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q3: Ruta vacía o degenerada no dibuja barreras/cajones inválidos",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q3: Renderer separa rutas y escala anchuras una vez (zoom 0.25)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q3: Renderer dibuja los diez cajones de equipo (zoom 0.25)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q3: Renderer dibuja ambos límites de pista (zoom 0.25)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q3: Renderer separa rutas y escala anchuras una vez (zoom 1)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q3: Renderer dibuja los diez cajones de equipo (zoom 1)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q3: Renderer dibuja ambos límites de pista (zoom 1)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q3: Renderer separa rutas y escala anchuras una vez (zoom 4)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q3: Renderer dibuja los diez cajones de equipo (zoom 4)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q3: Renderer dibuja ambos límites de pista (zoom 4)",
+          "pass": true,
+          "details": ""
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "world-position",
+      "tasks": [
+        "Q4"
+      ],
+      "sprint": "2.8",
+      "kind": "regression",
+      "passed": 28,
+      "failed": 0,
+      "assertions": [
+        {
+          "name": "Q4: Posición sobre toda la ruta de boxes 0.9–0.15, sin offset lateral de pista",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q4: Cuatro cámaras apuntan al coche en los 101 puntos de boxes 0.9–0.15",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q4: Posición sobre toda la ruta de boxes 0.361–0.461, sin offset lateral de pista",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q4: Cuatro cámaras apuntan al coche en los 101 puntos de boxes 0.361–0.461",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q4: Interpolación y desplazamiento lateral conservan el ancho/capacidad Q1",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q4: Renderer consume posición/orientación almacenada (zoom 0.25)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q4: Clic en coche visible con zoom 0.25 y rotación 0",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q4: Renderer consume posición/orientación almacenada (zoom 2.75)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q4: Clic en coche visible con zoom 2.75 y rotación 0.8",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q4: Renderer consume posición/orientación almacenada (zoom 8)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q4: Clic en coche visible con zoom 8 y rotación -1.2",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q4: Minimap real proyecta worldX/Y e incluye boxes en el encuadre",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q4: Minimap dibuja el carril de boxes",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q4: Clic y minimapa excluyen finalizados/retirados ocultos y conservan retirados visibles",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q4: Parrilla inicial tiene posiciones válidas antes del primer frame",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q4: Empezar formación actualiza inmediatamente el offset de parrilla",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q4: Motor sincroniza al terminar la rama formation-lap",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q4: Motor sincroniza al terminar la rama grid-parking",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q4: Motor sincroniza al terminar la rama grid-ready",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q4: Motor sincroniza al terminar la rama lights-1",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q4: Motor sincroniza al terminar la rama racing",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q4: Boxes se sincroniza después de avanzar, sin retraso de un paso",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q4: Retirados también mantienen su posición actual",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q4: Pausa conserva posición y progreso",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q4: Recolocación tras roja actualiza posición en el mismo frame",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q4: Cambiar circuito reinicializa posiciones con su capacidad",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q4: Reiniciar carrera no conserva posiciones del estado anterior",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q4: Parada completa del motor mantiene cámara/posición alineadas en entrada, servicio y salida",
+          "pass": true,
+          "details": ""
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "documentation",
+      "tasks": [],
+      "sprint": null,
+      "kind": "regression",
+      "passed": 4,
+      "failed": 0,
+      "assertions": [
+        {
+          "name": "Documentación: dashboard e index completos y alineados",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Documentación: conserva el orden declarado y la tarea actual existe",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Documentación: añadir una tarea exige actualizar el index",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Documentación: índice independiente de finales de línea Windows/Linux",
+          "pass": true,
+          "details": ""
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "finish-line",
+      "tasks": [
+        "Q5"
+      ],
+      "sprint": "2.8",
+      "kind": "regression",
+      "passed": 80,
+      "failed": 0,
+      "assertions": [
+        {
+          "name": "Q5: Ancho, grosor y bordes de meta lineales (zoom 0.25, rotación 0)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: Ajedrezado no tapado por una línea blanca (zoom 0.25, rotación 0)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: Etiquetas de curva sin doble zoom (0.25, rotación 0)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: Ancho, grosor y bordes de meta lineales (zoom 0.25, rotación 0.8)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: Ajedrezado no tapado por una línea blanca (zoom 0.25, rotación 0.8)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: Etiquetas de curva sin doble zoom (0.25, rotación 0.8)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: Ancho, grosor y bordes de meta lineales (zoom 0.25, rotación -1.2)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: Ajedrezado no tapado por una línea blanca (zoom 0.25, rotación -1.2)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: Etiquetas de curva sin doble zoom (0.25, rotación -1.2)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: Ancho, grosor y bordes de meta lineales (zoom 0.5, rotación 0)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: Ajedrezado no tapado por una línea blanca (zoom 0.5, rotación 0)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: Etiquetas de curva sin doble zoom (0.5, rotación 0)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: Ancho, grosor y bordes de meta lineales (zoom 0.5, rotación 0.8)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: Ajedrezado no tapado por una línea blanca (zoom 0.5, rotación 0.8)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: Etiquetas de curva sin doble zoom (0.5, rotación 0.8)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: Ancho, grosor y bordes de meta lineales (zoom 0.5, rotación -1.2)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: Ajedrezado no tapado por una línea blanca (zoom 0.5, rotación -1.2)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: Etiquetas de curva sin doble zoom (0.5, rotación -1.2)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: Ancho, grosor y bordes de meta lineales (zoom 1, rotación 0)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: Ajedrezado no tapado por una línea blanca (zoom 1, rotación 0)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: Etiquetas de curva sin doble zoom (1, rotación 0)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: Ancho, grosor y bordes de meta lineales (zoom 1, rotación 0.8)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: Ajedrezado no tapado por una línea blanca (zoom 1, rotación 0.8)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: Etiquetas de curva sin doble zoom (1, rotación 0.8)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: Ancho, grosor y bordes de meta lineales (zoom 1, rotación -1.2)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: Ajedrezado no tapado por una línea blanca (zoom 1, rotación -1.2)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: Etiquetas de curva sin doble zoom (1, rotación -1.2)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: Ancho, grosor y bordes de meta lineales (zoom 2.75, rotación 0)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: Ajedrezado no tapado por una línea blanca (zoom 2.75, rotación 0)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: Etiquetas de curva sin doble zoom (2.75, rotación 0)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: Ancho, grosor y bordes de meta lineales (zoom 2.75, rotación 0.8)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: Ajedrezado no tapado por una línea blanca (zoom 2.75, rotación 0.8)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: Etiquetas de curva sin doble zoom (2.75, rotación 0.8)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: Ancho, grosor y bordes de meta lineales (zoom 2.75, rotación -1.2)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: Ajedrezado no tapado por una línea blanca (zoom 2.75, rotación -1.2)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: Etiquetas de curva sin doble zoom (2.75, rotación -1.2)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: Ancho, grosor y bordes de meta lineales (zoom 4.5, rotación 0)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: Ajedrezado no tapado por una línea blanca (zoom 4.5, rotación 0)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: Etiquetas de curva sin doble zoom (4.5, rotación 0)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: Ancho, grosor y bordes de meta lineales (zoom 4.5, rotación 0.8)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: Ajedrezado no tapado por una línea blanca (zoom 4.5, rotación 0.8)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: Etiquetas de curva sin doble zoom (4.5, rotación 0.8)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: Ancho, grosor y bordes de meta lineales (zoom 4.5, rotación -1.2)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: Ajedrezado no tapado por una línea blanca (zoom 4.5, rotación -1.2)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: Etiquetas de curva sin doble zoom (4.5, rotación -1.2)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: Ancho, grosor y bordes de meta lineales (zoom 8, rotación 0)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: Ajedrezado no tapado por una línea blanca (zoom 8, rotación 0)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: Etiquetas de curva sin doble zoom (8, rotación 0)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: Ancho, grosor y bordes de meta lineales (zoom 8, rotación 0.8)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: Ajedrezado no tapado por una línea blanca (zoom 8, rotación 0.8)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: Etiquetas de curva sin doble zoom (8, rotación 0.8)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: Ancho, grosor y bordes de meta lineales (zoom 8, rotación -1.2)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: Ajedrezado no tapado por una línea blanca (zoom 8, rotación -1.2)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: Etiquetas de curva sin doble zoom (8, rotación -1.2)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: Vista lejana usa círculos/posiciones compactas (0.25)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: LOD conserva posición Q4 y no modifica estado (0.25)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: Vista lejana usa círculos/posiciones compactas (0.7)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: LOD conserva posición Q4 y no modifica estado (0.7)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: Distancia intermedia conserva coches sin nombres (0.71)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: Distancia intermedia conserva coches sin nombres (1.2)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: Nombres solo del seleccionado y ambos rivales (1.21)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: Nombres solo del seleccionado y ambos rivales (2.75)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: Nombres solo del seleccionado y ambos rivales (8)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: Cambiar de seleccionado retira el nombre anterior y prioriza el nuevo",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: Deseleccionar conserva únicamente los nombres de las batallas",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: Umbral de batalla estricto y gap válido (0)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: Umbral de batalla estricto y gap válido (-0.1)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: Umbral de batalla estricto y gap válido (0.799)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: Umbral de batalla estricto y gap válido (0.8)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: Umbral de batalla estricto y gap válido (1)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: Umbral de batalla estricto y gap válido (NaN)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: No etiqueta una falsa batalla ({\"isInPitLane\":true})",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: No etiqueta una falsa batalla ({\"status\":\"pit\"})",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: No etiqueta una falsa batalla ({\"status\":\"out\",\"isRetiredVisible\":true})",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: No etiqueta una falsa batalla ({\"isBlueFlagged\":true})",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: No etiqueta una falsa batalla ({\"currentSpeedKmh\":0})",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: No etiqueta una falsa batalla ({\"progress\":1.195})",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: Pelotón denso prioriza seleccionado y evita solapamientos (0.5)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: Pelotón denso prioriza seleccionado y evita solapamientos (2.75)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q5: Alertas de bandera azul y DNF siguen visibles con el nuevo LOD",
+          "pass": true,
+          "details": ""
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "scenarios",
+      "tasks": [
+        "Q6"
+      ],
+      "sprint": "2.8",
+      "kind": "regression",
+      "passed": 14,
+      "failed": 0,
+      "assertions": [
+        {
+          "name": "Q6-1: Monaco scenario has hasGravelGlobal === false",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q6-2: Monaco scenario defines barrier zones",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q6-3: Barcelona scenario has hasGravelGlobal === true",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q6-4: Barcelona has at least 3 gravel runoff zones",
+          "pass": true,
+          "details": "found 4"
+        },
+        {
+          "name": "Q6-5: Barcelona kerbs are localized segments (not spanning straights)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q6-6: Barcelona scenario geometry has runoff polygons and kerb segments",
+          "pass": true,
+          "details": "runoffs: 13, kerbs: 20"
+        },
+        {
+          "name": "Q6-7: Monaco scenario geometry has barrier lines and kerb segments",
+          "pass": true,
+          "details": "barriers: 9, kerbs: 11"
+        },
+        {
+          "name": "Q6-8: Monza falls back to default scenario (empty localized zones)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q6-9: Default scenario has hasGravelGlobal === true (legacy compatibility)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q6-10: Monaco CircuitSpec.trackType === \"street\"",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q6-11: Barcelona CircuitSpec.trackType === \"permanent\"",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q6-12: Independent builds of Barcelona and Monaco have distinct hasGravelGlobal",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q6-13: All Barcelona kerbs span ≤10% of track (localized at corners)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q6-14: Monaco has zero gravel runoff zones",
+          "pass": true,
+          "details": ""
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "box-orders",
+      "tasks": [
+        "Q9",
+        "Q10"
+      ],
+      "sprint": "2.8",
+      "kind": "regression",
+      "passed": 65,
+      "failed": 0,
+      "assertions": [
+        {
+          "name": "Q9: Aceptar soft no cambia ruedas en pista",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q9: IA no sustituye orden del jugador (soft)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q9: Servicio real e historial montan soft una sola vez",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q9: Salida no duplica servicio (soft)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q9: Segunda parada vinculante (soft)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q9: Aceptar medium no cambia ruedas en pista",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q9: IA no sustituye orden del jugador (medium)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q9: Servicio real e historial montan medium una sola vez",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q9: Salida no duplica servicio (medium)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q9: Segunda parada vinculante (medium)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q9: Aceptar hard no cambia ruedas en pista",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q9: IA no sustituye orden del jugador (hard)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q9: Servicio real e historial montan hard una sola vez",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q9: Salida no duplica servicio (hard)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q9: Segunda parada vinculante (hard)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q9: Aceptar intermediate no cambia ruedas en pista",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q9: IA no sustituye orden del jugador (intermediate)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q9: Servicio real e historial montan intermediate una sola vez",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q9: Salida no duplica servicio (intermediate)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q9: Segunda parada vinculante (intermediate)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q9: Aceptar wet no cambia ruedas en pista",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q9: IA no sustituye orden del jugador (wet)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q9: Servicio real e historial montan wet una sola vez",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q9: Salida no duplica servicio (wet)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q9: Segunda parada vinculante (wet)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q10: Llamada antes/sobre/después del compromiso (-0.000001)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q10: Llamada antes/sobre/después del compromiso (0)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q10: Llamada antes/sobre/después del compromiso (0.000001)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q10: Cancelar elimina programación residual y conserva acuse",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q10: Orden cancelada no reaparece en la siguiente vuelta",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q9: SC no reactiva estrategia cancelada del jugador",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q10: Cancelar conserva emergencia independiente por pinchazo",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q10: Pinchazo entra realmente tras una cancelación",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q10: Cancelar sobre la línea llega tarde",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q9: Compuesto bloqueado tras compromiso",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q10: Cruces integrados compromiso/entrada (1x, 0.875→0.9)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q10: Entrada sin reposicionar progress (1x, 0.9)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q10: Cruces integrados compromiso/entrada (1x, 0.999→0.001)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q10: Entrada sin reposicionar progress (1x, 0.001)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q10: Cruces integrados compromiso/entrada (1x, 0.3→0.32)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q10: Entrada sin reposicionar progress (1x, 0.32)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q10: Cruces integrados compromiso/entrada (16x, 0.875→0.9)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q10: Entrada sin reposicionar progress (16x, 0.9)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q10: Cruces integrados compromiso/entrada (16x, 0.999→0.001)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q10: Entrada sin reposicionar progress (16x, 0.001)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q10: Cruces integrados compromiso/entrada (16x, 0.3→0.32)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q10: Entrada sin reposicionar progress (16x, 0.32)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q10: Cruces integrados compromiso/entrada (32x, 0.875→0.9)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q10: Entrada sin reposicionar progress (32x, 0.9)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q10: Cruces integrados compromiso/entrada (32x, 0.999→0.001)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q10: Entrada sin reposicionar progress (32x, 0.001)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q10: Cruces integrados compromiso/entrada (32x, 0.3→0.32)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q10: Entrada sin reposicionar progress (32x, 0.32)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q10: Llamada tardía no usa la entrada inmediata",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q10: Llamada tardía espera realmente otra oportunidad",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q9: Retirada invalida orden",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q9: Reset limpia órdenes y control",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q9: Se aceptan órdenes durante SC",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q9: Roja rechaza nuevas órdenes ordinarias",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q9: Jugador sustituye una orden IA",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q9: Servicio de cualquier equipo no admite cambios",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q10: Un único frame cruza compromiso y entrada a x16",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q10: Un único frame cruza compromiso y entrada a x32",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q10: Pausa no compromete ni mueve el coche",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q10: Cambio de GP limpia orden y usa línea calibrada propia",
+          "pass": true,
+          "details": ""
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "double-stack",
+      "tasks": [
+        "Q11"
+      ],
+      "sprint": "2.8",
+      "kind": "regression",
+      "passed": 8,
+      "failed": 0,
+      "assertions": [
+        {
+          "name": "Q11: Primer coche recibe servicio normal",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q11: Segundo coche espera en cola (speed=0, waitingForBox=true)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q11: Reloj de servicio del segundo coche no avanza mientras espera",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q11: Equipos distintos no se bloquean entre sí",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q11: Segundo coche recibe servicio después de liberación",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q11: Tiempo de espera acumulado refleja el tiempo del compañero",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q11: Segundo coche retirado mientras espera no bloquea ni admite órdenes",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q11: Reset limpia el estado de cola de todos los coches",
+          "pass": true,
+          "details": ""
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "pace",
+      "tasks": [
+        "Q12"
+      ],
+      "sprint": "2.8",
+      "kind": "regression",
+      "passed": 6,
+      "failed": 0,
+      "assertions": [
+        {
+          "name": "Q12: Push es más rápido que Balanced",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q12: Balanced es más rápido que Save",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q12: Push desgasta más neumático que Balanced",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q12: Balanced desgasta más neumático que Save",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q12: El modo de ritmo persiste tras parada en boxes",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q12: Bajo Safety Car, los modos de ritmo no generan gaps abusivos",
+          "pass": true,
+          "details": ""
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "rejoin",
+      "tasks": [
+        "Q13"
+      ],
+      "sprint": "2.8",
+      "kind": "regression",
+      "passed": 2,
+      "failed": 0,
+      "assertions": [
+        {
+          "name": "Q13: El predictor base suma pitLaneTimeLoss y servicio estándar",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q13: El predictor de un segundo piloto suma el recargo por Double Stack si su compañero va a parar",
+          "pass": true,
+          "details": ""
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "track-width",
+      "tasks": [
+        "Q7"
+      ],
+      "sprint": "2.8",
+      "kind": "contract",
+      "passed": 4,
+      "failed": 4,
+      "assertions": [
+        {
+          "name": "Q7: anchuras válidas en barcelona",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q7: anchura variable en barcelona",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q7: anchuras válidas en monaco",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q7: anchura variable en monaco",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q7: posición continua al cambiar anchura/capacidad en 0.5",
+          "pass": false,
+          "details": ""
+        },
+        {
+          "name": "Q7: huella física constante al estrecharse la pista",
+          "pass": false,
+          "details": ""
+        },
+        {
+          "name": "Q7: posición continua al cambiar anchura/capacidad en 1",
+          "pass": false,
+          "details": ""
+        },
+        {
+          "name": "Q7: huella física constante al estrecharse la pista",
+          "pass": false,
+          "details": ""
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "racing-line",
+      "tasks": [
+        "Q8"
+      ],
+      "sprint": "2.8",
+      "kind": "contract",
+      "passed": 11,
+      "failed": 4,
+      "assertions": [
+        {
+          "name": "Q8: offsets finitos dentro de pista en barcelona",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q8: trazada lateral en ambos sentidos en barcelona",
+          "pass": false,
+          "details": ""
+        },
+        {
+          "name": "Q8: offsets finitos dentro de pista en monaco",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q8: trazada lateral en ambos sentidos en monaco",
+          "pass": false,
+          "details": ""
+        },
+        {
+          "name": "Q8: paso real de un coche acumula goma en seco",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q8: engomado no regenera neumáticos",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q8: engomado permanece acotado",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q8: pausa no acumula goma",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q8: reiniciar carrera limpia goma de todas las muestras",
+          "pass": false,
+          "details": ""
+        },
+        {
+          "name": "Q8: agarre acumulado mejora movimiento con idénticas condiciones",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q8: goma saturada no supera 1",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q8: sin coches no aparece goma",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q8: coche en boxes no engoma la trazada principal",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q8: cambiar circuito no hereda goma del anterior",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q8: misma duración a distintos FPS conserva distribución de goma (1%)",
+          "pass": false,
+          "details": "error=0.00016499999999999997"
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "pace-contract",
+      "tasks": [
+        "Q12"
+      ],
+      "sprint": "2.8",
+      "kind": "contract",
+      "passed": 9,
+      "failed": 0,
+      "assertions": [
+        {
+          "name": "Q12: push completa cinco vueltas reales",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q12: balanced completa cinco vueltas reales",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q12: save completa cinco vueltas reales",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q12: cinco vueltas idénticas Push gastan más neumático que Save",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q12: cinco vueltas idénticas Push consumen más combustible que Save",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q12: orden de tiempos Push/Balanced/Save con el mismo piloto",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q12: cambiar un piloto no cambia al compañero",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q12: pausa conserva posición y orden",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q12: reset elimina las órdenes previas",
+          "pass": true,
+          "details": ""
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "rejoin-contract",
+      "tasks": [
+        "Q13"
+      ],
+      "sprint": "2.8",
+      "kind": "contract",
+      "passed": 3,
+      "failed": 2,
+      "assertions": [
+        {
+          "name": "Q13: parada costosa pierde posición frente a un rival a menos de un segundo",
+          "pass": false,
+          "details": ""
+        },
+        {
+          "name": "Q13: consultar predictor no mueve coches",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q13: predictor excluye retirados",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q13: fixture completa parada real",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q13: posición prevista coincide con reincorporación controlada",
+          "pass": false,
+          "details": "prevista=1, real=2"
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "neutralization-motion",
+      "tasks": [
+        "Q14"
+      ],
+      "sprint": "2.8",
+      "kind": "contract",
+      "passed": 1,
+      "failed": 4,
+      "assertions": [
+        {
+          "name": "Q14: SC no recoloca ni retrocede coche x1",
+          "pass": false,
+          "details": "distancia=-13.97100000000053 m; retroceso interno=true"
+        },
+        {
+          "name": "Q14: SC no recoloca ni retrocede coche x16",
+          "pass": false,
+          "details": "distancia=1.3067777777797924 m; retroceso interno=true"
+        },
+        {
+          "name": "Q14: SC no recoloca ni retrocede coche x32",
+          "pass": false,
+          "details": "distancia=16.862333333337638 m; retroceso interno=true"
+        },
+        {
+          "name": "Q14: reanudación de roja conserva distancia completada",
+          "pass": false,
+          "details": ""
+        },
+        {
+          "name": "Q14: reanudación no crea neumático ni combustible",
+          "pass": true,
+          "details": ""
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "blue-flags",
+      "tasks": [
+        "Q15"
+      ],
+      "sprint": "2.8",
+      "kind": "contract",
+      "passed": 7,
+      "failed": 2,
+      "assertions": [
+        {
+          "name": "Q15: señal correcta con líder detrás",
+          "pass": false,
+          "details": ""
+        },
+        {
+          "name": "Q15: señal correcta con meta",
+          "pass": false,
+          "details": ""
+        },
+        {
+          "name": "Q15: señal correcta con misma vuelta",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q15: señal correcta con líder ya pasó",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q15: coche out no provoca bandera azul",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q15: coche pit no provoca bandera azul",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q15: señal se apaga cuando desaparece la causa",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q15: neutralización sc no exige ceder para adelantar",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q15: neutralización vsc no exige ceder para adelantar",
+          "pass": true,
+          "details": ""
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "resources",
+      "tasks": [
+        "Q16"
+      ],
+      "sprint": "2.8",
+      "kind": "contract",
+      "passed": 5,
+      "failed": 11,
+      "assertions": [
+        {
+          "name": "Q16: depósito vacío no crea combustible (low)",
+          "pass": false,
+          "details": ""
+        },
+        {
+          "name": "Q16: combustible se agota sin reserva infinita (low)",
+          "pass": false,
+          "details": ""
+        },
+        {
+          "name": "Q16: consumo independiente de partición temporal (low)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q16: depósito vacío no crea combustible (standard)",
+          "pass": false,
+          "details": ""
+        },
+        {
+          "name": "Q16: combustible se agota sin reserva infinita (standard)",
+          "pass": false,
+          "details": ""
+        },
+        {
+          "name": "Q16: consumo independiente de partición temporal (standard)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q16: depósito vacío no crea combustible (push)",
+          "pass": false,
+          "details": ""
+        },
+        {
+          "name": "Q16: combustible se agota sin reserva infinita (push)",
+          "pass": false,
+          "details": ""
+        },
+        {
+          "name": "Q16: consumo independiente de partición temporal (push)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q16: depósito vacío no crea combustible (overtake)",
+          "pass": false,
+          "details": ""
+        },
+        {
+          "name": "Q16: combustible se agota sin reserva infinita (overtake)",
+          "pass": false,
+          "details": ""
+        },
+        {
+          "name": "Q16: consumo independiente de partición temporal (overtake)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q16: despliegue de ERS consume estado real, no SOC constante",
+          "pass": false,
+          "details": ""
+        },
+        {
+          "name": "Q16: SOC dentro de límites",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q16: coche parado sin combustible no crea recurso ni propulsión",
+          "pass": false,
+          "details": ""
+        },
+        {
+          "name": "Q16: motor sobrecalentado pierde rendimiento físico antes de integrar distancia",
+          "pass": false,
+          "details": ""
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "luck-rewards",
+      "tasks": [
+        "Q17"
+      ],
+      "sprint": "2.8",
+      "kind": "contract",
+      "passed": 10,
+      "failed": 3,
+      "assertions": [
+        {
+          "name": "Q17: fixture produce tirada 1",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q17: tirada 1 no cambia neumáticos en pista",
+          "pass": false,
+          "details": ""
+        },
+        {
+          "name": "Q17: tirada 1 no crea combustible",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q17: doble aplicación 1 es idempotente",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q17: fixture produce tirada 10",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q17: tirada 10 no cambia neumáticos en pista",
+          "pass": false,
+          "details": ""
+        },
+        {
+          "name": "Q17: tirada 10 no crea combustible",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q17: doble aplicación 10 es idempotente",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q17: fixture produce tirada 20",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q17: tirada 20 no cambia neumáticos en pista",
+          "pass": false,
+          "details": ""
+        },
+        {
+          "name": "Q17: tirada 20 no crea combustible",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q17: doble aplicación 20 es idempotente",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q17: ID ajeno y beneficiario retirado no reciben recursos",
+          "pass": true,
+          "details": ""
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "reset-lifecycle",
+      "tasks": [
+        "Q18"
+      ],
+      "sprint": "2.8",
+      "kind": "contract",
+      "passed": 2,
+      "failed": 4,
+      "assertions": [
+        {
+          "name": "Q18: motor registra incidentes antes y después de reiniciar",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q18: initRace reinicia IDs de IncidentModel",
+          "pass": false,
+          "details": ""
+        },
+        {
+          "name": "Q18: incidente normal despliega SC urbano",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q18: política personalizada urbana exige al menos 10 vueltas",
+          "pass": false,
+          "details": ""
+        },
+        {
+          "name": "Q18: reset elimina evento D20 anterior",
+          "pass": false,
+          "details": ""
+        },
+        {
+          "name": "Q18: cambio de GP elimina evento D20 anterior",
+          "pass": false,
+          "details": ""
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "drs-permissions",
+      "tasks": [
+        "Q19"
+      ],
+      "sprint": "2.8",
+      "kind": "contract",
+      "passed": 7,
+      "failed": 4,
+      "assertions": [
+        {
+          "name": "Q19: helper aplica umbral estricto a 0.999s",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q19: helper aplica umbral estricto a 1s",
+          "pass": false,
+          "details": ""
+        },
+        {
+          "name": "Q19: helper aplica umbral estricto a 1.001s",
+          "pass": false,
+          "details": ""
+        },
+        {
+          "name": "Q19: entrar en activación sin detección previa no autoriza (0.999s)",
+          "pass": false,
+          "details": ""
+        },
+        {
+          "name": "Q19: entrar en activación sin detección previa no autoriza (1s)",
+          "pass": false,
+          "details": ""
+        },
+        {
+          "name": "Q19: entrar en activación sin detección previa no autoriza (1.001s)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q19: motor cierra DRS bajo yellow",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q19: motor cierra DRS bajo sc",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q19: motor cierra DRS bajo vsc",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q19: motor cierra DRS bajo red",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q19: reinicio elimina aperturas anteriores",
+          "pass": true,
+          "details": ""
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "scenario-monza",
+      "tasks": [
+        "Q6.1"
+      ],
+      "sprint": "2.8",
+      "kind": "contract",
+      "passed": 1,
+      "failed": 2,
+      "assertions": [
+        {
+          "name": "Q6.1: circuito monza registrado",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q6.1: monza tiene escenario específico, no fallback",
+          "pass": false,
+          "details": ""
+        },
+        {
+          "name": "Q6.1: pianos y barreras propios generan geometría utilizable",
+          "pass": false,
+          "details": ""
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "scenario-silverstone",
+      "tasks": [
+        "Q6.2"
+      ],
+      "sprint": "2.8",
+      "kind": "contract",
+      "passed": 1,
+      "failed": 2,
+      "assertions": [
+        {
+          "name": "Q6.2: circuito silverstone registrado",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q6.2: silverstone tiene escenario específico, no fallback",
+          "pass": false,
+          "details": ""
+        },
+        {
+          "name": "Q6.2: pianos y barreras propios generan geometría utilizable",
+          "pass": false,
+          "details": ""
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "scenario-spa",
+      "tasks": [
+        "Q6.3"
+      ],
+      "sprint": "2.8",
+      "kind": "contract",
+      "passed": 1,
+      "failed": 2,
+      "assertions": [
+        {
+          "name": "Q6.3: circuito spa registrado",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q6.3: spa tiene escenario específico, no fallback",
+          "pass": false,
+          "details": ""
+        },
+        {
+          "name": "Q6.3: pianos y barreras propios generan geometría utilizable",
+          "pass": false,
+          "details": ""
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "scenario-spielberg",
+      "tasks": [
+        "Q6.4"
+      ],
+      "sprint": "2.8",
+      "kind": "contract",
+      "passed": 1,
+      "failed": 2,
+      "assertions": [
+        {
+          "name": "Q6.4: circuito spielberg registrado",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q6.4: spielberg tiene escenario específico, no fallback",
+          "pass": false,
+          "details": ""
+        },
+        {
+          "name": "Q6.4: pianos y barreras propios generan geometría utilizable",
+          "pass": false,
+          "details": ""
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "scenario-interlagos",
+      "tasks": [
+        "Q6.5"
+      ],
+      "sprint": "2.8",
+      "kind": "contract",
+      "passed": 1,
+      "failed": 2,
+      "assertions": [
+        {
+          "name": "Q6.5: circuito interlagos registrado",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q6.5: interlagos tiene escenario específico, no fallback",
+          "pass": false,
+          "details": ""
+        },
+        {
+          "name": "Q6.5: pianos y barreras propios generan geometría utilizable",
+          "pass": false,
+          "details": ""
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "scenario-suzuka",
+      "tasks": [
+        "Q6.6"
+      ],
+      "sprint": "2.8",
+      "kind": "contract",
+      "passed": 1,
+      "failed": 2,
+      "assertions": [
+        {
+          "name": "Q6.6: circuito suzuka registrado",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q6.6: suzuka tiene escenario específico, no fallback",
+          "pass": false,
+          "details": ""
+        },
+        {
+          "name": "Q6.6: pianos y barreras propios generan geometría utilizable",
+          "pass": false,
+          "details": ""
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "scenario-zandvoort",
+      "tasks": [
+        "Q6.7"
+      ],
+      "sprint": "2.8",
+      "kind": "contract",
+      "passed": 1,
+      "failed": 2,
+      "assertions": [
+        {
+          "name": "Q6.7: circuito zandvoort registrado",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q6.7: zandvoort tiene escenario específico, no fallback",
+          "pass": false,
+          "details": ""
+        },
+        {
+          "name": "Q6.7: pianos y barreras propios generan geometría utilizable",
+          "pass": false,
+          "details": ""
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "scenario-las-vegas",
+      "tasks": [
+        "Q6.8"
+      ],
+      "sprint": "2.8",
+      "kind": "contract",
+      "passed": 1,
+      "failed": 2,
+      "assertions": [
+        {
+          "name": "Q6.8: circuito las-vegas registrado",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q6.8: las-vegas tiene escenario específico, no fallback",
+          "pass": false,
+          "details": ""
+        },
+        {
+          "name": "Q6.8: pianos y barreras propios generan geometría utilizable",
+          "pass": false,
+          "details": ""
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "scenario-bahrain",
+      "tasks": [
+        "Q6.9"
+      ],
+      "sprint": "2.8",
+      "kind": "contract",
+      "passed": 1,
+      "failed": 2,
+      "assertions": [
+        {
+          "name": "Q6.9: circuito bahrain registrado",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q6.9: bahrain tiene escenario específico, no fallback",
+          "pass": false,
+          "details": ""
+        },
+        {
+          "name": "Q6.9: pianos y barreras propios generan geometría utilizable",
+          "pass": false,
+          "details": ""
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "scenario-baku",
+      "tasks": [
+        "Q6.10"
+      ],
+      "sprint": "2.8",
+      "kind": "contract",
+      "passed": 1,
+      "failed": 2,
+      "assertions": [
+        {
+          "name": "Q6.10: circuito baku registrado",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q6.10: baku tiene escenario específico, no fallback",
+          "pass": false,
+          "details": ""
+        },
+        {
+          "name": "Q6.10: pianos y barreras propios generan geometría utilizable",
+          "pass": false,
+          "details": ""
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "scenario-melbourne",
+      "tasks": [
+        "Q6.11"
+      ],
+      "sprint": "2.8",
+      "kind": "contract",
+      "passed": 1,
+      "failed": 2,
+      "assertions": [
+        {
+          "name": "Q6.11: circuito melbourne registrado",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q6.11: melbourne tiene escenario específico, no fallback",
+          "pass": false,
+          "details": ""
+        },
+        {
+          "name": "Q6.11: pianos y barreras propios generan geometría utilizable",
+          "pass": false,
+          "details": ""
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "scenario-miami",
+      "tasks": [
+        "Q6.12"
+      ],
+      "sprint": "2.8",
+      "kind": "contract",
+      "passed": 1,
+      "failed": 2,
+      "assertions": [
+        {
+          "name": "Q6.12: circuito miami registrado",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q6.12: miami tiene escenario específico, no fallback",
+          "pass": false,
+          "details": ""
+        },
+        {
+          "name": "Q6.12: pianos y barreras propios generan geometría utilizable",
+          "pass": false,
+          "details": ""
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "scenario-shanghai",
+      "tasks": [
+        "Q6.13"
+      ],
+      "sprint": "2.8",
+      "kind": "contract",
+      "passed": 1,
+      "failed": 2,
+      "assertions": [
+        {
+          "name": "Q6.13: circuito shanghai registrado",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q6.13: shanghai tiene escenario específico, no fallback",
+          "pass": false,
+          "details": ""
+        },
+        {
+          "name": "Q6.13: pianos y barreras propios generan geometría utilizable",
+          "pass": false,
+          "details": ""
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "scenario-jeddah",
+      "tasks": [
+        "Q6.14"
+      ],
+      "sprint": "2.8",
+      "kind": "contract",
+      "passed": 1,
+      "failed": 2,
+      "assertions": [
+        {
+          "name": "Q6.14: circuito jeddah registrado",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q6.14: jeddah tiene escenario específico, no fallback",
+          "pass": false,
+          "details": ""
+        },
+        {
+          "name": "Q6.14: pianos y barreras propios generan geometría utilizable",
+          "pass": false,
+          "details": ""
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "scenario-marina-bay",
+      "tasks": [
+        "Q6.15"
+      ],
+      "sprint": "2.8",
+      "kind": "contract",
+      "passed": 1,
+      "failed": 2,
+      "assertions": [
+        {
+          "name": "Q6.15: circuito marina-bay registrado",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q6.15: marina-bay tiene escenario específico, no fallback",
+          "pass": false,
+          "details": ""
+        },
+        {
+          "name": "Q6.15: pianos y barreras propios generan geometría utilizable",
+          "pass": false,
+          "details": ""
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "scenario-lusail",
+      "tasks": [
+        "Q6.16"
+      ],
+      "sprint": "2.8",
+      "kind": "contract",
+      "passed": 1,
+      "failed": 2,
+      "assertions": [
+        {
+          "name": "Q6.16: circuito lusail registrado",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q6.16: lusail tiene escenario específico, no fallback",
+          "pass": false,
+          "details": ""
+        },
+        {
+          "name": "Q6.16: pianos y barreras propios generan geometría utilizable",
+          "pass": false,
+          "details": ""
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "scenario-yas-marina",
+      "tasks": [
+        "Q6.17"
+      ],
+      "sprint": "2.8",
+      "kind": "contract",
+      "passed": 1,
+      "failed": 2,
+      "assertions": [
+        {
+          "name": "Q6.17: circuito yas-marina registrado",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q6.17: yas-marina tiene escenario específico, no fallback",
+          "pass": false,
+          "details": ""
+        },
+        {
+          "name": "Q6.17: pianos y barreras propios generan geometría utilizable",
+          "pass": false,
+          "details": ""
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "scenario-hungaroring",
+      "tasks": [
+        "Q6.18"
+      ],
+      "sprint": "2.8",
+      "kind": "contract",
+      "passed": 1,
+      "failed": 2,
+      "assertions": [
+        {
+          "name": "Q6.18: circuito hungaroring registrado",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q6.18: hungaroring tiene escenario específico, no fallback",
+          "pass": false,
+          "details": ""
+        },
+        {
+          "name": "Q6.18: pianos y barreras propios generan geometría utilizable",
+          "pass": false,
+          "details": ""
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "scenario-mexico-city",
+      "tasks": [
+        "Q6.19"
+      ],
+      "sprint": "2.8",
+      "kind": "contract",
+      "passed": 1,
+      "failed": 2,
+      "assertions": [
+        {
+          "name": "Q6.19: circuito mexico-city registrado",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q6.19: mexico-city tiene escenario específico, no fallback",
+          "pass": false,
+          "details": ""
+        },
+        {
+          "name": "Q6.19: pianos y barreras propios generan geometría utilizable",
+          "pass": false,
+          "details": ""
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "scenario-montreal",
+      "tasks": [
+        "Q6.20"
+      ],
+      "sprint": "2.8",
+      "kind": "contract",
+      "passed": 1,
+      "failed": 2,
+      "assertions": [
+        {
+          "name": "Q6.20: circuito montreal registrado",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q6.20: montreal tiene escenario específico, no fallback",
+          "pass": false,
+          "details": ""
+        },
+        {
+          "name": "Q6.20: pianos y barreras propios generan geometría utilizable",
+          "pass": false,
+          "details": ""
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "scenario-austin",
+      "tasks": [
+        "Q6.21"
+      ],
+      "sprint": "2.8",
+      "kind": "contract",
+      "passed": 1,
+      "failed": 2,
+      "assertions": [
+        {
+          "name": "Q6.21: circuito austin registrado",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q6.21: austin tiene escenario específico, no fallback",
+          "pass": false,
+          "details": ""
+        },
+        {
+          "name": "Q6.21: pianos y barreras propios generan geometría utilizable",
+          "pass": false,
+          "details": ""
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "box-ui",
+      "tasks": [
+        "Q9",
+        "Q10",
+        "Q11"
+      ],
+      "sprint": "2.8",
+      "kind": "contract",
+      "passed": 6,
+      "failed": 0,
+      "assertions": [
+        {
+          "name": "Q9 UI: ofrece los cinco compuestos",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q9 UI: acuse muestra compuesto aceptado",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q10 UI: compromiso bloquea cambio y cancelación",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q10 UI: muestra orden comprometida",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q11 UI: controles independientes para ambos pilotos",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q11 UI: muestra cola y tiempo real del segundo piloto",
+          "pass": true,
+          "details": ""
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "race-ui",
+      "tasks": [],
+      "sprint": null,
+      "kind": "contract",
+      "passed": 7,
+      "failed": 0,
+      "assertions": [
+        {
+          "name": "HUD: muestra estado yellow",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "HUD: muestra estado sc",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "HUD: muestra estado vsc",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "HUD: muestra estado red",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Clasificación: retirada visible",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Clasificación: render no muta orden de coches",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Telemetría: valores iniciales legibles",
+          "pass": true,
+          "details": ""
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "scenario-rendering",
+      "tasks": [
+        "Q6"
+      ],
+      "sprint": "2.8",
+      "kind": "contract",
+      "passed": 24,
+      "failed": 0,
+      "assertions": [
+        {
+          "name": "Q6: grava dibujada correcta en barcelona zoom=0.3 giro=0",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q6: geometría dibujada finita en barcelona",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q6: grava dibujada correcta en monaco zoom=0.3 giro=0",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q6: geometría dibujada finita en monaco",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q6: grava dibujada correcta en barcelona zoom=0.3 giro=0",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q6: geometría dibujada finita en barcelona",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q6: grava dibujada correcta en barcelona zoom=0.3 giro=0.8",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q6: geometría dibujada finita en barcelona",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q6: grava dibujada correcta en monaco zoom=0.3 giro=0.8",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q6: geometría dibujada finita en monaco",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q6: grava dibujada correcta en barcelona zoom=0.3 giro=0.8",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q6: geometría dibujada finita en barcelona",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q6: grava dibujada correcta en barcelona zoom=2 giro=0",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q6: geometría dibujada finita en barcelona",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q6: grava dibujada correcta en monaco zoom=2 giro=0",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q6: geometría dibujada finita en monaco",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q6: grava dibujada correcta en barcelona zoom=2 giro=0",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q6: geometría dibujada finita en barcelona",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q6: grava dibujada correcta en barcelona zoom=2 giro=0.8",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q6: geometría dibujada finita en barcelona",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q6: grava dibujada correcta en monaco zoom=2 giro=0.8",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q6: geometría dibujada finita en monaco",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q6: grava dibujada correcta en barcelona zoom=2 giro=0.8",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q6: geometría dibujada finita en barcelona",
+          "pass": true,
+          "details": ""
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "racing-line-geometry",
+      "tasks": [
+        "Q8"
+      ],
+      "sprint": "2.8",
+      "kind": "contract",
+      "passed": 0,
+      "failed": 3,
+      "assertions": [
+        {
+          "name": "Q8: ápice al interior del giro directo (fixture sintético)",
+          "pass": false,
+          "details": ""
+        },
+        {
+          "name": "Q8: ápice al interior del giro inverso (fixture sintético)",
+          "pass": false,
+          "details": ""
+        },
+        {
+          "name": "Q8: centro de goma dibujada coincide con posición de coche en trazada ideal",
+          "pass": false,
+          "details": ""
+        }
+      ],
+      "errors": []
+    }
+  ],
+  "execution": {
+    "date": "2026-09-28",
+    "fullRun": "node test-suite.mjs --all",
+    "targetedFinalRun": "node test-suite.mjs --module resources",
+    "note": "Resultados consolidados: ejecución integral y última ejecución del único módulo ampliado después (resources).",
+    "runnerTests": {
+      "passed": 4,
+      "failed": 0
+    },
+    "protectedFilesUnchanged": 75
+  }
+}

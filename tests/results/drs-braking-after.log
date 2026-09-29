@@ -1,0 +1,35 @@
+
+=== drs-detection (Q19) ===
+  PASS: Q19: permiso usa tiempo de detección 0.8s
+  PASS: Q19: primer coche sin rival observado no recibe permiso
+  PASS: Q19: permiso usa tiempo de detección 1s
+  PASS: Q19: primer coche sin rival observado no recibe permiso
+  PASS: Q19: permiso usa tiempo de detección 1.3s
+  PASS: Q19: primer coche sin rival observado no recibe permiso
+  PASS: Q19: detección compartida autoriza sus dos zonas
+  PASS: Q19: permiso no se extiende a otra detección
+  PASS: Q19: siguiente detección renueva y revoca permiso anterior
+  PASS: Q19: reset borra permisos de detección
+  PASS: Q19: coche en boxes no otorga permiso a coche en pista
+  PASS: Q19: cruces se ordenan por tiempo, no por orden del array
+  PASS: Q19: cruzar detección a menos de un segundo permite abrir en su zona
+  PASS: Q19: permiso persiste aunque el gap actual suba a 1.3s
+  PASS: Q19: primera frenada cierra el flap
+  PASS: Q19: soltar freno no reabre en la misma zona sin nueva pasada
+drs-detection: 16 PASS, 0 FAIL
+
+=== drs-permissions (Q19) ===
+  PASS: Q19: helper aplica umbral estricto a 0.999s
+  PASS: Q19: helper aplica umbral estricto a 1s
+  PASS: Q19: helper aplica umbral estricto a 1.001s
+  PASS: Q19: entrar en activación sin detección previa no autoriza (0.999s)
+  PASS: Q19: entrar en activación sin detección previa no autoriza (1s)
+  PASS: Q19: entrar en activación sin detección previa no autoriza (1.001s)
+  PASS: Q19: motor cierra DRS bajo yellow
+  PASS: Q19: motor cierra DRS bajo sc
+  PASS: Q19: motor cierra DRS bajo vsc
+  PASS: Q19: motor cierra DRS bajo red
+  PASS: Q19: reinicio elimina aperturas anteriores
+drs-permissions: 11 PASS, 0 FAIL
+
+TOTAL RESULTS: 27 PASSED, 0 FAILED (2 módulos)

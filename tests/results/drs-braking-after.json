@@ -1,0 +1,169 @@
+{
+  "summary": {
+    "passed": 27,
+    "failed": 0
+  },
+  "results": [
+    {
+      "id": "drs-detection",
+      "tasks": [
+        "Q19"
+      ],
+      "sprint": "2.8",
+      "kind": "contract",
+      "passed": 16,
+      "failed": 0,
+      "assertions": [
+        {
+          "name": "Q19: permiso usa tiempo de detección 0.8s",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q19: primer coche sin rival observado no recibe permiso",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q19: permiso usa tiempo de detección 1s",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q19: primer coche sin rival observado no recibe permiso",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q19: permiso usa tiempo de detección 1.3s",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q19: primer coche sin rival observado no recibe permiso",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q19: detección compartida autoriza sus dos zonas",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q19: permiso no se extiende a otra detección",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q19: siguiente detección renueva y revoca permiso anterior",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q19: reset borra permisos de detección",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q19: coche en boxes no otorga permiso a coche en pista",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q19: cruces se ordenan por tiempo, no por orden del array",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q19: cruzar detección a menos de un segundo permite abrir en su zona",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q19: permiso persiste aunque el gap actual suba a 1.3s",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q19: primera frenada cierra el flap",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q19: soltar freno no reabre en la misma zona sin nueva pasada",
+          "pass": true,
+          "details": ""
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "drs-permissions",
+      "tasks": [
+        "Q19"
+      ],
+      "sprint": "2.8",
+      "kind": "contract",
+      "passed": 11,
+      "failed": 0,
+      "assertions": [
+        {
+          "name": "Q19: helper aplica umbral estricto a 0.999s",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q19: helper aplica umbral estricto a 1s",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q19: helper aplica umbral estricto a 1.001s",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q19: entrar en activación sin detección previa no autoriza (0.999s)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q19: entrar en activación sin detección previa no autoriza (1s)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q19: entrar en activación sin detección previa no autoriza (1.001s)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q19: motor cierra DRS bajo yellow",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q19: motor cierra DRS bajo sc",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q19: motor cierra DRS bajo vsc",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q19: motor cierra DRS bajo red",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q19: reinicio elimina aperturas anteriores",
+          "pass": true,
+          "details": ""
+        }
+      ],
+      "errors": []
+    }
+  ]
+}

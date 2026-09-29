@@ -23,6 +23,7 @@
 .stops { margin-left:auto; color:#94a3b8; }
 .waitInfo { font-size:12px; color:#fde68a; }
 .orderRow { display:flex; gap:4px; align-items:center; }
+.paceControls { display:flex; flex-direction:column; gap:3px; }
 .orderRow select,.orderRow button { font:inherit; color:#f8fafc; border:1px solid #64748b; background:#1e293b; padding:5px 8px; border-radius:5px; }
 .orderRow button { cursor:pointer; font-weight:700; flex:1; }
 .orderRow button:disabled,.orderRow select:disabled { opacity:.45; cursor:default; }

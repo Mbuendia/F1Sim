@@ -1,0 +1,21 @@
+
+=== drs-detection (Q19) ===
+  PASS: Q19: permiso usa tiempo de detección 0.8s
+  PASS: Q19: primer coche sin rival observado no recibe permiso
+  PASS: Q19: permiso usa tiempo de detección 1s
+  PASS: Q19: primer coche sin rival observado no recibe permiso
+  PASS: Q19: permiso usa tiempo de detección 1.3s
+  PASS: Q19: primer coche sin rival observado no recibe permiso
+  PASS: Q19: detección compartida autoriza sus dos zonas
+  PASS: Q19: permiso no se extiende a otra detección
+  PASS: Q19: siguiente detección renueva y revoca permiso anterior
+  PASS: Q19: reset borra permisos de detección
+  PASS: Q19: coche en boxes no otorga permiso a coche en pista
+  PASS: Q19: cruces se ordenan por tiempo, no por orden del array
+  PASS: Q19: cruzar detección a menos de un segundo permite abrir en su zona
+  PASS: Q19: permiso persiste aunque el gap actual suba a 1.3s
+  PASS: Q19: primera frenada cierra el flap
+  FAIL: Q19: soltar freno no reabre en la misma zona sin nueva pasada
+drs-detection: 15 PASS, 1 FAIL
+
+TOTAL RESULTS: 15 PASSED, 1 FAILED (1 módulos)

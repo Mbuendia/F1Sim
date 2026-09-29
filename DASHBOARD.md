@@ -4,6 +4,10 @@
 
 ---
 
+**Planificación de 2.9 confirmada — 29/09/2026:** planificar el rediseño de escritorio en Sprint 2.9, conservando toda la funcionalidad. Añadir R29-R34 y sincronizar dashboards/índice. La consulta móvil de la misma carrera queda como MOB01 posterior, por enlace temporal de solo lectura y sin cuentas inicialmente. Esta autorización es documental: no implementa el rediseño, no cierra tareas previas ni autoriza commit/push.
+
+**Solicitud vigente — revisión del usuario, 29/09/2026:** incorporar al Sprint 2.8 las correcciones confirmadas en entrevista: Q20 (recorrido real de boxes), Q21 (neumáticos en toda la app), y ampliar Q13/Q16 sin duplicarlas. Actualización posterior autorizada: absorber Q24 en Q21, incorporar Q22/Q23 y publicar todos los cambios locales en sprint/2.8. Las tareas visuales nuevas siguen pendientes de implementación. El rediseño 2.9 conserva su alcance.
+
 ## 📜 1. LEYES INMUTABLES DE DESARROLLO (REGLAS DE ORO)
 
 1. **🧪 Testing Automatizado Obligatorio**: Cada cambio de código debe incluir su prueba automatizada ejecutable en `test-suite.mjs`. Ninguna tarea se da por cerrada sin `✅ PASS`.
@@ -20,7 +24,7 @@
 
 **Orden vigente:** Sprint **2.8** · Tarea actual **Q10** · Siguiente **Q11**.
 
-**Solicitud vigente: completar Q9 y Q10 en `sprint/2.8`, con commit/push autorizados expresamente el 18/09/2026.** Sustituye para esta entrega la planificación/publicación anterior de 2.9. No ampliar Q6, Q11 ni implementar reglas del Sprint 2.9.
+**Registro histórico de solicitud: completar Q9 y Q10 en `sprint/2.8`, con commit/push autorizados expresamente el 18/09/2026.** Sustituye para esta entrega la planificación/publicación anterior de 2.9. No ampliar Q6, Q11 ni implementar reglas del Sprint 2.9.
 
 **Refinamiento Q9/Q10 autorizado:** reutilizar la orden existente, añadir controles del muro para el piloto elegido en el paddock (mirar un rival no permite darle órdenes), acuse y compuesto vinculante. Orden aceptada/cancelable hasta cruce de compromiso, comprometida/irreversible después, consumida una sola vez al completar servicio. Llamada exactamente sobre la línea se considera posterior al cruce y espera la siguiente oportunidad. Línea calibrada por circuito (Barcelona/Mónaco explícitas; fallback por distancia previa a entrada, identificado como calibración, nunca FIA). Procesar intervalos de progreso, incluidos meta y pasos acelerados, con subpasos acotados; no reposicionar coches. La orden del jugador sustituye la programación automática y evita decisiones aleatorias de SC; cancelarla elimina esa solicitud, pero conserva entradas independientes por pinchazo/desgaste crítico o roja. Un único punto de servicio por equipo reutiliza Q11-1 sin añadir cola/doble gestión. Probar camino real del motor, cinco compuestos, dos servicios, límites/cancelación, emergencia, retirada/reset y UI; alinear también dashboard_visual.html.
 
@@ -41,8 +45,8 @@ Leyenda de Estado:
 | **Sprint 2** | SC Físico, Undercut/Overcut Orgánico, Monoplaza Vectorial 2D, Desdoblamiento | ✅ **COMPLETADO** |
 | **Sprint 2.1** | **Resolución de Bugs Críticos y Altos de Auditoría (C1-C7, A1-A6)** | ✅ **COMPLETADO (23/23 Tests PASS)** |
 | **Sprint 2.5** | **Deuda Técnica de Auditoría (M1-M10, B1-B7)** | ✅ **COMPLETADO (17/17 Tareas - 46 Tests PASS)** |
-| **Sprint 2.8** | **Salto de Calidad: Fidelidad de Simulación, Geometría, Muro Táctico y revisión DRS (Q1-Q19)** | 🟡 **Q1-Q8 y Q11-1 conservan su estado previo; Q9/Q10 implementadas y validadas; subida autorizada; Q11-Q19 pendientes; ampliaciones Q6.1-Q6.21 sin cambios** |
-| **Sprint 2.9** | **Reglamento FIA 2025, identidad técnica de equipos y experiencia de carrera (R01-R28)** | 🟡 **PLANIFICADO — sin implementación en esta entrega Q9/Q10** |
+| **Sprint 2.8** | **Salto de Calidad: Fidelidad de Simulación, Geometría, Muro Táctico y revisión DRS (Q1-Q23)** | 🟡 **Revisión personal registrada; Q20/Q21 planificadas; Q13/Q16 ampliadas. Aprobaciones parciales no cierran tareas completas; casillas previas conservadas** |
+| **Sprint 2.9** | **Reglamento FIA 2025, identidad técnica de equipos y experiencia de carrera y rediseño de escritorio (R01-R34)** | 🟡 **PLANIFICADO — R29-R34 añadidas; sin implementación del rediseño** |
 | **Sprint 3** | **Audio, Telemetría Avanzada, Radar GPS & Clima (4 tareas definidas; desglose histórico de 16 incompleto)** | ⏳ **PLANIFICADO (Después del Sprint 2.9; coordinar clima con R22)** |
 | **Sprint 4** | **Épica: F1 Team Principal & Race Manager (estimación histórica de 12 tareas sin desglose)** | ⏳ **BACKLOG — requiere definición antes de implementar** |
 
@@ -67,7 +71,7 @@ Leyenda de Estado:
 
 **Entrega mínima de cada tarea:** comportamiento observable y límites explícitos; pruebas de regresión por comportamiento en `test-suite.mjs` y comprobación del camino de integración; `node test-suite.mjs`, `npm run sync:tasks`, `npm run check:tasks`, `npm run build`, `git diff --check`; revisión local cuando cambie dibujo/interacción. Registrar escenarios, resultado y limitaciones en la tarea. No borrar una prueba antigua solo porque detecta una regresión; si su expectativa cambia justificadamente, documentar el contrato nuevo. Para física/tiempos, incluir semilla o fixtures reproducibles y distintos pasos/velocidades; para dibujo, rotación, zoom y Barcelona/Mónaco. La autorización de implementar no sustituye el OK de revisión antes de subir.
 
-**Inventario real pendiente:** 14 tareas Q6-Q19, 28 tareas R01-R28 y 4 tareas detalladas T3.1-T3.4. Las «16 subtareas» de Sprint 3 y las «12» de Sprint 4 eran estimaciones sin fichas completas; no inventar tareas ni contarlas como desarrolladas. Las lagunas se explican en la sección 7.
+**Inventario real pendiente:** 14 tareas Q6-Q19, 34 tareas R01-R34, MOB01 diferida fuera de 2.9 y 4 tareas detalladas T3.1-T3.4. Las «16 subtareas» de Sprint 3 y las «12» de Sprint 4 eran estimaciones sin fichas completas; no inventar tareas ni contarlas como desarrolladas. Las lagunas se explican en la sección 7.
 
 ---
 
@@ -345,6 +349,10 @@ Los 13 bugs críticos y altos detectados en la auditoría fueron implementados y
   * *Contexto y archivos:* `CircuitSpec.pitLaneTimeLossSec` existe y HomeScreen lo muestra; el servicio real no impone ese tiempo fijo. `gapToCarAheadSec` aún deriva de vueltas ×77.8. Crear cálculo puro compartido por `Leaderboard` y `MinimapRenderer`, usando Q9/Q11 y posición Q4.
   * *Contrato/aceptación:* estimar tránsito + servicio + cola, menos el tiempo equivalente en pista, para el coche que recibe la orden. Identificar fuente y margen; un valor de ficha sirve de fallback visible, no de cronometraje FIA. Excluir retirados, separar doblados/ruta de boxes y tener en cuenta neutralización sin adivinar incidentes futuros. Probar pista libre, tráfico, segundo en cola, SC y meta; no alterar `progress` real para dibujar el marcador. R02/R08 mejorarán entradas sin crear un predictor alternativo.
 
+  * *Revisión del usuario (29/09/2026):* bloqueada porque el artefacto remitía a tests y advertía que el marcador no estaba entregado. No se registró un fallo observado de indicador congelado.
+  * *Ampliación confirmada:* completar la presentación compartida en clasificación y minimapa para el piloto objetivo; actualizarla con carrera/tráfico/cola y selección, mostrar fuente, carácter estimado y límites. Sin datos suficientes, mostrar no disponible con motivo; no mostrar una posición fija como si fuera medida. Pausa conserva la predicción; reset/cambio de GP elimina la anterior.
+  * *Tests previos adicionales:* módulos rejoin-contract y nuevo rejoin-ui propuesto; fixture con cambios suficientes de tráfico para alterar el pronóstico (no exigir cambio cada frame), selección de ambos pilotos, cola, SC, cruce de meta, pausa/reset y coincidencia torre/minimapa sin mutar progress. Pruebas de interacción y captura del SVG/Canvas real antes de aceptación humana.
+
 ### 🏎️ Bloque D: Físicas Orgánicas, Banderas y Consistencia de Simulación (5 Tareas)
 * **Q14 — Eliminación de Asignaciones Directas de Posición en SC y Bandera Roja:** `[ ] PENDIENTE`
   * *Problema:* En SC y red flag existen saltos forzados de `progress`.
@@ -365,9 +373,13 @@ Los 13 bugs críticos y altos detectados en la auditoría fueron implementados y
   * *Problema:* `RaceSimulation.ts:834`, batería estática al 85%, clamp de 0.5 kg en combustible, penalización térmica tardía.
   * *Solución refinada con FIA 2025:* Conectar el ERS al ciclo real: **MGU-K → ES máximo 2 MJ/vuelta; ES → MGU-K máximo 4 MJ/vuelta; MGU-K ±120 kW**, con contabilidad separada del MGU-H y ventana de carga del ES de 4 MJ (T5.3.2). Consumo continuo sin reserva artificial infinita y penalización térmica aplicada antes de integrar el movimiento. Desarrollo completo y dependencias en R14-R16.
   * *Test:* Conservación de energía, saturación y agotamiento, límites por flujo/vuelta, reset reglamentario al entrar en boxes y ausencia de energía creada por cambios de modo. No exigir oscilaciones arbitrarias de SOC del 20% al 100%.
-  * *Contexto real:* `FuelModel.updateFuel` mantiene mínimo 0.5 kg; `RaceSimulation` emite `batterySoc: 85` y aplica parte de la penalización térmica después del movimiento. `EngineModel` no contiene un libro de energía. Cambiar solo los números de telemetría no implementa Q16.
+  * *Diagnóstico histórico anterior a las correcciones de septiembre (no describe todo el estado actual):* `FuelModel.updateFuel` mantiene mínimo 0.5 kg; `RaceSimulation` emite `batterySoc: 85` y aplica parte de la penalización térmica después del movimiento. `EngineModel` no contiene un libro de energía. Cambiar solo los números de telemetría no implementa Q16.
   * *Contrato y dependencia a resolver al autorizar:* dividir en combustible finito, libro energético y orden térmico de actualización; unidades kg/kW/kJ o MJ/segundos documentadas. Integrar potencia×tiempo, acotar flujos por recurso y límites, y aplicar rendimiento disponible antes de mover el coche. Un reset de contador reglamentario no rellena la batería. Compartir desde el principio contratos mínimos R01/R02/R14-R16; Q16 entrega el núcleo y las R amplían legalidad/calibración, sin dos modelos paralelos. Acordar el refinamiento de esta tarea amplia antes de codificarla.
   * *Aceptación ampliada:* salida, frenada con batería llena, fin de vuelta, entrada a boxes y cero combustible a x1/x16; balance con tolerancia declarada, cero negativos y agotamiento con pérdida física de propulsión. Telemetría derivada del mismo estado. No afirmar modelo FIA completo hasta verificar fuentes y todas las condiciones R14-R16.
+
+  * *Revisión del usuario (29/09/2026):* «No cambiaba nada y no lo encontraba». Investigar por separado visibilidad, actualización de estado y simulación; no atribuir el síntoma al motor sin reproducirlo.
+  * *Ampliación confirmada:* combustible (kg), batería (%) y temperatura (°C) localizables desde la telemetría del piloto, ligados al estado real; selección independiente de piloto, explicación de límites y estado no disponible si faltan datos. No animar valores para aparentar actividad. Reutilizar los modelos existentes y su contrato con R14-R16.
+  * *Tests previos adicionales:* resources y módulo resources-ui propuesto; captura inicial/final en escenarios deterministas de consumo, descarga/regeneración y calentamiento/enfriamiento; probar propagación motor→UI, unidades, redondeo que no oculte cambios significativos, selección, pausa, reset y agotamiento. Entregar pasos reproducibles para revisión humana, sin esperar a un incidente aleatorio.
 
 * **Q17 — Rebalanceo del D20 de Suerte hacia el Reglamento FIA:** `[ ] PENDIENTE`
   * *Problema:* `RaceSimulation.ts:1262`, el D20 monta neumáticos nuevos mágicamente en pista sin parar en boxes.
@@ -394,6 +406,38 @@ Los 13 bugs críticos y altos detectados en la auditoría fueron implementados y
   * *Dependencias y cierre:* R01-R03 definen contratos reutilizables; R04 añade integración visual y escenarios de aceptación sobre Q19, sin implementar el DRS dos veces. Primera referencia Barcelona/Mónaco con notas oficiales de evento pendientes de aportar/verificar. Registrar cualquier geometría provisional como estimada. **Esta tarea aún no corrige el DRS en el juego.**
   * *Puntos de entrada y frontera de entrega:* modificar `DrsZoneSpec`/`CircuitSpec`, parser, `CarState`, `DRSModel` y llamada real de `RaceSimulation`; consumidores en `CarRenderer` y telemetría solo leen estado. Los contratos mínimos de cruces/evento/permisos necesarios para Q19 no cierran automáticamente R01-R03. Preparar fixtures de detección verificados o explícitamente sintéticos antes de sustituir la lógica; sin datos reales suficientes, indicar el límite de la entrega. R04 completa explicación visual/animación y R05 el efecto aerodinámico; Q19 no debe introducir otro bonus de velocidad.
 
+### Bloque F — Correcciones de revisión personal confirmadas (29/09/2026)
+
+Registro original: `docs/reviews/resultados-usuario-2026-09-29.json`: 32 aprobaciones, 2 solicitudes de cambios y 2 bloqueos. La aprobación de una corrección parcial o evidencia técnica no cierra toda la tarea (especialmente Q19). Q13/Q16 se amplían en sus fichas; no crear tareas duplicadas.
+
+* **Q20 — Recorrido real y extremos de boxes en Barcelona, Mónaco y Suzuka:** `[ ] PLANIFICADO — CAMBIO CONFIRMADO`
+  * *Alcance:* Corregir ubicación real de entrada/salida y recorrido completo del pit lane en dibujo y circulación. La aprobación visual general de Suzuka se conserva, con esta incidencia de boxes separada.
+  * *Datos/contrato:* Recopilar planos/mapas verificables del circuito y, cuando proceda, notas oficiales del evento; registrar fuente, edición/fecha, sentido y transformación al SVG. No generar un recorrido paralelo genérico para presentarlo como real. Si falta geometría verificable, registrar el bloqueo y pedir referencia antes de validar. Separar entrada/salida de ruta, compromiso, limitador y cajón: no mover todas esas líneas por inferencia.
+  * *Aceptación:* Superponer referencia y ruta sobre Barcelona/Mónaco/Suzuka; verificar entrada/salida en lugar correcto, continuidad sin saltos, cajones conectados y coche/cámara/minimapa/clic compartiendo ruta. Mantener órdenes y cancelación Q9-Q11.
+  * *Tests previos:* Ampliar pit-lane/world-position/box-orders; añadir fixtures específicos basados en referencias para los tres circuitos y revisión visual de una parada completa por circuito. Tests primero, sin relajar tolerancias para acomodar el dibujo.
+
+* **Q21 — Iconos de neumático coherentes en toda la aplicación:** `[ ] PLANIFICADO — CAMBIO CONFIRMADO`
+  * *Alcance:* Sustituir representaciones aisladas S/M/H/I/W por una rueda con el color identificativo del compuesto en selector, muro, clasificación, telemetría, historial y demás superficies existentes.
+  * *Datos/contrato:* Inventariar consumidores; usar representación reutilizable con nombre del compuesto, tooltip y etiqueta accesible, sin depender solo del color. Verificar y documentar la convención oficial del proveedor/FIA para el perfil de temporada antes de fijar colores en tests; no atribuir códigos HEX arbitrarios a una norma.
+  * *Aceptación:* Los cinco compuestos se distinguen y conservan selección por teclado, estados seleccionado/deshabilitado y nombre accesible. Icono de goma actual, solicitada e histórica refleja su propio dato; no cambia la lógica de boxes.
+  * *Tests previos:* Módulo visual-icons existente (Q24 absorbida) más box-ui/race-ui: los cinco compuestos, todas las superficies inventariadas, historial, selección de ambos pilotos y pedido versus montado; revisar capturas/contraste. Sin nuevos tests del motor que dupliquen Q9.
+
+
+  * *Unificación autorizada:* Q24 queda absorbida por Q21; no es una tarea adicional. Se conserva íntegro su contrato ejecutable en visual-icons (CompoundBadge y F1CarSilhouette, tamaño/color de equipo e integración en Leaderboard, TelemetryPanel y BoxControls). Los HEX son una paleta visual del contrato, no una certificación oficial. La verificación de fuentes y la cobertura del resto de superficies siguen pendientes.
+  * *Estado de tests:* Contrato existente pendiente de implementación; ampliar cobertura acordada sin relajar sus aserciones. El catálogo asigna visual-icons a Q21.
+
+### Bloque G — Contratos visuales incorporados desde GitHub
+
+* **Q22 — Chasis SVG cenital con desgaste y DRS:** `[ ] CONTRATO DE TESTS — IMPLEMENTACIÓN PENDIENTE`
+  * *Alcance:* Componente CarChassisSvg reutilizable con cuatro ruedas identificadas, desgaste individual, color de equipo y estado de alerón DRS.
+  * *Aceptación:* Indicadores por rueda para desgaste sano, alerta y crítico, aviso por debajo del 25%, DRS abierto/cerrado y renderizado sin NaN/undefined. Consumir datos reales disponibles; no inventar desgaste individual si el motor no lo proporciona.
+  * *Tests previos:* visual-chassis; contrato ya publicado, pendiente de implementación y revisión visual.
+
+* **Q23 — Animaciones e indicadores de clasificación y telemetría:** `[ ] CONTRATO DE TESTS — IMPLEMENTACIÓN PENDIENTE`
+  * *Alcance:* Indicadores de posición ganada/perdida y boxes en Leaderboard; marcadores para animación de velocidad/RPM y entrada del panel de telemetría.
+  * *Aceptación:* Conservar lectura y funcionalidad existente y renderizado SSR sin DOM. Los marcadores de tests no certifican por sí solos la animación: revisar movimiento y actualización en navegador antes de aceptar.
+  * *Tests previos:* visual-animations; contrato ya publicado, pendiente de implementación y revisión visual.
+
 **Reconciliación de propuestas anteriores con el Sprint 2.9:** Q3: `[x] COMPLETADO`
 Q4: `[x] COMPLETADO`
 Q5: `[x] COMPLETADO`
@@ -408,7 +452,7 @@ Q3 debe permitir límite de boxes por evento (80 km/h por defecto) y fast lane d
 
 ### 6.0 Alcance acordado y primera entrega propuesta
 
-Se mantienen **las 28 tareas R01-R28 y las cinco entregas A-E**. Esta revisión concreta su planificación, no cierra ninguna tarea ni reanuda las Q pendientes. Los contratos propuestos deben contrastarse con el código cuando se autorice implementar; la presencia de una interfaz o una prueba sintética no acredita una mecánica completa.
+Se mantienen **las 28 tareas R01-R28 y las cinco entregas A-E**, ampliadas con **R29-R34 de rediseño de escritorio** en la entrega E (34 tareas en total). Esta revisión concreta su planificación, no cierra ninguna tarea ni reanuda las Q pendientes. Los contratos propuestos deben contrastarse con el código cuando se autorice implementar; la presencia de una interfaz o una prueba sintética no acredita una mecánica completa.
 
 | Entrega | Contenido conservado | Límite de la planificación actual |
 |---|---|---|
@@ -416,7 +460,7 @@ Se mantienen **las 28 tareas R01-R28 y las cinco entregas A-E**. Esta revisión 
 | **B — Rendimiento y recursos** | R05, R06, R14-R17 | Reglas comunes y diferencias técnicas de equipos; dependencias Q7/Q8/Q16 documentadas, no presupuestas ni implementadas en esta revisión. |
 | **C — Carrera y estrategia** | R07-R13, R22, R25; resultado de una carrera de R21 | Incluir clasificación/puntos de una carrera sin esperar al campeonato. Órdenes, boxes y continuidad dependen de Q9-Q15/Q18 donde corresponda; reconocer esas carencias antes de autorizar cada bloque. |
 | **D — Fin de semana y temporada** | R18-R21, R26 | R21 amplía el resultado de carrera con campeonato, sin contarlo como tarea nueva. Q17 permanece como dependencia de R26, no se considera entregada. |
-| **E — Presentación y verificación transversal** | R23, R24, R27, R28 | R27 acompaña desde el inicio; definir el esquema R28 temprano sin declarar guardado completado. R23 excluye los nuevos escenarios por capas de Q6. |
+| **E — Presentación y verificación transversal** | R23, R24, R27, R28, R29-R34 | R27 acompaña desde el inicio; definir el esquema R28 temprano sin declarar guardado completado. R23 excluye los nuevos escenarios por capas de Q6. |
 
 **Primera entrega propuesta, pendiente de autorización para codificar:**
 
@@ -622,7 +666,7 @@ Todas las tareas siguientes están **pendientes**. P0 = corregir validez del nú
 
 * **R23 — SVG/Canvas que explica la física (P1; Q4/Q5, Q7/Q8 pendientes, R03-R16; Q6 excluida):** `[ ]`
   * Usar geometría y escenario existentes para explicar el estado físico: detección DRS diferenciada de activación cuando Q19/R04 estén disponibles; flap, daño, luces y contacto de suelo vinculados al motor. Preservar proporciones, LOD, cámara/minimapa/selección compartiendo coordenadas y transiciones suaves. Nuevos escenarios por capas, edificios, escapatorias y pianos localizados de Q6 quedan fuera de esta planificación.
-  * *Aceptación:* coherencia de las señales con el estado real, coches y boxes a distintos zooms sobre Barcelona/Mónaco existentes, colores legibles sin depender solo de rojo/verde y coste medido con 20 coches/lluvia cuando exista ese estado. La eliminación de grava genérica en Mónaco y el rediseño de identidad visual siguen en Q6 excluida; no son criterios que obliguen a implementarla para cerrar R23. Q7/Q8 pendientes limitan las verificaciones que dependan de su geometría.
+  * *Aceptación:* coherencia de las señales con el estado real, coches y boxes a distintos zooms sobre Barcelona/Mónaco existentes, colores legibles sin depender solo de rojo/verde y coste medido con 20 coches/lluvia cuando exista ese estado. La eliminación de grava genérica en Mónaco y el rediseño de identidad visual de los escenarios siguen en Q6 excluida; no son criterios que obliguen a implementarla para cerrar R23. Q7/Q8 pendientes limitan las verificaciones que dependan de su geometría.
 * **R24 — Telemetría y mensajes de muro basados en eventos (P1; R02/R04/R07-R16):** `[ ]`
   * Mostrar gap real, permiso DRS y causa, energía recuperada/desplegada/restante, combustible previsto y reserva, neumáticos disponibles/obligatorios, delta VSC, sanciones, daños y estado de mejoras. Sustituir porcentajes ficticios de Push/ahorro y puestos ganados como contador de adelantamientos por registros reales.
   * *Aceptación:* cada cifra reconstruible desde eventos; misma información en panel/torre/minimapa; diferenciar adelantamiento en pista, ganancia por pit y sanción; pocas alertas prioritarias y explicaciones claras sin inundar al jugador de artículos.
@@ -633,6 +677,46 @@ Todas las tareas siguientes están **pendientes**. P0 = corregir validez del nú
   * Snapshot versionado: semilla, reloj, órdenes, permisos DRS, inventario, energía/contadores, sanciones, eventos, mejoras y temporada. Reinicio limpia timers, IDs y permisos. Validador de circuitos/unidades y migraciones con diagnóstico de datos faltantes.
   * *Aceptación:* guardar/cargar antes de detección, durante pit, SC/VSC/roja y tras fin; continuar con mismo resultado. Cambiar circuito no hereda DRS ni incidentes, y datos provisionales nunca pasan a oficiales silenciosamente.
 
+#### Entrega E — Rediseño de escritorio aprobado en entrevista (29/09/2026)
+
+Objetivo: circuito protagonista, clasificación compacta y órdenes de ambos pilotos accesibles. Conservar toda la funcionalidad y atajos; detalles de telemetría e historial desplegables. R23 sigue siendo responsable de las señales del Canvas y R24 de los datos/eventos: R29-R34 organizan su presentación sin duplicar esos motores. No se rediseñan escenarios Q6 ni se amplía la simulación en este bloque.
+
+* **R29 — Inventario funcional y contrato del rediseño de escritorio:** `[ ] PLANIFICADO`
+  * *Prioridad/dependencias:* P0; antes de R30-R34.
+  * *Alcance:* Inventariar portada, selección de piloto/circuito, cámara, zoom/rotación, minimapa, clasificación, pausa/velocidades, salida/reinicio, órdenes de ambos pilotos, compuestos, ritmo, telemetría, historial, avisos y herramientas de desarrollo. Registrar acceso actual, destino propuesto y atajo existente. Separar función existente de mecánica todavía pendiente.
+  * *Aceptación:* Cada función existente tiene una ruta de acceso nueva y un caso de prueba asignado; ninguna se elimina o convierte en decorativa. Revisar con el usuario el contrato y las pantallas antes de implementar.
+  * *Tests antes de implementación:* Matriz función → módulo → caso; ampliar primero los módulos afectados con casos fallidos reproducibles. Mantener fijos los tests acordados durante implementación.
+
+* **R30 — Rediseño del paddock y distribución de escritorio:** `[ ] PLANIFICADO`
+  * *Prioridad/dependencias:* P1; R29.
+  * *Alcance:* Diseñar una nueva jerarquía visual de portada y paddock, con selección e información claras. En carrera, circuito protagonista y clasificación compacta. Evitar columnas rígidas que recorten fichas, controles o el área útil del trazado.
+  * *Aceptación:* Validar 1024×768, 1366×768, 1440×900 y 1920×1080: sin controles recortados ni scroll horizontal de página; fichas largas consultables. La cámara general encuadra el circuito dentro del área libre real. Revisar capturas con el usuario antes de cerrar.
+  * *Tests antes de implementación:* Módulos propuestos desktop-layout y paddock-navigation: dimensiones y visibilidad en navegador real, selección y entrada a pista, zoom/rotación y redimensionado; complementar world-position/geometry-rendering sin duplicar la física de R23.
+
+* **R31 — Muro de dos pilotos y paneles de consulta desplegables:** `[ ] PLANIFICADO`
+  * *Prioridad/dependencias:* P1; R29/R30; coordina R24/R25.
+  * *Alcance:* Mantener accesibles clasificación compacta y órdenes de ambos pilotos. Telemetría detallada, historial y otros detalles se abren en paneles que pueden cerrarse. Reutilizar el estado y las órdenes existentes; cambiar presentación no crea otra lógica de boxes o ritmo.
+  * *Aceptación:* Abrir/cerrar paneles conserva selección y estado de carrera, permite volver al circuito y no tapa los controles esenciales. Ejecutar las funciones del inventario R29 mediante ratón y atajos existentes; ninguna funcionalidad se pierde por quedar oculta.
+  * *Tests antes de implementación:* Módulo propuesto race-panels y consumidores box-ui/race-ui: interacciones reales de apertura/cierre, órdenes, selección y pausa; casos de carrera, formación, neutralización y final.
+
+* **R32 — Estados de carrera claros y herramientas de desarrollo separadas:** `[ ] PLANIFICADO`
+  * *Prioridad/dependencias:* P1; R29/R30; coordina R24.
+  * *Alcance:* Reservar espacio para formación, salida, pausa, banderas y avisos sin superponerlos a controles. Usar Reanudar al pausar. Si no hay datos relativos durante formación, indicar que no están disponibles: no inferir líder o último coche. Conservar TEST SC/TEST RED FLAG dentro de un modo de desarrollo explícito, oculto por defecto en uso normal.
+  * *Aceptación:* P7 no se anuncia como líder por ausencia de datos; pausa tiene texto/icono/etiqueta accesible coherentes; avisos no bloquean pausa, velocidad ni órdenes. Herramientas de desarrollo siguen operativas únicamente en ese modo.
+  * *Tests antes de implementación:* Ampliar race-ui y añadir race-status-ui: fixtures de formación/datos ausentes, carrera/pausa, SC/VSC/roja y final; prueba de acceso al modo de desarrollo y ausencia de sus controles en modo normal. R24 mantiene la propiedad de los datos/eventos.
+
+* **R33 — Sistema visual y accesibilidad del escritorio:** `[ ] PLANIFICADO`
+  * *Prioridad/dependencias:* P1; R29/R30/R31.
+  * *Alcance:* Rediseñar tipografía, espaciado, contraste y jerarquía: reservar letras decorativas para títulos y usar cifras/textos legibles en controles y telemetría. Mantener todas las funciones y atajos; añadir foco visible y nombres accesibles a controles.
+  * *Aceptación:* Texto operativo de al menos 14 px como referencia de diseño; contraste de texto normal ≥4.5:1; estados comprensibles sin depender solo del color. Navegación por teclado, cierre y devolución de foco en paneles; reducción de movimiento en transiciones decorativas.
+  * *Tests antes de implementación:* Módulo propuesto desktop-accessibility: teclado, etiquetas, foco, contraste y zoom de navegador 200%; pruebas visuales de cifras y textos largos. Los cambios estéticos no alteran el motor.
+
+* **R34 — Aceptación visual y regresión funcional del rediseño:** `[ ] PLANIFICADO`
+  * *Prioridad/dependencias:* P0 para cerrar el bloque; R29-R33; coordina R27.
+  * *Alcance:* Ejecutar la matriz R29 sobre la nueva interfaz y comparar con el comportamiento anterior. Validar capturas de Barcelona/Mónaco, paddock y estados representativos; medir rendimiento en el mismo equipo y condiciones antes/después.
+  * *Aceptación:* Todas las funciones inventariadas siguen accesibles; sin recortes ni solapamientos que impidan jugar en los tamaños R30. Registrar resultados, limitaciones, rendimiento y aprobación visual del usuario. Ningún PASS sintético sustituye la revisión del Canvas real.
+  * *Tests antes de implementación:* Ejecutar módulos UI afectados y consumidores; regresión completa solo al integrar el bloque transversal, más build. R27 conserva el banco de simulación; esta tarea cubre aceptación del rediseño, sin duplicarlo.
+
 ### 6.6 Secuencia, dependencias y límite de alcance
 
 1. **Alcance actual: planificar Sprint 2.9**, sin continuar ni refinar Sprint 2.8. Q1-Q5 completadas; Q6-Q19 pendientes. Q6 excluida. Las dependencias técnicas entre Q y R no cambian esos estados ni autorizan implementarlas. La secuencia anterior que exigía continuar primero todas las Q queda sustituida, a efectos de esta planificación, por la primera entrega acotada de 6.0.
@@ -640,9 +724,9 @@ Todas las tareas siguientes están **pendientes**. P0 = corregir validez del nú
 3. **2.9-B:** recursos finitos y comportamiento por equipo. Hito: decidir ahorrar/empujar cambia energía, temperaturas y ritmo de forma comprobable.
 4. **2.9-C:** estrategia, incidentes y resultado reglamentario de una carrera completa (incluye la parte de resultados de R21). Hito: Mónaco exige estrategia legal, SC/VSC/roja y sanciones tienen consecuencias coherentes.
 5. **2.9-D:** fin de semana y evolución de temporada. Hito: mejoras y uso de piezas tienen fechas, costes y restricciones, con diferencias legítimas entre equipos.
-6. **2.9-E y verificación transversal:** presentación y mensajes se incorporan a cada entrega; benchmark, guardado y aceptación final cierran el sprint. No aplazar todas las pruebas a la última fase. Publicar solo el bloque que haya recibido OK local.
+6. **2.9-E y verificación transversal:** R29 fija inventario/contrato; R30 define distribución; R31-R33 concretan paneles, estados y accesibilidad; R34 verifica conservación funcional y aceptación visual. Este bloque consume las funciones existentes y no espera a toda la física futura para corregir la interfaz.  presentación y mensajes se incorporan a cada entrega; benchmark, guardado y aceptación final cierran el sprint. No aplazar todas las pruebas a la última fase. Publicar solo el bloque que haya recibido OK local.
 
-**No es una promesa de implementar 28 tareas en una sesión:** son cinco entregas revisables de una épica 2.9. Las fases D de temporada pueden ejecutarse después del núcleo de carrera, sin marcar el sprint completo antes de tiempo. Compartir implementaciones con Q9-Q19 y T3.2-T3.4; no mantener motores alternativos de DRS, clima o boxes.
+**No es una promesa de implementar 34 tareas en una sesión:** son cinco entregas revisables de una épica 2.9. Las fases D de temporada pueden ejecutarse después del núcleo de carrera, sin marcar el sprint completo antes de tiempo. Compartir implementaciones con Q9-Q19 y T3.2-T3.4; no mantener motores alternativos de DRS, clima o boxes.
 
 **Datos externos todavía necesarios:** notas del director/mapas oficiales por GP y año (detecciones, zonas y líneas); prescripciones del proveedor de neumáticos (compuestos, presiones, mantas); Código Deportivo Internacional y apéndices H/L para detalle de banderas/conducta; clasificación de constructores para ATR; fuentes de rendimiento público para calibrar cada equipo. El mapa SVG, una URL oficial genérica o el PDF general no sustituyen esos datos. La falta de un mapa puede resolverse con fixtures sintéticos para probar lógica, pero no con coordenadas inventadas etiquetadas «FIA».
 
@@ -666,7 +750,7 @@ Todas las tareas siguientes están **pendientes**. P0 = corregir validez del nú
 | T12-T16 | Chasis, pruebas de impacto, seguridad, materiales y química de combustibles/aceites: base homologada R16/R18; no reproducir laboratorio, crash tests ni análisis químico |
 | T17 y ap. 3-5 | Clasificación, perímetro y homologación de componentes/PU: R17-R19; conservar trazabilidad de piezas y desarrollo permitido |
 
-**Criterio de cierre del Sprint 2.9:** 28 tareas con evidencia de aceptación y pruebas ejecutables, datos oficiales separados de calibración, documentación de simplificaciones, build correcto y OK del usuario sobre el bloque jugable en local. Las reglas críticas y los resultados deben ser explicables desde el registro de carrera. Hasta entonces permanece planificado/en curso, aunque una parte visual esté terminada.
+**Criterio de cierre del Sprint 2.9:** 34 tareas con evidencia de aceptación y pruebas ejecutables, datos oficiales separados de calibración, documentación de simplificaciones, build correcto y OK del usuario sobre el bloque jugable en local. Las reglas críticas y los resultados deben ser explicables desde el registro de carrera. Hasta entonces permanece planificado/en curso, aunque una parte visual esté terminada.
 
 ### 6.7 Mapa de implementación para retomar R01-R28
 
@@ -711,6 +795,15 @@ Complementa, no sustituye, las reglas y escenarios de 6.3/6.5. **No hay módulos
 - R02/R27 aportan reloj, RNG y fixtures desde el comienzo; R21 entrega clasificación de una carrera antes que campeonato; R28 define serialización/versiones antes de que aumente el estado persistente. Ninguno de estos acuerdos permite empezar otra tarea sin el alcance autorizado por el usuario.
 
 ---
+
+### 6.8 Bloque posterior a Sprint 2.9 — Consulta móvil de la misma carrera
+
+* **MOB01 — Seguimiento móvil por enlace temporal de solo lectura:** `[ ] DIFERIDO — FUERA DE SPRINT 2.9`
+  * *Intención confirmada:* consultar desde el teléfono la misma carrera que continúa en el ordenador; no otra simulación independiente. Primera entrega sin cuentas/login, mediante enlace temporal; no incluye control remoto, chat ni multijugador. No duplicar la épica multijugador B8.
+  * *Dependencias y diseño pendiente:* contrato de estado/eventos R02/R24 y snapshot R28; definir transporte, alojamiento y alcance de red antes de implementar. El ordenador mantiene la autoridad de simulación. El enlace debe poder revocarse/caducar y el receptor no puede enviar órdenes. Costes y duración/latencia exactas se acuerdan al refinar esta tarea, no quedan asumidos.
+  * *Aceptación propuesta:* clasificación, vuelta, bandera y telemetría del piloto coinciden con la carrera de origen; indicar última actualización y desconexión, recuperar estado tras reconectar sin crear otra carrera; vistas de solo lectura utilizables en 390×844. Caducidad/revocación impiden continuar el acceso.
+  * *Tests antes de implementación:* módulo independiente mobile-spectator con dos clientes, pausa/reinicio/cambio de GP, desconexión/reconexión, enlace inválido/caducado/revocado y rechazo de órdenes del espectador.
+
 
 ## 🔮 7. SPRINT 3: AUDIO, TELEMETRÍA AVANZADA, RADAR GPS & CLIMA (4 TAREAS DEFINIDAS)
 

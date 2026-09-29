@@ -22,7 +22,7 @@ export class FuelModel {
     }
 
     const burnRatePerSecond = (this.BASE_CONSUMPTION_PER_LAP * burnMultiplier) / lapTimeSeconds;
-    const remainingFuelKg = Math.max(0.5, currentFuelKg - burnRatePerSecond * dt);
+    const remainingFuelKg = Math.max(0, currentFuelKg - burnRatePerSecond * Math.max(0, dt));
 
     // Efecto de peso en F1: ~0.33 segundos más rápido por cada 10 kg menos de combustible
     // 110kg -> 0% bonus | 10kg -> +3.3s/vuelta (~4.2% más rápido)

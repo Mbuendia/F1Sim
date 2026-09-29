@@ -1,0 +1,930 @@
+
+=== pace-orders (Q12) ===
+  PASS: Q12: rival entrando en boxes no sustituye Save por Push
+  PASS: Q12: ritmo desconocido se rechaza sin cambiar orden
+  PASS: Q12: no se dan órdenes a un retirado
+  PASS: Q12: carrera terminada rechaza nuevas órdenes
+  PASS: Q12: VSC limita el ritmo efectivo conservando Push pedido
+  PASS: Q12: al volver a verde se recupera el ritmo pedido
+pace-orders: 6 PASS, 0 FAIL
+
+=== pace-ui (Q12) ===
+  PASS: Q12 UI: selector de ritmo accesible por cada piloto
+  PASS: Q12 UI: ofrece Push, Balanced y Save
+  PASS: Q12 UI: diferencia ritmo pedido de efectivo
+  PASS: Q12 UI: explica limitación por Safety Car
+  PASS: Q12 UI: selector deshabilitado para retirado
+pace-ui: 5 PASS, 0 FAIL
+
+=== drs-detection (Q19) ===
+  PASS: Q19: permiso usa tiempo de detección 0.8s
+  PASS: Q19: primer coche sin rival observado no recibe permiso
+  PASS: Q19: permiso usa tiempo de detección 1s
+  PASS: Q19: primer coche sin rival observado no recibe permiso
+  PASS: Q19: permiso usa tiempo de detección 1.3s
+  PASS: Q19: primer coche sin rival observado no recibe permiso
+  PASS: Q19: detección compartida autoriza sus dos zonas
+  PASS: Q19: permiso no se extiende a otra detección
+  PASS: Q19: siguiente detección renueva y revoca permiso anterior
+  PASS: Q19: reset borra permisos de detección
+  PASS: Q19: coche en boxes no otorga permiso a coche en pista
+  PASS: Q19: cruces se ordenan por tiempo, no por orden del array
+  PASS: Q19: cruzar detección a menos de un segundo permite abrir en su zona
+  PASS: Q19: permiso persiste aunque el gap actual suba a 1.3s
+  PASS: Q19: primera frenada cierra el flap
+  PASS: Q19: soltar freno no reabre en la misma zona sin nueva pasada
+drs-detection: 16 PASS, 0 FAIL
+
+=== safety-car (C1, C2, C3, C4) ===
+--- TEST GROUP 1: SafetyCarModel Fixes (C1, C2, C3, C4) ---
+  PASS: C1: SC transitions to "returning" despite lapped car on track (fieldSpread lead lap only)
+  PASS: C1 Fallback: SC transitions to "returning" on hardTimeout (lapCount >= targetLaps + 3)
+  PASS: C2: Returning mode speed is 140 km/h (not null)
+  PASS: C2: Leading mode speed is 120 km/h
+  PASS: C2: Red flag speed is 80 km/h
+  PASS: C3: SC is deployed
+  PASS: C3: SC spawns just ahead of leader (4.780 vs 4.780)
+  PASS: C3: SC transitions deploying -> leading when leader reaches/overtakes it (no deadlock)
+  PASS: C3: SC repositions ahead of leader
+  PASS: C4: SC transitions to "in" and despawns when trackT >= 0.94 without skipping window
+safety-car: 10 PASS, 0 FAIL
+
+=== pit-stop (A3, A4, A5, A6) ===
+
+--- TEST GROUP 2: PitStopModel & Barcelona Track Fixes (A3, A4, A5, A6) ---
+  PASS: A3: Barcelona pitEntryT is 0.92 (actual: 0.92)
+  PASS: A3: Barcelona pitExitT is 0.11 (actual: 0.11)
+  PASS: A4: Puncture immediately triggers shouldEnterPit
+  PASS: A4: Severely worn tire (<= 5%) triggers shouldEnterPit
+  PASS: A5: Puncture NOT cleared while tires are still being changed
+  PASS: A5: Puncture successfully cleared after tire change
+  PASS: A6: New stint added
+  PASS: A6: Previous stint endLap properly closed to lap 5 (got: 5)
+  PASS: PitStop: Car before pit entry window cannot enter pit lane yet
+pit-stop: 9 PASS, 0 FAIL
+
+=== race-state (C5, C6, C7, A1, A2) ===
+
+--- TEST GROUP 3: RaceSimulation Fixes (C5, C6, C7, A1, A2) ---
+  PASS: C5: sim.scEndingLap is null on initRace
+  PASS: C5: sim.scEndingLap is automatically cleared to null when all cars finish restart lap
+  PASS: C6: vscActive and vscTimer reset upon SC deployment
+  PASS: C7: sim.cars array order is not mutated in-place when SC goes in
+race-state: 4 PASS, 0 FAIL
+
+=== car-rendering (M1, M2, M3) ===
+
+--- TEST GROUP 4: Bloque A — Modelado Visual 2D (M1, M2, M3) ---
+  PASS: M1: Z-Order de capas vectorial correcto (Floor -> Suspensions -> Wheels -> Chassis -> Wings/Halo)
+  PASS: M2: Sombra del coche proyectada en pantalla antes de rotar el monoplaza
+  PASS: M3: Humo de retirada utiliza ángulo compuesto (angle + camera.rotation)
+car-rendering: 3 PASS, 0 FAIL
+
+=== tires-strategy (M4, M5, M9, M10) ===
+
+--- TEST GROUP 5: Bloque B — Físicas de Neumáticos y Boxes (M4, M5, M9, M10) ---
+  PASS: M4: Cero curación mágica detectada en las 4 ruedas (estrictamente monótono)
+  PASS: M4: Neumático exterior sufre mayor desgaste en curva (FL: 98.68% < FR: 99.05%)
+  PASS: M5: Salud al final de 15 vueltas nominales está en rango óptimo (esperado: 5-25%, obtenido: 16.5%)
+  PASS: M9: car.status se establece en "pit" mientras está en el pit lane
+  PASS: M9: car.status se restaura a "running" al incorporarse a la pista
+  PASS: M10: Parada estratégica se activa automáticamente al alcanzar scheduledLap
+  PASS: M10: No entra antes de alcanzar la vuelta programada
+tires-strategy: 7 PASS, 0 FAIL
+
+=== teams-sectors (M6, M7, M8) ===
+
+--- TEST GROUP 6: Bloque C — Identidad de Equipos y Sectores (M6, M7, M8) ---
+  PASS: M6: Mercedes textColor es negro (#000000) para ratio WCAG AAA (obtenido: #000000)
+  PASS: M7: Red Bull utiliza azul marino mate oficial #041E42 (obtenido: #041E42)
+  PASS: M7: Racing Bulls utiliza azul eléctrico VCARB #1634CC (obtenido: #1634CC)
+  PASS: M7: Colores de Red Bull y Racing Bulls están claramente diferenciados
+  PASS: M8: Punto al 10% corresponde a Sector 1 (obtenido: 1)
+  PASS: M8: Punto al 35% corresponde a Sector 2 con límite 0.20 (obtenido: 2)
+  PASS: M8: Punto al 75% corresponde a Sector 3 con límite 0.60 (obtenido: 3)
+  PASS: M8: IncidentModel asigna Sector 2 para trackT 0.30 usando límites del circuito (obtenido: 2)
+teams-sectors: 8 PASS, 0 FAIL
+
+=== robustness (B1, B3, B4, B5) ===
+
+--- TEST GROUP 7: Bloque D — Limpieza y Robustez (B1, B3, B4, B5) ---
+  PASS: B1: SpriteManager obsoleto eliminado de CarRenderer.ts
+  PASS: B3: getCompoundProperties devuelve fallback seguro en caso de compuesto no registrado
+  PASS: B4: IncidentModel.reset() reinicia el ID de incidentes a 1 (obtenido: 1)
+  PASS: B5: Tipo de incidente "spin" registrado correctamente
+  PASS: B5: Temporizador de spin entre 8s y 12s (obtenido: 10.4s)
+robustness: 5 PASS, 0 FAIL
+
+=== track-geometry (Q1, Q2) ===
+
+--- TEST GROUP 8: Bloque A — Escala, Geometría y Cinemática Espacial (Q1, Q2) ---
+  PASS: Q1: Separación del coche centrado supera 1.2 veces la huella completa (obtenido: 4.27x)
+  PASS: Q1: Huellas transversales disjuntas en zoom 0.5–4.5 (gap mínimo: +8.4px)
+  PASS: Q1: Margen en pista estrecha sobre huella completa (obtenido: 5.00x)
+  PASS: Q2: Continuidad C0 en entrada de boxes (desviación: 0.0000 unidades del mundo)
+  PASS: Q2: Continuidad C0 en salida de boxes (desviación: 0.0000 unidades del mundo)
+  PASS: Q2: Continuidad C1 tangencial en entrada de boxes (diferencia angular: 1.81°)
+  PASS: Q2: Continuidad C1 tangencial en salida de boxes (diferencia angular: 1.81°)
+  PASS: Q2: Carril central de boxes mantiene separación nominal de 38 unidades del mundo (obtenido: 38.0)
+track-geometry: 8 PASS, 0 FAIL
+
+=== geometry-rendering (Q1, Q2) ===
+
+--- TEST GROUP 9: Revisión Q1/Q2 — dibujo real y extremos entre muestras ---
+  PASS: Q1: Ruedas/alerones separados del coche centrado (24m, capacidad 3, zoom 0.25–8 y rotaciones)
+  PASS: Q1: Dibujo real separado en carriles opuestos (24m, capacidad 3)
+  PASS: Q1: Monoplaza completo dentro del asfalto con offset 0.85 (24m, capacidad 3)
+  PASS: Q1: Huella declarada coincide con ruedas y alerones realmente dibujados (24m, capacidad 3)
+  PASS: Q1: Ruedas/alerones separados del coche centrado (24m, capacidad 2, zoom 0.25–8 y rotaciones)
+  PASS: Q1: Dibujo real separado en carriles opuestos (24m, capacidad 2)
+  PASS: Q1: Monoplaza completo dentro del asfalto con offset 0.85 (24m, capacidad 2)
+  PASS: Q1: Huella declarada coincide con ruedas y alerones realmente dibujados (24m, capacidad 2)
+  PASS: Q1: Ruedas/alerones separados del coche centrado (16m, capacidad 2, zoom 0.25–8 y rotaciones)
+  PASS: Q1: Dibujo real separado en carriles opuestos (16m, capacidad 2)
+  PASS: Q1: Monoplaza completo dentro del asfalto con offset 0.85 (16m, capacidad 2)
+  PASS: Q1: Huella declarada coincide con ruedas y alerones realmente dibujados (16m, capacidad 2)
+  PASS: Q2: Extremos exactos entre muestras, entrada 0.9 / salida 0.15
+  PASS: Q2: Dirección de entrada/salida suave en intervalo 0.9–0.15
+  PASS: Q2: Todas las muestras son finitas en 0.9–0.15
+  PASS: Q2: Extremos exactos entre muestras, entrada 0.361 / salida 0.461
+  PASS: Q2: Dirección de entrada/salida suave en intervalo 0.361–0.461
+  PASS: Q2: Todas las muestras son finitas en 0.361–0.461
+  PASS: Q2: Extremos exactos entre muestras, entrada 0.9237 / salida 0.1011
+  PASS: Q2: Dirección de entrada/salida suave en intervalo 0.9237–0.1011
+  PASS: Q2: Todas las muestras son finitas en 0.9237–0.1011
+  PASS: Q2: Pista vacía no genera un carril inválido
+  PASS: Q2: El dibujo en boxes usa el progreso actual, aunque pitLaneProgress esté retrasado
+  PASS: Q2: Activar la ruta de boxes en la entrada no desplaza el coche
+  PASS: Q2: Cambiar de ruta en la salida conserva la posición dibujada
+  PASS: Q2: Superar la salida no retiene visualmente el coche cuando el estado de boxes llega un paso tarde
+geometry-rendering: 26 PASS, 0 FAIL
+
+=== pit-lane (Q3, Q11-1) ===
+
+--- TEST GROUP 10: Q3 — carriles, barreras y cajones de equipo ---
+  PASS: Q3: Diez cajones, uno por equipo (sentido -1, offset -38)
+  PASS: Q3: Muro separado del carril rápido y del asfalto (sentido -1, offset -38)
+  PASS: Q3: Cajones fuera del carril rápido (sentido -1, offset -38)
+  PASS: Q3: Cajones consecutivos sin solapamiento (sentido -1, offset -38)
+  PASS: Q3: Entrada y salida abiertas (sentido -1, offset -38)
+  PASS: Q3: Ruta Q2 y estado originales intactos (sentido -1, offset -38)
+  PASS: Q3: Dos bordes blancos en los límites, sin línea central falsa (sentido -1, offset -38)
+  PASS: Q3: Diez cajones, uno por equipo (sentido -1, offset 38)
+  PASS: Q3: Muro separado del carril rápido y del asfalto (sentido -1, offset 38)
+  PASS: Q3: Cajones fuera del carril rápido (sentido -1, offset 38)
+  PASS: Q3: Cajones consecutivos sin solapamiento (sentido -1, offset 38)
+  PASS: Q3: Entrada y salida abiertas (sentido -1, offset 38)
+  PASS: Q3: Ruta Q2 y estado originales intactos (sentido -1, offset 38)
+  PASS: Q3: Dos bordes blancos en los límites, sin línea central falsa (sentido -1, offset 38)
+  PASS: Q3: Diez cajones, uno por equipo (sentido 1, offset -38)
+  PASS: Q3: Muro separado del carril rápido y del asfalto (sentido 1, offset -38)
+  PASS: Q3: Cajones fuera del carril rápido (sentido 1, offset -38)
+  PASS: Q3: Cajones consecutivos sin solapamiento (sentido 1, offset -38)
+  PASS: Q3: Entrada y salida abiertas (sentido 1, offset -38)
+  PASS: Q3: Ruta Q2 y estado originales intactos (sentido 1, offset -38)
+  PASS: Q3: Dos bordes blancos en los límites, sin línea central falsa (sentido 1, offset -38)
+  PASS: Q3: Diez cajones, uno por equipo (sentido 1, offset 38)
+  PASS: Q3: Muro separado del carril rápido y del asfalto (sentido 1, offset 38)
+  PASS: Q3: Cajones fuera del carril rápido (sentido 1, offset 38)
+  PASS: Q3: Cajones consecutivos sin solapamiento (sentido 1, offset 38)
+  PASS: Q3: Entrada y salida abiertas (sentido 1, offset 38)
+  PASS: Q3: Ruta Q2 y estado originales intactos (sentido 1, offset 38)
+  PASS: Q3: Dos bordes blancos en los límites, sin línea central falsa (sentido 1, offset 38)
+  PASS: Q3: Ruta vacía o degenerada no dibuja barreras/cajones inválidos
+  PASS: Q3: Ruta vacía o degenerada no dibuja barreras/cajones inválidos
+  PASS: Q3: Ruta vacía o degenerada no dibuja barreras/cajones inválidos
+  PASS: Q3: Renderer separa rutas y escala anchuras una vez (zoom 0.25)
+  PASS: Q3: Renderer dibuja los diez cajones de equipo (zoom 0.25)
+  PASS: Q3: Renderer dibuja ambos límites de pista (zoom 0.25)
+  PASS: Q3: Renderer separa rutas y escala anchuras una vez (zoom 1)
+  PASS: Q3: Renderer dibuja los diez cajones de equipo (zoom 1)
+  PASS: Q3: Renderer dibuja ambos límites de pista (zoom 1)
+  PASS: Q3: Renderer separa rutas y escala anchuras una vez (zoom 4)
+  PASS: Q3: Renderer dibuja los diez cajones de equipo (zoom 4)
+  PASS: Q3: Renderer dibuja ambos límites de pista (zoom 4)
+pit-lane: 40 PASS, 0 FAIL
+
+=== world-position (Q4) ===
+
+--- TEST GROUP 11: Q4 — posición única y consumidores ---
+  PASS: Q4: Posición sobre toda la ruta de boxes 0.9–0.15, sin offset lateral de pista
+  PASS: Q4: Cuatro cámaras apuntan al coche en los 101 puntos de boxes 0.9–0.15
+  PASS: Q4: Posición sobre toda la ruta de boxes 0.361–0.461, sin offset lateral de pista
+  PASS: Q4: Cuatro cámaras apuntan al coche en los 101 puntos de boxes 0.361–0.461
+  PASS: Q4: Interpolación y desplazamiento lateral conservan el ancho/capacidad Q1
+  PASS: Q4: Renderer consume posición/orientación almacenada (zoom 0.25)
+  PASS: Q4: Clic en coche visible con zoom 0.25 y rotación 0
+  PASS: Q4: Renderer consume posición/orientación almacenada (zoom 2.75)
+  PASS: Q4: Clic en coche visible con zoom 2.75 y rotación 0.8
+  PASS: Q4: Renderer consume posición/orientación almacenada (zoom 8)
+  PASS: Q4: Clic en coche visible con zoom 8 y rotación -1.2
+  PASS: Q4: Minimap real proyecta worldX/Y e incluye boxes en el encuadre
+  PASS: Q4: Minimap dibuja el carril de boxes
+  PASS: Q4: Clic y minimapa excluyen finalizados/retirados ocultos y conservan retirados visibles
+  PASS: Q4: Parrilla inicial tiene posiciones válidas antes del primer frame
+  PASS: Q4: Empezar formación actualiza inmediatamente el offset de parrilla
+  PASS: Q4: Motor sincroniza al terminar la rama formation-lap
+  PASS: Q4: Motor sincroniza al terminar la rama grid-parking
+  PASS: Q4: Motor sincroniza al terminar la rama grid-ready
+  PASS: Q4: Motor sincroniza al terminar la rama lights-1
+  PASS: Q4: Motor sincroniza al terminar la rama racing
+  PASS: Q4: Boxes se sincroniza después de avanzar, sin retraso de un paso
+  PASS: Q4: Retirados también mantienen su posición actual
+  PASS: Q4: Pausa conserva posición y progreso
+  PASS: Q4: Recolocación tras roja actualiza posición en el mismo frame
+  PASS: Q4: Cambiar circuito reinicializa posiciones con su capacidad
+  PASS: Q4: Reiniciar carrera no conserva posiciones del estado anterior
+  PASS: Q4: Parada completa del motor mantiene cámara/posición alineadas en entrada, servicio y salida
+world-position: 28 PASS, 0 FAIL
+
+=== documentation (general) ===
+
+--- TEST GROUP 12: Regla de Oro 6 — sincronización documental ---
+  PASS: Documentación: dashboard e index completos y alineados
+  PASS: Documentación: conserva el orden declarado y la tarea actual existe
+  PASS: Documentación: añadir una tarea exige actualizar el index
+  PASS: Documentación: índice independiente de finales de línea Windows/Linux
+documentation: 4 PASS, 0 FAIL
+
+=== finish-line (Q5) ===
+
+--- TEST GROUP 13: Q5 — escala de meta y legibilidad ---
+  PASS: Q5: Ancho, grosor y bordes de meta lineales (zoom 0.25, rotación 0)
+  PASS: Q5: Ajedrezado no tapado por una línea blanca (zoom 0.25, rotación 0)
+  PASS: Q5: Etiquetas de curva sin doble zoom (0.25, rotación 0)
+  PASS: Q5: Ancho, grosor y bordes de meta lineales (zoom 0.25, rotación 0.8)
+  PASS: Q5: Ajedrezado no tapado por una línea blanca (zoom 0.25, rotación 0.8)
+  PASS: Q5: Etiquetas de curva sin doble zoom (0.25, rotación 0.8)
+  PASS: Q5: Ancho, grosor y bordes de meta lineales (zoom 0.25, rotación -1.2)
+  PASS: Q5: Ajedrezado no tapado por una línea blanca (zoom 0.25, rotación -1.2)
+  PASS: Q5: Etiquetas de curva sin doble zoom (0.25, rotación -1.2)
+  PASS: Q5: Ancho, grosor y bordes de meta lineales (zoom 0.5, rotación 0)
+  PASS: Q5: Ajedrezado no tapado por una línea blanca (zoom 0.5, rotación 0)
+  PASS: Q5: Etiquetas de curva sin doble zoom (0.5, rotación 0)
+  PASS: Q5: Ancho, grosor y bordes de meta lineales (zoom 0.5, rotación 0.8)
+  PASS: Q5: Ajedrezado no tapado por una línea blanca (zoom 0.5, rotación 0.8)
+  PASS: Q5: Etiquetas de curva sin doble zoom (0.5, rotación 0.8)
+  PASS: Q5: Ancho, grosor y bordes de meta lineales (zoom 0.5, rotación -1.2)
+  PASS: Q5: Ajedrezado no tapado por una línea blanca (zoom 0.5, rotación -1.2)
+  PASS: Q5: Etiquetas de curva sin doble zoom (0.5, rotación -1.2)
+  PASS: Q5: Ancho, grosor y bordes de meta lineales (zoom 1, rotación 0)
+  PASS: Q5: Ajedrezado no tapado por una línea blanca (zoom 1, rotación 0)
+  PASS: Q5: Etiquetas de curva sin doble zoom (1, rotación 0)
+  PASS: Q5: Ancho, grosor y bordes de meta lineales (zoom 1, rotación 0.8)
+  PASS: Q5: Ajedrezado no tapado por una línea blanca (zoom 1, rotación 0.8)
+  PASS: Q5: Etiquetas de curva sin doble zoom (1, rotación 0.8)
+  PASS: Q5: Ancho, grosor y bordes de meta lineales (zoom 1, rotación -1.2)
+  PASS: Q5: Ajedrezado no tapado por una línea blanca (zoom 1, rotación -1.2)
+  PASS: Q5: Etiquetas de curva sin doble zoom (1, rotación -1.2)
+  PASS: Q5: Ancho, grosor y bordes de meta lineales (zoom 2.75, rotación 0)
+  PASS: Q5: Ajedrezado no tapado por una línea blanca (zoom 2.75, rotación 0)
+  PASS: Q5: Etiquetas de curva sin doble zoom (2.75, rotación 0)
+  PASS: Q5: Ancho, grosor y bordes de meta lineales (zoom 2.75, rotación 0.8)
+  PASS: Q5: Ajedrezado no tapado por una línea blanca (zoom 2.75, rotación 0.8)
+  PASS: Q5: Etiquetas de curva sin doble zoom (2.75, rotación 0.8)
+  PASS: Q5: Ancho, grosor y bordes de meta lineales (zoom 2.75, rotación -1.2)
+  PASS: Q5: Ajedrezado no tapado por una línea blanca (zoom 2.75, rotación -1.2)
+  PASS: Q5: Etiquetas de curva sin doble zoom (2.75, rotación -1.2)
+  PASS: Q5: Ancho, grosor y bordes de meta lineales (zoom 4.5, rotación 0)
+  PASS: Q5: Ajedrezado no tapado por una línea blanca (zoom 4.5, rotación 0)
+  PASS: Q5: Etiquetas de curva sin doble zoom (4.5, rotación 0)
+  PASS: Q5: Ancho, grosor y bordes de meta lineales (zoom 4.5, rotación 0.8)
+  PASS: Q5: Ajedrezado no tapado por una línea blanca (zoom 4.5, rotación 0.8)
+  PASS: Q5: Etiquetas de curva sin doble zoom (4.5, rotación 0.8)
+  PASS: Q5: Ancho, grosor y bordes de meta lineales (zoom 4.5, rotación -1.2)
+  PASS: Q5: Ajedrezado no tapado por una línea blanca (zoom 4.5, rotación -1.2)
+  PASS: Q5: Etiquetas de curva sin doble zoom (4.5, rotación -1.2)
+  PASS: Q5: Ancho, grosor y bordes de meta lineales (zoom 8, rotación 0)
+  PASS: Q5: Ajedrezado no tapado por una línea blanca (zoom 8, rotación 0)
+  PASS: Q5: Etiquetas de curva sin doble zoom (8, rotación 0)
+  PASS: Q5: Ancho, grosor y bordes de meta lineales (zoom 8, rotación 0.8)
+  PASS: Q5: Ajedrezado no tapado por una línea blanca (zoom 8, rotación 0.8)
+  PASS: Q5: Etiquetas de curva sin doble zoom (8, rotación 0.8)
+  PASS: Q5: Ancho, grosor y bordes de meta lineales (zoom 8, rotación -1.2)
+  PASS: Q5: Ajedrezado no tapado por una línea blanca (zoom 8, rotación -1.2)
+  PASS: Q5: Etiquetas de curva sin doble zoom (8, rotación -1.2)
+  PASS: Q5: Vista lejana usa círculos/posiciones compactas (0.25)
+  PASS: Q5: LOD conserva posición Q4 y no modifica estado (0.25)
+  PASS: Q5: Vista lejana usa círculos/posiciones compactas (0.7)
+  PASS: Q5: LOD conserva posición Q4 y no modifica estado (0.7)
+  PASS: Q5: Distancia intermedia conserva coches sin nombres (0.71)
+  PASS: Q5: Distancia intermedia conserva coches sin nombres (1.2)
+  PASS: Q5: Nombres solo del seleccionado y ambos rivales (1.21)
+  PASS: Q5: Nombres solo del seleccionado y ambos rivales (2.75)
+  PASS: Q5: Nombres solo del seleccionado y ambos rivales (8)
+  PASS: Q5: Cambiar de seleccionado retira el nombre anterior y prioriza el nuevo
+  PASS: Q5: Deseleccionar conserva únicamente los nombres de las batallas
+  PASS: Q5: Umbral de batalla estricto y gap válido (0)
+  PASS: Q5: Umbral de batalla estricto y gap válido (-0.1)
+  PASS: Q5: Umbral de batalla estricto y gap válido (0.799)
+  PASS: Q5: Umbral de batalla estricto y gap válido (0.8)
+  PASS: Q5: Umbral de batalla estricto y gap válido (1)
+  PASS: Q5: Umbral de batalla estricto y gap válido (NaN)
+  PASS: Q5: No etiqueta una falsa batalla ({"isInPitLane":true})
+  PASS: Q5: No etiqueta una falsa batalla ({"status":"pit"})
+  PASS: Q5: No etiqueta una falsa batalla ({"status":"out","isRetiredVisible":true})
+  PASS: Q5: No etiqueta una falsa batalla ({"isBlueFlagged":true})
+  PASS: Q5: No etiqueta una falsa batalla ({"currentSpeedKmh":0})
+  PASS: Q5: No etiqueta una falsa batalla ({"progress":1.195})
+  PASS: Q5: Pelotón denso prioriza seleccionado y evita solapamientos (0.5)
+  PASS: Q5: Pelotón denso prioriza seleccionado y evita solapamientos (2.75)
+  PASS: Q5: Alertas de bandera azul y DNF siguen visibles con el nuevo LOD
+finish-line: 80 PASS, 0 FAIL
+
+=== scenarios (Q6) ===
+
+--- TEST GROUP 14: Q6 Scenario Layers ---
+  PASS: Q6-1: Monaco scenario has hasGravelGlobal === false
+  PASS: Q6-2: Monaco scenario defines barrier zones
+  PASS: Q6-3: Barcelona scenario has hasGravelGlobal === true
+  PASS: Q6-4: Barcelona has at least 3 gravel runoff zones — found 4
+  PASS: Q6-5: Barcelona kerbs are localized segments (not spanning straights)
+  PASS: Q6-6: Barcelona scenario geometry has runoff polygons and kerb segments — runoffs: 13, kerbs: 20
+  PASS: Q6-7: Monaco scenario geometry has barrier lines and kerb segments — barriers: 9, kerbs: 11
+  PASS: Q6-8: Unmapped circuit falls back to default scenario (empty localized zones)
+  PASS: Q6-9: Default scenario has hasGravelGlobal === true (legacy compatibility)
+  PASS: Q6-10: Monaco CircuitSpec.trackType === "street"
+  PASS: Q6-11: Barcelona CircuitSpec.trackType === "permanent"
+  PASS: Q6-12: Independent builds of Barcelona and Monaco have distinct hasGravelGlobal
+  PASS: Q6-13: All Barcelona kerbs span ≤10% of track (localized at corners)
+  PASS: Q6-14: Monaco has zero gravel runoff zones
+scenarios: 14 PASS, 0 FAIL
+
+=== box-orders (Q9, Q10) ===
+
+--- TEST GROUP 15: Q9/Q10 — órdenes y cruces reales ---
+  PASS: Q9: Aceptar soft no cambia ruedas en pista
+  PASS: Q9: IA no sustituye orden del jugador (soft)
+  PASS: Q9: Servicio real e historial montan soft una sola vez
+  PASS: Q9: Salida no duplica servicio (soft)
+  PASS: Q9: Segunda parada vinculante (soft)
+  PASS: Q9: Aceptar medium no cambia ruedas en pista
+  PASS: Q9: IA no sustituye orden del jugador (medium)
+  PASS: Q9: Servicio real e historial montan medium una sola vez
+  PASS: Q9: Salida no duplica servicio (medium)
+  PASS: Q9: Segunda parada vinculante (medium)
+  PASS: Q9: Aceptar hard no cambia ruedas en pista
+  PASS: Q9: IA no sustituye orden del jugador (hard)
+  PASS: Q9: Servicio real e historial montan hard una sola vez
+  PASS: Q9: Salida no duplica servicio (hard)
+  PASS: Q9: Segunda parada vinculante (hard)
+  PASS: Q9: Aceptar intermediate no cambia ruedas en pista
+  PASS: Q9: IA no sustituye orden del jugador (intermediate)
+  PASS: Q9: Servicio real e historial montan intermediate una sola vez
+  PASS: Q9: Salida no duplica servicio (intermediate)
+  PASS: Q9: Segunda parada vinculante (intermediate)
+  PASS: Q9: Aceptar wet no cambia ruedas en pista
+  PASS: Q9: IA no sustituye orden del jugador (wet)
+  PASS: Q9: Servicio real e historial montan wet una sola vez
+  PASS: Q9: Salida no duplica servicio (wet)
+  PASS: Q9: Segunda parada vinculante (wet)
+  PASS: Q10: Llamada antes/sobre/después del compromiso (-0.000001)
+  PASS: Q10: Llamada antes/sobre/después del compromiso (0)
+  PASS: Q10: Llamada antes/sobre/después del compromiso (0.000001)
+  PASS: Q10: Cancelar elimina programación residual y conserva acuse
+  PASS: Q10: Orden cancelada no reaparece en la siguiente vuelta
+  PASS: Q9: SC no reactiva estrategia cancelada del jugador
+  PASS: Q10: Cancelar conserva emergencia independiente por pinchazo
+  PASS: Q10: Pinchazo entra realmente tras una cancelación
+  PASS: Q10: Cancelar sobre la línea llega tarde
+  PASS: Q9: Compuesto bloqueado tras compromiso
+  PASS: Q10: Cruces integrados compromiso/entrada (1x, 0.875→0.9)
+  PASS: Q10: Entrada sin reposicionar progress (1x, 0.9)
+  PASS: Q10: Cruces integrados compromiso/entrada (1x, 0.999→0.001)
+  PASS: Q10: Entrada sin reposicionar progress (1x, 0.001)
+  PASS: Q10: Cruces integrados compromiso/entrada (1x, 0.3→0.32)
+  PASS: Q10: Entrada sin reposicionar progress (1x, 0.32)
+  PASS: Q10: Cruces integrados compromiso/entrada (16x, 0.875→0.9)
+  PASS: Q10: Entrada sin reposicionar progress (16x, 0.9)
+  PASS: Q10: Cruces integrados compromiso/entrada (16x, 0.999→0.001)
+  PASS: Q10: Entrada sin reposicionar progress (16x, 0.001)
+  PASS: Q10: Cruces integrados compromiso/entrada (16x, 0.3→0.32)
+  PASS: Q10: Entrada sin reposicionar progress (16x, 0.32)
+  PASS: Q10: Cruces integrados compromiso/entrada (32x, 0.875→0.9)
+  PASS: Q10: Entrada sin reposicionar progress (32x, 0.9)
+  PASS: Q10: Cruces integrados compromiso/entrada (32x, 0.999→0.001)
+  PASS: Q10: Entrada sin reposicionar progress (32x, 0.001)
+  PASS: Q10: Cruces integrados compromiso/entrada (32x, 0.3→0.32)
+  PASS: Q10: Entrada sin reposicionar progress (32x, 0.32)
+  PASS: Q10: Llamada tardía no usa la entrada inmediata
+  PASS: Q10: Llamada tardía espera realmente otra oportunidad
+  PASS: Q9: Retirada invalida orden
+  PASS: Q9: Reset limpia órdenes y control
+  PASS: Q9: Se aceptan órdenes durante SC
+  PASS: Q9: Roja rechaza nuevas órdenes ordinarias
+  PASS: Q9: Jugador sustituye una orden IA
+  PASS: Q9: Servicio de cualquier equipo no admite cambios
+  PASS: Q10: Un único frame cruza compromiso y entrada a x16
+  PASS: Q10: Un único frame cruza compromiso y entrada a x32
+  PASS: Q10: Pausa no compromete ni mueve el coche
+  PASS: Q10: Cambio de GP limpia orden y usa línea calibrada propia
+box-orders: 65 PASS, 0 FAIL
+
+=== double-stack (Q11) ===
+
+--- TEST GROUP 16: Q11 — Gestión Dual y Double Stack ---
+  PASS: Q11: Primer coche recibe servicio normal
+  PASS: Q11: Segundo coche espera en cola (speed=0, waitingForBox=true)
+  PASS: Q11: Reloj de servicio del segundo coche no avanza mientras espera
+  PASS: Q11: Equipos distintos no se bloquean entre sí
+  PASS: Q11: Segundo coche recibe servicio después de liberación
+  PASS: Q11: Tiempo de espera acumulado refleja el tiempo del compañero
+  PASS: Q11: Segundo coche retirado mientras espera no bloquea ni admite órdenes
+  PASS: Q11: Reset limpia el estado de cola de todos los coches
+double-stack: 8 PASS, 0 FAIL
+
+=== pace (Q12) ===
+
+--- TEST GROUP 17: Q12 — Modos de Ritmo del Piloto ---
+  PASS: Q12: Push es más rápido que Balanced
+  PASS: Q12: Balanced es más rápido que Save
+  PASS: Q12: Push desgasta más neumático que Balanced
+  PASS: Q12: Balanced desgasta más neumático que Save
+  PASS: Q12: El modo de ritmo persiste tras parada en boxes
+  PASS: Q12: Bajo Safety Car, los modos de ritmo no generan gaps abusivos
+pace: 6 PASS, 0 FAIL
+
+=== rejoin (Q13) ===
+
+--- TEST GROUP 18: Q13 — Predictor de Ventana de Reincorporación ---
+  PASS: Q13: El predictor base suma pitLaneTimeLoss y servicio estándar
+  PASS: Q13: El predictor de un segundo piloto suma el recargo por Double Stack si su compañero va a parar
+rejoin: 2 PASS, 0 FAIL
+
+=== track-width (Q7) ===
+  PASS: Q7: anchuras válidas en barcelona
+  PASS: Q7: anchura variable en barcelona
+  PASS: Q7: anchuras válidas en monaco
+  PASS: Q7: anchura variable en monaco
+  PASS: Q7: posición continua al cambiar anchura/capacidad en 0.5
+  PASS: Q7: huella física constante al estrecharse la pista
+  PASS: Q7: posición continua al cambiar anchura/capacidad en 1
+  PASS: Q7: huella física constante al estrecharse la pista
+track-width: 8 PASS, 0 FAIL
+
+=== racing-line (Q8) ===
+  PASS: Q8: offsets finitos dentro de pista en barcelona
+  PASS: Q8: trazada lateral en ambos sentidos en barcelona
+  PASS: Q8: offsets finitos dentro de pista en monaco
+  PASS: Q8: trazada lateral en ambos sentidos en monaco
+  PASS: Q8: paso real de un coche acumula goma en seco
+  PASS: Q8: engomado no regenera neumáticos
+  PASS: Q8: engomado permanece acotado
+  PASS: Q8: pausa no acumula goma
+  PASS: Q8: reiniciar carrera limpia goma de todas las muestras
+  PASS: Q8: agarre acumulado mejora movimiento con idénticas condiciones
+  PASS: Q8: goma saturada no supera 1
+  PASS: Q8: sin coches no aparece goma
+  PASS: Q8: coche en boxes no engoma la trazada principal
+  PASS: Q8: cambiar circuito no hereda goma del anterior
+  PASS: Q8: misma duración a distintos FPS conserva distribución de goma (1%) — error=0.0007535738730644352
+racing-line: 15 PASS, 0 FAIL
+
+=== pace-contract (Q12) ===
+  PASS: Q12: push completa cinco vueltas reales
+  PASS: Q12: balanced completa cinco vueltas reales
+  PASS: Q12: save completa cinco vueltas reales
+  PASS: Q12: cinco vueltas idénticas Push gastan más neumático que Save
+  PASS: Q12: cinco vueltas idénticas Push consumen más combustible que Save
+  PASS: Q12: orden de tiempos Push/Balanced/Save con el mismo piloto
+  PASS: Q12: cambiar un piloto no cambia al compañero
+  PASS: Q12: pausa conserva posición y orden
+  PASS: Q12: reset elimina las órdenes previas
+pace-contract: 9 PASS, 0 FAIL
+
+=== rejoin-contract (Q13) ===
+  PASS: Q13: parada costosa pierde posición frente a un rival a menos de un segundo
+  PASS: Q13: consultar predictor no mueve coches
+  PASS: Q13: predictor excluye retirados
+  PASS: Q13: fixture completa parada real
+  PASS: Q13: posición prevista coincide con reincorporación controlada — prevista=2, real=2
+rejoin-contract: 5 PASS, 0 FAIL
+
+=== neutralization-motion (Q14) ===
+  PASS: Q14: SC no recoloca ni retrocede coche x1 — distancia=0 m; retroceso interno=false
+  PASS: Q14: SC no recoloca ni retrocede coche x16 — distancia=0.13518315054961727 m; retroceso interno=false
+  PASS: Q14: SC no recoloca ni retrocede coche x32 — distancia=7.70544434353401 m; retroceso interno=false
+  PASS: Q14: reanudación de roja conserva distancia completada
+  PASS: Q14: reanudación no crea neumático ni combustible
+neutralization-motion: 5 PASS, 0 FAIL
+
+=== blue-flags (Q15) ===
+  PASS: Q15: señal correcta con líder detrás
+  PASS: Q15: señal correcta con meta
+  PASS: Q15: señal correcta con misma vuelta
+  PASS: Q15: señal correcta con líder ya pasó
+  PASS: Q15: coche out no provoca bandera azul
+  PASS: Q15: coche pit no provoca bandera azul
+  PASS: Q15: señal se apaga cuando desaparece la causa
+  PASS: Q15: neutralización sc no exige ceder para adelantar
+  PASS: Q15: neutralización vsc no exige ceder para adelantar
+blue-flags: 9 PASS, 0 FAIL
+
+=== resources (Q16) ===
+  PASS: Q16: depósito vacío no crea combustible (low)
+  PASS: Q16: combustible se agota sin reserva infinita (low)
+  PASS: Q16: consumo independiente de partición temporal (low)
+  PASS: Q16: depósito vacío no crea combustible (standard)
+  PASS: Q16: combustible se agota sin reserva infinita (standard)
+  PASS: Q16: consumo independiente de partición temporal (standard)
+  PASS: Q16: depósito vacío no crea combustible (push)
+  PASS: Q16: combustible se agota sin reserva infinita (push)
+  PASS: Q16: consumo independiente de partición temporal (push)
+  PASS: Q16: depósito vacío no crea combustible (overtake)
+  PASS: Q16: combustible se agota sin reserva infinita (overtake)
+  PASS: Q16: consumo independiente de partición temporal (overtake)
+  PASS: Q16: despliegue de ERS consume estado real, no SOC constante
+  PASS: Q16: SOC dentro de límites
+  PASS: Q16: coche parado sin combustible no crea recurso ni propulsión
+  PASS: Q16: motor sobrecalentado pierde rendimiento físico antes de integrar distancia
+resources: 16 PASS, 0 FAIL
+
+=== luck-rewards (Q17) ===
+  PASS: Q17: fixture produce tirada 1
+  PASS: Q17: tirada 1 no cambia neumáticos en pista
+  PASS: Q17: tirada 1 no crea combustible
+  PASS: Q17: doble aplicación 1 es idempotente
+  PASS: Q17: fixture produce tirada 10
+  PASS: Q17: tirada 10 no cambia neumáticos en pista
+  PASS: Q17: tirada 10 no crea combustible
+  PASS: Q17: doble aplicación 10 es idempotente
+  PASS: Q17: fixture produce tirada 20
+  PASS: Q17: tirada 20 no cambia neumáticos en pista
+  PASS: Q17: tirada 20 no crea combustible
+  PASS: Q17: doble aplicación 20 es idempotente
+  PASS: Q17: ID ajeno y beneficiario retirado no reciben recursos
+luck-rewards: 13 PASS, 0 FAIL
+
+=== reset-lifecycle (Q18) ===
+  PASS: Q18: motor registra incidentes antes y después de reiniciar
+  PASS: Q18: initRace reinicia IDs de IncidentModel
+  PASS: Q18: incidente normal despliega SC urbano
+  PASS: Q18: política personalizada urbana exige al menos 10 vueltas
+  PASS: Q18: reset elimina evento D20 anterior
+  PASS: Q18: cambio de GP elimina evento D20 anterior
+reset-lifecycle: 6 PASS, 0 FAIL
+
+=== drs-permissions (Q19) ===
+  PASS: Q19: helper aplica umbral estricto a 0.999s
+  PASS: Q19: helper aplica umbral estricto a 1s
+  PASS: Q19: helper aplica umbral estricto a 1.001s
+  PASS: Q19: entrar en activación sin detección previa no autoriza (0.999s)
+  PASS: Q19: entrar en activación sin detección previa no autoriza (1s)
+  PASS: Q19: entrar en activación sin detección previa no autoriza (1.001s)
+  PASS: Q19: motor cierra DRS bajo yellow
+  PASS: Q19: motor cierra DRS bajo sc
+  PASS: Q19: motor cierra DRS bajo vsc
+  PASS: Q19: motor cierra DRS bajo red
+  PASS: Q19: reinicio elimina aperturas anteriores
+drs-permissions: 11 PASS, 0 FAIL
+
+=== scenario-monza (Q6.1) ===
+  PASS: Q6.1: circuito monza registrado
+  PASS: Q6.1: monza tiene escenario específico, no fallback
+  PASS: Q6.1: pianos y barreras propios generan geometría utilizable
+scenario-monza: 3 PASS, 0 FAIL
+
+=== scenario-silverstone (Q6.2) ===
+  PASS: Q6.2: circuito silverstone registrado
+  PASS: Q6.2: silverstone tiene escenario específico, no fallback
+  PASS: Q6.2: pianos y barreras propios generan geometría utilizable
+scenario-silverstone: 3 PASS, 0 FAIL
+
+=== scenario-spa (Q6.3) ===
+  PASS: Q6.3: circuito spa registrado
+  PASS: Q6.3: spa tiene escenario específico, no fallback
+  PASS: Q6.3: pianos y barreras propios generan geometría utilizable
+scenario-spa: 3 PASS, 0 FAIL
+
+=== scenario-spielberg (Q6.4) ===
+  PASS: Q6.4: circuito spielberg registrado
+  PASS: Q6.4: spielberg tiene escenario específico, no fallback
+  PASS: Q6.4: pianos y barreras propios generan geometría utilizable
+scenario-spielberg: 3 PASS, 0 FAIL
+
+=== scenario-interlagos (Q6.5) ===
+  PASS: Q6.5: circuito interlagos registrado
+  PASS: Q6.5: interlagos tiene escenario específico, no fallback
+  PASS: Q6.5: pianos y barreras propios generan geometría utilizable
+scenario-interlagos: 3 PASS, 0 FAIL
+
+=== scenario-suzuka (Q6.6) ===
+  PASS: Q6.6: circuito suzuka registrado
+  PASS: Q6.6: suzuka tiene escenario específico, no fallback
+  PASS: Q6.6: pianos y barreras propios generan geometría utilizable
+scenario-suzuka: 3 PASS, 0 FAIL
+
+=== scenario-zandvoort (Q6.7) ===
+  PASS: Q6.7: circuito zandvoort registrado
+  PASS: Q6.7: zandvoort tiene escenario específico, no fallback
+  PASS: Q6.7: pianos y barreras propios generan geometría utilizable
+scenario-zandvoort: 3 PASS, 0 FAIL
+
+=== scenario-las-vegas (Q6.8) ===
+  PASS: Q6.8: circuito las-vegas registrado
+  PASS: Q6.8: las-vegas tiene escenario específico, no fallback
+  PASS: Q6.8: pianos y barreras propios generan geometría utilizable
+scenario-las-vegas: 3 PASS, 0 FAIL
+
+=== scenario-bahrain (Q6.9) ===
+  PASS: Q6.9: circuito bahrain registrado
+  PASS: Q6.9: bahrain tiene escenario específico, no fallback
+  PASS: Q6.9: pianos y barreras propios generan geometría utilizable
+scenario-bahrain: 3 PASS, 0 FAIL
+
+=== scenario-baku (Q6.10) ===
+  PASS: Q6.10: circuito baku registrado
+  PASS: Q6.10: baku tiene escenario específico, no fallback
+  PASS: Q6.10: pianos y barreras propios generan geometría utilizable
+scenario-baku: 3 PASS, 0 FAIL
+
+=== scenario-melbourne (Q6.11) ===
+  PASS: Q6.11: circuito melbourne registrado
+  PASS: Q6.11: melbourne tiene escenario específico, no fallback
+  PASS: Q6.11: pianos y barreras propios generan geometría utilizable
+scenario-melbourne: 3 PASS, 0 FAIL
+
+=== scenario-miami (Q6.12) ===
+  PASS: Q6.12: circuito miami registrado
+  PASS: Q6.12: miami tiene escenario específico, no fallback
+  PASS: Q6.12: pianos y barreras propios generan geometría utilizable
+scenario-miami: 3 PASS, 0 FAIL
+
+=== scenario-shanghai (Q6.13) ===
+  PASS: Q6.13: circuito shanghai registrado
+  PASS: Q6.13: shanghai tiene escenario específico, no fallback
+  PASS: Q6.13: pianos y barreras propios generan geometría utilizable
+scenario-shanghai: 3 PASS, 0 FAIL
+
+=== scenario-jeddah (Q6.14) ===
+  PASS: Q6.14: circuito jeddah registrado
+  PASS: Q6.14: jeddah tiene escenario específico, no fallback
+  PASS: Q6.14: pianos y barreras propios generan geometría utilizable
+scenario-jeddah: 3 PASS, 0 FAIL
+
+=== scenario-marina-bay (Q6.15) ===
+  PASS: Q6.15: circuito marina-bay registrado
+  PASS: Q6.15: marina-bay tiene escenario específico, no fallback
+  PASS: Q6.15: pianos y barreras propios generan geometría utilizable
+scenario-marina-bay: 3 PASS, 0 FAIL
+
+=== scenario-lusail (Q6.16) ===
+  PASS: Q6.16: circuito lusail registrado
+  PASS: Q6.16: lusail tiene escenario específico, no fallback
+  PASS: Q6.16: pianos y barreras propios generan geometría utilizable
+scenario-lusail: 3 PASS, 0 FAIL
+
+=== scenario-yas-marina (Q6.17) ===
+  PASS: Q6.17: circuito yas-marina registrado
+  PASS: Q6.17: yas-marina tiene escenario específico, no fallback
+  PASS: Q6.17: pianos y barreras propios generan geometría utilizable
+scenario-yas-marina: 3 PASS, 0 FAIL
+
+=== scenario-hungaroring (Q6.18) ===
+  PASS: Q6.18: circuito hungaroring registrado
+  PASS: Q6.18: hungaroring tiene escenario específico, no fallback
+  PASS: Q6.18: pianos y barreras propios generan geometría utilizable
+scenario-hungaroring: 3 PASS, 0 FAIL
+
+=== scenario-mexico-city (Q6.19) ===
+  PASS: Q6.19: circuito mexico-city registrado
+  PASS: Q6.19: mexico-city tiene escenario específico, no fallback
+  PASS: Q6.19: pianos y barreras propios generan geometría utilizable
+scenario-mexico-city: 3 PASS, 0 FAIL
+
+=== scenario-montreal (Q6.20) ===
+  PASS: Q6.20: circuito montreal registrado
+  PASS: Q6.20: montreal tiene escenario específico, no fallback
+  PASS: Q6.20: pianos y barreras propios generan geometría utilizable
+scenario-montreal: 3 PASS, 0 FAIL
+
+=== scenario-austin (Q6.21) ===
+  PASS: Q6.21: circuito austin registrado
+  PASS: Q6.21: austin tiene escenario específico, no fallback
+  PASS: Q6.21: pianos y barreras propios generan geometría utilizable
+scenario-austin: 3 PASS, 0 FAIL
+
+=== box-ui (Q9, Q10, Q11) ===
+  PASS: Q9 UI: ofrece los cinco compuestos
+  PASS: Q9 UI: acuse muestra compuesto aceptado
+  PASS: Q10 UI: compromiso bloquea cambio y cancelación
+  PASS: Q10 UI: muestra orden comprometida
+  PASS: Q11 UI: controles independientes para ambos pilotos
+  PASS: Q11 UI: muestra cola y tiempo real del segundo piloto
+box-ui: 6 PASS, 0 FAIL
+
+=== race-ui (general) ===
+  PASS: HUD: muestra estado yellow
+  PASS: HUD: muestra estado sc
+  PASS: HUD: muestra estado vsc
+  PASS: HUD: muestra estado red
+  PASS: Clasificación: retirada visible
+  PASS: Clasificación: render no muta orden de coches
+  PASS: Telemetría: valores iniciales legibles
+race-ui: 7 PASS, 0 FAIL
+
+=== scenario-rendering (Q6) ===
+  PASS: Q6: grava dibujada correcta en barcelona zoom=0.3 giro=0
+  PASS: Q6: geometría dibujada finita en barcelona
+  PASS: Q6: grava dibujada correcta en monaco zoom=0.3 giro=0
+  PASS: Q6: geometría dibujada finita en monaco
+  PASS: Q6: grava dibujada correcta en barcelona zoom=0.3 giro=0
+  PASS: Q6: geometría dibujada finita en barcelona
+  PASS: Q6: grava dibujada correcta en barcelona zoom=0.3 giro=0.8
+  PASS: Q6: geometría dibujada finita en barcelona
+  PASS: Q6: grava dibujada correcta en monaco zoom=0.3 giro=0.8
+  PASS: Q6: geometría dibujada finita en monaco
+  PASS: Q6: grava dibujada correcta en barcelona zoom=0.3 giro=0.8
+  PASS: Q6: geometría dibujada finita en barcelona
+  PASS: Q6: grava dibujada correcta en barcelona zoom=2 giro=0
+  PASS: Q6: geometría dibujada finita en barcelona
+  PASS: Q6: grava dibujada correcta en monaco zoom=2 giro=0
+  PASS: Q6: geometría dibujada finita en monaco
+  PASS: Q6: grava dibujada correcta en barcelona zoom=2 giro=0
+  PASS: Q6: geometría dibujada finita en barcelona
+  PASS: Q6: grava dibujada correcta en barcelona zoom=2 giro=0.8
+  PASS: Q6: geometría dibujada finita en barcelona
+  PASS: Q6: grava dibujada correcta en monaco zoom=2 giro=0.8
+  PASS: Q6: geometría dibujada finita en monaco
+  PASS: Q6: grava dibujada correcta en barcelona zoom=2 giro=0.8
+  PASS: Q6: geometría dibujada finita en barcelona
+scenario-rendering: 24 PASS, 0 FAIL
+
+=== racing-line-geometry (Q8) ===
+  PASS: Q8: ápice al interior del giro directo (fixture sintético)
+  PASS: Q8: ápice al interior del giro inverso (fixture sintético)
+  PASS: Q8: centro de goma dibujada coincide con posición de coche en trazada ideal
+racing-line-geometry: 3 PASS, 0 FAIL
+
+=== visual-chassis (Q22) ===
+16:52:55 [vite] (ssr) Error when evaluating SSR module /src/components/CarChassisSvg.tsx: Failed to load url /src/components/CarChassisSvg.tsx (resolved id: /src/components/CarChassisSvg.tsx). Does the file exist?
+      at loadAndTransform (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:35835:17)
+  FAIL: Q22: CarChassisSvg exporta un componente React — Error: Failed to load url /src/components/CarChassisSvg.tsx (resolved id: /src/components/CarChassisSvg.tsx). Does the file exist?
+    at loadAndTransform (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:35835:17)
+16:52:55 [vite] (ssr) Error when evaluating SSR module /src/components/CarChassisSvg.tsx: Failed to load url /src/components/CarChassisSvg.tsx (resolved id: /src/components/CarChassisSvg.tsx). Does the file exist?
+      at loadAndTransform (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:35835:17)
+      at async fetchModule (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:46988:16)
+      at async handleInvoke (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:39131:22)
+      at async EventEmitter.listenerForInvokeHandler (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:39204:19)
+  FAIL: Q22: Renderiza SVG con las 4 ruedas identificadas — Error: Failed to load url /src/components/CarChassisSvg.tsx (resolved id: /src/components/CarChassisSvg.tsx). Does the file exist?
+    at loadAndTransform (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:35835:17)
+    at async fetchModule (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:46988:16)
+    at async handleInvoke (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:39131:22)
+    at async EventEmitter.listenerForInvokeHandler (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:39204:19)
+16:52:55 [vite] (ssr) Error when evaluating SSR module /src/components/CarChassisSvg.tsx: Failed to load url /src/components/CarChassisSvg.tsx (resolved id: /src/components/CarChassisSvg.tsx). Does the file exist?
+      at loadAndTransform (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:35835:17)
+      at async fetchModule (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:46988:16)
+      at async handleInvoke (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:39131:22)
+      at async EventEmitter.listenerForInvokeHandler (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:39204:19)
+  FAIL: Q22: Colores de rueda reflejan nivel de desgaste — Error: Failed to load url /src/components/CarChassisSvg.tsx (resolved id: /src/components/CarChassisSvg.tsx). Does the file exist?
+    at loadAndTransform (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:35835:17)
+    at async fetchModule (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:46988:16)
+    at async handleInvoke (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:39131:22)
+    at async EventEmitter.listenerForInvokeHandler (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:39204:19)
+16:52:55 [vite] (ssr) Error when evaluating SSR module /src/components/CarChassisSvg.tsx: Failed to load url /src/components/CarChassisSvg.tsx (resolved id: /src/components/CarChassisSvg.tsx). Does the file exist?
+      at loadAndTransform (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:35835:17)
+      at async fetchModule (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:46988:16)
+      at async handleInvoke (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:39131:22)
+      at async EventEmitter.listenerForInvokeHandler (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:39204:19)
+  FAIL: Q22: Alerón trasero refleja estado DRS — Error: Failed to load url /src/components/CarChassisSvg.tsx (resolved id: /src/components/CarChassisSvg.tsx). Does the file exist?
+    at loadAndTransform (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:35835:17)
+    at async fetchModule (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:46988:16)
+    at async handleInvoke (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:39131:22)
+    at async EventEmitter.listenerForInvokeHandler (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:39204:19)
+16:52:55 [vite] (ssr) Error when evaluating SSR module /src/components/CarChassisSvg.tsx: Failed to load url /src/components/CarChassisSvg.tsx (resolved id: /src/components/CarChassisSvg.tsx). Does the file exist?
+      at loadAndTransform (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:35835:17)
+      at async fetchModule (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:46988:16)
+      at async handleInvoke (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:39131:22)
+      at async EventEmitter.listenerForInvokeHandler (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:39204:19)
+  FAIL: Q22: Pulso de advertencia para ruedas críticas (<25%) — Error: Failed to load url /src/components/CarChassisSvg.tsx (resolved id: /src/components/CarChassisSvg.tsx). Does the file exist?
+    at loadAndTransform (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:35835:17)
+    at async fetchModule (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:46988:16)
+    at async handleInvoke (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:39131:22)
+    at async EventEmitter.listenerForInvokeHandler (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:39204:19)
+16:52:55 [vite] (ssr) Error when evaluating SSR module /src/components/CarChassisSvg.tsx: Failed to load url /src/components/CarChassisSvg.tsx (resolved id: /src/components/CarChassisSvg.tsx). Does the file exist?
+      at loadAndTransform (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:35835:17)
+      at async fetchModule (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:46988:16)
+      at async handleInvoke (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:39131:22)
+      at async EventEmitter.listenerForInvokeHandler (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:39204:19)
+  FAIL: Q22: Usa color del equipo en el chasis — Error: Failed to load url /src/components/CarChassisSvg.tsx (resolved id: /src/components/CarChassisSvg.tsx). Does the file exist?
+    at loadAndTransform (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:35835:17)
+    at async fetchModule (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:46988:16)
+    at async handleInvoke (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:39131:22)
+    at async EventEmitter.listenerForInvokeHandler (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:39204:19)
+16:52:55 [vite] (ssr) Error when evaluating SSR module /src/components/CarChassisSvg.tsx: Failed to load url /src/components/CarChassisSvg.tsx (resolved id: /src/components/CarChassisSvg.tsx). Does the file exist?
+      at loadAndTransform (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:35835:17)
+      at async fetchModule (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:46988:16)
+      at async handleInvoke (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:39131:22)
+      at async EventEmitter.listenerForInvokeHandler (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:39204:19)
+  FAIL: Q22: No renderiza NaN ni undefined — Error: Failed to load url /src/components/CarChassisSvg.tsx (resolved id: /src/components/CarChassisSvg.tsx). Does the file exist?
+    at loadAndTransform (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:35835:17)
+    at async fetchModule (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:46988:16)
+    at async handleInvoke (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:39131:22)
+    at async EventEmitter.listenerForInvokeHandler (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:39204:19)
+visual-chassis: 0 PASS, 7 FAIL
+
+=== visual-animations (Q23) ===
+  FAIL: Leaderboard contiene marcadores de cambio de posición
+  PASS: Leaderboard muestra PIT para coche en boxes
+  PASS: TelemetryPanel contiene marcador para animación de velocidad
+  PASS: TelemetryPanel contiene marcador para animación de RPM
+  PASS: TelemetryPanel tiene contenedores animables
+  PASS: Leaderboard renderiza sin error en SSR (Anime.js hooks son client-only)
+  PASS: TelemetryPanel renderiza sin error en SSR
+visual-animations: 6 PASS, 1 FAIL
+
+=== visual-icons (Q21) ===
+16:52:59 [vite] (ssr) Error when evaluating SSR module /src/components/CompoundBadge.tsx: Failed to load url /src/components/CompoundBadge.tsx (resolved id: /src/components/CompoundBadge.tsx). Does the file exist?
+      at loadAndTransform (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:35835:17)
+  FAIL: Q21: CompoundBadge exporta un componente React — Error: Failed to load url /src/components/CompoundBadge.tsx (resolved id: /src/components/CompoundBadge.tsx). Does the file exist?
+    at loadAndTransform (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:35835:17)
+16:52:59 [vite] (ssr) Error when evaluating SSR module /src/components/CompoundBadge.tsx: Failed to load url /src/components/CompoundBadge.tsx (resolved id: /src/components/CompoundBadge.tsx). Does the file exist?
+      at loadAndTransform (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:35835:17)
+      at async fetchModule (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:46988:16)
+      at async handleInvoke (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:39131:22)
+      at async EventEmitter.listenerForInvokeHandler (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:39204:19)
+  FAIL: Q21: CompoundBadge renderiza SVG con los 5 compuestos — Error: Failed to load url /src/components/CompoundBadge.tsx (resolved id: /src/components/CompoundBadge.tsx). Does the file exist?
+    at loadAndTransform (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:35835:17)
+    at async fetchModule (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:46988:16)
+    at async handleInvoke (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:39131:22)
+    at async EventEmitter.listenerForInvokeHandler (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:39204:19)
+16:52:59 [vite] (ssr) Error when evaluating SSR module /src/components/CompoundBadge.tsx: Failed to load url /src/components/CompoundBadge.tsx (resolved id: /src/components/CompoundBadge.tsx). Does the file exist?
+      at loadAndTransform (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:35835:17)
+      at async fetchModule (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:46988:16)
+      at async handleInvoke (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:39131:22)
+      at async EventEmitter.listenerForInvokeHandler (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:39204:19)
+  FAIL: Q21: CompoundBadge usa colores Pirelli 2025 correctos — Error: Failed to load url /src/components/CompoundBadge.tsx (resolved id: /src/components/CompoundBadge.tsx). Does the file exist?
+    at loadAndTransform (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:35835:17)
+    at async fetchModule (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:46988:16)
+    at async handleInvoke (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:39131:22)
+    at async EventEmitter.listenerForInvokeHandler (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:39204:19)
+16:52:59 [vite] (ssr) Error when evaluating SSR module /src/components/CompoundBadge.tsx: Failed to load url /src/components/CompoundBadge.tsx (resolved id: /src/components/CompoundBadge.tsx). Does the file exist?
+      at loadAndTransform (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:35835:17)
+      at async fetchModule (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:46988:16)
+      at async handleInvoke (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:39131:22)
+      at async EventEmitter.listenerForInvokeHandler (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:39204:19)
+  FAIL: Q21: CompoundBadge muestra letra identificativa del compuesto — Error: Failed to load url /src/components/CompoundBadge.tsx (resolved id: /src/components/CompoundBadge.tsx). Does the file exist?
+    at loadAndTransform (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:35835:17)
+    at async fetchModule (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:46988:16)
+    at async handleInvoke (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:39131:22)
+    at async EventEmitter.listenerForInvokeHandler (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:39204:19)
+16:52:59 [vite] (ssr) Error when evaluating SSR module /src/components/CompoundBadge.tsx: Failed to load url /src/components/CompoundBadge.tsx (resolved id: /src/components/CompoundBadge.tsx). Does the file exist?
+      at loadAndTransform (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:35835:17)
+      at async fetchModule (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:46988:16)
+      at async handleInvoke (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:39131:22)
+      at async EventEmitter.listenerForInvokeHandler (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:39204:19)
+  FAIL: Q21: CompoundBadge incluye accesibilidad (title/aria-label) — Error: Failed to load url /src/components/CompoundBadge.tsx (resolved id: /src/components/CompoundBadge.tsx). Does the file exist?
+    at loadAndTransform (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:35835:17)
+    at async fetchModule (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:46988:16)
+    at async handleInvoke (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:39131:22)
+    at async EventEmitter.listenerForInvokeHandler (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:39204:19)
+16:52:59 [vite] (ssr) Error when evaluating SSR module /src/components/F1CarSilhouette.tsx: Failed to load url /src/components/F1CarSilhouette.tsx (resolved id: /src/components/F1CarSilhouette.tsx). Does the file exist?
+      at loadAndTransform (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:35835:17)
+  FAIL: Q21: F1CarSilhouette exporta un componente React — Error: Failed to load url /src/components/F1CarSilhouette.tsx (resolved id: /src/components/F1CarSilhouette.tsx). Does the file exist?
+    at loadAndTransform (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:35835:17)
+16:52:59 [vite] (ssr) Error when evaluating SSR module /src/components/F1CarSilhouette.tsx: Failed to load url /src/components/F1CarSilhouette.tsx (resolved id: /src/components/F1CarSilhouette.tsx). Does the file exist?
+      at loadAndTransform (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:35835:17)
+      at async fetchModule (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:46988:16)
+      at async handleInvoke (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:39131:22)
+      at async EventEmitter.listenerForInvokeHandler (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:39204:19)
+  FAIL: Q21: F1CarSilhouette renderiza SVG con color del equipo — Error: Failed to load url /src/components/F1CarSilhouette.tsx (resolved id: /src/components/F1CarSilhouette.tsx). Does the file exist?
+    at loadAndTransform (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:35835:17)
+    at async fetchModule (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:46988:16)
+    at async handleInvoke (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:39131:22)
+    at async EventEmitter.listenerForInvokeHandler (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:39204:19)
+16:52:59 [vite] (ssr) Error when evaluating SSR module /src/components/F1CarSilhouette.tsx: Failed to load url /src/components/F1CarSilhouette.tsx (resolved id: /src/components/F1CarSilhouette.tsx). Does the file exist?
+      at loadAndTransform (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:35835:17)
+      at async fetchModule (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:46988:16)
+      at async handleInvoke (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:39131:22)
+      at async EventEmitter.listenerForInvokeHandler (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:39204:19)
+  FAIL: Q21: F1CarSilhouette acepta prop de tamaño — Error: Failed to load url /src/components/F1CarSilhouette.tsx (resolved id: /src/components/F1CarSilhouette.tsx). Does the file exist?
+    at loadAndTransform (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:35835:17)
+    at async fetchModule (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:46988:16)
+    at async handleInvoke (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:39131:22)
+    at async EventEmitter.listenerForInvokeHandler (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:39204:19)
+  FAIL: Leaderboard: usa badge SVG de compuesto
+  FAIL: TelemetryPanel: usa badge SVG de compuesto
+  FAIL: BoxControls: usa badge SVG en selector de compuesto
+16:53:00 [vite] (ssr) Error when evaluating SSR module /src/components/CompoundBadge.tsx: Failed to load url /src/components/CompoundBadge.tsx (resolved id: /src/components/CompoundBadge.tsx). Does the file exist?
+      at loadAndTransform (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:35835:17)
+      at async fetchModule (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:46988:16)
+      at async handleInvoke (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:39131:22)
+      at async EventEmitter.listenerForInvokeHandler (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:39204:19)
+  FAIL: Q21: CompoundBadge no produce NaN/undefined — Error: Failed to load url /src/components/CompoundBadge.tsx (resolved id: /src/components/CompoundBadge.tsx). Does the file exist?
+    at loadAndTransform (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:35835:17)
+    at async fetchModule (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:46988:16)
+    at async handleInvoke (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:39131:22)
+    at async EventEmitter.listenerForInvokeHandler (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:39204:19)
+16:53:00 [vite] (ssr) Error when evaluating SSR module /src/components/F1CarSilhouette.tsx: Failed to load url /src/components/F1CarSilhouette.tsx (resolved id: /src/components/F1CarSilhouette.tsx). Does the file exist?
+      at loadAndTransform (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:35835:17)
+      at async fetchModule (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:46988:16)
+      at async handleInvoke (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:39131:22)
+      at async EventEmitter.listenerForInvokeHandler (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:39204:19)
+  FAIL: Q21: F1CarSilhouette no produce NaN/undefined — Error: Failed to load url /src/components/F1CarSilhouette.tsx (resolved id: /src/components/F1CarSilhouette.tsx). Does the file exist?
+    at loadAndTransform (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:35835:17)
+    at async fetchModule (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:46988:16)
+    at async handleInvoke (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:39131:22)
+    at async EventEmitter.listenerForInvokeHandler (file:///C:/Users/Usuario/Documents/antigravity/brave-mendeleev/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:39204:19)
+visual-icons: 0 PASS, 13 FAIL
+
+TOTAL RESULTS: 560 PASSED, 21 FAILED (59 módulos)

@@ -30,8 +30,10 @@ export class CarRenderer {
   static getCarDimensions(zoom: number, trackWidthMeters: number = 24, trackWidthCarsCapacity: number = 3) {
     // cw = carWid * 0.8; las ruedas alcanzan +/- (1.15 + 0.45 / 2) * cw.
     const footprintWidthFactor = 2 * 0.8 * (1.15 + 0.45 / 2);
-    const laneSpacing = CarRenderer.getLateralDisplacement(0.55, trackWidthMeters, trackWidthCarsCapacity);
-    const worldScale = Math.min(1.15, laneSpacing / (1.25 * CarRenderer.BASE_CAR_WID * footprintWidthFactor));
+    // Huella fija calibrada para el ancho mínimo de 8 m; cambia el espacio de
+    // maniobra, nunca el tamaño físico del coche al pasar de un tramo a otro.
+    const laneSpacing = CarRenderer.getLateralDisplacement(0.55, 8, 2);
+    const worldScale = laneSpacing / (1.25 * CarRenderer.BASE_CAR_WID * footprintWidthFactor);
     const scale = worldScale * zoom;
     return {
       scale,

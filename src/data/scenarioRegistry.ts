@@ -2,6 +2,7 @@ import type { CircuitScenario } from './scenarioTypes';
 import { barcelonaScenario } from './scenarioBarcelona';
 import { monacoScenario } from './scenarioMonaco';
 import { defaultScenario } from './scenarioDefault';
+import { calendarScenarios } from './scenarioCalendar';
 
 /**
  * Registro centralizado de escenarios por circuito.
@@ -9,6 +10,7 @@ import { defaultScenario } from './scenarioDefault';
  * (bandas uniformes idénticas al renderizado legacy).
  */
 const SCENARIOS: Record<string, CircuitScenario> = {
+  ...calendarScenarios,
   barcelona: barcelonaScenario,
   monaco: monacoScenario,
 };

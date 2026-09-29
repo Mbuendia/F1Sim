@@ -1,0 +1,190 @@
+{
+  "summary": {
+    "passed": 17,
+    "failed": 9
+  },
+  "results": [
+    {
+      "id": "pace-orders",
+      "tasks": [
+        "Q12"
+      ],
+      "sprint": "2.8",
+      "kind": "contract",
+      "passed": 2,
+      "failed": 4,
+      "assertions": [
+        {
+          "name": "Q12: rival entrando en boxes no sustituye Save por Push",
+          "pass": false,
+          "details": ""
+        },
+        {
+          "name": "Q12: ritmo desconocido se rechaza sin cambiar orden",
+          "pass": false,
+          "details": ""
+        },
+        {
+          "name": "Q12: no se dan órdenes a un retirado",
+          "pass": false,
+          "details": ""
+        },
+        {
+          "name": "Q12: carrera terminada rechaza nuevas órdenes",
+          "pass": false,
+          "details": ""
+        },
+        {
+          "name": "Q12: VSC limita el ritmo efectivo conservando Push pedido",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q12: al volver a verde se recupera el ritmo pedido",
+          "pass": true,
+          "details": ""
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "pace-ui",
+      "tasks": [
+        "Q12"
+      ],
+      "sprint": "2.8",
+      "kind": "contract",
+      "passed": 0,
+      "failed": 5,
+      "assertions": [
+        {
+          "name": "Q12 UI: selector de ritmo accesible por cada piloto",
+          "pass": false,
+          "details": ""
+        },
+        {
+          "name": "Q12 UI: ofrece Push, Balanced y Save",
+          "pass": false,
+          "details": ""
+        },
+        {
+          "name": "Q12 UI: diferencia ritmo pedido de efectivo",
+          "pass": false,
+          "details": ""
+        },
+        {
+          "name": "Q12 UI: explica limitación por Safety Car",
+          "pass": false,
+          "details": ""
+        },
+        {
+          "name": "Q12 UI: selector deshabilitado para retirado",
+          "pass": false,
+          "details": ""
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "pace",
+      "tasks": [
+        "Q12"
+      ],
+      "sprint": "2.8",
+      "kind": "regression",
+      "passed": 6,
+      "failed": 0,
+      "assertions": [
+        {
+          "name": "Q12: Push es más rápido que Balanced",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q12: Balanced es más rápido que Save",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q12: Push desgasta más neumático que Balanced",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q12: Balanced desgasta más neumático que Save",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q12: El modo de ritmo persiste tras parada en boxes",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q12: Bajo Safety Car, los modos de ritmo no generan gaps abusivos",
+          "pass": true,
+          "details": ""
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "pace-contract",
+      "tasks": [
+        "Q12"
+      ],
+      "sprint": "2.8",
+      "kind": "contract",
+      "passed": 9,
+      "failed": 0,
+      "assertions": [
+        {
+          "name": "Q12: push completa cinco vueltas reales",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q12: balanced completa cinco vueltas reales",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q12: save completa cinco vueltas reales",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q12: cinco vueltas idénticas Push gastan más neumático que Save",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q12: cinco vueltas idénticas Push consumen más combustible que Save",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q12: orden de tiempos Push/Balanced/Save con el mismo piloto",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q12: cambiar un piloto no cambia al compañero",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q12: pausa conserva posición y orden",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q12: reset elimina las órdenes previas",
+          "pass": true,
+          "details": ""
+        }
+      ],
+      "errors": []
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-// Q24 — Iconos SVG temáticos F1: Badge Pirelli y Silueta lateral de monoplaza.
+// Q21 — Iconos SVG temáticos F1: Badge Pirelli y Silueta lateral de monoplaza.
 // Contrato: componentes React reutilizables con props tipadas, usados en todas las superficies.
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -20,13 +20,13 @@ export default async function run({ server, assert, test }) {
 
   // ── CompoundBadge: Badge circular Pirelli ──
 
-  await test('Q24: CompoundBadge exporta un componente React', async () => {
+  await test('Q21: CompoundBadge exporta un componente React', async () => {
     const mod = await server.ssrLoadModule('/src/components/CompoundBadge.tsx');
     assert(typeof mod.CompoundBadge === 'function' || typeof mod.default === 'function',
       'CompoundBadge es un componente exportado');
   });
 
-  await test('Q24: CompoundBadge renderiza SVG con los 5 compuestos', async () => {
+  await test('Q21: CompoundBadge renderiza SVG con los 5 compuestos', async () => {
     const { CompoundBadge } = await server.ssrLoadModule('/src/components/CompoundBadge.tsx');
     for (const compound of ALL_COMPOUNDS) {
       const html = renderToStaticMarkup(createElement(CompoundBadge, { compound }));
@@ -34,7 +34,7 @@ export default async function run({ server, assert, test }) {
     }
   });
 
-  await test('Q24: CompoundBadge usa colores Pirelli 2025 correctos', async () => {
+  await test('Q21: CompoundBadge usa colores Pirelli 2025 correctos', async () => {
     const { CompoundBadge } = await server.ssrLoadModule('/src/components/CompoundBadge.tsx');
     for (const compound of ALL_COMPOUNDS) {
       const html = renderToStaticMarkup(createElement(CompoundBadge, { compound }));
@@ -43,7 +43,7 @@ export default async function run({ server, assert, test }) {
     }
   });
 
-  await test('Q24: CompoundBadge muestra letra identificativa del compuesto', async () => {
+  await test('Q21: CompoundBadge muestra letra identificativa del compuesto', async () => {
     const { CompoundBadge } = await server.ssrLoadModule('/src/components/CompoundBadge.tsx');
     const letters = { soft: 'S', medium: 'M', hard: 'H', intermediate: 'I', wet: 'W' };
     for (const compound of ALL_COMPOUNDS) {
@@ -53,7 +53,7 @@ export default async function run({ server, assert, test }) {
     }
   });
 
-  await test('Q24: CompoundBadge incluye accesibilidad (title/aria-label)', async () => {
+  await test('Q21: CompoundBadge incluye accesibilidad (title/aria-label)', async () => {
     const { CompoundBadge } = await server.ssrLoadModule('/src/components/CompoundBadge.tsx');
     for (const compound of ALL_COMPOUNDS) {
       const html = renderToStaticMarkup(createElement(CompoundBadge, { compound }));
@@ -65,13 +65,13 @@ export default async function run({ server, assert, test }) {
 
   // ── F1CarSilhouette: Silueta lateral genérica ──
 
-  await test('Q24: F1CarSilhouette exporta un componente React', async () => {
+  await test('Q21: F1CarSilhouette exporta un componente React', async () => {
     const mod = await server.ssrLoadModule('/src/components/F1CarSilhouette.tsx');
     assert(typeof mod.F1CarSilhouette === 'function' || typeof mod.default === 'function',
       'F1CarSilhouette es un componente exportado');
   });
 
-  await test('Q24: F1CarSilhouette renderiza SVG con color del equipo', async () => {
+  await test('Q21: F1CarSilhouette renderiza SVG con color del equipo', async () => {
     const { F1CarSilhouette } = await server.ssrLoadModule('/src/components/F1CarSilhouette.tsx');
     const teamColor = '#ff8000'; // McLaren
     const html = renderToStaticMarkup(createElement(F1CarSilhouette, { teamColor }));
@@ -79,7 +79,7 @@ export default async function run({ server, assert, test }) {
     assert(html.includes(teamColor), 'F1CarSilhouette usa el color del equipo como fill');
   });
 
-  await test('Q24: F1CarSilhouette acepta prop de tamaño', async () => {
+  await test('Q21: F1CarSilhouette acepta prop de tamaño', async () => {
     const { F1CarSilhouette } = await server.ssrLoadModule('/src/components/F1CarSilhouette.tsx');
     const html = renderToStaticMarkup(createElement(F1CarSilhouette, {
       teamColor: '#e10600', width: 120
@@ -89,7 +89,7 @@ export default async function run({ server, assert, test }) {
 
   // ── Integración: CompoundBadge en los consumidores existentes ──
 
-  await test('Q24: Leaderboard usa CompoundBadge en lugar de punto de color', async () => {
+  await test('Q21: Leaderboard usa CompoundBadge en lugar de punto de color', async () => {
     const { Leaderboard } = await server.ssrLoadModule('/src/components/Leaderboard.tsx');
     const sim = make('barcelona', 2);
     sim.cars.forEach((c, i) => { c.currentPosition = i + 1; });
@@ -105,7 +105,7 @@ export default async function run({ server, assert, test }) {
       'Leaderboard: usa badge SVG de compuesto');
   });
 
-  await test('Q24: TelemetryPanel usa CompoundBadge', async () => {
+  await test('Q21: TelemetryPanel usa CompoundBadge', async () => {
     const { TelemetryPanel } = await server.ssrLoadModule('/src/components/TelemetryPanel.tsx');
     const sim = make('barcelona', 1);
     const car = sim.cars[0];
@@ -121,7 +121,7 @@ export default async function run({ server, assert, test }) {
       'TelemetryPanel: usa badge SVG de compuesto');
   });
 
-  await test('Q24: BoxControls usa CompoundBadge', async () => {
+  await test('Q21: BoxControls usa CompoundBadge', async () => {
     const { BoxControls } = await server.ssrLoadModule('/src/components/BoxControls.tsx');
     const sim = make('barcelona', 1);
     const car = sim.cars[0];
@@ -138,7 +138,7 @@ export default async function run({ server, assert, test }) {
 
   // ── Integridad de renderizado ──
 
-  await test('Q24: CompoundBadge no produce NaN/undefined', async () => {
+  await test('Q21: CompoundBadge no produce NaN/undefined', async () => {
     const { CompoundBadge } = await server.ssrLoadModule('/src/components/CompoundBadge.tsx');
     for (const compound of ALL_COMPOUNDS) {
       const html = renderToStaticMarkup(createElement(CompoundBadge, { compound }));
@@ -147,7 +147,7 @@ export default async function run({ server, assert, test }) {
     }
   });
 
-  await test('Q24: F1CarSilhouette no produce NaN/undefined', async () => {
+  await test('Q21: F1CarSilhouette no produce NaN/undefined', async () => {
     const { F1CarSilhouette } = await server.ssrLoadModule('/src/components/F1CarSilhouette.tsx');
     const html = renderToStaticMarkup(createElement(F1CarSilhouette, {
       teamColor: '#e10600'

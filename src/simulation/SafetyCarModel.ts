@@ -60,7 +60,8 @@ export class SafetyCarModel {
     sc: SafetyCarState,
     reason: string,
     leaderProgress: number,
-    raceTimeSec: number
+    raceTimeSec: number,
+    trackType: string = 'permanent'
   ): void {
     sc.isDeployed = true;
     sc.mode = 'deploying';
@@ -71,7 +72,7 @@ export class SafetyCarModel {
     sc.trackT = ((sc.progress % 1) + 1) % 1;
     sc.currentSpeedKmh = 40; // SC sale del pitlane lento
     sc.lapCount = 0;
-    sc.targetLaps = 2 + Math.floor(Math.random() * 2); // 2-3 vueltas
+    sc.targetLaps = trackType === 'street' ? 10 : 2 + Math.floor(Math.random() * 2); // 2-3 vueltas
     sc.triggerReason = reason;
     sc.deployedAtRaceTime = raceTimeSec;
   }
@@ -206,7 +207,7 @@ export class SafetyCarModel {
       } else {
         const carAhead = activeCars[i - 1];
         const gap = carAhead.progress - car.progress;
-        if (gap > targetGap * 2) {
+        if (gap > targetGap * 2 && car.fuelKg > 0) {
           car.currentSpeedKmh = Math.min(car.currentSpeedKmh + dt * 15, 130);
         } else if (gap < targetGap) {
           car.currentSpeedKmh = Math.min(car.currentSpeedKmh, carAhead.currentSpeedKmh * 0.98);

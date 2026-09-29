@@ -233,7 +233,7 @@ export interface CarState {
   isInPitLane: boolean;
   speed: number;
   currentSpeedKmh: number;
-  
+
   lateralOffset: number;
   targetLateralOffset: number;
   isOvertaking: boolean;
@@ -246,7 +246,11 @@ export interface CarState {
   smokeOpacity: number;
 
   raceDayLuckFactor: number;
-  
+
+  // [Q12] Pace mode ordered by player
+  paceMode?: 'push' | 'balanced' | 'save';
+  energy?: import('../simulation/EnergyModel').EnergyState;
+
   tires: TireState;
   fuelKg: number;
   engineMode: EngineMode;
@@ -257,7 +261,7 @@ export interface CarState {
   // ── MODELO TERMODINÁMICO CONTINUO ──
   brakeTempCelsius: number;    // 250°C (frío) → 1050°C (frenada extrema)
   engineTempCelsius: number;   // 85°C (frío) → 130°C (sobrecalentamiento)
-  
+
   currentLap: number;
   lapStartTime: number;
   lastLapTime: number | null;
@@ -268,11 +272,11 @@ export interface CarState {
 
   aheadInfo: RelativeCarInfo | null;
   behindInfo: RelativeCarInfo | null;
-  
+
   currentSector: 1 | 2 | 3;
   sectors: SectorTimes;
   sectorStartTime: number;
-  
+
   pitStop: PitStopState;
   stats: DriverStatsSummary;
   lapHistory: CarTelemetryLog[];

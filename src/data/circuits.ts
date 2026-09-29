@@ -17,6 +17,8 @@ export interface DrsZoneSpec {
 import type { TrackType } from './scenarioTypes';
 
 export interface CircuitSpec {
+  /** Solo puntos aportados explícitamente; no inferirlos del comienzo de zona. */
+  drsDetections?: import('../simulation/DRSModel').DrsDetection[];
   id: string;
   name: string;
   officialGpName: string;

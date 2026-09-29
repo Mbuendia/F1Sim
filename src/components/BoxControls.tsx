@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { CarState, TireCompound } from '../types/f1';
 import type { RaceSimulation } from '../simulation/RaceSimulation';
 import styles from './BoxControls.module.css';
+import { PaceControls } from './PaceControls';
 
 // [Q11] Panel dual de pilotos del equipo — controles independientes de boxes para ambos coches.
 export function BoxControls({ car, simulation, teamCars }: {
@@ -67,6 +68,7 @@ export function BoxControls({ car, simulation, teamCars }: {
                   ⏳ Esperando cajón ({p.pitStop.boxWaitTimer.toFixed(1)}s)
                 </div>
               )}
+              <PaceControls car={p} simulation={simulation} />
               <div className={styles.orderRow}>
                 <select aria-label={`Compuesto para ${p.driver.code}`} value={compound}
                   disabled={!available || locked}

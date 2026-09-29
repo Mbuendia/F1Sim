@@ -1,0 +1,238 @@
+{
+  "summary": {
+    "passed": 35,
+    "failed": 0
+  },
+  "results": [
+    {
+      "id": "safety-car",
+      "tasks": [
+        "C1",
+        "C2",
+        "C3",
+        "C4"
+      ],
+      "sprint": null,
+      "kind": "regression",
+      "passed": 10,
+      "failed": 0,
+      "assertions": [
+        {
+          "name": "C1: SC transitions to \"returning\" despite lapped car on track (fieldSpread lead lap only)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "C1 Fallback: SC transitions to \"returning\" on hardTimeout (lapCount >= targetLaps + 3)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "C2: Returning mode speed is 140 km/h (not null)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "C2: Leading mode speed is 120 km/h",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "C2: Red flag speed is 80 km/h",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "C3: SC is deployed",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "C3: SC spawns just ahead of leader (4.780 vs 4.780)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "C3: SC transitions deploying -> leading when leader reaches/overtakes it (no deadlock)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "C3: SC repositions ahead of leader",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "C4: SC transitions to \"in\" and despawns when trackT >= 0.94 without skipping window",
+          "pass": true,
+          "details": ""
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "neutralization-motion",
+      "tasks": [
+        "Q14"
+      ],
+      "sprint": "2.8",
+      "kind": "contract",
+      "passed": 5,
+      "failed": 0,
+      "assertions": [
+        {
+          "name": "Q14: SC no recoloca ni retrocede coche x1",
+          "pass": true,
+          "details": "distancia=0 m; retroceso interno=false"
+        },
+        {
+          "name": "Q14: SC no recoloca ni retrocede coche x16",
+          "pass": true,
+          "details": "distancia=0.13518315054961727 m; retroceso interno=false"
+        },
+        {
+          "name": "Q14: SC no recoloca ni retrocede coche x32",
+          "pass": true,
+          "details": "distancia=7.70544434353401 m; retroceso interno=false"
+        },
+        {
+          "name": "Q14: reanudación de roja conserva distancia completada",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q14: reanudación no crea neumático ni combustible",
+          "pass": true,
+          "details": ""
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "blue-flags",
+      "tasks": [
+        "Q15"
+      ],
+      "sprint": "2.8",
+      "kind": "contract",
+      "passed": 9,
+      "failed": 0,
+      "assertions": [
+        {
+          "name": "Q15: señal correcta con líder detrás",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q15: señal correcta con meta",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q15: señal correcta con misma vuelta",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q15: señal correcta con líder ya pasó",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q15: coche out no provoca bandera azul",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q15: coche pit no provoca bandera azul",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q15: señal se apaga cuando desaparece la causa",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q15: neutralización sc no exige ceder para adelantar",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q15: neutralización vsc no exige ceder para adelantar",
+          "pass": true,
+          "details": ""
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "drs-permissions",
+      "tasks": [
+        "Q19"
+      ],
+      "sprint": "2.8",
+      "kind": "contract",
+      "passed": 11,
+      "failed": 0,
+      "assertions": [
+        {
+          "name": "Q19: helper aplica umbral estricto a 0.999s",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q19: helper aplica umbral estricto a 1s",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q19: helper aplica umbral estricto a 1.001s",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q19: entrar en activación sin detección previa no autoriza (0.999s)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q19: entrar en activación sin detección previa no autoriza (1s)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q19: entrar en activación sin detección previa no autoriza (1.001s)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q19: motor cierra DRS bajo yellow",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q19: motor cierra DRS bajo sc",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q19: motor cierra DRS bajo vsc",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q19: motor cierra DRS bajo red",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q19: reinicio elimina aperturas anteriores",
+          "pass": true,
+          "details": ""
+        }
+      ],
+      "errors": []
+    }
+  ]
+}

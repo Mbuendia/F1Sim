@@ -2,6 +2,7 @@ import { SplinePoint, Point2D } from './spline';
 import { TrackDefinition, CornerMarker } from '../data/barcelonaTrack';
 import { CircuitSpec } from '../data/circuits';
 import svgPathsJson from '../data/svgTrackPaths.json';
+import { setIdealRacingLine } from './racingLine';
 
 const svgPathsMap: Record<string, string> = svgPathsJson as any;
 
@@ -251,6 +252,8 @@ export function buildTrackFromSvg(circuit: CircuitSpec, sampleCount: number = 75
     accumDist += distances[i];
   }
 
+  setIdealRacingLine(splinePoints);
+
   // ── 4. GENERACIÓN DEL PIT LANE OFICIAL (CARRIL DE BOXES INTERIOR) ──
   const pitEntryT = circuit.pitEntryT !== undefined ? circuit.pitEntryT : 0.92;
   const pitExitT = circuit.pitExitT !== undefined ? circuit.pitExitT : 0.08;
@@ -287,6 +290,8 @@ export function buildTrackFromSvg(circuit: CircuitSpec, sampleCount: number = 75
 
   return {
     name: circuit.name,
+    pitLaneTimeLossSec: circuit.pitLaneTimeLossSec,
+    drsDetections: circuit.drsDetections,
     fullName: circuit.officialGpName,
     location: circuit.location,
     country: circuit.country,

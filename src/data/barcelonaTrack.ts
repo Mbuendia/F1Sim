@@ -16,6 +16,8 @@ export interface TrackDefinition {
   totalLaps: number;
   lapLengthMeters: number;
   trackWidthMeters: number;
+  pitLaneTimeLossSec?: number;
+  drsDetections?: import('../simulation/DRSModel').DrsDetection[];
   corners: CornerMarker[];
   points: SplinePoint[];
   pitLanePoints: Point2D[];
