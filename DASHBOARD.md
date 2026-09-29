@@ -22,7 +22,7 @@
 
 ## 🧭 2. ROADMAP Y ESTADO GLOBAL DE SPRINTS
 
-**Orden vigente:** Sprint **2.8** · Tarea actual **Q19** · Siguiente **Q16**.
+**Orden vigente:** Sprint **2.8** · Tarea actual **Q16** · Siguiente **Q13**.
 
 **Prioridad acordada tras la auditoría (30/09/2026, `docs/reviews/auditoria-q12-q19.md`):** Q19 → Q16 → Q13 → Q17 → Q12 → Q18/Q14/Q15. Decisiones del usuario: detecciones DRS desde las notas oficiales FIA; el Safety Car debe salir del pit lane (Q14); tests estructurales sin dependencias nuevas para Q18; tolerancias de calibración Q12 propuestas.
 
@@ -373,7 +373,7 @@ Los 13 bugs críticos y altos detectados en la auditoría fueron implementados y
   * *Contexto y archivos:* lógica dispersa de proximidad/adelantamiento en `RaceSimulation`; `updateLeaderboardPositions` da el rival por clasificación, que no siempre es el vecino físico. Consultar progreso acumulado para vuelta de ventaja y distancia circular para cercanía, sin incluir un coche en otra ruta de boxes.
   * *Contrato/aceptación:* extraer una consulta común de tráfico consumida por banderas y maniobras; ceder donde exista espacio Q7/Q8 y levantar progresivamente, sin aplicar -15% como salto instantáneo. 1.2 s/15% son ajustes de juego a validar. Probar líder P1 detrás de P20, dos líderes próximos, cruce de meta, coche en misma vuelta, boxes, curva estrecha, SC y retirada. Apagar la señal cuando termine la causa; R02/R09 sustituirán el gap aproximado con tiempo real y permisos centrales.
 
-* **Q16 — Modelo Dinámico de ERS, Combustible y Penalización Térmica en Agarre:** `[ ] PENDIENTE`
+* **Q16 — Modelo Dinámico de ERS, Combustible y Penalización Térmica en Agarre:** `[ ] EN REVISIÓN LOCAL — VISIBILIDAD Y LÍMITES ENTREGADOS 30/09/2026, PENDIENTE REVISIÓN VISUAL DEL USUARIO`
   * *Problema:* `RaceSimulation.ts:834`, batería estática al 85%, clamp de 0.5 kg en combustible, penalización térmica tardía.
   * *Solución refinada con FIA 2025:* Conectar el ERS al ciclo real: **MGU-K → ES máximo 2 MJ/vuelta; ES → MGU-K máximo 4 MJ/vuelta; MGU-K ±120 kW**, con contabilidad separada del MGU-H y ventana de carga del ES de 4 MJ (T5.3.2). Consumo continuo sin reserva artificial infinita y penalización térmica aplicada antes de integrar el movimiento. Desarrollo completo y dependencias en R14-R16.
   * *Test:* Conservación de energía, saturación y agotamiento, límites por flujo/vuelta, reset reglamentario al entrar en boxes y ausencia de energía creada por cambios de modo. No exigir oscilaciones arbitrarias de SOC del 20% al 100%.
@@ -382,6 +382,9 @@ Los 13 bugs críticos y altos detectados en la auditoría fueron implementados y
   * *Aceptación ampliada:* salida, frenada con batería llena, fin de vuelta, entrada a boxes y cero combustible a x1/x16; balance con tolerancia declarada, cero negativos y agotamiento con pérdida física de propulsión. Telemetría derivada del mismo estado. No afirmar modelo FIA completo hasta verificar fuentes y todas las condiciones R14-R16.
 
   * *Revisión del usuario (29/09/2026):* «No cambiaba nada y no lo encontraba». Investigar por separado visibilidad, actualización de estado y simulación; no atribuir el síntoma al motor sin reproducirlo.
+  * *Diagnóstico (30/09/2026):* el motor sí funciona (el SOC varía entre 0 y 100 % en carrera), pero `batterySoc`/`ersDeploying` no se mostraban en ninguna pantalla; además, la columna de estado del dock (DRS y modo) quedaba fuera del área visible: el contenido medía 1316 px y el dock solo 893 px entre los paneles laterales.
+  * *Entrega:* el dock muestra ERS con barra y % de SOC (4 MJ = 100 %) y "DESPLIEGUE" cuando el MGU-K entrega potencia; el dock ya no desborda (tarjetas laterales flexibles, bloques en dos filas y estado DRS/modo/ERS en una línea al pie). Contrato nuevo `ers-energy` (11 PASS): en carrera real recarga ≤ 2 MJ/vuelta, despliegue ≤ 4 MJ/vuelta, ES entre 0 y 4 MJ, potencia ≤ 120 kW (0 de 87 440 pasos), conservación exacta paso a paso y SOC de telemetría derivado del mismo estado; cambiar de modo sin frenar no crea energía. Suite 1117 PASS / 0 FAIL.
+  * *Pendiente:* la llamada del motor pasa `inPit = false` siempre (los coches en boxes no actualizan energía); el reset de contadores al entrar en boxes queda sin ejercitar.
   * *Ampliación confirmada:* combustible (kg), batería (%) y temperatura (°C) localizables desde la telemetría del piloto, ligados al estado real; selección independiente de piloto, explicación de límites y estado no disponible si faltan datos. No animar valores para aparentar actividad. Reutilizar los modelos existentes y su contrato con R14-R16.
   * *Tests previos adicionales:* resources y módulo resources-ui propuesto; captura inicial/final en escenarios deterministas de consumo, descarga/regeneración y calentamiento/enfriamiento; probar propagación motor→UI, unidades, redondeo que no oculte cambios significativos, selección, pausa, reset y agotamiento. Entregar pasos reproducibles para revisión humana, sin esperar a un incidente aleatorio.
 
