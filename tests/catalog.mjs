@@ -487,5 +487,6 @@ export const modules = [
   { "id": "ers-pit", "tasks": ["Q16"], "sprint": "2.8", "kind": "contract" },
   { "id": "drs-restart", "tasks": ["Q19"], "sprint": "2.8", "kind": "contract" },
   { "id": "landing-compound", "tasks": ["R30"], "sprint": "2.9", "kind": "contract" },
-  { "id": "race-menu", "tasks": ["R32"], "sprint": "2.9", "kind": "contract" }
+  { "id": "race-menu", "tasks": ["R32"], "sprint": "2.9", "kind": "contract" },
+  { "id": "camera-zoom", "tasks": ["R32"], "sprint": "2.9", "kind": "contract" }
 ];
