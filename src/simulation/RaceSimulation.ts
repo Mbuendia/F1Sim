@@ -303,6 +303,25 @@ export class RaceSimulation {
     }
   }
 
+  // [Q15] Banderas azules: consulta común de tráfico y ajustes de cesión (ajustes de juego, no cifras FIA).
+  static readonly BLUE_FLAG_GAP_SEC = 1.2;
+  static readonly BLUE_FLAG_RAMP_IN_SEC = 2.0;
+  static readonly BLUE_FLAG_RAMP_OUT_SEC = 1.5;
+  static readonly BLUE_FLAG_LIFT = 0.15;
+  static readonly BLUE_FLAG_OFFSET = 0.7;
+  static readonly BLUE_FLAG_NARROW_LEVEL = 0.1;
+
+  /** Coche con al menos media vuelta más de progreso que viene físicamente detrás a menos de BLUE_FLAG_GAP_SEC. */
+  lappingCarBehind(car: CarState, lapDistanceMeters = this.activeTrack.lapLengthMeters): CarState | undefined {
+    if (car.isInPitLane || car.pitStop.isPitting) return undefined;
+    return this.cars.find(c => {
+      const distance = ((car.progress - c.progress) % 1 + 1) % 1;
+      return c.id !== car.id && c.status === 'running' && !c.isInPitLane && !c.pitStop.isPitting
+        && c.progress - car.progress > 0.5 && distance > 0
+        && distance * lapDistanceMeters / Math.max(1, c.currentSpeedKmh / 3.6) < RaceSimulation.BLUE_FLAG_GAP_SEC;
+    });
+  }
+
   // [Q14] Despliegue y retirada del Safety Car por el motor (también los usa el botón DEV): sale de su garaje en el
   // pit lane y vuelve a él; nunca se coloca en pista por asignación.
   deploySafetyCar(reason: string, options: { targetLaps?: number } = {}): boolean {
@@ -671,18 +690,17 @@ export class RaceSimulation {
       const pointIndex = Math.floor(normalizedT * totalPoints) % totalPoints;
       const trackPoint = points[pointIndex] || points[0];
 
-      const carApproachingBehind = this.cars.find(c => {
-        const distance = ((car.progress - c.progress) % 1 + 1) % 1;
-        return c.id !== car.id && c.status === 'running' && !c.isInPitLane && !c.pitStop.isPitting
-          && c.progress - car.progress > 0.5 && distance > 0
-          && distance * lapDistanceMeters / Math.max(1, c.currentSpeedKmh / 3.6) < 1.2;
-      });
-      if (this.raceFlagState === 'green' && carApproachingBehind) {
-        car.isBlueFlagged = true;
-        car.targetLateralOffset = -0.70;
-      } else {
-        car.isBlueFlagged = false;
-      }
+      // [Q15] Bandera azul: señal inmediata; la cesión (nivel 0..1) sube y baja de forma gradual y solo es completa
+      // donde hay espacio (recta con al menos dos coches de ancho). En curva lenta mantiene la trazada.
+      const carApproachingBehind = this.raceFlagState === 'green' ? this.lappingCarBehind(car, lapDistanceMeters) : undefined;
+      car.isBlueFlagged = Boolean(carApproachingBehind);
+      const roomToYield = trackPoint.speedLimitFactor >= 0.65 &&
+        (trackPoint.trackWidthCars ?? OFFICIAL_CIRCUITS[this.circuitId]?.trackWidthCars ?? 3) >= 2;
+      const yieldTarget = car.isBlueFlagged ? (roomToYield ? 1 : RaceSimulation.BLUE_FLAG_NARROW_LEVEL) : 0;
+      const yieldLevel = car.blueFlagLevel ?? 0;
+      car.blueFlagLevel = yieldTarget > yieldLevel
+        ? Math.min(yieldTarget, yieldLevel + dt / RaceSimulation.BLUE_FLAG_RAMP_IN_SEC)
+        : Math.max(yieldTarget, yieldLevel - dt / RaceSimulation.BLUE_FLAG_RAMP_OUT_SEC);
 
       const carAhead = car.carAheadId !== null ? this.getCarById(car.carAheadId) : null;
       const pace = this.getPaceStatus(car.id)!;
@@ -756,14 +774,13 @@ export class RaceSimulation {
       const lateralDiff = Math.abs(car.lateralOffset - (trackPoint.idealLineOffset || 0));
       const isOnIdealLine = lateralDiff < 0.25;
       
-      if (isOnIdealLine) {
-        // Boost pace based on accumulated rubber grip (up to +2%)
-        effectivePace *= (1.0 + trackPoint.rubberGrip * 0.02);
-        
-      } else {
-        // Penalty for driving offline (marbles/dirt)
-        effectivePace *= 0.985;
-      }
+      // [Q15] Transición continua entre trazada y fuera de trazada (0,15–0,35 de separación, centrada en el umbral
+      // 0,25): apartarse al ceder no provoca un salto de ritmo. Extremos iguales: +2 % goma en trazada, −1,5 % fuera.
+      const offline = Math.min(1, Math.max(0, (lateralDiff - 0.15) / 0.2));
+      // Boost pace based on accumulated rubber grip (up to +2%)
+      effectivePace *= 1.0 + trackPoint.rubberGrip * 0.02 * (1 - offline);
+      // Penalty for driving offline (marbles/dirt)
+      effectivePace *= 1 - 0.015 * offline;
 
       // Automatically try to follow the ideal racing line if not overtaking/blue flagged
       if (!car.isOvertaking && !car.isBlueFlagged && this.raceFlagState === 'green' && !car.pitStop.isPitting && !car.isInPitLane) {
@@ -796,9 +813,8 @@ export class RaceSimulation {
         targetKmh = (68 + (speedLimitFactor - 0.20) * 240) * effectivePace;
       }
 
-      if (car.isBlueFlagged) {
-        targetKmh *= 0.85;
-      }
+      // [Q15] Levantar en proporción a la cesión (máx. BLUE_FLAG_LIFT), sin salto de velocidad objetivo.
+      targetKmh *= 1 - RaceSimulation.BLUE_FLAG_LIFT * (car.blueFlagLevel ?? 0);
 
       // ── RESTRICCIONES DE VELOCIDAD BAJO SC / VSC / BANDERA AMARILLA ──
       const scMaxSpeed = SafetyCarModel.getMaxAllowedSpeed(this.raceFlagState, this.safetyCar.mode);
@@ -919,6 +935,15 @@ export class RaceSimulation {
       } else if (!car.isBlueFlagged) {
         car.isOvertaking = false;
         car.targetLateralOffset = this.raceFlagState === 'green' ? (trackPoint.idealLineOffset || 0) : 0;
+      }
+
+      // [Q15] Apartarse hacia el lado contrario a la trazada en proporción a la cesión.
+      // El lado se elige al empezar a ceder y se mantiene hasta terminar (la trazada cruza el eje en las rectas).
+      if ((car.blueFlagLevel ?? 0) > 0 && !car.isOvertaking) {
+        car.blueFlagSide ??= (trackPoint.idealLineOffset ?? 0) >= 0 ? -1 : 1;
+        car.targetLateralOffset = car.blueFlagSide * RaceSimulation.BLUE_FLAG_OFFSET * (car.blueFlagLevel ?? 0);
+      } else if ((car.blueFlagLevel ?? 0) === 0) {
+        car.blueFlagSide = undefined;
       }
 
       // Q20: con la parada decidida, llegar a la entrada por el eje (la ruta de boxes sale de la línea central).

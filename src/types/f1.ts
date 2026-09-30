@@ -278,6 +278,8 @@ export interface CarState {
   targetLateralOffset: number;
   isOvertaking: boolean;
   isBlueFlagged: boolean;
+  blueFlagLevel?: number;        // Q15: nivel de cesión 0..1 (gradual)
+  blueFlagSide?: -1 | 1;         // Q15: lado hacia el que se aparta mientras cede
 
   hasPuncture?: boolean;
   dnfReason?: string;
