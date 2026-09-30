@@ -227,6 +227,7 @@ export type RejoinEstimate =
       worstPos: number;
       timeLossSec: number;
       uncertaintySec: number;
+      rejoinProgress: number;
       rejoinTrackT: number;
       source: string;
     }

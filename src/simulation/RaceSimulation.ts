@@ -29,6 +29,7 @@ import { depositRubber } from '../utils/racingLine';
 import { PitStopModel } from './PitStopModel';
 import { commitmentT, nextCrossing, orderIsActive, updateOrderCommitment } from './BoxOrders';
 import { SafetyCarModel } from './SafetyCarModel';
+import { RejoinModel } from './RejoinModel';
 import { IncidentModel } from './IncidentModel';
 import { calculateCarWorldPosition, lapsToPitEntry, limitLateralChange } from '../utils/carPosition';
 
@@ -300,69 +301,89 @@ export class RaceSimulation {
     }
   }
 
-  // [Q13] Rejoin Predictor
-  getRejoinProjection(carId: number): { timeLossSec: number; projectedPos: number } {
-    const car = this.getCarById(carId);
-    if (!car || !this.activeTrack) return { timeLossSec: 0, projectedPos: car ? car.currentPosition : 1 };
+  // [Q13] Predictor de reincorporación. La pérdida sale de RejoinModel (réplica 1D del pit lane y la pista del
+  // motor, validada contra el simulador); la neutralización limita la velocidad en pista y reduce la pérdida.
+  static readonly REJOIN_UNCERTAINTY_SEC = 2.0;
+  static readonly REJOIN_UNCERTAINTY_SC_SEC = 5.0;
 
-    const baseLoss = this.activeTrack.pitLaneTimeLossSec || 22.0;
-    const serviceTime = 2.5; // Average service time
-    let totalLoss = baseLoss + serviceTime;
+  private rejoinSpeedCap(): { capKmh: number | null; neutralization: 'SC' | 'VSC' | null } {
+    const cap = SafetyCarModel.getMaxAllowedSpeed(this.raceFlagState, this.safetyCar.mode);
+    if (this.raceFlagState === 'sc' && cap !== null) return { capKmh: cap, neutralization: 'SC' };
+    if (this.raceFlagState === 'vsc' || this.vscActive) return { capKmh: cap ?? 160, neutralization: 'VSC' };
+    return { capKmh: cap, neutralization: null };
+  }
 
-    // Penalty for Double Stack (Q11)
+  private rejoinContext(car: CarState) {
+    const { capKmh, neutralization } = this.rejoinSpeedCap();
+    const pitLossSec = RejoinModel.pitLossSec(this.activeTrack, car, capKmh, RejoinModel.MEAN_SERVICE_SEC);
+    // Double stack (Q11): esperar al compañero que ocupa el box, o su servicio si ya está comprometido a parar.
+    let queueSec = 0;
     const teammate = this.cars.find(c => c.driver.teamId === car.driver.teamId && c.id !== car.id);
     if (teammate) {
       const teammateInBox = PitStopModel.getTeammateInBox(car, this.cars);
       if (teammateInBox) {
-        // Teammate is already in the box, we will wait for them to finish
-        const remaining = Math.max(0, teammateInBox.pitStop.stopDuration - teammateInBox.pitStop.currentStopTimer);
-        totalLoss += remaining;
+        queueSec = Math.max(0, teammateInBox.pitStop.stopDuration - teammateInBox.pitStop.currentStopTimer);
       } else if (teammate.pitStop.activeBoxOrder && teammate.pitStop.activeBoxOrder.status === 'committed') {
-        // Teammate is committed to pit but not yet in box. If they arrive before us, we will wait for their full service.
-        totalLoss += 2.5;
+        queueSec = RejoinModel.MEAN_SERVICE_SEC;
       }
     }
+    const profile = RejoinModel.lapProfile(this.activeTrack, car, capKmh);
+    return { capKmh, neutralization, pitLossSec, queueSec, timeLossSec: pitLossSec + queueSec, profile };
+  }
 
-    const lapTime = car.lastLapTime || RaceSimulation.BASE_LAP_TIME_SEC;
-    const rejoinProgress = car.progress - totalLoss / lapTime;
-    const projectedPos = 1 + this.cars.filter(other => other.id !== car.id &&
+  private rejoinPositionAt(car: CarState, rejoinProgress: number): number {
+    return 1 + this.cars.filter(other => other.id !== car.id &&
       other.status !== 'out' && other.progress > rejoinProgress).length;
-    return { timeLossSec: totalLoss, projectedPos };
+  }
+
+  getRejoinProjection(carId: number): { timeLossSec: number; projectedPos: number } {
+    const car = this.getCarById(carId);
+    if (!car || !this.activeTrack) return { timeLossSec: 0, projectedPos: car ? car.currentPosition : 1 };
+    const { timeLossSec, profile } = this.rejoinContext(car);
+    const rejoinProgress = RejoinModel.progressBefore(profile, car.progress, timeLossSec);
+    return { timeLossSec, projectedPos: this.rejoinPositionAt(car, rejoinProgress) };
+  }
+
+  /** Segundos en régimen estable (perfil de la pista con la neutralización actual) para ir de un progreso a otro. */
+  getRejoinTimeGap(carId: number, fromProgress: number, toProgress: number): number {
+    const car = this.getCarById(carId);
+    if (!car || !this.activeTrack) return NaN;
+    return RejoinModel.timeBetween(this.rejoinContext(car).profile, fromProgress, toProgress);
   }
 
   // [Q13] Estimación visible para la UI: mismo predictor, con fuente, intervalo y motivo si no está disponible.
-  static readonly REJOIN_UNCERTAINTY_SEC = 2.0;
-
   getRejoinEstimate(carId: number): RejoinEstimate {
     const car = this.getCarById(carId);
     if (!car || !this.activeTrack) return { available: false, carId, reason: 'Sin datos del piloto' };
     if (car.status === 'out') return { available: false, carId, reason: 'Piloto retirado' };
     if (car.status === 'finished' || this.isFinished) return { available: false, carId, reason: 'Carrera terminada' };
     if (this.lightState !== 'racing') return { available: false, carId, reason: 'Carrera no iniciada' };
+    if (this.raceFlagState === 'red') return { available: false, carId, reason: 'Bandera roja: carrera detenida' };
     if (car.isInPitLane || car.pitStop.isPitting) return { available: false, carId, reason: 'En boxes: reincorporación en curso' };
 
-    const { timeLossSec, projectedPos } = this.getRejoinProjection(carId);
-    const lapTime = car.lastLapTime || RaceSimulation.BASE_LAP_TIME_SEC;
-    const uncertaintySec = RaceSimulation.REJOIN_UNCERTAINTY_SEC;
-    const others = this.cars.filter(other => other.id !== car.id && other.status !== 'out');
-    const posAt = (lossSec: number) => {
-      const rejoinProgress = car.progress - lossSec / lapTime;
-      return 1 + others.filter(other => other.progress > rejoinProgress).length;
-    };
-    const rejoinProgress = car.progress - timeLossSec / lapTime;
-    const baseLoss = this.activeTrack.pitLaneTimeLossSec || 22.0;
-    const lapSource = car.lastLapTime ? 'última vuelta' : 'vuelta de referencia';
+    const context = this.rejoinContext(car);
+    const { timeLossSec, profile, neutralization, capKmh } = context;
+    const uncertaintySec = neutralization === 'SC' ? RaceSimulation.REJOIN_UNCERTAINTY_SC_SEC : RaceSimulation.REJOIN_UNCERTAINTY_SEC;
+    const posAt = (lossSec: number) => this.rejoinPositionAt(car, RejoinModel.progressBefore(profile, car.progress, Math.max(0, lossSec)));
+    const rejoinProgress = RejoinModel.progressBefore(profile, car.progress, timeLossSec);
+    const cardLoss = this.activeTrack.pitLaneTimeLossSec;
+    const fmt = (v: number) => v.toFixed(1).replace('.', ',');
+    const source = `Modelo de boxes del simulador: pit lane a ${PitStopModel.PIT_SPEED_LIMIT_KMH} km/h + servicio medio ${fmt(RejoinModel.MEAN_SERVICE_SEC)} s = ${fmt(context.pitLossSec)} s` +
+      (context.queueSec > 0 ? ` + espera double stack ${fmt(context.queueSec)} s` : '') +
+      (neutralization === 'SC' ? ` · bajo Safety Car (${capKmh} km/h; compactación no modelada)` : '') +
+      (neutralization === 'VSC' ? ` · bajo VSC (${capKmh} km/h)` : '') +
+      (cardLoss ? ` · ficha del circuito ${fmt(cardLoss)} s` : '');
     return {
       available: true,
       carId,
-      projectedPos,
+      projectedPos: this.rejoinPositionAt(car, rejoinProgress),
       bestPos: posAt(timeLossSec - uncertaintySec),
       worstPos: posAt(timeLossSec + uncertaintySec),
       timeLossSec,
       uncertaintySec,
+      rejoinProgress,
       rejoinTrackT: ((rejoinProgress % 1) + 1) % 1,
-      source: `Pérdida en boxes ${baseLoss.toFixed(1)} s + servicio 2,5 s` +
-        (timeLossSec > baseLoss + 2.5 + 1e-9 ? ' + espera double stack' : '') + ` · ${lapSource} ${lapTime.toFixed(1)} s`,
+      source,
     };
   }
 
