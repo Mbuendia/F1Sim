@@ -752,7 +752,7 @@ export class RaceSimulation {
         targetKmh = 70;
       } else if (speedLimitFactor >= 0.90) {
         // Recta a fondo
-        const topStraightSpeed = 338 + (car.drsActive ? 18 : 0) + (car.engineMode === 'push' ? 8 : 0) + (car.team.carPerformance - 0.88) * 120;
+        const topStraightSpeed = 338 + (car.drsActive ? 18 : 0) + (car.engineMode === 'push' ? 5 : 0) + (car.team.carPerformance - 0.88) * 120;
         targetKmh = topStraightSpeed * effectivePace;
       } else if (speedLimitFactor >= 0.65) {
         // Curva rápida de media-alta velocidad

@@ -7,11 +7,11 @@ export class EngineModel {
   static getEnginePerformance(mode: EngineMode): { speedFactor: number; ersDeployRate: number } {
     switch (mode) {
       case 'low':
-        return { speedFactor: 0.975, ersDeployRate: 0.2 };
+        return { speedFactor: 0.9995, ersDeployRate: 0.2 };
       case 'standard':
         return { speedFactor: 1.0, ersDeployRate: 0.5 };
       case 'push':
-        return { speedFactor: 1.025, ersDeployRate: 0.85 };
+        return { speedFactor: 1.0005, ersDeployRate: 0.85 };
       case 'overtake':
         return { speedFactor: 1.050, ersDeployRate: 1.0 };
     }
