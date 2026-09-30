@@ -22,11 +22,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  filter: drop-shadow(0 0 35px rgba(225, 6, 0, 0.45));
   transition: filter 0.3s ease;
 }
 
-.canvasContainer:hover {
-  filter: drop-shadow(0 0 45px rgba(225, 6, 0, 0.7));
-}
 

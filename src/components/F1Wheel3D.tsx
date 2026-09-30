@@ -6,7 +6,6 @@ import { COMPOUND_STYLES } from '../utils/compounds';
 export type TireCompound = 'soft' | 'medium' | 'hard' | 'inter' | 'wet';
 
 interface F1Wheel3DProps {
-  onEnter?: () => void;
   isTransitioning?: boolean;
   className?: string;
 }
@@ -377,7 +376,7 @@ function createBremboF1Caliper(): THREE.Group {
   return group;
 }
 
-export const F1Wheel3D: React.FC<F1Wheel3DProps> = ({ onEnter, isTransitioning = false, className }) => {
+export const F1Wheel3D: React.FC<F1Wheel3DProps> = ({ isTransitioning = false, className }) => {
   const mountRef = useRef<HTMLDivElement>(null);
   const [compound] = useState<TireCompound>(landingCompound);
   const spinSpeedRef = useRef(1.8);
@@ -710,7 +709,7 @@ export const F1Wheel3D: React.FC<F1Wheel3DProps> = ({ onEnter, isTransitioning =
 
   return (
     <div className={`${styles.wheel3dWrapper} ${className || ''}`}>
-      <div ref={mountRef} className={styles.canvasContainer} onClick={onEnter} />
+      <div ref={mountRef} className={styles.canvasContainer} aria-hidden="true" />
     </div>
   );
 };
