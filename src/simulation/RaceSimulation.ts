@@ -471,8 +471,13 @@ export class RaceSimulation {
         })), this.activeTrack.drsDetections || [], this.raceTimeSec - dt, dt);
       }
       if (racing) this.cars.forEach((car, index) => {
+        const wasInPitLane = car.isInPitLane;
         PitStopModel.processCrossings(car, previous[index], this.activeTrack,
           dtRaw / steps * this.getEffectiveTimeScale(), this.raceFlagState, this.safetyCar.mode);
+        // [Q16] Reinicio de contadores ERS en el mismo cruce de la entrada de boxes (sin flujo: dt = 0).
+        if (!wasInPitLane && car.isInPitLane && car.energy) {
+          EnergyModel.update(car.energy, car.engineMode, false, 0, car.currentLap, true, car.fuelKg > 0);
+        }
         const order = car.pitStop.activeBoxOrder;
         if (order?.status === 'consumed' && order.consumedAt === undefined) order.consumedAt = this.raceTimeSec;
       });
@@ -656,6 +661,11 @@ export class RaceSimulation {
         car.speed = (car.currentSpeedKmh / 3.6) / lapDistanceMeters;
         car.progress += (dt * (car.currentSpeedKmh / 3.6)) / lapDistanceMeters;
         car.trackT = ((car.progress % 1) + 1) % 1;
+        // [Q16] En boxes: reinicio reglamentario de los contadores por vuelta al entrar, sin flujos ni recarga.
+        car.energy ??= EnergyModel.create();
+        EnergyModel.update(car.energy, car.engineMode, false, dt, car.currentLap, true, car.fuelKg > 0);
+        car.telemetry.batterySoc = car.energy.storedMJ * 25;
+        car.telemetry.ersDeploying = false;
         car.telemetry.speedKmh = Math.round(car.currentSpeedKmh);
         car.lateralOffset = 0;
         car.targetLateralOffset = 0;
