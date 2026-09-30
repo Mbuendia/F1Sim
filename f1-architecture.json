@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "F1 Simulator Architecture",
+    "output": "f1-architecture-rendered.html"
+  },
+  "components": [
+    { "id": "app", "type": "frontend", "label": "App.tsx", "sublabel": "Game Loop & UI", "pos": [50, 150], "size": [140, 60], "tag": "React" },
+    { "id": "render", "type": "backend", "label": "Renderers", "sublabel": "Track, Car, Camera", "pos": [50, 350], "size": [140, 60], "tag": "Canvas" },
+    
+    { "id": "race_sim", "type": "backend", "label": "RaceSimulation", "sublabel": "Core Physics", "pos": [400, 150], "size": [160, 60], "tag": "60 Hz" },
+    { "id": "models", "type": "backend", "label": "Simulation Models", "sublabel": "Pit, SC, Tires", "pos": [400, 350], "size": [160, 60] },
+
+    { "id": "car_pos", "type": "backend", "label": "Math & Utils", "sublabel": "carPosition, spline", "pos": [750, 150], "size": [140, 60] },
+    { "id": "data", "type": "database", "label": "Static Data", "sublabel": "Circuits, Teams", "pos": [750, 350], "size": [140, 60] }
+  ],
+  "connections": [
+    { "id": "c1", "from": "app", "to": "race_sim", "label": "Tick (dt)", "variant": "emphasis" },
+    { "id": "c2", "from": "race_sim", "to": "app", "label": "State", "variant": "dashed", "fromSide": "top", "toSide": "top", "labelDy": -20 },
+    
+    { "id": "c3", "from": "app", "to": "render", "label": "Draw", "labelDy": 25 },
+    
+    { "id": "c4", "from": "race_sim", "to": "models", "label": "Delegate", "labelDy": 25 },
+    { "id": "c5", "from": "race_sim", "to": "car_pos", "label": "Calculate 2D" },
+    { "id": "c6", "from": "race_sim", "to": "data", "label": "Read", "variant": "dashed", "fromSide": "right", "toSide": "left", "labelDy": -20 }
+  ],
+  "cards": [
+    { "dot": "cyan", "title": "Game Loop", "items": ["App.tsx drives requestAnimationFrame", "RaceSimulation applies math sequentially"] },
+    { "dot": "emerald", "title": "Separation of Concerns", "items": ["Simulation holds absolute 1D progress", "Utils translate 1D to 2D", "Renderers paint the canvas"] }
+  ]
+}

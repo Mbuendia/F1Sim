@@ -17,6 +17,8 @@ import {
 import { animate } from 'animejs';
 import { CircuitSpec } from '../data/circuits';
 import { RaceHeader } from './RaceHeader';
+import { CompoundBadge } from './CompoundBadge';
+import { COMPOUND_STYLES, compoundStyle } from '../utils/compounds';
 
 export interface RightStatsPanelProps {
   car: CarState | null;
@@ -229,7 +231,8 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
   const stintStartPoint = { x: getX(currentStint.startLap), y: getY(100) };
   const stintExpectedEndPoint = { x: getX(expectedEndLap), y: getY(0) };
 
-  const currentCompoundColor = tires.compound === 'soft' ? '#e10600' : (tires.compound === 'medium' ? '#ffd700' : '#ffffff');
+  // Q21: color del compuesto desde la paleta única (también Intermedio y Lluvia).
+  const stintStroke = compoundStyle(tires.compound).color;
 
   const historyPoints = lapHistory.map(h => ({
     x: getX(h.lap),
@@ -258,8 +261,8 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
   // Rain Recommendation Strategy
   const getRainRecommendation = () => {
     const depth = weather?.waterDepthMm || 0;
-    if (depth > 3.0) return { compound: 'WET (AZUL)', advice: 'Extrema acumulación de agua. Slicks no operativos.', col: '#0284c7' };
-    if (depth > 0.5) return { compound: 'INTERMEDIATE (VERDE)', advice: 'Pista húmeda / con spray. Ventana óptima de Inter.', col: '#22c55e' };
+    if (depth > 3.0) return { compound: 'WET (AZUL)', advice: 'Extrema acumulación de agua. Slicks no operativos.', col: COMPOUND_STYLES.wet.color };
+    if (depth > 0.5) return { compound: 'INTERMEDIATE (VERDE)', advice: 'Pista húmeda / con spray. Ventana óptima de Inter.', col: COMPOUND_STYLES.intermediate.color };
     return { compound: 'SLICK (SECO)', advice: 'Asfalto seco. Máximo agarre en compuestos Soft/Med/Hard.', col: '#ffd700' };
   };
   const rainRec = getRainRecommendation();
@@ -353,7 +356,7 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
                   y1={stintStartPoint.y} 
                   x2={stintExpectedEndPoint.x} 
                   y2={stintExpectedEndPoint.y} 
-                  stroke={currentCompoundColor} 
+                  stroke={stintStroke} 
                   strokeWidth="2.0" 
                   strokeDasharray="4,4" 
                   opacity="0.85" 
@@ -362,7 +365,7 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
                 {historyPoints.map((p, i) => {
                   if (i === 0) return null;
                   const prev = historyPoints[i - 1];
-                  const strokeCol = prev.compound === 'soft' ? '#e10600' : (prev.compound === 'medium' ? '#ffd700' : '#ffffff');
+                  const strokeCol = compoundStyle(prev.compound).color;
                   return (
                     <line key={i} x1={prev.x} y1={prev.y} x2={p.x} y2={p.y} stroke={strokeCol} strokeWidth="2.6" strokeLinecap="round" />
                   );
@@ -374,31 +377,31 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
                     y1={historyPoints[historyPoints.length - 1].y} 
                     x2={currentPoint.x} 
                     y2={currentPoint.y} 
-                    stroke={currentCompoundColor} 
+                    stroke={stintStroke} 
                     strokeWidth="2.6" 
                   />
                 )}
 
-                <circle cx={currentPoint.x} cy={currentPoint.y} r="4.5" fill={currentCompoundColor} stroke="#000000" strokeWidth="1.5" />
+                <circle cx={currentPoint.x} cy={currentPoint.y} r="4.5" fill={stintStroke} stroke="#000000" strokeWidth="1.5" />
               </svg>
 
               <div className={styles.chartLegend}>
                 <div className={styles.legendItem}>
-                  <span className={styles.legendDot} style={{ backgroundColor: '#e10600' }} />
+                  <span className={styles.legendDot} style={{ backgroundColor: COMPOUND_STYLES.soft.color }} />
                   <span>Blandos (~15v)</span>
                 </div>
                 <div className={styles.legendItem}>
-                  <span className={styles.legendDot} style={{ backgroundColor: '#ffd700' }} />
+                  <span className={styles.legendDot} style={{ backgroundColor: COMPOUND_STYLES.medium.color }} />
                   <span>Medios (~24v)</span>
                 </div>
                 <div className={styles.legendItem}>
-                  <span className={styles.legendDot} style={{ backgroundColor: '#ffffff' }} />
+                  <span className={styles.legendDot} style={{ backgroundColor: COMPOUND_STYLES.hard.color }} />
                   <span>Duros (~38v)</span>
                 </div>
               </div>
 
               <div className={styles.forecastBanner}>
-                <span>🎯 Neumático {tires.compound.toUpperCase()} rinde hasta <strong>Vuelta {Math.round(expectedEndLap)}</strong> ({currentStint.expectedLaps} vtas previstas)</span>
+                <span>🎯 Neumático <CompoundBadge compound={tires.compound} size={16} showName /> rinde hasta <strong>Vuelta {Math.round(expectedEndLap)}</strong> ({currentStint.expectedLaps} vtas previstas)</span>
               </div>
             </div>
           </div>
@@ -491,7 +494,6 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
                   ) : (
                     [...lapHistory].reverse().map((h) => {
                       const isBestLap = bestLapTime && Math.abs(h.lapTime - bestLapTime) < 0.005;
-                      const dotColor = h.compound === 'soft' ? '#e10600' : (h.compound === 'medium' ? '#ffd700' : '#ffffff');
                       return (
                         <tr key={h.lap}>
                           <td className={styles.lapNumCell}>L{h.lap}</td>
@@ -502,7 +504,7 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
                           <td>{h.sector2 ? `${h.sector2.toFixed(2)}s` : '-'}</td>
                           <td>{h.sector3 ? `${h.sector3.toFixed(2)}s` : '-'}</td>
                           <td>
-                            <span style={{ color: dotColor, fontWeight: 900 }}>{h.compound[0].toUpperCase()}</span>
+                            <CompoundBadge compound={h.compound} size={14} detail={`vuelta ${h.lap}`} />
                           </td>
                           <td>{h.tireHealth !== undefined ? `${h.tireHealth}%` : '-'}</td>
                         </tr>

@@ -1,0 +1,199 @@
+{
+  "summary": {
+    "passed": 33,
+    "failed": 0
+  },
+  "results": [
+    {
+      "id": "world-position",
+      "tasks": [
+        "Q4"
+      ],
+      "sprint": "2.8",
+      "kind": "regression",
+      "passed": 28,
+      "failed": 0,
+      "assertions": [
+        {
+          "name": "Q4: Posición sobre toda la ruta de boxes 0.9–0.15, sin offset lateral de pista",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q4: Cuatro cámaras apuntan al coche en los 101 puntos de boxes 0.9–0.15",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q4: Posición sobre toda la ruta de boxes 0.361–0.461, sin offset lateral de pista",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q4: Cuatro cámaras apuntan al coche en los 101 puntos de boxes 0.361–0.461",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q4: Interpolación y desplazamiento lateral conservan el ancho/capacidad Q1",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q4: Renderer consume posición/orientación almacenada (zoom 0.25)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q4: Clic en coche visible con zoom 0.25 y rotación 0",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q4: Renderer consume posición/orientación almacenada (zoom 2.75)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q4: Clic en coche visible con zoom 2.75 y rotación 0.8",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q4: Renderer consume posición/orientación almacenada (zoom 8)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q4: Clic en coche visible con zoom 8 y rotación -1.2",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q4: Minimap real proyecta worldX/Y e incluye boxes en el encuadre",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q4: Minimap dibuja el carril de boxes",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q4: Clic y minimapa excluyen finalizados/retirados ocultos y conservan retirados visibles",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q4: Parrilla inicial tiene posiciones válidas antes del primer frame",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q4: Empezar formación actualiza inmediatamente el offset de parrilla",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q4: Motor sincroniza al terminar la rama formation-lap",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q4: Motor sincroniza al terminar la rama grid-parking",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q4: Motor sincroniza al terminar la rama grid-ready",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q4: Motor sincroniza al terminar la rama lights-1",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q4: Motor sincroniza al terminar la rama racing",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q4: Boxes se sincroniza después de avanzar, sin retraso de un paso",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q4: Retirados también mantienen su posición actual",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q4: Pausa conserva posición y progreso",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q4: Recolocación tras roja actualiza posición en el mismo frame",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q4: Cambiar circuito reinicializa posiciones con su capacidad",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q4: Reiniciar carrera no conserva posiciones del estado anterior",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q4: Parada completa del motor mantiene cámara/posición alineadas en entrada, servicio y salida",
+          "pass": true,
+          "details": ""
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "neutralization-motion",
+      "tasks": [
+        "Q14"
+      ],
+      "sprint": "2.8",
+      "kind": "contract",
+      "passed": 5,
+      "failed": 0,
+      "assertions": [
+        {
+          "name": "Q14: SC no recoloca ni retrocede coche x1",
+          "pass": true,
+          "details": "distancia=0 m; retroceso interno=false"
+        },
+        {
+          "name": "Q14: SC no recoloca ni retrocede coche x16",
+          "pass": true,
+          "details": "distancia=0.13518315054961727 m; retroceso interno=false"
+        },
+        {
+          "name": "Q14: SC no recoloca ni retrocede coche x32",
+          "pass": true,
+          "details": "distancia=7.70544434353401 m; retroceso interno=false"
+        },
+        {
+          "name": "Q14: reanudación de roja conserva distancia completada",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q14: reanudación no crea neumático ni combustible",
+          "pass": true,
+          "details": ""
+        }
+      ],
+      "errors": []
+    }
+  ]
+}

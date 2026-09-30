@@ -8,6 +8,7 @@ import { StartLights } from './components/StartLights';
 import { RaceHeader } from './components/RaceHeader';
 import { Leaderboard } from './components/Leaderboard';
 import { BottomTelemetryDock } from './components/BottomTelemetryDock';
+import { BoxControls } from './components/BoxControls';
 import { RightStatsPanel } from './components/RightStatsPanel';
 import { PodiumModal } from './components/PodiumModal';
 import { HomeScreen } from './components/HomeScreen';
@@ -16,6 +17,8 @@ import RaceFlagsHUD from './components/RaceFlagsHUD';
 import { DnfNotificationModal } from './components/DnfNotificationModal';
 import { D20LuckModal } from './components/D20LuckModal';
 import { OFFICIAL_CIRCUITS } from './data/circuits';
+import { DRIVERS } from './data/drivers';
+import { TEAMS } from './data/teams';
 import { RaceResultHistory, StartLightState, CarState, RaceFlagState, SafetyCarState, DnfNotification, D20LuckEvent, TrackWeatherState } from './types/f1';
 import { RotateCw, Flag, ArrowLeft, ChevronLeft, ChevronRight, Camera as CameraIcon } from 'lucide-react';
 
@@ -116,6 +119,15 @@ export const App: React.FC = () => {
     simulation.setSpeed(speed);
     setSpeedMultiplier(simulation.speedMultiplier);
     setIsPaused(simulation.isPaused);
+  }, [simulation]);
+
+  // [Q18] Callbacks estables del modal D20; aplicar es idempotente en el motor por ID de evento.
+  const handleApplyLuckReward = useCallback((eventId: string) => {
+    simulation.applyLuckEventReward(eventId);
+  }, [simulation]);
+  const handleDismissLuckEvent = useCallback(() => {
+    simulation.activeLuckEvent = null;
+    setActiveLuckEvent(null);
   }, [simulation]);
 
   const handleResetRace = useCallback(() => {
@@ -223,8 +235,21 @@ export const App: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [currentView, handleSelectCar, handleSpeedChange, isPaused, handleCycleCameraMode]);
 
+
   const favoriteCar = simulation.cars.find(c => c.driver.id === selectedDriverId) || simulation.cars[0];
+  // [Q11] Resolve both team pilots for dual-panel BoxControls
+  const teamCars = useMemo(() => {
+    const driver = DRIVERS[selectedDriverId];
+    if (!driver) return [favoriteCar];
+    const team = TEAMS[driver.teamId];
+    if (!team) return [favoriteCar];
+    return team.drivers
+      .map(dId => cars.find(c => c.driver.id === dId))
+      .filter((c): c is CarState => c !== undefined);
+  }, [cars, selectedDriverId, favoriteCar]);
   const selectedCar = selectedCarId !== null ? simulation.getCarById(selectedCarId) || null : null;
+  // [Q13] Reincorporación estimada del piloto objetivo (el mismo que muestra el dock); se recalcula en cada refresco.
+  const rejoinEstimate = simulation.getRejoinEstimate((selectedCar || favoriteCar).id);
   const activeCircuitSpec = OFFICIAL_CIRCUITS[selectedCircuitId] || OFFICIAL_CIRCUITS['barcelona'];
 
   if (currentView === 'landing') {
@@ -255,6 +280,7 @@ export const App: React.FC = () => {
             onSelectCar={handleSelectCar}
             fastestLapDriverName={fastestLapDriver}
             leaderLap={leaderLap}
+            rejoin={rejoinEstimate}
           />
         )}
         <button 
@@ -313,23 +339,11 @@ export const App: React.FC = () => {
               style={{ borderColor: simulation.safetyCar.isDeployed ? '#22c55e' : '#fbbf24', color: simulation.safetyCar.isDeployed ? '#22c55e' : '#fbbf24' }}
               onClick={() => {
                 if (!simulation.safetyCar.isDeployed) {
-                  const leader = simulation.cars.find(c => c.currentPosition === 1);
-                  simulation.safetyCar.isDeployed = true;
-                  simulation.safetyCar.mode = 'deploying';
-                  // SC spawnea exactamente en la salida de boxes
-                  const leaderProgress = leader?.progress || 0;
-                  const leaderT = leaderProgress % 1;
-                  const baseLap = leaderT < 0.05 ? Math.floor(leaderProgress) : Math.ceil(leaderProgress);
-                  simulation.safetyCar.progress = baseLap + 0.05;
-                  simulation.safetyCar.trackT = ((simulation.safetyCar.progress % 1) + 1) % 1;
-                  simulation.safetyCar.currentSpeedKmh = 80;
-                  simulation.safetyCar.lapCount = 0;
-                  simulation.safetyCar.targetLaps = 999;
-                  simulation.safetyCar.triggerReason = 'PRUEBA MANUAL (DEV)';
-                  simulation.raceFlagState = 'sc';
+                  // [Q14] Sale de su garaje en el pit lane, como en carrera.
+                  simulation.deploySafetyCar('PRUEBA MANUAL (DEV)', { targetLaps: 999 });
                 } else {
-                  // Forzar que el SC se vaya
-                  simulation.safetyCar.mode = 'returning';
+                  // Forzar que el SC se vaya por el pit lane
+                  simulation.recallSafetyCar();
                   // Limpiamos los incidentes artificialmente si los hay
                   simulation.incidents = [];
                 }
@@ -383,6 +397,7 @@ export const App: React.FC = () => {
 
         {/* ── HUD INFERIOR: CENTRADO DINÁMICAMENTE ── */}
         <div className={styles.bottomDockWrapper}>
+          <BoxControls key={teamCars.map(c => c.id).join(':') + ':' + selectedCircuitId} car={favoriteCar} simulation={simulation} teamCars={teamCars} />
           <BottomTelemetryDock
             car={selectedCar || favoriteCar}
             onSelectCar={handleSelectCar}
@@ -419,16 +434,10 @@ export const App: React.FC = () => {
         {/* ── MODAL DE SUERTE CON DADO D20 (SAFETY CAR & BANDERA ROJA) ── */}
         {activeLuckEvent && (
           <D20LuckModal
+            key={activeLuckEvent.id}
             event={activeLuckEvent}
-            onApplyReward={(id) => {
-              simulation.applyLuckEventReward(id);
-              simulation.activeLuckEvent = null;
-              setActiveLuckEvent(null);
-            }}
-            onDismiss={() => {
-              simulation.activeLuckEvent = null;
-              setActiveLuckEvent(null);
-            }}
+            onApplyReward={handleApplyLuckReward}
+            onDismiss={handleDismissLuckEvent}
           />
         )}
       </div>

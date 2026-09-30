@@ -1,0 +1,50 @@
+
+=== safety-car (C1, C2, C3, C4) ===
+--- TEST GROUP 1: SafetyCarModel Fixes (C1, C2, C3, C4) ---
+  PASS: C1: SC transitions to "returning" despite lapped car on track (fieldSpread lead lap only)
+  PASS: C1 Fallback: SC transitions to "returning" on hardTimeout (lapCount >= targetLaps + 3)
+  PASS: C2: Returning mode speed is 140 km/h (not null)
+  PASS: C2: Leading mode speed is 120 km/h
+  PASS: C2: Red flag speed is 80 km/h
+  PASS: C3: SC is deployed
+  PASS: C3: SC spawns just ahead of leader (4.780 vs 4.780)
+  PASS: C3: SC transitions deploying -> leading when leader reaches/overtakes it (no deadlock)
+  PASS: C3: SC repositions ahead of leader
+  PASS: C4: SC transitions to "in" and despawns when trackT >= 0.94 without skipping window
+safety-car: 10 PASS, 0 FAIL
+
+=== neutralization-motion (Q14) ===
+  PASS: Q14: SC no recoloca ni retrocede coche x1 — distancia=0 m; retroceso interno=false
+  PASS: Q14: SC no recoloca ni retrocede coche x16 — distancia=0.13518315054961727 m; retroceso interno=false
+  PASS: Q14: SC no recoloca ni retrocede coche x32 — distancia=7.70544434353401 m; retroceso interno=false
+  PASS: Q14: reanudación de roja conserva distancia completada
+  PASS: Q14: reanudación no crea neumático ni combustible
+neutralization-motion: 5 PASS, 0 FAIL
+
+=== blue-flags (Q15) ===
+  PASS: Q15: señal correcta con líder detrás
+  PASS: Q15: señal correcta con meta
+  PASS: Q15: señal correcta con misma vuelta
+  PASS: Q15: señal correcta con líder ya pasó
+  PASS: Q15: coche out no provoca bandera azul
+  PASS: Q15: coche pit no provoca bandera azul
+  PASS: Q15: señal se apaga cuando desaparece la causa
+  PASS: Q15: neutralización sc no exige ceder para adelantar
+  PASS: Q15: neutralización vsc no exige ceder para adelantar
+blue-flags: 9 PASS, 0 FAIL
+
+=== drs-permissions (Q19) ===
+  PASS: Q19: helper aplica umbral estricto a 0.999s
+  PASS: Q19: helper aplica umbral estricto a 1s
+  PASS: Q19: helper aplica umbral estricto a 1.001s
+  PASS: Q19: entrar en activación sin detección previa no autoriza (0.999s)
+  PASS: Q19: entrar en activación sin detección previa no autoriza (1s)
+  PASS: Q19: entrar en activación sin detección previa no autoriza (1.001s)
+  PASS: Q19: motor cierra DRS bajo yellow
+  PASS: Q19: motor cierra DRS bajo sc
+  PASS: Q19: motor cierra DRS bajo vsc
+  PASS: Q19: motor cierra DRS bajo red
+  PASS: Q19: reinicio elimina aperturas anteriores
+drs-permissions: 11 PASS, 0 FAIL
+
+TOTAL RESULTS: 35 PASSED, 0 FAILED (4 módulos)

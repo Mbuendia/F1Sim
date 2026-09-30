@@ -1,3 +1,5 @@
+import { setIdealRacingLine } from './racingLine';
+
 export interface Point2D {
   x: number;
   y: number;
@@ -148,5 +150,6 @@ export function computeTrackSpline(
     accumDistance += dist;
   }
 
+  setIdealRacingLine(splinePoints);
   return splinePoints;
 }

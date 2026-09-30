@@ -1,0 +1,8 @@
+name = "f1_implementation"
+description = "Análisis y cambios autorizados de aplicación tras acordar tests; nunca edita tests."
+developer_instructions = """
+Lee AGENTS.md y .ai/roles/implementation.md desde la raíz del repositorio y aplica ese contrato.
+Si eres delegado, no crees subagentes ni repitas el despliegue de cuatro roles.
+Hereda modelo y permisos. Mantén alcance y contexto breves. No alteres tests acordados para hacer pasar implementación.
+"""
+

@@ -1,0 +1,70 @@
+
+=== pace-orders (Q12) ===
+  PASS: Q12: rival entrando en boxes no sustituye Save por Push
+  PASS: Q12: ritmo desconocido se rechaza sin cambiar orden
+  PASS: Q12: no se dan órdenes a un retirado
+  PASS: Q12: carrera terminada rechaza nuevas órdenes
+  PASS: Q12: VSC limita el ritmo efectivo conservando Push pedido
+  PASS: Q12: al volver a verde se recupera el ritmo pedido
+pace-orders: 6 PASS, 0 FAIL
+
+=== pace-ui (Q12) ===
+  PASS: Q12 UI: selector de ritmo accesible por cada piloto
+  PASS: Q12 UI: ofrece Push, Balanced y Save
+  PASS: Q12 UI: diferencia ritmo pedido de efectivo
+  PASS: Q12 UI: explica limitación por Safety Car
+  PASS: Q12 UI: selector deshabilitado para retirado
+pace-ui: 5 PASS, 0 FAIL
+
+=== pace (Q12) ===
+
+--- TEST GROUP 17: Q12 — Modos de Ritmo del Piloto ---
+  PASS: Q12: Push es más rápido que Balanced
+  PASS: Q12: Balanced es más rápido que Save
+  PASS: Q12: Push desgasta más neumático que Balanced
+  PASS: Q12: Balanced desgasta más neumático que Save
+  PASS: Q12: El modo de ritmo persiste tras parada en boxes
+  PASS: Q12: Bajo Safety Car, los modos de ritmo no generan gaps abusivos
+pace: 6 PASS, 0 FAIL
+
+=== pace-contract (Q12) ===
+  PASS: Q12: push completa cinco vueltas reales
+  PASS: Q12: balanced completa cinco vueltas reales
+  PASS: Q12: save completa cinco vueltas reales
+  PASS: Q12: cinco vueltas idénticas Push gastan más neumático que Save
+  PASS: Q12: cinco vueltas idénticas Push consumen más combustible que Save
+  PASS: Q12: orden de tiempos Push/Balanced/Save con el mismo piloto
+  PASS: Q12: cambiar un piloto no cambia al compañero
+  PASS: Q12: pausa conserva posición y orden
+  PASS: Q12: reset elimina las órdenes previas
+pace-contract: 9 PASS, 0 FAIL
+
+=== resources (Q16) ===
+  PASS: Q16: depósito vacío no crea combustible (low)
+  PASS: Q16: combustible se agota sin reserva infinita (low)
+  PASS: Q16: consumo independiente de partición temporal (low)
+  PASS: Q16: depósito vacío no crea combustible (standard)
+  PASS: Q16: combustible se agota sin reserva infinita (standard)
+  PASS: Q16: consumo independiente de partición temporal (standard)
+  PASS: Q16: depósito vacío no crea combustible (push)
+  PASS: Q16: combustible se agota sin reserva infinita (push)
+  PASS: Q16: consumo independiente de partición temporal (push)
+  PASS: Q16: depósito vacío no crea combustible (overtake)
+  PASS: Q16: combustible se agota sin reserva infinita (overtake)
+  PASS: Q16: consumo independiente de partición temporal (overtake)
+  PASS: Q16: despliegue de ERS consume estado real, no SOC constante
+  PASS: Q16: SOC dentro de límites
+  PASS: Q16: coche parado sin combustible no crea recurso ni propulsión
+  PASS: Q16: motor sobrecalentado pierde rendimiento físico antes de integrar distancia
+resources: 16 PASS, 0 FAIL
+
+=== box-ui (Q9, Q10, Q11) ===
+  PASS: Q9 UI: ofrece los cinco compuestos
+  PASS: Q9 UI: acuse muestra compuesto aceptado
+  PASS: Q10 UI: compromiso bloquea cambio y cancelación
+  PASS: Q10 UI: muestra orden comprometida
+  PASS: Q11 UI: controles independientes para ambos pilotos
+  PASS: Q11 UI: muestra cola y tiempo real del segundo piloto
+box-ui: 6 PASS, 0 FAIL
+
+TOTAL RESULTS: 48 PASSED, 0 FAILED (6 módulos)

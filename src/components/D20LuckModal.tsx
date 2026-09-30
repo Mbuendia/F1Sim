@@ -1,9 +1,57 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import styles from './D20LuckModal.module.css';
 import { D20LuckEvent } from '../types/f1';
 import { Sparkles, Dices, ShieldAlert, CheckCircle2, Zap } from 'lucide-react';
 import { FlagIcon } from './FlagIcon';
+import { CompoundBadge } from './CompoundBadge';
 import { animate } from 'animejs';
+
+// [Q17] Resultado de la tirada: es un consejo de estrategia. No monta neumáticos; el compuesto es una
+// recomendación para la próxima parada, que requiere una orden de boxes y el servicio normal.
+export const D20LuckResult: React.FC<{ event: D20LuckEvent }> = ({ event }) => (
+  <div className={styles.resultCard}>
+    <div className={styles.rewardHeader}>
+      <Sparkles size={16} color="#ffd700" />
+      <span>{event.rewardTitle}</span>
+    </div>
+
+    {/* Lucky Driver Pill */}
+    <div
+      className={styles.driverPill}
+      style={{ borderColor: event.luckyTeamColor, background: `${event.luckyTeamColor}18` }}
+    >
+      <FlagIcon emoji={event.luckyDriverFlag} size={20} />
+      <span className={styles.driverName}>{event.luckyDriverName}</span>
+      <span className={styles.teamTag} style={{ color: event.luckyTeamColor }}>
+        {event.luckyTeamName}
+      </span>
+      {event.isPlayerCar && (
+        <span className={styles.playerBadge}>
+          <Zap size={11} /> TU PILOTO
+        </span>
+      )}
+    </div>
+
+    <p className={styles.rewardDesc}>{event.rewardDescription}</p>
+
+    <div className={styles.benefitRow} data-d20-benefit={event.benefit.kind}>
+      <span className={styles.tiresLabel}>Beneficio:</span>
+      <span className={styles.benefitValue}>
+        {event.benefit.serviceMinSec !== undefined && event.benefit.serviceMaxSec !== undefined
+          ? `${event.benefit.label} · servicio ${event.benefit.serviceMinSec.toFixed(1).replace('.', ',')}–${event.benefit.serviceMaxSec.toFixed(1).replace('.', ',')} s en la próxima parada (${event.benefit.validLaps} vueltas)`
+          : event.benefit.label}
+      </span>
+    </div>
+
+    <div className={styles.optimalTireRow} data-d20-recommendation={event.optimalCompound}>
+      <span className={styles.tiresLabel}>Compuesto recomendado para la próxima parada:</span>
+      <span className={styles.optimalCompound}>
+        <CompoundBadge compound={event.optimalCompound} size={18} showName detail="Recomendación del muro" />
+      </span>
+    </div>
+    <p className={styles.adviceNote}>Consejo de estrategia: no cambia los neumáticos en pista. Para montarlo, da una orden de boxes.</p>
+  </div>
+);
 
 interface D20LuckModalProps {
   event: D20LuckEvent;
@@ -22,6 +70,20 @@ export const D20LuckModal: React.FC<D20LuckModalProps> = ({
   const [countdown, setCountdown] = useState<number>(6);
   const modalRef = useRef<HTMLDivElement>(null);
   const diceRef = useRef<HTMLDivElement>(null);
+  // [Q18] Callbacks vigentes del padre en una ref: App re-renderiza cada 66 ms con funciones nuevas y, como
+  // dependencias, reiniciarían los temporizadores (la cuenta atrás nunca avanzaba).
+  const callbacksRef = useRef({ onApplyReward, onDismiss });
+  useEffect(() => {
+    callbacksRef.current = { onApplyReward, onDismiss };
+  });
+  // [Q18] Cierre único compartido por clic y fin de cuenta.
+  const closedRef = useRef(false);
+  const finish = useCallback(() => {
+    if (closedRef.current) return;
+    closedRef.current = true;
+    callbacksRef.current.onApplyReward(event.id);
+    callbacksRef.current.onDismiss();
+  }, [event.id]);
 
   // Entrance animation
   useEffect(() => {
@@ -65,31 +127,22 @@ export const D20LuckModal: React.FC<D20LuckModalProps> = ({
     }, 60);
 
     return () => clearInterval(rollInterval);
-  }, [event.rollValue]);
+  }, [event.id]);
 
-  // Auto-dismiss countdown after dice lands
+  // Auto-dismiss countdown after dice lands: el actualizador solo calcula el estado; el cierre ocurre en un efecto.
   useEffect(() => {
     if (!hasLanded) return;
-
     const timer = window.setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          onApplyReward(event.id);
-          onDismiss();
-          return 0;
-        }
-        return prev - 1;
-      });
+      setCountdown((prev) => Math.max(0, prev - 1));
     }, 1000);
-
     return () => clearInterval(timer);
-  }, [hasLanded, event.id, onApplyReward, onDismiss]);
+  }, [hasLanded, event.id]);
 
-  const handleApply = () => {
-    onApplyReward(event.id);
-    onDismiss();
-  };
+  useEffect(() => {
+    if (hasLanded && countdown === 0) finish();
+  }, [hasLanded, countdown, finish]);
+
+  const handleApply = finish;
 
   const isCrit = event.rollValue === 20;
 
@@ -128,38 +181,7 @@ export const D20LuckModal: React.FC<D20LuckModalProps> = ({
 
         {/* ── DRIVER & REWARD RESULT (REVEALED AFTER LAND) ── */}
         {hasLanded && (
-          <div className={styles.resultCard}>
-            <div className={styles.rewardHeader}>
-              <Sparkles size={16} color="#ffd700" />
-              <span>{event.rewardTitle}</span>
-            </div>
-
-            {/* Lucky Driver Pill */}
-            <div 
-              className={styles.driverPill} 
-              style={{ borderColor: event.luckyTeamColor, background: `${event.luckyTeamColor}18` }}
-            >
-              <FlagIcon emoji={event.luckyDriverFlag} size={20} />
-              <span className={styles.driverName}>{event.luckyDriverName}</span>
-              <span className={styles.teamTag} style={{ color: event.luckyTeamColor }}>
-                {event.luckyTeamName}
-              </span>
-              {event.isPlayerCar && (
-                <span className={styles.playerBadge}>
-                  <Zap size={11} /> TU PILOTO
-                </span>
-              )}
-            </div>
-
-            <p className={styles.rewardDesc}>{event.rewardDescription}</p>
-
-            <div className={styles.optimalTireRow}>
-              <span className={styles.tiresLabel}>Compuesto Óptimo Equipado:</span>
-              <span className={`${styles.compoundBadge} ${styles[event.optimalCompound]}`}>
-                {event.optimalCompound.toUpperCase()} (100% SALUD)
-              </span>
-            </div>
-          </div>
+          <D20LuckResult event={event} />
         )}
 
         {/* Actions & Auto-Countdown */}
@@ -171,7 +193,7 @@ export const D20LuckModal: React.FC<D20LuckModalProps> = ({
             disabled={isRolling}
           >
             <CheckCircle2 size={16} />
-            <span>APLICAR Y CONTINUAR ({countdown}s)</span>
+            <span>ACEPTAR CONSEJO ({countdown}s)</span>
           </button>
         </div>
       </div>

@@ -224,31 +224,15 @@
   font-weight: 700;
 }
 
-.compoundBadge {
+.optimalCompound {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-family: 'Orbitron', sans-serif;
   font-size: 10px;
   font-weight: 800;
-  padding: 3px 8px;
-  border-radius: 6px;
   letter-spacing: 0.5px;
-}
-
-.soft {
-  background: rgba(225, 6, 0, 0.25);
-  color: #ff4d4d;
-  border: 1px solid #e10600;
-}
-
-.medium {
-  background: rgba(255, 215, 0, 0.25);
-  color: #ffd700;
-  border: 1px solid #ffd700;
-}
-
-.hard {
-  background: rgba(255, 255, 255, 0.2);
-  color: #ffffff;
-  border: 1px solid #ffffff;
+  color: #e2e8f0;
 }
 
 .actionsRow {
@@ -283,4 +267,27 @@
 .applyBtn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* [Q17] Aclaración: el D20 da un consejo, no monta neumáticos */
+.adviceNote {
+  margin: 8px 0 0;
+  font-size: 11px;
+  color: #94a3b8;
+  text-align: center;
+}
+
+/* [Q17] Beneficio del catálogo */
+.benefitRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+  margin-top: 6px;
+}
+.benefitValue {
+  font-size: 12px;
+  font-weight: 700;
+  color: #86efac;
 }

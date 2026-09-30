@@ -32,8 +32,9 @@
 
 /* Tarjetas Coche Delante / Detrás */
 .relativeCarCard {
-  width: 240px;
-  min-width: 220px;
+  /* Se encoge con el espacio disponible entre los paneles laterales (antes 240 px fijos desbordaban el dock). */
+  flex: 0 1 180px;
+  min-width: 140px;
   background: rgba(0, 0, 0, 0.5);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 10px;
@@ -131,6 +132,9 @@
 /* Tarjeta Central Piloto */
 .mainPilotCard {
   flex: 1;
+  min-width: 0;
+  flex-wrap: wrap;
+  row-gap: 6px;
   background: rgba(0, 0, 0, 0.6);
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-top: 4px solid #e10600;
@@ -283,12 +287,14 @@
   gap: 10px;
 }
 
-.compoundPill {
+.compoundInfo {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-family: 'Orbitron', sans-serif;
   font-size: 11px;
   font-weight: 900;
-  padding: 2px 8px;
-  border-radius: 4px;
+  color: #e2e8f0;
 }
 
 .tireHealthText {
@@ -306,10 +312,14 @@
 }
 
 /* Cluster Estado */
+/* Estado (DRS, modo, ERS) en una línea al pie de la tarjeta: se ve siempre y ocupa poca altura. */
 .statusCluster {
   display: flex;
-  flex-direction: column;
-  gap: 5px;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  flex-basis: 100%;
+  gap: 6px 16px;
 }
 
 .statItem {
@@ -342,4 +352,42 @@
 .drsOff {
   background: rgba(255, 255, 255, 0.08);
   color: #94a3b8;
+}
+
+/* Q22: chasis cenital junto al desglose por rueda */
+.wheelsWithChassis {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Desglose 2×2 (FL FR / RL RR) alineado con las ruedas del chasis */
+.wheelsWithChassis .fourWheelsRow {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 2px 10px;
+}
+
+/* Q16: batería ERS (SOC) y despliegue MGU-K */
+.ersBar {
+  display: inline-block;
+  width: 46px;
+  height: 6px;
+  background: #1e293b;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.ersFill {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.25s linear;
+}
+
+.ersDeploy {
+  font-size: 9px;
+  font-weight: 900;
+  color: #38bdf8;
+  letter-spacing: 0.5px;
 }

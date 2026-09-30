@@ -1,0 +1,593 @@
+{
+  "summary": {
+    "passed": 91,
+    "failed": 0
+  },
+  "results": [
+    {
+      "id": "track-width",
+      "tasks": [
+        "Q7"
+      ],
+      "sprint": "2.8",
+      "kind": "contract",
+      "passed": 8,
+      "failed": 0,
+      "assertions": [
+        {
+          "name": "Q7: anchuras válidas en barcelona",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q7: anchura variable en barcelona",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q7: anchuras válidas en monaco",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q7: anchura variable en monaco",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q7: posición continua al cambiar anchura/capacidad en 0.5",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q7: huella física constante al estrecharse la pista",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q7: posición continua al cambiar anchura/capacidad en 1",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q7: huella física constante al estrecharse la pista",
+          "pass": true,
+          "details": ""
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "racing-line",
+      "tasks": [
+        "Q8"
+      ],
+      "sprint": "2.8",
+      "kind": "contract",
+      "passed": 15,
+      "failed": 0,
+      "assertions": [
+        {
+          "name": "Q8: offsets finitos dentro de pista en barcelona",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q8: trazada lateral en ambos sentidos en barcelona",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q8: offsets finitos dentro de pista en monaco",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q8: trazada lateral en ambos sentidos en monaco",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q8: paso real de un coche acumula goma en seco",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q8: engomado no regenera neumáticos",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q8: engomado permanece acotado",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q8: pausa no acumula goma",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q8: reiniciar carrera limpia goma de todas las muestras",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q8: agarre acumulado mejora movimiento con idénticas condiciones",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q8: goma saturada no supera 1",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q8: sin coches no aparece goma",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q8: coche en boxes no engoma la trazada principal",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q8: cambiar circuito no hereda goma del anterior",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q8: misma duración a distintos FPS conserva distribución de goma (1%)",
+          "pass": true,
+          "details": "error=0.0007535738730644352"
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "rejoin-contract",
+      "tasks": [
+        "Q13"
+      ],
+      "sprint": "2.8",
+      "kind": "contract",
+      "passed": 5,
+      "failed": 0,
+      "assertions": [
+        {
+          "name": "Q13: parada costosa pierde posición frente a un rival a menos de un segundo",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q13: consultar predictor no mueve coches",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q13: predictor excluye retirados",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q13: fixture completa parada real",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q13: posición prevista coincide con reincorporación controlada",
+          "pass": true,
+          "details": "prevista=2, real=2"
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "neutralization-motion",
+      "tasks": [
+        "Q14"
+      ],
+      "sprint": "2.8",
+      "kind": "contract",
+      "passed": 5,
+      "failed": 0,
+      "assertions": [
+        {
+          "name": "Q14: SC no recoloca ni retrocede coche x1",
+          "pass": true,
+          "details": "distancia=0 m; retroceso interno=false"
+        },
+        {
+          "name": "Q14: SC no recoloca ni retrocede coche x16",
+          "pass": true,
+          "details": "distancia=0.13518315054961727 m; retroceso interno=false"
+        },
+        {
+          "name": "Q14: SC no recoloca ni retrocede coche x32",
+          "pass": true,
+          "details": "distancia=7.70544434353401 m; retroceso interno=false"
+        },
+        {
+          "name": "Q14: reanudación de roja conserva distancia completada",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q14: reanudación no crea neumático ni combustible",
+          "pass": true,
+          "details": ""
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "blue-flags",
+      "tasks": [
+        "Q15"
+      ],
+      "sprint": "2.8",
+      "kind": "contract",
+      "passed": 9,
+      "failed": 0,
+      "assertions": [
+        {
+          "name": "Q15: señal correcta con líder detrás",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q15: señal correcta con meta",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q15: señal correcta con misma vuelta",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q15: señal correcta con líder ya pasó",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q15: coche out no provoca bandera azul",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q15: coche pit no provoca bandera azul",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q15: señal se apaga cuando desaparece la causa",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q15: neutralización sc no exige ceder para adelantar",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q15: neutralización vsc no exige ceder para adelantar",
+          "pass": true,
+          "details": ""
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "resources",
+      "tasks": [
+        "Q16"
+      ],
+      "sprint": "2.8",
+      "kind": "contract",
+      "passed": 16,
+      "failed": 0,
+      "assertions": [
+        {
+          "name": "Q16: depósito vacío no crea combustible (low)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q16: combustible se agota sin reserva infinita (low)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q16: consumo independiente de partición temporal (low)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q16: depósito vacío no crea combustible (standard)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q16: combustible se agota sin reserva infinita (standard)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q16: consumo independiente de partición temporal (standard)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q16: depósito vacío no crea combustible (push)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q16: combustible se agota sin reserva infinita (push)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q16: consumo independiente de partición temporal (push)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q16: depósito vacío no crea combustible (overtake)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q16: combustible se agota sin reserva infinita (overtake)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q16: consumo independiente de partición temporal (overtake)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q16: despliegue de ERS consume estado real, no SOC constante",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q16: SOC dentro de límites",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q16: coche parado sin combustible no crea recurso ni propulsión",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q16: motor sobrecalentado pierde rendimiento físico antes de integrar distancia",
+          "pass": true,
+          "details": ""
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "luck-rewards",
+      "tasks": [
+        "Q17"
+      ],
+      "sprint": "2.8",
+      "kind": "contract",
+      "passed": 13,
+      "failed": 0,
+      "assertions": [
+        {
+          "name": "Q17: fixture produce tirada 1",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q17: tirada 1 no cambia neumáticos en pista",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q17: tirada 1 no crea combustible",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q17: doble aplicación 1 es idempotente",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q17: fixture produce tirada 10",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q17: tirada 10 no cambia neumáticos en pista",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q17: tirada 10 no crea combustible",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q17: doble aplicación 10 es idempotente",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q17: fixture produce tirada 20",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q17: tirada 20 no cambia neumáticos en pista",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q17: tirada 20 no crea combustible",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q17: doble aplicación 20 es idempotente",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q17: ID ajeno y beneficiario retirado no reciben recursos",
+          "pass": true,
+          "details": ""
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "reset-lifecycle",
+      "tasks": [
+        "Q18"
+      ],
+      "sprint": "2.8",
+      "kind": "contract",
+      "passed": 6,
+      "failed": 0,
+      "assertions": [
+        {
+          "name": "Q18: motor registra incidentes antes y después de reiniciar",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q18: initRace reinicia IDs de IncidentModel",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q18: incidente normal despliega SC urbano",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q18: política personalizada urbana exige al menos 10 vueltas",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q18: reset elimina evento D20 anterior",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q18: cambio de GP elimina evento D20 anterior",
+          "pass": true,
+          "details": ""
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "drs-permissions",
+      "tasks": [
+        "Q19"
+      ],
+      "sprint": "2.8",
+      "kind": "contract",
+      "passed": 11,
+      "failed": 0,
+      "assertions": [
+        {
+          "name": "Q19: helper aplica umbral estricto a 0.999s",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q19: helper aplica umbral estricto a 1s",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q19: helper aplica umbral estricto a 1.001s",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q19: entrar en activación sin detección previa no autoriza (0.999s)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q19: entrar en activación sin detección previa no autoriza (1s)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q19: entrar en activación sin detección previa no autoriza (1.001s)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q19: motor cierra DRS bajo yellow",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q19: motor cierra DRS bajo sc",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q19: motor cierra DRS bajo vsc",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q19: motor cierra DRS bajo red",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q19: reinicio elimina aperturas anteriores",
+          "pass": true,
+          "details": ""
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "racing-line-geometry",
+      "tasks": [
+        "Q8"
+      ],
+      "sprint": "2.8",
+      "kind": "contract",
+      "passed": 3,
+      "failed": 0,
+      "assertions": [
+        {
+          "name": "Q8: ápice al interior del giro directo (fixture sintético)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q8: ápice al interior del giro inverso (fixture sintético)",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "Q8: centro de goma dibujada coincide con posición de coche en trazada ideal",
+          "pass": true,
+          "details": ""
+        }
+      ],
+      "errors": []
+    }
+  ]
+}

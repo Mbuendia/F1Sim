@@ -2,6 +2,24 @@ export type EngineMode = 'low' | 'standard' | 'push' | 'overtake';
 export type AggressionLevel = 'conservative' | 'balanced' | 'aggressive' | 'maximum';
 export type TireCompound = 'soft' | 'medium' | 'hard' | 'intermediate' | 'wet';
 
+// ── Q9: ÓRDENES DE BOXES VINCULANTES ──
+export type BoxOrderStatus = 'pending' | 'accepted' | 'committed' | 'consumed' | 'cancelled' | 'rejected';
+export type BoxOrderIssuer = 'player' | 'ai';
+
+export interface BoxOrder {
+  id: string;
+  carId: number;
+  issuer: BoxOrderIssuer;
+  compound: TireCompound;
+  status: BoxOrderStatus;
+  rejectionReason?: string;
+  createdAt: number;         // raceTimeSec when the order was created
+  consumedAt?: number;       // raceTimeSec when the order was consumed (tire change)
+  commitmentProgress: number;
+  entryProgress: number;
+  message: string;
+}
+
 // ── SISTEMA DE BANDERAS Y SAFETY CAR ──
 export type RaceFlagState = 'green' | 'yellow' | 'double-yellow' | 'vsc' | 'sc' | 'red';
 
@@ -15,6 +33,7 @@ export interface SafetyCarState {
   targetLaps: number;
   triggerReason: string;
   deployedAtRaceTime: number;
+  isInPitLane?: boolean;       // Q14: circulando por el pit lane (salida o retirada)
 }
 
 export interface TrackIncident {
@@ -167,6 +186,35 @@ export interface PitStopState {
   lastStopDuration: number | null;
   targetCompound: TireCompound;
   stints: StintLog[];
+  activeBoxOrder: BoxOrder | null;   // Q9: Binding compound order
+  playerControlled?: boolean;
+  entryProgress?: number;
+  // Q11: Double stack — waiting state
+  waitingForBox: boolean;            // true when queued behind teammate at the shared box
+  boxWaitTimer: number;              // accumulated wait time (sim seconds) behind teammate
+  // Q17: beneficio D20 de servicio pendiente (se consume en la próxima parada real dentro de su validez)
+  crewBenefit?: CrewServiceBenefit | null;
+}
+
+// [Q17] Beneficio de preparación de boxes: solo acota la duración del servicio; no toca tránsito ni recursos.
+export interface CrewServiceBenefit {
+  eventId: string;
+  label: string;
+  minSec: number;
+  maxSec: number;
+  expiresLap: number;
+  inUse?: boolean;             // aplicado al servicio de la parada en curso
+}
+
+// [Q17] Catálogo de beneficios del D20 por tramo de tirada.
+export type D20BenefitKind = 'crew-ready' | 'crew-alert' | 'engineer-report' | 'none';
+export interface D20Benefit {
+  kind: D20BenefitKind;
+  label: string;
+  serviceMinSec?: number;
+  serviceMaxSec?: number;
+  validLaps?: number;
+  rejoin?: RejoinEstimate;
 }
 
 export type StartLightState = 
@@ -193,6 +241,22 @@ export interface RelativeCarInfo {
   position: number;
 }
 
+// [Q13] Estimación de reincorporación tras parar ahora (predictor del motor), o motivo por el que no hay estimación.
+export type RejoinEstimate =
+  | {
+      available: true;
+      carId: number;
+      projectedPos: number;
+      bestPos: number;
+      worstPos: number;
+      timeLossSec: number;
+      uncertaintySec: number;
+      rejoinProgress: number;
+      rejoinTrackT: number;
+      source: string;
+    }
+  | { available: false; carId: number; reason: string };
+
 export interface CarState {
   id: number;
   driver: Driver;
@@ -209,11 +273,13 @@ export interface CarState {
   isInPitLane: boolean;
   speed: number;
   currentSpeedKmh: number;
-  
+
   lateralOffset: number;
   targetLateralOffset: number;
   isOvertaking: boolean;
   isBlueFlagged: boolean;
+  blueFlagLevel?: number;        // Q15: nivel de cesión 0..1 (gradual)
+  blueFlagSide?: -1 | 1;         // Q15: lado hacia el que se aparta mientras cede
 
   hasPuncture?: boolean;
   dnfReason?: string;
@@ -222,7 +288,11 @@ export interface CarState {
   smokeOpacity: number;
 
   raceDayLuckFactor: number;
-  
+
+  // [Q12] Pace mode ordered by player
+  paceMode?: 'push' | 'balanced' | 'save';
+  energy?: import('../simulation/EnergyModel').EnergyState;
+
   tires: TireState;
   fuelKg: number;
   engineMode: EngineMode;
@@ -233,7 +303,7 @@ export interface CarState {
   // ── MODELO TERMODINÁMICO CONTINUO ──
   brakeTempCelsius: number;    // 250°C (frío) → 1050°C (frenada extrema)
   engineTempCelsius: number;   // 85°C (frío) → 130°C (sobrecalentamiento)
-  
+
   currentLap: number;
   lapStartTime: number;
   lastLapTime: number | null;
@@ -244,11 +314,11 @@ export interface CarState {
 
   aheadInfo: RelativeCarInfo | null;
   behindInfo: RelativeCarInfo | null;
-  
+
   currentSector: 1 | 2 | 3;
   sectors: SectorTimes;
   sectorStartTime: number;
-  
+
   pitStop: PitStopState;
   stats: DriverStatsSummary;
   lapHistory: CarTelemetryLog[];
@@ -305,6 +375,7 @@ export interface D20LuckEvent {
   rewardTitle: string;
   rewardDescription: string;
   optimalCompound: TireCompound;
+  benefit: D20Benefit;
   applied: boolean;
   timestamp: number;
 }

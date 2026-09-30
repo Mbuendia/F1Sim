@@ -1,0 +1,1670 @@
+{
+ "barcelona": {
+  "drsZoneSpecs": [
+   {
+    "id": 1,
+    "name": "A1 · 40m after turn 9",
+    "startT": 0.5641,
+    "endT": 0.6547
+   },
+   {
+    "id": 2,
+    "name": "A2 · 162m after turn 14",
+    "startT": 0.9015,
+    "endT": 0.0867
+   }
+  ],
+  "drsDetections": [
+   {
+    "id": "D1",
+    "t": 0.5366,
+    "zoneIds": [
+     1
+    ],
+    "source": "verified"
+   },
+   {
+    "id": "D2",
+    "t": 0.8343,
+    "zoneIds": [
+     2
+    ],
+    "source": "calibrated"
+   }
+  ],
+  "event": "Spanish Grand Prix",
+  "circuitKey": 15,
+  "orientation": {
+   "reflected": true,
+   "reversed": false
+  },
+  "fitMedianM": 1.9,
+  "lineSpreadM": 0,
+  "points": {
+   "D1": {
+    "text": "86m before turn 9",
+    "t": 0.5366,
+    "offTrackM": 3.2,
+    "approx": null
+   },
+   "D2": {
+    "text": "Safety Car Line 1",
+    "t": 0.8343,
+    "offTrackM": 0,
+    "approx": "línea SC1 ≈ inicio de la entrada a boxes (pitEntryT)"
+   },
+   "A1": {
+    "text": "40m after turn 9",
+    "t": 0.5641,
+    "offTrackM": 0.9,
+    "approx": null
+   },
+   "A2": {
+    "text": "162m after turn 14",
+    "t": 0.9015,
+    "offTrackM": 0.7,
+    "approx": null
+   }
+  }
+ },
+ "monza": {
+  "drsZoneSpecs": [
+   {
+    "id": 1,
+    "name": "A1 · 170m after Turn 7",
+    "startT": 0.4585,
+    "endT": 0.588
+   },
+   {
+    "id": 2,
+    "name": "A2 · 12m after finish line",
+    "startT": 0.9347,
+    "endT": 0.0653
+   }
+  ],
+  "drsDetections": [
+   {
+    "id": "D1",
+    "t": 0.4126,
+    "zoneIds": [
+     1
+    ],
+    "source": "verified"
+   },
+   {
+    "id": "D2",
+    "t": 0.8393,
+    "zoneIds": [
+     2
+    ],
+    "source": "verified"
+   }
+  ],
+  "event": "Italian Grand Prix",
+  "circuitKey": 39,
+  "orientation": {
+   "reflected": true,
+   "reversed": false
+  },
+  "fitMedianM": 2.5,
+  "lineSpreadM": 0,
+  "points": {
+   "D1": {
+    "text": "95m before Turn 7",
+    "t": 0.4126,
+    "offTrackM": 2.6,
+    "approx": null
+   },
+   "A1": {
+    "text": "170m after Turn 7",
+    "t": 0.4585,
+    "offTrackM": 1.4,
+    "approx": null
+   },
+   "D2": {
+    "text": "20m after Turn 11",
+    "t": 0.8393,
+    "offTrackM": 0.9,
+    "approx": null
+   },
+   "A2": {
+    "text": "12m after finish line",
+    "t": 0.9347,
+    "offTrackM": 3.5,
+    "approx": null
+   }
+  }
+ },
+ "silverstone": {
+  "drsZoneSpecs": [
+   {
+    "id": 1,
+    "name": "A1 · 30m after Turn 5",
+    "startT": 0.7356,
+    "endT": 0.828
+   },
+   {
+    "id": 2,
+    "name": "A2 · Turn 14",
+    "startT": 0.2284,
+    "endT": 0.3507
+   }
+  ],
+  "drsDetections": [
+   {
+    "id": "D1",
+    "t": 0.6626,
+    "zoneIds": [
+     1
+    ],
+    "source": "verified"
+   },
+   {
+    "id": "D2",
+    "t": 0.1529,
+    "zoneIds": [
+     2
+    ],
+    "source": "verified"
+   }
+  ],
+  "event": "British Grand Prix",
+  "circuitKey": 2,
+  "orientation": {
+   "reflected": true,
+   "reversed": false
+  },
+  "fitMedianM": 3.8,
+  "lineSpreadM": 0,
+  "points": {
+   "D1": {
+    "text": "25m before Turn 3",
+    "t": 0.6626,
+    "offTrackM": 3.9,
+    "approx": null
+   },
+   "D2": {
+    "text": "Turn 11",
+    "t": 0.1529,
+    "offTrackM": 12,
+    "approx": null
+   },
+   "A1": {
+    "text": "30m after Turn 5",
+    "t": 0.7356,
+    "offTrackM": 3.6,
+    "approx": null
+   },
+   "A2": {
+    "text": "Turn 14",
+    "t": 0.2284,
+    "offTrackM": 5.1,
+    "approx": null
+   }
+  }
+ },
+ "spa": {
+  "drsZoneSpecs": [
+   {
+    "id": 1,
+    "name": "A1 · 305m after Turn 4",
+    "startT": 0.1256,
+    "endT": 0.2187
+   },
+   {
+    "id": 2,
+    "name": "A2 · 30m after Turn 19",
+    "startT": 0.8765,
+    "endT": 0.9267
+   }
+  ],
+  "drsDetections": [
+   {
+    "id": "D1",
+    "t": 0.017,
+    "zoneIds": [
+     1
+    ],
+    "source": "verified"
+   },
+   {
+    "id": "D2",
+    "t": 0.8389,
+    "zoneIds": [
+     2
+    ],
+    "source": "verified"
+   }
+  ],
+  "event": "Belgian Grand Prix",
+  "circuitKey": 7,
+  "orientation": {
+   "reflected": true,
+   "reversed": false
+  },
+  "fitMedianM": 2.3,
+  "lineSpreadM": 0,
+  "points": {
+   "D1": {
+    "text": "240m before Turn 2",
+    "t": 0.017,
+    "offTrackM": 1,
+    "approx": null
+   },
+   "D2": {
+    "text": "160m before Turn 18",
+    "t": 0.8389,
+    "offTrackM": 3.2,
+    "approx": null
+   },
+   "A1": {
+    "text": "305m after Turn 4",
+    "t": 0.1256,
+    "offTrackM": 0.6,
+    "approx": null
+   },
+   "A2": {
+    "text": "30m after Turn 19",
+    "t": 0.8765,
+    "offTrackM": 0.2,
+    "approx": null
+   }
+  }
+ },
+ "monaco": {
+  "drsZoneSpecs": [
+   {
+    "id": 1,
+    "name": "A1 · 18m after Turn 19",
+    "startT": 0.6067,
+    "endT": 0.732
+   }
+  ],
+  "drsDetections": [
+   {
+    "id": "D1",
+    "t": 0.5345,
+    "zoneIds": [
+     1
+    ],
+    "source": "verified"
+   }
+  ],
+  "event": "Monaco Grand Prix",
+  "circuitKey": 22,
+  "orientation": {
+   "reflected": true,
+   "reversed": false
+  },
+  "fitMedianM": 2,
+  "lineSpreadM": 0,
+  "points": {
+   "D1": {
+    "text": "80m after Turn 16",
+    "t": 0.5345,
+    "offTrackM": 1.1,
+    "approx": null
+   },
+   "A1": {
+    "text": "18m after Turn 19",
+    "t": 0.6067,
+    "offTrackM": 1.8,
+    "approx": null
+   }
+  }
+ },
+ "spielberg": {
+  "drsZoneSpecs": [
+   {
+    "id": 1,
+    "name": "A1 · 102m after T1",
+    "startT": 0.3918,
+    "endT": 0.5587
+   },
+   {
+    "id": 2,
+    "name": "A2 · 100m after T3",
+    "startT": 0.6094,
+    "endT": 0.7493
+   },
+   {
+    "id": 3,
+    "name": "A3 · 106m after T10",
+    "startT": 0.2121,
+    "endT": 0.3308
+   }
+  ],
+  "drsDetections": [
+   {
+    "id": "D1",
+    "t": 0.3308,
+    "zoneIds": [
+     1
+    ],
+    "source": "verified"
+   },
+   {
+    "id": "D2",
+    "t": 0.5757,
+    "zoneIds": [
+     2
+    ],
+    "source": "verified"
+   },
+   {
+    "id": "D3",
+    "t": 0.1581,
+    "zoneIds": [
+     3
+    ],
+    "source": "verified"
+   }
+  ],
+  "event": "Austrian Grand Prix",
+  "circuitKey": 19,
+  "orientation": {
+   "reflected": true,
+   "reversed": false
+  },
+  "fitMedianM": 2.2,
+  "lineSpreadM": 0,
+  "points": {
+   "D1": {
+    "text": "160m before T1",
+    "t": 0.3308,
+    "offTrackM": 2.8,
+    "approx": null
+   },
+   "A1": {
+    "text": "102m after T1",
+    "t": 0.3918,
+    "offTrackM": 1.5,
+    "approx": null
+   },
+   "D2": {
+    "text": "40m before T3",
+    "t": 0.5757,
+    "offTrackM": 3.3,
+    "approx": null
+   },
+   "A2": {
+    "text": "100m after T3",
+    "t": 0.6094,
+    "offTrackM": 2.6,
+    "approx": null
+   },
+   "D3": {
+    "text": "120m before T10",
+    "t": 0.1581,
+    "offTrackM": 0.2,
+    "approx": null
+   },
+   "A3": {
+    "text": "106m after T10",
+    "t": 0.2121,
+    "offTrackM": 2.1,
+    "approx": null
+   }
+  }
+ },
+ "interlagos": {
+  "drsZoneSpecs": [
+   {
+    "id": 1,
+    "name": "A1 · 30m after Turn 3",
+    "startT": 0.3514,
+    "endT": 0.4987
+   },
+   {
+    "id": 2,
+    "name": "A2 · 160m before Turn 15",
+    "startT": 0.0983,
+    "endT": 0.2493
+   }
+  ],
+  "drsDetections": [
+   {
+    "id": "D1",
+    "t": 0.3015,
+    "zoneIds": [
+     1
+    ],
+    "source": "verified"
+   },
+   {
+    "id": "D2",
+    "t": 0.9884,
+    "zoneIds": [
+     2
+    ],
+    "source": "verified"
+   }
+  ],
+  "event": "São Paulo Grand Prix",
+  "circuitKey": 14,
+  "orientation": {
+   "reflected": true,
+   "reversed": false
+  },
+  "fitMedianM": 2.3,
+  "lineSpreadM": 0,
+  "points": {
+   "D1": {
+    "text": "Apex of Turn 2",
+    "t": 0.3015,
+    "offTrackM": 8.2,
+    "approx": null
+   },
+   "A1": {
+    "text": "30m after Turn 3",
+    "t": 0.3514,
+    "offTrackM": 2.5,
+    "approx": null
+   },
+   "D2": {
+    "text": "30m after Turn 13",
+    "t": 0.9884,
+    "offTrackM": 0.3,
+    "approx": null
+   },
+   "A2": {
+    "text": "160m before Turn 15",
+    "t": 0.0983,
+    "offTrackM": 2,
+    "approx": null
+   }
+  }
+ },
+ "suzuka": {
+  "drsZoneSpecs": [
+   {
+    "id": 1,
+    "name": "A1 · 100m before control line",
+    "startT": 0.9481,
+    "endT": 0.0853
+   }
+  ],
+  "drsDetections": [
+   {
+    "id": "D1",
+    "t": 0.8301,
+    "zoneIds": [
+     1
+    ],
+    "source": "verified"
+   }
+  ],
+  "event": "Japanese Grand Prix",
+  "circuitKey": 46,
+  "orientation": {
+   "reflected": true,
+   "reversed": false
+  },
+  "fitMedianM": 2.4,
+  "lineSpreadM": 0,
+  "points": {
+   "D1": {
+    "text": "40m after Turn 15",
+    "t": 0.8301,
+    "offTrackM": 5.5,
+    "approx": null
+   },
+   "A1": {
+    "text": "100m before control line",
+    "t": 0.9481,
+    "offTrackM": 0.7,
+    "approx": null
+   }
+  }
+ },
+ "zandvoort": {
+  "drsZoneSpecs": [
+   {
+    "id": 1,
+    "name": "A1 · 50m after turn 10",
+    "startT": 0.9349,
+    "endT": 0.036
+   },
+   {
+    "id": 2,
+    "name": "A2 · 40m after turn 13",
+    "startT": 0.1672,
+    "endT": 0.392
+   }
+  ],
+  "drsDetections": [
+   {
+    "id": "D1",
+    "t": 0.9132,
+    "zoneIds": [
+     1
+    ],
+    "source": "calibrated"
+   },
+   {
+    "id": "D2",
+    "t": 0.0904,
+    "zoneIds": [
+     2
+    ],
+    "source": "verified"
+   }
+  ],
+  "event": "Dutch Grand Prix",
+  "circuitKey": 55,
+  "orientation": {
+   "reflected": true,
+   "reversed": false
+  },
+  "fitMedianM": 2.1,
+  "lineSpreadM": 0,
+  "points": {
+   "D1": {
+    "text": "At entry to turn 10",
+    "t": 0.9132,
+    "offTrackM": 4.5,
+    "approx": "entrada de curva ≈ 50 m antes del vértice"
+   },
+   "D2": {
+    "text": "20m after turn 12",
+    "t": 0.0904,
+    "offTrackM": 0.5,
+    "approx": null
+   },
+   "A1": {
+    "text": "50m after turn 10",
+    "t": 0.9349,
+    "offTrackM": 2.4,
+    "approx": null
+   },
+   "A2": {
+    "text": "40m after turn 13",
+    "t": 0.1672,
+    "offTrackM": 1.4,
+    "approx": null
+   }
+  }
+ },
+ "las-vegas": {
+  "drsZoneSpecs": [
+   {
+    "id": 1,
+    "name": "A1 · 20m After T4",
+    "startT": 0.1695,
+    "endT": 0.2853
+   },
+   {
+    "id": 2,
+    "name": "A2 · 870m Before T14",
+    "startT": 0.7478,
+    "endT": 0.864
+   }
+  ],
+  "drsDetections": [
+   {
+    "id": "D1",
+    "t": 0.1167,
+    "zoneIds": [
+     1
+    ],
+    "source": "verified"
+   },
+   {
+    "id": "D2",
+    "t": 0.6884,
+    "zoneIds": [
+     2
+    ],
+    "source": "verified"
+   }
+  ],
+  "event": "Las Vegas Grand Prix",
+  "circuitKey": 152,
+  "orientation": {
+   "reflected": true,
+   "reversed": false
+  },
+  "fitMedianM": 3.7,
+  "lineSpreadM": 0,
+  "points": {
+   "D1": {
+    "text": "10m After T2",
+    "t": 0.1167,
+    "offTrackM": 0.8,
+    "approx": null
+   },
+   "D2": {
+    "text": "710m After T12",
+    "t": 0.6884,
+    "offTrackM": 0.6,
+    "approx": null
+   },
+   "A1": {
+    "text": "20m After T4",
+    "t": 0.1695,
+    "offTrackM": 7.2,
+    "approx": null
+   },
+   "A2": {
+    "text": "870m Before T14",
+    "t": 0.7478,
+    "offTrackM": 2.9,
+    "approx": null
+   }
+  }
+ },
+ "bahrain": {
+  "drsZoneSpecs": [
+   {
+    "id": 1,
+    "name": "A1 · 23m after T3",
+    "startT": 0.3856,
+    "endT": 0.472
+   },
+   {
+    "id": 2,
+    "name": "A2 · 50m after T10",
+    "startT": 0.7216,
+    "endT": 0.836
+   },
+   {
+    "id": 3,
+    "name": "A3 · 250m after T15",
+    "startT": 0.1793,
+    "endT": 0.3173
+   }
+  ],
+  "drsDetections": [
+   {
+    "id": "D1",
+    "t": 0.3311,
+    "zoneIds": [
+     1
+    ],
+    "source": "verified"
+   },
+   {
+    "id": "D2",
+    "t": 0.6922,
+    "zoneIds": [
+     2
+    ],
+    "source": "verified"
+   },
+   {
+    "id": "D3",
+    "t": 0.0974,
+    "zoneIds": [
+     3
+    ],
+    "source": "verified"
+   }
+  ],
+  "event": "Bahrain Grand Prix",
+  "circuitKey": 63,
+  "orientation": {
+   "reflected": true,
+   "reversed": false
+  },
+  "fitMedianM": 2.3,
+  "lineSpreadM": 0,
+  "points": {
+   "D1": {
+    "text": "50m before T1",
+    "t": 0.3311,
+    "offTrackM": 2.2,
+    "approx": null
+   },
+   "D2": {
+    "text": "10m before T9",
+    "t": 0.6922,
+    "offTrackM": 1.3,
+    "approx": null
+   },
+   "D3": {
+    "text": "110m before T14",
+    "t": 0.0974,
+    "offTrackM": 3.4,
+    "approx": null
+   },
+   "A1": {
+    "text": "23m after T3",
+    "t": 0.3856,
+    "offTrackM": 2.5,
+    "approx": null
+   },
+   "A2": {
+    "text": "50m after T10",
+    "t": 0.7216,
+    "offTrackM": 2.8,
+    "approx": null
+   },
+   "A3": {
+    "text": "250m after T15",
+    "t": 0.1793,
+    "offTrackM": 0.2,
+    "approx": null
+   }
+  }
+ },
+ "baku": {
+  "drsZoneSpecs": [
+   {
+    "id": 1,
+    "name": "A1 · 54m after Turn 2",
+    "startT": 0.1732,
+    "endT": 0.2827
+   },
+   {
+    "id": 2,
+    "name": "A2 · 347m after Turn 20",
+    "startT": 0.9488,
+    "endT": 0.08
+   }
+  ],
+  "drsDetections": [
+   {
+    "id": "D1",
+    "t": 0.1252,
+    "zoneIds": [
+     1
+    ],
+    "source": "calibrated"
+   },
+   {
+    "id": "D2",
+    "t": 0.8907,
+    "zoneIds": [
+     2
+    ],
+    "source": "verified"
+   }
+  ],
+  "event": "Azerbaijan Grand Prix",
+  "circuitKey": 144,
+  "orientation": {
+   "reflected": true,
+   "reversed": false
+  },
+  "fitMedianM": 2.1,
+  "lineSpreadM": 0,
+  "points": {
+   "D1": {
+    "text": "SC2 before Turn 2",
+    "t": 0.1252,
+    "offTrackM": 0,
+    "approx": "línea SC2 ≈ reincorporación de boxes (pitExitT)"
+   },
+   "D2": {
+    "text": "On Turn 20",
+    "t": 0.8907,
+    "offTrackM": 6.5,
+    "approx": null
+   },
+   "A1": {
+    "text": "54m after Turn 2",
+    "t": 0.1732,
+    "offTrackM": 1.4,
+    "approx": null
+   },
+   "A2": {
+    "text": "347m after Turn 20",
+    "t": 0.9488,
+    "offTrackM": 1.6,
+    "approx": null
+   }
+  }
+ },
+ "melbourne": {
+  "drsZoneSpecs": [
+   {
+    "id": 1,
+    "name": "A1 · 130m after TSP1",
+    "startT": 0.8839,
+    "endT": 0.0587
+   },
+   {
+    "id": 2,
+    "name": "A2 · 100m after T10",
+    "startT": 0.1099,
+    "endT": 0.1973
+   },
+   {
+    "id": 3,
+    "name": "A3 · 30m after T14",
+    "startT": 0.3591,
+    "endT": 0.484
+   },
+   {
+    "id": 4,
+    "name": "A4 · 30m after T2",
+    "startT": 0.5322,
+    "endT": 0.6227
+   }
+  ],
+  "drsDetections": [
+   {
+    "id": "D1",
+    "t": 0.8064,
+    "zoneIds": [
+     1,
+     2
+    ],
+    "source": "verified"
+   },
+   {
+    "id": "D2",
+    "t": 0.305,
+    "zoneIds": [
+     3,
+     4
+    ],
+    "source": "verified"
+   }
+  ],
+  "event": "Australian Grand Prix",
+  "circuitKey": 10,
+  "orientation": {
+   "reflected": true,
+   "reversed": false
+  },
+  "fitMedianM": 2.5,
+  "lineSpreadM": 0,
+  "points": {
+   "D1": {
+    "text": "40m after T6",
+    "t": 0.8064,
+    "offTrackM": 4,
+    "approx": null
+   },
+   "D2": {
+    "text": "90m before T13",
+    "t": 0.305,
+    "offTrackM": 2.4,
+    "approx": null
+   },
+   "A1": {
+    "text": "130m after TSP1",
+    "t": 0.8839,
+    "offTrackM": 0.3,
+    "approx": "interpretación: 'TSP1' no figura en la leyenda; en el plano la activación 1 está en la recta tras la curva 8 (Lakeside Drive)"
+   },
+   "A2": {
+    "text": "100m after T10",
+    "t": 0.1099,
+    "offTrackM": 2.1,
+    "approx": null
+   },
+   "A3": {
+    "text": "30m after T14",
+    "t": 0.3591,
+    "offTrackM": 3.8,
+    "approx": null
+   },
+   "A4": {
+    "text": "30m after T2",
+    "t": 0.5322,
+    "offTrackM": 4.7,
+    "approx": null
+   }
+  }
+ },
+ "miami": {
+  "drsZoneSpecs": [
+   {
+    "id": 1,
+    "name": "A1 · 30m after turn 9",
+    "startT": 0.6387,
+    "endT": 0.7813
+   },
+   {
+    "id": 2,
+    "name": "A2 · 525m after turn 16",
+    "startT": 0.9848,
+    "endT": 0.108
+   },
+   {
+    "id": 3,
+    "name": "A3 · On turn 19 apex",
+    "startT": 0.1984,
+    "endT": 0.276
+   }
+  ],
+  "drsDetections": [
+   {
+    "id": "D1",
+    "t": 0.5524,
+    "zoneIds": [
+     1
+    ],
+    "source": "verified"
+   },
+   {
+    "id": "D2",
+    "t": 0.9017,
+    "zoneIds": [
+     2
+    ],
+    "source": "verified"
+   },
+   {
+    "id": "D3",
+    "t": 0.1363,
+    "zoneIds": [
+     3
+    ],
+    "source": "verified"
+   }
+  ],
+  "event": "Miami Grand Prix",
+  "circuitKey": 151,
+  "orientation": {
+   "reflected": true,
+   "reversed": false
+  },
+  "fitMedianM": 2.4,
+  "lineSpreadM": 0,
+  "points": {
+   "D1": {
+    "text": "90m after turn 8",
+    "t": 0.5524,
+    "offTrackM": 3,
+    "approx": null
+   },
+   "D2": {
+    "text": "70m after turn 16",
+    "t": 0.9017,
+    "offTrackM": 2.6,
+    "approx": null
+   },
+   "D3": {
+    "text": "15m after turn 17",
+    "t": 0.1363,
+    "offTrackM": 1.2,
+    "approx": null
+   },
+   "A1": {
+    "text": "30m after turn 9",
+    "t": 0.6387,
+    "offTrackM": 2.3,
+    "approx": null
+   },
+   "A2": {
+    "text": "525m after turn 16",
+    "t": 0.9848,
+    "offTrackM": 0.7,
+    "approx": null
+   },
+   "A3": {
+    "text": "On turn 19 apex",
+    "t": 0.1984,
+    "offTrackM": 5.1,
+    "approx": null
+   }
+  }
+ },
+ "shanghai": {
+  "drsZoneSpecs": [
+   {
+    "id": 1,
+    "name": "A1 · 375m after turn 13",
+    "startT": 0.8004,
+    "endT": 0.956
+   },
+   {
+    "id": 2,
+    "name": "A2 · 98m after turn 16",
+    "startT": 0.0681,
+    "endT": 0.2027
+   }
+  ],
+  "drsDetections": [
+   {
+    "id": "D1",
+    "t": 0.6943,
+    "zoneIds": [
+     1
+    ],
+    "source": "verified"
+   },
+   {
+    "id": "D2",
+    "t": 0.0442,
+    "zoneIds": [
+     2
+    ],
+    "source": "verified"
+   }
+  ],
+  "event": "Chinese Grand Prix",
+  "circuitKey": 49,
+  "orientation": {
+   "reflected": true,
+   "reversed": false
+  },
+  "fitMedianM": 0.6,
+  "lineSpreadM": 0,
+  "points": {
+   "D1": {
+    "text": "on turn 12",
+    "t": 0.6943,
+    "offTrackM": 2.3,
+    "approx": null
+   },
+   "A1": {
+    "text": "375m after turn 13",
+    "t": 0.8004,
+    "offTrackM": 0.7,
+    "approx": null
+   },
+   "D2": {
+    "text": "35m before turn 16",
+    "t": 0.0442,
+    "offTrackM": 0.5,
+    "approx": null
+   },
+   "A2": {
+    "text": "98m after turn 16",
+    "t": 0.0681,
+    "offTrackM": 1.3,
+    "approx": null
+   }
+  }
+ },
+ "jeddah": {
+  "drsZoneSpecs": [
+   {
+    "id": 1,
+    "name": "A1 · On exit to turn 19",
+    "startT": 0.6039,
+    "endT": 0.6942
+   },
+   {
+    "id": 2,
+    "name": "A2 · On entry to turn 25",
+    "startT": 0.7804,
+    "endT": 0.884
+   },
+   {
+    "id": 3,
+    "name": "A3 · 240m after turn 27",
+    "startT": 0.9487,
+    "endT": 0.0613
+   }
+  ],
+  "drsDetections": [
+   {
+    "id": "D1",
+    "t": 0.5352,
+    "zoneIds": [
+     1
+    ],
+    "source": "calibrated"
+   },
+   {
+    "id": "D2",
+    "t": 0.6942,
+    "zoneIds": [
+     2
+    ],
+    "source": "calibrated"
+   },
+   {
+    "id": "D3",
+    "t": 0.9182,
+    "zoneIds": [
+     3
+    ],
+    "source": "calibrated"
+   }
+  ],
+  "event": "Saudi Arabian Grand Prix",
+  "circuitKey": 149,
+  "orientation": {
+   "reflected": true,
+   "reversed": false
+  },
+  "fitMedianM": 2.7,
+  "lineSpreadM": 0,
+  "points": {
+   "D1": {
+    "text": "On exit to turn 17",
+    "t": 0.5352,
+    "offTrackM": 3.9,
+    "approx": "salida de curva ≈ 50 m después del vértice"
+   },
+   "D2": {
+    "text": "On entry to turn 22",
+    "t": 0.6942,
+    "offTrackM": 0.7,
+    "approx": "entrada de curva ≈ 50 m antes del vértice"
+   },
+   "D3": {
+    "text": "On exit to turn 27",
+    "t": 0.9182,
+    "offTrackM": 0.4,
+    "approx": "salida de curva ≈ 50 m después del vértice"
+   },
+   "A1": {
+    "text": "On exit to turn 19",
+    "t": 0.6039,
+    "offTrackM": 2.3,
+    "approx": "salida de curva ≈ 50 m después del vértice"
+   },
+   "A2": {
+    "text": "On entry to turn 25",
+    "t": 0.7804,
+    "offTrackM": 3.3,
+    "approx": "entrada de curva ≈ 50 m antes del vértice"
+   },
+   "A3": {
+    "text": "240m after turn 27",
+    "t": 0.9487,
+    "offTrackM": 0.9,
+    "approx": null
+   }
+  }
+ },
+ "marina-bay": {
+  "drsZoneSpecs": [
+   {
+    "id": 1,
+    "name": "A1 · 48m after T5",
+    "startT": 0.2075,
+    "endT": 0.3373
+   },
+   {
+    "id": 2,
+    "name": "A2 · 78m after T13",
+    "startT": 0.6385,
+    "endT": 0.7067
+   },
+   {
+    "id": 3,
+    "name": "A3 · 100m after T14",
+    "startT": 0.7571,
+    "endT": 0.86
+   },
+   {
+    "id": 4,
+    "name": "A4 · Exit T19",
+    "startT": 0.9844,
+    "endT": 0.064
+   }
+  ],
+  "drsDetections": [
+   {
+    "id": "D1",
+    "t": 0.1471,
+    "zoneIds": [
+     1
+    ],
+    "source": "verified"
+   },
+   {
+    "id": "D2",
+    "t": 0.598,
+    "zoneIds": [
+     2,
+     3
+    ],
+    "source": "verified"
+   },
+   {
+    "id": "D3",
+    "t": 0.9171,
+    "zoneIds": [
+     4
+    ],
+    "source": "verified"
+   }
+  ],
+  "event": "Singapore Grand Prix",
+  "circuitKey": 61,
+  "orientation": {
+   "reflected": true,
+   "reversed": false
+  },
+  "fitMedianM": 4.4,
+  "lineSpreadM": 0,
+  "points": {
+   "D1": {
+    "text": "T4",
+    "t": 0.1471,
+    "offTrackM": 0.7,
+    "approx": null
+   },
+   "D2": {
+    "text": "102m before T13",
+    "t": 0.598,
+    "offTrackM": 12.3,
+    "approx": null
+   },
+   "D3": {
+    "text": "105m after apex T17",
+    "t": 0.9171,
+    "offTrackM": 1.6,
+    "approx": null
+   },
+   "A1": {
+    "text": "48m after T5",
+    "t": 0.2075,
+    "offTrackM": 0.7,
+    "approx": null
+   },
+   "A2": {
+    "text": "78m after T13",
+    "t": 0.6385,
+    "offTrackM": 0.2,
+    "approx": null
+   },
+   "A3": {
+    "text": "100m after T14",
+    "t": 0.7571,
+    "offTrackM": 0.2,
+    "approx": null
+   },
+   "A4": {
+    "text": "Exit T19",
+    "t": 0.9844,
+    "offTrackM": 6.5,
+    "approx": "salida de curva ≈ 50 m después del vértice"
+   }
+  }
+ },
+ "lusail": {
+  "drsZoneSpecs": [
+   {
+    "id": 1,
+    "name": "A1 · 305m After Turn 16",
+    "startT": 0.8861,
+    "endT": 0.0427
+   }
+  ],
+  "drsDetections": [
+   {
+    "id": "D1",
+    "t": 0.7487,
+    "zoneIds": [
+     1
+    ],
+    "source": "verified"
+   }
+  ],
+  "event": "Qatar Grand Prix",
+  "circuitKey": 150,
+  "orientation": {
+   "reflected": true,
+   "reversed": false
+  },
+  "fitMedianM": 2.7,
+  "lineSpreadM": 0,
+  "points": {
+   "D1": {
+    "text": "40m After Turn 15",
+    "t": 0.7487,
+    "offTrackM": 1.5,
+    "approx": null
+   },
+   "A1": {
+    "text": "305m After Turn 16",
+    "t": 0.8861,
+    "offTrackM": 5.7,
+    "approx": null
+   }
+  }
+ },
+ "yas-marina": {
+  "drsZoneSpecs": [
+   {
+    "id": 1,
+    "name": "A1 · 260m after Turn 5",
+    "startT": 0.8917,
+    "endT": 0.0427
+   },
+   {
+    "id": 2,
+    "name": "A2 · 165m after Turn 7",
+    "startT": 0.1138,
+    "endT": 0.2387
+   }
+  ],
+  "drsDetections": [
+   {
+    "id": "D1",
+    "t": 0.7982,
+    "zoneIds": [
+     1
+    ],
+    "source": "verified"
+   },
+   {
+    "id": "D2",
+    "t": 0.0923,
+    "zoneIds": [
+     2
+    ],
+    "source": "verified"
+   }
+  ],
+  "event": "Abu Dhabi Grand Prix",
+  "circuitKey": 70,
+  "orientation": {
+   "reflected": true,
+   "reversed": false
+  },
+  "fitMedianM": 2.8,
+  "lineSpreadM": 0,
+  "points": {
+   "D1": {
+    "text": "250m before Turn 5",
+    "t": 0.7982,
+    "offTrackM": 2.3,
+    "approx": null
+   },
+   "D2": {
+    "text": "50m after Turn 7",
+    "t": 0.0923,
+    "offTrackM": 1.7,
+    "approx": null
+   },
+   "A1": {
+    "text": "260m after Turn 5",
+    "t": 0.8917,
+    "offTrackM": 4.1,
+    "approx": null
+   },
+   "A2": {
+    "text": "165m after Turn 7",
+    "t": 0.1138,
+    "offTrackM": 4.4,
+    "approx": null
+   }
+  }
+ },
+ "hungaroring": {
+  "drsZoneSpecs": [
+   {
+    "id": 1,
+    "name": "A1 · 40m after Turn 14",
+    "startT": 0.5884,
+    "endT": 0.7587
+   },
+   {
+    "id": 2,
+    "name": "A2 · 6m after Turn 1",
+    "startT": 0.7908,
+    "endT": 0.8733
+   }
+  ],
+  "drsDetections": [
+   {
+    "id": "D1",
+    "t": 0.5776,
+    "zoneIds": [
+     1,
+     2
+    ],
+    "source": "verified"
+   }
+  ],
+  "event": "Hungarian Grand Prix",
+  "circuitKey": 4,
+  "orientation": {
+   "reflected": true,
+   "reversed": false
+  },
+  "fitMedianM": 2.3,
+  "lineSpreadM": 0,
+  "points": {
+   "D1": {
+    "text": "5m before Turn 14",
+    "t": 0.5776,
+    "offTrackM": 2.5,
+    "approx": null
+   },
+   "A1": {
+    "text": "40m after Turn 14",
+    "t": 0.5884,
+    "offTrackM": 3.4,
+    "approx": null
+   },
+   "A2": {
+    "text": "6m after Turn 1",
+    "t": 0.7908,
+    "offTrackM": 4,
+    "approx": null
+   }
+  }
+ },
+ "mexico-city": {
+  "drsZoneSpecs": [
+   {
+    "id": 1,
+    "name": "A1 · 80m after Turn 11",
+    "startT": 0.6045,
+    "endT": 0.692
+   },
+   {
+    "id": 2,
+    "name": "A2 · 240m after Turn 17",
+    "startT": 0.8855,
+    "endT": 0.124
+   },
+   {
+    "id": 3,
+    "name": "A3 · 115m after Turn 3",
+    "startT": 0.2091,
+    "endT": 0.3187
+   }
+  ],
+  "drsDetections": [
+   {
+    "id": "D1",
+    "t": 0.5345,
+    "zoneIds": [
+     1
+    ],
+    "source": "verified"
+   },
+   {
+    "id": "D2",
+    "t": 0.7978,
+    "zoneIds": [
+     2,
+     3
+    ],
+    "source": "calibrated"
+   }
+  ],
+  "event": "Mexico City Grand Prix",
+  "circuitKey": 65,
+  "orientation": {
+   "reflected": true,
+   "reversed": false
+  },
+  "fitMedianM": 2.5,
+  "lineSpreadM": 0,
+  "points": {
+   "D1": {
+    "text": "70m after Turn 9",
+    "t": 0.5345,
+    "offTrackM": 1,
+    "approx": null
+   },
+   "A1": {
+    "text": "80m after Turn 11",
+    "t": 0.6045,
+    "offTrackM": 4.8,
+    "approx": null
+   },
+   "D2": {
+    "text": "Exit Turn 15",
+    "t": 0.7978,
+    "offTrackM": 1.8,
+    "approx": "salida de curva ≈ 50 m después del vértice"
+   },
+   "A2": {
+    "text": "240m after Turn 17",
+    "t": 0.8855,
+    "offTrackM": 5.5,
+    "approx": null
+   },
+   "A3": {
+    "text": "115m after Turn 3",
+    "t": 0.2091,
+    "offTrackM": 1.9,
+    "approx": null
+   }
+  }
+ },
+ "montreal": {
+  "drsZoneSpecs": [
+   {
+    "id": 1,
+    "name": "A1 · 95m after Turn 7",
+    "startT": 0.5608,
+    "endT": 0.668
+   },
+   {
+    "id": 2,
+    "name": "A2 · 155m before Turn 12",
+    "startT": 0.9264,
+    "endT": 0.1013
+   },
+   {
+    "id": 3,
+    "name": "A3 · 70m after Turn 14",
+    "startT": 0.1512,
+    "endT": 0.264
+   }
+  ],
+  "drsDetections": [
+   {
+    "id": "D1",
+    "t": 0.4686,
+    "zoneIds": [
+     1
+    ],
+    "source": "verified"
+   },
+   {
+    "id": "D2",
+    "t": 0.7402,
+    "zoneIds": [
+     2,
+     3
+    ],
+    "source": "verified"
+   }
+  ],
+  "event": "Canadian Grand Prix",
+  "circuitKey": 23,
+  "orientation": {
+   "reflected": true,
+   "reversed": false
+  },
+  "fitMedianM": 2.1,
+  "lineSpreadM": 0,
+  "points": {
+   "D1": {
+    "text": "15m after Turn 5",
+    "t": 0.4686,
+    "offTrackM": 5.4,
+    "approx": null
+   },
+   "A1": {
+    "text": "95m after Turn 7",
+    "t": 0.5608,
+    "offTrackM": 2.1,
+    "approx": null
+   },
+   "D2": {
+    "text": "110m after Turn 9",
+    "t": 0.7402,
+    "offTrackM": 3,
+    "approx": null
+   },
+   "A2": {
+    "text": "155m before Turn 12",
+    "t": 0.9264,
+    "offTrackM": 2.4,
+    "approx": null
+   },
+   "A3": {
+    "text": "70m after Turn 14",
+    "t": 0.1512,
+    "offTrackM": 3.3,
+    "approx": null
+   }
+  }
+ },
+ "austin": {
+  "drsZoneSpecs": [
+   {
+    "id": 1,
+    "name": "A1 · 345m after turn 11",
+    "startT": 0.1042,
+    "endT": 0.2333
+   },
+   {
+    "id": 2,
+    "name": "A2 · 80m after turn 20",
+    "startT": 0.5624,
+    "endT": 0.6653
+   }
+  ],
+  "drsDetections": [
+   {
+    "id": "D1",
+    "t": 0.9985,
+    "zoneIds": [
+     1
+    ],
+    "source": "verified"
+   },
+   {
+    "id": "D2",
+    "t": 0.451,
+    "zoneIds": [
+     2
+    ],
+    "source": "verified"
+   }
+  ],
+  "event": "United States Grand Prix",
+  "circuitKey": 9,
+  "orientation": {
+   "reflected": true,
+   "reversed": false
+  },
+  "fitMedianM": 2.5,
+  "lineSpreadM": 0,
+  "points": {
+   "D1": {
+    "text": "150m after turn 10",
+    "t": 0.9985,
+    "offTrackM": 2.4,
+    "approx": null
+   },
+   "D2": {
+    "text": "65m after turn 18",
+    "t": 0.451,
+    "offTrackM": 2.9,
+    "approx": null
+   },
+   "A1": {
+    "text": "345m after turn 11",
+    "t": 0.1042,
+    "offTrackM": 0.4,
+    "approx": null
+   },
+   "A2": {
+    "text": "80m after turn 20",
+    "t": 0.5624,
+    "offTrackM": 4.2,
+    "approx": null
+   }
+  }
+ }
+}

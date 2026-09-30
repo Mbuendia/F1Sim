@@ -17,6 +17,8 @@ export interface DrsZoneSpec {
 import type { TrackType } from './scenarioTypes';
 
 export interface CircuitSpec {
+  /** Solo puntos aportados explícitamente; no inferirlos del comienzo de zona. */
+  drsDetections?: import('../simulation/DRSModel').DrsDetection[];
   id: string;
   name: string;
   officialGpName: string;
@@ -45,6 +47,8 @@ export interface CircuitSpec {
   safetyCarProbabilityPercent: number;
   officialWebsiteUrl: string;
   pitEntryT?: number;
+  /** Línea táctica calibrada para el juego, no dato FIA. */
+  pitCommitmentT?: number;
   pitExitT?: number;
   startOffsetT?: number;
   pitOffset?: number;
@@ -63,8 +67,9 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
     id: 'barcelona',
     name: 'Circuit de Barcelona-Catalunya',
     trackType: 'permanent',
-    pitEntryT: 0.9,
-      pitExitT: 0.15,
+    pitEntryT: 0.8343,
+    pitCommitmentT: 0.8093,
+      pitExitT: 0.0616,
       startOffsetT: 0.12,
       officialGpName: 'Gran Premio de España',
     location: 'Montmeló, Barcelona',
@@ -76,9 +81,14 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
     totalLaps: 66,
     turns: 16,
     drsZones: 2,
+    // Q19: activación y detección oficiales (plano FIA 2025 · Spanish Grand Prix); fin de zona en la frenada siguiente.
     drsZoneSpecs: [
-      { id: 1, name: 'Recta Principal', startT: 0.90, endT: 0.08 },
-      { id: 2, name: 'Contrarrecta T9-T10', startT: 0.44, endT: 0.54 }
+      { id: 1, name: "A1 · 40m after turn 9", startT: 0.5641, endT: 0.6547 },
+      { id: 2, name: "A2 · 162m after turn 14", startT: 0.9015, endT: 0.0867 }
+    ],
+    drsDetections: [
+      { id: 'D1', t: 0.5366, zoneIds: [1], source: 'verified' },
+      { id: 'D2', t: 0.8343, zoneIds: [2], source: 'calibrated' }
     ],
     spectators: 140000,
     pitLaneTimeLossSec: 22.4,
@@ -102,8 +112,8 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
     id: 'monza',
     name: 'Autodromo Nazionale Monza',
       trackType: 'permanent',
-      pitEntryT: 0.9,
-      pitExitT: 0.12,
+      pitEntryT: 0.8882,
+      pitExitT: 0.0162,
       startOffsetT: 0.76,
       officialGpName: 'Gran Premio d\'Italia',
     location: 'Monza, Milán',
@@ -115,9 +125,14 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
     totalLaps: 53,
     turns: 11,
     drsZones: 2,
+    // Q19: activación y detección oficiales (plano FIA 2025 · Italian Grand Prix); fin de zona en la frenada siguiente.
     drsZoneSpecs: [
-      { id: 1, name: 'Rettifilo Tribune', startT: 0.88, endT: 0.07 },
-      { id: 2, name: 'Rettifilo Serraglio (Variante Ascari)', startT: 0.52, endT: 0.68 }
+      { id: 1, name: "A1 · 170m after Turn 7", startT: 0.4585, endT: 0.588 },
+      { id: 2, name: "A2 · 12m after finish line", startT: 0.9347, endT: 0.0653 }
+    ],
+    drsDetections: [
+      { id: 'D1', t: 0.4126, zoneIds: [1], source: 'verified' },
+      { id: 'D2', t: 0.8393, zoneIds: [2], source: 'verified' }
     ],
     spectators: 155000,
     pitLaneTimeLossSec: 24.1,
@@ -141,8 +156,8 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
     id: 'silverstone',
     name: 'Silverstone Circuit',
     trackType: 'permanent',
-    pitEntryT: 0.36,
-    pitExitT: 0.46,
+    pitEntryT: 0.4118,
+    pitExitT: 0.6355,
     pitOffset: 28,
     startOffsetT: 0.42,
     officialGpName: 'British Grand Prix',
@@ -155,9 +170,14 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
     totalLaps: 52,
     turns: 18,
     drsZones: 2,
+    // Q19: activación y detección oficiales (plano FIA 2025 · British Grand Prix); fin de zona en la frenada siguiente.
     drsZoneSpecs: [
-      { id: 1, name: 'Wellington Straight', startT: 0.22, endT: 0.35 },
-      { id: 2, name: 'Hangar Straight (Stowe)', startT: 0.68, endT: 0.82 }
+      { id: 1, name: "A1 · 30m after Turn 5", startT: 0.7356, endT: 0.828 },
+      { id: 2, name: "A2 · Turn 14", startT: 0.2284, endT: 0.3507 }
+    ],
+    drsDetections: [
+      { id: 'D1', t: 0.6626, zoneIds: [1], source: 'verified' },
+      { id: 'D2', t: 0.1529, zoneIds: [2], source: 'verified' }
     ],
     spectators: 160000,
     pitLaneTimeLossSec: 20.5,
@@ -181,8 +201,8 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
     id: 'spa',
     name: 'Circuit de Spa-Francorchamps',
       trackType: 'permanent',
-      pitEntryT: 0.92,
-      pitExitT: 0.1,
+      pitEntryT: 0.8664,
+      pitExitT: 0.9774,
       startOffsetT: 0.05,
       officialGpName: 'Belgian Grand Prix',
     location: 'Stavelot, Lieja',
@@ -194,9 +214,14 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
     totalLaps: 44,
     turns: 19,
     drsZones: 2,
+    // Q19: activación y detección oficiales (plano FIA 2025 · Belgian Grand Prix); fin de zona en la frenada siguiente.
     drsZoneSpecs: [
-      { id: 1, name: 'Kemmel Straight (post Raidillon)', startT: 0.12, endT: 0.28 },
-      { id: 2, name: 'Recta Principal (La Source)', startT: 0.92, endT: 0.04 }
+      { id: 1, name: "A1 · 305m after Turn 4", startT: 0.1256, endT: 0.2187 },
+      { id: 2, name: "A2 · 30m after Turn 19", startT: 0.8765, endT: 0.9267 }
+    ],
+    drsDetections: [
+      { id: 'D1', t: 0.017, zoneIds: [1], source: 'verified' },
+      { id: 'D2', t: 0.8389, zoneIds: [2], source: 'verified' }
     ],
     spectators: 130000,
     pitLaneTimeLossSec: 21.8,
@@ -217,12 +242,13 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
     statsF1Url: 'https://www.statsf1.com/en/circuit-spa-francorchamps.aspx'
     },
   monaco: {
+    pitCommitmentT: 0.5567,
     id: 'monaco',
     trackWidthCars: 2,
     name: 'Circuit de Monaco',
       trackType: 'street',
-      pitEntryT: 0.92,
-      pitExitT: 0.1,
+      pitEntryT: 0.5867,
+      pitExitT: 0.7023,
       startOffsetT: 0.6,
       officialGpName: 'Grand Prix de Monaco',
     location: 'Montecarlo',
@@ -234,8 +260,12 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
     totalLaps: 78,
     turns: 19,
     drsZones: 1,
+    // Q19: activación y detección oficiales (plano FIA 2025 · Monaco Grand Prix); fin de zona en la frenada siguiente.
     drsZoneSpecs: [
-      { id: 1, name: 'Boulevard Albert 1er', startT: 0.90, endT: 0.05 }
+      { id: 1, name: "A1 · 18m after Turn 19", startT: 0.6067, endT: 0.732 }
+    ],
+    drsDetections: [
+      { id: 'D1', t: 0.5345, zoneIds: [1], source: 'verified' }
     ],
     spectators: 40000,
     pitLaneTimeLossSec: 22.0,
@@ -259,23 +289,29 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
     id: 'spielberg',
     name: 'Red Bull Ring',
       trackType: 'permanent',
-    pitEntryT: 0.9,
-      pitExitT: 0.1,
-      startOffsetT: 0.86,
+    pitEntryT: 0.1527,
+      pitExitT: 0.4006,
+      startOffsetT: 0,
       officialGpName: 'Austrian Grand Prix',
     location: 'Spielberg, Estiria',
     country: 'Austria',
     countryFlag: '🇦🇹',
-    svgFile: 'spielberg-3.svg',
+    svgFile: 'spielberg-2026.svg',
     direction: 'clockwise',
     lapLengthMeters: 4318,
     totalLaps: 71,
     turns: 10,
     drsZones: 3,
+    // Q19: activación y detección oficiales (plano FIA 2025 · Austrian Grand Prix); fin de zona en la frenada siguiente.
     drsZoneSpecs: [
-      { id: 1, name: 'Recta Principal', startT: 0.88, endT: 0.06 },
-      { id: 2, name: 'Subida a T3 (Remus)', startT: 0.10, endT: 0.28 },
-      { id: 3, name: 'Bajada T3-T4 (Rauch)', startT: 0.32, endT: 0.48 }
+      { id: 1, name: "A1 · 102m after T1", startT: 0.3918, endT: 0.5587 },
+      { id: 2, name: "A2 · 100m after T3", startT: 0.6094, endT: 0.7493 },
+      { id: 3, name: "A3 · 106m after T10", startT: 0.2121, endT: 0.3308 }
+    ],
+    drsDetections: [
+      { id: 'D1', t: 0.3308, zoneIds: [1], source: 'verified' },
+      { id: 'D2', t: 0.5757, zoneIds: [2], source: 'verified' },
+      { id: 'D3', t: 0.1581, zoneIds: [3], source: 'verified' }
     ],
     spectators: 105000,
     pitLaneTimeLossSec: 20.2,
@@ -310,9 +346,14 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
     totalLaps: 71,
     turns: 15,
     drsZones: 2,
+    // Q19: activación y detección oficiales (plano FIA 2025 · São Paulo Grand Prix); fin de zona en la frenada siguiente.
     drsZoneSpecs: [
-      { id: 1, name: 'Reta dos Boxes', startT: 0.86, endT: 0.05 },
-      { id: 2, name: 'Reta Oposta (post Senna S)', startT: 0.16, endT: 0.32 }
+      { id: 1, name: "A1 · 30m after Turn 3", startT: 0.3514, endT: 0.4987 },
+      { id: 2, name: "A2 · 160m before Turn 15", startT: 0.0983, endT: 0.2493 }
+    ],
+    drsDetections: [
+      { id: 'D1', t: 0.3015, zoneIds: [1], source: 'verified' },
+      { id: 'D2', t: 0.9884, zoneIds: [2], source: 'verified' }
     ],
     spectators: 110000,
     pitLaneTimeLossSec: 23.5,
@@ -325,8 +366,8 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
     elevationChangeMeters: 25,
     safetyCarProbabilityPercent: 45,
     officialWebsiteUrl: 'https://www.formula1.com/en/racing/2026.html',
-    pitEntryT: 0.92,
-    pitExitT: 0.08,
+    pitEntryT: 0.0981,
+    pitExitT: 0.4289,
     latitude: -23.7036,
     longitude: -46.6997,
     googleMapsUrl: 'https://www.google.com/maps/search/?api=1&query=-23.7036,-46.6997',
@@ -338,8 +379,8 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
     id: 'suzuka',
     name: 'Suzuka International Racing Course',
       trackType: 'permanent',
-      pitEntryT: 0.9,
-      pitExitT: 0.1,
+      pitEntryT: 0.9117,
+      pitExitT: 0.0672,
       startOffsetT: 0.62,
       officialGpName: 'Japanese Grand Prix',
     location: 'Suzuka, Mie',
@@ -351,8 +392,12 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
     totalLaps: 53,
     turns: 18,
     drsZones: 1,
+    // Q19: activación y detección oficiales (plano FIA 2025 · Japanese Grand Prix); fin de zona en la frenada siguiente.
     drsZoneSpecs: [
-      { id: 1, name: 'Main Pit Straight', startT: 0.90, endT: 0.05 }
+      { id: 1, name: "A1 · 100m before control line", startT: 0.9481, endT: 0.0853 }
+    ],
+    drsDetections: [
+      { id: 'D1', t: 0.8301, zoneIds: [1], source: 'verified' }
     ],
     spectators: 130000,
     pitLaneTimeLossSec: 22.8,
@@ -377,8 +422,8 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
     trackWidthCars: 2,
     name: 'Circuit Zandvoort',
       trackType: 'permanent',
-      pitEntryT: 0.9,
-      pitExitT: 0.1,
+      pitEntryT: 0.2744,
+      pitExitT: 0.4603,
       startOffsetT: 0.75,
       officialGpName: 'Dutch Grand Prix',
     location: 'Zandvoort',
@@ -390,9 +435,14 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
     totalLaps: 72,
     turns: 14,
     drsZones: 2,
+    // Q19: activación y detección oficiales (plano FIA 2025 · Dutch Grand Prix); fin de zona en la frenada siguiente.
     drsZoneSpecs: [
-      { id: 1, name: 'Arie Luyendyk Bocht Straight', startT: 0.91, endT: 0.05 },
-      { id: 2, name: 'Hugenholtz to Slotemaker', startT: 0.22, endT: 0.35 }
+      { id: 1, name: "A1 · 50m after turn 10", startT: 0.9349, endT: 0.036 },
+      { id: 2, name: "A2 · 40m after turn 13", startT: 0.1672, endT: 0.392 }
+    ],
+    drsDetections: [
+      { id: 'D1', t: 0.9132, zoneIds: [1], source: 'calibrated' },
+      { id: 'D2', t: 0.0904, zoneIds: [2], source: 'verified' }
     ],
     spectators: 115000,
     pitLaneTimeLossSec: 21.0,
@@ -417,22 +467,27 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
     trackWidthCars: 2,
     name: 'Las Vegas Strip Circuit',
       trackType: 'street',
-    pitEntryT: 0.9,
-      pitExitT: 0.1,
-      startOffsetT: 0.42,
+    pitEntryT: 0.0254,
+      pitExitT: 0.1087,
+      startOffsetT: 0,
       officialGpName: 'Las Vegas Grand Prix',
     location: 'Las Vegas, Nevada',
     country: 'Estados Unidos',
     countryFlag: '🇺🇸',
-    svgFile: 'las-vegas-1.svg',
+    svgFile: 'las-vegas-2026.svg',
     direction: 'anti-clockwise',
     lapLengthMeters: 6201,
     totalLaps: 50,
     turns: 17,
     drsZones: 2,
+    // Q19: activación y detección oficiales (plano FIA 2025 · Las Vegas Grand Prix); fin de zona en la frenada siguiente.
     drsZoneSpecs: [
-      { id: 1, name: 'Las Vegas Blvd (The Strip)', startT: 0.58, endT: 0.82 },
-      { id: 2, name: 'Koval Lane Straight', startT: 0.18, endT: 0.30 }
+      { id: 1, name: "A1 · 20m After T4", startT: 0.1695, endT: 0.2853 },
+      { id: 2, name: "A2 · 870m Before T14", startT: 0.7478, endT: 0.864 }
+    ],
+    drsDetections: [
+      { id: 'D1', t: 0.1167, zoneIds: [1], source: 'verified' },
+      { id: 'D2', t: 0.6884, zoneIds: [2], source: 'verified' }
     ],
     spectators: 120000,
     pitLaneTimeLossSec: 21.5,
@@ -456,23 +511,29 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
     id: 'bahrain',
     name: 'Bahrain International Circuit',
       trackType: 'permanent',
-      pitEntryT: 0.9,
-      pitExitT: 0.1,
-      startOffsetT: 0.88,
+      pitEntryT: 0.1688,
+      pitExitT: 0.3108,
+      startOffsetT: 0,
       officialGpName: 'Bahrain Grand Prix',
     location: 'Sakhir',
     country: 'Baréin',
     countryFlag: '🇧🇭',
-    svgFile: 'bahrain-1.svg',
+    svgFile: 'bahrain-2026.svg',
     direction: 'clockwise',
     lapLengthMeters: 5412,
     totalLaps: 57,
     turns: 15,
     drsZones: 3,
+    // Q19: activación y detección oficiales (plano FIA 2025 · Bahrain Grand Prix); fin de zona en la frenada siguiente.
     drsZoneSpecs: [
-      { id: 1, name: 'Main Pit Straight', startT: 0.88, endT: 0.05 },
-      { id: 2, name: 'Straight T3-T4', startT: 0.18, endT: 0.30 },
-      { id: 3, name: 'Straight T10-T11', startT: 0.58, endT: 0.70 }
+      { id: 1, name: "A1 · 23m after T3", startT: 0.3856, endT: 0.472 },
+      { id: 2, name: "A2 · 50m after T10", startT: 0.7216, endT: 0.836 },
+      { id: 3, name: "A3 · 250m after T15", startT: 0.1793, endT: 0.3173 }
+    ],
+    drsDetections: [
+      { id: 'D1', t: 0.3311, zoneIds: [1], source: 'verified' },
+      { id: 'D2', t: 0.6922, zoneIds: [2], source: 'verified' },
+      { id: 'D3', t: 0.0974, zoneIds: [3], source: 'verified' }
     ],
     spectators: 98000,
     pitLaneTimeLossSec: 23.9,
@@ -497,22 +558,27 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
     trackWidthCars: 2,
     name: 'Baku City Circuit',
       trackType: 'street',
-      pitEntryT: 0.9,
-      pitExitT: 0.1,
-      startOffsetT: 0.88,
+      pitEntryT: 0.9989,
+      pitExitT: 0.1252,
+      startOffsetT: 0,
       officialGpName: 'Azerbaijan Grand Prix',
     location: 'Bakú',
     country: 'Azerbaiyán',
     countryFlag: '🇦🇿',
-    svgFile: 'baku-1.svg',
+    svgFile: 'baku-2026.svg',
     direction: 'anti-clockwise',
     lapLengthMeters: 6003,
     totalLaps: 51,
     turns: 20,
     drsZones: 2,
+    // Q19: activación y detección oficiales (plano FIA 2025 · Azerbaijan Grand Prix); fin de zona en la frenada siguiente.
     drsZoneSpecs: [
-      { id: 1, name: 'Neftchilar Avenue (2.2km flat out)', startT: 0.76, endT: 0.05 },
-      { id: 2, name: 'Straight T2-T3', startT: 0.14, endT: 0.25 }
+      { id: 1, name: "A1 · 54m after Turn 2", startT: 0.1732, endT: 0.2827 },
+      { id: 2, name: "A2 · 347m after Turn 20", startT: 0.9488, endT: 0.08 }
+    ],
+    drsDetections: [
+      { id: 'D1', t: 0.1252, zoneIds: [1], source: 'calibrated' },
+      { id: 'D2', t: 0.8907, zoneIds: [2], source: 'verified' }
     ],
     spectators: 85000,
     pitLaneTimeLossSec: 21.2,
@@ -536,8 +602,8 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
     id: 'melbourne',
     name: 'Albert Park Circuit',
       trackType: 'hybrid',
-      pitEntryT: 0.92,
-      pitExitT: 0.1,
+      pitEntryT: 0.3325,
+      pitExitT: 0.4703,
       startOffsetT: 0.64,
       officialGpName: 'Australian Grand Prix',
     location: 'Melbourne, Victoria',
@@ -549,11 +615,16 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
     totalLaps: 58,
     turns: 14,
     drsZones: 4,
+    // Q19: activación y detección oficiales (plano FIA 2025 · Australian Grand Prix); fin de zona en la frenada siguiente.
     drsZoneSpecs: [
-      { id: 1, name: 'Main Straight', startT: 0.88, endT: 0.05 },
-      { id: 2, name: 'Lakeside Drive 1', startT: 0.16, endT: 0.28 },
-      { id: 3, name: 'Lakeside Drive 2', startT: 0.42, endT: 0.58 },
-      { id: 4, name: 'Straight T12-T13', startT: 0.72, endT: 0.82 }
+      { id: 1, name: "A1 · 130m after TSP1", startT: 0.8839, endT: 0.0587 },
+      { id: 2, name: "A2 · 100m after T10", startT: 0.1099, endT: 0.1973 },
+      { id: 3, name: "A3 · 30m after T14", startT: 0.3591, endT: 0.484 },
+      { id: 4, name: "A4 · 30m after T2", startT: 0.5322, endT: 0.6227 }
+    ],
+    drsDetections: [
+      { id: 'D1', t: 0.8064, zoneIds: [1, 2], source: 'verified' },
+      { id: 'D2', t: 0.305, zoneIds: [3, 4], source: 'verified' }
     ],
     spectators: 145000,
     pitLaneTimeLossSec: 21.0,
@@ -578,23 +649,29 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
     trackWidthCars: 2,
     name: 'Miami International Autodrome',
       trackType: 'hybrid',
-      pitEntryT: 0.9,
-      pitExitT: 0.1,
-      startOffsetT: 0.75,
+      pitEntryT: 0.1671,
+      pitExitT: 0.3159,
+      startOffsetT: 0,
       officialGpName: 'Miami Grand Prix',
     location: 'Miami Gardens, Florida',
     country: 'Estados Unidos',
     countryFlag: '🇺🇸',
-    svgFile: 'miami-1.svg',
+    svgFile: 'miami-2026.svg',
     direction: 'anti-clockwise',
     lapLengthMeters: 5412,
     totalLaps: 57,
     turns: 19,
     drsZones: 3,
+    // Q19: activación y detección oficiales (plano FIA 2025 · Miami Grand Prix); fin de zona en la frenada siguiente.
     drsZoneSpecs: [
-      { id: 1, name: 'Main Straight', startT: 0.90, endT: 0.05 },
-      { id: 2, name: 'Turn 8 to Turn 11 Straight', startT: 0.32, endT: 0.46 },
-      { id: 3, name: 'Turn 16 to Turn 17 Long Straight', startT: 0.70, endT: 0.85 }
+      { id: 1, name: "A1 · 30m after turn 9", startT: 0.6387, endT: 0.7813 },
+      { id: 2, name: "A2 · 525m after turn 16", startT: 0.9848, endT: 0.108 },
+      { id: 3, name: "A3 · On turn 19 apex", startT: 0.1984, endT: 0.276 }
+    ],
+    drsDetections: [
+      { id: 'D1', t: 0.5524, zoneIds: [1], source: 'verified' },
+      { id: 'D2', t: 0.9017, zoneIds: [2], source: 'verified' },
+      { id: 'D3', t: 0.1363, zoneIds: [3], source: 'verified' }
     ],
     spectators: 95000,
     pitLaneTimeLossSec: 22.1,
@@ -618,22 +695,27 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
     id: 'shanghai',
     name: 'Shanghai International Circuit',
       trackType: 'permanent',
-      pitEntryT: 0.9,
-      pitExitT: 0.1,
-      startOffsetT: 0.28,
+      pitEntryT: 0.0482,
+      pitExitT: 0.1906,
+      startOffsetT: 0,
       officialGpName: 'Chinese Grand Prix',
     location: 'Jiading, Shanghai',
     country: 'China',
     countryFlag: '🇨🇳',
-    svgFile: 'shanghai-1.svg',
+    svgFile: 'shanghai-2026.svg',
     direction: 'clockwise',
     lapLengthMeters: 5451,
     totalLaps: 56,
     turns: 16,
     drsZones: 2,
+    // Q19: activación y detección oficiales (plano FIA 2025 · Chinese Grand Prix); fin de zona en la frenada siguiente.
     drsZoneSpecs: [
-      { id: 1, name: '1.2km Back Straight (T13-T14)', startT: 0.68, endT: 0.88 },
-      { id: 2, name: 'Main Pit Straight', startT: 0.92, endT: 0.05 }
+      { id: 1, name: "A1 · 375m after turn 13", startT: 0.8004, endT: 0.956 },
+      { id: 2, name: "A2 · 98m after turn 16", startT: 0.0681, endT: 0.2027 }
+    ],
+    drsDetections: [
+      { id: 'D1', t: 0.6943, zoneIds: [1], source: 'verified' },
+      { id: 'D2', t: 0.0442, zoneIds: [2], source: 'verified' }
     ],
     spectators: 120000,
     pitLaneTimeLossSec: 22.9,
@@ -658,8 +740,8 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
     trackWidthCars: 2,
     name: 'Jeddah Corniche Circuit',
       trackType: 'street',
-      pitEntryT: 0.9,
-      pitExitT: 0.1,
+      pitEntryT: 0.9568,
+      pitExitT: 0.0998,
       startOffsetT: 0.07,
       officialGpName: 'Saudi Arabian Grand Prix',
     location: 'Yeda',
@@ -671,10 +753,16 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
     totalLaps: 50,
     turns: 27,
     drsZones: 3,
+    // Q19: activación y detección oficiales (plano FIA 2025 · Saudi Arabian Grand Prix); fin de zona en la frenada siguiente.
     drsZoneSpecs: [
-      { id: 1, name: 'Main Pit Straight', startT: 0.90, endT: 0.05 },
-      { id: 2, name: 'High-speed Sweep T19-T22', startT: 0.48, endT: 0.62 },
-      { id: 3, name: 'Back Straight to T27', startT: 0.74, endT: 0.88 }
+      { id: 1, name: "A1 · On exit to turn 19", startT: 0.6039, endT: 0.6942 },
+      { id: 2, name: "A2 · On entry to turn 25", startT: 0.7804, endT: 0.884 },
+      { id: 3, name: "A3 · 240m after turn 27", startT: 0.9487, endT: 0.0613 }
+    ],
+    drsDetections: [
+      { id: 'D1', t: 0.5352, zoneIds: [1], source: 'calibrated' },
+      { id: 'D2', t: 0.6942, zoneIds: [2], source: 'calibrated' },
+      { id: 'D3', t: 0.9182, zoneIds: [3], source: 'calibrated' }
     ],
     spectators: 90000,
     pitLaneTimeLossSec: 20.8,
@@ -699,8 +787,8 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
     trackWidthCars: 2,
     name: 'Marina Bay Street Circuit',
       trackType: 'street',
-    pitEntryT: 0.9,
-      pitExitT: 0.1,
+    pitEntryT: 0.9287,
+      pitExitT: 0.1012,
       startOffsetT: 0.05,
       officialGpName: 'Singapore Grand Prix',
     location: 'Marina Bay',
@@ -712,11 +800,17 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
     totalLaps: 62,
     turns: 19,
     drsZones: 4,
+    // Q19: activación y detección oficiales (plano FIA 2025 · Singapore Grand Prix); fin de zona en la frenada siguiente.
     drsZoneSpecs: [
-      { id: 1, name: 'Pit Straight', startT: 0.90, endT: 0.05 },
-      { id: 2, name: 'Raffles Boulevard', startT: 0.20, endT: 0.35 },
-      { id: 3, name: 'Straight T13-T14', startT: 0.52, endT: 0.62 },
-      { id: 4, name: 'New Section T15-T16', startT: 0.70, endT: 0.82 }
+      { id: 1, name: "A1 · 48m after T5", startT: 0.2075, endT: 0.3373 },
+      { id: 2, name: "A2 · 78m after T13", startT: 0.6385, endT: 0.7067 },
+      { id: 3, name: "A3 · 100m after T14", startT: 0.7571, endT: 0.86 },
+      { id: 4, name: "A4 · Exit T19", startT: 0.9844, endT: 0.064 }
+    ],
+    drsDetections: [
+      { id: 'D1', t: 0.1471, zoneIds: [1], source: 'verified' },
+      { id: 'D2', t: 0.598, zoneIds: [2, 3], source: 'verified' },
+      { id: 'D3', t: 0.9171, zoneIds: [4], source: 'verified' }
     ],
     spectators: 100000,
     pitLaneTimeLossSec: 29.5,
@@ -740,8 +834,8 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
     id: 'lusail',
     name: 'Lusail International Circuit',
       trackType: 'permanent',
-    pitEntryT: 0.9,
-      pitExitT: 0.1,
+    pitEntryT: 0.7953,
+      pitExitT: 0.028,
       startOffsetT: 0.04,
       officialGpName: 'Qatar Grand Prix',
     location: 'Lusail, Doha',
@@ -753,8 +847,12 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
     totalLaps: 57,
     turns: 16,
     drsZones: 1,
+    // Q19: activación y detección oficiales (plano FIA 2025 · Qatar Grand Prix); fin de zona en la frenada siguiente.
     drsZoneSpecs: [
-      { id: 1, name: 'Main Pit Straight (1.068km)', startT: 0.88, endT: 0.05 }
+      { id: 1, name: "A1 · 305m After Turn 16", startT: 0.8861, endT: 0.0427 }
+    ],
+    drsDetections: [
+      { id: 'D1', t: 0.7487, zoneIds: [1], source: 'verified' }
     ],
     spectators: 85000,
     pitLaneTimeLossSec: 22.0,
@@ -778,8 +876,8 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
     id: 'yas-marina',
     name: 'Yas Marina Circuit',
       trackType: 'permanent',
-    pitEntryT: 0.9,
-      pitExitT: 0.1,
+    pitEntryT: 0.5179,
+      pitExitT: 0.7328,
       startOffsetT: 0.05,
       officialGpName: 'Abu Dhabi Grand Prix',
     location: 'Isla Yas, Abu Dabi',
@@ -791,9 +889,14 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
     totalLaps: 58,
     turns: 16,
     drsZones: 2,
+    // Q19: activación y detección oficiales (plano FIA 2025 · Abu Dhabi Grand Prix); fin de zona en la frenada siguiente.
     drsZoneSpecs: [
-      { id: 1, name: '1.2km Back Straight (T5-T6)', startT: 0.28, endT: 0.45 },
-      { id: 2, name: 'Secondary Straight (T6-T9)', startT: 0.50, endT: 0.65 }
+      { id: 1, name: "A1 · 260m after Turn 5", startT: 0.8917, endT: 0.0427 },
+      { id: 2, name: "A2 · 165m after Turn 7", startT: 0.1138, endT: 0.2387 }
+    ],
+    drsDetections: [
+      { id: 'D1', t: 0.7982, zoneIds: [1], source: 'verified' },
+      { id: 'D2', t: 0.0923, zoneIds: [2], source: 'verified' }
     ],
     spectators: 110000,
     pitLaneTimeLossSec: 22.6,
@@ -817,8 +920,8 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
     id: 'hungaroring',
     name: 'Hungaroring',
       trackType: 'permanent',
-      pitEntryT: 0.9,
-      pitExitT: 0.1,
+      pitEntryT: 0.5245,
+      pitExitT: 0.7784,
       startOffsetT: 0.22,
       officialGpName: 'Hungarian Grand Prix',
     location: 'Mogyoród, Budapest',
@@ -830,9 +933,13 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
     totalLaps: 70,
     turns: 14,
     drsZones: 2,
+    // Q19: activación y detección oficiales (plano FIA 2025 · Hungarian Grand Prix); fin de zona en la frenada siguiente.
     drsZoneSpecs: [
-      { id: 1, name: 'Main Pit Straight', startT: 0.88, endT: 0.05 },
-      { id: 2, name: 'Descent to Turn 2', startT: 0.08, endT: 0.18 }
+      { id: 1, name: "A1 · 40m after Turn 14", startT: 0.5884, endT: 0.7587 },
+      { id: 2, name: "A2 · 6m after Turn 1", startT: 0.7908, endT: 0.8733 }
+    ],
+    drsDetections: [
+      { id: 'D1', t: 0.5776, zoneIds: [1, 2], source: 'verified' }
     ],
     spectators: 100000,
     pitLaneTimeLossSec: 21.4,
@@ -856,23 +963,28 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
     id: 'mexico-city',
     name: 'Autódromo Hermanos Rodríguez',
       trackType: 'permanent',
-    pitEntryT: 0.9,
-      pitExitT: 0.1,
-      startOffsetT: 0.14,
+    pitEntryT: 0.8099,
+      pitExitT: 0.9975,
+      startOffsetT: 0,
       officialGpName: 'Gran Premio de la Ciudad de México',
     location: 'Ciudad de México',
     country: 'México',
     countryFlag: '🇲🇽',
-    svgFile: 'mexico-city-3.svg',
+    svgFile: 'mexico-city-2026.svg',
     direction: 'clockwise',
     lapLengthMeters: 4304,
     totalLaps: 71,
     turns: 17,
     drsZones: 3,
+    // Q19: activación y detección oficiales (plano FIA 2025 · Mexico City Grand Prix); fin de zona en la frenada siguiente.
     drsZoneSpecs: [
-      { id: 1, name: '1.3km Main Straight', startT: 0.86, endT: 0.05 },
-      { id: 2, name: 'Straight T3-T4', startT: 0.12, endT: 0.22 },
-      { id: 3, name: 'Straight T11-T12 (Foro Sol)', startT: 0.58, endT: 0.70 }
+      { id: 1, name: "A1 · 80m after Turn 11", startT: 0.6045, endT: 0.692 },
+      { id: 2, name: "A2 · 240m after Turn 17", startT: 0.8855, endT: 0.124 },
+      { id: 3, name: "A3 · 115m after Turn 3", startT: 0.2091, endT: 0.3187 }
+    ],
+    drsDetections: [
+      { id: 'D1', t: 0.5345, zoneIds: [1], source: 'verified' },
+      { id: 'D2', t: 0.7978, zoneIds: [2, 3], source: 'calibrated' }
     ],
     spectators: 150000,
     pitLaneTimeLossSec: 22.5,
@@ -896,8 +1008,8 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
     id: 'montreal',
     name: 'Circuit Gilles-Villeneuve',
       trackType: 'hybrid',
-      pitEntryT: 0.92,
-      pitExitT: 0.1,
+      pitEntryT: 0.125,
+      pitExitT: 0.3224,
       startOffsetT: 0.18,
       officialGpName: 'Canadian Grand Prix',
     location: 'Île Notre-Dame, Montreal',
@@ -909,10 +1021,15 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
     totalLaps: 70,
     turns: 14,
     drsZones: 3,
+    // Q19: activación y detección oficiales (plano FIA 2025 · Canadian Grand Prix); fin de zona en la frenada siguiente.
     drsZoneSpecs: [
-      { id: 1, name: 'Droit du Casino (1.1km)', startT: 0.70, endT: 0.88 },
-      { id: 2, name: 'Main Pit Straight', startT: 0.92, endT: 0.05 },
-      { id: 3, name: 'Straight T7-T8', startT: 0.38, endT: 0.50 }
+      { id: 1, name: "A1 · 95m after Turn 7", startT: 0.5608, endT: 0.668 },
+      { id: 2, name: "A2 · 155m before Turn 12", startT: 0.9264, endT: 0.1013 },
+      { id: 3, name: "A3 · 70m after Turn 14", startT: 0.1512, endT: 0.264 }
+    ],
+    drsDetections: [
+      { id: 'D1', t: 0.4686, zoneIds: [1], source: 'verified' },
+      { id: 'D2', t: 0.7402, zoneIds: [2, 3], source: 'verified' }
     ],
     spectators: 115000,
     pitLaneTimeLossSec: 18.5,
@@ -936,22 +1053,27 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
     id: 'austin',
     name: 'Circuit of the Americas',
       trackType: 'permanent',
-    pitEntryT: 0.9,
-      pitExitT: 0.1,
-      startOffsetT: 0.96,
+    pitEntryT: 0.5045,
+      pitExitT: 0.6877,
+      startOffsetT: 0,
       officialGpName: 'United States Grand Prix',
     location: 'Austin, Texas',
     country: 'Estados Unidos',
     countryFlag: '🇺🇸',
-    svgFile: 'austin-1.svg',
+    svgFile: 'austin-2026.svg',
     direction: 'anti-clockwise',
     lapLengthMeters: 5513,
     totalLaps: 56,
     turns: 20,
     drsZones: 2,
+    // Q19: activación y detección oficiales (plano FIA 2025 · United States Grand Prix); fin de zona en la frenada siguiente.
     drsZoneSpecs: [
-      { id: 1, name: '1.2km Back Straight (T11-T12)', startT: 0.42, endT: 0.60 },
-      { id: 2, name: 'Main Pit Straight (Subida a T1)', startT: 0.90, endT: 0.05 }
+      { id: 1, name: "A1 · 345m after turn 11", startT: 0.1042, endT: 0.2333 },
+      { id: 2, name: "A2 · 80m after turn 20", startT: 0.5624, endT: 0.6653 }
+    ],
+    drsDetections: [
+      { id: 'D1', t: 0.9985, zoneIds: [1], source: 'verified' },
+      { id: 'D2', t: 0.451, zoneIds: [2], source: 'verified' }
     ],
     spectators: 150000,
     pitLaneTimeLossSec: 21.6,

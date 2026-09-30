@@ -1,0 +1,4 @@
+# Cuatro roles: principal/coordinación y hasta tres especialistas.
+[agents]
+enabled = true
+max_concurrent_threads_per_session = 3

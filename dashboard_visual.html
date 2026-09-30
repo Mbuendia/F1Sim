@@ -674,11 +674,11 @@
             <div class="sprintHeaderLeft">
                 <span class="chevron collapsed" id="chevron-sprint2_8">▼</span>
                 <span class="dot dotOrange"></span>
-                <span>Sprint 2.8 — 🎯 Salto de Calidad: Fidelidad de Simulación, Geometría y Muro Táctico (39 Tareas)</span>
-                <span class="badgePending">2 / 18 Tareas (Refinado / Listo para Validación)</span>
+                <span>Sprint 2.8 — 🎯 Salto de Calidad: Fidelidad de Simulación, Geometría y Muro Táctico (45 fichas visibles)</span>
+                <span class="badgePending">32 / 45 fichas marcadas · revisión registrada</span>
             </div>
             <div class="sprintHeaderRight">
-                <span>Completadas: <strong>2</strong> | Pendientes: <strong>16</strong></span>
+                <span>Marcadas: <strong>32</strong> | Sin marcar: <strong>10</strong></span>
             </div>
         </div>
 
@@ -992,27 +992,28 @@
 
             <!-- BLOQUE C: MURO TÁCTICO & ESTRATEGIA (100% TEAM PRINCIPAL) -->
             <div style="font-size: 12px; font-weight: 800; color: #06b6d4; margin: 14px 0 6px 4px; text-transform: uppercase; letter-spacing: 0.5px;">
-                👔 Bloque C: Muro Táctico & Decisiones de Estrategia (5 Tareas)
+                👔 Bloque C: Muro Táctico & Decisiones de Estrategia (6 Tareas) · Q9/Q10 completadas · 311 pruebas PASS
             </div>
-            <div class="task pending">
-                <input type="checkbox" id="t_q9">
+            <div class="task"><input type="checkbox" id="t_q11_1" checked><div class="task-content"><div class="task-title">Q11-1 · Progreso de cajón por equipo · COMPLETADO</div><div class="task-desc">Implementación previa conservada. Solo asigna el lugar de servicio; la cola y gestión dual Q11 siguen pendientes.</div></div></div>
+            <div class="task">
+                <input type="checkbox" id="t_q9" checked>
                 <div class="task-content">
                     <div class="task-title-row">
                         <div class="task-title"><span class="orderBadge">Q9</span><label for="t_q9">Q9. 🛑 Órdenes de Boxes Vinculantes (Compuesto Elegido por el Jugador)</label></div>
-                        <div class="tokensRow"><span class="badgeToken tokLevelHigh">🟠 Alta</span><span class="badgeToken tokGemini">♊ PitStopModel.ts / BottomTelemetryDock.tsx</span></div>
+                        <div class="tokensRow"><span class="badgeProgress">COMPLETADO · SUBIDA AUTORIZADA</span> <span class="badgeToken tokLevelHigh">🟠 Alta</span><span class="badgeToken tokGemini">♊ PitStopModel.ts / BottomTelemetryDock.tsx</span></div>
                     </div>
-                    <div class="task-desc">Hacer que la orden de parada y el compuesto seleccionado por el usuario (Soft, Medium, Hard, Inter, Wet) gobiernen de forma estricta la parada y el historial de stints sin selecciones aleatorias automáticas.</div>
+                    <div class="task-desc">IMPLEMENTADA Y VALIDADA: selector S/M/H/I/W, llamada vinculante para el piloto del paddock, aceptación y ejecución visibles. Prioridad sobre IA y dos servicios sucesivos con historial coherente.</div>
                 </div>
             </div>
 
-            <div class="task pending">
-                <input type="checkbox" id="t_q10">
+            <div class="task">
+                <input type="checkbox" id="t_q10" checked>
                 <div class="task-content">
                     <div class="task-title-row">
                         <div class="task-title"><span class="orderBadge">Q10</span><label for="t_q10">Q10. ⚠️ Punto de Compromiso (Pit Commitment Line) y Cancelación de Parada</label></div>
-                        <div class="tokensRow"><span class="badgeToken tokLevelMed">🟡 Media</span><span class="badgeToken tokGemini">♊ PitStopModel.ts / RaceSimulation.ts</span></div>
+                        <div class="tokensRow"><span class="badgeProgress">COMPLETADO · SUBIDA AUTORIZADA</span> <span class="badgeToken tokLevelMed">🟡 Media</span><span class="badgeToken tokGemini">♊ PitStopModel.ts / RaceSimulation.ts</span></div>
                     </div>
-                    <div class="task-desc">Establecer una línea de compromiso antes de pitEntryT donde el jugador puede abortar la parada ('Stay Out'). Una vez rebasada dicha línea, la entrada a boxes es irreversible.</div>
+                    <div class="task-desc">IMPLEMENTADA Y VALIDADA: cancelación antes del compromiso sin scheduledLap residual; después entrada confirmada. Llamada tardía espera otra oportunidad. Líneas calibradas por circuito, cruces de meta y pasos x16/x32.</div>
                 </div>
             </div>
 
@@ -1045,7 +1046,7 @@
                         <div class="task-title"><span class="orderBadge">Q13</span><label for="t_q13">Q13. ⏱️ Predictor de Ventana de Reincorporación (Rejoin & Undercut Window)</label></div>
                         <div class="tokensRow"><span class="badgeToken tokLevelMed">🟡 Media</span><span class="badgeToken tokGemini">♊ Leaderboard.tsx / RaceSimulation.ts</span></div>
                     </div>
-                    <div class="task-desc">Calcular y proyectar en la torre de tiempos y el minimapa la posición virtual en la que reaparecería el monoplaza tras realizar una parada (descontando ~22s de pit loss de Barcelona).</div>
+                    <div class="task-desc">Calcular y proyectar en la torre de tiempos y el minimapa la posición virtual en la que reaparecería el monoplaza tras realizar una parada (descontando ~22s de pit loss de Barcelona).<br><strong>Revisión confirmada 29/09:</strong> Entrega visible pendiente, no fallo observado de valor congelado. Completar marcador actualizado en torre/minimapa, fuente y límites; tests de tráfico, selección, cola, pausa/reset y misma predicción en ambas vistas.</div>
                 </div>
             </div>
 
@@ -1082,7 +1083,7 @@
                         <div class="task-title"><span class="orderBadge">Q16</span><label for="t_q16">Q16. 🔋 Modelo Dinámico de ERS, Combustible y Penalización Térmica en Agarre</label></div>
                         <div class="tokensRow"><span class="badgeToken tokLevelMed">🟡 Media</span><span class="badgeToken tokGemini">♊ RaceSimulation.ts:834 / FuelModel.ts</span></div>
                     </div>
-                    <div class="task-desc">Desbloquear la batería del 85% fijo para regenerar en frenada y desplegar en aceleración; eliminar el clamp de 0.5 kg de combustible; aplicar penalización térmica directamente sobre la fricción de curva.</div>
+                    <div class="task-desc">Desbloquear la batería del 85% fijo para regenerar en frenada y desplegar en aceleración; eliminar el clamp de 0.5 kg de combustible; aplicar penalización térmica directamente sobre la fricción de curva.<br><strong>Revisión confirmada 29/09:</strong> El usuario no encontraba datos ni percibía cambios. Diagnosticar visibilidad, actualización y motor; mostrar kg, batería % y °C del piloto real, con casos reproducibles y tests motor→UI. No simular cambios cosméticos.</div>
                 </div>
             </div>
 
@@ -1107,18 +1108,23 @@
                     <div class="task-desc">Conectar IncidentModel.reset() en initRace(); asegurar mínimo 10 vueltas para SC en circuito urbano según normativa; estabilizar timers en React para evitar reinicios por re-render.</div>
                 </div>
             </div>
+            <div class="task pending"><input type="checkbox" id="t_q19"><div class="task-content"><div class="task-title-row"><div class="task-title"><span class="orderBadge">Q19</span><label for="t_q19">DRS medido en detección y permiso persistente</label></div><span class="badgePending">PARCIAL</span></div><div class="task-desc">Contratos de detección, permiso y cierre por freno implementados parcialmente. Pendientes geometría de detección verificada por circuito, cobertura reglamentaria completa y aceptación visual. Véase el contrato completo Q19 en DASHBOARD.md; tests drs-detection y drs-permissions no cierran toda la tarea.</div></div></div>
+<div class="task pending"><input type="checkbox" id="t_q20"><div class="task-content"><div class="task-title-row"><div class="task-title"><span class="orderBadge">Q20</span><label for="t_q20">Recorrido real y extremos de boxes en Barcelona, Mónaco y Suzuka</label></div><span class="badgePending">PLANIFICADO</span></div><div class="task-desc">Corregir ubicación real de entrada/salida y recorrido completo del pit lane en dibujo y circulación. La aprobación visual general de Suzuka se conserva, con esta incidencia de boxes separada.<br><strong>Contrato:</strong> Recopilar planos/mapas verificables del circuito y, cuando proceda, notas oficiales del evento; registrar fuente, edición/fecha, sentido y transformación al SVG. No generar un recorrido paralelo genérico para presentarlo como real. Si falta geometría verificable, registrar el bloqueo y pedir referencia antes de validar. Separar entrada/salida de ruta, compromiso, limitador y cajón: no mover todas esas líneas por inferencia.<br><strong>Aceptación:</strong> Superponer referencia y ruta sobre Barcelona/Mónaco/Suzuka; verificar entrada/salida en lugar correcto, continuidad sin saltos, cajones conectados y coche/cámara/minimapa/clic compartiendo ruta. Mantener órdenes y cancelación Q9-Q11.<br><strong>Tests:</strong> Ampliar pit-lane/world-position/box-orders; añadir fixtures específicos basados en referencias para los tres circuitos y revisión visual de una parada completa por circuito. Tests primero, sin relajar tolerancias para acomodar el dibujo.</div></div></div>
+            <div class="task pending"><input type="checkbox" id="t_q21"><div class="task-content"><div class="task-title-row"><div class="task-title"><span class="orderBadge">Q21</span><label for="t_q21">Iconos de neumático coherentes en toda la aplicación (incluye Q24)</label></div><span class="badgePending">PLANIFICADO</span></div><div class="task-desc">Sustituir representaciones aisladas S/M/H/I/W por una rueda con el color identificativo del compuesto en selector, muro, clasificación, telemetría, historial y demás superficies existentes.<br><strong>Contrato:</strong> Inventariar consumidores; usar representación reutilizable con nombre del compuesto, tooltip y etiqueta accesible, sin depender solo del color. Verificar y documentar la convención oficial del proveedor/FIA para el perfil de temporada antes de fijar colores en tests; no atribuir códigos HEX arbitrarios a una norma.<br><strong>Aceptación:</strong> Los cinco compuestos se distinguen y conservan selección por teclado, estados seleccionado/deshabilitado y nombre accesible. Icono de goma actual, solicitada e histórica refleja su propio dato; no cambia la lógica de boxes.<br><strong>Tests:</strong> Módulo visual-icons existente (Q24 absorbida) más box-ui/race-ui: los cinco compuestos, todas las superficies inventariadas, historial, selección de ambos pilotos y pedido versus montado; revisar capturas/contraste. Sin nuevos tests del motor que dupliquen Q9. Q24 absorbida: conservar CompoundBadge y F1CarSilhouette, tamaño y color del equipo. Paleta HEX visual, no certificación oficial.</div></div></div>
+<div class="task pending"><input type="checkbox" id="t_q22"><div class="task-content"><div class="task-title-row"><div class="task-title"><span class="orderBadge">Q22</span><label for="t_q22">Chasis SVG cenital con desgaste y DRS</label></div><span class="badgePending">PENDIENTE</span></div><div class="task-desc">CarChassisSvg: cuatro ruedas identificadas, desgaste, avisos críticos, color de equipo y estado DRS. Contrato visual-chassis publicado; implementación y revisión visual pendientes.</div></div></div>
+<div class="task pending"><input type="checkbox" id="t_q23"><div class="task-content"><div class="task-title-row"><div class="task-title"><span class="orderBadge">Q23</span><label for="t_q23">Animaciones e indicadores de clasificación y telemetría</label></div><span class="badgePending">PENDIENTE</span></div><div class="task-desc">Indicadores de posición y boxes; animación de velocidad/RPM y entrada del panel. Contrato visual-animations publicado; implementación y validación en navegador pendientes.</div></div></div>
         </div>
 
-        <!-- =================== SPRINT 2.9 (REGLAMENTO FIA 2025 Y SENSACIÓN DE CARRERA - 28 TAREAS) =================== -->
+        <!-- =================== SPRINT 2.9 (REGLAMENTO FIA 2025 Y SENSACIÓN DE CARRERA - 34 TAREAS) =================== -->
         <div class="sprintHeader" onclick="toggleSprint('sprint2_9')">
             <div class="sprintHeaderLeft">
                 <span class="chevron collapsed" id="chevron-sprint2_9">▼</span>
                 <span class="dot dotCyan"></span>
-                <span>Sprint 2.9 — 🏁 Reglamento FIA 2025 y Sensación de Carrera (28 Tareas)</span>
-                <span class="badgePending">0 / 28 Tareas (Planificado)</span>
+                <span>Sprint 2.9 — 🏁 Reglamento FIA 2025 y Sensación de Carrera (34 Tareas)</span>
+                <span class="badgePending">0 / 34 Tareas (Planificado)</span>
             </div>
             <div class="sprintHeaderRight">
-                <span>Completadas: <strong>0</strong> | Pendientes: <strong>28</strong></span>
+                <span>Completadas: <strong>0</strong> | Pendientes: <strong>34</strong></span>
             </div>
         </div>
 
@@ -1404,7 +1410,55 @@
                 </div>
             </div>
 
+            <div class="task pending">
+                <input type="checkbox" id="t_r29">
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">R29</span><label for="t_r29">Inventario funcional y contrato del rediseño de escritorio</label></div><span class="badgePending">PLANIFICADO</span></div>
+                    <div class="task-desc"><strong>P0; antes de R30-R34</strong><br>Inventariar portada, selección de piloto/circuito, cámara, zoom/rotación, minimapa, clasificación, pausa/velocidades, salida/reinicio, órdenes de ambos pilotos, compuestos, ritmo, telemetría, historial, avisos y herramientas de desarrollo. Registrar acceso actual, destino propuesto y atajo existente. Separar función existente de mecánica todavía pendiente.<br><strong>Aceptación:</strong> Cada función existente tiene una ruta de acceso nueva y un caso de prueba asignado; ninguna se elimina o convierte en decorativa. Revisar con el usuario el contrato y las pantallas antes de implementar.<br><strong>Tests:</strong> Matriz función → módulo → caso; ampliar primero los módulos afectados con casos fallidos reproducibles. Mantener fijos los tests acordados durante implementación.</div>
+                </div>
+            </div>
+            <div class="task pending">
+                <input type="checkbox" id="t_r30">
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">R30</span><label for="t_r30">Rediseño del paddock y distribución de escritorio</label></div><span class="badgePending">PLANIFICADO</span></div>
+                    <div class="task-desc"><strong>P1; R29</strong><br>Diseñar una nueva jerarquía visual de portada y paddock, con selección e información claras. En carrera, circuito protagonista y clasificación compacta. Evitar columnas rígidas que recorten fichas, controles o el área útil del trazado.<br><strong>Aceptación:</strong> Validar 1024×768, 1366×768, 1440×900 y 1920×1080: sin controles recortados ni scroll horizontal de página; fichas largas consultables. La cámara general encuadra el circuito dentro del área libre real. Revisar capturas con el usuario antes de cerrar.<br><strong>Tests:</strong> Módulos propuestos desktop-layout y paddock-navigation: dimensiones y visibilidad en navegador real, selección y entrada a pista, zoom/rotación y redimensionado; complementar world-position/geometry-rendering sin duplicar la física de R23.</div>
+                </div>
+            </div>
+            <div class="task pending">
+                <input type="checkbox" id="t_r31">
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">R31</span><label for="t_r31">Muro de dos pilotos y paneles de consulta desplegables</label></div><span class="badgePending">PLANIFICADO</span></div>
+                    <div class="task-desc"><strong>P1; R29/R30; coordina R24/R25</strong><br>Mantener accesibles clasificación compacta y órdenes de ambos pilotos. Telemetría detallada, historial y otros detalles se abren en paneles que pueden cerrarse. Reutilizar el estado y las órdenes existentes; cambiar presentación no crea otra lógica de boxes o ritmo.<br><strong>Aceptación:</strong> Abrir/cerrar paneles conserva selección y estado de carrera, permite volver al circuito y no tapa los controles esenciales. Ejecutar las funciones del inventario R29 mediante ratón y atajos existentes; ninguna funcionalidad se pierde por quedar oculta.<br><strong>Tests:</strong> Módulo propuesto race-panels y consumidores box-ui/race-ui: interacciones reales de apertura/cierre, órdenes, selección y pausa; casos de carrera, formación, neutralización y final.</div>
+                </div>
+            </div>
+            <div class="task pending">
+                <input type="checkbox" id="t_r32">
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">R32</span><label for="t_r32">Estados de carrera claros y herramientas de desarrollo separadas</label></div><span class="badgePending">PLANIFICADO</span></div>
+                    <div class="task-desc"><strong>P1; R29/R30; coordina R24</strong><br>Reservar espacio para formación, salida, pausa, banderas y avisos sin superponerlos a controles. Usar Reanudar al pausar. Si no hay datos relativos durante formación, indicar que no están disponibles: no inferir líder o último coche. Conservar TEST SC/TEST RED FLAG dentro de un modo de desarrollo explícito, oculto por defecto en uso normal.<br><strong>Aceptación:</strong> P7 no se anuncia como líder por ausencia de datos; pausa tiene texto/icono/etiqueta accesible coherentes; avisos no bloquean pausa, velocidad ni órdenes. Herramientas de desarrollo siguen operativas únicamente en ese modo.<br><strong>Tests:</strong> Ampliar race-ui y añadir race-status-ui: fixtures de formación/datos ausentes, carrera/pausa, SC/VSC/roja y final; prueba de acceso al modo de desarrollo y ausencia de sus controles en modo normal. R24 mantiene la propiedad de los datos/eventos.</div>
+                </div>
+            </div>
+            <div class="task pending">
+                <input type="checkbox" id="t_r33">
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">R33</span><label for="t_r33">Sistema visual y accesibilidad del escritorio</label></div><span class="badgePending">PLANIFICADO</span></div>
+                    <div class="task-desc"><strong>P1; R29/R30/R31</strong><br>Rediseñar tipografía, espaciado, contraste y jerarquía: reservar letras decorativas para títulos y usar cifras/textos legibles en controles y telemetría. Mantener todas las funciones y atajos; añadir foco visible y nombres accesibles a controles.<br><strong>Aceptación:</strong> Texto operativo de al menos 14 px como referencia de diseño; contraste de texto normal ≥4.5:1; estados comprensibles sin depender solo del color. Navegación por teclado, cierre y devolución de foco en paneles; reducción de movimiento en transiciones decorativas.<br><strong>Tests:</strong> Módulo propuesto desktop-accessibility: teclado, etiquetas, foco, contraste y zoom de navegador 200%; pruebas visuales de cifras y textos largos. Los cambios estéticos no alteran el motor.</div>
+                </div>
+            </div>
+            <div class="task pending">
+                <input type="checkbox" id="t_r34">
+                <div class="task-content">
+                    <div class="task-title-row"><div class="task-title"><span class="orderBadge">R34</span><label for="t_r34">Aceptación visual y regresión funcional del rediseño</label></div><span class="badgePending">PLANIFICADO</span></div>
+                    <div class="task-desc"><strong>P0 para cerrar el bloque; R29-R33; coordina R27</strong><br>Ejecutar la matriz R29 sobre la nueva interfaz y comparar con el comportamiento anterior. Validar capturas de Barcelona/Mónaco, paddock y estados representativos; medir rendimiento en el mismo equipo y condiciones antes/después.<br><strong>Aceptación:</strong> Todas las funciones inventariadas siguen accesibles; sin recortes ni solapamientos que impidan jugar en los tamaños R30. Registrar resultados, limitaciones, rendimiento y aprobación visual del usuario. Ningún PASS sintético sustituye la revisión del Canvas real.<br><strong>Tests:</strong> Ejecutar módulos UI afectados y consumidores; regresión completa solo al integrar el bloque transversal, más build. R27 conserva el banco de simulación; esta tarea cubre aceptación del rediseño, sin duplicarlo.</div>
+                </div>
+            </div>
         </div>
+
+        <section style="margin: 16px 0; padding: 16px; border: 1px solid #334155; border-radius: 8px;">
+            <h3>MOB01 — Consulta móvil de la misma carrera · DIFERIDA FUERA DE 2.9</h3>
+            <p>Enlace temporal de solo lectura, sin cuentas inicialmente. El ordenador mantiene la simulación; el móvil consulta clasificación, vuelta, banderas y telemetría. Sin control remoto ni multijugador.</p>
+            <p>Refinar transporte/alojamiento, caducidad y coste; probar reconexión, revocación y rechazo de órdenes. Ver detalle y dependencias en DASHBOARD.md, sección 6.8.</p>
+        </section>
 
         <!-- =================== SPRINT 3 (AUDIO, TELEMETRÍA Y CLIMA - 16 SUBTAREAS) =================== -->
         <div class="sprintHeader" onclick="toggleSprint('sprint3')">

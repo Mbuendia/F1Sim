@@ -35,8 +35,10 @@ const RaceFlagsHUD: React.FC<RaceFlagsHUDProps> = ({ raceFlagState, sectorFlags,
   // Subtexto contextual
   let subtext = '';
   if (raceFlagState === 'sc' && safetyCar) {
-    if (safetyCar.mode === 'deploying') {
-      subtext = `Desplegando Safety Car — ${safetyCar.triggerReason}`;
+    if (safetyCar.mode === 'deploying' && safetyCar.isInPitLane) {
+      subtext = `Safety Car saliendo del pit lane — ${safetyCar.triggerReason}`;
+    } else if (safetyCar.mode === 'deploying') {
+      subtext = `Safety Car en pista esperando al líder — ${safetyCar.triggerReason}`;
     } else if (safetyCar.mode === 'leading') {
       subtext = `Liderando pelotón — Vueltas bajo SC: ${safetyCar.lapCount} — ${safetyCar.triggerReason}`;
     } else if (safetyCar.mode === 'returning' || safetyCar.mode === 'in') {

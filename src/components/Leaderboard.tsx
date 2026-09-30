@@ -1,9 +1,10 @@
 import React, { useEffect, useRef } from 'react';
 import styles from './Leaderboard.module.css';
-import { CarState } from '../types/f1';
+import { CarState, RejoinEstimate } from '../types/f1';
 import { Timer, AlertTriangle } from 'lucide-react';
 import { animate, stagger } from 'animejs';
 import { FlagIcon } from './FlagIcon';
+import { CompoundBadge } from './CompoundBadge';
 
 interface LeaderboardProps {
   cars: CarState[];
@@ -11,15 +12,23 @@ interface LeaderboardProps {
   onSelectCar: (carId: number | null) => void;
   fastestLapDriverName: string | null;
   leaderLap: number;
+  // [Q13] Estimación de reincorporación del piloto objetivo (motor), o motivo por el que no hay.
+  rejoin?: RejoinEstimate | null;
 }
 
 export const Leaderboard: React.FC<LeaderboardProps> = ({
   cars,
   selectedCarId,
   onSelectCar,
-  fastestLapDriverName
+  fastestLapDriverName,
+  rejoin = null
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  // Q23: el motor solo conserva previousPosition durante el paso del adelantamiento; la torre recuerda
+  // cada cambio unos segundos para que el indicador sea visible y anima su aparición.
+  const lastPositions = useRef(new Map<number, number>());
+  const recentChanges = useRef(new Map<number, { delta: number; at: number }>());
+  const POSITION_CHANGE_MS = 4000;
 
   useEffect(() => {
     if (containerRef.current) {
@@ -33,10 +42,55 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
     }
   }, []);
 
+  useEffect(() => {
+    const now = Date.now();
+    for (const car of cars) {
+      const last = lastPositions.current.get(car.id);
+      if (last !== undefined && last !== car.currentPosition && car.status !== 'out') {
+        recentChanges.current.set(car.id, { delta: last - car.currentPosition, at: now });
+        if (containerRef.current) {
+          animate(`[data-pos-car="${car.id}"]`, { scale: [1.8, 1], opacity: [0, 1], duration: 450, ease: 'outBack' });
+        }
+      }
+      lastPositions.current.set(car.id, car.currentPosition);
+    }
+  });
+
+  const positionDelta = (car: CarState): number => {
+    const fromEngine = (car.previousPosition ?? car.currentPosition) - car.currentPosition;
+    if (fromEngine !== 0) return fromEngine;
+    const recent = recentChanges.current.get(car.id);
+    return recent && Date.now() - recent.at < POSITION_CHANGE_MS ? recent.delta : 0;
+  };
+
   const sortedCars = [...cars].sort((a, b) => a.currentPosition - b.currentPosition);
   const leader = sortedCars.find(c => c.status !== 'out') || sortedCars[0];
   const leaderProgress = leader ? leader.progress : 0;
   const leaderFloorLap = Math.max(0, Math.floor(leaderProgress));
+
+  // [Q13] Fila fantasma: dónde saldría el piloto objetivo si parase ahora (tras el coche P-1 de los demás).
+  const rejoinCar = rejoin ? cars.find(c => c.id === rejoin.carId) : undefined;
+  const rivals = rejoin ? sortedCars.filter(c => c.id !== rejoin.carId && c.status !== 'out') : [];
+  const ghostAfterId = rejoin?.available && rejoin.projectedPos > 1 ? rivals[rejoin.projectedPos - 2]?.id : undefined;
+  const renderRejoinGhost = () => {
+    if (!rejoin?.available) return null;
+    const range = rejoin.bestPos === rejoin.worstPos ? `P${rejoin.projectedPos}` : `P${rejoin.bestPos}–P${rejoin.worstPos}`;
+    return (
+      <div
+        className={styles.rejoinGhost}
+        data-rejoin-projection={rejoin.projectedPos}
+        data-rejoin-estimate="true"
+        data-rejoin-car={rejoin.carId}
+        data-rejoin-source={rejoin.source}
+        title={`Estimación si para ahora (±${rejoin.uncertaintySec.toFixed(0)} s: ${range}). Fuente: ${rejoin.source}`}
+        style={{ borderLeftColor: rejoinCar?.team.color }}
+      >
+        <span className={styles.rejoinPos}>{`≈P${rejoin.projectedPos}`}</span>
+        <span className={styles.rejoinLabel}>{`${rejoinCar?.driver.code ?? ''} TRAS BOXES`}</span>
+        <span className={styles.rejoinRange}>{`${range} · −${rejoin.timeLossSec.toFixed(1)}s`}</span>
+      </div>
+    );
+  };
 
   const formatGap = (car: CarState, index: number): string => {
     if (car.status === 'out') {
@@ -48,6 +102,7 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
     }
     if (car.hasPuncture) return 'PINCHAZO';
     if (index === 0) return 'LÍDER';
+    if (car.pitStop.waitingForBox) return 'QUEUE';
     if (car.pitStop.isPitting) return 'PIT';
 
     const progressDiff = leaderProgress - car.progress;
@@ -64,15 +119,6 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
     return `+${car.gapToLeaderSec.toFixed(1)}s`;
   };
 
-  const getCompoundDotColor = (compound: string) => {
-    switch (compound) {
-      case 'soft': return '#e10600';
-      case 'medium': return '#ffd700';
-      case 'hard': return '#ffffff';
-      default: return '#ffd700';
-    }
-  };
-
   return (
     <div ref={containerRef} className={styles.towerContainer}>
       <div className={styles.header}>
@@ -81,15 +127,18 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
       </div>
 
       <div className={styles.tableList}>
+        {rejoin?.available && rejoin.projectedPos === 1 && renderRejoinGhost()}
         {sortedCars.map((car, idx) => {
           const isSelected = car.id === selectedCarId;
           const isFastest = fastestLapDriverName === `${car.driver.firstName} ${car.driver.lastName}`;
           const isLeader = idx === 0 && car.status !== 'out';
           const isOut = car.status === 'out';
+          const delta = isOut ? 0 : positionDelta(car);
+          const pitStatus = isOut ? null : car.pitStop.waitingForBox ? 'queue' : (car.pitStop.isPitting || car.isInPitLane) ? 'pitting' : null;
 
           return (
+            <React.Fragment key={car.id}>
             <div
-              key={car.id}
               className={`${styles.row} ${isSelected ? styles.selected : ''} ${isLeader ? styles.leaderRow : ''} ${isOut ? styles.outRow : ''}`}
               onClick={() => onSelectCar(isSelected ? null : car.id)}
               style={{ borderLeftColor: isOut ? '#64748b' : car.team.color, opacity: isOut ? 0.6 : 1 }}
@@ -98,6 +147,15 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
               {/* Posición */}
               <div className={styles.posCell}>
                 <span className={styles.posNum}>{isOut ? 'DNF' : car.currentPosition}</span>
+                {delta !== 0 && (
+                  <span
+                    className={`position-change ${delta > 0 ? 'pos-up' : 'pos-down'} ${styles.posChange} ${delta > 0 ? styles.posUp : styles.posDown}`}
+                    data-pos-change={delta > 0 ? 'up' : 'down'}
+                    data-pos-delta={delta > 0 ? `+${delta}` : `${delta}`}
+                    data-pos-car={car.id}
+                    title={delta > 0 ? `Gana ${delta} ${delta === 1 ? 'puesto' : 'puestos'}` : `Pierde ${-delta} ${delta === -1 ? 'puesto' : 'puestos'}`}
+                  >{delta > 0 ? '▲' : '▼'}{Math.abs(delta)}</span>
+                )}
               </div>
 
               {/* Barra color equipo */}
@@ -126,11 +184,8 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
               <div className={styles.tireCell}>
                 {!isOut && (
                   <>
-                    <span
-                      className={styles.tireDot}
-                      style={{ backgroundColor: getCompoundDotColor(car.tires.compound) }}
-                      title={`Neumático ${car.tires.compound.toUpperCase()} - Salud: ${Math.round(car.tires.health)}%`}
-                    />
+                    <CompoundBadge compound={car.tires.compound} size={16}
+                      detail={`Salud ${Math.round(car.tires.health)}%`} />
                     {car.pitStop.totalPitStops > 0 && (
                       <span className={styles.pitCountBadge}>{car.pitStop.totalPitStops}P</span>
                     )}
@@ -140,14 +195,32 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
 
               {/* Gap */}
               <div className={styles.gapCell}>
-                <span className={`${styles.gapText} ${isLeader ? styles.leaderText : ''} ${isOut ? styles.outText : ''}`} style={{ color: isOut ? '#ef4444' : (car.hasPuncture ? '#f59e0b' : undefined) }}>
-                  {formatGap(car, idx)}
-                </span>
+                {pitStatus ? (
+                  <span className={`pit-pulse ${styles.pitPulse}`} data-pit-status={pitStatus}>
+                    {pitStatus === 'queue' ? 'QUEUE' : 'PIT'}
+                  </span>
+                ) : (
+                  <span className={`${styles.gapText} ${isLeader ? styles.leaderText : ''} ${isOut ? styles.outText : ''}`} style={{ color: isOut ? '#ef4444' : (car.hasPuncture ? '#f59e0b' : undefined) }}>
+                    {formatGap(car, idx)}
+                  </span>
+                )}
               </div>
             </div>
+            {car.id === ghostAfterId && renderRejoinGhost()}
+            </React.Fragment>
           );
         })}
       </div>
+      {rejoin && !rejoin.available && (
+        <div
+          className={styles.rejoinUnavailable}
+          data-rejoin-projection="unavailable"
+          data-rejoin-car={rejoin.carId}
+          data-rejoin-reason={rejoin.reason}
+        >
+          {`Reincorporación ${rejoinCar?.driver.code ?? ''}: no disponible · ${rejoin.reason}`}
+        </div>
+      )}
     </div>
   );
 };

@@ -1,0 +1,123 @@
+
+=== track-width (Q7) ===
+  PASS: Q7: anchuras válidas en barcelona
+  PASS: Q7: anchura variable en barcelona
+  PASS: Q7: anchuras válidas en monaco
+  PASS: Q7: anchura variable en monaco
+  FAIL: Q7: posición continua al cambiar anchura/capacidad en 0.5
+  FAIL: Q7: huella física constante al estrecharse la pista
+  FAIL: Q7: posición continua al cambiar anchura/capacidad en 1
+  FAIL: Q7: huella física constante al estrecharse la pista
+track-width: 4 PASS, 4 FAIL
+
+=== racing-line (Q8) ===
+  PASS: Q8: offsets finitos dentro de pista en barcelona
+  FAIL: Q8: trazada lateral en ambos sentidos en barcelona
+  PASS: Q8: offsets finitos dentro de pista en monaco
+  FAIL: Q8: trazada lateral en ambos sentidos en monaco
+  PASS: Q8: paso real de un coche acumula goma en seco
+  PASS: Q8: engomado no regenera neumáticos
+  PASS: Q8: engomado permanece acotado
+  PASS: Q8: pausa no acumula goma
+  FAIL: Q8: reiniciar carrera limpia goma de todas las muestras
+  PASS: Q8: agarre acumulado mejora movimiento con idénticas condiciones
+  PASS: Q8: goma saturada no supera 1
+  PASS: Q8: sin coches no aparece goma
+  PASS: Q8: coche en boxes no engoma la trazada principal
+  PASS: Q8: cambiar circuito no hereda goma del anterior
+  FAIL: Q8: misma duración a distintos FPS conserva distribución de goma (1%) — error=0.00016499999999999997
+racing-line: 11 PASS, 4 FAIL
+
+=== rejoin-contract (Q13) ===
+  FAIL: Q13: parada costosa pierde posición frente a un rival a menos de un segundo
+  PASS: Q13: consultar predictor no mueve coches
+  PASS: Q13: predictor excluye retirados
+  PASS: Q13: fixture completa parada real
+  FAIL: Q13: posición prevista coincide con reincorporación controlada — prevista=1, real=2
+rejoin-contract: 3 PASS, 2 FAIL
+
+=== neutralization-motion (Q14) ===
+  FAIL: Q14: SC no recoloca ni retrocede coche x1 — distancia=-13.97100000000053 m; retroceso interno=true
+  FAIL: Q14: SC no recoloca ni retrocede coche x16 — distancia=1.3067777777797924 m; retroceso interno=true
+  FAIL: Q14: SC no recoloca ni retrocede coche x32 — distancia=16.862333333337638 m; retroceso interno=true
+  FAIL: Q14: reanudación de roja conserva distancia completada
+  PASS: Q14: reanudación no crea neumático ni combustible
+neutralization-motion: 1 PASS, 4 FAIL
+
+=== blue-flags (Q15) ===
+  FAIL: Q15: señal correcta con líder detrás
+  FAIL: Q15: señal correcta con meta
+  PASS: Q15: señal correcta con misma vuelta
+  PASS: Q15: señal correcta con líder ya pasó
+  PASS: Q15: coche out no provoca bandera azul
+  PASS: Q15: coche pit no provoca bandera azul
+  PASS: Q15: señal se apaga cuando desaparece la causa
+  PASS: Q15: neutralización sc no exige ceder para adelantar
+  PASS: Q15: neutralización vsc no exige ceder para adelantar
+blue-flags: 7 PASS, 2 FAIL
+
+=== resources (Q16) ===
+  FAIL: Q16: depósito vacío no crea combustible (low)
+  FAIL: Q16: combustible se agota sin reserva infinita (low)
+  PASS: Q16: consumo independiente de partición temporal (low)
+  FAIL: Q16: depósito vacío no crea combustible (standard)
+  FAIL: Q16: combustible se agota sin reserva infinita (standard)
+  PASS: Q16: consumo independiente de partición temporal (standard)
+  FAIL: Q16: depósito vacío no crea combustible (push)
+  FAIL: Q16: combustible se agota sin reserva infinita (push)
+  PASS: Q16: consumo independiente de partición temporal (push)
+  PASS: Q16: consumo independiente de partición temporal (overtake)
+  FAIL: Q16: depósito vacío no crea combustible (overtake)
+  FAIL: Q16: combustible se agota sin reserva infinita (overtake)
+  FAIL: Q16: despliegue de ERS consume estado real, no SOC constante
+  PASS: Q16: SOC dentro de límites
+  FAIL: Q16: coche parado sin combustible no crea recurso ni propulsión
+  FAIL: Q16: motor sobrecalentado pierde rendimiento físico antes de integrar distancia
+resources: 5 PASS, 11 FAIL
+
+=== luck-rewards (Q17) ===
+  PASS: Q17: fixture produce tirada 1
+  FAIL: Q17: tirada 1 no cambia neumáticos en pista
+  PASS: Q17: tirada 1 no crea combustible
+  PASS: Q17: doble aplicación 1 es idempotente
+  PASS: Q17: fixture produce tirada 10
+  FAIL: Q17: tirada 10 no cambia neumáticos en pista
+  PASS: Q17: tirada 10 no crea combustible
+  PASS: Q17: doble aplicación 10 es idempotente
+  PASS: Q17: fixture produce tirada 20
+  FAIL: Q17: tirada 20 no cambia neumáticos en pista
+  PASS: Q17: tirada 20 no crea combustible
+  PASS: Q17: doble aplicación 20 es idempotente
+  PASS: Q17: ID ajeno y beneficiario retirado no reciben recursos
+luck-rewards: 10 PASS, 3 FAIL
+
+=== reset-lifecycle (Q18) ===
+  PASS: Q18: motor registra incidentes antes y después de reiniciar
+  FAIL: Q18: initRace reinicia IDs de IncidentModel
+  PASS: Q18: incidente normal despliega SC urbano
+  FAIL: Q18: política personalizada urbana exige al menos 10 vueltas
+  FAIL: Q18: reset elimina evento D20 anterior
+  FAIL: Q18: cambio de GP elimina evento D20 anterior
+reset-lifecycle: 2 PASS, 4 FAIL
+
+=== drs-permissions (Q19) ===
+  PASS: Q19: helper aplica umbral estricto a 0.999s
+  FAIL: Q19: helper aplica umbral estricto a 1s
+  FAIL: Q19: helper aplica umbral estricto a 1.001s
+  FAIL: Q19: entrar en activación sin detección previa no autoriza (0.999s)
+  FAIL: Q19: entrar en activación sin detección previa no autoriza (1s)
+  PASS: Q19: entrar en activación sin detección previa no autoriza (1.001s)
+  PASS: Q19: motor cierra DRS bajo yellow
+  PASS: Q19: motor cierra DRS bajo sc
+  PASS: Q19: motor cierra DRS bajo vsc
+  PASS: Q19: motor cierra DRS bajo red
+  PASS: Q19: reinicio elimina aperturas anteriores
+drs-permissions: 7 PASS, 4 FAIL
+
+=== racing-line-geometry (Q8) ===
+  FAIL: Q8: ápice al interior del giro directo (fixture sintético)
+  FAIL: Q8: ápice al interior del giro inverso (fixture sintético)
+  FAIL: Q8: centro de goma dibujada coincide con posición de coche en trazada ideal
+racing-line-geometry: 0 PASS, 3 FAIL
+
+TOTAL RESULTS: 50 PASSED, 41 FAILED (10 módulos)

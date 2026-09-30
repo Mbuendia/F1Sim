@@ -1,0 +1,44 @@
+
+=== world-position (Q4) ===
+WebSocket server error: Port 24678 is already in use
+
+--- TEST GROUP 11: Q4 — posición única y consumidores ---
+  PASS: Q4: Posición sobre toda la ruta de boxes 0.9–0.15, sin offset lateral de pista
+  PASS: Q4: Cuatro cámaras apuntan al coche en los 101 puntos de boxes 0.9–0.15
+  PASS: Q4: Posición sobre toda la ruta de boxes 0.361–0.461, sin offset lateral de pista
+  PASS: Q4: Cuatro cámaras apuntan al coche en los 101 puntos de boxes 0.361–0.461
+  PASS: Q4: Interpolación y desplazamiento lateral conservan el ancho/capacidad Q1
+  PASS: Q4: Renderer consume posición/orientación almacenada (zoom 0.25)
+  PASS: Q4: Clic en coche visible con zoom 0.25 y rotación 0
+  PASS: Q4: Renderer consume posición/orientación almacenada (zoom 2.75)
+  PASS: Q4: Clic en coche visible con zoom 2.75 y rotación 0.8
+  PASS: Q4: Renderer consume posición/orientación almacenada (zoom 8)
+  PASS: Q4: Clic en coche visible con zoom 8 y rotación -1.2
+  PASS: Q4: Minimap real proyecta worldX/Y e incluye boxes en el encuadre
+  PASS: Q4: Minimap dibuja el carril de boxes
+  PASS: Q4: Clic y minimapa excluyen finalizados/retirados ocultos y conservan retirados visibles
+  PASS: Q4: Parrilla inicial tiene posiciones válidas antes del primer frame
+  PASS: Q4: Empezar formación actualiza inmediatamente el offset de parrilla
+  PASS: Q4: Motor sincroniza al terminar la rama formation-lap
+  PASS: Q4: Motor sincroniza al terminar la rama grid-parking
+  PASS: Q4: Motor sincroniza al terminar la rama grid-ready
+  PASS: Q4: Motor sincroniza al terminar la rama lights-1
+  PASS: Q4: Motor sincroniza al terminar la rama racing
+  PASS: Q4: Boxes se sincroniza después de avanzar, sin retraso de un paso
+  PASS: Q4: Retirados también mantienen su posición actual
+  PASS: Q4: Pausa conserva posición y progreso
+  PASS: Q4: Recolocación tras roja actualiza posición en el mismo frame
+  PASS: Q4: Cambiar circuito reinicializa posiciones con su capacidad
+  PASS: Q4: Reiniciar carrera no conserva posiciones del estado anterior
+  PASS: Q4: Parada completa del motor mantiene cámara/posición alineadas en entrada, servicio y salida
+world-position: 28 PASS, 0 FAIL
+
+=== neutralization-motion (Q14) ===
+  PASS: Q14: SC no recoloca ni retrocede coche x1 — distancia=0 m; retroceso interno=false
+  PASS: Q14: SC no recoloca ni retrocede coche x16 — distancia=0.13518315054961727 m; retroceso interno=false
+  PASS: Q14: SC no recoloca ni retrocede coche x32 — distancia=7.70544434353401 m; retroceso interno=false
+  PASS: Q14: reanudación de roja conserva distancia completada
+  PASS: Q14: reanudación no crea neumático ni combustible
+neutralization-motion: 5 PASS, 0 FAIL
+
+TOTAL RESULTS: 33 PASSED, 0 FAILED (2 módulos)

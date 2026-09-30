@@ -9,7 +9,11 @@ import {
   TrackIncident, 
   DnfNotification,
   TrackWeatherState,
-  D20LuckEvent
+  D20LuckEvent,
+  TireCompound,
+  BoxOrder,
+  BoxOrderIssuer,
+  RejoinEstimate
 } from '../types/f1';
 import { DRIVERS } from '../data/drivers';
 import { TEAMS, STARTING_GRID_ORDER } from '../data/teams';
@@ -19,11 +23,18 @@ import { buildTrackFromSvg } from '../utils/svgTrackParser';
 import { TireModel } from './TireModel';
 import { FuelModel } from './FuelModel';
 import { EngineModel } from './EngineModel';
-import { DRSModel } from './DRSModel';
+import { DrsPermissions } from './DRSModel';
+import { EnergyModel } from './EnergyModel';
+import { depositRubber } from '../utils/racingLine';
 import { PitStopModel } from './PitStopModel';
+import { commitmentT, nextCrossing, orderIsActive, updateOrderCommitment } from './BoxOrders';
 import { SafetyCarModel } from './SafetyCarModel';
+import { RejoinModel } from './RejoinModel';
 import { IncidentModel } from './IncidentModel';
-import { calculateCarWorldPosition } from '../utils/carPosition';
+import { calculateCarWorldPosition, lapsToPitEntry, limitLateralChange } from '../utils/carPosition';
+
+// Q20: distancia previa a la entrada de boxes en la que un coche que va a parar se coloca en el eje.
+const PIT_APPROACH_METERS = 250;
 
 export class RaceSimulation {
   cars: CarState[] = [];
@@ -70,6 +81,8 @@ export class RaceSimulation {
 
   // ── DADO D20 DE LA SUERTE ANTE INCIDENTES ──
   activeLuckEvent: D20LuckEvent | null = null;
+  private luckEventSeq = 0;
+  static readonly D20_BENEFIT_VALID_LAPS = 3;
 
   // ── SISTEMA DE BANDERAS Y SAFETY CAR ──
   raceFlagState: RaceFlagState = 'green';
@@ -101,7 +114,15 @@ export class RaceSimulation {
     this.initRace();
   }
 
+  private nextBoxOrderId = 1;
+  private drsPermissions = new DrsPermissions();
+
   initRace() {
+    IncidentModel.reset();
+    this.activeLuckEvent = null;
+    this.drsPermissions.reset();
+    this.activeTrack.points.forEach(point => { point.rubberGrip = 0; });
+    this.nextBoxOrderId = 1;
     this.raceTimeSec = 0;
     this.leaderLap = 0;
     this.isFinished = false;
@@ -200,6 +221,8 @@ export class RaceSimulation {
 
         raceDayLuckFactor,
 
+        paceMode: 'balanced',
+
         tires: initialTires,
         fuelKg: FuelModel.INITIAL_FUEL_KG,
         engineMode: 'standard',
@@ -241,6 +264,9 @@ export class RaceSimulation {
           totalPitStops: 0,
           lastStopDuration: null,
           targetCompound: 'hard',
+          activeBoxOrder: null,
+          waitingForBox: false,
+          boxWaitTimer: 0,
           stints: [
             {
               stintNumber: 1,
@@ -277,6 +303,140 @@ export class RaceSimulation {
     }
   }
 
+  // [Q15] Banderas azules: consulta común de tráfico y ajustes de cesión (ajustes de juego, no cifras FIA).
+  static readonly BLUE_FLAG_GAP_SEC = 1.2;
+  static readonly BLUE_FLAG_RAMP_IN_SEC = 2.0;
+  static readonly BLUE_FLAG_RAMP_OUT_SEC = 1.5;
+  static readonly BLUE_FLAG_LIFT = 0.15;
+  static readonly BLUE_FLAG_OFFSET = 0.7;
+  static readonly BLUE_FLAG_NARROW_LEVEL = 0.1;
+
+  /** Coche con al menos media vuelta más de progreso que viene físicamente detrás a menos de BLUE_FLAG_GAP_SEC. */
+  lappingCarBehind(car: CarState, lapDistanceMeters = this.activeTrack.lapLengthMeters): CarState | undefined {
+    if (car.isInPitLane || car.pitStop.isPitting) return undefined;
+    return this.cars.find(c => {
+      const distance = ((car.progress - c.progress) % 1 + 1) % 1;
+      return c.id !== car.id && c.status === 'running' && !c.isInPitLane && !c.pitStop.isPitting
+        && c.progress - car.progress > 0.5 && distance > 0
+        && distance * lapDistanceMeters / Math.max(1, c.currentSpeedKmh / 3.6) < RaceSimulation.BLUE_FLAG_GAP_SEC;
+    });
+  }
+
+  // [Q14] Despliegue y retirada del Safety Car por el motor (también los usa el botón DEV): sale de su garaje en el
+  // pit lane y vuelve a él; nunca se coloca en pista por asignación.
+  deploySafetyCar(reason: string, options: { targetLaps?: number } = {}): boolean {
+    if (this.safetyCar.isDeployed || this.raceFlagState === 'red') return false;
+    const leader = [...this.cars].filter(c => c.status === 'running').sort((a, b) => b.progress - a.progress)[0];
+    SafetyCarModel.deploy(this.safetyCar, reason, leader ? leader.progress : 0, this.raceTimeSec,
+      (OFFICIAL_CIRCUITS[this.circuitId] || OFFICIAL_CIRCUITS.barcelona).trackType, this.activeTrack);
+    if (options.targetLaps !== undefined) this.safetyCar.targetLaps = options.targetLaps;
+    this.raceFlagState = 'sc';
+    this.vscActive = false; this.vscTimer = 0;
+    return true;
+  }
+
+  recallSafetyCar(): boolean {
+    const sc = this.safetyCar;
+    if (!sc.isDeployed || sc.mode === 'returning' || sc.mode === 'in') return false;
+    if (sc.isInPitLane) {
+      // Aún no había salido del pit lane: vuelve a su garaje sin salir a pista.
+      sc.isDeployed = false; sc.mode = 'in'; sc.isInPitLane = false; sc.currentSpeedKmh = 0;
+      if (this.raceFlagState === 'sc') this.raceFlagState = 'green';
+      return true;
+    }
+    sc.mode = 'returning';
+    return true;
+  }
+
+  // [Q13] Predictor de reincorporación. La pérdida sale de RejoinModel (réplica 1D del pit lane y la pista del
+  // motor, validada contra el simulador); la neutralización limita la velocidad en pista y reduce la pérdida.
+  static readonly REJOIN_UNCERTAINTY_SEC = 2.0;
+  static readonly REJOIN_UNCERTAINTY_SC_SEC = 5.0;
+
+  private rejoinSpeedCap(): { capKmh: number | null; neutralization: 'SC' | 'VSC' | null } {
+    const cap = SafetyCarModel.getMaxAllowedSpeed(this.raceFlagState, this.safetyCar.mode);
+    if (this.raceFlagState === 'sc' && cap !== null) return { capKmh: cap, neutralization: 'SC' };
+    if (this.raceFlagState === 'vsc' || this.vscActive) return { capKmh: cap ?? 160, neutralization: 'VSC' };
+    return { capKmh: cap, neutralization: null };
+  }
+
+  private rejoinContext(car: CarState) {
+    const { capKmh, neutralization } = this.rejoinSpeedCap();
+    const benefit = car.pitStop.crewBenefit;
+    const benefitActive = Boolean(benefit && car.currentLap <= benefit.expiresLap);
+    const serviceSec = benefitActive && benefit ? (benefit.minSec + benefit.maxSec) / 2 : RejoinModel.MEAN_SERVICE_SEC;
+    const pitLossSec = RejoinModel.pitLossSec(this.activeTrack, car, capKmh, serviceSec);
+    // Double stack (Q11): esperar al compañero que ocupa el box, o su servicio si ya está comprometido a parar.
+    let queueSec = 0;
+    const teammate = this.cars.find(c => c.driver.teamId === car.driver.teamId && c.id !== car.id);
+    if (teammate) {
+      const teammateInBox = PitStopModel.getTeammateInBox(car, this.cars);
+      if (teammateInBox) {
+        queueSec = Math.max(0, teammateInBox.pitStop.stopDuration - teammateInBox.pitStop.currentStopTimer);
+      } else if (teammate.pitStop.activeBoxOrder && teammate.pitStop.activeBoxOrder.status === 'committed') {
+        queueSec = RejoinModel.MEAN_SERVICE_SEC;
+      }
+    }
+    const profile = RejoinModel.lapProfile(this.activeTrack, car, capKmh);
+    return { capKmh, neutralization, pitLossSec, queueSec, serviceSec, benefitLabel: benefitActive ? benefit?.label ?? null : null, timeLossSec: pitLossSec + queueSec, profile };
+  }
+
+  private rejoinPositionAt(car: CarState, rejoinProgress: number): number {
+    return 1 + this.cars.filter(other => other.id !== car.id &&
+      other.status !== 'out' && other.progress > rejoinProgress).length;
+  }
+
+  getRejoinProjection(carId: number): { timeLossSec: number; projectedPos: number } {
+    const car = this.getCarById(carId);
+    if (!car || !this.activeTrack) return { timeLossSec: 0, projectedPos: car ? car.currentPosition : 1 };
+    const { timeLossSec, profile } = this.rejoinContext(car);
+    const rejoinProgress = RejoinModel.progressBefore(profile, car.progress, timeLossSec);
+    return { timeLossSec, projectedPos: this.rejoinPositionAt(car, rejoinProgress) };
+  }
+
+  /** Segundos en régimen estable (perfil de la pista con la neutralización actual) para ir de un progreso a otro. */
+  getRejoinTimeGap(carId: number, fromProgress: number, toProgress: number): number {
+    const car = this.getCarById(carId);
+    if (!car || !this.activeTrack) return NaN;
+    return RejoinModel.timeBetween(this.rejoinContext(car).profile, fromProgress, toProgress);
+  }
+
+  // [Q13] Estimación visible para la UI: mismo predictor, con fuente, intervalo y motivo si no está disponible.
+  getRejoinEstimate(carId: number): RejoinEstimate {
+    const car = this.getCarById(carId);
+    if (!car || !this.activeTrack) return { available: false, carId, reason: 'Sin datos del piloto' };
+    if (car.status === 'out') return { available: false, carId, reason: 'Piloto retirado' };
+    if (car.status === 'finished' || this.isFinished) return { available: false, carId, reason: 'Carrera terminada' };
+    if (this.lightState !== 'racing') return { available: false, carId, reason: 'Carrera no iniciada' };
+    if (this.raceFlagState === 'red') return { available: false, carId, reason: 'Bandera roja: carrera detenida' };
+    if (car.isInPitLane || car.pitStop.isPitting) return { available: false, carId, reason: 'En boxes: reincorporación en curso' };
+
+    const context = this.rejoinContext(car);
+    const { timeLossSec, profile, neutralization, capKmh } = context;
+    const uncertaintySec = neutralization === 'SC' ? RaceSimulation.REJOIN_UNCERTAINTY_SC_SEC : RaceSimulation.REJOIN_UNCERTAINTY_SEC;
+    const posAt = (lossSec: number) => this.rejoinPositionAt(car, RejoinModel.progressBefore(profile, car.progress, Math.max(0, lossSec)));
+    const rejoinProgress = RejoinModel.progressBefore(profile, car.progress, timeLossSec);
+    const cardLoss = this.activeTrack.pitLaneTimeLossSec;
+    const fmt = (v: number) => v.toFixed(1).replace('.', ',');
+    const source = `Modelo de boxes del simulador: pit lane a ${PitStopModel.PIT_SPEED_LIMIT_KMH} km/h + servicio ${context.benefitLabel ? `${context.benefitLabel.toLowerCase()} ` : 'medio '}${fmt(context.serviceSec)} s = ${fmt(context.pitLossSec)} s` +
+      (context.queueSec > 0 ? ` + espera double stack ${fmt(context.queueSec)} s` : '') +
+      (neutralization === 'SC' ? ` · bajo Safety Car (${capKmh} km/h; compactación no modelada)` : '') +
+      (neutralization === 'VSC' ? ` · bajo VSC (${capKmh} km/h)` : '') +
+      (cardLoss ? ` · ficha del circuito ${fmt(cardLoss)} s` : '');
+    return {
+      available: true,
+      carId,
+      projectedPos: this.rejoinPositionAt(car, rejoinProgress),
+      bestPos: posAt(timeLossSec - uncertaintySec),
+      worstPos: posAt(timeLossSec + uncertaintySec),
+      timeLossSec,
+      uncertaintySec,
+      rejoinProgress,
+      rejoinTrackT: ((rejoinProgress % 1) + 1) % 1,
+      source,
+    };
+  }
+
   getEffectiveTimeScale(): number {
     switch (this.speedMultiplier) {
       case 1: return 2.2;
@@ -296,7 +456,32 @@ export class RaceSimulation {
   }
 
   update(dtRaw: number) {
-    this.advanceSimulation(dtRaw);
+    // Pasos de <=50 ms simulados: los cruces se procesan también a x16/x32.
+    const steps = Math.max(1, Math.ceil(dtRaw * this.getEffectiveTimeScale() / 0.05));
+    for (let step = 0; step < steps; step++) {
+      const previous = this.cars.map(car => car.progress);
+      const onTrack = this.cars.map(car => car.status === 'running' && !car.isInPitLane && !car.pitStop.isPitting);
+      const racing = this.lightState === 'racing' && !this.isPaused && !this.isFinished;
+      this.advanceSimulation(dtRaw / steps);
+      if (racing) {
+        const dt = dtRaw / steps * this.getEffectiveTimeScale();
+        this.drsPermissions.record(this.cars.map((car, i) => ({
+          id: car.id, from: previous[i], to: car.progress,
+          onTrack: onTrack[i] && !car.isInPitLane && !car.pitStop.isPitting,
+        })), this.activeTrack.drsDetections || [], this.raceTimeSec - dt, dt);
+      }
+      if (racing) this.cars.forEach((car, index) => {
+        const wasInPitLane = car.isInPitLane;
+        PitStopModel.processCrossings(car, previous[index], this.activeTrack,
+          dtRaw / steps * this.getEffectiveTimeScale(), this.raceFlagState, this.safetyCar.mode);
+        // [Q16] Reinicio de contadores ERS en el mismo cruce de la entrada de boxes (sin flujo: dt = 0).
+        if (!wasInPitLane && car.isInPitLane && car.energy) {
+          EnergyModel.update(car.energy, car.engineMode, false, 0, car.currentLap, true, car.fuelKg > 0);
+        }
+        const order = car.pitStop.activeBoxOrder;
+        if (order?.status === 'consumed' && order.consumedAt === undefined) order.consumedAt = this.raceTimeSec;
+      });
+    }
     // Después de todas las ramas y ajustes del motor, antes de dibujar el frame.
     this.updateWorldPositions();
   }
@@ -442,7 +627,7 @@ export class RaceSimulation {
           }
         } else if (response === 'sc' && this.raceFlagState !== 'red') {
           const leaderProgress = leaderCar ? leaderCar.progress : 0;
-          SafetyCarModel.deploy(this.safetyCar, `Abandono de ${car.driver.code}`, leaderProgress, this.raceTimeSec);
+          SafetyCarModel.deploy(this.safetyCar, `Abandono de ${car.driver.code}`, leaderProgress, this.raceTimeSec, (OFFICIAL_CIRCUITS[this.circuitId] || OFFICIAL_CIRCUITS.barcelona).trackType, this.activeTrack);
           this.raceFlagState = 'sc';
           // [FIX C6] Desactivar VSC si estaba activo
           this.vscActive = false; this.vscTimer = 0;
@@ -466,7 +651,8 @@ export class RaceSimulation {
         // Actualizar Pit Stops
         const isHandlingPit = PitStopModel.updatePitStop(
           car, dt, lapDistanceMeters, this.activeTrack, this.totalLaps,
-          this.raceFlagState, this.safetyCar.mode, this.safetyCar.progress
+          this.raceFlagState, this.safetyCar.mode, this.safetyCar.progress,
+          this.cars
         );
       
       if (isHandlingPit) {
@@ -475,6 +661,11 @@ export class RaceSimulation {
         car.speed = (car.currentSpeedKmh / 3.6) / lapDistanceMeters;
         car.progress += (dt * (car.currentSpeedKmh / 3.6)) / lapDistanceMeters;
         car.trackT = ((car.progress % 1) + 1) % 1;
+        // [Q16] En boxes: reinicio reglamentario de los contadores por vuelta al entrar, sin flujos ni recarga.
+        car.energy ??= EnergyModel.create();
+        EnergyModel.update(car.energy, car.engineMode, false, dt, car.currentLap, true, car.fuelKg > 0);
+        car.telemetry.batterySoc = car.energy.storedMJ * 25;
+        car.telemetry.ersDeploying = false;
         car.telemetry.speedKmh = Math.round(car.currentSpeedKmh);
         car.lateralOffset = 0;
         car.targetLateralOffset = 0;
@@ -509,35 +700,36 @@ export class RaceSimulation {
       const pointIndex = Math.floor(normalizedT * totalPoints) % totalPoints;
       const trackPoint = points[pointIndex] || points[0];
 
-      const isBeingLapped = leaderCar && leaderCar.id !== car.id && (leaderCar.progress - car.progress) >= 0.85;
-      // [FIX A2] Buscar coche MÁS RÁPIDO que viene POR DETRÁS acercándose (su progress < car.progress pero está en una vuelta superior)
-      const carApproachingBehind = this.cars.find(
-        c => c.id !== car.id && c.status === 'running' && !c.pitStop.isPitting
-          && c.currentLap > car.currentLap  // El coche está en una vuelta superior (nos está doblando)
-          && (car.progress - c.progress) > 0 && (car.progress - c.progress) < 0.05 // Está justo detrás acercándose
-      );
-
-      if (isBeingLapped && carApproachingBehind) {
-        car.isBlueFlagged = true;
-        car.targetLateralOffset = -0.70;
-      } else {
-        car.isBlueFlagged = false;
-      }
+      // [Q15] Bandera azul: señal inmediata; la cesión (nivel 0..1) sube y baja de forma gradual y solo es completa
+      // donde hay espacio (recta con al menos dos coches de ancho). En curva lenta mantiene la trazada.
+      const carApproachingBehind = this.raceFlagState === 'green' ? this.lappingCarBehind(car, lapDistanceMeters) : undefined;
+      car.isBlueFlagged = Boolean(carApproachingBehind);
+      const roomToYield = trackPoint.speedLimitFactor >= 0.65 &&
+        (trackPoint.trackWidthCars ?? OFFICIAL_CIRCUITS[this.circuitId]?.trackWidthCars ?? 3) >= 2;
+      const yieldTarget = car.isBlueFlagged ? (roomToYield ? 1 : RaceSimulation.BLUE_FLAG_NARROW_LEVEL) : 0;
+      const yieldLevel = car.blueFlagLevel ?? 0;
+      car.blueFlagLevel = yieldTarget > yieldLevel
+        ? Math.min(yieldTarget, yieldLevel + dt / RaceSimulation.BLUE_FLAG_RAMP_IN_SEC)
+        : Math.max(yieldTarget, yieldLevel - dt / RaceSimulation.BLUE_FLAG_RAMP_OUT_SEC);
 
       const carAhead = car.carAheadId !== null ? this.getCarById(car.carAheadId) : null;
-      if (carAhead && carAhead.pitStop.isPitting && !car.pitStop.isPitting) {
-        car.engineMode = 'push';
-        car.aggression = 'aggressive';
-      } else if (car.engineMode === 'push' && (!carAhead || !carAhead.pitStop.isPitting)) {
-        car.engineMode = 'standard';
-        car.aggression = 'balanced';
+      const pace = this.getPaceStatus(car.id)!;
+      let effectiveEngineMode = 'standard';
+      let effectiveAggression = 'balanced';
+      switch (pace.effective) {
+        case 'save': effectiveEngineMode = 'low'; effectiveAggression = 'safe'; break;
+        case 'push': effectiveEngineMode = 'push'; effectiveAggression = 'aggressive'; break;
       }
+      car.engineMode = effectiveEngineMode as CarState['engineMode'];
+      car.aggression = effectiveAggression as CarState['aggression'];
 
       // DRS — Desactivado bajo SC, VSC o banderas amarillas
       const drsBlockedByFlags = this.raceFlagState !== 'green' || this.drsDisabledLaps > 0;
-      const isEligibleForDrs = !drsBlockedByFlags && trackPoint.isDrsZone && car.currentLap > 1 && car.gapToCarAheadSec > 0 && car.gapToCarAheadSec <= 1.0;
-      car.drsEligible = !drsBlockedByFlags && trackPoint.isDrsZone && car.currentLap > 1;
-      car.drsActive = isEligibleForDrs;
+      car.drsEligible = !drsBlockedByFlags && car.currentLap > 1 &&
+        this.drsPermissions.eligible(car.id, trackPoint.drsZoneId);
+      car.drsActive = this.drsPermissions.activation(car.id,
+        trackPoint.isDrsZone ? trackPoint.drsZoneId : undefined,
+        car.drsEligible, trackPoint.isBrakingZone);
 
       const isCornering = trackPoint.speedLimitFactor < 0.80;
       const tireResult = TireModel.updateTires(
@@ -559,6 +751,9 @@ export class RaceSimulation {
       );
       car.fuelKg = fuelResult.remainingFuelKg;
 
+      car.energy ??= EnergyModel.create();
+      const energyDeployment = EnergyModel.update(car.energy, car.engineMode, trackPoint.isBrakingZone,
+        dt, car.currentLap, false, car.fuelKg > 0);
       const enginePerf = EngineModel.getEnginePerformance(car.engineMode);
       
       const driverSkillMultiplier = 
@@ -579,26 +774,23 @@ export class RaceSimulation {
         enginePerf.speedFactor * 
         (car.drsActive ? 1.07 : 1.0) * 
         slipstreamBonus * 
-        raceDayVariance;
+        raceDayVariance * (1 + energyDeployment * 0.025);
+      if (car.engineTempCelsius > 115) {
+        effectivePace *= Math.max(0.92, 1 - (car.engineTempCelsius - 115) / 20 * 0.08);
+      }
 
       // Q8: Dynamic Rubber Grip Accumulation
       // If car is close to the ideal line, increase pace slightly.
       const lateralDiff = Math.abs(car.lateralOffset - (trackPoint.idealLineOffset || 0));
       const isOnIdealLine = lateralDiff < 0.25;
       
-      if (isOnIdealLine) {
-        // Boost pace based on accumulated rubber grip (up to +2%)
-        effectivePace *= (1.0 + trackPoint.rubberGrip * 0.02);
-        
-        // Accumulate rubber (only if running normal race conditions)
-        if (this.raceFlagState === 'green') {
-          // Increment grip slowly (max 1.0)
-          trackPoint.rubberGrip = Math.min(1.0, trackPoint.rubberGrip + 0.00015 * dt);
-        }
-      } else {
-        // Penalty for driving offline (marbles/dirt)
-        effectivePace *= 0.985;
-      }
+      // [Q15] Transición continua entre trazada y fuera de trazada (0,15–0,35 de separación, centrada en el umbral
+      // 0,25): apartarse al ceder no provoca un salto de ritmo. Extremos iguales: +2 % goma en trazada, −1,5 % fuera.
+      const offline = Math.min(1, Math.max(0, (lateralDiff - 0.15) / 0.2));
+      // Boost pace based on accumulated rubber grip (up to +2%)
+      effectivePace *= 1.0 + trackPoint.rubberGrip * 0.02 * (1 - offline);
+      // Penalty for driving offline (marbles/dirt)
+      effectivePace *= 1 - 0.015 * offline;
 
       // Automatically try to follow the ideal racing line if not overtaking/blue flagged
       if (!car.isOvertaking && !car.isBlueFlagged && this.raceFlagState === 'green' && !car.pitStop.isPitting && !car.isInPitLane) {
@@ -618,7 +810,7 @@ export class RaceSimulation {
         targetKmh = 70;
       } else if (speedLimitFactor >= 0.90) {
         // Recta a fondo
-        const topStraightSpeed = 338 + (car.drsActive ? 18 : 0) + (car.engineMode === 'push' ? 8 : 0) + (car.team.carPerformance - 0.88) * 120;
+        const topStraightSpeed = 338 + (car.drsActive ? 18 : 0) + (car.engineMode === 'push' ? 5 : 0) + (car.team.carPerformance - 0.88) * 120;
         targetKmh = topStraightSpeed * effectivePace;
       } else if (speedLimitFactor >= 0.65) {
         // Curva rápida de media-alta velocidad
@@ -631,9 +823,8 @@ export class RaceSimulation {
         targetKmh = (68 + (speedLimitFactor - 0.20) * 240) * effectivePace;
       }
 
-      if (car.isBlueFlagged) {
-        targetKmh *= 0.85;
-      }
+      // [Q15] Levantar en proporción a la cesión (máx. BLUE_FLAG_LIFT), sin salto de velocidad objetivo.
+      targetKmh *= 1 - RaceSimulation.BLUE_FLAG_LIFT * (car.blueFlagLevel ?? 0);
 
       // ── RESTRICCIONES DE VELOCIDAD BAJO SC / VSC / BANDERA AMARILLA ──
       const scMaxSpeed = SafetyCarModel.getMaxAllowedSpeed(this.raceFlagState, this.safetyCar.mode);
@@ -656,6 +847,20 @@ export class RaceSimulation {
           car.targetLateralOffset = 0;
         }
       }
+      // [Q14] Aproximación al SC con curva de frenada: el coche que lo alcanza reduce a tiempo para quedarse detrás
+      // (v² = v_SC² + 2·a·d, a = 12 m/s², a CATCH_DISTANCE_M/2 del SC), en vez de un frenazo instantáneo al llegar.
+      const sc = this.safetyCar;
+      if (sc.isDeployed && !sc.isInPitLane && (sc.mode === 'deploying' || sc.mode === 'leading')) {
+        const gapM = (sc.progress - car.progress) * lapDistanceMeters;
+        if (gapM >= 0 && gapM < 0.08 * lapDistanceMeters) {
+          // Detenerse antes del margen mínimo que impone el límite de seguridad de abajo (0,005 vueltas).
+          const followM = Math.max(SafetyCarModel.CATCH_DISTANCE_M / 2, 0.005 * lapDistanceMeters + 5);
+          const vSc = sc.currentSpeedKmh / 3.6;
+          const allowed = Math.sqrt(vSc * vSc + 2 * 12 * Math.max(0, gapM - followM)) * 3.6;
+          targetKmh = Math.min(targetKmh, allowed);
+        }
+      }
+
       // Bandera amarilla local: reducir velocidad en el sector afectado
       const carSector: 1 | 2 | 3 = normalizedT < 0.33 ? 1 : normalizedT < 0.66 ? 2 : 3;
       if (this.sectorFlags[carSector - 1] !== 'green' && this.raceFlagState === 'green') {
@@ -667,6 +872,8 @@ export class RaceSimulation {
       if (isWaitingForScRestartLine) {
         targetKmh = Math.min(targetKmh, 120); // Velocidad dictada por el líder hasta la meta
       }
+
+      if (car.fuelKg <= 0) targetKmh = 0;
 
       // Aceleración vs Frenada
       let throttleVal = 0;
@@ -714,7 +921,7 @@ export class RaceSimulation {
           const isCatchingPackUnderSc = isCatchingPack && this.safetyCar.isDeployed;
           const wantsToOvertake = ((canOvertakeHere || rareCornerOvertakeChance) && hasOvertakePace) || isCatchingPackUnderSc;
 
-          if (wantsToOvertake && !isWaitingForScRestartLine) {
+          if (wantsToOvertake && !isWaitingForScRestartLine && this.raceFlagState === 'green') {
             car.isOvertaking = true;
             car.targetLateralOffset = car.id % 2 === 0 ? 0.55 : -0.55;
           } else {
@@ -723,7 +930,6 @@ export class RaceSimulation {
             
             // Si estamos en resalida de SC, forzamos un muro físico entre los coches para que hagan una fila india perfecta
             if (isWaitingForScRestartLine && deltaProgress < 0.0025) {
-               car.progress = carAhead.progress - 0.0025;
                car.currentSpeedKmh = Math.min(car.currentSpeedKmh, carAhead.currentSpeedKmh);
             } else {
                car.currentSpeedKmh = Math.min(car.currentSpeedKmh, carAhead.currentSpeedKmh * 0.99);
@@ -738,27 +944,46 @@ export class RaceSimulation {
         }
       } else if (!car.isBlueFlagged) {
         car.isOvertaking = false;
-        car.targetLateralOffset = 0;
+        car.targetLateralOffset = this.raceFlagState === 'green' ? (trackPoint.idealLineOffset || 0) : 0;
       }
 
-      car.lateralOffset += (car.targetLateralOffset - car.lateralOffset) * Math.min(1.0, dt * 4.0);
+      // [Q15] Apartarse hacia el lado contrario a la trazada en proporción a la cesión.
+      // El lado se elige al empezar a ceder y se mantiene hasta terminar (la trazada cruza el eje en las rectas).
+      if ((car.blueFlagLevel ?? 0) > 0 && !car.isOvertaking) {
+        car.blueFlagSide ??= (trackPoint.idealLineOffset ?? 0) >= 0 ? -1 : 1;
+        car.targetLateralOffset = car.blueFlagSide * RaceSimulation.BLUE_FLAG_OFFSET * (car.blueFlagLevel ?? 0);
+      } else if ((car.blueFlagLevel ?? 0) === 0) {
+        car.blueFlagSide = undefined;
+      }
 
+      // Q20: con la parada decidida, llegar a la entrada por el eje (la ruta de boxes sale de la línea central).
+      const pitPlan = car.pitStop;
+      const pitDecided = pitPlan.isPitting || car.hasPuncture || car.tires.health <= 5 || pitPlan.activeBoxOrder?.status === 'committed';
+      if (pitDecided && !car.isInPitLane && lapsToPitEntry(this.activeTrack, car.progress) * lapDistanceMeters < PIT_APPROACH_METERS) {
+        car.isOvertaking = false;
+        car.targetLateralOffset = 0;
+      }
+      // Q20: sin deslizamientos laterales más rápidos que el avance (evita saltos a baja velocidad).
+      car.lateralOffset += limitLateralChange((car.targetLateralOffset - car.lateralOffset) * Math.min(1.0, dt * 4.0),
+        this.activeTrack, dt * car.currentSpeedKmh / 3.6, trackPoint);
+
+      // Limit forward displacement; never repair spacing by moving a car backwards.
+      // [Q14] El SC en el pit lane no limita a los coches de pista.
+      if (this.safetyCar.isDeployed && !this.safetyCar.isInPitLane && this.safetyCar.mode !== 'idle' && this.safetyCar.mode !== 'in') {
+        const gap = this.safetyCar.progress - car.progress;
+        if (gap >= 0 && gap < 0.08) {
+          car.speed = Math.min(car.speed, Math.max(0, gap - 0.005) / Math.max(dt, 1e-9));
+        }
+      }
+      if ((this.raceFlagState !== 'green' || isWaitingForScRestartLine) && carAhead &&
+          !carAhead.isInPitLane && carAhead.progress > car.progress) {
+        car.speed = Math.min(car.speed, Math.max(0, carAhead.progress - car.progress - 0.0025) / Math.max(dt, 1e-9));
+      }
+      car.currentSpeedKmh = car.speed * lapDistanceMeters * 3.6;
       const prevProgress = car.progress;
       car.progress += car.speed * dt;
-
-      // HARD BLOCKING DEL SAFETY CAR: Nadie puede físicamente adelantar al SC, SALVO LOS DOBLADOS
-      if (this.safetyCar.isDeployed && this.safetyCar.mode !== 'idle' && this.safetyCar.mode !== 'in') {
-        const scBlockDistance = 0.005;
-        const leader = this.cars.find(c => c.currentPosition === 1);
-        const isCatchingPack = leader ? (leader.progress - car.progress) >= 0.15 : false;
-        
-        const relativeDiff = car.progress - this.safetyCar.progress;
-        // Si el coche NO está lejos, y está justo intentando adelantar al SC en esta misma vuelta (hasta +0.02 por delante)
-        if (!isCatchingPack && relativeDiff > -scBlockDistance && relativeDiff < 0.02) {
-           car.progress = this.safetyCar.progress - scBlockDistance;
-           car.currentSpeedKmh = Math.min(car.currentSpeedKmh, this.safetyCar.currentSpeedKmh);
-           car.speed = (car.currentSpeedKmh / 3.6) / lapDistanceMeters;
-        }
+      if (isOnIdealLine && this.raceFlagState === 'green' && this.weather.waterDepthMm === 0) {
+        depositRubber(points, prevProgress, car.progress);
       }
 
       this.updateCarSectors(car, normalizedT);
@@ -874,13 +1099,6 @@ export class RaceSimulation {
       car.engineTempCelsius += (engineHeatInput - car.engineTempCelsius) * Math.min(1.0, dt * engineCoolRate);
       car.engineTempCelsius = Math.max(80, Math.min(135, car.engineTempCelsius));
 
-      // ── PENALIZACIÓN POR SOBRECALENTAMIENTO DE MOTOR ──
-      // Por encima de 115°C el motor pierde potencia progresivamente
-      if (car.engineTempCelsius > 115) {
-        const overheatPenalty = 1.0 - ((car.engineTempCelsius - 115) / 20) * 0.08; // Hasta -8% a 135°C
-        effectivePace *= Math.max(0.92, overheatPenalty);
-      }
-
       car.stats = {
         pushLaps: Math.floor(car.currentLap * 0.35),
         savingLaps: Math.floor(car.currentLap * 0.65),
@@ -905,8 +1123,8 @@ export class RaceSimulation {
         aggression: car.aggression,
         fuelKg: Number(car.fuelKg.toFixed(1)),
         fuelPerLap: Number(FuelModel.BASE_CONSUMPTION_PER_LAP.toFixed(2)),
-        batterySoc: 85,
-        ersDeploying: car.engineMode === 'push',
+        batterySoc: car.energy.storedMJ * 25,
+        ersDeploying: energyDeployment > 0,
         tireWear: Math.round(car.tires.health),
         tireHealthFL: Math.round(tireResult.tireHealthFL),
         tireHealthFR: Math.round(tireResult.tireHealthFR),
@@ -932,18 +1150,21 @@ export class RaceSimulation {
 
     // 3. Actualizar Safety Car en pista
     if (this.safetyCar.isDeployed) {
-      SafetyCarModel.update(this.safetyCar, dt, this.cars, this.incidents, lapDistanceMeters);
+      SafetyCarModel.update(this.safetyCar, dt, this.cars, this.incidents, lapDistanceMeters, this.activeTrack);
       // Compactar el pelotón detrás del SC
       if (this.safetyCar.mode === 'leading') {
         SafetyCarModel.compactField(this.cars, this.safetyCar.progress, dt);
       }
-      // SC ha entrado en boxes → preparamos bandera verde
-      if (this.safetyCar.mode === 'in') {
+      // [Q14] SC entrando al pit lane en su retirada (o ya en su garaje) → preparamos bandera verde una sola vez
+      const scEnteredPits = this.safetyCar.mode === 'in' || (this.safetyCar.mode === 'returning' && this.safetyCar.isInPitLane);
+      if (scEnteredPits && this.raceFlagState === 'sc') {
         const leader = [...this.cars].filter(c => c.status !== 'out').sort((a, b) => b.progress - a.progress)[0];
         // Establecemos la vuelta a partir de la cual se podrá adelantar
         this.scEndingLap = leader ? Math.floor(leader.progress) : null;
         this.raceFlagState = 'green';
-        this.drsDisabledLaps = 2; // DRS deshabilitado durante 2 vueltas tras SC
+        // [Q19] S22.1: una vuelta completada tras el SC. El contador baja en cada cruce del líder por la línea: el
+        // primero es la línea de reanudación (el SC libera antes de ella) y el segundo completa esa vuelta.
+        this.drsDisabledLaps = 2;
       }
     }
 
@@ -953,7 +1174,8 @@ export class RaceSimulation {
       if (this.vscTimer >= this.vscDuration || IncidentModel.isTrackClear(this.incidents)) {
         this.vscActive = false;
         this.raceFlagState = 'green';
-        this.drsDisabledLaps = 1; // DRS deshabilitado 1 vuelta tras VSC
+        // [Q19] S22.1: tras el VSC no hay espera adicional de DRS (antes 1 vuelta).
+        this.drsDisabledLaps = 0;
       }
     }
 
@@ -967,34 +1189,16 @@ export class RaceSimulation {
       
       const allCleared = IncidentModel.isTrackClear(this.incidents);
       if (allCleared) {
-        // Reiniciar carrera tras bandera roja (standing start)
+        // Await restart confirmation without teleporting or granting resources.
         this.raceFlagState = 'green';
         this.drsDisabledLaps = 2;
-
-        const activeCars = this.cars.filter(c => c.status === 'running' || c.status === 'pit').sort((a, b) => a.currentPosition - b.currentPosition);
-        
-        // Poner a todos los coches en parrilla con la vuelta actual retenida
-        const currentLapVal = activeCars.length > 0 ? Math.floor(activeCars[0].progress) : 0;
-        
-        activeCars.forEach((car, idx) => {
-          // Durante la bandera roja los mecánicos cambian neumáticos (alta probabilidad)
-          if (Math.random() < 0.85) {
-            car.tires.health = 100;
-            car.tires.lapsOnTire = 0;
-          }
-          
-          car.status = 'running';
-          car.pitStop.isPitting = false;
-          car.isInPitLane = false;
+        this.scEndingLap = Math.floor(Math.max(0, ...this.cars.filter(c => c.status !== 'out').map(c => c.progress)));
+        for (const car of this.cars) {
+          if (car.status === 'out' || car.status === 'finished') continue;
           car.currentSpeedKmh = 0;
           car.speed = 0;
-          car.progress = currentLapVal - ((idx + 1) * 0.0035);
-          car.trackT = ((car.progress % 1) + 1) % 1;
-          car.lateralOffset = idx % 2 === 0 ? 0.65 : -0.65;
-          car.targetLateralOffset = car.lateralOffset;
-        });
-
-        // Activar semáforos
+          car.telemetry.speedKmh = 0;
+        }
         this.lightState = 'grid-ready';
         this.lightsTimer = 0;
       }
@@ -1263,25 +1467,38 @@ export class RaceSimulation {
       optimalCompound = 'medium';
     }
 
+    // [Q17] Catálogo de beneficios legales por tramo: preparación del equipo de boxes (acota solo la duración del
+    // servicio de la próxima parada real, 3 vueltas de validez), informe del ingeniero (estimación Q13) o nada.
+    const code = luckyCar.driver.code;
+    const fmt = (v: number) => v.toFixed(1).replace('.', ',');
+    const advice = `Compuesto recomendado para la próxima parada: ${optimalCompound.toUpperCase()}.`;
     let rewardTitle = '';
     let rewardDescription = '';
+    let benefit: D20LuckEvent['benefit'];
 
-    if (roll === 20) {
-      rewardTitle = '💥 ¡ÉXITO CRÍTICO D20! (NAT 20)';
-      rewardDescription = `¡Parada milagrosa en boxes bajo ${triggerType.toUpperCase()}! Neumáticos ${optimalCompound.toUpperCase()} nuevos a estrenar con 100% de agarre y 0s de pérdida de tiempo.`;
-    } else if (roll >= 14) {
-      rewardTitle = `✨ GOLPE DE SUERTE TÁCTICO (DADO ${roll})`;
-      rewardDescription = `Ventana de parada de boxes óptima aprovechada con compuesto ${optimalCompound.toUpperCase()} fresco.`;
+    if (roll >= 14) {
+      const ready = roll === 20;
+      const [min, max] = ready ? [1.8, 2.2] : [2.2, 2.6];
+      benefit = { kind: ready ? 'crew-ready' : 'crew-alert', label: ready ? 'Box preparado' : 'Equipo en alerta',
+        serviceMinSec: min, serviceMaxSec: max, validLaps: RaceSimulation.D20_BENEFIT_VALID_LAPS };
+      rewardTitle = ready ? '💥 ¡ÉXITO CRÍTICO! BOX PREPARADO (NAT 20)' : `✨ EQUIPO EN ALERTA (DADO ${roll})`;
+      rewardDescription = `El equipo de ${code} prepara el box: si para en las próximas ${RaceSimulation.D20_BENEFIT_VALID_LAPS} vueltas, ` +
+        `servicio de ${fmt(min)}–${fmt(max)} s. Requiere una orden de boxes; el paso por el pit lane no cambia. ${advice}`;
     } else if (roll >= 8) {
-      rewardTitle = `🎲 ESTRATEGIA FAVORABLE (DADO ${roll})`;
-      rewardDescription = `Ajuste táctico de ritmo de carrera y refrigeración de frenos y neumáticos.`;
+      const rejoin = this.getRejoinEstimate(luckyCar.id);
+      benefit = { kind: 'engineer-report', label: 'Informe del ingeniero', rejoin };
+      rewardTitle = `📡 INFORME DEL INGENIERO (DADO ${roll})`;
+      rewardDescription = rejoin.available
+        ? `Si ${code} para ahora, saldría ≈P${rejoin.projectedPos} (P${rejoin.bestPos}–P${rejoin.worstPos}), perdiendo ${fmt(rejoin.timeLossSec)} s. ${advice}`
+        : `Sin estimación de reincorporación para ${code}: ${rejoin.reason.toLowerCase()}. ${advice}`;
     } else {
-      rewardTitle = `⚡ REACCIÓN RÁPIDA DE BOXES (DADO ${roll})`;
-      rewardDescription = `La escudería aprovecha la ralentización del pelotón para recalibrar los mapas de motor y gomas.`;
+      benefit = { kind: 'none', label: 'Sin ventaja' };
+      rewardTitle = `🎲 SIN VENTAJA (DADO ${roll})`;
+      rewardDescription = `La neutralización no ofrece ventaja a ${code}: revisa combustible, neumáticos y tráfico. ${advice}`;
     }
 
     const event: D20LuckEvent = {
-      id: `d20_${Date.now()}_${roll}`,
+      id: `d20_${Date.now()}_${++this.luckEventSeq}_${roll}`,
       triggerType,
       rollValue: roll,
       luckyCarId: luckyCar.id,
@@ -1294,6 +1511,7 @@ export class RaceSimulation {
       rewardTitle,
       rewardDescription,
       optimalCompound,
+      benefit,
       applied: false,
       timestamp: Date.now(),
     };
@@ -1305,14 +1523,22 @@ export class RaceSimulation {
   applyLuckEventReward(eventId: string) {
     if (!this.activeLuckEvent || this.activeLuckEvent.id !== eventId || this.activeLuckEvent.applied) return;
 
-    const car = this.getCarById(this.activeLuckEvent.luckyCarId);
-    if (car && car.status === 'running') {
-      car.tires = TireModel.createFreshTire(this.activeLuckEvent.optimalCompound);
-      car.tires.health = 100;
-      car.stats.brakeTempCelsius = 420;
-      car.stats.engineTempCelsius = 98;
+    // Aceptar el consejo. Los beneficios de servicio quedan pendientes para la próxima parada real del beneficiario;
+    // nada cambia en pista (neumáticos, combustible, energía y tránsito intactos).
+    const event = this.activeLuckEvent;
+    event.applied = true;
+    const car = this.getCarById(event.luckyCarId);
+    const { benefit } = event;
+    if (!car || car.status === 'out' || car.status === 'finished') return;
+    if ((benefit.kind === 'crew-ready' || benefit.kind === 'crew-alert') && benefit.serviceMinSec !== undefined && benefit.serviceMaxSec !== undefined) {
+      car.pitStop.crewBenefit = {
+        eventId: event.id,
+        label: benefit.label,
+        minSec: benefit.serviceMinSec,
+        maxSec: benefit.serviceMaxSec,
+        expiresLap: car.currentLap + (benefit.validLaps ?? RaceSimulation.D20_BENEFIT_VALID_LAPS),
+      };
     }
-    this.activeLuckEvent.applied = true;
   }
 
   // ── EVOLUCIÓN DINÁMICA DE CONDICIONES DE PISTA & CLIMA ──
@@ -1322,5 +1548,84 @@ export class RaceSimulation {
     this.weather.trackTempCelsius = Number((38.5 + tempOscillation).toFixed(1));
     this.weather.airTempCelsius = Number((24.2 + tempOscillation * 0.4).toFixed(1));
     this.weather.windSpeedKmh = Number((14.0 + Math.cos(this.raceTimeSec * 0.08) * 3.5).toFixed(1));
+  }
+
+  // Órdenes del muro: aceptación no equivale a compromiso de entrada.
+  // [Q12] Player pace orders
+  getPaceStatus(carId: number) {
+    const car = this.getCarById(carId);
+    if (!car) return null;
+    const requested = car.paceMode || 'balanced';
+    let effective = requested;
+    let reason = '';
+    const available = this.lightState === 'racing' && !this.isFinished &&
+      (car.status === 'running' || car.status === 'pit');
+    if (car.status === 'out') reason = 'Piloto retirado';
+    else if (this.isFinished || car.status === 'finished') reason = 'Carrera finalizada';
+    else if (this.lightState !== 'racing') reason = 'Disponible durante la carrera';
+    else if (car.isInPitLane || car.pitStop.isPitting) reason = 'Boxes: velocidad limitada';
+    else if (this.raceFlagState === 'sc') reason = 'Safety Car';
+    else if (this.raceFlagState === 'vsc' || this.vscActive) reason = 'Virtual Safety Car';
+    else if (this.raceFlagState === 'red') reason = 'Bandera roja';
+    else if (this.raceFlagState === 'yellow' || this.raceFlagState === 'double-yellow') reason = 'Bandera amarilla';
+    if (this.raceFlagState !== 'green' || this.vscActive || car.isInPitLane || car.pitStop.isPitting) {
+      effective = 'save';
+    }
+    // These resource limits reduce propulsion directly; they do not erase the order.
+    if (!reason && car.fuelKg <= 0) reason = 'Sin combustible: sin propulsión';
+    else if (!reason && car.engineTempCelsius > 115) reason = 'Temperatura: potencia reducida';
+    else if (!reason && car.energy && car.energy.storedMJ <= 0) reason = 'Batería agotada: sin despliegue ERS';
+    return { requested, effective, reason, available };
+  }
+
+  issuePaceOrder(carId: number, paceMode: CarState['paceMode']): boolean {
+    const car = this.cars.find(c => c.id === carId);
+    if (!car || !paceMode || !['push', 'balanced', 'save'].includes(paceMode) ||
+        !this.getPaceStatus(carId)?.available) return false;
+    car.paceMode = paceMode;
+    return true;
+  }
+
+  issueBoxOrder(carId: number, compound: TireCompound, issuer: BoxOrderIssuer = 'player'): BoxOrder | null {
+    const car = this.getCarById(carId);
+    if (!car || car.status !== 'running' || car.isInPitLane || car.pitStop.isPitting ||
+      this.lightState !== 'racing' || this.isFinished || this.raceFlagState === 'red' ||
+      !['soft', 'medium', 'hard', 'intermediate', 'wet'].includes(compound)) return null;
+    updateOrderCommitment(car);
+    const previous = car.pitStop.activeBoxOrder;
+    if (previous?.status === 'committed' || (issuer === 'ai' && car.pitStop.playerControlled)) return null;
+    if (orderIsActive(previous)) {
+      previous!.status = 'cancelled';
+      previous!.message = 'Sustituida por una nueva orden.';
+    }
+    const commitmentProgress = nextCrossing(car.progress, commitmentT(this.activeTrack));
+    const entryProgress = nextCrossing(commitmentProgress, this.activeTrack.pitEntryT);
+    const deferred = entryProgress > nextCrossing(car.progress, this.activeTrack.pitEntryT) + 1e-10;
+    const order: BoxOrder = {
+      id: 'box_' + carId + '_' + this.nextBoxOrderId++, carId, issuer, compound,
+      status: 'accepted', createdAt: this.raceTimeSec, commitmentProgress, entryProgress,
+      message: deferred ? 'Aceptada para la siguiente oportunidad: compromiso ya superado.' : 'Aceptada: puedes cancelar antes del compromiso.',
+    };
+    car.pitStop.activeBoxOrder = order;
+    car.pitStop.targetCompound = compound;
+    if (issuer === 'player') car.pitStop.playerControlled = true;
+    // La orden sustituye la estrategia previa; no deja scheduledLap residual al cancelar.
+    car.pitStop.scheduledLap = 0;
+    return order;
+  }
+
+  cancelBoxOrder(carId: number): boolean {
+    const car = this.getCarById(carId);
+    if (!car) return false;
+    updateOrderCommitment(car);
+    const order = car.pitStop.activeBoxOrder;
+    if (!order || order.status !== 'accepted' || car.isInPitLane || car.pitStop.isPitting || car.status !== 'running') return false;
+    order.status = 'cancelled';
+    order.message = 'Cancelada: sigue en pista. Pinchazo, desgaste crítico o roja pueden exigir otra entrada.';
+    return true;
+  }
+
+  getBoxOrder(carId: number): BoxOrder | null {
+    return this.getCarById(carId)?.pitStop.activeBoxOrder || null;
   }
 }

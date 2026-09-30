@@ -1,5 +1,6 @@
 import type { TrackDefinition } from '../data/barcelonaTrack';
 import type { Point2D } from './spline';
+import { TEAMS } from '../data/teams';
 
 export interface PitTeam { id: string; shortName: string; color: string }
 export interface PitBox {
@@ -64,6 +65,18 @@ function segmentClearsPath(a: Point2D, b: Point2D, path: Point2D[], clearance: n
     if (segmentDistance(a, b, path[i], path[(i + 1) % path.length]) < clearance) return false;
   }
   return true;
+}
+
+const geometryCache = new WeakMap<TrackDefinition, PitLaneGeometry>();
+
+/** Fuente única de la geometría de boxes para pista y minimapa (cacheada por definición de pista). */
+export function getPitLaneGeometry(track: TrackDefinition): PitLaneGeometry {
+  let geometry = geometryCache.get(track);
+  if (!geometry) {
+    geometry = buildPitLaneGeometry(track, Object.values(TEAMS));
+    geometryCache.set(track, geometry);
+  }
+  return geometry;
 }
 
 /** Geometría independiente del motor: nunca modifica la ruta ni la posición del coche. */

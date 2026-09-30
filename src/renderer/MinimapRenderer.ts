@@ -1,13 +1,15 @@
 import type { RaceSimulation } from '../simulation/RaceSimulation';
 import type { Camera } from './Camera';
-import { isCarVisible } from '../utils/carPosition';
+import type { RejoinEstimate } from '../types/f1';
+import { getPitRoute, isCarVisible } from '../utils/carPosition';
 
 // ── RENDERIZADO DEL MINIMAPA A LA IZQUIERDA DEL TODO ──
 export function renderLeftMinimap(
   ctx: CanvasRenderingContext2D,
   simulation: Pick<RaceSimulation, 'activeTrack' | 'cars'>,
-  camera: Camera
-) {
+  camera: Camera,
+  rejoin: RejoinEstimate | null = null
+): { x: number; y: number; worldX: number; worldY: number } | null {
   const mmW = 180;
   const mmH = 115;
   const mmX = 20;
@@ -15,7 +17,9 @@ export function renderLeftMinimap(
   const mmY = camera.screenHeight - mmH - 120;
   const bounds = simulation.activeTrack.bounds;
   const b = { ...bounds };
-  for (const point of simulation.activeTrack.pitLanePoints) {
+  // Ruta de boxes del motor (fuente única), no una ruta propia.
+  const pitRoute = getPitRoute(simulation.activeTrack);
+  for (const point of pitRoute) {
     b.minX = Math.min(b.minX, point.x);
     b.maxX = Math.max(b.maxX, point.x);
     b.minY = Math.min(b.minY, point.y);
@@ -56,9 +60,9 @@ export function renderLeftMinimap(
   }
 
   // La ruta de boxes permite situar el marcador fuera de la pista principal.
-  if (simulation.activeTrack.pitLanePoints.length > 1) {
+  if (pitRoute.length > 1) {
     ctx.beginPath();
-    simulation.activeTrack.pitLanePoints.forEach((point, index) => {
+    pitRoute.forEach((point, index) => {
       const x = mmOffsetX + (point.x - b.minX) * mmScale;
       const y = mmOffsetY + (point.y - b.minY) * mmScale;
       if (index === 0) ctx.moveTo(x, y);
@@ -79,4 +83,25 @@ export function renderLeftMinimap(
     ctx.arc(cx, cy, car.id === camera.followingCarId ? 4.5 : 2.5, 0, Math.PI * 2);
     ctx.fill();
   }
+
+  // [Q13] Marcador de reincorporación estimada: anillo discontinuo con el color del equipo en el punto de pista
+  // donde saldría el piloto objetivo si parase ahora. Es una estimación (± incertidumbre), no una posición real.
+  if (!rejoin || !rejoin.available || points.length === 0) return null;
+  const target = simulation.cars.find(car => car.id === rejoin.carId);
+  const point = points[Math.floor(rejoin.rejoinTrackT * points.length) % points.length];
+  const x = mmOffsetX + (point.x - b.minX) * mmScale;
+  const y = mmOffsetY + (point.y - b.minY) * mmScale;
+  ctx.save();
+  ctx.setLineDash([2, 2]);
+  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = target?.team.color ?? '#ffffff';
+  ctx.beginPath();
+  ctx.arc(x, y, 6, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 9px sans-serif';
+  ctx.fillText(`≈P${rejoin.projectedPos}`, x + 8, y - 6);
+  ctx.restore();
+  return { x, y, worldX: point.x, worldY: point.y };
 }

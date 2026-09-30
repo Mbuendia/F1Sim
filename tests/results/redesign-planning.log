@@ -1,0 +1,11 @@
+
+=== documentation (general) ===
+
+--- TEST GROUP 12: Regla de Oro 6 — sincronización documental ---
+  PASS: Documentación: dashboard e index completos y alineados
+  PASS: Documentación: conserva el orden declarado y la tarea actual existe
+  PASS: Documentación: añadir una tarea exige actualizar el index
+  PASS: Documentación: índice independiente de finales de línea Windows/Linux
+documentation: 4 PASS, 0 FAIL
+
+TOTAL RESULTS: 4 PASSED, 0 FAILED (1 módulos)

@@ -1,25 +1,19 @@
 import { TrackDefinition } from '../data/barcelonaTrack';
 import { Camera } from './Camera';
 import { TrackWeatherState } from '../types/f1';
-import { TEAMS } from '../data/teams';
-import { buildPitLaneGeometry, PitLaneGeometry } from '../utils/pitLaneGeometry';
+import { getPitLaneGeometry, PitLaneGeometry } from '../utils/pitLaneGeometry';
 import { getScenario } from '../data/scenarioRegistry';
 import { buildScenarioGeometry, ScenarioGeometry } from '../utils/scenarioGeometry';
 import type { Point2D } from '../utils/spline';
+import { calculateCarWorldPosition } from '../utils/carPosition';
 
 export class TrackRenderer {
-  private static geometryCache = new WeakMap<TrackDefinition, PitLaneGeometry>();
   private static scenarioCache = new WeakMap<TrackDefinition, ScenarioGeometry>();
   /** Último circuitId usado para invalidar la caché de escenario al cambiar de circuito */
   private static lastCircuitId: string = '';
 
   private static geometryFor(track: TrackDefinition): PitLaneGeometry {
-    let geometry = this.geometryCache.get(track);
-    if (!geometry) {
-      geometry = buildPitLaneGeometry(track, Object.values(TEAMS));
-      this.geometryCache.set(track, geometry);
-    }
-    return geometry;
+    return getPitLaneGeometry(track);
   }
 
   private static scenarioFor(track: TrackDefinition, circuitId: string): ScenarioGeometry {
@@ -122,15 +116,10 @@ export class TrackRenderer {
     for (let i = 0; i < n; i++) {
       const p1 = points[i];
       const p2 = points[(i + 1) % n];
-      const hw1 = ((p1.trackWidthMeters || track.trackWidthMeters || 26) * 1.75) / 2;
-      const hw2 = ((p2.trackWidthMeters || track.trackWidthMeters || 26) * 1.75) / 2;
-      const offset1 = (p1.idealLineOffset || 0) * hw1;
-      const offset2 = (p2.idealLineOffset || 0) * hw2;
-      
-      const wx1 = p1.x + p1.normal.x * offset1;
-      const wy1 = p1.y + p1.normal.y * offset1;
-      const wx2 = p2.x + p2.normal.x * offset2;
-      const wy2 = p2.y + p2.normal.y * offset2;
+      const line1 = calculateCarWorldPosition({ progress: i / n, lateralOffset: p1.idealLineOffset || 0, isInPitLane: false }, track);
+      const line2 = calculateCarWorldPosition({ progress: (i + 1) / n, lateralOffset: p2.idealLineOffset || 0, isInPitLane: false }, track);
+      const wx1 = line1.worldX, wy1 = line1.worldY;
+      const wx2 = line2.worldX, wy2 = line2.worldY;
       
       const sp1 = camera.worldToScreen(wx1, wy1);
       const sp2 = camera.worldToScreen(wx2, wy2);

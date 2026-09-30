@@ -1,0 +1,1 @@
+src/simulation/RaceSimulation.ts(16,3): error TS2305: Module '"../types/f1"' has no exported member 'PaceMode'.
