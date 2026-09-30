@@ -339,23 +339,11 @@ export const App: React.FC = () => {
               style={{ borderColor: simulation.safetyCar.isDeployed ? '#22c55e' : '#fbbf24', color: simulation.safetyCar.isDeployed ? '#22c55e' : '#fbbf24' }}
               onClick={() => {
                 if (!simulation.safetyCar.isDeployed) {
-                  const leader = simulation.cars.find(c => c.currentPosition === 1);
-                  simulation.safetyCar.isDeployed = true;
-                  simulation.safetyCar.mode = 'deploying';
-                  // SC spawnea exactamente en la salida de boxes
-                  const leaderProgress = leader?.progress || 0;
-                  const leaderT = leaderProgress % 1;
-                  const baseLap = leaderT < 0.05 ? Math.floor(leaderProgress) : Math.ceil(leaderProgress);
-                  simulation.safetyCar.progress = baseLap + 0.05;
-                  simulation.safetyCar.trackT = ((simulation.safetyCar.progress % 1) + 1) % 1;
-                  simulation.safetyCar.currentSpeedKmh = 80;
-                  simulation.safetyCar.lapCount = 0;
-                  simulation.safetyCar.targetLaps = 999;
-                  simulation.safetyCar.triggerReason = 'PRUEBA MANUAL (DEV)';
-                  simulation.raceFlagState = 'sc';
+                  // [Q14] Sale de su garaje en el pit lane, como en carrera.
+                  simulation.deploySafetyCar('PRUEBA MANUAL (DEV)', { targetLaps: 999 });
                 } else {
-                  // Forzar que el SC se vaya
-                  simulation.safetyCar.mode = 'returning';
+                  // Forzar que el SC se vaya por el pit lane
+                  simulation.recallSafetyCar();
                   // Limpiamos los incidentes artificialmente si los hay
                   simulation.incidents = [];
                 }

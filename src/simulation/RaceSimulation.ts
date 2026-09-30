@@ -303,6 +303,32 @@ export class RaceSimulation {
     }
   }
 
+  // [Q14] Despliegue y retirada del Safety Car por el motor (también los usa el botón DEV): sale de su garaje en el
+  // pit lane y vuelve a él; nunca se coloca en pista por asignación.
+  deploySafetyCar(reason: string, options: { targetLaps?: number } = {}): boolean {
+    if (this.safetyCar.isDeployed || this.raceFlagState === 'red') return false;
+    const leader = [...this.cars].filter(c => c.status === 'running').sort((a, b) => b.progress - a.progress)[0];
+    SafetyCarModel.deploy(this.safetyCar, reason, leader ? leader.progress : 0, this.raceTimeSec,
+      (OFFICIAL_CIRCUITS[this.circuitId] || OFFICIAL_CIRCUITS.barcelona).trackType, this.activeTrack);
+    if (options.targetLaps !== undefined) this.safetyCar.targetLaps = options.targetLaps;
+    this.raceFlagState = 'sc';
+    this.vscActive = false; this.vscTimer = 0;
+    return true;
+  }
+
+  recallSafetyCar(): boolean {
+    const sc = this.safetyCar;
+    if (!sc.isDeployed || sc.mode === 'returning' || sc.mode === 'in') return false;
+    if (sc.isInPitLane) {
+      // Aún no había salido del pit lane: vuelve a su garaje sin salir a pista.
+      sc.isDeployed = false; sc.mode = 'in'; sc.isInPitLane = false; sc.currentSpeedKmh = 0;
+      if (this.raceFlagState === 'sc') this.raceFlagState = 'green';
+      return true;
+    }
+    sc.mode = 'returning';
+    return true;
+  }
+
   // [Q13] Predictor de reincorporación. La pérdida sale de RejoinModel (réplica 1D del pit lane y la pista del
   // motor, validada contra el simulador); la neutralización limita la velocidad en pista y reduce la pérdida.
   static readonly REJOIN_UNCERTAINTY_SEC = 2.0;
@@ -577,7 +603,7 @@ export class RaceSimulation {
           }
         } else if (response === 'sc' && this.raceFlagState !== 'red') {
           const leaderProgress = leaderCar ? leaderCar.progress : 0;
-          SafetyCarModel.deploy(this.safetyCar, `Abandono de ${car.driver.code}`, leaderProgress, this.raceTimeSec, (OFFICIAL_CIRCUITS[this.circuitId] || OFFICIAL_CIRCUITS.barcelona).trackType);
+          SafetyCarModel.deploy(this.safetyCar, `Abandono de ${car.driver.code}`, leaderProgress, this.raceTimeSec, (OFFICIAL_CIRCUITS[this.circuitId] || OFFICIAL_CIRCUITS.barcelona).trackType, this.activeTrack);
           this.raceFlagState = 'sc';
           // [FIX C6] Desactivar VSC si estaba activo
           this.vscActive = false; this.vscTimer = 0;
@@ -795,6 +821,20 @@ export class RaceSimulation {
           car.targetLateralOffset = 0;
         }
       }
+      // [Q14] Aproximación al SC con curva de frenada: el coche que lo alcanza reduce a tiempo para quedarse detrás
+      // (v² = v_SC² + 2·a·d, a = 12 m/s², a CATCH_DISTANCE_M/2 del SC), en vez de un frenazo instantáneo al llegar.
+      const sc = this.safetyCar;
+      if (sc.isDeployed && !sc.isInPitLane && (sc.mode === 'deploying' || sc.mode === 'leading')) {
+        const gapM = (sc.progress - car.progress) * lapDistanceMeters;
+        if (gapM >= 0 && gapM < 0.08 * lapDistanceMeters) {
+          // Detenerse antes del margen mínimo que impone el límite de seguridad de abajo (0,005 vueltas).
+          const followM = Math.max(SafetyCarModel.CATCH_DISTANCE_M / 2, 0.005 * lapDistanceMeters + 5);
+          const vSc = sc.currentSpeedKmh / 3.6;
+          const allowed = Math.sqrt(vSc * vSc + 2 * 12 * Math.max(0, gapM - followM)) * 3.6;
+          targetKmh = Math.min(targetKmh, allowed);
+        }
+      }
+
       // Bandera amarilla local: reducir velocidad en el sector afectado
       const carSector: 1 | 2 | 3 = normalizedT < 0.33 ? 1 : normalizedT < 0.66 ? 2 : 3;
       if (this.sectorFlags[carSector - 1] !== 'green' && this.raceFlagState === 'green') {
@@ -893,7 +933,8 @@ export class RaceSimulation {
         this.activeTrack, dt * car.currentSpeedKmh / 3.6, trackPoint);
 
       // Limit forward displacement; never repair spacing by moving a car backwards.
-      if (this.safetyCar.isDeployed && this.safetyCar.mode !== 'idle' && this.safetyCar.mode !== 'in') {
+      // [Q14] El SC en el pit lane no limita a los coches de pista.
+      if (this.safetyCar.isDeployed && !this.safetyCar.isInPitLane && this.safetyCar.mode !== 'idle' && this.safetyCar.mode !== 'in') {
         const gap = this.safetyCar.progress - car.progress;
         if (gap >= 0 && gap < 0.08) {
           car.speed = Math.min(car.speed, Math.max(0, gap - 0.005) / Math.max(dt, 1e-9));
@@ -1074,13 +1115,14 @@ export class RaceSimulation {
 
     // 3. Actualizar Safety Car en pista
     if (this.safetyCar.isDeployed) {
-      SafetyCarModel.update(this.safetyCar, dt, this.cars, this.incidents, lapDistanceMeters);
+      SafetyCarModel.update(this.safetyCar, dt, this.cars, this.incidents, lapDistanceMeters, this.activeTrack);
       // Compactar el pelotón detrás del SC
       if (this.safetyCar.mode === 'leading') {
         SafetyCarModel.compactField(this.cars, this.safetyCar.progress, dt);
       }
-      // SC ha entrado en boxes → preparamos bandera verde
-      if (this.safetyCar.mode === 'in') {
+      // [Q14] SC entrando al pit lane en su retirada (o ya en su garaje) → preparamos bandera verde una sola vez
+      const scEnteredPits = this.safetyCar.mode === 'in' || (this.safetyCar.mode === 'returning' && this.safetyCar.isInPitLane);
+      if (scEnteredPits && this.raceFlagState === 'sc') {
         const leader = [...this.cars].filter(c => c.status !== 'out').sort((a, b) => b.progress - a.progress)[0];
         // Establecemos la vuelta a partir de la cual se podrá adelantar
         this.scEndingLap = leader ? Math.floor(leader.progress) : null;

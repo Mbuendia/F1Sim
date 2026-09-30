@@ -1,7 +1,7 @@
 import { CarState, SafetyCarState } from '../types/f1';
 import { TrackDefinition } from '../data/barcelonaTrack';
 import { Camera } from './Camera';
-import { getTrackHalfWidth, getLateralDisplacement, isCarVisible } from '../utils/carPosition';
+import { getTrackHalfWidth, getLateralDisplacement, isCarVisible, calculateCarWorldPosition } from '../utils/carPosition';
 import { OVERVIEW_ZOOM, renderCarLabels } from './CarLabels';
 
 export class CarRenderer {
@@ -160,23 +160,9 @@ export class CarRenderer {
     track: TrackDefinition,
     camera: Camera
   ) {
-    const points = track.points;
-    const totalPts = points.length;
-    const normT = ((sc.progress % 1) + 1) % 1;
-    const ptIndex = Math.floor(normT * totalPts) % totalPts;
-    const pt = points[ptIndex] || points[0];
-    const nextPtIndex = (ptIndex + 1) % totalPts;
-    const nextPt = points[nextPtIndex] || points[0];
-
-    const fraction = (normT * totalPts) % 1;
-    
-    const worldX = pt.x + (nextPt.x - pt.x) * fraction;
-    const worldY = pt.y + (nextPt.y - pt.y) * fraction;
-    
-    let dAngle = nextPt.angle - pt.angle;
-    if (dAngle > Math.PI) dAngle -= Math.PI * 2;
-    if (dAngle < -Math.PI) dAngle += Math.PI * 2;
-    const angle = pt.angle + dAngle * fraction;
+    // [Q14] Misma ruta que los coches: pista o pit lane (salida y retirada del SC).
+    const { worldX, worldY, worldAngle: angle } = calculateCarWorldPosition(
+      { progress: sc.progress, isInPitLane: Boolean(sc.isInPitLane), lateralOffset: 0 }, track);
 
     const screen = camera.worldToScreen(worldX, worldY);
     if (screen.x < -80 || screen.x > camera.screenWidth + 80 ||

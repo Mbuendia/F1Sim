@@ -33,6 +33,7 @@ export interface SafetyCarState {
   targetLaps: number;
   triggerReason: string;
   deployedAtRaceTime: number;
+  isInPitLane?: boolean;       // Q14: circulando por el pit lane (salida o retirada)
 }
 
 export interface TrackIncident {

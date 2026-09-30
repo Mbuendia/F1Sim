@@ -1,6 +1,10 @@
 import { SafetyCarState, CarState, TrackIncident, RaceFlagState } from '../types/f1';
 import { IncidentModel } from './IncidentModel';
 
+type PitGeometry = { pitEntryT: number; pitExitT: number };
+type TrackPointLike = { speedLimitFactor: number };
+const DEFAULT_PIT: PitGeometry = { pitEntryT: 0.94, pitExitT: 0.06 };
+
 export class SafetyCarModel {
 
   // Crear estado inicial (inactivo) del safety car
@@ -15,6 +19,7 @@ export class SafetyCarModel {
       targetLaps: 0,
       triggerReason: '',
       deployedAtRaceTime: 0,
+      isInPitLane: false,
     };
   }
 
@@ -55,118 +60,158 @@ export class SafetyCarModel {
     return 'yellow';
   }
 
-  // Desplegar el safety car
+  // ── [Q14] SC FÍSICO: sale del pit lane, espera despacio al líder y vuelve por el pit lane ──
+  /** Límite del pit lane (km/h). */
+  static readonly PIT_LANE_KMH = 80;
+  /** Velocidad máxima en pista mientras espera a que el líder lo alcance. */
+  static readonly SC_WAIT_KMH = 100;
+  /** Velocidad máxima liderando el pelotón (coincide con el límite de los coches bajo SC). */
+  static readonly SC_LEADING_KMH = 120;
+  /** Velocidad máxima en la vuelta de retirada. */
+  static readonly SC_RETURNING_KMH = 140;
+  /** Distancia a la que se considera que el líder ha alcanzado al SC (m). */
+  static readonly CATCH_DISTANCE_M = 30;
+  /** Posición del garaje del SC en el pit lane (fracción del carril desde la entrada). */
+  static readonly GARAGE_FRACTION = 0.85;
+  /** Aceleración y frenada del SC (km/h por segundo). */
+  static readonly ACCEL_KMH_S = 30;
+  static readonly BRAKE_KMH_S = 45;
+
+  private static laneLength(pit: PitGeometry): number {
+    return ((pit.pitExitT - pit.pitEntryT) % 1 + 1) % 1 || 1;
+  }
+
+  /** Líder físico en pista (excluye coches en boxes). */
+  private static leaderOf(cars: CarState[]): CarState | undefined {
+    return [...cars]
+      .filter(c => (c.status === 'running' || c.status === 'pit') && !c.pitStop.isPitting && !c.isInPitLane)
+      .sort((a, b) => b.progress - a.progress)[0];
+  }
+
+  // Desplegar el safety car: aparece aparcado en su garaje, al final del pit lane.
   static deploy(
     sc: SafetyCarState,
     reason: string,
     leaderProgress: number,
     raceTimeSec: number,
-    trackType: string = 'permanent'
+    trackType: string = 'permanent',
+    pit: PitGeometry = DEFAULT_PIT
   ): void {
     sc.isDeployed = true;
     sc.mode = 'deploying';
-    // [FIX C3] SC spawnea justo por delante del líder en la pista (no a una vuelta de distancia)
-    // El SC sale del pit lane y se coloca ligeramente por delante del líder
-    const safeLeaderProgress = Math.max(0, leaderProgress);
-    sc.progress = safeLeaderProgress + 0.03; // Justo delante del líder
+    sc.isInPitLane = true;
+    // Vuelta de referencia del garaje: la del líder (la etiqueta se ajusta al entrar en pista, sin mover el SC).
+    const lap = Math.floor(Math.max(0, leaderProgress));
+    sc.progress = lap + pit.pitEntryT + SafetyCarModel.laneLength(pit) * SafetyCarModel.GARAGE_FRACTION;
     sc.trackT = ((sc.progress % 1) + 1) % 1;
-    sc.currentSpeedKmh = 40; // SC sale del pitlane lento
+    sc.currentSpeedKmh = 0;
     sc.lapCount = 0;
     sc.targetLaps = trackType === 'street' ? 10 : 2 + Math.floor(Math.random() * 2); // 2-3 vueltas
     sc.triggerReason = reason;
     sc.deployedAtRaceTime = raceTimeSec;
   }
 
-  // Helper para saber si SC está en recta
-  static isScInStraight(trackT: number): boolean {
-    if (trackT >= 0.90 || trackT <= 0.10) return true; // Recta principal
-    if (trackT >= 0.40 && trackT <= 0.60) return true; // Recta opuesta
-    return false;
+  /** Velocidad objetivo en pista según el tramo: mira un poco por delante para frenar antes de la curva. */
+  private static trackTarget(cap: number, trackT: number, track?: { points?: TrackPointLike[] }): number {
+    const points = track?.points;
+    if (!points || !points.length) return cap;
+    const n = points.length;
+    let factor = 1;
+    for (let k = 0; k <= 6; k++) factor = Math.min(factor, points[(Math.floor(trackT * n) + k) % n].speedLimitFactor);
+    const scale = factor >= 0.9 ? 1 : factor >= 0.65 ? 0.85 : factor >= 0.4 ? 0.7 : 0.55;
+    return cap * scale;
   }
 
-  // Actualización principal para el safety car
+  private static approach(sc: SafetyCarState, target: number, dt: number): void {
+    if (sc.currentSpeedKmh < target) sc.currentSpeedKmh = Math.min(target, sc.currentSpeedKmh + SafetyCarModel.ACCEL_KMH_S * dt);
+    else sc.currentSpeedKmh = Math.max(target, sc.currentSpeedKmh - SafetyCarModel.BRAKE_KMH_S * dt);
+  }
+
+  // Actualización principal para el safety car. Solo integra velocidad: progress += v·dt.
   static update(
     sc: SafetyCarState,
     dt: number,
     cars: CarState[],
     incidents: TrackIncident[],
-    lapDistanceMeters: number
+    lapDistanceMeters: number,
+    track: PitGeometry & { points?: TrackPointLike[] } = DEFAULT_PIT
   ): void {
     if (!sc.isDeployed || sc.mode === 'idle' || sc.mode === 'in') return;
+    const laneLen = SafetyCarModel.laneLength(track);
+    const laneFraction = () => (((sc.progress - track.pitEntryT) % 1) + 1) % 1 / laneLen;
+    const leader = SafetyCarModel.leaderOf(cars);
 
-    // [FIX C7 parcial] No mutar el array original — usar copia
-    const activeCars = [...cars]
-      .filter(c => (c.status === 'running' || c.status === 'pit') && !c.pitStop.isPitting && !c.isInPitLane)
-      .sort((a, b) => b.progress - a.progress);
-    const leader = activeCars[0];
-    if (!leader) return;
+    // Objetivo de velocidad según la fase.
+    let target: number;
+    if (sc.isInPitLane) {
+      const parking = sc.mode === 'returning' && laneFraction() >= SafetyCarModel.GARAGE_FRACTION - 0.05;
+      target = parking ? 20 : SafetyCarModel.PIT_LANE_KMH;
+    } else if (sc.mode === 'deploying') {
+      target = SafetyCarModel.trackTarget(SafetyCarModel.SC_WAIT_KMH, sc.trackT, track);
+    } else if (sc.mode === 'leading') {
+      target = SafetyCarModel.trackTarget(SafetyCarModel.SC_LEADING_KMH, sc.trackT, track);
+    } else {
+      // Retirada: acelera y reduce a velocidad de pit lane al acercarse a la entrada de boxes.
+      const toEntry = ((track.pitEntryT - sc.progress) % 1 + 1) % 1 * lapDistanceMeters;
+      target = toEntry < 150 ? SafetyCarModel.PIT_LANE_KMH : SafetyCarModel.trackTarget(SafetyCarModel.SC_RETURNING_KMH, sc.trackT, track);
+    }
+    SafetyCarModel.approach(sc, target, dt);
 
-    const inStraight = SafetyCarModel.isScInStraight(sc.trackT);
+    const prevProgress = sc.progress;
+    sc.progress += (sc.currentSpeedKmh / 3.6 / lapDistanceMeters) * dt;
+    sc.trackT = ((sc.progress % 1) + 1) % 1;
+
+    if (sc.isInPitLane) {
+      const crossedExit = Math.floor(sc.progress - track.pitExitT) > Math.floor(prevProgress - track.pitExitT);
+      if (sc.mode === 'deploying' && crossedExit) {
+        // Sale a pista por la salida de boxes. Si el líder va por delante en la cuenta de vueltas, la etiqueta de vuelta
+        // del SC se ajusta (mismo punto físico) para que el SC quede delante y el líder tenga que alcanzarlo.
+        sc.isInPitLane = false;
+        if (leader) sc.progress += Math.max(0, Math.floor(leader.progress - sc.progress) + 1);
+        sc.trackT = ((sc.progress % 1) + 1) % 1;
+      } else if (sc.mode === 'returning' && laneFraction() >= SafetyCarModel.GARAGE_FRACTION) {
+        // Aparcado en su garaje.
+        sc.mode = 'in';
+        sc.isDeployed = false;
+        sc.isInPitLane = false;
+        sc.currentSpeedKmh = 0;
+      }
+      return;
+    }
 
     if (sc.mode === 'deploying') {
-      sc.currentSpeedKmh = 40; // Muy lento, sale de boxes y espera al líder
-      sc.progress += (sc.currentSpeedKmh / 3.6 / lapDistanceMeters) * dt;
-      sc.trackT = ((sc.progress % 1) + 1) % 1;
-      
-      // [FIX C3] Transición más robusta: si el líder está cerca o ya nos ha pasado, transicionar
-      // El SC no debe quedarse esperando si el líder ya le adelantó
-      const leaderDist = leader.progress - sc.progress;
-      if (leaderDist > -0.05) {
-        // El líder está justo detrás, a la par, o ligeramente por delante → transicionar
-        sc.mode = 'leading';
-        // Si el líder nos ha pasado, recolocamos el SC justo por delante
-        if (leaderDist > 0.01) {
-          sc.progress = leader.progress + 0.005;
-          sc.trackT = ((sc.progress % 1) + 1) % 1;
-        }
+      // Espera al líder: pasa a liderar cuando el líder lo alcanza por detrás.
+      if (leader) {
+        const gapM = (sc.progress - leader.progress) * lapDistanceMeters;
+        if (gapM >= 0 && gapM <= SafetyCarModel.CATCH_DISTANCE_M) sc.mode = 'leading';
       }
+      return;
     }
 
     if (sc.mode === 'leading') {
-      sc.currentSpeedKmh = inStraight ? 120 : 70; // Acelera cuando tiene al líder detrás
-      const scSpeed = (sc.currentSpeedKmh / 3.6) / lapDistanceMeters;
-      const prevProgress = sc.progress;
-      sc.progress += scSpeed * dt;
-      sc.trackT = ((sc.progress % 1) + 1) % 1;
-      
-      const prevLap = Math.floor(prevProgress);
-      const currLap = Math.floor(sc.progress);
-      if (currLap > prevLap && prevProgress > 0) {
-        sc.lapCount++;
-      }
-      
+      if (Math.floor(sc.progress) > Math.floor(prevProgress) && prevProgress > 0) sc.lapCount++;
+      if (!leader) return;
       const allCleared = IncidentModel.isTrackClear(incidents);
-      
-      // [FIX C1] Calcular fieldSpread SOLO con coches en la vuelta del líder (no doblados)
-      // y excluir coches en boxes
-      const leadLapCars = activeCars.filter(c => {
-        const lapDiff = Math.floor(leader.progress) - Math.floor(c.progress);
-        return lapDiff === 0; // Solo coches en la misma vuelta que el líder
-      });
+
+      // [FIX C1] Calcular fieldSpread SOLO con coches en la vuelta del líder (no doblados) y excluir coches en boxes
+      const activeCars = [...cars]
+        .filter(c => (c.status === 'running' || c.status === 'pit') && !c.pitStop.isPitting && !c.isInPitLane)
+        .sort((a, b) => b.progress - a.progress);
+      const leadLapCars = activeCars.filter(c => Math.floor(leader.progress) - Math.floor(c.progress) === 0);
       const lastLeadLapCar = leadLapCars[leadLapCars.length - 1];
       const fieldSpread = lastLeadLapCar ? (leader.progress - lastLeadLapCar.progress) : 0;
-      
+
       // [FIX C1] Timeout forzoso: si lleva +3 vueltas más de las target, se va sí o sí
       const hardTimeout = sc.lapCount >= sc.targetLaps + 3;
-      
       if ((allCleared && sc.lapCount >= sc.targetLaps && fieldSpread < 0.20) || hardTimeout) {
         sc.mode = 'returning';
       }
+      return;
     }
 
-    if (sc.mode === 'returning') {
-      sc.currentSpeedKmh = sc.trackT > 0.90 ? 80 : 140; // Acelera, pero frena a 80 en la entrada a boxes
-      sc.progress += (sc.currentSpeedKmh / 3.6 / lapDistanceMeters) * dt;
-      sc.trackT = ((sc.progress % 1) + 1) % 1;
-      
-      // [FIX C4] Ventana de entrada a boxes ampliada: >= pitEntry sin límite superior
-      // Usa 0.94 como pitEntryT genérico (Barcelona). Nunca se puede saltar.
-      if (sc.trackT >= 0.94) {
-        sc.mode = 'in';
-        sc.isDeployed = false;
-        sc.currentSpeedKmh = 0;
-      }
-    }
+    // Retirada: entra al pit lane al cruzar la línea de entrada de boxes.
+    const crossedEntry = Math.floor(sc.progress - track.pitEntryT) > Math.floor(prevProgress - track.pitEntryT);
+    if (crossedEntry) sc.isInPitLane = true;
   }
 
   // [FIX C2] Aplicar restricciones de velocidad SC/VSC y Banderas Rojas
