@@ -22,7 +22,7 @@
 
 ## 🧭 2. ROADMAP Y ESTADO GLOBAL DE SPRINTS
 
-**Orden vigente:** Sprint **2.8** · Tarea actual **Q15** · Siguiente **revisión en local del usuario (Q12-Q19, Q21-Q23)**; prioridad de la auditoría completada.
+**Orden vigente:** Sprint **2.8** · Tarea actual **Q15** · Siguiente **Q19** (casos especiales pendientes). Prioridad de la auditoría completada; Q12-Q19 y Q21-Q23 pendientes de revisión en local del usuario.
 
 **Prioridad acordada tras la auditoría (30/09/2026, `docs/reviews/auditoria-q12-q19.md`):** Q19 → Q16 → Q13 → Q17 → Q12 → Q18/Q14/Q15. Decisiones del usuario: detecciones DRS desde las notas oficiales FIA; el Safety Car debe salir del pit lane (Q14); tests estructurales sin dependencias nuevas para Q18; tolerancias de calibración Q12 propuestas.
 
