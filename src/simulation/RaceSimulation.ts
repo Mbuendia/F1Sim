@@ -1162,7 +1162,9 @@ export class RaceSimulation {
         // Establecemos la vuelta a partir de la cual se podrá adelantar
         this.scEndingLap = leader ? Math.floor(leader.progress) : null;
         this.raceFlagState = 'green';
-        this.drsDisabledLaps = 2; // DRS deshabilitado durante 2 vueltas tras SC
+        // [Q19] S22.1: una vuelta completada tras el SC. El contador baja en cada cruce del líder por la línea: el
+        // primero es la línea de reanudación (el SC libera antes de ella) y el segundo completa esa vuelta.
+        this.drsDisabledLaps = 2;
       }
     }
 
@@ -1172,7 +1174,8 @@ export class RaceSimulation {
       if (this.vscTimer >= this.vscDuration || IncidentModel.isTrackClear(this.incidents)) {
         this.vscActive = false;
         this.raceFlagState = 'green';
-        this.drsDisabledLaps = 1; // DRS deshabilitado 1 vuelta tras VSC
+        // [Q19] S22.1: tras el VSC no hay espera adicional de DRS (antes 1 vuelta).
+        this.drsDisabledLaps = 0;
       }
     }
 
