@@ -276,3 +276,18 @@
   color: #94a3b8;
   text-align: center;
 }
+
+/* [Q17] Beneficio del catálogo */
+.benefitRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+  margin-top: 6px;
+}
+.benefitValue {
+  font-size: 12px;
+  font-weight: 700;
+  color: #86efac;
+}

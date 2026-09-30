@@ -81,6 +81,8 @@ export class RaceSimulation {
 
   // ── DADO D20 DE LA SUERTE ANTE INCIDENTES ──
   activeLuckEvent: D20LuckEvent | null = null;
+  private luckEventSeq = 0;
+  static readonly D20_BENEFIT_VALID_LAPS = 3;
 
   // ── SISTEMA DE BANDERAS Y SAFETY CAR ──
   raceFlagState: RaceFlagState = 'green';
@@ -315,7 +317,10 @@ export class RaceSimulation {
 
   private rejoinContext(car: CarState) {
     const { capKmh, neutralization } = this.rejoinSpeedCap();
-    const pitLossSec = RejoinModel.pitLossSec(this.activeTrack, car, capKmh, RejoinModel.MEAN_SERVICE_SEC);
+    const benefit = car.pitStop.crewBenefit;
+    const benefitActive = Boolean(benefit && car.currentLap <= benefit.expiresLap);
+    const serviceSec = benefitActive && benefit ? (benefit.minSec + benefit.maxSec) / 2 : RejoinModel.MEAN_SERVICE_SEC;
+    const pitLossSec = RejoinModel.pitLossSec(this.activeTrack, car, capKmh, serviceSec);
     // Double stack (Q11): esperar al compañero que ocupa el box, o su servicio si ya está comprometido a parar.
     let queueSec = 0;
     const teammate = this.cars.find(c => c.driver.teamId === car.driver.teamId && c.id !== car.id);
@@ -328,7 +333,7 @@ export class RaceSimulation {
       }
     }
     const profile = RejoinModel.lapProfile(this.activeTrack, car, capKmh);
-    return { capKmh, neutralization, pitLossSec, queueSec, timeLossSec: pitLossSec + queueSec, profile };
+    return { capKmh, neutralization, pitLossSec, queueSec, serviceSec, benefitLabel: benefitActive ? benefit?.label ?? null : null, timeLossSec: pitLossSec + queueSec, profile };
   }
 
   private rejoinPositionAt(car: CarState, rejoinProgress: number): number {
@@ -368,7 +373,7 @@ export class RaceSimulation {
     const rejoinProgress = RejoinModel.progressBefore(profile, car.progress, timeLossSec);
     const cardLoss = this.activeTrack.pitLaneTimeLossSec;
     const fmt = (v: number) => v.toFixed(1).replace('.', ',');
-    const source = `Modelo de boxes del simulador: pit lane a ${PitStopModel.PIT_SPEED_LIMIT_KMH} km/h + servicio medio ${fmt(RejoinModel.MEAN_SERVICE_SEC)} s = ${fmt(context.pitLossSec)} s` +
+    const source = `Modelo de boxes del simulador: pit lane a ${PitStopModel.PIT_SPEED_LIMIT_KMH} km/h + servicio ${context.benefitLabel ? `${context.benefitLabel.toLowerCase()} ` : 'medio '}${fmt(context.serviceSec)} s = ${fmt(context.pitLossSec)} s` +
       (context.queueSec > 0 ? ` + espera double stack ${fmt(context.queueSec)} s` : '') +
       (neutralization === 'SC' ? ` · bajo Safety Car (${capKmh} km/h; compactación no modelada)` : '') +
       (neutralization === 'VSC' ? ` · bajo VSC (${capKmh} km/h)` : '') +
@@ -1382,25 +1387,38 @@ export class RaceSimulation {
       optimalCompound = 'medium';
     }
 
+    // [Q17] Catálogo de beneficios legales por tramo: preparación del equipo de boxes (acota solo la duración del
+    // servicio de la próxima parada real, 3 vueltas de validez), informe del ingeniero (estimación Q13) o nada.
+    const code = luckyCar.driver.code;
+    const fmt = (v: number) => v.toFixed(1).replace('.', ',');
+    const advice = `Compuesto recomendado para la próxima parada: ${optimalCompound.toUpperCase()}.`;
     let rewardTitle = '';
     let rewardDescription = '';
+    let benefit: D20LuckEvent['benefit'];
 
-    if (roll === 20) {
-      rewardTitle = '💥 ¡ÉXITO CRÍTICO D20! (NAT 20)';
-      rewardDescription = `Oportunidad táctica bajo ${triggerType.toUpperCase()}: considera ${optimalCompound.toUpperCase()} en tu próxima parada. Consulta la predicción de reincorporación antes de ordenar boxes.`;
-    } else if (roll >= 14) {
-      rewardTitle = `✨ GOLPE DE SUERTE TÁCTICO (DADO ${roll})`;
-      rewardDescription = `Consejo de estrategia: evalúa una parada para montar ${optimalCompound.toUpperCase()}. Requiere una orden de boxes y servicio normal.`;
+    if (roll >= 14) {
+      const ready = roll === 20;
+      const [min, max] = ready ? [1.8, 2.2] : [2.2, 2.6];
+      benefit = { kind: ready ? 'crew-ready' : 'crew-alert', label: ready ? 'Box preparado' : 'Equipo en alerta',
+        serviceMinSec: min, serviceMaxSec: max, validLaps: RaceSimulation.D20_BENEFIT_VALID_LAPS };
+      rewardTitle = ready ? '💥 ¡ÉXITO CRÍTICO! BOX PREPARADO (NAT 20)' : `✨ EQUIPO EN ALERTA (DADO ${roll})`;
+      rewardDescription = `El equipo de ${code} prepara el box: si para en las próximas ${RaceSimulation.D20_BENEFIT_VALID_LAPS} vueltas, ` +
+        `servicio de ${fmt(min)}–${fmt(max)} s. Requiere una orden de boxes; el paso por el pit lane no cambia. ${advice}`;
     } else if (roll >= 8) {
-      rewardTitle = `🎲 ESTRATEGIA FAVORABLE (DADO ${roll})`;
-      rewardDescription = `Consejo de estrategia: revisa el ritmo y las temperaturas antes de elegir entre ahorrar y atacar.`;
+      const rejoin = this.getRejoinEstimate(luckyCar.id);
+      benefit = { kind: 'engineer-report', label: 'Informe del ingeniero', rejoin };
+      rewardTitle = `📡 INFORME DEL INGENIERO (DADO ${roll})`;
+      rewardDescription = rejoin.available
+        ? `Si ${code} para ahora, saldría ≈P${rejoin.projectedPos} (P${rejoin.bestPos}–P${rejoin.worstPos}), perdiendo ${fmt(rejoin.timeLossSec)} s. ${advice}`
+        : `Sin estimación de reincorporación para ${code}: ${rejoin.reason.toLowerCase()}. ${advice}`;
     } else {
-      rewardTitle = `⚡ REACCIÓN RÁPIDA DE BOXES (DADO ${roll})`;
-      rewardDescription = `Consejo de estrategia: aprovecha la neutralización para revisar combustible, neumáticos y tráfico.`;
+      benefit = { kind: 'none', label: 'Sin ventaja' };
+      rewardTitle = `🎲 SIN VENTAJA (DADO ${roll})`;
+      rewardDescription = `La neutralización no ofrece ventaja a ${code}: revisa combustible, neumáticos y tráfico. ${advice}`;
     }
 
     const event: D20LuckEvent = {
-      id: `d20_${Date.now()}_${roll}`,
+      id: `d20_${Date.now()}_${++this.luckEventSeq}_${roll}`,
       triggerType,
       rollValue: roll,
       luckyCarId: luckyCar.id,
@@ -1413,6 +1431,7 @@ export class RaceSimulation {
       rewardTitle,
       rewardDescription,
       optimalCompound,
+      benefit,
       applied: false,
       timestamp: Date.now(),
     };
@@ -1424,8 +1443,22 @@ export class RaceSimulation {
   applyLuckEventReward(eventId: string) {
     if (!this.activeLuckEvent || this.activeLuckEvent.id !== eventId || this.activeLuckEvent.applied) return;
 
-    // Accept the tactical advice; tyre changes still require an actual pit stop.
-    this.activeLuckEvent.applied = true;
+    // Aceptar el consejo. Los beneficios de servicio quedan pendientes para la próxima parada real del beneficiario;
+    // nada cambia en pista (neumáticos, combustible, energía y tránsito intactos).
+    const event = this.activeLuckEvent;
+    event.applied = true;
+    const car = this.getCarById(event.luckyCarId);
+    const { benefit } = event;
+    if (!car || car.status === 'out' || car.status === 'finished') return;
+    if ((benefit.kind === 'crew-ready' || benefit.kind === 'crew-alert') && benefit.serviceMinSec !== undefined && benefit.serviceMaxSec !== undefined) {
+      car.pitStop.crewBenefit = {
+        eventId: event.id,
+        label: benefit.label,
+        minSec: benefit.serviceMinSec,
+        maxSec: benefit.serviceMaxSec,
+        expiresLap: car.currentLap + (benefit.validLaps ?? RaceSimulation.D20_BENEFIT_VALID_LAPS),
+      };
+    }
   }
 
   // ── EVOLUCIÓN DINÁMICA DE CONDICIONES DE PISTA & CLIMA ──

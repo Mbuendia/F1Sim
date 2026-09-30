@@ -65,6 +65,12 @@ export function BoxControls({ car, simulation, teamCars }: {
                 <span>V{p.currentLap} · {Math.round(p.tires.health)}%</span>
                 <span className={styles.stops}>Stops: {p.pitStop.totalPitStops}</span>
               </div>
+              {p.pitStop.crewBenefit && p.currentLap <= p.pitStop.crewBenefit.expiresLap && (
+                <div className={styles.benefitInfo} data-crew-benefit={p.pitStop.crewBenefit.eventId}
+                  title="Beneficio D20: solo acorta el servicio de la próxima parada; el tránsito por el pit lane no cambia">
+                  🎲 {p.pitStop.crewBenefit.label}: servicio {p.pitStop.crewBenefit.minSec.toFixed(1).replace('.', ',')}–{p.pitStop.crewBenefit.maxSec.toFixed(1).replace('.', ',')} s hasta V{p.pitStop.crewBenefit.expiresLap}
+                </div>
+              )}
               {isWaiting && (
                 <div className={styles.waitInfo}>
                   ⏳ Esperando cajón ({p.pitStop.boxWaitTimer.toFixed(1)}s)

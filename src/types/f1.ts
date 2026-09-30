@@ -191,6 +191,29 @@ export interface PitStopState {
   // Q11: Double stack — waiting state
   waitingForBox: boolean;            // true when queued behind teammate at the shared box
   boxWaitTimer: number;              // accumulated wait time (sim seconds) behind teammate
+  // Q17: beneficio D20 de servicio pendiente (se consume en la próxima parada real dentro de su validez)
+  crewBenefit?: CrewServiceBenefit | null;
+}
+
+// [Q17] Beneficio de preparación de boxes: solo acota la duración del servicio; no toca tránsito ni recursos.
+export interface CrewServiceBenefit {
+  eventId: string;
+  label: string;
+  minSec: number;
+  maxSec: number;
+  expiresLap: number;
+  inUse?: boolean;             // aplicado al servicio de la parada en curso
+}
+
+// [Q17] Catálogo de beneficios del D20 por tramo de tirada.
+export type D20BenefitKind = 'crew-ready' | 'crew-alert' | 'engineer-report' | 'none';
+export interface D20Benefit {
+  kind: D20BenefitKind;
+  label: string;
+  serviceMinSec?: number;
+  serviceMaxSec?: number;
+  validLaps?: number;
+  rejoin?: RejoinEstimate;
 }
 
 export type StartLightState = 
@@ -349,6 +372,7 @@ export interface D20LuckEvent {
   rewardTitle: string;
   rewardDescription: string;
   optimalCompound: TireCompound;
+  benefit: D20Benefit;
   applied: boolean;
   timestamp: number;
 }

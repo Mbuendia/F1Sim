@@ -34,6 +34,15 @@ export const D20LuckResult: React.FC<{ event: D20LuckEvent }> = ({ event }) => (
 
     <p className={styles.rewardDesc}>{event.rewardDescription}</p>
 
+    <div className={styles.benefitRow} data-d20-benefit={event.benefit.kind}>
+      <span className={styles.tiresLabel}>Beneficio:</span>
+      <span className={styles.benefitValue}>
+        {event.benefit.serviceMinSec !== undefined && event.benefit.serviceMaxSec !== undefined
+          ? `${event.benefit.label} · servicio ${event.benefit.serviceMinSec.toFixed(1).replace('.', ',')}–${event.benefit.serviceMaxSec.toFixed(1).replace('.', ',')} s en la próxima parada (${event.benefit.validLaps} vueltas)`
+          : event.benefit.label}
+      </span>
+    </div>
+
     <div className={styles.optimalTireRow} data-d20-recommendation={event.optimalCompound}>
       <span className={styles.tiresLabel}>Compuesto recomendado para la próxima parada:</span>
       <span className={styles.optimalCompound}>

@@ -170,6 +170,8 @@ export class PitStopModel {
       if (pit.pitLaneProgress >= boxProgress && pit.currentStopTimer >= pit.stopDuration && !pit.waitingForBox) {
         if (pit.lastStopDuration !== pit.stopDuration) {
           pit.lastStopDuration = pit.stopDuration;
+          // [Q17] El beneficio de servicio se consume al completar el servicio.
+          if (pit.crewBenefit?.inUse) pit.crewBenefit = null;
           
           let nextCompound: TireCompound = 'hard';
           let expectedLaps = 36;
@@ -283,6 +285,13 @@ export class PitStopModel {
     const roll = Math.random();
     pit.stopDuration = Number((roll < .2 ? 1.8 + Math.random() * .4 :
       roll < .75 ? 2.2 + Math.random() * .8 : roll < .9 ? 3 + Math.random() : 4 + Math.random() * 4).toFixed(2));
+    // [Q17] Beneficio D20 de preparación del box: acota solo el servicio de esta parada si sigue vigente.
+    const benefit = pit.crewBenefit;
+    if (benefit && car.currentLap > benefit.expiresLap) pit.crewBenefit = null;
+    else if (benefit) {
+      pit.stopDuration = Number((benefit.minSec + (benefit.maxSec - benefit.minSec) * roll).toFixed(2));
+      benefit.inUse = true;
+    }
     if (orderIsActive(order)) {
       order!.status = 'committed';
       order!.message = emergency && !ordered ? 'Entrada de emergencia; se mantiene el compuesto solicitado.' : 'En boxes: compuesto confirmado.';
