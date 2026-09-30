@@ -35,8 +35,10 @@ export default async function run({ server, assert, test }) {
       assert(estimate.bestPos <= estimate.projectedPos && estimate.projectedPos <= estimate.worstPos && estimate.uncertaintySec > 0,
         'Q13: expresa incertidumbre como intervalo de posiciones', `P${estimate.bestPos}–P${estimate.worstPos}`);
       assert(typeof estimate.source === 'string' && /boxes/i.test(estimate.source), 'Q13: declara la fuente del cálculo', estimate.source);
-      const expectedT = (((target.progress - estimate.timeLossSec / (target.lastLapTime || sim.constructor.BASE_LAP_TIME_SEC)) % 1) + 1) % 1;
-      assert(Math.abs(estimate.rejoinTrackT - expectedT) < 1e-9, 'Q13: punto de reincorporación en pista coherente con la pérdida');
+      // El punto de reincorporación está a "pérdida" segundos por detrás del coche según el perfil de velocidad de la pista.
+      const gap = sim.getRejoinTimeGap(target.id, estimate.rejoinProgress, target.progress);
+      assert(Math.abs(gap - estimate.timeLossSec) < 0.1 && Math.abs(estimate.rejoinTrackT - (((estimate.rejoinProgress % 1) + 1) % 1)) < 1e-12,
+        'Q13: punto de reincorporación en pista coherente con la pérdida', `${gap.toFixed(2)} s`);
     });
 
     await test('Q13: clasificación muestra la posición estimada marcada como estimación', () => {
@@ -77,6 +79,25 @@ export default async function run({ server, assert, test }) {
       const { ctx: ctx2, arcs: arcs2 } = recordingCtx();
       const none = renderLeftMinimap(ctx2, sim, camera, { available: false, carId: target.id, reason: 'x' });
       assert(none === null && arcs2.length === arcs.length - 1, 'Q13: sin estimación disponible no hay marcador');
+    });
+
+    await test('Q13: cruce de meta, cola de boxes y compañero seleccionado', () => {
+      const sim = field(), [a, b, c, d] = sim.cars;
+      // Coche recién pasada la meta: la reincorporación cae en la vuelta anterior, antes de la línea.
+      a.progress = 4.01; a.trackT = 0.01; a.currentLap = 4;
+      const lap = sim.getRejoinEstimate(a.id);
+      assert(lap.available && lap.rejoinProgress < 4 && lap.rejoinTrackT > 0.5, 'Q13: la estimación cruza la meta hacia atrás sin saltos', `t=${lap.rejoinTrackT?.toFixed(3)}`);
+      // Segundo en cola: el compañero está en el box → espera añadida y declarada.
+      b.driver.teamId = c.driver.teamId;
+      const base = sim.getRejoinEstimate(b.id);
+      Object.assign(c.pitStop, { isPitting: true, stopDuration: 6, currentStopTimer: 1, pitLaneProgress: 0.5 });
+      c.isInPitLane = true;
+      const queued = sim.getRejoinEstimate(b.id);
+      assert(queued.available && queued.timeLossSec > base.timeLossSec + 4 && /double stack/i.test(queued.source),
+        'Q13: segundo en cola suma la espera del compañero y lo declara', `${base.timeLossSec.toFixed(1)} → ${queued.timeLossSec.toFixed(1)} s`);
+      // Compañero seleccionado: la torre coloca la fila fantasma del piloto seleccionado.
+      const html = board(sim, sim.getRejoinEstimate(d.id));
+      assert(html.includes(`data-rejoin-car="${d.id}"`) && html.includes(`${d.driver.code} TRAS BOXES`), 'Q13: la fila fantasma sigue al piloto seleccionado');
     });
 
     await test('Q13: la pausa conserva el marcador; reset y cambio de GP lo eliminan', () => {

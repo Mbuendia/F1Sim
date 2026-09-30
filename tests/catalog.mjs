@@ -475,5 +475,7 @@ export const modules = [
   { "id": "pit-route", "tasks": ["Q20"], "sprint": "2.8", "kind": "contract" },
   { "id": "drs-references", "tasks": ["Q19"], "sprint": "2.8", "kind": "contract" },
   { "id": "ers-energy", "tasks": ["Q16"], "sprint": "2.8", "kind": "contract" },
-  { "id": "rejoin-ui", "tasks": ["Q13"], "sprint": "2.8", "kind": "contract" }
+  { "id": "rejoin-ui", "tasks": ["Q13"], "sprint": "2.8", "kind": "contract" },
+  { "id": "rejoin-loss", "tasks": ["Q13"], "sprint": "2.8", "kind": "contract" },
+  { "id": "luck-modal", "tasks": ["Q17"], "sprint": "2.8", "kind": "contract" }
 ];
