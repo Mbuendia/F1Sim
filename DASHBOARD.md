@@ -50,7 +50,7 @@ Leyenda de Estado:
 | **Sprint 2.1** | **Resolución de Bugs Críticos y Altos de Auditoría (C1-C7, A1-A6)** | ✅ **COMPLETADO (23/23 Tests PASS)** |
 | **Sprint 2.5** | **Deuda Técnica de Auditoría (M1-M10, B1-B7)** | ✅ **COMPLETADO (17/17 Tareas - 46 Tests PASS)** |
 | **Sprint 2.8** | **Salto de Calidad: Fidelidad de Simulación, Geometría, Muro Táctico y revisión DRS (Q1-Q23)** | 🟡 **Revisión personal registrada; Q20/Q21 planificadas; Q13/Q16 ampliadas. Aprobaciones parciales no cierran tareas completas; casillas previas conservadas** |
-| **Sprint 2.9** | **Reglamento FIA 2025, identidad técnica de equipos y experiencia de carrera y rediseño de escritorio (R01-R34)** | 🟡 **PLANIFICADO — R29-R34 añadidas; sin implementación del rediseño** |
+| **Sprint 2.9** | **Reglamento FIA 2025, identidad técnica de equipos y experiencia de carrera y rediseño de escritorio (R01-R39)** | 🟡 **PLANIFICADO — R29-R34 añadidas; R35-R39 desde la revisión en local del 30/09/2026; sin implementación del rediseño** |
 | **Sprint 3** | **Audio, Telemetría Avanzada, Radar GPS & Clima (4 tareas definidas; desglose histórico de 16 incompleto)** | ⏳ **PLANIFICADO (Después del Sprint 2.9; coordinar clima con R22)** |
 | **Sprint 4** | **Épica: F1 Team Principal & Race Manager (estimación histórica de 12 tareas sin desglose)** | ⏳ **BACKLOG — requiere definición antes de implementar** |
 
@@ -362,6 +362,7 @@ Los 13 bugs críticos y altos detectados en la auditoría fueron implementados y
 
 ### 🏎️ Bloque D: Físicas Orgánicas, Banderas y Consistencia de Simulación (5 Tareas)
 * **Q14 — Eliminación de Asignaciones Directas de Posición en SC y Bandera Roja:** `[ ] EN REVISIÓN LOCAL — SC FÍSICO POR EL PIT LANE ENTREGADO 30/09/2026, PENDIENTE REVISIÓN VISUAL`
+  * *Revisión en local (30/09/2026):* SC verificado en carrera (sale del pit lane a 80 km/h, el líder lo alcanza a 28,6 m, vuelve por el pit lane). Bandera roja con paradas forzadas registrada como **R35**.
   * *Problema:* En SC y red flag existen saltos forzados de `progress`.
   * *Solución:* Realizar deceleraciones, agrupamiento y relanzamientos de forma 100% cinemática mediante velocidad, aceleración y distancia de seguridad sin alterar `progress` artificialmente.
   * *Test:* Simulación de retorno y parada en el carril rápido de boxes bajo bandera roja mediante deceleración suave hasta `speed = 0`, sin saltos discretos en `progress`. La parrilla se reserva para la excepción de seguridad del artículo 57.2 (ver R12).
@@ -371,6 +372,7 @@ Los 13 bugs críticos y altos detectados en la auditoría fueron implementados y
   * *Entrega 30/09/2026 (decisión del usuario: «sale del pit lane y va despacio hasta que el líder lo alcanza»):* el SC aparece aparcado en su garaje (85 % del pit lane), recorre el carril a 80 km/h y entra en pista por la salida de boxes; en pista espera despacio (≤ 100 km/h, frenando antes de las curvas, aceleración 30 km/h/s y frenada 45 km/h/s) y pasa a liderar cuando el líder lo alcanza a ≤ 30 m. El líder frena con curva v² = v_SC² + 2·a·d (a = 12 m/s²) en vez de un frenazo instantáneo; los doblados entre el SC y el líder pueden pasarlo. En la retirada reduce a 80 km/h antes de la entrada, entra al pit lane, la carrera se libera en ese momento y termina aparcado en su garaje. Posición dibujada con la misma función que los coches (pista o pit lane). Sin asignaciones: el único `sc.progress =` es el aparcamiento al desplegar; al salir a pista solo se ajusta la etiqueta de vuelta (mismo punto físico) si el líder va por delante en la cuenta. Botón DEV usa `deploySafetyCar`/`recallSafetyCar`. Test `sc-deploy` (22 PASS): salida por el pit lane, limitador, espera lenta, alcance a ≤ 30 m, el líder nunca lo adelanta, frenada del líder ≤ 200 km/h/s, doblados que lo pasan, retirada por la entrada con liberación, ∫v·dt del SC y sin saltos de coches. C3/C4 de `safety-car.mjs` migrados con explicación (antes: aparición 0,03 vueltas delante del líder y desaparición en t = 0,94). *Pendiente:* bandera roja (el SC se retira al instante), ajuste final al aparcar en parrilla (`RaceSimulation`) y escenarios de formación/relanzamiento; revisión visual del usuario.
 
 * **Q15 — Centralización de Reglas de Banderas Azules y Tráfico de Doblados:** `[ ] EN REVISIÓN LOCAL — CESIÓN PROGRESIVA ENTREGADA 30/09/2026`
+  * *Revisión en local (30/09/2026):* la señal aparece en carrera, pero la cesión solo llega al 30 % porque el aviso dura ≈ 0,6 s; registrado como **R36**.
   * *Problema:* Fallos de lógica entre la posición en vuelta y la proximidad física en pista.
   * *Solución:* Algoritmo unificado de banderas azules: cuando un coche con una o más vueltas de ventaja se encuentra a menos de 1.2s (delta métrico) detrás de un doblado, este último reduce su velocidad un 15% y se desplaza al exterior en recta.
   * *Test:* Doblado cediendo el paso de forma fluida ante la aproximación del líder.
@@ -394,6 +396,7 @@ Los 13 bugs críticos y altos detectados en la auditoría fueron implementados y
   * *Tests previos adicionales:* resources y módulo resources-ui propuesto; captura inicial/final en escenarios deterministas de consumo, descarga/regeneración y calentamiento/enfriamiento; probar propagación motor→UI, unidades, redondeo que no oculte cambios significativos, selección, pausa, reset y agotamiento. Entregar pasos reproducibles para revisión humana, sin esperar a un incidente aleatorio.
 
 * **Q17 — Rebalanceo del D20 de Suerte hacia el Reglamento FIA:** `[ ] EN REVISIÓN LOCAL — TEXTO Y CATÁLOGO DE BENEFICIOS ENTREGADOS 30/09/2026, PENDIENTE REVISIÓN DEL USUARIO`
+  * *Revisión en local (30/09/2026):* modal verificado (beneficio, compuesto recomendado y nota). Informe del ingeniero vacío bajo roja registrado como **R37**. Q18: la cuenta atrás baja de 6 a 0 y cierra.
   * *Problema:* `RaceSimulation.ts:1262`, el D20 monta neumáticos nuevos mágicamente en pista sin parar en boxes.
   * *Solución vigente (sustituye el boceto anterior):* beneficio opcional de preparación de boxes o información del ingeniero, con coste/alcance explícito y efecto aplicado en una oportunidad legal. No implementar el antiguo +15% ERS ni +3 km/h por cambio instantáneo de setup; R26 exige conservar recursos, límites y parc fermé. Elegir y aprobar el catálogo concreto al refinar Q17; 1.9 s no es una garantía FIA.
   * *Test:* Validar que el D20 ya no cambia los neumáticos de un monoplaza mientras rueda por la pista.
@@ -467,6 +470,7 @@ Registro original: `docs/reviews/resultados-usuario-2026-09-29.json`: 32 aprobac
   * *Integración visible (30/09/2026):* `TelemetryPanel` no se monta en ninguna vista del juego (componente sin uso, cubierto solo por tests); el chasis se integra también en el dock inferior (`BottomTelemetryDock`), la telemetría visible en carrera, con el desglose FL/FR/RL/RR en rejilla 2×2 y los umbrales compartidos (antes rojo < 30 %).
 
 * **Q23 — Animaciones e indicadores de clasificación y telemetría:** `[ ] EN REVISIÓN LOCAL — IMPLEMENTADO 30/09/2026, PENDIENTE REVISIÓN VISUAL DEL USUARIO`
+  * *Revisión en local (30/09/2026):* flechas ▲▼ visibles bajo la posición; la animación a menudo no se reproduce (avisos «No target found»), registrado como **R38**.
   * *Alcance:* Indicadores de posición ganada/perdida y boxes en Leaderboard; marcadores para animación de velocidad/RPM y entrada del panel de telemetría.
   * *Aceptación:* Conservar lectura y funcionalidad existente y renderizado SSR sin DOM. Los marcadores de tests no certifican por sí solos la animación: revisar movimiento y actualización en navegador antes de aceptar.
   * *Tests previos:* visual-animations; contrato ya publicado, pendiente de implementación y revisión visual.
@@ -482,13 +486,13 @@ Q3 debe permitir límite de boxes por evento (80 km/h por defecto) y fast lane d
 
 ---
 
-## 🏎️ 6. SPRINT 2.9: REGLAMENTO FIA 2025 Y SENSACIÓN DE CARRERA (28 TAREAS)
+## 🏎️ 6. SPRINT 2.9: REGLAMENTO FIA 2025 Y SENSACIÓN DE CARRERA (39 TAREAS)
 
 **Estado: `[ ] REFINADO — PENDIENTE DE APROBACIÓN PARA IMPLEMENTAR`.** Investigación inicial documentada el 16/09/2026; planificación acotada posteriormente por el usuario a Sprint 2.9 y autorizada para integrar/publicar en main. Este cambio no implementa nuevas reglas. Objetivo: que el jugador entienda por qué un coche alcanza a otro, cuándo puede adelantar y qué coste tienen sus decisiones sobre neumáticos, energía, combustible y evolución del equipo. Se conservan las seis Reglas de Oro y la experiencia 100% Team Principal.
 
 ### 6.0 Alcance acordado y primera entrega propuesta
 
-Se mantienen **las 28 tareas R01-R28 y las cinco entregas A-E**, ampliadas con **R29-R34 de rediseño de escritorio** en la entrega E (34 tareas en total). Esta revisión concreta su planificación, no cierra ninguna tarea ni reanuda las Q pendientes. Los contratos propuestos deben contrastarse con el código cuando se autorice implementar; la presencia de una interfaz o una prueba sintética no acredita una mecánica completa.
+Se mantienen **las 28 tareas R01-R28 y las cinco entregas A-E**, ampliadas con **R29-R34 de rediseño de escritorio** en la entrega E y **R35-R39 de la revisión en local del 30/09/2026** en la entrega F (39 tareas en total). Esta revisión concreta su planificación, no cierra ninguna tarea ni reanuda las Q pendientes. Los contratos propuestos deben contrastarse con el código cuando se autorice implementar; la presencia de una interfaz o una prueba sintética no acredita una mecánica completa.
 
 | Entrega | Contenido conservado | Límite de la planificación actual |
 |---|---|---|
@@ -497,6 +501,7 @@ Se mantienen **las 28 tareas R01-R28 y las cinco entregas A-E**, ampliadas con *
 | **C — Carrera y estrategia** | R07-R13, R22, R25; resultado de una carrera de R21 | Incluir clasificación/puntos de una carrera sin esperar al campeonato. Órdenes, boxes y continuidad dependen de Q9-Q15/Q18 donde corresponda; reconocer esas carencias antes de autorizar cada bloque. |
 | **D — Fin de semana y temporada** | R18-R21, R26 | R21 amplía el resultado de carrera con campeonato, sin contarlo como tarea nueva. Q17 permanece como dependencia de R26, no se considera entregada. |
 | **E — Presentación y verificación transversal** | R23, R24, R27, R28, R29-R34 | R27 acompaña desde el inicio; definir el esquema R28 temprano sin declarar guardado completado. R23 excluye los nuevos escenarios por capas de Q6. |
+| **F — Hallazgos de la revisión en local (30/09/2026)** | R35-R39 | Defectos observados jugando una carrera real (build de producción, Barcelona). R35 es el más grave; R39 se resuelve dentro del rediseño R30/R31. |
 
 **Primera entrega propuesta, pendiente de autorización para codificar:**
 
@@ -752,6 +757,45 @@ Objetivo: circuito protagonista, clasificación compacta y órdenes de ambos pil
   * *Alcance:* Ejecutar la matriz R29 sobre la nueva interfaz y comparar con el comportamiento anterior. Validar capturas de Barcelona/Mónaco, paddock y estados representativos; medir rendimiento en el mismo equipo y condiciones antes/después.
   * *Aceptación:* Todas las funciones inventariadas siguen accesibles; sin recortes ni solapamientos que impidan jugar en los tamaños R30. Registrar resultados, limitaciones, rendimiento y aprobación visual del usuario. Ningún PASS sintético sustituye la revisión del Canvas real.
   * *Tests antes de implementación:* Ejecutar módulos UI afectados y consumidores; regresión completa solo al integrar el bloque transversal, más build. R27 conserva el banco de simulación; esta tarea cubre aceptación del rediseño, sin duplicarlo.
+
+#### Entrega F — Hallazgos de la revisión en local (30/09/2026)
+
+Origen: revisión en local de Q12-Q23 jugando una carrera en Barcelona con el build de producción (`vite preview`), a petición del usuario. Lo entregado ese día funciona en carrera; estos defectos se observaron y midieron en esa sesión. Registro documental: no autoriza implementarlos.
+
+* **R35 — Bandera roja sin paradas forzadas ni cambio de neumáticos:** `[ ] PLANIFICADO`
+  * *Prioridad/dependencias:* P0; parte pendiente de Q14; coordina R12 (procedimiento de roja) y R07 (inventario de neumáticos).
+  * *Hallazgo:* la roja marca a todos los coches como `isPitting`; esperan la salida dentro del pit lane (13 coches en el carril en `grid-ready`) y, al relanzar, completan una parada real con cambio de neumáticos. Con dos rojas había 22 paradas en la vuelta 4. El SC además se retira al instante.
+  * *Alcance:* desacelerar y detener a los coches en orden (fast lane o parrilla según el perfil), sin reutilizar el servicio ordinario como aparcamiento; cambio de neumáticos solo si el reglamento lo permite y como decisión explícita; relanzar sin paradas fantasma.
+  * *Aceptación:* tras una roja y el relanzamiento, `totalPitStops` no cambia salvo orden explícita; orden, vueltas y recursos se conservan; ningún coche aparece como «PIT» en la clasificación durante la espera.
+  * *Tests antes de implementación:* ampliar neutralization-motion: roja → espera → relanzamiento en carrera real; paradas, compuesto, salud y posiciones antes/después; ∫v·dt durante la detención.
+
+* **R36 — Aviso de bandera azul con tiempo suficiente para ceder:** `[ ] PLANIFICADO`
+  * *Prioridad/dependencias:* P1; continúa Q15; coordina R02/R09 (tráfico físico).
+  * *Hallazgo:* en adelantamientos reales la señal dura unos 0,6 s y la cesión solo llega al 30 % (nivel máximo 0,30 en 20 vueltas); el doblado apenas se aparta. El líder no queda bloqueado físicamente por el doblado.
+  * *Alcance:* anticipar el aviso (propuesta ≈ 3 s de hueco en lugar de 1,2 s, ajuste de juego a validar) manteniendo la rampa gradual de Q15; valorar que el líder no atraviese al doblado mientras no haya cedido.
+  * *Aceptación:* en carrera real el doblado alcanza cesión ≥ 0,9 antes de ser adelantado en recta; sin frenadas bruscas (criterio de blue-flags-yield) ni señales falsas con coches de la misma vuelta.
+  * *Tests antes de implementación:* ampliar blue-flags-yield con un adelantamiento completo en carrera real y el nivel máximo alcanzado; conservar blue-flags.
+
+* **R37 — Beneficio del D20 útil bajo bandera roja:** `[ ] PLANIFICADO`
+  * *Prioridad/dependencias:* P2; continúa Q17; coordina R26.
+  * *Hallazgo:* con tirada 8-13 bajo bandera roja, el «Informe del ingeniero» siempre dice «sin estimación: bandera roja, carrera detenida», porque la estimación Q13 no está disponible con roja.
+  * *Alcance:* bajo roja, ofrecer otro beneficio del catálogo o una información útil para el relanzamiento; no mostrar un beneficio vacío.
+  * *Aceptación:* ninguna tirada muestra un beneficio sin contenido; el texto describe exactamente el efecto.
+  * *Tests antes de implementación:* ampliar luck-benefits con disparo `red` en los cuatro tramos.
+
+* **R38 — Animación de cambio de posición que no se reproduce:** `[ ] PLANIFICADO`
+  * *Prioridad/dependencias:* P2; continúa Q23.
+  * *Hallazgo:* la clasificación lanza la animación de la flecha ▲▼ antes de que el elemento exista en el DOM; Anime.js avisa «No target found» (cientos de avisos en consola en una carrera) y la animación a menudo no se ve.
+  * *Alcance:* animar solo cuando la flecha ya está en pantalla (p. ej. cambios pendientes que se animan al aparecer); sin avisos en consola.
+  * *Aceptación:* cada cambio de posición visible se anima una vez; cero avisos «No target found» durante una carrera.
+  * *Tests antes de implementación:* prueba estructural o de navegador que cuente avisos durante una carrera y compruebe que el cambio se anima al aparecer.
+
+* **R39 — El muro de boxes no debe tapar el coche seguido ni el Safety Car:** `[ ] PLANIFICADO`
+  * *Prioridad/dependencias:* P1; se resuelve dentro de R30/R31.
+  * *Hallazgo:* con la cámara siguiendo a un coche o al SC, el panel del muro queda sobre el centro del Canvas y oculta el objetivo (1440×900).
+  * *Alcance:* el objetivo de la cámara queda siempre en el área libre del Canvas, o el muro se pliega sin perder órdenes de ambos pilotos.
+  * *Aceptación:* en los tamaños de R30, el coche seguido y el SC son visibles con el muro abierto.
+  * *Tests antes de implementación:* incluir en desktop-layout la posición en pantalla del objetivo de la cámara frente a los rectángulos de los paneles.
 
 ### 6.6 Secuencia, dependencias y límite de alcance
 
