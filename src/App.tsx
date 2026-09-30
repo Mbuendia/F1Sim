@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import styles from './App.module.css';
 import { RaceSimulation } from './simulation/RaceSimulation';
 import { Camera } from './renderer/Camera';
@@ -17,6 +17,7 @@ import RaceFlagsHUD from './components/RaceFlagsHUD';
 import { DnfNotificationModal } from './components/DnfNotificationModal';
 import { D20LuckModal } from './components/D20LuckModal';
 import { RaceMenu } from './components/RaceMenu';
+import { RaceNotices, RaceNotice, RaceNoticeTone } from './components/RaceNotices';
 import { OFFICIAL_CIRCUITS } from './data/circuits';
 import { DRIVERS } from './data/drivers';
 import { TEAMS } from './data/teams';
@@ -32,6 +33,18 @@ const FLAG_CHIPS: Record<RaceFlagState, { label: string; className: string }> = 
   'sc': { label: 'SAFETY CAR', className: 'flagSc' },
   'red': { label: 'BANDERA ROJA', className: 'flagRed' },
 };
+
+// R32: aviso breve al cambiar la bandera (la vuelta a verde solo se anuncia tras una neutralización).
+const FLAG_NOTICES: Record<RaceFlagState, [RaceNoticeTone, string, string]> = {
+  'green': ['ok', 'Verde', 'Pista libre: se puede adelantar'],
+  'yellow': ['warning', 'Amarilla', 'Bandera amarilla en pista'],
+  'double-yellow': ['warning', 'Amarilla', 'Doble amarilla: prepararse para parar'],
+  'vsc': ['warning', 'VSC', 'Virtual Safety Car: mantener el delta'],
+  'sc': ['warning', 'SC', 'Safety Car desplegado'],
+  'red': ['danger', 'Roja', 'Bandera roja: carrera detenida'],
+};
+const NOTICE_MS = 8000;
+const TYRE_WORDS: Record<string, string> = { soft: 'blandos', medium: 'medios', hard: 'duros', intermediate: 'intermedios', wet: 'de lluvia' };
 
 const CAMERA_LABELS: Record<string, string> = {
   overview: 'General',
@@ -199,6 +212,7 @@ export const App: React.FC = () => {
     camera.resetToFullTrack();
     setSelectedCarId(null);
     setDetailOpen(false);
+    clearNotices();
     setLightState('idle');
     setIsFinished(false);
     simulation.startRaceSequence();
@@ -209,6 +223,7 @@ export const App: React.FC = () => {
     camera.resetToFullTrack();
     setSelectedCarId(null);
     setDetailOpen(false);
+    clearNotices();
     setIsFinished(false);
     setCurrentView('race');
     simulation.startRaceSequence();
@@ -313,6 +328,52 @@ export const App: React.FC = () => {
       .map(dId => cars.find(c => c.driver.id === dId))
       .filter((c): c is CarState => c !== undefined);
   }, [cars, selectedDriverId, favoriteCar]);
+  // ── R32: avisos breves (máx. 3 a la vez, caducan solos, sin robar el foco) ──
+  const [notices, setNotices] = useState<RaceNotice[]>([]);
+  const noticeSeq = useRef(0);
+  const lastFlag = useRef<RaceFlagState>('green');
+  const lastPitLane = useRef(new Map<number, boolean>());
+  const lastDnfId = useRef<string | null>(null);
+
+  const pushNotice = useCallback((tone: RaceNoticeTone, tag: string, text: string) => {
+    const id = ++noticeSeq.current;
+    setNotices(list => [...list, { id, tone, tag, text }].slice(-3));
+    window.setTimeout(() => setNotices(list => list.filter(n => n.id !== id)), NOTICE_MS);
+  }, []);
+
+  const clearNotices = useCallback(() => {
+    setNotices([]);
+    lastFlag.current = 'green';
+    lastPitLane.current.clear();
+    lastDnfId.current = null;
+  }, []);
+
+  useEffect(() => {
+    if (currentView !== 'race' || raceFlagState === lastFlag.current) return;
+    lastFlag.current = raceFlagState;
+    const [tone, tag, text] = FLAG_NOTICES[raceFlagState];
+    pushNotice(tone, tag, text);
+  }, [raceFlagState, currentView, pushNotice]);
+
+  useEffect(() => {
+    if (currentView !== 'race') return;
+    for (const car of teamCars) {
+      const was = lastPitLane.current.get(car.id);
+      const now = car.isInPitLane;
+      if (was === now) continue;
+      lastPitLane.current.set(car.id, now);
+      if (was === undefined) continue;
+      if (now) pushNotice('info', 'Box', `${car.driver.code} entra en boxes`);
+      else pushNotice('ok', 'Box', `${car.driver.code} sale de boxes con ${TYRE_WORDS[car.tires.compound] ?? car.tires.compound}`);
+    }
+  }, [teamCars, currentView, pushNotice]);
+
+  useEffect(() => {
+    if (!activeDnf || activeDnf.id === lastDnfId.current) return;
+    lastDnfId.current = activeDnf.id;
+    pushNotice('danger', 'DNF', `${activeDnf.driverCode}: ${activeDnf.reason}`);
+  }, [activeDnf, pushNotice]);
+
   const selectedCar = selectedCarId !== null ? simulation.getCarById(selectedCarId) || null : null;
   // [Q13] Reincorporación estimada del piloto objetivo (el mismo que muestra el dock); se recalcula en cada refresco.
   const rejoinEstimate = simulation.getRejoinEstimate((selectedCar || favoriteCar).id);
@@ -448,6 +509,8 @@ export const App: React.FC = () => {
               sectorFlags={sectorFlags}
               safetyCar={safetyCar}
             />
+
+            <RaceNotices notices={notices} />
 
             {lightState === 'formation-lap' && (
               <div className={styles.formationBanner}>

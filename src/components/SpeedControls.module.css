@@ -22,8 +22,8 @@
 }
 
 .lapLabel {
-  font-size: 9px;
-  font-family: 'Orbitron', sans-serif;
+  font-size: 13px;
+  font-family: var(--font-ui);
   color: #ff4d4d;
   letter-spacing: 1px;
 }
@@ -52,12 +52,12 @@
 
 .btn {
   background: transparent;
-  color: #94a3b8;
+  color: var(--text-2);
   border: none;
   padding: 6px 10px;
   border-radius: 6px;
-  font-family: 'Orbitron', sans-serif;
-  font-size: 11px;
+  font-family: var(--font-ui);
+  font-size: 14px;
   font-weight: 700;
   cursor: pointer;
   display: flex;
@@ -88,22 +88,22 @@
 }
 
 .timeLabel {
-  font-size: 9px;
-  font-family: 'Orbitron', sans-serif;
+  font-size: 13px;
+  font-family: var(--font-ui);
   color: #64748b;
   letter-spacing: 1px;
 }
 
 .timeValue {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 13px;
+  font-family: var(--font-ui);
+  font-size: 16px;
   font-weight: 700;
-  color: #f1f5f9;
+  color: var(--text);
 }
 
 .resetBtn {
   background: rgba(255, 255, 255, 0.06);
-  color: #94a3b8;
+  color: var(--text-2);
   border: 1px solid rgba(255, 255, 255, 0.1);
   padding: 8px;
   border-radius: 8px;
@@ -135,4 +135,10 @@
   .lapLabel, .timeLabel { display: none; }
   .container { gap: 8px; }
   .btn { min-width: 34px; padding: 0 5px; }
+}
+
+/* Sin saltos de línea en la barra; las etiquetas «Vuelta» y «Tiempo GP» se omiten por debajo de 1600 px. */
+.lapBadge, .timeBadge, .lapValue, .timeValue { white-space: nowrap; }
+@media (max-width: 1599px) {
+  .lapLabel, .timeLabel { display: none; }
 }
