@@ -22,7 +22,7 @@
 
 ## 🧭 2. ROADMAP Y ESTADO GLOBAL DE SPRINTS
 
-**Orden vigente:** Sprint **2.8** · Tarea actual **Q16** · Siguiente **Q13**.
+**Orden vigente:** Sprint **2.8** · Tarea actual **Q13** · Siguiente **Q17**.
 
 **Prioridad acordada tras la auditoría (30/09/2026, `docs/reviews/auditoria-q12-q19.md`):** Q19 → Q16 → Q13 → Q17 → Q12 → Q18/Q14/Q15. Decisiones del usuario: detecciones DRS desde las notas oficiales FIA; el Safety Car debe salir del pit lane (Q14); tests estructurales sin dependencias nuevas para Q18; tolerancias de calibración Q12 propuestas.
 
@@ -346,7 +346,7 @@ Los 13 bugs críticos y altos detectados en la auditoría fueron implementados y
   * *Contexto y archivos:* `EngineModel`, `TireModel.updateTire`, `FuelModel.updateFuel` ya leen `engineMode`; `RaceSimulation` fuerza `push/standard` al observar al rival entrar a boxes. Separar orden persistente y modo efectivo: IA, banderas, temperatura y energía pueden limitar ejecución sin borrar la intención del jugador. Mapear Save→low, Balanced→standard, Push→push o documentar por qué cambia ese contrato; `overtake` no es conducción manual.
   * *Aceptación ampliada:* mismas condiciones/semilla, cinco vueltas y recursos iniciales iguales, orden mantenida tras parada del rival, cambio de piloto sin afectar al otro, pausa/reset. Mostrar modo pedido/efectivo y motivo de limitación. Q16/R14-R16 reemplazarán recursos provisionales; no prometer cifras de ahorro basadas en telemetría ficticia.
 
-* **Q13 — Predictor de Ventana de Reincorporación (Rejoin & Undercut Window):** `[ ] PENDIENTE`
+* **Q13 — Predictor de Ventana de Reincorporación (Rejoin & Undercut Window):** `[ ] EN REVISIÓN LOCAL — MARCADOR EN CLASIFICACIÓN Y MINIMAPA ENTREGADO 30/09/2026, PENDIENTE REVISIÓN VISUAL DEL USUARIO`
   * *Problema:* El jugador no puede predecir el tráfico tras salir de boxes.
   * *Solución:* Proyectar en la Timing Tower y el Minimapa una marca de "Posición Estimada de Reincorporación" calculada restando el `pitLaneTimeLoss` (~22s) al tiempo del coche actual.
   * *Test:* Predicción contrastada con un escenario controlado de reincorporación; expresar incertidumbre en carrera real, no prometer posición exacta con tráfico variable.
@@ -356,6 +356,7 @@ Los 13 bugs críticos y altos detectados en la auditoría fueron implementados y
   * *Revisión del usuario (29/09/2026):* bloqueada porque el artefacto remitía a tests y advertía que el marcador no estaba entregado. No se registró un fallo observado de indicador congelado.
   * *Ampliación confirmada:* completar la presentación compartida en clasificación y minimapa para el piloto objetivo; actualizarla con carrera/tráfico/cola y selección, mostrar fuente, carácter estimado y límites. Sin datos suficientes, mostrar no disponible con motivo; no mostrar una posición fija como si fuera medida. Pausa conserva la predicción; reset/cambio de GP elimina la anterior.
   * *Tests previos adicionales:* módulos rejoin-contract y nuevo rejoin-ui propuesto; fixture con cambios suficientes de tráfico para alterar el pronóstico (no exigir cambio cada frame), selección de ambos pilotos, cola, SC, cruce de meta, pausa/reset y coincidencia torre/minimapa sin mutar progress. Pruebas de interacción y captura del SVG/Canvas real antes de aceptación humana.
+  * *Entrega 30/09/2026 (hueco de la auditoría):* `RaceSimulation.getRejoinEstimate` envuelve el predictor existente (`getRejoinProjection`, sin cambiarlo) y devuelve posición estimada, intervalo P mejor–peor con ±2 s de incertidumbre, pérdida total, punto de pista de reincorporación y fuente legible (pérdida en boxes del circuito + servicio 2,5 s + espera double stack + vuelta usada). Sin estimación devuelve el motivo: retirado, en boxes, carrera no iniciada o terminada. La torre muestra una fila fantasma discontinua «≈P7 ALO TRAS BOXES P6–P8 · −24.5s» en el hueco donde saldría el piloto objetivo (el mismo del dock: seleccionado o favorito) o una línea «no disponible · motivo». El minimapa del coche seguido dibuja un anillo discontinuo con el color del equipo y «≈P7» en el punto de reincorporación. Test `rejoin-ui` (18 PASS): coincidencia con el predictor, fuente, intervalo, fila fantasma, motivos, marcador del minimapa en el punto proyectado, pausa sin cambios, reset y cambio de GP sin marcador. *Pendiente:* escenarios SC, cruce de meta, segundo en cola y selección del compañero en la UI; revisión visual del usuario en carrera.
 
 ### 🏎️ Bloque D: Físicas Orgánicas, Banderas y Consistencia de Simulación (5 Tareas)
 * **Q14 — Eliminación de Asignaciones Directas de Posición en SC y Bandera Roja:** `[ ] PENDIENTE`
