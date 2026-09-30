@@ -709,3 +709,27 @@
   font-weight: 800;
   color: #ffffff;
 }
+/* R30/R33: paddock con la paleta y la tipografía del rediseño. Texto operativo ≥ 14 px, Orbitron solo en la marca. */
+.homeContainer { background: var(--bg); color: var(--text); font-family: var(--font-ui); }
+.header { background: var(--panel); border-bottom: 1px solid var(--line); }
+.headerTitles h1 { font-family: var(--font-marca); font-size: 18px; letter-spacing: 0.04em; }
+.headerTitles p { font-family: var(--font-ui); font-size: 15px; letter-spacing: 0; text-transform: none; color: var(--text-2); }
+.historySection { cursor: default; }
+.historyTitle { cursor: pointer; font-family: var(--font-ui); font-size: 15px; font-weight: 700; letter-spacing: 0; text-transform: none; color: var(--text-2); list-style: revert; }
+.mainLayout3Col { grid-template-columns: 320px minmax(0, 1fr) 320px; }
+.tabBtn { font-family: var(--font-ui); font-size: 16px; font-weight: 700; letter-spacing: 0; }
+.driverListName, .circuitListName { font-size: 17px; }
+.driverListTeam, .circuitListSub { font-size: 14px; color: var(--text-2); }
+.driverListNum { font-family: var(--font-ui); font-size: 16px; font-weight: 700; }
+.driverListItem:focus-visible, .circuitListItem:focus-visible { outline: 3px solid var(--foco); outline-offset: 2px; }
+.activeMark { font-size: 13px; font-weight: 700; color: var(--text); }
+.circuitLaps { font-size: 15px; font-weight: 700; color: var(--text-2); }
+.sidePanelTitle { font-family: var(--font-ui); font-size: 15px; font-weight: 700; letter-spacing: 0.06em; }
+.summaryCardBadge { font-family: var(--font-ui); font-size: 13px; font-weight: 700; letter-spacing: 0.06em; }
+.summaryCardMain { font-size: 18px; font-weight: 700; }
+.summaryCardSub { font-size: 15px; color: var(--text-2); }
+.summaryCardExtra { font-size: 14px; }
+.summaryTrack { margin-top: 8px; height: 140px; display: flex; align-items: center; justify-content: center; }
+.launchBigButton { font-family: var(--font-ui); font-size: 20px; font-weight: 700; letter-spacing: 0.02em; min-height: 64px; background: var(--accion); box-shadow: none; }
+.launchBigButton:hover { background: var(--accion-hover); }
+.launchSub { font-size: 14px; font-weight: 600; opacity: 0.9; letter-spacing: 0; }

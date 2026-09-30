@@ -169,18 +169,18 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           <div className={styles.f1Logo}>F1</div>
           <F1WheelSvg style={{ width: '28px', height: '28px', flexShrink: 0 }} />
           <div className={styles.headerTitles}>
-            <h1>F1 GRAND PRIX SIMULATOR</h1>
-            <p>CENTRO DE CONTROL OFICIAL · SELECCIÓN DE PILOTO & CIRCUITO</p>
+            <h1>F1 RACE MANAGER</h1>
+            <p>Paddock · elige piloto y circuito y entra a pista</p>
           </div>
         </div>
       </header>
 
       {raceHistory.length > 0 && (
-        <section className={styles.historySection}>
-          <div className={styles.historyTitle}>
-            <History size={11} />
-            <span>HISTORIAL DE CARRERAS DISPUTADAS ({raceHistory.length})</span>
-          </div>
+        <details className={styles.historySection}>
+          <summary className={styles.historyTitle}>
+            <History size={14} aria-hidden="true" />
+            <span>Historial de carreras disputadas ({raceHistory.length})</span>
+          </summary>
 
           <div className={styles.historyCardsList}>
             {raceHistory.map((race) => (
@@ -198,7 +198,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               </div>
             ))}
           </div>
-        </section>
+        </details>
       )}
 
       <div className={styles.mainLayout3Col}>
@@ -231,6 +231,15 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 return (
                   <div
                     key={d.id}
+                    role="button"
+                    tabIndex={0}
+                    aria-pressed={isSelected}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        (event.currentTarget as HTMLElement).click();
+                      }
+                    }}
                     className={`${styles.driverListItem} ${isSelected ? styles.driverListItemSelected : ''}`}
                     style={{ borderLeftColor: t.color, background: isInspected && !isSelected ? 'rgba(255,255,255,0.09)' : undefined }}
                     onClick={() => {
@@ -248,7 +257,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
                     <div style={{ textAlign: 'right' }}>
                       <span className={styles.driverListNum} style={{ color: t.color }}>#{d.number}</span>
-                      {isSelected && <div style={{ fontSize: '9px', color: '#22c55e', fontWeight: 800 }}>ACTIVO ✓</div>}
+                      {isSelected && <div className={styles.activeMark}>Elegido ✓</div>}
                     </div>
                   </div>
                 );
@@ -261,6 +270,15 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 return (
                   <div
                     key={circuit.id}
+                    role="button"
+                    tabIndex={0}
+                    aria-pressed={isSelected}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        (event.currentTarget as HTMLElement).click();
+                      }
+                    }}
                     className={`${styles.circuitListItem} ${isSelected ? styles.circuitListItemSelected : ''}`}
                     style={{ background: isInspected && !isSelected ? 'rgba(255,255,255,0.09)' : undefined }}
                     onClick={() => {
@@ -278,8 +296,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                       </div>
                     </div>
                     <div style={{ textAlign: 'right' }}>
-                      <span style={{ fontFamily: 'Orbitron', fontSize: '10.5px', color: '#38bdf8' }}>{circuit.totalLaps} V</span>
-                      {isSelected && <div style={{ fontSize: '9px', color: '#38bdf8', fontWeight: 800 }}>ACTIVO ✓</div>}
+                      <span className={styles.circuitLaps}>{circuit.totalLaps} v</span>
+                      {isSelected && <div className={styles.activeMark}>Elegido ✓</div>}
                     </div>
                   </div>
                 );
@@ -960,11 +978,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 <div className={styles.summaryCardExtra} style={{ color: '#ffd700', background: 'rgba(255,215,0,0.1)' }}>
                   🏁 {selectedCircuit.totalLaps} Vueltas · {selectedCircuit.direction === 'clockwise' ? '🔄 Horario' : '🔄 Antihorario'}
                 </div>
-                <div style={{ marginTop: '4px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div className={styles.summaryTrack}>
                   <img 
                     src={`${import.meta.env.BASE_URL}circuits/minimal/${selectedCircuit.svgFile}`} 
                     alt={selectedCircuit.name} 
-                    style={{ maxHeight: '100%', maxWidth: '100%', filter: 'drop-shadow(0 0 6px rgba(225,6,0,0.5))' }} 
+                    style={{ maxHeight: '100%', maxWidth: '100%' }} 
                   />
                 </div>
               </div>
@@ -972,11 +990,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           </div>
 
           <button className={styles.launchBigButton} onClick={onStartRace}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Play size={15} fill="#ffffff" />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Play size={18} fill="#ffffff" aria-hidden="true" />
               <span>ENTRAR A PISTA</span>
             </div>
-            <span style={{ fontSize: '8.5px', opacity: 0.85, letterSpacing: '0.5px' }}>EMPEZAR GRAN PREMIO OFICIAL</span>
+            <span className={styles.launchSub}>Empezar el Gran Premio</span>
           </button>
         </div>
       </div>
