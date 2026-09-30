@@ -484,5 +484,6 @@ export const modules = [
   { "id": "sc-deploy", "tasks": ["Q14"], "sprint": "2.8", "kind": "contract" },
   { "id": "blue-flags-yield", "tasks": ["Q15"], "sprint": "2.8", "kind": "contract" },
   { "id": "drs-cases", "tasks": ["Q19"], "sprint": "2.8", "kind": "contract" },
-  { "id": "ers-pit", "tasks": ["Q16"], "sprint": "2.8", "kind": "contract" }
+  { "id": "ers-pit", "tasks": ["Q16"], "sprint": "2.8", "kind": "contract" },
+  { "id": "drs-restart", "tasks": ["Q19"], "sprint": "2.8", "kind": "contract" }
 ];
