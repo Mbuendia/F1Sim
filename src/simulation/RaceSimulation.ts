@@ -12,7 +12,8 @@ import {
   D20LuckEvent,
   TireCompound,
   BoxOrder,
-  BoxOrderIssuer
+  BoxOrderIssuer,
+  RejoinEstimate
 } from '../types/f1';
 import { DRIVERS } from '../data/drivers';
 import { TEAMS, STARTING_GRID_ORDER } from '../data/teams';
@@ -327,6 +328,42 @@ export class RaceSimulation {
     const projectedPos = 1 + this.cars.filter(other => other.id !== car.id &&
       other.status !== 'out' && other.progress > rejoinProgress).length;
     return { timeLossSec: totalLoss, projectedPos };
+  }
+
+  // [Q13] Estimación visible para la UI: mismo predictor, con fuente, intervalo y motivo si no está disponible.
+  static readonly REJOIN_UNCERTAINTY_SEC = 2.0;
+
+  getRejoinEstimate(carId: number): RejoinEstimate {
+    const car = this.getCarById(carId);
+    if (!car || !this.activeTrack) return { available: false, carId, reason: 'Sin datos del piloto' };
+    if (car.status === 'out') return { available: false, carId, reason: 'Piloto retirado' };
+    if (car.status === 'finished' || this.isFinished) return { available: false, carId, reason: 'Carrera terminada' };
+    if (this.lightState !== 'racing') return { available: false, carId, reason: 'Carrera no iniciada' };
+    if (car.isInPitLane || car.pitStop.isPitting) return { available: false, carId, reason: 'En boxes: reincorporación en curso' };
+
+    const { timeLossSec, projectedPos } = this.getRejoinProjection(carId);
+    const lapTime = car.lastLapTime || RaceSimulation.BASE_LAP_TIME_SEC;
+    const uncertaintySec = RaceSimulation.REJOIN_UNCERTAINTY_SEC;
+    const others = this.cars.filter(other => other.id !== car.id && other.status !== 'out');
+    const posAt = (lossSec: number) => {
+      const rejoinProgress = car.progress - lossSec / lapTime;
+      return 1 + others.filter(other => other.progress > rejoinProgress).length;
+    };
+    const rejoinProgress = car.progress - timeLossSec / lapTime;
+    const baseLoss = this.activeTrack.pitLaneTimeLossSec || 22.0;
+    const lapSource = car.lastLapTime ? 'última vuelta' : 'vuelta de referencia';
+    return {
+      available: true,
+      carId,
+      projectedPos,
+      bestPos: posAt(timeLossSec - uncertaintySec),
+      worstPos: posAt(timeLossSec + uncertaintySec),
+      timeLossSec,
+      uncertaintySec,
+      rejoinTrackT: ((rejoinProgress % 1) + 1) % 1,
+      source: `Pérdida en boxes ${baseLoss.toFixed(1)} s + servicio 2,5 s` +
+        (timeLossSec > baseLoss + 2.5 + 1e-9 ? ' + espera double stack' : '') + ` · ${lapSource} ${lapTime.toFixed(1)} s`,
+    };
   }
 
   getEffectiveTimeScale(): number {

@@ -239,6 +239,8 @@ export const App: React.FC = () => {
       .filter((c): c is CarState => c !== undefined);
   }, [cars, selectedDriverId, favoriteCar]);
   const selectedCar = selectedCarId !== null ? simulation.getCarById(selectedCarId) || null : null;
+  // [Q13] Reincorporación estimada del piloto objetivo (el mismo que muestra el dock); se recalcula en cada refresco.
+  const rejoinEstimate = simulation.getRejoinEstimate((selectedCar || favoriteCar).id);
   const activeCircuitSpec = OFFICIAL_CIRCUITS[selectedCircuitId] || OFFICIAL_CIRCUITS['barcelona'];
 
   if (currentView === 'landing') {
@@ -269,6 +271,7 @@ export const App: React.FC = () => {
             onSelectCar={handleSelectCar}
             fastestLapDriverName={fastestLapDriver}
             leaderLap={leaderLap}
+            rejoin={rejoinEstimate}
           />
         )}
         <button 

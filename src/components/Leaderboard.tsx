@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import styles from './Leaderboard.module.css';
-import { CarState } from '../types/f1';
+import { CarState, RejoinEstimate } from '../types/f1';
 import { Timer, AlertTriangle } from 'lucide-react';
 import { animate, stagger } from 'animejs';
 import { FlagIcon } from './FlagIcon';
@@ -12,13 +12,16 @@ interface LeaderboardProps {
   onSelectCar: (carId: number | null) => void;
   fastestLapDriverName: string | null;
   leaderLap: number;
+  // [Q13] Estimación de reincorporación del piloto objetivo (motor), o motivo por el que no hay.
+  rejoin?: RejoinEstimate | null;
 }
 
 export const Leaderboard: React.FC<LeaderboardProps> = ({
   cars,
   selectedCarId,
   onSelectCar,
-  fastestLapDriverName
+  fastestLapDriverName,
+  rejoin = null
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   // Q23: el motor solo conserva previousPosition durante el paso del adelantamiento; la torre recuerda
@@ -65,6 +68,30 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
   const leaderProgress = leader ? leader.progress : 0;
   const leaderFloorLap = Math.max(0, Math.floor(leaderProgress));
 
+  // [Q13] Fila fantasma: dónde saldría el piloto objetivo si parase ahora (tras el coche P-1 de los demás).
+  const rejoinCar = rejoin ? cars.find(c => c.id === rejoin.carId) : undefined;
+  const rivals = rejoin ? sortedCars.filter(c => c.id !== rejoin.carId && c.status !== 'out') : [];
+  const ghostAfterId = rejoin?.available && rejoin.projectedPos > 1 ? rivals[rejoin.projectedPos - 2]?.id : undefined;
+  const renderRejoinGhost = () => {
+    if (!rejoin?.available) return null;
+    const range = rejoin.bestPos === rejoin.worstPos ? `P${rejoin.projectedPos}` : `P${rejoin.bestPos}–P${rejoin.worstPos}`;
+    return (
+      <div
+        className={styles.rejoinGhost}
+        data-rejoin-projection={rejoin.projectedPos}
+        data-rejoin-estimate="true"
+        data-rejoin-car={rejoin.carId}
+        data-rejoin-source={rejoin.source}
+        title={`Estimación si para ahora (±${rejoin.uncertaintySec.toFixed(0)} s: ${range}). Fuente: ${rejoin.source}`}
+        style={{ borderLeftColor: rejoinCar?.team.color }}
+      >
+        <span className={styles.rejoinPos}>{`≈P${rejoin.projectedPos}`}</span>
+        <span className={styles.rejoinLabel}>{`${rejoinCar?.driver.code ?? ''} TRAS BOXES`}</span>
+        <span className={styles.rejoinRange}>{`${range} · −${rejoin.timeLossSec.toFixed(1)}s`}</span>
+      </div>
+    );
+  };
+
   const formatGap = (car: CarState, index: number): string => {
     if (car.status === 'out') {
       if (car.dnfReason?.includes('MOTOR')) return '💥 DNF MOTOR';
@@ -100,6 +127,7 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
       </div>
 
       <div className={styles.tableList}>
+        {rejoin?.available && rejoin.projectedPos === 1 && renderRejoinGhost()}
         {sortedCars.map((car, idx) => {
           const isSelected = car.id === selectedCarId;
           const isFastest = fastestLapDriverName === `${car.driver.firstName} ${car.driver.lastName}`;
@@ -109,8 +137,8 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
           const pitStatus = isOut ? null : car.pitStop.waitingForBox ? 'queue' : (car.pitStop.isPitting || car.isInPitLane) ? 'pitting' : null;
 
           return (
+            <React.Fragment key={car.id}>
             <div
-              key={car.id}
               className={`${styles.row} ${isSelected ? styles.selected : ''} ${isLeader ? styles.leaderRow : ''} ${isOut ? styles.outRow : ''}`}
               onClick={() => onSelectCar(isSelected ? null : car.id)}
               style={{ borderLeftColor: isOut ? '#64748b' : car.team.color, opacity: isOut ? 0.6 : 1 }}
@@ -178,9 +206,21 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
                 )}
               </div>
             </div>
+            {car.id === ghostAfterId && renderRejoinGhost()}
+            </React.Fragment>
           );
         })}
       </div>
+      {rejoin && !rejoin.available && (
+        <div
+          className={styles.rejoinUnavailable}
+          data-rejoin-projection="unavailable"
+          data-rejoin-car={rejoin.carId}
+          data-rejoin-reason={rejoin.reason}
+        >
+          {`Reincorporación ${rejoinCar?.driver.code ?? ''}: no disponible · ${rejoin.reason}`}
+        </div>
+      )}
     </div>
   );
 };

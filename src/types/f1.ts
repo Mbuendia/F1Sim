@@ -217,6 +217,21 @@ export interface RelativeCarInfo {
   position: number;
 }
 
+// [Q13] Estimación de reincorporación tras parar ahora (predictor del motor), o motivo por el que no hay estimación.
+export type RejoinEstimate =
+  | {
+      available: true;
+      carId: number;
+      projectedPos: number;
+      bestPos: number;
+      worstPos: number;
+      timeLossSec: number;
+      uncertaintySec: number;
+      rejoinTrackT: number;
+      source: string;
+    }
+  | { available: false; carId: number; reason: string };
+
 export interface CarState {
   id: number;
   driver: Driver;

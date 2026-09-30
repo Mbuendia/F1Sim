@@ -100,7 +100,7 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
 
       // ── MINIMAPA A LA IZQUIERDA DEL TODO (visible al seguir un coche) ──
       if (camera.followingCarId !== null) {
-        renderLeftMinimap(ctx, simulation, camera);
+        renderLeftMinimap(ctx, simulation, camera, simulation.getRejoinEstimate(camera.followingCarId));
       }
 
       ctx.restore();

@@ -215,3 +215,41 @@
   0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(250, 204, 21, 0.6); }
   50% { opacity: 0.55; box-shadow: 0 0 6px 2px rgba(250, 204, 21, 0.35); }
 }
+
+/* [Q13] Fila fantasma de reincorporación estimada */
+.rejoinGhost {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  border: 1px dashed rgba(255, 255, 255, 0.35);
+  border-left: 4px dashed #ffffff;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.02);
+  font-size: 10px;
+  color: #cbd5e1;
+}
+
+.rejoinPos {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 900;
+  color: #ffffff;
+}
+
+.rejoinLabel {
+  flex: 1;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.rejoinRange {
+  font-family: 'Orbitron', sans-serif;
+  color: #94a3b8;
+}
+
+.rejoinUnavailable {
+  padding: 4px 10px 6px;
+  font-size: 10px;
+  color: #94a3b8;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
