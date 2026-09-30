@@ -268,3 +268,11 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* [Q17] Aclaración: el D20 da un consejo, no monta neumáticos */
+.adviceNote {
+  margin: 8px 0 0;
+  font-size: 11px;
+  color: #94a3b8;
+  text-align: center;
+}

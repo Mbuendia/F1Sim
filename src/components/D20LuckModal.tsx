@@ -6,6 +6,44 @@ import { FlagIcon } from './FlagIcon';
 import { CompoundBadge } from './CompoundBadge';
 import { animate } from 'animejs';
 
+// [Q17] Resultado de la tirada: es un consejo de estrategia. No monta neumáticos; el compuesto es una
+// recomendación para la próxima parada, que requiere una orden de boxes y el servicio normal.
+export const D20LuckResult: React.FC<{ event: D20LuckEvent }> = ({ event }) => (
+  <div className={styles.resultCard}>
+    <div className={styles.rewardHeader}>
+      <Sparkles size={16} color="#ffd700" />
+      <span>{event.rewardTitle}</span>
+    </div>
+
+    {/* Lucky Driver Pill */}
+    <div
+      className={styles.driverPill}
+      style={{ borderColor: event.luckyTeamColor, background: `${event.luckyTeamColor}18` }}
+    >
+      <FlagIcon emoji={event.luckyDriverFlag} size={20} />
+      <span className={styles.driverName}>{event.luckyDriverName}</span>
+      <span className={styles.teamTag} style={{ color: event.luckyTeamColor }}>
+        {event.luckyTeamName}
+      </span>
+      {event.isPlayerCar && (
+        <span className={styles.playerBadge}>
+          <Zap size={11} /> TU PILOTO
+        </span>
+      )}
+    </div>
+
+    <p className={styles.rewardDesc}>{event.rewardDescription}</p>
+
+    <div className={styles.optimalTireRow} data-d20-recommendation={event.optimalCompound}>
+      <span className={styles.tiresLabel}>Compuesto recomendado para la próxima parada:</span>
+      <span className={styles.optimalCompound}>
+        <CompoundBadge compound={event.optimalCompound} size={18} showName detail="Recomendación del muro" />
+      </span>
+    </div>
+    <p className={styles.adviceNote}>Consejo de estrategia: no cambia los neumáticos en pista. Para montarlo, da una orden de boxes.</p>
+  </div>
+);
+
 interface D20LuckModalProps {
   event: D20LuckEvent;
   onApplyReward: (eventId: string) => void;
@@ -129,38 +167,7 @@ export const D20LuckModal: React.FC<D20LuckModalProps> = ({
 
         {/* ── DRIVER & REWARD RESULT (REVEALED AFTER LAND) ── */}
         {hasLanded && (
-          <div className={styles.resultCard}>
-            <div className={styles.rewardHeader}>
-              <Sparkles size={16} color="#ffd700" />
-              <span>{event.rewardTitle}</span>
-            </div>
-
-            {/* Lucky Driver Pill */}
-            <div 
-              className={styles.driverPill} 
-              style={{ borderColor: event.luckyTeamColor, background: `${event.luckyTeamColor}18` }}
-            >
-              <FlagIcon emoji={event.luckyDriverFlag} size={20} />
-              <span className={styles.driverName}>{event.luckyDriverName}</span>
-              <span className={styles.teamTag} style={{ color: event.luckyTeamColor }}>
-                {event.luckyTeamName}
-              </span>
-              {event.isPlayerCar && (
-                <span className={styles.playerBadge}>
-                  <Zap size={11} /> TU PILOTO
-                </span>
-              )}
-            </div>
-
-            <p className={styles.rewardDesc}>{event.rewardDescription}</p>
-
-            <div className={styles.optimalTireRow}>
-              <span className={styles.tiresLabel}>Compuesto Óptimo Equipado:</span>
-              <span className={styles.optimalCompound}>
-                <CompoundBadge compound={event.optimalCompound} size={18} showName detail="100% de salud" /> (100% SALUD)
-              </span>
-            </div>
-          </div>
+          <D20LuckResult event={event} />
         )}
 
         {/* Actions & Auto-Countdown */}
@@ -172,7 +179,7 @@ export const D20LuckModal: React.FC<D20LuckModalProps> = ({
             disabled={isRolling}
           >
             <CheckCircle2 size={16} />
-            <span>APLICAR Y CONTINUAR ({countdown}s)</span>
+            <span>ACEPTAR CONSEJO ({countdown}s)</span>
           </button>
         </div>
       </div>
