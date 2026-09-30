@@ -4,9 +4,58 @@
   box-sizing: border-box;
 }
 
+/* R33: sistema visual del rediseño de escritorio. Grafito, texto marfil y un solo rojo para la acción principal;
+   los colores de compuestos, equipos y banderas conservan su significado propio. */
+:root {
+  --bg: #0d1117;
+  --panel: #171d26;
+  --panel-2: #222a35;
+  --line: #2e3746;
+  --line-strong: #3a4556;
+  --text: #f2f4f7;
+  --text-2: #b4becc;
+  --text-3: #8a95a6;
+  --accion: #e10600;
+  --accion-hover: #ff1a0f;
+  --foco: #5aa9ff;
+
+  --font-marca: 'Orbitron', sans-serif;
+  --font-ui: 'Rajdhani', system-ui, sans-serif;
+
+  --radio-s: 6px;
+  --radio-m: 8px;
+  --radio-l: 10px;
+
+  --barra-carrera: 52px;
+  --ancho-posiciones: 248px;
+  --ancho-detalle: 360px;
+}
+
 html, body, #root {
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background: #090c13;
+  background: var(--bg);
+}
+
+body {
+  font-family: var(--font-ui);
+  color: var(--text);
+}
+
+button, select, input {
+  font-family: inherit;
+}
+
+:focus-visible {
+  outline: 3px solid var(--foco);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
