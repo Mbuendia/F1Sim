@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import styles from './F1Wheel3D.module.css';
 import { COMPOUND_STYLES } from '../utils/compounds';
@@ -21,6 +21,44 @@ const COMPOUND_COLORS: Record<TireCompound, { hex: string; num: number; label: s
   inter: wheelColor('intermediate', 'INTERMEDIATE (CINTURATO VERDE)'),
   wet: wheelColor('wet', 'WET (CINTURATO AZUL)'),
 };
+
+// Portada: un compuesto al azar en cada carga de la web, distinto del de la visita anterior (recordado en el
+// navegador). Sin almacenamiento disponible se elige entre los cinco.
+const LANDING_COMPOUNDS: TireCompound[] = ['soft', 'medium', 'hard', 'inter', 'wet'];
+const LANDING_COMPOUND_KEY = 'f1sim.landingCompound';
+type CompoundStorage = Pick<Storage, 'getItem' | 'setItem'>;
+
+const browserStorage = (): CompoundStorage | undefined => {
+  try {
+    return typeof window !== 'undefined' ? window.localStorage : undefined;
+  } catch {
+    return undefined;
+  }
+};
+
+export function chooseLandingCompound(
+  storage: CompoundStorage | undefined = browserStorage(),
+  random: () => number = Math.random,
+): TireCompound {
+  let previous: string | null = null;
+  try {
+    previous = storage?.getItem(LANDING_COMPOUND_KEY) ?? null;
+  } catch {
+    previous = null;
+  }
+  const options = LANDING_COMPOUNDS.filter(compound => compound !== previous);
+  const pick = options[Math.min(options.length - 1, Math.floor(random() * options.length))];
+  try {
+    storage?.setItem(LANDING_COMPOUND_KEY, pick);
+  } catch {
+    // Sin almacenamiento: la próxima carga elige entre los cinco.
+  }
+  return pick;
+}
+
+// Una elección por carga de página, aunque la portada se monte más de una vez.
+let compoundForThisLoad: TireCompound | null = null;
+const landingCompound = (): TireCompound => (compoundForThisLoad ??= chooseLandingCompound());
 
 /**
  * Creates transparent decal texture containing only the Pirelli branding and compound stripes.
@@ -341,27 +379,11 @@ function createBremboF1Caliper(): THREE.Group {
 
 export const F1Wheel3D: React.FC<F1Wheel3DProps> = ({ onEnter, isTransitioning = false, className }) => {
   const mountRef = useRef<HTMLDivElement>(null);
-  const [selectedCompound, setSelectedCompound] = useState<TireCompound>('soft');
-  const sidewallDecalFrontRef = useRef<THREE.Mesh | null>(null);
-  const sidewallDecalBackRef = useRef<THREE.Mesh | null>(null);
+  const [compound] = useState<TireCompound>(landingCompound);
   const spinSpeedRef = useRef(1.8);
   const targetRotationRef = useRef({ x: 0.12, y: 0.32 });
   const wheelGroupRef = useRef<THREE.Group | null>(null);
   const isHoveredRef = useRef(false);
-
-  // Update sidewall decal texture when compound changes
-  const updateCompound = useCallback((comp: TireCompound) => {
-    setSelectedCompound(comp);
-    const newTex = createSidewallDecalTexture(comp);
-    if (sidewallDecalFrontRef.current) {
-      (sidewallDecalFrontRef.current.material as THREE.MeshBasicMaterial).map = newTex;
-      (sidewallDecalFrontRef.current.material as THREE.MeshBasicMaterial).needsUpdate = true;
-    }
-    if (sidewallDecalBackRef.current) {
-      (sidewallDecalBackRef.current.material as THREE.MeshBasicMaterial).map = newTex;
-      (sidewallDecalBackRef.current.material as THREE.MeshBasicMaterial).needsUpdate = true;
-    }
-  }, []);
 
   useEffect(() => {
     const container = mountRef.current;
@@ -472,7 +494,7 @@ export const F1Wheel3D: React.FC<F1Wheel3DProps> = ({ onEnter, isTransitioning =
     spinningAssembly.add(sidewallBaseBack);
 
     // 3. PIRELLI TRANSPARENT DECAL OVERLAY (Zero grey background!)
-    const decalTex = createSidewallDecalTexture(selectedCompound);
+    const decalTex = createSidewallDecalTexture(compound);
     const decalMat = new THREE.MeshBasicMaterial({
       map: decalTex,
       transparent: true,
@@ -482,13 +504,11 @@ export const F1Wheel3D: React.FC<F1Wheel3DProps> = ({ onEnter, isTransitioning =
 
     const decalFront = new THREE.Mesh(sidewallGeom, decalMat);
     decalFront.position.z = tireWidth * 0.5 + 0.005;
-    sidewallDecalFrontRef.current = decalFront;
     spinningAssembly.add(decalFront);
 
     const decalBack = new THREE.Mesh(sidewallGeom, decalMat);
     decalBack.position.z = -tireWidth * 0.5 - 0.005;
     decalBack.rotation.y = Math.PI;
-    sidewallDecalBackRef.current = decalBack;
     spinningAssembly.add(decalBack);
 
     // 4. ALLOY WHEEL RIM (BBS / OZ Satin Black Forged Rim like Reference Photo)
@@ -686,37 +706,11 @@ export const F1Wheel3D: React.FC<F1Wheel3DProps> = ({ onEnter, isTransitioning =
         renderer.domElement.parentNode.removeChild(renderer.domElement);
       }
     };
-  }, [isTransitioning, selectedCompound]);
+  }, [isTransitioning, compound]);
 
   return (
     <div className={`${styles.wheel3dWrapper} ${className || ''}`}>
       <div ref={mountRef} className={styles.canvasContainer} onClick={onEnter} />
-
-      {/* Floating Compound Switcher Badges */}
-      <div className={styles.compoundSelector}>
-        {(['soft', 'medium', 'hard', 'inter', 'wet'] as TireCompound[]).map((comp) => (
-          <button
-            key={comp}
-            type="button"
-            className={`${styles.compoundBtn} ${selectedCompound === comp ? styles.compoundBtnActive : ''}`}
-            onClick={(e) => {
-              e.stopPropagation();
-              updateCompound(comp);
-            }}
-            style={{
-              borderColor: selectedCompound === comp ? COMPOUND_COLORS[comp].hex : 'rgba(255,255,255,0.12)',
-              color: selectedCompound === comp ? COMPOUND_COLORS[comp].hex : '#94a3b8',
-              boxShadow: selectedCompound === comp ? `0 0 14px ${COMPOUND_COLORS[comp].hex}66` : 'none',
-            }}
-          >
-            <span
-              className={styles.compoundDot}
-              style={{ backgroundColor: COMPOUND_COLORS[comp].hex }}
-            />
-            <span>{comp.toUpperCase()}</span>
-          </button>
-        ))}
-      </div>
     </div>
   );
 };
