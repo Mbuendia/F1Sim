@@ -731,31 +731,37 @@ Objetivo: circuito protagonista, clasificación compacta y órdenes de ambos pil
   * *Aceptación:* Cada función existente tiene una ruta de acceso nueva y un caso de prueba asignado; ninguna se elimina o convierte en decorativa. Revisar con el usuario el contrato y las pantallas antes de implementar.
   * *Tests antes de implementación:* Matriz función → módulo → caso; ampliar primero los módulos afectados con casos fallidos reproducibles. Mantener fijos los tests acordados durante implementación.
 
-* **R30 — Rediseño del paddock y distribución de escritorio:** `[ ] PLANIFICADO`
+* **R30 — Rediseño del paddock y distribución de escritorio:** `[x] COMPLETADO — APROBADO POR EL USUARIO Y FUSIONADO EN MAIN (30/09/2026)`
+  * *Implementado 30/09/2026 (rama `feat/rediseno-escritorio`):* portada con la rueda 3D grande y oscurecida al fondo, compuesto aleatorio por carga, un solo botón «Entrar al paddock» y Enter/Espacio sin capturar otros controles; paddock con historial plegable, listas accesibles por teclado y «Entrar a pista» fijo; carrera en áreas estables (barra, posiciones de 248 px, circuito, muro). Medido en 1024×768, 1366×768, 1440×900 y 1920×1080 sin scroll horizontal ni controles fuera de pantalla.
   * *Prioridad/dependencias:* P1; R29.
   * *Alcance:* Diseñar una nueva jerarquía visual de portada y paddock, con selección e información claras. En carrera, circuito protagonista y clasificación compacta. Evitar columnas rígidas que recorten fichas, controles o el área útil del trazado.
   * *Aceptación:* Validar 1024×768, 1366×768, 1440×900 y 1920×1080: sin controles recortados ni scroll horizontal de página; fichas largas consultables. La cámara general encuadra el circuito dentro del área libre real. Revisar capturas con el usuario antes de cerrar.
   * *Tests antes de implementación:* Módulos propuestos desktop-layout y paddock-navigation: dimensiones y visibilidad en navegador real, selección y entrada a pista, zoom/rotación y redimensionado; complementar world-position/geometry-rendering sin duplicar la física de R23.
 
-* **R31 — Muro de dos pilotos y paneles de consulta desplegables:** `[ ] PLANIFICADO`
+* **R31 — Muro de dos pilotos y paneles de consulta desplegables:** `[x] COMPLETADO — APROBADO POR EL USUARIO Y FUSIONADO EN MAIN (30/09/2026)`
+  * *Implementado 30/09/2026 (rama `feat/rediseno-escritorio`):* muro en su propia franja bajo el circuito con dos tarjetas equivalentes (150–168 px de alto; 239 px a 1024); detalle del coche bajo demanda: en pantallas estrechas sustituye a la clasificación con «← Volver a posiciones», a partir de 1600 px convive con ella; aviso «Solo consulta» al consultar un rival; se conserva montado para no perder pestaña ni selección.
   * *Prioridad/dependencias:* P1; R29/R30; coordina R24/R25.
   * *Alcance:* Mantener accesibles clasificación compacta y órdenes de ambos pilotos. Telemetría detallada, historial y otros detalles se abren en paneles que pueden cerrarse. Reutilizar el estado y las órdenes existentes; cambiar presentación no crea otra lógica de boxes o ritmo.
   * *Aceptación:* Abrir/cerrar paneles conserva selección y estado de carrera, permite volver al circuito y no tapa los controles esenciales. Ejecutar las funciones del inventario R29 mediante ratón y atajos existentes; ninguna funcionalidad se pierde por quedar oculta.
   * *Tests antes de implementación:* Módulo propuesto race-panels y consumidores box-ui/race-ui: interacciones reales de apertura/cierre, órdenes, selección y pausa; casos de carrera, formación, neutralización y final.
 
-* **R32 — Estados de carrera claros y herramientas de desarrollo separadas:** `[ ] PLANIFICADO`
+* **R32 — Estados de carrera claros y herramientas de desarrollo separadas:** `[x] COMPLETADO — APROBADO POR EL USUARIO Y FUSIONADO EN MAIN (30/09/2026)`
+  * *Zoom 30/09/2026:* botones Alejar/Acercar en la barra; la cámara respeta el zoom del usuario en todos los modos (antes la rueda del ratón solo funcionaba en modo libre) y «Vista general» lo restablece (test `camera-zoom`).
+  * *Implementado 30/09/2026 (rama `feat/rediseno-escritorio`):* barra con estado de bandera, vuelta, pausa (Pausar/Reanudar), velocidades, tiempo, cámara y menú; SC y bandera roja de prueba dentro del menú, cerrado por defecto y etiquetados «Prueba: …» (test `race-menu`). Zona estable de avisos breves sobre el circuito (máx. 3, caducan a los 8 s, sin robar foco): cambios de bandera, entradas y salidas de boxes de los pilotos propios y abandonos; el estado de cada piloto (servicio, espera, ritmo limitado y su motivo) sigue junto a él en el muro; el banner de bandera pasa al área del circuito.
   * *Prioridad/dependencias:* P1; R29/R30; coordina R24.
   * *Alcance:* Reservar espacio para formación, salida, pausa, banderas y avisos sin superponerlos a controles. Usar Reanudar al pausar. Si no hay datos relativos durante formación, indicar que no están disponibles: no inferir líder o último coche. Conservar TEST SC/TEST RED FLAG dentro de un modo de desarrollo explícito, oculto por defecto en uso normal.
   * *Aceptación:* P7 no se anuncia como líder por ausencia de datos; pausa tiene texto/icono/etiqueta accesible coherentes; avisos no bloquean pausa, velocidad ni órdenes. Herramientas de desarrollo siguen operativas únicamente en ese modo.
   * *Tests antes de implementación:* Ampliar race-ui y añadir race-status-ui: fixtures de formación/datos ausentes, carrera/pausa, SC/VSC/roja y final; prueba de acceso al modo de desarrollo y ausencia de sus controles en modo normal. R24 mantiene la propiedad de los datos/eventos.
 
-* **R33 — Sistema visual y accesibilidad del escritorio:** `[ ] PLANIFICADO`
+* **R33 — Sistema visual y accesibilidad del escritorio:** `[x] COMPLETADO — APROBADO POR EL USUARIO Y FUSIONADO EN MAIN (30/09/2026)`
+  * *Implementado 30/09/2026 (rama `feat/rediseno-escritorio`):* tokens de color, fuente de interfaz Rajdhani, Orbitron solo en marca, foco visible y movimiento reducido; texto operativo de la carrera y el paddock a 14–18 px; paneles secundarios y modales migrados (80 textos pequeños de Orbitron a la fuente de interfaz y 51 colores a tokens).
   * *Prioridad/dependencias:* P1; R29/R30/R31.
   * *Alcance:* Rediseñar tipografía, espaciado, contraste y jerarquía: reservar letras decorativas para títulos y usar cifras/textos legibles en controles y telemetría. Mantener todas las funciones y atajos; añadir foco visible y nombres accesibles a controles.
   * *Aceptación:* Texto operativo de al menos 14 px como referencia de diseño; contraste de texto normal ≥4.5:1; estados comprensibles sin depender solo del color. Navegación por teclado, cierre y devolución de foco en paneles; reducción de movimiento en transiciones decorativas.
   * *Tests antes de implementación:* Módulo propuesto desktop-accessibility: teclado, etiquetas, foco, contraste y zoom de navegador 200%; pruebas visuales de cifras y textos largos. Los cambios estéticos no alteran el motor.
 
-* **R34 — Aceptación visual y regresión funcional del rediseño:** `[ ] PLANIFICADO`
+* **R34 — Aceptación visual y regresión funcional del rediseño:** `[x] COMPLETADO — APROBADO POR EL USUARIO Y FUSIONADO EN MAIN (30/09/2026)`
+  * *Aceptación 30/09/2026:* build de producción recorrido (portada → paddock → formación → salida → boxes → Safety Car de prueba → consulta de rival) y medido a 1024×768, 1366×768, 1440×900 y 1920×1080 con el detalle abierto y cerrado: sin scroll horizontal, controles fuera de pantalla ni textos partidos en la barra. Aprobado por el usuario al pedir la fusión de las PR #3 y #4.
   * *Prioridad/dependencias:* P0 para cerrar el bloque; R29-R33; coordina R27.
   * *Alcance:* Ejecutar la matriz R29 sobre la nueva interfaz y comparar con el comportamiento anterior. Validar capturas de Barcelona/Mónaco, paddock y estados representativos; medir rendimiento en el mismo equipo y condiciones antes/después.
   * *Aceptación:* Todas las funciones inventariadas siguen accesibles; sin recortes ni solapamientos que impidan jugar en los tamaños R30. Registrar resultados, limitaciones, rendimiento y aprobación visual del usuario. Ningún PASS sintético sustituye la revisión del Canvas real.
@@ -793,7 +799,8 @@ Origen: revisión en local de Q12-Q23 jugando una carrera en Barcelona con el bu
   * *Aceptación:* cada cambio de posición visible se anima una vez; cero avisos «No target found» durante una carrera.
   * *Tests antes de implementación:* prueba estructural o de navegador que cuente avisos durante una carrera y compruebe que el cambio se anima al aparecer.
 
-* **R39 — El muro de boxes no debe tapar el coche seguido ni el Safety Car:** `[ ] PLANIFICADO`
+* **R39 — El muro de boxes no debe tapar el coche seguido ni el Safety Car:** `[x] COMPLETADO — APROBADO POR EL USUARIO Y FUSIONADO EN MAIN (30/09/2026)`
+  * *Implementado 30/09/2026 (rama `feat/rediseno-escritorio`):* el muro ya no se superpone al circuito: el coche seguido y el Safety Car quedan en el área libre del Canvas.
   * *Prioridad/dependencias:* P1; se resuelve dentro de R30/R31.
   * *Hallazgo:* con la cámara siguiendo a un coche o al SC, el panel del muro queda sobre el centro del Canvas y oculta el objetivo (1440×900).
   * *Alcance:* el objetivo de la cámara queda siempre en el área libre del Canvas, o el muro se pliega sin perder órdenes de ambos pilotos.

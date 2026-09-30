@@ -39,9 +39,9 @@
   border: 1px solid transparent;
   border-radius: 6px;
   padding: 7px 8px;
-  color: #94a3b8;
-  font-family: 'Orbitron', sans-serif;
-  font-size: 10px;
+  color: var(--text-2);
+  font-family: var(--font-ui);
+  font-size: 13px;
   font-weight: 800;
   letter-spacing: 0.5px;
   cursor: pointer;
@@ -78,8 +78,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-family: 'Orbitron', sans-serif;
-  font-size: 11px;
+  font-family: var(--font-ui);
+  font-size: 14px;
   font-weight: 900;
   color: #ffffff;
   letter-spacing: 1px;
@@ -144,7 +144,7 @@
   font-size: 9.5px;
   font-family: 'Rajdhani', sans-serif;
   font-weight: 700;
-  color: #94a3b8;
+  color: var(--text-2);
   margin-top: 2px;
 }
 
@@ -171,15 +171,15 @@
 }
 
 .recTitle {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 9.5px;
+  font-family: var(--font-ui);
+  font-size: 13px;
   font-weight: 900;
   letter-spacing: 0.5px;
 }
 
 .recCompound {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 12px;
+  font-family: var(--font-ui);
+  font-size: 15px;
   font-weight: 900;
   color: #ffffff;
 }
@@ -226,12 +226,12 @@
   font-size: 9.5px;
   font-family: 'Rajdhani', sans-serif;
   font-weight: 700;
-  color: #94a3b8;
+  color: var(--text-2);
 }
 
 .weatherBoxVal {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 13px;
+  font-family: var(--font-ui);
+  font-size: 16px;
   font-weight: 800;
   color: #ffffff;
 }
@@ -240,7 +240,7 @@
   font-size: 9px;
   font-family: 'Rajdhani', sans-serif;
   font-weight: 600;
-  color: #94a3b8;
+  color: var(--text-2);
 }
 
 .waterProgressBar {
@@ -277,21 +277,21 @@
 }
 
 .sectorLabel {
-  font-size: 9px;
-  font-family: 'Orbitron', sans-serif;
+  font-size: 13px;
+  font-family: var(--font-ui);
   font-weight: 700;
   color: #cbd5e1;
 }
 
 .sectorTime {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 12.5px;
+  font-family: var(--font-ui);
+  font-size: 16px;
   font-weight: 900;
 }
 
 .sectorStatus {
-  font-size: 8px;
-  font-family: 'Orbitron', sans-serif;
+  font-size: 13px;
+  font-family: var(--font-ui);
   font-weight: 700;
 }
 
@@ -315,7 +315,7 @@
   font-size: 9.5px;
   font-family: 'Rajdhani', sans-serif;
   font-weight: 700;
-  color: #94a3b8;
+  color: var(--text-2);
 }
 
 .legendItem {
@@ -363,12 +363,12 @@
   font-size: 9.5px;
   font-family: 'Rajdhani', sans-serif;
   font-weight: 700;
-  color: #94a3b8;
+  color: var(--text-2);
 }
 
 .miniBoxVal {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 13px;
+  font-family: var(--font-ui);
+  font-size: 16px;
   font-weight: 800;
   color: #ffffff;
 }
@@ -407,15 +407,15 @@
 }
 
 .pitBlink {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 11px;
+  font-family: var(--font-ui);
+  font-size: 14px;
   font-weight: 900;
   color: #ef4444;
 }
 
 .pitCurrentTimer {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 13px;
+  font-family: var(--font-ui);
+  font-size: 16px;
   font-weight: 900;
   color: #ffffff;
 }
@@ -438,11 +438,11 @@
 
 .historyTable th {
   background: rgba(15, 23, 42, 0.95);
-  color: #94a3b8;
+  color: var(--text-2);
   padding: 5px 3px;
   font-weight: 800;
-  font-family: 'Orbitron', sans-serif;
-  font-size: 8.5px;
+  font-family: var(--font-ui);
+  font-size: 13px;
   position: sticky;
   top: 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);

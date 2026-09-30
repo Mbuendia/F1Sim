@@ -7,6 +7,8 @@ interface LandingPageProps {
   onEnter: () => void;
 }
 
+// R30: portada con la rueda 3D grande y oscurecida al fondo, desplazada a la derecha; la marca y «Entrar al paddock»
+// por delante. Solo el botón y Enter/Espacio entran al paddock (sin navegación por clic en el fondo o la rueda).
 export const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
   const [isTransitioning, setIsTransitioning] = useState(false);
 
@@ -20,10 +22,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        handleEnterSequence();
-      }
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      // No capturar el teclado de un control con su propia acción (botón, enlace, campo).
+      const target = e.target as HTMLElement | null;
+      if (target && target.closest('button, a, input, select, textarea, [role="button"]')) return;
+      e.preventDefault();
+      handleEnterSequence();
     };
 
     window.addEventListener('keydown', handleKey);
@@ -31,56 +35,33 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
   }, [isTransitioning]);
 
   return (
-    <div 
-      className={`${styles.landingContainer} ${isTransitioning ? styles.landingTransitionOut : ''}`} 
-      onClick={handleEnterSequence}
-    >
-      {/* Particle field */}
-      <div className={styles.particleField}>
-        {Array.from({ length: 35 }).map((_, i) => (
-          <div
-            key={i}
-            className={styles.particle}
-            style={{
-              left: `${(i * 2.85) % 100}%`,
-              top: `${(i * 3.7 + 10) % 95}%`,
-              animationDelay: `${(i * 0.25) % 4}s`,
-              width: `${1.5 + (i % 3)}px`,
-              height: `${1.5 + (i % 3)}px`,
-            }}
-          />
-        ))}
+    <div className={`${styles.landingContainer} ${isTransitioning ? styles.landingTransitionOut : ''}`}>
+      {/* Rueda 3D interactiva de fondo: gira y responde al puntero */}
+      <div className={styles.wheelStage}>
+        <F1Wheel3D isTransitioning={isTransitioning} className={styles.wheelBackdrop} />
       </div>
+      <div className={styles.readingShade} aria-hidden="true" />
 
-      {/* 3D Interactive F1 Pirelli Wheel Hero */}
-      <F1Wheel3D 
-        onEnter={handleEnterSequence} 
-        isTransitioning={isTransitioning}
-      />
+      {/* Marca y acción principal */}
+      <main className={styles.brandGroup}>
+        <div className={styles.kicker}>Temporada 2026 · Escritorio</div>
+        <h1 className={styles.brandTitle}>
+          <span className={styles.f1LogoBig}>F1</span>
+          <span className={styles.titleText}>Race Manager</span>
+        </h1>
+        <p className={styles.subtitleText}>
+          Dirige la estrategia de tus dos pilotos desde el muro: boxes, compuestos y ritmo en 23 circuitos.
+        </p>
+        <div className={styles.actionRow}>
+          <button className={styles.enterButton} onClick={handleEnterSequence}>
+            <Play size={18} fill="#ffffff" aria-hidden="true" />
+            <span>Entrar al paddock</span>
+          </button>
+          <span className={styles.enterHint}>o pulsa <kbd className={styles.key}>Enter</kbd></span>
+        </div>
+      </main>
 
-      {/* Brand text */}
-      <div className={styles.brandGroup}>
-        <div className={styles.f1LogoBig}>F1</div>
-        <div className={styles.titleText}>Race Manager & Simulator</div>
-        <div className={styles.subtitleText}>2026 Season · Tactical Strategy & Simulation Engine</div>
-        <button 
-          className={styles.enterButton}
-          onClick={(e) => {
-            e.stopPropagation();
-            handleEnterSequence();
-          }}
-        >
-          <Play size={16} fill="#ffffff" />
-          <span>ENTRAR AL PADDOCK</span>
-        </button>
-      </div>
-
-      {/* Enter hint */}
-      <div className={styles.enterHint}>
-        Pulsa cualquier tecla o haz click para continuar
-      </div>
-
-      <div className={styles.versionBadge}>F1 2026 ENGINE · 3D WEBGL</div>
+      <div className={styles.versionBadge}>F1 2026 · simulador de estrategia</div>
     </div>
   );
 };

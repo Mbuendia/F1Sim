@@ -1,78 +1,182 @@
+/* R30-R32: vista de carrera en áreas estables. Barra arriba, posiciones a la izquierda, circuito libre en el centro,
+   muro en su propia franja bajo el circuito y detalle del coche bajo demanda. Nada se superpone al circuito salvo
+   avisos y modales de carrera. */
 .appContainer {
   display: flex;
+  flex-direction: column;
   width: 100vw;
   height: 100vh;
   overflow: hidden;
-  background: #080b12;
-  color: #f1f5f9;
-  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-ui);
   user-select: none;
 }
 
-.leftSidebar {
-  width: 310px;
-  min-width: 310px;
-  height: 100%;
+/* ── Barra de carrera ── */
+.raceBar {
+  height: var(--barra-carrera);
+  flex-shrink: 0;
   display: flex;
-  flex-direction: column;
-  z-index: 30;
-}
-
-.rightSidebar {
-  width: 360px;
-  min-width: 360px;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  z-index: 30;
-}
-
-.mainRaceView {
-  flex: 1;
-  position: relative;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.topBarOverlay {
-  position: absolute;
-  top: 14px;
-  left: 14px;
-  right: 14px;
-  display: flex;
-  justify-content: space-between;
   align-items: center;
-  z-index: 20;
-  pointer-events: none;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 12px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+  z-index: 40;
 }
 
-.topBarOverlay > * {
-  pointer-events: auto;
+.barGroup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
 }
 
+.homeBtn,
+.barBtn {
+  height: 36px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radio-s);
+  background: transparent;
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.homeBtn:hover,
+.barBtn:hover {
+  background: var(--panel-2);
+}
+
+.barBtn[aria-pressed='true'] {
+  background: var(--panel-2);
+  border-color: var(--text);
+}
+
+.flagChip {
+  padding: 4px 10px;
+  border-radius: var(--radio-s);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.flagGreen { background: #13351f; color: #7be3a2; }
+.flagYellow { background: #3a3108; color: #ffe070; }
+.flagVsc { background: #3a2a06; color: #ffc266; }
+.flagSc { background: #facc15; color: #1a1400; }
+.flagRed { background: #b91c1c; color: #ffffff; }
+
+/* ── Cuerpo de carrera: columnas definidas en App.tsx según paneles abiertos ── */
+.raceShell {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.positionsArea {
+  grid-area: pos;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--panel);
+  border-right: 1px solid var(--line);
+}
+
+.centerArea {
+  grid-area: center;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.canvasArea {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.wallArea {
+  flex-shrink: 0;
+  background: var(--panel);
+  border-top: 1px solid var(--line);
+}
+
+.detailArea {
+  grid-area: detail;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px;
+  overflow-y: auto;
+  background: var(--panel);
+  border-left: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+}
+
+.detailHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.detailTitle {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.rivalNote {
+  padding: 8px 10px;
+  border-radius: var(--radio-m);
+  background: #0f2a4d;
+  color: #bfdbff;
+  font-size: 15px;
+}
+
+.detailStats {
+  display: flex;
+  flex-direction: column;
+  min-height: 420px;
+}
+
+.isHidden {
+  display: none !important;
+}
+
+/* ── Avisos de carrera sobre el circuito ── */
 .formationBanner {
   position: absolute;
-  top: 75px;
+  top: 14px;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(11, 15, 25, 0.92);
-  backdrop-filter: blur(10px);
-  border: 1.5px solid rgba(56, 189, 248, 0.5);
-  color: #38bdf8;
-  padding: 8px 22px;
-  border-radius: 24px;
-  font-family: 'Orbitron', sans-serif;
-  font-size: 13px;
-  font-weight: 800;
-  letter-spacing: 1px;
+  background: rgba(13, 17, 23, 0.92);
+  border: 1px solid var(--line-strong);
+  color: var(--text);
+  padding: 8px 18px;
+  border-radius: var(--radio-l);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
   display: flex;
   align-items: center;
   gap: 10px;
   z-index: 25;
-  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.7);
-  animation: pulse 1.5s infinite alternate;
 }
 
 .spinIcon {
@@ -84,126 +188,10 @@
   to { transform: rotate(360deg); }
 }
 
-@keyframes pulse {
-  from { opacity: 0.85; transform: translateX(-50%) scale(0.98); }
-  to { opacity: 1; transform: translateX(-50%) scale(1.01); }
-}
-
-.bottomDockWrapper {
-  position: absolute;
-  bottom: 14px;
-  left: 0;
-  right: 0;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  z-index: 35;
-  pointer-events: none;
-}
-
-.bottomDockWrapper > * {
-  pointer-events: auto;
-}
-
-.homeBtn {
-  background: rgba(15, 23, 42, 0.88);
-  backdrop-filter: blur(8px);
-  color: #f1f5f9;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  padding: 6px 12px;
-  border-radius: 7px;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
-  font-family: 'Orbitron', sans-serif;
-  font-weight: 800;
-  font-size: 11px;
-  letter-spacing: 0.5px;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-}
-
-.homeBtn:hover {
-  background: #e10600;
-  border-color: #e10600;
-  color: #ffffff;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(225, 6, 0, 0.5);
-}
-
-.cameraBadge {
-  background: rgba(15, 23, 42, 0.85);
-  color: #38bdf8;
-  border: 1px solid rgba(56, 189, 248, 0.3);
-  padding: 6px 12px;
-  border-radius: 7px;
-  font-family: 'Orbitron', sans-serif;
-  font-size: 10.5px;
-  font-weight: 700;
-  cursor: pointer;
-  letter-spacing: 0.5px;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-}
-
-.cameraBadge:hover {
-  background: rgba(56, 189, 248, 0.2);
-  border-color: #38bdf8;
-  color: #ffffff;
-  transform: translateY(-1px);
-}
-
-.leftSidebar,
-.rightSidebar {
-  position: relative;
-  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), min-width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  overflow: visible !important;
-}
-
-.sidebarCollapsed {
-  width: 0px !important;
-  min-width: 0px !important;
-}
-
-.sidebarToggle {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 24px;
-  height: 52px;
-  background: rgba(11, 15, 25, 0.95);
-  border: 1.5px solid rgba(255, 255, 255, 0.2);
-  color: #38bdf8;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  z-index: 60;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.7);
-  transition: background 0.15s, color 0.15s, transform 0.15s, border-color 0.15s;
-}
-
-.sidebarToggle:hover {
-  background: #1e293b;
-  color: #ffffff;
-  border-color: #38bdf8;
-  transform: translateY(-50%) scale(1.08);
-}
-
-.sidebarToggleLeft {
-  right: -24px;
-  border-radius: 0 8px 8px 0;
-  border-left: none;
-}
-
-.sidebarToggleRight {
-  left: -24px;
-  border-radius: 8px 0 0 8px;
-  border-right: none;
+/* Pantallas estrechas: los botones de la barra muestran solo su icono (conservan su nombre accesible). */
+@media (max-width: 1439px) {
+  .barLabel { display: none; }
+  .raceBar { gap: 8px; padding: 0 8px; }
+  .barGroup { gap: 6px; }
+  .barBtn { padding: 0 10px; }
 }

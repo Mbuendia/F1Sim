@@ -18,11 +18,14 @@ import { useTweenedNumber } from '../utils/useTweenedNumber';
 export interface BottomTelemetryDockProps {
   car: CarState | null;
   onSelectCar: (carId: number | null) => void;
+  /** R31: dentro del panel de detalle, en columna. */
+  compact?: boolean;
 }
 
 export const BottomTelemetryDock: React.FC<BottomTelemetryDockProps> = ({
   car,
-  onSelectCar
+  onSelectCar,
+  compact = false
 }) => {
   const dockRef = useRef<HTMLDivElement>(null);
   const prevCarIdRef = useRef<number | null>(null);
@@ -55,7 +58,7 @@ export const BottomTelemetryDock: React.FC<BottomTelemetryDockProps> = ({
   const rpmPercent = Math.min(100, Math.max(0, ((telemetry.rpm - 8000) / (13500 - 8000)) * 100));
 
   return (
-    <div ref={dockRef} className={styles.dockContainer} data-animate="slide-in">
+    <div ref={dockRef} className={`${styles.dockContainer} ${compact ? styles.dockCompact : ''}`} data-animate="slide-in">
       {/* ── 1. COCHE DE DELANTE ── */}
       <div className={styles.relativeCarCard}>
         <div className={styles.relativeHeader}>

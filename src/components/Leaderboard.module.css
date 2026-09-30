@@ -4,7 +4,7 @@
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: #0b0f19;
+  background: var(--panel);
   border-right: 2px solid #1a2236;
   box-shadow: 4px 0 25px rgba(0, 0, 0, 0.6);
   z-index: 30;
@@ -87,10 +87,10 @@
 }
 
 .posNum {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 13px;
+  font-family: var(--font-ui);
+  font-size: 16px;
   font-weight: 800;
-  color: #94a3b8;
+  color: var(--text-2);
 }
 
 .teamBar {
@@ -113,8 +113,8 @@
 }
 
 .driverCode {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 13px;
+  font-family: var(--font-ui);
+  font-size: 16px;
   font-weight: 800;
   color: #ffffff;
 }
@@ -122,7 +122,7 @@
 .driverLastName {
   font-size: 13.5px;
   font-family: 'Rajdhani', sans-serif;
-  color: #f1f5f9;
+  color: var(--text);
   font-weight: 700;
   white-space: nowrap;
   overflow: hidden;
@@ -150,12 +150,12 @@
 }
 
 .pitCountBadge {
-  font-size: 10px;
+  font-size: 13px;
   background: rgba(255, 255, 255, 0.12);
   padding: 2px 5px;
   border-radius: 3px;
-  color: #f1f5f9;
-  font-family: 'Orbitron', sans-serif;
+  color: var(--text);
+  font-family: var(--font-ui);
   font-weight: 700;
 }
 
@@ -165,8 +165,8 @@
 }
 
 .gapText {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 11.5px;
+  font-family: var(--font-ui);
+  font-size: 15px;
   color: #ffffff;
   font-weight: 700;
 }
@@ -186,8 +186,8 @@
   text-align: center;
   white-space: nowrap;
   pointer-events: none;
-  font-family: 'Orbitron', sans-serif;
-  font-size: 8px;
+  font-family: var(--font-ui);
+  font-size: 13px;
   font-weight: 900;
   line-height: 1;
 }
@@ -201,8 +201,8 @@
 }
 
 .pitPulse {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 10px;
+  font-family: var(--font-ui);
+  font-size: 13px;
   font-weight: 900;
   color: #0b0f17;
   background: #facc15;
@@ -244,12 +244,32 @@
 
 .rejoinRange {
   font-family: 'Orbitron', sans-serif;
-  color: #94a3b8;
+  color: var(--text-2);
 }
 
 .rejoinUnavailable {
   padding: 4px 10px 6px;
   font-size: 10px;
-  color: #94a3b8;
+  color: var(--text-2);
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
+
+/* R30/R33: clasificación compacta en su columna fija (248 px): cifras legibles en Rajdhani, sin apellido, filas de 30 px. */
+.towerContainer { width: 100%; min-width: 0; background: var(--panel); border-right: none; box-shadow: none; }
+.header { padding: 8px 12px; background: var(--panel); border-bottom: 1px solid var(--line); }
+.headerTitle { font-size: 14px; color: var(--text-2); }
+.tableList { padding: 4px 6px; gap: 1px; }
+.row { min-height: 30px; padding: 2px 6px; background: transparent; }
+.row:hover { background: var(--panel-2); transform: none; }
+.selected { background: var(--panel-2) !important; border-left-color: var(--accion) !important; box-shadow: none; }
+.posNum { font-family: var(--font-ui); font-size: 16px; font-weight: 700; color: var(--text-2); }
+.teamBar { margin: 0 6px; height: 18px; }
+.driverCode { font-family: var(--font-ui); font-size: 16px; font-weight: 700; color: var(--text); }
+.driverLastName { display: none; }
+.gapText { font-family: var(--font-ui); font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.pitPulse { font-family: var(--font-ui); font-size: 13px; }
+.pitCountBadge { font-family: var(--font-ui); font-size: 12px; }
+.posChange { font-family: var(--font-ui); font-size: 11px; }
+.rejoinGhost { font-size: 13px; }
+.rejoinPos, .rejoinRange { font-family: var(--font-ui); }
+.rejoinUnavailable { font-size: 13px; color: var(--text-2); }

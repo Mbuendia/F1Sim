@@ -35,9 +35,9 @@
 }
 
 .f1Brand {
-  font-family: 'Orbitron', sans-serif;
+  font-family: var(--font-ui);
   color: #e10600;
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 900;
   letter-spacing: 4px;
 }
@@ -101,8 +101,8 @@
 }
 
 .selectorLabel {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 11px;
+  font-family: var(--font-ui);
+  font-size: 14px;
   font-weight: 800;
   color: #cbd5e1;
   letter-spacing: 1px;
@@ -127,8 +127,8 @@
   border: none;
   padding: 12px 32px;
   border-radius: 8px;
-  font-family: 'Orbitron', sans-serif;
-  font-size: 13.5px;
+  font-family: var(--font-ui);
+  font-size: 16px;
   font-weight: 800;
   letter-spacing: 2px;
   cursor: pointer;
@@ -154,8 +154,8 @@
 }
 
 .statusText {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 12px;
+  font-family: var(--font-ui);
+  font-size: 15px;
   color: #f59e0b;
   letter-spacing: 1px;
 }

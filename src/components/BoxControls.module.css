@@ -1,11 +1,13 @@
-.controls { display:flex; flex-direction:column; gap:6px; padding:10px 14px; margin:0 auto 8px; max-width:1250px; width:96%; box-sizing:border-box; color:#f1f5f9; background:rgba(11,15,25,.97); border:1px solid #475569; border-radius:10px; font:13px 'Rajdhani',sans-serif; pointer-events:auto; }
-.teamHeader { color:#fbbf24; font-size:14px; font-weight:700; }
-.pilotsGrid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-.pilotCard { display:flex; flex-direction:column; gap:4px; padding:6px 8px; border:1px solid #334155; border-radius:6px; background:rgba(30,41,59,.6); }
-.pilotIdentity { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
-.pilotCode { font-weight:700; color:#e2e8f0; }
-.pilotPos { color:#94a3b8; font-size:12px; }
-.badge { font-size:11px; font-weight:700; padding:1px 6px; border-radius:3px; }
+/* R31: muro en su propia franja bajo el circuito. Dos tarjetas equivalentes (una por piloto): estado arriba,
+   ritmo a la izquierda y boxes a la derecha, avisos y acuses en la última fila. */
+.controls { display:flex; flex-direction:column; gap:6px; padding:8px 12px 10px; width:100%; box-sizing:border-box; color:var(--text); background:var(--panel); font:15px var(--font-ui); pointer-events:auto; }
+.teamHeader { color:var(--text-2); font-size:14px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; }
+.pilotsGrid { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:10px; }
+.pilotCard { display:grid; grid-template-columns:minmax(0, 1fr) minmax(0, 1fr); column-gap:12px; row-gap:6px; align-items:center; padding:8px 12px; border:1px solid var(--line); border-radius:var(--radio-l); background:var(--panel-2); }
+.pilotIdentity { grid-column:1; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.pilotCode { font-size:18px; font-weight:700; color:var(--text); }
+.pilotPos { color:var(--text); font-size:16px; font-weight:700; }
+.badge { font-size:13px; font-weight:700; padding:2px 8px; border-radius:var(--radio-s); }
 .badgeAccepted { background:#065f46; color:#6ee7b7; }
 .badgeCommitted { background:#92400e; color:#fbbf24; }
 .badgePit { background:#1e3a5f; color:#7dd3fc; }
@@ -13,17 +15,24 @@
 .badgeWaiting { background:#78350f; color:#fde68a; animation:pulse .8s ease-in-out infinite; }
 .badgeDnf { background:#450a0a; color:#fca5a5; }
 .badgeFinished { background:#1c1917; color:#a8a29e; }
-.pilotTire { display:flex; align-items:center; gap:6px; font-size:12px; color:#cbd5e1; }
-.stops { margin-left:auto; color:#94a3b8; }
-.waitInfo { font-size:12px; color:#fde68a; }
-.benefitInfo { font-size:11px; color:#86efac; }
-.orderRow { display:flex; gap:4px; align-items:center; }
-.paceControls { display:flex; flex-direction:column; gap:3px; }
-.orderRow select,.orderRow button { font:inherit; color:#f8fafc; border:1px solid #64748b; background:#1e293b; padding:5px 8px; border-radius:5px; }
-.orderRow button { cursor:pointer; font-weight:700; flex:1; }
+.pilotTire { grid-column:2; justify-self:end; display:flex; align-items:center; gap:8px; font-size:15px; color:var(--text-2); }
+.stops { color:var(--text-2); }
+.waitInfo { grid-column:1 / -1; font-size:14px; color:#fde68a; }
+.benefitInfo { grid-column:1 / -1; font-size:14px; color:#86efac; }
+.paceControls { grid-column:1; display:flex; flex-direction:column; gap:2px; }
+.orderRow { grid-column:2; display:flex; gap:6px; align-items:center; font-size:15px; color:var(--text-2); }
+.paceControls .orderRow { grid-column:auto; }
+.orderRow select,.orderRow button { font:inherit; font-size:15px; font-weight:600; color:var(--text); border:1px solid var(--line-strong); background:var(--panel); height:40px; padding:0 10px; border-radius:var(--radio-m); min-width:0; }
+.orderRow button { cursor:pointer; font-weight:700; flex:1; white-space:nowrap; padding:0 8px; }
+.orderRow button:first-of-type { background:var(--accion); border-color:var(--accion); color:#fff; }
+.orderRow button:first-of-type:hover:not(:disabled) { background:var(--accion-hover); }
 .orderRow button:disabled,.orderRow select:disabled { opacity:.45; cursor:default; }
-.orderRow button:focus-visible,.orderRow select:focus-visible { outline:2px solid #fbbf24; outline-offset:2px; }
-.message { font-size:11px; color:#94a3b8; min-height:14px; }
+.orderRow button:focus-visible,.orderRow select:focus-visible { outline:3px solid var(--foco); outline-offset:2px; }
+.message { grid-column:1 / -1; font-size:14px; color:var(--text-2); min-height:18px; }
 .message span { color:#fbbf24; font-weight:700; }
 @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.6; } }
-@media(max-width:700px) { .pilotsGrid { grid-template-columns:1fr; } .controls { font-size:12px; gap:4px; } }
+@media(max-width:1180px) { .pilotCard { grid-template-columns:minmax(0, 1fr); } .pilotIdentity,.pilotTire,.paceControls,.orderRow { grid-column:1; justify-self:start; } }
+
+/* El encabezado del muro queda para lectores de pantalla: la sección ya se nombra «Órdenes de boxes del equipo». */
+.teamHeader { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+.controls { position:relative; }

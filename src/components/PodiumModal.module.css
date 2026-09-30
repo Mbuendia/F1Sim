@@ -64,7 +64,7 @@
   font-family: 'Rajdhani', sans-serif;
   font-size: 14px;
   font-weight: 700;
-  color: #94a3b8;
+  color: var(--text-2);
   letter-spacing: 1px;
 }
 
@@ -96,8 +96,8 @@
 }
 
 .winnerCrown {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 11px;
+  font-family: var(--font-ui);
+  font-size: 14px;
   font-weight: 900;
   color: #ffd700;
   margin-bottom: 8px;
@@ -172,7 +172,7 @@
   font-family: 'Rajdhani', sans-serif;
   font-size: 16px;
   font-weight: 800;
-  color: #f1f5f9;
+  color: var(--text);
   text-align: center;
 }
 
@@ -185,16 +185,16 @@
 }
 
 .gapText {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 12px;
+  font-family: var(--font-ui);
+  font-size: 15px;
   color: #38bdf8;
   font-weight: 800;
   margin-top: 2px;
 }
 
 .winnerTag {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 10.5px;
+  font-family: var(--font-ui);
+  font-size: 14px;
   font-weight: 900;
   color: #ffd700;
   background: rgba(255, 215, 0, 0.2);
@@ -228,8 +228,8 @@
   border: none;
   padding: 13px 32px;
   border-radius: 10px;
-  font-family: 'Orbitron', sans-serif;
-  font-size: 13px;
+  font-family: var(--font-ui);
+  font-size: 16px;
   font-weight: 800;
   letter-spacing: 2px;
   cursor: pointer;

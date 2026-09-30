@@ -24,8 +24,8 @@
   backdrop-filter: blur(8px);
   border: 1px solid rgba(56, 189, 248, 0.35);
   color: #38bdf8;
-  font-family: 'Orbitron', sans-serif;
-  font-size: 10.5px;
+  font-family: var(--font-ui);
+  font-size: 14px;
   font-weight: 700;
   padding: 5px 10px;
   border-radius: 6px;
@@ -53,7 +53,7 @@
   background: rgba(11, 15, 25, 0.82);
   backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 0.12);
-  color: #94a3b8;
+  color: var(--text-2);
   font-family: 'Rajdhani', sans-serif;
   font-size: 11.5px;
   font-weight: 600;
@@ -68,7 +68,7 @@
 }
 
 .cameraHint strong {
-  color: #f1f5f9;
-  font-family: 'Orbitron', sans-serif;
-  font-size: 9.5px;
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 13px;
 }

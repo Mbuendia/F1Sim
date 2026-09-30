@@ -48,8 +48,8 @@
 .badgeDnf {
   background: #ef4444;
   color: #ffffff;
-  font-family: 'Orbitron', sans-serif;
-  font-size: 10.5px;
+  font-family: var(--font-ui);
+  font-size: 14px;
   font-weight: 900;
   padding: 2px 8px;
   border-radius: 4px;
@@ -62,7 +62,7 @@
 .closeBtn {
   background: transparent;
   border: none;
-  color: #94a3b8;
+  color: var(--text-2);
   font-size: 14px;
   cursor: pointer;
   padding: 2px 6px;
@@ -93,7 +93,7 @@
   font-family: 'Rajdhani', sans-serif;
   font-size: 16px;
   font-weight: 800;
-  color: #f8fafc;
+  color: var(--text);
   display: flex;
   align-items: center;
   gap: 6px;
@@ -101,7 +101,7 @@
 
 .driverTeam {
   font-size: 11px;
-  color: #94a3b8;
+  color: var(--text-2);
   font-family: 'Rajdhani', sans-serif;
   font-weight: 600;
 }
@@ -120,7 +120,7 @@
 }
 
 .metaInfo {
-  font-size: 10.5px;
+  font-size: 14px;
   color: #cbd5e1;
-  font-family: 'Orbitron', sans-serif;
+  font-family: var(--font-ui);
 }

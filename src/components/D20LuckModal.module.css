@@ -40,8 +40,8 @@
   background: rgba(225, 6, 0, 0.2);
   border: 1px solid rgba(225, 6, 0, 0.5);
   color: #ff4d4d;
-  font-family: 'Orbitron', sans-serif;
-  font-size: 11px;
+  font-family: var(--font-ui);
+  font-size: 14px;
   font-weight: 800;
   letter-spacing: 1px;
   padding: 6px 14px;
@@ -76,7 +76,7 @@
 .modalSubtitle {
   font-family: 'Rajdhani', sans-serif;
   font-size: 13.5px;
-  color: #94a3b8;
+  color: var(--text-2);
   margin-bottom: 16px;
   line-height: 1.4;
 }
@@ -123,8 +123,8 @@
 }
 
 .d20Label {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 8px;
+  font-family: var(--font-ui);
+  font-size: 13px;
   font-weight: 800;
   color: #38bdf8;
   letter-spacing: 1px;
@@ -156,8 +156,8 @@
 }
 
 .rewardHeader {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 13px;
+  font-family: var(--font-ui);
+  font-size: 16px;
   font-weight: 900;
   color: #ffd700;
   display: flex;
@@ -192,8 +192,8 @@
 .playerBadge {
   background: #e10600;
   color: #ffffff;
-  font-family: 'Orbitron', sans-serif;
-  font-size: 9px;
+  font-family: var(--font-ui);
+  font-size: 13px;
   font-weight: 900;
   padding: 2px 7px;
   border-radius: 10px;
@@ -220,7 +220,7 @@
 .tiresLabel {
   font-family: 'Rajdhani', sans-serif;
   font-size: 12px;
-  color: #94a3b8;
+  color: var(--text-2);
   font-weight: 700;
 }
 
@@ -228,8 +228,8 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-family: 'Orbitron', sans-serif;
-  font-size: 10px;
+  font-family: var(--font-ui);
+  font-size: 13px;
   font-weight: 800;
   letter-spacing: 0.5px;
   color: #e2e8f0;
@@ -247,8 +247,8 @@
   border: none;
   border-radius: 10px;
   padding: 11px 26px;
-  font-family: 'Orbitron', sans-serif;
-  font-size: 12px;
+  font-family: var(--font-ui);
+  font-size: 15px;
   font-weight: 800;
   letter-spacing: 1px;
   cursor: pointer;
@@ -273,7 +273,7 @@
 .adviceNote {
   margin: 8px 0 0;
   font-size: 11px;
-  color: #94a3b8;
+  color: var(--text-2);
   text-align: center;
 }
 

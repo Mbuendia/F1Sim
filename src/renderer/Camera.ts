@@ -14,6 +14,10 @@ export class Camera {
   targetY: number = 450;
   targetZoom: number = 1.0;
   targetRotation: number = 0; // Target rotation for smooth lerp
+  /** Zoom pedido por el usuario (rueda o botones), aplicado sobre el encuadre de cada modo. */
+  zoomLevel: number = 1.0;
+  static readonly MIN_ZOOM_LEVEL = 0.5;
+  static readonly MAX_ZOOM_LEVEL = 4.0;
 
   screenWidth: number = 1200;
   screenHeight: number = 800;
@@ -36,7 +40,7 @@ export class Camera {
     this.screenHeight = height;
     if (track) this.lastTrack = track;
     if (this.followingCarId === null && this.lastTrack && this.currentMode !== 'free') {
-      this.resetToFullTrack(this.lastTrack);
+      this.resetToFullTrack(this.lastTrack, true);
     }
   }
 
@@ -56,10 +60,11 @@ export class Camera {
     this.setMode(modes[nextIndex]);
   }
 
-  resetToFullTrack(track?: TrackDefinition) {
+  resetToFullTrack(track?: TrackDefinition, keepZoom = false) {
     this.followingCarId = null;
     this.currentMode = 'overview';
     this.targetRotation = 0;
+    if (!keepZoom) this.zoomLevel = 1.0;
     const activeTrack = track || this.lastTrack;
     if (!activeTrack) return;
     this.lastTrack = activeTrack;
@@ -72,7 +77,7 @@ export class Camera {
     const zoomY = this.screenHeight / trackH;
     const fitZoom = Math.min(zoomX, zoomY) * 0.94;
 
-    this.targetZoom = fitZoom;
+    this.targetZoom = fitZoom * this.zoomLevel;
     this.targetX = (b.minX + b.maxX) / 2;
     this.targetY = (b.minY + b.maxY) / 2;
   }
@@ -106,7 +111,11 @@ export class Camera {
   }
 
   zoomBy(factor: number) {
-    this.targetZoom = Math.max(0.25, Math.min(8.0, this.targetZoom * factor));
+    if (this.currentMode === 'free') {
+      this.targetZoom = Math.max(0.25, Math.min(8.0, this.targetZoom * factor));
+      return;
+    }
+    this.zoomLevel = Math.max(Camera.MIN_ZOOM_LEVEL, Math.min(Camera.MAX_ZOOM_LEVEL, this.zoomLevel * factor));
   }
 
   update(cars: CarState[], dt: number, track?: TrackDefinition) {
@@ -121,7 +130,7 @@ export class Camera {
 
         const zoomX = this.screenWidth / trackW;
         const zoomY = this.screenHeight / trackH;
-        this.targetZoom = Math.min(zoomX, zoomY) * 0.94;
+        this.targetZoom = Math.min(zoomX, zoomY) * 0.94 * this.zoomLevel;
         this.targetX = (b.minX + b.maxX) / 2;
         this.targetY = (b.minY + b.maxY) / 2;
       }
@@ -130,10 +139,11 @@ export class Camera {
       if (car && isCarVisible(car)) {
         this.targetX = car.worldX;
         this.targetY = car.worldY;
-        if (this.currentMode === 'cinematic') this.targetZoom = Camera.CINEMATIC_ZOOM;
-        else if (this.currentMode === 'onboard') this.targetZoom = Camera.ONBOARD_ZOOM;
-        else if (this.currentMode === 'helicopter') this.targetZoom = Camera.HELICOPTER_ZOOM;
-        else this.targetZoom = Camera.FOLLOW_ZOOM;
+        const modeZoom = this.currentMode === 'cinematic' ? Camera.CINEMATIC_ZOOM
+          : this.currentMode === 'onboard' ? Camera.ONBOARD_ZOOM
+          : this.currentMode === 'helicopter' ? Camera.HELICOPTER_ZOOM
+          : Camera.FOLLOW_ZOOM;
+        this.targetZoom = modeZoom * this.zoomLevel;
       }
     }
 

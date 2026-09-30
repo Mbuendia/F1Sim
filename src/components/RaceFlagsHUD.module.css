@@ -1,9 +1,10 @@
 .flagsContainer {
-  position: fixed;
-  top: 12px;
+  /* R32: dentro del área del circuito, abajo en el centro; la barra ya muestra el estado de bandera. */
+  position: absolute;
+  bottom: 12px;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 55;
+  z-index: 26;
   pointer-events: none;
   display: flex;
   flex-direction: column;
@@ -18,8 +19,8 @@
   gap: 8px;
   padding: 6px 18px;
   border-radius: 8px;
-  font-family: 'Orbitron', 'Segoe UI', sans-serif;
-  font-size: 13px;
+  font-family: var(--font-ui);
+  font-size: 16px;
   font-weight: 700;
   letter-spacing: 0.5px;
   backdrop-filter: blur(8px);
