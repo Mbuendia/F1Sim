@@ -482,5 +482,6 @@ export const modules = [
   { "id": "luck-benefits", "tasks": ["Q17"], "sprint": "2.8", "kind": "contract" },
   { "id": "modal-lifecycle", "tasks": ["Q18"], "sprint": "2.8", "kind": "contract" },
   { "id": "sc-deploy", "tasks": ["Q14"], "sprint": "2.8", "kind": "contract" },
-  { "id": "blue-flags-yield", "tasks": ["Q15"], "sprint": "2.8", "kind": "contract" }
+  { "id": "blue-flags-yield", "tasks": ["Q15"], "sprint": "2.8", "kind": "contract" },
+  { "id": "drs-cases", "tasks": ["Q19"], "sprint": "2.8", "kind": "contract" }
 ];
