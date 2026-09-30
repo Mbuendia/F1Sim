@@ -1,0 +1,76 @@
+.root {
+  position: relative;
+}
+
+.trigger {
+  height: 36px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radio-s);
+  background: transparent;
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.trigger:hover,
+.trigger[aria-expanded='true'] {
+  background: var(--panel-2);
+}
+
+.menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  width: 290px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radio-l);
+  background: var(--panel-2);
+  z-index: 80;
+}
+
+.section {
+  padding: 4px 8px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+.item {
+  min-height: 44px;
+  padding: 0 12px;
+  border-radius: var(--radio-s);
+  background: transparent;
+  text-align: left;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.itemSc {
+  border: 1px dashed #6b5710;
+  color: #ffe070;
+}
+
+.itemRed {
+  border: 1px dashed #7f1d1d;
+  color: #fca5a5;
+}
+
+.item:hover {
+  background: var(--panel);
+}
+
+@media (max-width: 1279px) {
+  .label { display: none; }
+}

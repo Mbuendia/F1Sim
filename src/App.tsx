@@ -16,11 +16,31 @@ import { LandingPage } from './components/LandingPage';
 import RaceFlagsHUD from './components/RaceFlagsHUD';
 import { DnfNotificationModal } from './components/DnfNotificationModal';
 import { D20LuckModal } from './components/D20LuckModal';
+import { RaceMenu } from './components/RaceMenu';
 import { OFFICIAL_CIRCUITS } from './data/circuits';
 import { DRIVERS } from './data/drivers';
 import { TEAMS } from './data/teams';
 import { RaceResultHistory, StartLightState, CarState, RaceFlagState, SafetyCarState, DnfNotification, D20LuckEvent, TrackWeatherState } from './types/f1';
-import { RotateCw, Flag, ArrowLeft, ChevronLeft, ChevronRight, Camera as CameraIcon } from 'lucide-react';
+import { RotateCw, ArrowLeft, Camera as CameraIcon, Maximize2, ListOrdered, PanelRight } from 'lucide-react';
+
+// R32: estado de carrera siempre visible en la barra.
+const FLAG_CHIPS: Record<RaceFlagState, { label: string; className: string }> = {
+  'green': { label: 'VERDE', className: 'flagGreen' },
+  'yellow': { label: 'AMARILLA', className: 'flagYellow' },
+  'double-yellow': { label: 'DOBLE AMARILLA', className: 'flagYellow' },
+  'vsc': { label: 'VSC', className: 'flagVsc' },
+  'sc': { label: 'SAFETY CAR', className: 'flagSc' },
+  'red': { label: 'BANDERA ROJA', className: 'flagRed' },
+};
+
+const CAMERA_LABELS: Record<string, string> = {
+  overview: 'General',
+  follow: 'Seguimiento',
+  cinematic: 'Cinemática',
+  onboard: 'A bordo',
+  helicopter: 'Helicóptero',
+  free: 'Libre',
+};
 
 export const App: React.FC = () => {
   // Piloto y Circuito seleccionados
@@ -36,9 +56,16 @@ export const App: React.FC = () => {
   // Coche seleccionado expresamente en pista
   const [selectedCarId, setSelectedCarId] = useState<number | null>(null);
 
-  // Sidebar collapse state
+  // Paneles: posiciones visibles; el detalle del coche se abre bajo demanda.
   const [leftSidebarOpen, setLeftSidebarOpen] = useState(true);
-  const [rightSidebarOpen, setRightSidebarOpen] = useState(true);
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth);
+
+  useEffect(() => {
+    const onResize = () => setViewportWidth(window.innerWidth);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
   // Camera mode
   const [cameraMode, setCameraMode] = useState<string>('overview');
@@ -110,10 +137,47 @@ export const App: React.FC = () => {
     setSelectedCarId(carId);
     if (carId !== null) {
       camera.followCar(carId);
+      setDetailOpen(true);
     } else {
       camera.resetToFullTrack();
+      setDetailOpen(false);
     }
   }, [camera]);
+
+  // R32: herramientas de prueba (menú de carrera). Conservan su efecto anterior.
+  const handleSafetyCarTest = useCallback(() => {
+    if (!simulation.safetyCar.isDeployed) {
+      // [Q14] Sale de su garaje en el pit lane, como en carrera.
+      simulation.deploySafetyCar('PRUEBA MANUAL (DEV)', { targetLaps: 999 });
+    } else {
+      // Forzar que el SC se vaya por el pit lane
+      simulation.recallSafetyCar();
+      // Limpiamos los incidentes artificialmente si los hay
+      simulation.incidents = [];
+    }
+  }, [simulation]);
+
+  const handleRedFlagTest = useCallback(() => {
+    // Escoger coche al azar
+    const runningCars = simulation.cars.filter(c => c.status === 'running');
+    if (runningCars.length === 0) return;
+    const randomCar = runningCars[Math.floor(Math.random() * runningCars.length)];
+    randomCar.status = 'out';
+    const failureTypes = ['💥 ACCIDENTE GRAVE', '🔥 INCENDIO MOTOR', '💥 CHOQUE MÚLTIPLE'];
+    randomCar.dnfReason = failureTypes[Math.floor(Math.random() * failureTypes.length)];
+    randomCar.isRetiredVisible = true;
+    randomCar.smokeOpacity = 1.0;
+    randomCar.retireTimer = 60;
+
+    // Forzar bandera roja directamente
+    simulation.raceFlagState = 'red';
+    simulation.safetyCar.isDeployed = false;
+    simulation.safetyCar.mode = 'idle';
+    for (const c of simulation.cars) {
+      if (c.status === 'running') c.pitStop.isPitting = true;
+    }
+    simulation.triggerD20LuckRoll('red');
+  }, [simulation]);
 
   const handleSpeedChange = useCallback((speed: number) => {
     simulation.setSpeed(speed);
@@ -134,6 +198,7 @@ export const App: React.FC = () => {
     simulation.initRace();
     camera.resetToFullTrack();
     setSelectedCarId(null);
+    setDetailOpen(false);
     setLightState('idle');
     setIsFinished(false);
     simulation.startRaceSequence();
@@ -143,6 +208,7 @@ export const App: React.FC = () => {
     simulation.setCircuit(selectedCircuitId);
     camera.resetToFullTrack();
     setSelectedCarId(null);
+    setDetailOpen(false);
     setIsFinished(false);
     setCurrentView('race');
     simulation.startRaceSequence();
@@ -269,11 +335,93 @@ export const App: React.FC = () => {
     );
   }
 
+  // R30/R31: la vista de detalle sustituye a la clasificación en pantallas estrechas; en las anchas convive con ella.
+  const isWide = viewportWidth >= 1600;
+  const detailCar = selectedCar || favoriteCar;
+  const detailIsRival = !teamCars.some(c => c.id === detailCar.id);
+  const detailReplacesPositions = detailOpen && !isWide;
+  const showPositions = leftSidebarOpen && !detailReplacesPositions;
+  const columns: string[] = [];
+  const areas: string[] = [];
+  if (showPositions) { columns.push('var(--ancho-posiciones)'); areas.push('pos'); }
+  if (detailReplacesPositions) { columns.push('var(--ancho-detalle)'); areas.push('detail'); }
+  columns.push('minmax(0, 1fr)'); areas.push('center');
+  if (detailOpen && isWide) { columns.push('var(--ancho-detalle)'); areas.push('detail'); }
+  const shellLayout = { gridTemplateColumns: columns.join(' '), gridTemplateAreas: `"${areas.join(' ')}"` };
+
   return (
     <div className={styles.appContainer}>
-      {/* ── 1. TIMING TOWER IZQUIERDA ── */}
-      <div className={`${styles.leftSidebar} ${leftSidebarOpen ? '' : styles.sidebarCollapsed}`}>
-        {leftSidebarOpen && (
+      {/* ── R32: BARRA DE CARRERA (estado, tiempo, velocidad, cámara y menú) ── */}
+      <header className={styles.raceBar}>
+        <div className={styles.barGroup}>
+          <button
+            className={styles.homeBtn}
+            onClick={() => setCurrentView('home')}
+            title="Volver a la selección"
+          >
+            <ArrowLeft size={14} />
+            <span>GPs</span>
+          </button>
+          <span className={`${styles.flagChip} ${styles[FLAG_CHIPS[raceFlagState].className]}`} role="status">
+            {FLAG_CHIPS[raceFlagState].label}
+          </span>
+        </div>
+
+        <SpeedControls
+          currentSpeed={speedMultiplier}
+          isPaused={isPaused}
+          onSpeedChange={handleSpeedChange}
+          onReset={handleResetRace}
+          raceTimeFormatted={formatRaceTime(raceTimeSec)}
+          leaderLap={leaderLap}
+          totalLaps={simulation.totalLaps}
+        />
+
+        <div className={styles.barGroup}>
+          <button
+            className={styles.barBtn}
+            onClick={handleCycleCameraMode}
+            title="Pulsar 'C' para cambiar vista de cámara"
+            aria-label={`Cámara: ${CAMERA_LABELS[cameraMode] ?? cameraMode}`}
+          >
+            <CameraIcon size={16} aria-hidden="true" />
+            <span className={styles.barLabel}>Cámara: {CAMERA_LABELS[cameraMode] ?? cameraMode}</span>
+          </button>
+          <button className={styles.barBtn} onClick={() => handleSelectCar(null)} title="Encuadrar todo el circuito (Esc)" aria-label="Vista general">
+            <Maximize2 size={16} aria-hidden="true" />
+            <span className={styles.barLabel}>Vista general</span>
+          </button>
+          <button
+            className={styles.barBtn}
+            aria-pressed={leftSidebarOpen}
+            onClick={() => setLeftSidebarOpen(open => !open)}
+            title={leftSidebarOpen ? 'Ocultar posiciones' : 'Mostrar posiciones'}
+            aria-label="Posiciones"
+          >
+            <ListOrdered size={16} aria-hidden="true" />
+            <span className={styles.barLabel}>Posiciones</span>
+          </button>
+          <button
+            className={styles.barBtn}
+            aria-pressed={detailOpen}
+            onClick={() => setDetailOpen(open => !open)}
+            title={detailOpen ? 'Cerrar detalle del coche' : 'Abrir detalle del coche'}
+            aria-label="Detalle"
+          >
+            <PanelRight size={16} aria-hidden="true" />
+            <span className={styles.barLabel}>Detalle</span>
+          </button>
+          <RaceMenu
+            safetyCarDeployed={simulation.safetyCar.isDeployed}
+            onToggleSafetyCarTest={handleSafetyCarTest}
+            onRedFlagTest={handleRedFlagTest}
+          />
+        </div>
+      </header>
+
+      <div className={styles.raceShell} style={shellLayout}>
+        {/* ── 1. CLASIFICACIÓN COMPACTA ── */}
+        <aside className={`${styles.positionsArea} ${showPositions ? '' : styles.isHidden}`} aria-label="Posiciones">
           <Leaderboard
             cars={cars}
             selectedCarId={selectedCarId}
@@ -282,187 +430,106 @@ export const App: React.FC = () => {
             leaderLap={leaderLap}
             rejoin={rejoinEstimate}
           />
-        )}
-        <button 
-          className={`${styles.sidebarToggle} ${styles.sidebarToggleLeft}`} 
-          onClick={() => setLeftSidebarOpen(!leftSidebarOpen)}
-          title={leftSidebarOpen ? "Ocultar Timing Tower" : "Mostrar Timing Tower"}
-        >
-          {leftSidebarOpen ? <ChevronLeft size={14} /> : <ChevronRight size={14} />}
-        </button>
-      </div>
+        </aside>
 
-      {/* ── 2. VISTA CENTRAL DE CARRERA (CANVAS + OVERLAYS) ── */}
-      <div className={styles.mainRaceView}>
-        <RaceCanvas
-          simulation={simulation}
-          camera={camera}
-          selectedCarId={selectedCarId}
-          onSelectCar={handleSelectCar}
-        />
+        {/* ── 2. CIRCUITO LIBRE + MURO EN SU FRANJA ── */}
+        <main className={styles.centerArea}>
+          <div className={styles.canvasArea}>
+            <RaceCanvas
+              simulation={simulation}
+              camera={camera}
+              selectedCarId={selectedCarId}
+              onSelectCar={handleSelectCar}
+            />
 
-        {/* HUD de Banderas y Safety Car en Directo */}
-        <RaceFlagsHUD
-          raceFlagState={raceFlagState}
-          sectorFlags={sectorFlags}
-          safetyCar={safetyCar}
-        />
+            {/* HUD de Banderas y Safety Car en Directo */}
+            <RaceFlagsHUD
+              raceFlagState={raceFlagState}
+              sectorFlags={sectorFlags}
+              safetyCar={safetyCar}
+            />
 
-        {lightState === 'formation-lap' && (
-          <div className={styles.formationBanner}>
-            <RotateCw size={16} className={styles.spinIcon} />
-            <span>VUELTA DE FORMACIÓN EN CURSO</span>
-          </div>
-        )}
+            {lightState === 'formation-lap' && (
+              <div className={styles.formationBanner}>
+                <RotateCw size={16} className={styles.spinIcon} />
+                <span>VUELTA DE FORMACIÓN EN CURSO</span>
+              </div>
+            )}
 
-        <div className={styles.topBarOverlay}>
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-            <button 
-              className={styles.homeBtn} 
-              onClick={() => setCurrentView('home')}
-              title="Volver a la selección"
-            >
-              <ArrowLeft size={14} />
-              <span>GPs</span>
-            </button>
-            <button
-              className={styles.cameraBadge}
-              onClick={handleCycleCameraMode}
-              title="Pulsar 'C' para cambiar vista de cámara"
-            >
-              <CameraIcon size={12} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} />
-              <span>{cameraMode.toUpperCase()}</span>
-            </button>
-            {/* Botón DEV para probar el Safety Car */}
-            <button
-              className={styles.cameraBadge}
-              style={{ borderColor: simulation.safetyCar.isDeployed ? '#22c55e' : '#fbbf24', color: simulation.safetyCar.isDeployed ? '#22c55e' : '#fbbf24' }}
-              onClick={() => {
-                if (!simulation.safetyCar.isDeployed) {
-                  // [Q14] Sale de su garaje en el pit lane, como en carrera.
-                  simulation.deploySafetyCar('PRUEBA MANUAL (DEV)', { targetLaps: 999 });
-                } else {
-                  // Forzar que el SC se vaya por el pit lane
-                  simulation.recallSafetyCar();
-                  // Limpiamos los incidentes artificialmente si los hay
-                  simulation.incidents = [];
-                }
+            <StartLights
+              lightState={lightState}
+              cars={cars}
+              favoriteCarId={favoriteCar.id}
+              onSelectFavoriteCar={(id) => {
+                const c = simulation.getCarById(id);
+                if (c) setSelectedDriverId(c.driver.id);
               }}
-              title={simulation.safetyCar.isDeployed ? "Retirar Safety Car (Dev)" : "Desplegar Safety Car (Dev)"}
-            >
-              <span>{simulation.safetyCar.isDeployed ? '🟢 RETIRAR SC' : '🚨 TEST SC'}</span>
-            </button>
-            {/* Botón DEV para probar la Bandera Roja */}
-            <button
-              className={styles.cameraBadge}
-              style={{ borderColor: '#e10600', color: '#e10600' }}
-              onClick={() => {
-                // Escoger coche al azar
-                const runningCars = simulation.cars.filter(c => c.status === 'running');
-                if (runningCars.length > 0) {
-                  const randomCar = runningCars[Math.floor(Math.random() * runningCars.length)];
-                  randomCar.status = 'out';
-                  const failureTypes = ['💥 ACCIDENTE GRAVE', '🔥 INCENDIO MOTOR', '💥 CHOQUE MÚLTIPLE'];
-                  randomCar.dnfReason = failureTypes[Math.floor(Math.random() * failureTypes.length)];
-                  randomCar.isRetiredVisible = true;
-                  randomCar.smokeOpacity = 1.0;
-                  randomCar.retireTimer = 60;
-                  
-                  // Forzar bandera roja directamente
-                  simulation.raceFlagState = 'red';
-                  simulation.safetyCar.isDeployed = false;
-                  simulation.safetyCar.mode = 'idle';
-                  for (const c of simulation.cars) {
-                    if (c.status === 'running') c.pitStop.isPitting = true;
-                  }
-                  simulation.triggerD20LuckRoll('red');
-                }
+              onStartClick={handleStartFormationLap}
+            />
+
+            {isFinished && podiumCars.length >= 3 && (
+              <PodiumModal
+                podiumCars={podiumCars}
+                onRestart={handleResetRace}
+                onGoHome={handleGoHome}
+              />
+            )}
+
+            <DnfNotificationModal
+              notification={activeDnf}
+              onDismiss={() => {
+                simulation.latestDnf = null;
+                setActiveDnf(null);
               }}
-              title="Forzar Bandera Roja (Dev)"
-            >
-              <span>🔴 TEST RED FLAG</span>
-            </button>
+            />
+
+            {/* ── MODAL DE SUERTE CON DADO D20 (SAFETY CAR & BANDERA ROJA) ── */}
+            {activeLuckEvent && (
+              <D20LuckModal
+                key={activeLuckEvent.id}
+                event={activeLuckEvent}
+                onApplyReward={handleApplyLuckReward}
+                onDismiss={handleDismissLuckEvent}
+              />
+            )}
           </div>
 
-          <SpeedControls
-            currentSpeed={speedMultiplier}
-            isPaused={isPaused}
-            onSpeedChange={handleSpeedChange}
-            onReset={handleResetRace}
-            raceTimeFormatted={formatRaceTime(raceTimeSec)}
-            leaderLap={leaderLap}
-            totalLaps={simulation.totalLaps}
-          />
-        </div>
+          <section className={styles.wallArea}>
+            <BoxControls key={teamCars.map(c => c.id).join(':') + ':' + selectedCircuitId} car={favoriteCar} simulation={simulation} teamCars={teamCars} />
+          </section>
+        </main>
 
-        {/* ── HUD INFERIOR: CENTRADO DINÁMICAMENTE ── */}
-        <div className={styles.bottomDockWrapper}>
-          <BoxControls key={teamCars.map(c => c.id).join(':') + ':' + selectedCircuitId} car={favoriteCar} simulation={simulation} teamCars={teamCars} />
-          <BottomTelemetryDock
-            car={selectedCar || favoriteCar}
-            onSelectCar={handleSelectCar}
-          />
-        </div>
-
-        <StartLights
-          lightState={lightState}
-          cars={cars}
-          favoriteCarId={favoriteCar.id}
-          onSelectFavoriteCar={(id) => {
-            const c = simulation.getCarById(id);
-            if (c) setSelectedDriverId(c.driver.id);
-          }}
-          onStartClick={handleStartFormationLap}
-        />
-
-        {isFinished && podiumCars.length >= 3 && (
-          <PodiumModal
-            podiumCars={podiumCars}
-            onRestart={handleResetRace}
-            onGoHome={handleGoHome}
-          />
-        )}
-
-        <DnfNotificationModal
-          notification={activeDnf}
-          onDismiss={() => {
-            simulation.latestDnf = null;
-            setActiveDnf(null);
-          }}
-        />
-
-        {/* ── MODAL DE SUERTE CON DADO D20 (SAFETY CAR & BANDERA ROJA) ── */}
-        {activeLuckEvent && (
-          <D20LuckModal
-            key={activeLuckEvent.id}
-            event={activeLuckEvent}
-            onApplyReward={handleApplyLuckReward}
-            onDismiss={handleDismissLuckEvent}
-          />
-        )}
-      </div>
-
-      {/* ── 3. PANEL DERECHO: DASHBOARD AVANZADO & ESTADO DE PISTA ── */}
-      <div className={`${styles.rightSidebar} ${rightSidebarOpen ? '' : styles.sidebarCollapsed}`}>
-        <button 
-          className={`${styles.sidebarToggle} ${styles.sidebarToggleRight}`} 
-          onClick={() => setRightSidebarOpen(!rightSidebarOpen)}
-          title={rightSidebarOpen ? "Ocultar Panel de Telemetría" : "Mostrar Panel de Telemetría"}
-        >
-          {rightSidebarOpen ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
-        </button>
-        {rightSidebarOpen && (
-          <RightStatsPanel
-            car={selectedCar}
-            defaultCar={favoriteCar}
-            totalLaps={simulation.totalLaps}
-            overallBestS1={bestS1}
-            overallBestS2={bestS2}
-            overallBestS3={bestS3}
-            weather={weather}
-            circuit={activeCircuitSpec}
-          />
-        )}
+        {/* ── 3. DETALLE DEL COCHE CONSULTADO (se conserva montado para no perder pestaña ni selección) ── */}
+        <aside className={`${styles.detailArea} ${detailOpen ? '' : styles.isHidden}`} aria-label="Detalle del coche">
+          <div className={styles.detailHeader}>
+            {detailReplacesPositions ? (
+              <button className={styles.barBtn} onClick={() => setDetailOpen(false)}>← Volver a posiciones</button>
+            ) : (
+              <span className={styles.detailTitle}>Detalle · {detailCar.driver.code}</span>
+            )}
+            {!detailReplacesPositions && (
+              <button className={styles.barBtn} onClick={() => setDetailOpen(false)} aria-label="Cerrar detalle">✕</button>
+            )}
+          </div>
+          {detailIsRival && (
+            <div className={styles.rivalNote}>
+              Solo consulta: las órdenes siguen siendo para {teamCars.map(c => c.driver.code).join(' y ')}.
+            </div>
+          )}
+          <BottomTelemetryDock car={detailCar} onSelectCar={handleSelectCar} compact />
+          <div className={styles.detailStats}>
+            <RightStatsPanel
+              car={selectedCar}
+              defaultCar={favoriteCar}
+              totalLaps={simulation.totalLaps}
+              overallBestS1={bestS1}
+              overallBestS2={bestS2}
+              overallBestS3={bestS3}
+              weather={weather}
+              circuit={activeCircuitSpec}
+            />
+          </div>
+        </aside>
       </div>
     </div>
   );

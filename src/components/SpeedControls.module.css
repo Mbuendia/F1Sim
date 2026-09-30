@@ -119,3 +119,20 @@
   color: #ff4d4d;
   border-color: rgba(225, 6, 0, 0.4);
 }
+
+/* R32: controles integrados en la barra de carrera (una sola línea, cifras en Rajdhani). */
+.container { gap: 10px; padding: 0; background: transparent; backdrop-filter: none; border: none; box-shadow: none; }
+.lapBadge, .timeBadge { flex-direction: row; align-items: baseline; gap: 6px; min-width: 0; padding: 0; background: transparent; border: none; }
+.lapLabel, .timeLabel { font-family: var(--font-ui); font-size: 14px; font-weight: 700; letter-spacing: 0.06em; color: var(--text-2); }
+.lapValue, .timeValue { font-family: var(--font-ui); font-size: 18px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
+.lapTotal { font-size: 15px; color: var(--text-2); }
+.buttonGroup { gap: 0; padding: 0; border: 1px solid var(--line-strong); border-radius: var(--radio-s); background: transparent; overflow: hidden; }
+.btn { height: 34px; min-width: 40px; padding: 0 8px; border-radius: 0; font-family: var(--font-ui); font-size: 15px; font-weight: 700; color: var(--text-2); }
+.btn.active { background: var(--text); color: var(--bg); box-shadow: none; }
+.resetBtn { height: 36px; width: 36px; padding: 0; border: 1px solid var(--line-strong); border-radius: var(--radio-s); background: transparent; color: var(--text); }
+
+@media (max-width: 1279px) {
+  .lapLabel, .timeLabel { display: none; }
+  .container { gap: 8px; }
+  .btn { min-width: 34px; padding: 0 5px; }
+}

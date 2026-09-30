@@ -36,7 +36,8 @@ export const SpeedControls: React.FC<SpeedControlsProps> = ({
         <button
           className={`${styles.btn} ${isPaused ? styles.active : ''}`}
           onClick={() => onSpeedChange(0)}
-          title="Pausar simulación (Espacio)"
+          title={isPaused ? 'Reanudar simulación (Espacio)' : 'Pausar simulación (Espacio)'}
+          aria-label={isPaused ? 'Reanudar (Espacio)' : 'Pausar (Espacio)'}
         >
           {isPaused ? <Play size={14} /> : <Pause size={14} />}
         </button>
@@ -59,7 +60,7 @@ export const SpeedControls: React.FC<SpeedControlsProps> = ({
       </div>
 
       {/* Botón de reinicio */}
-      <button className={styles.resetBtn} onClick={onReset} title="Reiniciar carrera">
+      <button className={styles.resetBtn} onClick={onReset} title="Reiniciar carrera" aria-label="Reiniciar carrera">
         <RotateCcw size={14} />
       </button>
     </div>

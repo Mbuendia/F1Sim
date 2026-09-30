@@ -391,3 +391,25 @@
   color: #38bdf8;
   letter-spacing: 0.5px;
 }
+
+/* R31: dock dentro del panel de detalle (columna, sin tarjeta flotante). */
+.dockCompact {
+  flex-direction: column;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  border: none;
+  box-shadow: none;
+  background: transparent;
+  backdrop-filter: none;
+}
+
+.dockCompact .relativeCarCard {
+  flex: none;
+  min-width: 0;
+}
+
+.dockCompact .mainPilotCard {
+  flex-wrap: wrap;
+}

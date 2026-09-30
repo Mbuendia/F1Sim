@@ -253,3 +253,23 @@
   color: #94a3b8;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
+
+/* R30/R33: clasificación compacta en su columna fija (248 px): cifras legibles en Rajdhani, sin apellido, filas de 30 px. */
+.towerContainer { width: 100%; min-width: 0; background: var(--panel); border-right: none; box-shadow: none; }
+.header { padding: 8px 12px; background: var(--panel); border-bottom: 1px solid var(--line); }
+.headerTitle { font-size: 14px; color: var(--text-2); }
+.tableList { padding: 4px 6px; gap: 1px; }
+.row { min-height: 30px; padding: 2px 6px; background: transparent; }
+.row:hover { background: var(--panel-2); transform: none; }
+.selected { background: var(--panel-2) !important; border-left-color: var(--accion) !important; box-shadow: none; }
+.posNum { font-family: var(--font-ui); font-size: 16px; font-weight: 700; color: var(--text-2); }
+.teamBar { margin: 0 6px; height: 18px; }
+.driverCode { font-family: var(--font-ui); font-size: 16px; font-weight: 700; color: var(--text); }
+.driverLastName { display: none; }
+.gapText { font-family: var(--font-ui); font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.pitPulse { font-family: var(--font-ui); font-size: 13px; }
+.pitCountBadge { font-family: var(--font-ui); font-size: 12px; }
+.posChange { font-family: var(--font-ui); font-size: 11px; }
+.rejoinGhost { font-size: 13px; }
+.rejoinPos, .rejoinRange { font-family: var(--font-ui); }
+.rejoinUnavailable { font-size: 13px; color: var(--text-2); }
