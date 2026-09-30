@@ -189,7 +189,7 @@
 }
 
 /* Pantallas estrechas: los botones de la barra muestran solo su icono (conservan su nombre accesible). */
-@media (max-width: 1279px) {
+@media (max-width: 1439px) {
   .barLabel { display: none; }
   .raceBar { gap: 8px; padding: 0 8px; }
   .barGroup { gap: 6px; }

@@ -22,7 +22,7 @@ import { OFFICIAL_CIRCUITS } from './data/circuits';
 import { DRIVERS } from './data/drivers';
 import { TEAMS } from './data/teams';
 import { RaceResultHistory, StartLightState, CarState, RaceFlagState, SafetyCarState, DnfNotification, D20LuckEvent, TrackWeatherState } from './types/f1';
-import { RotateCw, ArrowLeft, Camera as CameraIcon, Maximize2, ListOrdered, PanelRight } from 'lucide-react';
+import { RotateCw, ArrowLeft, Camera as CameraIcon, Maximize2, ListOrdered, PanelRight, ZoomIn, ZoomOut } from 'lucide-react';
 
 // R32: estado de carrera siempre visible en la barra.
 const FLAG_CHIPS: Record<RaceFlagState, { label: string; className: string }> = {
@@ -447,6 +447,12 @@ export const App: React.FC = () => {
           >
             <CameraIcon size={16} aria-hidden="true" />
             <span className={styles.barLabel}>Cámara: {CAMERA_LABELS[cameraMode] ?? cameraMode}</span>
+          </button>
+          <button className={styles.barBtn} onClick={() => camera.zoomBy(1 / 1.25)} title="Alejar (rueda del ratón)" aria-label="Alejar">
+            <ZoomOut size={16} aria-hidden="true" />
+          </button>
+          <button className={styles.barBtn} onClick={() => camera.zoomBy(1.25)} title="Acercar (rueda del ratón)" aria-label="Acercar">
+            <ZoomIn size={16} aria-hidden="true" />
           </button>
           <button className={styles.barBtn} onClick={() => handleSelectCar(null)} title="Encuadrar todo el circuito (Esc)" aria-label="Vista general">
             <Maximize2 size={16} aria-hidden="true" />
