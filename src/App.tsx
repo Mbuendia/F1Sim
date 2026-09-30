@@ -121,6 +121,15 @@ export const App: React.FC = () => {
     setIsPaused(simulation.isPaused);
   }, [simulation]);
 
+  // [Q18] Callbacks estables del modal D20; aplicar es idempotente en el motor por ID de evento.
+  const handleApplyLuckReward = useCallback((eventId: string) => {
+    simulation.applyLuckEventReward(eventId);
+  }, [simulation]);
+  const handleDismissLuckEvent = useCallback(() => {
+    simulation.activeLuckEvent = null;
+    setActiveLuckEvent(null);
+  }, [simulation]);
+
   const handleResetRace = useCallback(() => {
     simulation.initRace();
     camera.resetToFullTrack();
@@ -437,16 +446,10 @@ export const App: React.FC = () => {
         {/* ── MODAL DE SUERTE CON DADO D20 (SAFETY CAR & BANDERA ROJA) ── */}
         {activeLuckEvent && (
           <D20LuckModal
+            key={activeLuckEvent.id}
             event={activeLuckEvent}
-            onApplyReward={(id) => {
-              simulation.applyLuckEventReward(id);
-              simulation.activeLuckEvent = null;
-              setActiveLuckEvent(null);
-            }}
-            onDismiss={() => {
-              simulation.activeLuckEvent = null;
-              setActiveLuckEvent(null);
-            }}
+            onApplyReward={handleApplyLuckReward}
+            onDismiss={handleDismissLuckEvent}
           />
         )}
       </div>

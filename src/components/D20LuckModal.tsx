@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import styles from './D20LuckModal.module.css';
 import { D20LuckEvent } from '../types/f1';
 import { Sparkles, Dices, ShieldAlert, CheckCircle2, Zap } from 'lucide-react';
@@ -70,6 +70,20 @@ export const D20LuckModal: React.FC<D20LuckModalProps> = ({
   const [countdown, setCountdown] = useState<number>(6);
   const modalRef = useRef<HTMLDivElement>(null);
   const diceRef = useRef<HTMLDivElement>(null);
+  // [Q18] Callbacks vigentes del padre en una ref: App re-renderiza cada 66 ms con funciones nuevas y, como
+  // dependencias, reiniciarían los temporizadores (la cuenta atrás nunca avanzaba).
+  const callbacksRef = useRef({ onApplyReward, onDismiss });
+  useEffect(() => {
+    callbacksRef.current = { onApplyReward, onDismiss };
+  });
+  // [Q18] Cierre único compartido por clic y fin de cuenta.
+  const closedRef = useRef(false);
+  const finish = useCallback(() => {
+    if (closedRef.current) return;
+    closedRef.current = true;
+    callbacksRef.current.onApplyReward(event.id);
+    callbacksRef.current.onDismiss();
+  }, [event.id]);
 
   // Entrance animation
   useEffect(() => {
@@ -113,31 +127,22 @@ export const D20LuckModal: React.FC<D20LuckModalProps> = ({
     }, 60);
 
     return () => clearInterval(rollInterval);
-  }, [event.rollValue]);
+  }, [event.id]);
 
-  // Auto-dismiss countdown after dice lands
+  // Auto-dismiss countdown after dice lands: el actualizador solo calcula el estado; el cierre ocurre en un efecto.
   useEffect(() => {
     if (!hasLanded) return;
-
     const timer = window.setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          onApplyReward(event.id);
-          onDismiss();
-          return 0;
-        }
-        return prev - 1;
-      });
+      setCountdown((prev) => Math.max(0, prev - 1));
     }, 1000);
-
     return () => clearInterval(timer);
-  }, [hasLanded, event.id, onApplyReward, onDismiss]);
+  }, [hasLanded, event.id]);
 
-  const handleApply = () => {
-    onApplyReward(event.id);
-    onDismiss();
-  };
+  useEffect(() => {
+    if (hasLanded && countdown === 0) finish();
+  }, [hasLanded, countdown, finish]);
+
+  const handleApply = finish;
 
   const isCrit = event.rollValue === 20;
 
