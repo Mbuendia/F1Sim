@@ -479,5 +479,6 @@ export const modules = [
   { "id": "rejoin-loss", "tasks": ["Q13"], "sprint": "2.8", "kind": "contract" },
   { "id": "luck-modal", "tasks": ["Q17"], "sprint": "2.8", "kind": "contract" },
   { "id": "pace-calibration", "tasks": ["Q12"], "sprint": "2.8", "kind": "contract" },
-  { "id": "luck-benefits", "tasks": ["Q17"], "sprint": "2.8", "kind": "contract" }
+  { "id": "luck-benefits", "tasks": ["Q17"], "sprint": "2.8", "kind": "contract" },
+  { "id": "modal-lifecycle", "tasks": ["Q18"], "sprint": "2.8", "kind": "contract" }
 ];
