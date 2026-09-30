@@ -3,7 +3,7 @@
   height: 100vh;
   overflow: hidden;
   background: radial-gradient(circle at 50% 10%, #111728 0%, #060912 100%);
-  color: #f1f5f9;
+  color: var(--text);
   font-family: 'Inter', system-ui, sans-serif;
   padding: 12px 20px 14px;
   display: flex;
@@ -49,7 +49,7 @@
   font-family: 'Rajdhani', sans-serif;
   font-size: 11px;
   font-weight: 700;
-  color: #94a3b8;
+  color: var(--text-2);
   margin: 1px 0 0;
 }
 
@@ -66,8 +66,8 @@
 }
 
 .historyTitle {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 9px;
+  font-family: var(--font-ui);
+  font-size: 13px;
   font-weight: 900;
   color: #ffd700;
   letter-spacing: 1px;
@@ -109,12 +109,12 @@
   font-size: 8.5px;
   font-family: 'Rajdhani', sans-serif;
   font-weight: 700;
-  color: #94a3b8;
+  color: var(--text-2);
 }
 
 .historyWinner {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 10px;
+  font-family: var(--font-ui);
+  font-size: 13px;
   font-weight: 900;
   color: #ffffff;
 }
@@ -157,11 +157,11 @@
   flex: 1;
   background: transparent;
   border: none;
-  color: #94a3b8;
+  color: var(--text-2);
   padding: 6px 8px;
   border-radius: 6px;
-  font-family: 'Orbitron', sans-serif;
-  font-size: 10px;
+  font-family: var(--font-ui);
+  font-size: 13px;
   font-weight: 800;
   letter-spacing: 1px;
   cursor: pointer;
@@ -236,12 +236,12 @@
   font-size: 10px;
   font-family: 'Rajdhani', sans-serif;
   font-weight: 600;
-  color: #94a3b8;
+  color: var(--text-2);
 }
 
 .driverListNum {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 12.5px;
+  font-family: var(--font-ui);
+  font-size: 16px;
   font-weight: 900;
 }
 
@@ -280,7 +280,7 @@
   font-size: 10px;
   font-family: 'Rajdhani', sans-serif;
   font-weight: 600;
-  color: #94a3b8;
+  color: var(--text-2);
 }
 
 /* ── 2. COLUMNA CENTRAL (FICHA TÉCNICA Y PALMARÉS GRANDE) ── */
@@ -328,7 +328,7 @@
   font-family: 'Rajdhani', sans-serif;
   font-size: 13px;
   font-weight: 700;
-  color: #94a3b8;
+  color: var(--text-2);
 }
 
 .detailContentGrid {
@@ -348,8 +348,8 @@
 }
 
 .detailCardTitle {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 11px;
+  font-family: var(--font-ui);
+  font-size: 14px;
   font-weight: 900;
   color: #38bdf8;
   letter-spacing: 1px;
@@ -380,12 +380,12 @@
   font-size: 9.5px;
   font-family: 'Rajdhani', sans-serif;
   font-weight: 700;
-  color: #94a3b8;
+  color: var(--text-2);
 }
 
 .specItemVal {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 12px;
+  font-family: var(--font-ui);
+  font-size: 15px;
   font-weight: 800;
   color: #ffffff;
 }
@@ -432,8 +432,8 @@
 }
 
 .radarValueBadge {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 11px;
+  font-family: var(--font-ui);
+  font-size: 14px;
   font-weight: 900;
   color: #ffffff;
   min-width: 38px;
@@ -491,8 +491,8 @@
   border: none;
   padding: 7px 16px;
   border-radius: 6px;
-  font-family: 'Orbitron', sans-serif;
-  font-size: 11px;
+  font-family: var(--font-ui);
+  font-size: 14px;
   font-weight: 800;
   letter-spacing: 1px;
   cursor: pointer;
@@ -520,8 +520,8 @@
 }
 
 .sidePanelTitle {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 10.5px;
+  font-family: var(--font-ui);
+  font-size: 14px;
   font-weight: 900;
   color: #ffd700;
   letter-spacing: 1.5px;
@@ -550,8 +550,8 @@
 }
 
 .summaryCardBadge {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 8.5px;
+  font-family: var(--font-ui);
+  font-size: 13px;
   font-weight: 900;
   letter-spacing: 1px;
 }
@@ -570,7 +570,7 @@
   font-size: 10.5px;
   font-family: 'Rajdhani', sans-serif;
   font-weight: 600;
-  color: #94a3b8;
+  color: var(--text-2);
 }
 
 .summaryCardExtra {
@@ -591,8 +591,8 @@
   border: none;
   padding: 12px 14px;
   border-radius: 8px;
-  font-family: 'Orbitron', sans-serif;
-  font-size: 11.5px;
+  font-family: var(--font-ui);
+  font-size: 15px;
   font-weight: 900;
   letter-spacing: 1.5px;
   cursor: pointer;
@@ -627,11 +627,11 @@
   flex: 1;
   background: transparent;
   border: none;
-  color: #94a3b8;
+  color: var(--text-2);
   padding: 6px 10px;
   border-radius: 6px;
-  font-family: 'Orbitron', sans-serif;
-  font-size: 9.5px;
+  font-family: var(--font-ui);
+  font-size: 13px;
   font-weight: 800;
   letter-spacing: 0.8px;
   cursor: pointer;
@@ -643,7 +643,7 @@
 }
 
 .subTabBtn:hover {
-  color: #f1f5f9;
+  color: var(--text);
   background: rgba(255, 255, 255, 0.05);
 }
 
@@ -679,8 +679,8 @@
 }
 
 .drsZoneRange {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 10px;
+  font-family: var(--font-ui);
+  font-size: 13px;
   color: #00ff66;
   font-weight: 700;
 }
@@ -696,8 +696,8 @@
 }
 
 .strategyHighlightTitle {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 10px;
+  font-family: var(--font-ui);
+  font-size: 13px;
   font-weight: 800;
   color: #ffd700;
   letter-spacing: 0.5px;
