@@ -22,7 +22,7 @@
 
 ## 🧭 2. ROADMAP Y ESTADO GLOBAL DE SPRINTS
 
-**Orden vigente:** Sprint **2.8** · Tarea actual **Q19** · Siguiente **Q16** (reinicio de energía en boxes pendiente). Prioridad de la auditoría completada; Q12-Q19 y Q21-Q23 pendientes de revisión en local del usuario.
+**Orden vigente:** Sprint **2.8** · Tarea actual **Q16** · Siguiente **Q12** (implementación del sprint terminada; revisión del usuario en orden Q12→Q23 y decisión sobre los contadores DRS tras SC/VSC de Q19). Prioridad de la auditoría completada; Q12-Q19 y Q21-Q23 pendientes de revisión en local del usuario.
 
 **Prioridad acordada tras la auditoría (30/09/2026, `docs/reviews/auditoria-q12-q19.md`):** Q19 → Q16 → Q13 → Q17 → Q12 → Q18/Q14/Q15. Decisiones del usuario: detecciones DRS desde las notas oficiales FIA; el Safety Car debe salir del pit lane (Q14); tests estructurales sin dependencias nuevas para Q18; tolerancias de calibración Q12 propuestas.
 
@@ -392,6 +392,7 @@ Los 13 bugs críticos y altos detectados en la auditoría fueron implementados y
   * *Diagnóstico (30/09/2026):* el motor sí funciona (el SOC varía entre 0 y 100 % en carrera), pero `batterySoc`/`ersDeploying` no se mostraban en ninguna pantalla; además, la columna de estado del dock (DRS y modo) quedaba fuera del área visible: el contenido medía 1316 px y el dock solo 893 px entre los paneles laterales.
   * *Entrega:* el dock muestra ERS con barra y % de SOC (4 MJ = 100 %) y "DESPLIEGUE" cuando el MGU-K entrega potencia; el dock ya no desborda (tarjetas laterales flexibles, bloques en dos filas y estado DRS/modo/ERS en una línea al pie). Contrato nuevo `ers-energy` (11 PASS): en carrera real recarga ≤ 2 MJ/vuelta, despliegue ≤ 4 MJ/vuelta, ES entre 0 y 4 MJ, potencia ≤ 120 kW (0 de 87 440 pasos), conservación exacta paso a paso y SOC de telemetría derivado del mismo estado; cambiar de modo sin frenar no crea energía. Suite 1117 PASS / 0 FAIL.
   * *Pendiente:* la llamada del motor pasa `inPit = false` siempre (los coches en boxes no actualizan energía); el reset de contadores al entrar en boxes queda sin ejercitar.
+  * *Resuelto 30/09/2026:* el motor reinicia los contadores por vuelta (recarga/despliegue) en el mismo cruce de la entrada de boxes, sin rellenar la batería, y mientras el coche está en el pit lane no hay flujos de energía; la telemetría sigue derivada del mismo estado (`batterySoc = storedMJ × 25`, sin despliegue). Al salir, los contadores vuelven a acumular. Test `ers-pit` (7 PASS) en parada real de Barcelona.
   * *Ampliación confirmada:* combustible (kg), batería (%) y temperatura (°C) localizables desde la telemetría del piloto, ligados al estado real; selección independiente de piloto, explicación de límites y estado no disponible si faltan datos. No animar valores para aparentar actividad. Reutilizar los modelos existentes y su contrato con R14-R16.
   * *Tests previos adicionales:* resources y módulo resources-ui propuesto; captura inicial/final en escenarios deterministas de consumo, descarga/regeneración y calentamiento/enfriamiento; probar propagación motor→UI, unidades, redondeo que no oculte cambios significativos, selección, pausa, reset y agotamiento. Entregar pasos reproducibles para revisión humana, sin esperar a un incidente aleatorio.
 
