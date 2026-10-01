@@ -22,7 +22,7 @@
 
 ## 🧭 2. ROADMAP Y ESTADO GLOBAL DE SPRINTS
 
-**Orden vigente:** Sprint **2.9** · Tarea actual **R27** · Siguiente **R05** (bloque 2.9-A completo y pendiente de revisión: R01, R02, la base inicial de R03, el esquema de R28 y la base de R27 implementados el 01/10/2026 en la rama sprint/2.9 con contrato de tests acordado; 2.9-B empieza por R05; cada tarea del 2.9 sigue requiriendo autorización expresa).
+**Orden vigente:** Sprint **2.9** · Tarea actual **R05** · Siguiente **R06** (bloque 2.9-A pendiente de revisión: R01, R02, la base inicial de R03, el esquema de R28 y la base de R27; 2.9-B: R05 con R40 implementado; todo el 01/10/2026 en la rama sprint/2.9 con contrato de tests acordado; cada tarea del 2.9 sigue requiriendo autorización expresa).
 
 **Prioridad acordada tras la auditoría (30/09/2026, `docs/reviews/auditoria-q12-q19.md`):** Q19 → Q16 → Q13 → Q17 → Q12 → Q18/Q14/Q15. Decisiones del usuario: detecciones DRS desde las notas oficiales FIA; el Safety Car debe salir del pit lane (Q14); tests estructurales sin dependencias nuevas para Q18; tolerancias de calibración Q12 propuestas.
 
@@ -642,9 +642,10 @@ Todas las tareas siguientes están **pendientes**. P0 = corregir validez del nú
 
 #### Entrega B — Coches con comportamiento propio y recursos finitos
 
-* **R05 — Aerodinámica, rebufo y adelantamiento físico (P1; A):** `[ ]`
+* **R05 — Aerodinámica, rebufo y adelantamiento físico (P1; A):** `[ ] EN REVISIÓN LOCAL — IMPLEMENTADO 01/10/2026 CON CONTRATO DE TESTS ACORDADO`
   * Usar un único cálculo de drag, carga, tracción y potencia para obtener aceleración/velocidad. DRS reduce drag; el rebufo ayuda en recta y el aire sucio perjudica apoyo/refrigeración según distancia y offset. Conectar Q7/Q8 para elegir trayectoria viable y dejar espacio.
   * *Aceptación:* maniobra sin salto, sin aumento instantáneo de velocidad ni multiplicadores duplicados; comparación con/sin DRS a igual masa/energía; efecto distinto entre recta y curva. Coeficientes calibrados, nunca «ganancia FIA garantizada».
+  * *Entrega 01/10/2026 (contrato aprobado por el usuario; incluye R40):* `src/simulation/AeroModel.ts`: aceleración = (potencia limitada por tracción − drag − rodadura) / masa con combustible; la punta es el equilibrio potencia = resistencia. El DRS reduce el drag un 12 % (una sola vez: se eliminan el +18 km/h y el ×1,07); el rebufo reduce el drag hasta un 10 % según la distancia en segundos y la separación lateral con el coche físicamente delante (vecino en pista de R02, también un doblado), solo en recta; el aire sucio resta hasta un 4 % de velocidad de paso en curva, menos con otra trazada. Potencia = motor térmico × factor de modo × ritmo de coche/piloto/motor (los neumáticos actúan sobre el agarre, no sobre los caballos) + MGU-K desplegado. Ajuste al coche de delante limitado a 180 km/h por segundo en el paso. `RejoinModel` usa el mismo modelo. Coeficientes de calibración del juego. Resultados: punta con DRS 321 km/h en Barcelona y 297 km/h en Mónaco; DRS +14 km/h; rebufo a 0,5 s +8,7 km/h; aceleración máxima 13,4 m/s²; frenada ≤ 50 m/s². Test `aero` (18 PASS); suite completa 1463 PASS. Con autorización del usuario: tolerancia de push en Q12 ampliada a ±0,2 s/vuelta (el ERS ya no acelera en curva; Barcelona −0,14 s, Monza −0,43 s, Mónaco −0,44 s); rango de pérdida en boxes de Barcelona en Q13 actualizado a 32,5–35,5 s (medida 33,7 s); separación del escenario de hueco de R02 cambiada a 2,0 s (a 1,5 s coincidía por azar con la fórmula antigua); baseline R27 regenerada. *Límites:* a x32 el motor cuesta ~13,6 ms por frame con 22 coches (antes ~11,5 ms); los modos de ritmo quedan en el borde de tolerancia en Mónaco; sin drag por circuito (configuración de baja carga de Monza) ni refrigeración por aire sucio.
 * **R06 — Cuatro neumáticos con temperatura, carga y desgaste (P1; R05):** `[ ]`
   * Grip dependiente de compuesto, temperatura, carga, presión y agua; transferencia de apoyo según signo de curva, desgaste irreversible, calentamiento tras parada, bloqueo/flat spot y pinchazo. Conservar estado por rueda e historial, también al reutilizar un juego.
   * *Aceptación:* curvas izquierda/derecha cargan rueda exterior correcta; out-lap fría cuesta tiempo; Push aumenta exigencia y riesgo; enfriar no repara desgaste. Prueba de undercut/overcut dependiente de tráfico y calentamiento, sin victoria programada.
@@ -812,12 +813,13 @@ Origen: revisión en local de Q12-Q23 jugando una carrera en Barcelona con el bu
   * *Aceptación:* en los tamaños de R30, el coche seguido y el SC son visibles con el muro abierto.
   * *Tests antes de implementación:* incluir en desktop-layout la posición en pantalla del objetivo de la cámara frente a los rectángulos de los paneles.
 
-* **R40 — Velocidad punta irreal con DRS:** `[ ] PLANIFICADO`
+* **R40 — Velocidad punta irreal con DRS:** `[ ] EN REVISIÓN LOCAL — IMPLEMENTADO 01/10/2026 CON CONTRATO DE TESTS ACORDADO`
   * *Prioridad/dependencias:* P1; detectado por el banco R27 el 01/10/2026; coordina R05 (aerodinámica/DRS) y R14-R16 (motor y energía).
   * *Hallazgo:* en la carrera de referencia de Barcelona (semilla 2025) VER alcanza 407,2 km/h con DRS en la recta principal; 238 pasos superan 400 km/h. La punta se compone de 338 km/h base + 18 DRS + 5 push + ajuste por rendimiento del coche, multiplicado por un ritmo efectivo que ya incluye DRS (×1,07), rebufo (×1,018) y despliegue ERS: el DRS cuenta dos veces.
   * *Alcance:* calibrar la velocidad punta por circuito frente a fuentes identificadas (speed trap de referencia) sin contar dos veces DRS ni rebufo; no cambiar el ritmo en curva.
   * *Aceptación:* punta del banco R27 dentro del rango de referencia declarado por circuito; métrica `topSpeedKmh` de la baseline actualizada con autorización del usuario; invariantes del banco a cero.
   * *Tests antes de implementación:* acordar el rango por circuito y su fuente; ampliar el banco con la punta por coche y con/sin DRS.
+  * *Entrega 01/10/2026:* resuelto dentro de R05 (DRS contado una vez en el drag). Punta del banco R27: 321,1 km/h en Barcelona (antes 407,2) y 297,1 km/h en Mónaco; rango provisional 315–340 km/h en Barcelona y máximo de 370 km/h en todas las carreras del banco, pendientes de una fuente oficial de speed trap.
 
 ### 6.6 Secuencia, dependencias y límite de alcance
 
