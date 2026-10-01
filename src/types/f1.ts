@@ -381,6 +381,9 @@ export interface CarState {
   vscDeltaSec?: number;
   /** [R11] Acaba de salir de boxes bajo VSC: su referencia arranca con el margen de recuperación (delta continuo). */
   vscPitExit?: boolean;
+  /** [R12] Bandera roja: el coche va a la fila del carril rápido y espera (sin parada) / sale tras la reanudación. */
+  redFlagHold?: boolean;
+  redFlagRelease?: boolean;
   /** [R11] Infracciones de pista registradas (las sanciones las aplica R13). */
   infractions?: { type: 'delta-vsc'; value: number; lap: number; time: number }[];
   /** [R17] Perfil técnico resuelto para este evento (chasis, PU y paquete aerodinámico). */

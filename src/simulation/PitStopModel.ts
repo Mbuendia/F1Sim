@@ -40,7 +40,7 @@ export class PitStopModel {
     return null;
   }
 
-  private static closeLog(car: CarState) {
+  static closeLog(car: CarState) {
     const pit = car.pitStop;
     if (!pit.pendingLog) return;
     const totalSec = pit.laneTimer ?? 0, queueSec = pit.boxWaitTimer, releaseHoldSec = pit.releaseHoldSec ?? 0;

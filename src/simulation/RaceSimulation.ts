@@ -36,7 +36,7 @@ import { calculateCarWorldPosition, lapsToPitEntry, limitLateralChange } from '.
 import { lineCrossings, TimingLine, TimingService } from './Timing';
 import { brakeDecelFactor, brakeTempStep, engineTempStep, gearFor, rpmFor } from './PowertrainModel';
 import { chassisGripAt, resolveTechnical } from '../data/teamProfiles';
-import { availableSets, COMPOUND_LABEL, createInventory, TireCompliance, tireCompliance } from './TireInventory';
+import { availableSets, COMPOUND_LABEL, createInventory, mountSet, pickSet, TireCompliance, tireCompliance } from './TireInventory';
 import { localFlagsFrom, LocalFlag, marshalSectorOf, Permissions, permissionsFor } from './RaceControl';
 import { AERO, CAR_DRY_MASS_KG, cornerMassFactor, dirtyAirLevel, holdThrottle, longitudinalAccel, slipstreamLevel, topSpeedKmh } from './AeroModel';
 import { mulberry32, random, Rng, rngState, streamSeed, useRng } from './Random';
@@ -110,6 +110,19 @@ export class RaceSimulation {
   /** [R11] Fase del VSC (activo / final anunciado), hora del anuncio y de la verde, y registro con mensajes. */
   vscState: { phase: 'activo' | 'final' | null; announcedAt?: number; greenAt?: number } = { phase: null };
   vscLog: { phase: 'activo' | 'final' | 'verde' | 'sustituido'; time: number; message: string }[] = [];
+  /** [R12] Procedimiento de bandera roja (S57–S58): fase, orden de la fila, aviso, relojes y registro. */
+  redFlag: {
+    phase: 'suspension' | 'detenida' | 'aviso' | 'reanudacion' | null;
+    order: number[];
+    noticeEndsAt?: number;
+    releaseAt?: number[];
+    suspensionSec: number;
+    log: { phase: 'suspension' | 'detenida' | 'aviso' | 'reanudacion' | 'reanudada'; time: number; message: string }[];
+  } = { phase: null, order: [], suspensionSec: 0, log: [] };
+  /** [R12] Aviso mínimo de reanudación (s): 10 minutos en el perfil FIA (S58), 60 s en el personalizado (ajuste del juego). */
+  static readonly RED_FLAG_NOTICE_FIA_SEC = 600;
+  static readonly RED_FLAG_NOTICE_GAME_SEC = 60;
+  static readonly RED_FLAG_SLOT_M = 8;
   /** [R11] Perfil de referencia del VSC: vuelta estable con tope de 160 km/h (calibración) y tolerancia de delta (s). */
   static readonly VSC_REFERENCE_KMH = 160;
   /** [R11] Desfase máximo que un coche puede recuperar frente a su referencia (s): se corrigen los errores de seguimiento,
@@ -247,6 +260,7 @@ export class RaceSimulation {
     this.vscDuration = 0;
     this.vscState = { phase: null };
     this.vscLog = [];
+    this.redFlag = { phase: null, order: [], suspensionSec: 0, log: [] };
     this.scEndingLap = null; // [FIX C5] Reset scEndingLap en cada nueva carrera
 
     this.cars = STARTING_GRID_ORDER.map((driverId, idx) => {
@@ -612,6 +626,15 @@ export class RaceSimulation {
         const wasInPitLane = car.isInPitLane;
         PitStopModel.processCrossings(car, previous[index], this.activeTrack,
           dt, this.raceFlagState, this.safetyCar.mode, this.pitEntryClosed);
+        // [R12] Con la roja, el coche entra al pit lane por la línea de entrada para ir a la fila (sin servicio).
+        if (car.redFlagHold && !car.isInPitLane && car.status === 'running' && car.progress > previous[index]) {
+          const entry = nextCrossing(previous[index], this.activeTrack.pitEntryT);
+          if (entry <= car.progress + 1e-10) {
+            car.isInPitLane = true;
+            car.pitStop.entryProgress = entry;
+            car.pitStop.pitLaneProgress = 0;
+          }
+        }
         // [R11] Al entrar en el pit lane deja de aplicarse el delta del VSC (manda el limitador).
         if (car.isInPitLane) { car.vscRef = undefined; car.vscDeltaSec = undefined; car.vscPitExit = true; }
         // [Q16] Reinicio de contadores ERS en el mismo cruce de la entrada de boxes (sin flujo: dt = 0).
@@ -764,6 +787,17 @@ export class RaceSimulation {
         car.tires[wheel] = 0;
         car.tires.health = ((car.tires.healthFL ?? 0) + (car.tires.healthFR ?? 0) + (car.tires.healthRL ?? 0) + (car.tires.healthRR ?? 0)) / 4;
       }
+
+        // [R12] Un coche en servicio al llegar la roja termina su parada y pasa a la fila.
+        if (car.redFlagHold && car.pitStop.isPitting && car.isInPitLane && car.pitStop.lastStopDuration === car.pitStop.stopDuration
+          && car.pitStop.currentStopTimer >= car.pitStop.stopDuration && !car.pitStop.waitingForBox) {
+          PitStopModel.closeLog(car);
+          car.pitStop.isPitting = false;
+        }
+        if ((car.redFlagHold || car.redFlagRelease) && car.isInPitLane && !car.pitStop.isPitting) {
+          this.updateRedFlagLane(car, dt, lapDistanceMeters);
+          continue;
+        }
 
         // Actualizar Pit Stops
         const isHandlingPit = PitStopModel.updatePitStop(
@@ -1399,28 +1433,10 @@ export class RaceSimulation {
     }
 
     // 5. Actualizar estado global de bandera
-    if (this.raceFlagState === 'red') {
-      // Retirar Safety Car inmediatamente si estaba en pista
-      if (this.safetyCar.isDeployed) {
-        this.safetyCar.isDeployed = false;
-        this.safetyCar.mode = 'idle';
-      }
-      
-      const allCleared = IncidentModel.isTrackClear(this.incidents);
-      if (allCleared) {
-        // Await restart confirmation without teleporting or granting resources.
-        this.raceFlagState = 'green';
-        this.drsDisabledLaps = this.rule('drsLapsAfterSafetyCar');
-        this.scEndingLap = Math.floor(Math.max(0, ...this.cars.filter(c => c.status !== 'out').map(c => c.progress)));
-        for (const car of this.cars) {
-          if (car.status === 'out' || car.status === 'finished') continue;
-          car.currentSpeedKmh = 0;
-          car.speed = 0;
-          car.telemetry.speedKmh = 0;
-        }
-        this.lightState = 'grid-ready';
-        this.lightsTimer = 0;
-      }
+    if (this.raceFlagState === 'red' || this.redFlag.phase) {
+      // [R12] Procedimiento de roja: suspensión en fila, aviso y reanudación lanzada tras el SC.
+      if (this.raceFlagState === 'red' && !this.redFlag.phase) this.startRedFlag('Bandera roja');
+      this.updateRedFlag(dt);
     } else if (!this.safetyCar.isDeployed && !this.vscActive) {
       const hasActiveIncidents = !IncidentModel.isTrackClear(this.incidents);
       if (hasActiveIncidents) {
@@ -1737,7 +1753,7 @@ export class RaceSimulation {
   private pitIntent(car: CarState): boolean {
     const pit = car.pitStop;
     if (car.hasPuncture || car.tires.health <= 5 || pit.isPitting) return true;
-    if (pit.activeBoxOrder?.status === 'committed') return true;
+    if (pit.activeBoxOrder?.status === 'committed' || car.redFlagHold) return true;
     return !pit.playerControlled && pit.scheduledLap > 0 && car.currentLap >= pit.scheduledLap;
   }
 
@@ -1786,7 +1802,7 @@ export class RaceSimulation {
       this.raceFlagState = 'red';
       this.clearVirtualSafetyCar('Sustituido por Safety Car o bandera roja');
       this.triggerD20LuckRoll('red');
-      for (const c of this.cars) if (c.status === 'running') c.pitStop.isPitting = true;
+      this.startRedFlag(`Incidente de ${car.driver.code}`);
     } else if (retiring && (response === 'sc' || response === 'vsc' || response === 'yellow')) {
       sc.mode = 'leading';
       this.raceFlagState = 'sc';
@@ -1910,6 +1926,128 @@ export class RaceSimulation {
     this.vscActive = false; this.vscTimer = 0;
     this.vscState = { phase: null };
     for (const c of this.cars) { c.vscRef = undefined; c.vscDeltaSec = undefined; }
+  }
+
+  /** [R12] Bandera roja: los coches van en orden a la fila del carril rápido, sin parada; el SC se retira. */
+  startRedFlag(reason: string) {
+    this.raceFlagState = 'red';
+    this.clearVirtualSafetyCar('Sustituido por bandera roja');
+    if (this.safetyCar.isDeployed) { this.safetyCar.isDeployed = false; this.safetyCar.mode = 'idle'; this.safetyCar.isInPitLane = false; }
+    this.scEndingLap = null;
+    const order = this.cars.filter(c => c.status !== 'out' && c.status !== 'finished')
+      .sort((a, b) => a.currentPosition - b.currentPosition).map(c => c.id);
+    for (const car of this.cars) {
+      if (!order.includes(car.id)) continue;
+      car.redFlagHold = true; car.redFlagRelease = false; car.scUnlapping = false;
+    }
+    this.redFlag = { ...this.redFlag, phase: 'suspension', order, noticeEndsAt: undefined, releaseAt: undefined };
+    this.redFlag.log.push({ phase: 'suspension', time: this.raceTimeSec, message: `Bandera roja: ${reason}` });
+  }
+
+  /** [R12] Trabajo permitido durante la suspensión: cambio de neumáticos del inventario, sin contar parada. */
+  requestRedFlagTyres(carId: number, compound: TireCompound): boolean {
+    const car = this.getCarById(carId);
+    if (!car || !car.redFlagHold || !car.isInPitLane || car.currentSpeedKmh !== 0) return false;
+    if (this.redFlag.phase !== 'detenida' && this.redFlag.phase !== 'aviso') return false;
+    const inventory = car.tireInventory;
+    const set = inventory ? pickSet(inventory, compound) : null;
+    if (!inventory || !set) { car.pitStop.lastOrderRejection = `Sin juegos de ${COMPOUND_LABEL[compound]} disponibles`; return false; }
+    car.tires = mountSet(inventory, set, car.tires);
+    car.pitStop.targetCompound = compound;
+    car.pitStop.lastOrderRejection = undefined;
+    return true;
+  }
+
+  private redFlagLog(phase: RaceSimulation['redFlag']['log'][number]['phase'], message: string) {
+    this.redFlag.log.push({ phase, time: this.raceTimeSec, message });
+  }
+
+  private updateRedFlag(dt: number) {
+    const rf = this.redFlag;
+    if (!rf.phase) return;
+    if (rf.phase !== 'reanudacion') rf.suspensionSec += dt;
+    const holders = this.cars.filter(c => c.status !== 'out' && c.redFlagHold);
+    if (rf.phase === 'suspension' && holders.every(c => c.isInPitLane && !c.pitStop.isPitting && c.currentSpeedKmh === 0)) {
+      rf.phase = 'detenida';
+      this.redFlagLog('detenida', 'Coches detenidos en el carril rápido; salida de boxes cerrada');
+      // Trabajos permitidos: la IA cambia neumáticos solo si su juego está gastado (decisión propia).
+      for (const car of holders) {
+        if (car.pitStop.playerControlled || car.tires.health >= 70 || !car.tireInventory) continue;
+        const compliance = tireCompliance(car.tireInventory, this.circuitId);
+        const choice = (['medium', 'hard', 'soft'] as TireCompound[]).find(c => !compliance.slickSpecs.includes(c) && pickSet(car.tireInventory!, c))
+          ?? (['medium', 'hard', 'soft'] as TireCompound[]).find(c => pickSet(car.tireInventory!, c));
+        if (choice) this.requestRedFlagTyres(car.id, choice);
+      }
+    }
+    else if (rf.phase === 'detenida' && IncidentModel.isTrackClear(this.incidents)) {
+      const notice = this.rules.id === 'fia-2025' ? RaceSimulation.RED_FLAG_NOTICE_FIA_SEC : RaceSimulation.RED_FLAG_NOTICE_GAME_SEC;
+      rf.phase = 'aviso';
+      rf.noticeEndsAt = this.raceTimeSec + notice;
+      this.redFlagLog('aviso', `Reanudación en ${notice} s`);
+    }
+    else if (rf.phase === 'aviso' && this.raceTimeSec >= (rf.noticeEndsAt ?? Infinity) - 1e-9) {
+      rf.phase = 'reanudacion';
+      this.redFlagLog('reanudacion', 'Reanudación lanzada detrás del Safety Car');
+      this.raceFlagState = 'sc';
+      const leader = this.getCarById(rf.order[0]);
+      SafetyCarModel.deploy(this.safetyCar, 'Reanudación tras bandera roja', leader ? leader.progress : 0, this.raceTimeSec,
+        (OFFICIAL_CIRCUITS[this.circuitId] || OFFICIAL_CIRCUITS.barcelona).trackType, this.activeTrack);
+      this.afterSafetyCarDeploy('Reanudación tras bandera roja');
+      this.safetyCar.targetLaps = 1;
+      rf.releaseAt = rf.order.map((_, i) => this.raceTimeSec + 2 + i * 1.0);
+    }
+    else if (rf.phase === 'reanudacion') {
+      rf.order.forEach((id, i) => {
+        const car = this.getCarById(id);
+        if (car?.redFlagHold && this.raceTimeSec >= (rf.releaseAt?.[i] ?? Infinity)) { car.redFlagHold = false; car.redFlagRelease = true; }
+      });
+      const allOut = this.cars.every(c => !c.redFlagHold && !c.redFlagRelease);
+      if (allOut && this.raceFlagState === 'green') {
+        rf.phase = null;
+        this.redFlagLog('reanudada', 'Carrera reanudada');
+      }
+    }
+  }
+
+  /** [R12] Movimiento en el carril rápido: a la plaza de la fila (orden de la roja) o, liberado, hasta la salida. */
+  private updateRedFlagLane(car: CarState, dt: number, lapDistanceMeters: number) {
+    const track = this.activeTrack, pit = car.pitStop;
+    const len = track.pitExitT > track.pitEntryT ? track.pitExitT - track.pitEntryT : 1 - track.pitEntryT + track.pitExitT;
+    const laneM = len * lapDistanceMeters;
+    pit.pitLaneProgress = Math.min(1, Math.max(0, (car.progress - (pit.entryProgress ?? car.progress)) / len));
+    const { start, end } = PitStopModel.limitFractions(laneM);
+    const limit = PitStopModel.PIT_SPEED_LIMIT_KMH;
+    let v = car.currentSpeedKmh;
+    if (car.redFlagRelease) {
+      v = pit.pitLaneProgress >= end ? Math.min(260, v + dt * 200) : Math.min(limit, v + dt * 100);
+    } else {
+      const idx = Math.max(0, this.redFlag.order.indexOf(car.id));
+      const slot = Math.max(start + 0.01, end - (idx + 1) * RaceSimulation.RED_FLAG_SLOT_M / laneM);
+      const target = Math.max(slot, pit.pitLaneProgress);
+      v = pit.pitLaneProgress < start ? Math.max(limit, v - dt * PitStopModel.MAX_BRAKE_KMH_S) : Math.min(v, limit);
+      const toSlotM = (target - pit.pitLaneProgress) * laneM;
+      if (toSlotM <= 0.3) v = 0;
+      else v = Math.min(v, Math.max(Math.max(3, Math.sqrt(2 * PitStopModel.BOX_BRAKE_MS2 * toSlotM) * 3.6), v - dt * PitStopModel.MAX_BRAKE_KMH_S));
+    }
+    const prevProgress = car.progress;
+    car.currentSpeedKmh = v;
+    car.speed = v / 3.6 / lapDistanceMeters;
+    car.progress += car.speed * dt;
+    car.trackT = ((car.progress % 1) + 1) % 1;
+    car.telemetry.speedKmh = Math.round(v);
+    car.lateralOffset = 0; car.targetLateralOffset = 0; car.isBlueFlagged = false;
+    car.status = 'running';
+    // Vuelta completada dentro del carril (el pit lane de algunos circuitos cruza la meta).
+    const lap = prevProgress >= 0 ? lineCrossings(prevProgress, car.progress, this.raceTimeSec - dt, dt, [{ id: 'meta', t: 0 }]).filter(e => e.lap >= 1).pop() : undefined;
+    if (lap) {
+      car.currentLap = lap.lap;
+      car.tires.lapsOnTire += 1;
+      if (car.lapStartTime > 0) car.lastLapTime = lap.time - car.lapStartTime;
+      car.lapStartTime = lap.time; car.sectorStartTime = lap.time; car.currentSector = 1;
+    }
+    if (car.redFlagRelease && pit.pitLaneProgress >= 1) {
+      car.isInPitLane = false; car.redFlagRelease = false; pit.pitLaneProgress = 0;
+    }
   }
 
   getCarById(id: number): CarState | undefined {
