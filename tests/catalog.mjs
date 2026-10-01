@@ -493,5 +493,6 @@ export const modules = [
   { "id": "timing", "tasks": ["R02"], "sprint": "2.9", "kind": "contract" },
   { "id": "track-data", "tasks": ["R03"], "sprint": "2.9", "kind": "contract" },
   { "id": "snapshot", "tasks": ["R28"], "sprint": "2.9", "kind": "contract" },
-  { "id": "bench", "tasks": ["R27"], "sprint": "2.9", "kind": "contract" }
+  { "id": "bench", "tasks": ["R27"], "sprint": "2.9", "kind": "contract" },
+  { "id": "aero", "tasks": ["R05", "R40"], "sprint": "2.9", "kind": "contract" }
 ];
