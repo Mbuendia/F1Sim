@@ -22,7 +22,7 @@
 
 ## 🧭 2. ROADMAP Y ESTADO GLOBAL DE SPRINTS
 
-**Orden vigente:** Sprint **2.9** · Tarea actual **R28** · Siguiente **R27** (bloque 2.9-A: R01, R02, la base inicial de R03 y el esquema de R28 implementados el 01/10/2026 en la rama sprint/2.9 con contrato de tests acordado; cada tarea del 2.9 sigue requiriendo autorización expresa).
+**Orden vigente:** Sprint **2.9** · Tarea actual **R27** · Siguiente **R05** (bloque 2.9-A completo y pendiente de revisión: R01, R02, la base inicial de R03, el esquema de R28 y la base de R27 implementados el 01/10/2026 en la rama sprint/2.9 con contrato de tests acordado; 2.9-B empieza por R05; cada tarea del 2.9 sigue requiriendo autorización expresa).
 
 **Prioridad acordada tras la auditoría (30/09/2026, `docs/reviews/auditoria-q12-q19.md`):** Q19 → Q16 → Q13 → Q17 → Q12 → Q18/Q14/Q15. Decisiones del usuario: detecciones DRS desde las notas oficiales FIA; el Safety Car debe salir del pit lane (Q14); tests estructurales sin dependencias nuevas para Q18; tolerancias de calibración Q12 propuestas.
 
@@ -50,7 +50,7 @@ Leyenda de Estado:
 | **Sprint 2.1** | **Resolución de Bugs Críticos y Altos de Auditoría (C1-C7, A1-A6)** | ✅ **COMPLETADO (23/23 Tests PASS)** |
 | **Sprint 2.5** | **Deuda Técnica de Auditoría (M1-M10, B1-B7)** | ✅ **COMPLETADO (17/17 Tareas - 46 Tests PASS)** |
 | **Sprint 2.8** | **Salto de Calidad: Fidelidad de Simulación, Geometría, Muro Táctico y revisión DRS (Q1-Q23)** | ✅ **COMPLETADO — Q1-Q23 validadas por el usuario (30/09/2026); hallazgos de la revisión en local trasladados a R35-R39; PR a main** |
-| **Sprint 2.9** | **Reglamento FIA 2025, identidad técnica de equipos y experiencia de carrera y rediseño de escritorio (R01-R39)** | 🟡 **PLANIFICADO — R29-R34 añadidas; R35-R39 desde la revisión en local del 30/09/2026; sin implementación del rediseño** |
+| **Sprint 2.9** | **Reglamento FIA 2025, identidad técnica de equipos y experiencia de carrera y rediseño de escritorio (R01-R40)** | 🟡 **PLANIFICADO — R29-R34 añadidas; R35-R39 desde la revisión en local del 30/09/2026; sin implementación del rediseño** |
 | **Sprint 3** | **Audio, Telemetría Avanzada, Radar GPS & Clima (4 tareas definidas; desglose histórico de 16 incompleto)** | ⏳ **PLANIFICADO (Después del Sprint 2.9; coordinar clima con R22)** |
 | **Sprint 4** | **Épica: F1 Team Principal & Race Manager (estimación histórica de 12 tareas sin desglose)** | ⏳ **BACKLOG — requiere definición antes de implementar** |
 
@@ -504,7 +504,7 @@ Se mantienen **las 28 tareas R01-R28 y las cinco entregas A-E**, ampliadas con *
 | **C — Carrera y estrategia** | R07-R13, R22, R25; resultado de una carrera de R21 | Incluir clasificación/puntos de una carrera sin esperar al campeonato. Órdenes, boxes y continuidad dependen de Q9-Q15/Q18 donde corresponda; reconocer esas carencias antes de autorizar cada bloque. |
 | **D — Fin de semana y temporada** | R18-R21, R26 | R21 amplía el resultado de carrera con campeonato, sin contarlo como tarea nueva. Q17 permanece como dependencia de R26, no se considera entregada. |
 | **E — Presentación y verificación transversal** | R23, R24, R27, R28, R29-R34 | R27 acompaña desde el inicio; definir el esquema R28 temprano sin declarar guardado completado. R23 excluye los nuevos escenarios por capas de Q6. |
-| **F — Hallazgos de la revisión en local (30/09/2026)** | R35-R39 | Defectos observados jugando una carrera real (build de producción, Barcelona). R35 es el más grave; R39 se resuelve dentro del rediseño R30/R31. |
+| **F — Hallazgos de la revisión en local (30/09/2026)** | R35-R40 | Defectos observados jugando una carrera real (build de producción, Barcelona). R35 es el más grave; R39 se resuelve dentro del rediseño R30/R31. R40 (velocidad punta) lo detectó el banco R27 el 01/10/2026. |
 
 **Primera entrega propuesta, pendiente de autorización para codificar:**
 
@@ -717,9 +717,10 @@ Todas las tareas siguientes están **pendientes**. P0 = corregir validez del nú
 * **R24 — Telemetría y mensajes de muro basados en eventos (P1; R02/R04/R07-R16):** `[ ]`
   * Mostrar gap real, permiso DRS y causa, energía recuperada/desplegada/restante, combustible previsto y reserva, neumáticos disponibles/obligatorios, delta VSC, sanciones, daños y estado de mejoras. Sustituir porcentajes ficticios de Push/ahorro y puestos ganados como contador de adelantamientos por registros reales.
   * *Aceptación:* cada cifra reconstruible desde eventos; misma información en panel/torre/minimapa; diferenciar adelantamiento en pista, ganancia por pit y sanción; pocas alertas prioritarias y explicaciones claras sin inundar al jugador de artículos.
-* **R27 — Banco de escenarios y calibración de experiencia (P0/P1; todas las entregas):** `[ ]`
+* **R27 — Banco de escenarios y calibración de experiencia (P0/P1; todas las entregas):** `[ ] BASE EN REVISIÓN LOCAL — 01/10/2026 CON CONTRATO DE TESTS ACORDADO`
   * Añadir pruebas por comportamiento a `test-suite.mjs`, fixtures con semilla y carreras completas de referencia. Comparar baseline antes/después: cronometraje, continuidad, adelantamientos, pit loss, energía, temperatura y resultado. Validar geometría real además de escenarios sintéticos.
   * *Aceptación:* suite y build PASS; cero usos DRS sin permiso, cero recursos creados, cero adelantamientos ilegales no detectados, cero saltos de posición; invariancia de reglas con FPS/velocidad de simulación. Objetivo inicial de precisión de cruce ≤1 ms en fixtures; calibración de tiempos por circuito frente a fuentes identificadas, sin prometer precisión no medida. Revisión humana de carreras seca/mojada/SC/roja antes de publicar nuevas mecánicas.
+  * *Entrega parcial 01/10/2026 (base aprobada por el usuario; R27 sigue abierta):* `tests/support/bench.mjs` con `runBench` (circuito, coches, semilla, FPS, velocidad y eventos por paso), carreras de referencia en Barcelona y Mónaco con SVG reales (8 coches, 500 s, orden de boxes en el paso 3000 y SC en el 6000) y baseline `tests/baselines/bench.json`, que solo se reescribe con `node tests/support/bench.mjs --update` (se niega si alguna invariante falla; cambiarla requiere autorización del usuario). Invariantes a cero: DRS sin permiso, combustible que sube, neumático que mejora sin parar, energía fuera de límites, retroceso, salto incoherente con la velocidad del propio coche, NaN/Infinity y adelantamientos en pista bajo SC/VSC/amarilla. Barcelona da métricas idénticas a 30/60/144 FPS y x1/x16; error de cruce 0,03 ms (objetivo ≤ 1 ms) con pasos de 20 ms y pasos irregulares de hasta 50 ms. Métricas de la baseline: orden, vueltas, tiempos de vuelta, paradas, tiempo en pit lane (48,5 s Barcelona · 19,8 s Mónaco), energía desplegada/recuperada, temperaturas y velocidad punta. Test `bench` (24 PASS); suite completa 1445 PASS. *Hallazgo:* velocidad punta de 407 km/h con DRS en Barcelona (362,6 km/h en Mónaco) → R40. *Pendiente de R27:* lluvia y bandera roja, calibración de tiempos frente a fuentes identificadas, ejecución en navegador, revisión humana de carreras y ruta portable de la suite.
 * **R28 — Guardado, reinicio y calidad de datos (P1; R01/R02, Q18):** `[ ] ESQUEMA EN REVISIÓN LOCAL — 01/10/2026 CON CONTRATO DE TESTS ACORDADO`
   * Snapshot versionado: semilla, reloj, órdenes, permisos DRS, inventario, energía/contadores, sanciones, eventos, mejoras y temporada. Reinicio limpia timers, IDs y permisos. Validador de circuitos/unidades y migraciones con diagnóstico de datos faltantes.
   * *Aceptación:* guardar/cargar antes de detección, durante pit, SC/VSC/roja y tras fin; continuar con mismo resultado. Cambiar circuito no hereda DRS ni incidentes, y datos provisionales nunca pasan a oficiales silenciosamente.
@@ -810,6 +811,13 @@ Origen: revisión en local de Q12-Q23 jugando una carrera en Barcelona con el bu
   * *Alcance:* el objetivo de la cámara queda siempre en el área libre del Canvas, o el muro se pliega sin perder órdenes de ambos pilotos.
   * *Aceptación:* en los tamaños de R30, el coche seguido y el SC son visibles con el muro abierto.
   * *Tests antes de implementación:* incluir en desktop-layout la posición en pantalla del objetivo de la cámara frente a los rectángulos de los paneles.
+
+* **R40 — Velocidad punta irreal con DRS:** `[ ] PLANIFICADO`
+  * *Prioridad/dependencias:* P1; detectado por el banco R27 el 01/10/2026; coordina R05 (aerodinámica/DRS) y R14-R16 (motor y energía).
+  * *Hallazgo:* en la carrera de referencia de Barcelona (semilla 2025) VER alcanza 407,2 km/h con DRS en la recta principal; 238 pasos superan 400 km/h. La punta se compone de 338 km/h base + 18 DRS + 5 push + ajuste por rendimiento del coche, multiplicado por un ritmo efectivo que ya incluye DRS (×1,07), rebufo (×1,018) y despliegue ERS: el DRS cuenta dos veces.
+  * *Alcance:* calibrar la velocidad punta por circuito frente a fuentes identificadas (speed trap de referencia) sin contar dos veces DRS ni rebufo; no cambiar el ritmo en curva.
+  * *Aceptación:* punta del banco R27 dentro del rango de referencia declarado por circuito; métrica `topSpeedKmh` de la baseline actualizada con autorización del usuario; invariantes del banco a cero.
+  * *Tests antes de implementación:* acordar el rango por circuito y su fuente; ampliar el banco con la punta por coche y con/sin DRS.
 
 ### 6.6 Secuencia, dependencias y límite de alcance
 
