@@ -886,7 +886,7 @@ export class RaceSimulation {
 
       car.energy ??= EnergyModel.create();
       const energyDeployment = EnergyModel.update(car.energy, car.engineMode, trackPoint.isBrakingZone,
-        dt, car.currentLap, false, car.fuelKg > 0, this.energyLimits);
+        dt, car.currentLap, false, car.fuelKg > 0, this.energyLimits, { speedKmh: car.currentSpeedKmh });
       const enginePerf = EngineModel.getEnginePerformance(car.engineMode);
       
       const driverSkillMultiplier = 
@@ -1552,6 +1552,11 @@ export class RaceSimulation {
     } else if (this.lightState === 'lights-5' && this.lightsTimer > this.lightsRandomDelay) {
       this.lightState = 'lights-out';
       this.lightsTimer = 0;
+      // [R15] Salida parada: el MGU-K no despliega hasta 100 km/h (FIA T5.3.2).
+      for (const car of this.cars) {
+        car.energy ??= EnergyModel.create();
+        car.energy.standingStart = true;
+      }
       setTimeout(() => {
         if (this.lightState === 'lights-out') {
           this.lightState = 'racing';
