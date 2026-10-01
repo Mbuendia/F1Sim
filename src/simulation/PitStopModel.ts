@@ -1,3 +1,4 @@
+import { random } from './Random';
 import { DEFAULT_RULES } from '../rules/ruleSets';
 import { CarState, TireCompound } from '../types/f1';
 import { TireModel } from './TireModel';
@@ -37,9 +38,9 @@ export class PitStopModel {
     // Parada estratégica bajo Safety Car (solo si el SC está liderando, no entrando ni saliendo)
     if (raceFlagState === 'sc' && scMode === 'leading' && car.tires.health < 60 && !car.pitStop.isPitting) {
       // Un coche decide parar bajo SC si sus neumáticos están desgastados, perdiendo mucha menos penalización de tiempo
-      // [FIX A4] Math.random() debe escalarse por el dt (simulando 60 FPS = 0.016s)
+      // [FIX A4] random() debe escalarse por el dt (simulando 60 FPS = 0.016s)
       // Si a 60 FPS (0.016s) el rate original era 0.02, la tasa por segundo es 0.02 / 0.016 = 1.25.
-      if (Math.random() < 1.25 * dt) { 
+      if (random() < 1.25 * dt) { 
         return true;
       }
     }
@@ -189,13 +190,13 @@ export class PitStopModel {
             const currentLap = car.currentLap;
 
             if (currentLap < totalLaps * 0.4) {
-              nextCompound = Math.random() > 0.5 ? 'medium' : 'hard';
+              nextCompound = random() > 0.5 ? 'medium' : 'hard';
               expectedLaps = nextCompound === 'hard' ? 36 : 24;
             } else if (currentLap > totalLaps * 0.7) {
-              nextCompound = Math.random() > 0.5 ? 'soft' : 'medium';
+              nextCompound = random() > 0.5 ? 'soft' : 'medium';
               expectedLaps = nextCompound === 'medium' ? 24 : 16;
             } else {
-              const r = Math.random();
+              const r = random();
               if (r < 0.33) { nextCompound = 'soft'; expectedLaps = 16; } 
               else if (r < 0.66) { nextCompound = 'medium'; expectedLaps = 24; } 
               else { nextCompound = 'hard'; expectedLaps = 36; }
@@ -284,9 +285,9 @@ export class PitStopModel {
     pit.lastStopDuration = null;
     pit.waitingForBox = false;
     pit.boxWaitTimer = 0;
-    const roll = Math.random();
-    pit.stopDuration = Number((roll < .2 ? 1.8 + Math.random() * .4 :
-      roll < .75 ? 2.2 + Math.random() * .8 : roll < .9 ? 3 + Math.random() : 4 + Math.random() * 4).toFixed(2));
+    const roll = random();
+    pit.stopDuration = Number((roll < .2 ? 1.8 + random() * .4 :
+      roll < .75 ? 2.2 + random() * .8 : roll < .9 ? 3 + random() : 4 + random() * 4).toFixed(2));
     // [Q17] Beneficio D20 de preparación del box: acota solo el servicio de esta parada si sigue vigente.
     const benefit = pit.crewBenefit;
     if (benefit && car.currentLap > benefit.expiresLap) pit.crewBenefit = null;

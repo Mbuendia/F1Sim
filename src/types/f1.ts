@@ -311,6 +311,10 @@ export interface CarState {
   gapToLeaderSec: number;
   gapToCarAheadSec: number;
   carAheadId: number | null;
+  /** [R02] Vueltas completas por detrás del líder (el líder ya lo ha adelantado en pista). */
+  lapsBehindLeader?: number;
+  /** [R02] Coche inmediatamente delante en pista (sin pit lane), sea cual sea su vuelta. */
+  physicalAheadId?: number | null;
 
   aheadInfo: RelativeCarInfo | null;
   behindInfo: RelativeCarInfo | null;

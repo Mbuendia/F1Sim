@@ -105,11 +105,9 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
     if (car.pitStop.waitingForBox) return 'QUEUE';
     if (car.pitStop.isPitting) return 'PIT';
 
-    const progressDiff = leaderProgress - car.progress;
-    if (progressDiff >= 0.95) {
-      const lapsBehindStr = Math.floor(progressDiff);
-      return lapsBehindStr === 1 ? '+1 LAP' : `+${lapsBehindStr} LAPS`;
-    }
+    // [R02] Doblado: el motor cuenta las vueltas completas perdidas respecto al líder.
+    const lapsBehind = car.lapsBehindLeader ?? 0;
+    if (lapsBehind >= 1) return lapsBehind === 1 ? '+1 VUELTA' : `+${lapsBehind} VUELTAS`;
 
     if (car.gapToLeaderSec >= 60) {
       const mins = Math.floor(car.gapToLeaderSec / 60);

@@ -1,3 +1,4 @@
+import { random } from './Random';
 import { TrackIncident, CarState, RaceFlagState } from '../types/f1';
 
 export class IncidentModel {
@@ -24,13 +25,13 @@ export class IncidentModel {
     // Configurar clearTimer según el tipo
     let clearTimer = 0;
     if (type === 'dnf') {
-      clearTimer = 12 + Math.random() * 8; // 12-20s
+      clearTimer = 12 + random() * 8; // 12-20s
     } else if (type === 'crash') {
-      clearTimer = 25 + Math.random() * 15; // 25-40s
+      clearTimer = 25 + random() * 15; // 25-40s
     } else if (type === 'major_crash') {
-      clearTimer = 45 + Math.random() * 35; // 45-80s (Bandera roja garantizada)
+      clearTimer = 45 + random() * 35; // 45-80s (Bandera roja garantizada)
     } else if (type === 'spin') {
-      clearTimer = 8 + Math.random() * 4; // 8-12s
+      clearTimer = 8 + random() * 4; // 8-12s
     }
 
     const incident: TrackIncident = {

@@ -1,3 +1,4 @@
+import { random } from './Random';
 import { SafetyCarState, CarState, TrackIncident, RaceFlagState } from '../types/f1';
 import { IncidentModel } from './IncidentModel';
 import { DEFAULT_RULES } from '../rules/ruleSets';
@@ -107,7 +108,7 @@ export class SafetyCarModel {
     sc.trackT = ((sc.progress % 1) + 1) % 1;
     sc.currentSpeedKmh = 0;
     sc.lapCount = 0;
-    sc.targetLaps = trackType === 'street' ? 10 : 2 + Math.floor(Math.random() * 2); // 2-3 vueltas
+    sc.targetLaps = trackType === 'street' ? 10 : 2 + Math.floor(random() * 2); // 2-3 vueltas
     sc.triggerReason = reason;
     sc.deployedAtRaceTime = raceTimeSec;
   }

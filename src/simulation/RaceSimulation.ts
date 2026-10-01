@@ -33,6 +33,8 @@ import { SafetyCarModel } from './SafetyCarModel';
 import { RejoinModel } from './RejoinModel';
 import { IncidentModel } from './IncidentModel';
 import { calculateCarWorldPosition, lapsToPitEntry, limitLateralChange } from '../utils/carPosition';
+import { lineCrossings, TimingLine, TimingService } from './Timing';
+import { mulberry32, random, Rng, streamSeed, useRng } from './Random';
 
 // Q20: distancia previa a la entrada de boxes en la que un coche que va a parar se coloca en el eje.
 const PIT_APPROACH_METERS = 250;
@@ -118,6 +120,39 @@ export class RaceSimulation {
   private nextBoxOrderId = 1;
   private drsPermissions = new DrsPermissions();
 
+  // [R02] Cronometraje por lazos: huecos medidos como diferencia de horas de paso.
+  timing = new TimingService();
+  // [R02] Semilla: con ella, cada coche y el motor tienen su propio flujo de azar reproducible.
+  private seed: number | null = null;
+  private rngStreams = new Map<string, Rng>();
+  // [R02] Paso fijo: el motor avanza siempre en pasos iguales, independientes de los FPS y de la velocidad.
+  private fixedStepSec: number | null = null;
+  private stepAccumulator = 0;
+  fixedStepCount = 0;
+  onFixedStep: (() => void) | null = null;
+  // [R02] Tiempos de sector sin redondear de la vuelta en curso (s1 + s2 + s3 = tiempo de vuelta).
+  private rawSectors = new Map<number, { s1?: number; s2?: number }>();
+
+  /** Fija la semilla de la carrera (null: azar no reproducible). */
+  setSeed(seed: number | null) {
+    this.seed = seed;
+    this.rngStreams.clear();
+  }
+
+  /** Activa el paso fijo en segundos simulados (null: pasos variables de hasta 50 ms). */
+  setFixedStep(stepSec: number | null) {
+    if (stepSec !== null && !(stepSec > 0)) throw new Error('El paso fijo debe ser positivo');
+    this.fixedStepSec = stepSec;
+    this.stepAccumulator = 0;
+  }
+
+  private stream(key: string): Rng | null {
+    if (this.seed === null) return null;
+    let rng = this.rngStreams.get(key);
+    if (!rng) { rng = mulberry32(streamSeed(this.seed, key)); this.rngStreams.set(key, rng); }
+    return rng;
+  }
+
   // [R01] Perfil de reglas activo: el motor lee de aquí los valores reglamentarios.
   rules: RuleSet = getRuleSet(DEFAULT_RULE_SET_ID);
   private energyLimits: EnergyLimits = energyLimitsFor(this.rules);
@@ -139,6 +174,10 @@ export class RaceSimulation {
     IncidentModel.reset();
     this.activeLuckEvent = null;
     this.drsPermissions.reset();
+    this.timing.reset();
+    this.rawSectors.clear();
+    this.fixedStepCount = 0;
+    this.stepAccumulator = 0;
     this.activeTrack.points.forEach(point => { point.rubberGrip = 0; });
     this.nextBoxOrderId = 1;
     this.raceTimeSec = 0;
@@ -147,7 +186,7 @@ export class RaceSimulation {
     this.leaderFinished = false;
     this.lightState = 'idle';
     this.lightsTimer = 0;
-    this.lightsRandomDelay = 0.8 + Math.random() * 1.6;
+    this.lightsRandomDelay = 0.8 + random() * 1.6;
     this.fastestLap = null;
     this.overallBestS1 = null;
     this.overallBestS2 = null;
@@ -174,7 +213,7 @@ export class RaceSimulation {
       const initialProgress = -((idx + 1) * gridSpacing);
 
       const initialTires = TireModel.createFreshTire('medium');
-      const raceDayLuckFactor = (Math.random() - 0.45) * 0.015;
+      const raceDayLuckFactor = (random() - 0.45) * 0.015;
 
       const initialTelemetry: TelemetryData = {
         speedKmh: 0,
@@ -330,14 +369,18 @@ export class RaceSimulation {
   static readonly BLUE_FLAG_NARROW_LEVEL = 0.1;
 
   /** Coche con al menos media vuelta más de progreso que viene físicamente detrás a menos de BLUE_FLAG_GAP_SEC. */
-  lappingCarBehind(car: CarState, lapDistanceMeters = this.activeTrack.lapLengthMeters): CarState | undefined {
+  lappingCarBehind(car: CarState, lapDistanceMeters = this.activeTrack.lapLengthMeters, field: FieldCar[] = this.cars.map(fieldCar)): FieldCar | undefined {
     if (car.isInPitLane || car.pitStop.isPitting) return undefined;
-    return this.cars.find(c => {
+    // [R02] El más cercano detrás (no el primero de la lista): sin dependencia del orden de los coches.
+    let best: FieldCar | undefined, bestDistance = Infinity;
+    for (const c of field) {
       const distance = ((car.progress - c.progress) % 1 + 1) % 1;
-      return c.id !== car.id && c.status === 'running' && !c.isInPitLane && !c.pitStop.isPitting
+      if (c.id !== car.id && c.status === 'running' && !c.isInPitLane && !c.isPitting
         && c.progress - car.progress > 0.5 && distance > 0
-        && distance * lapDistanceMeters / Math.max(1, c.currentSpeedKmh / 3.6) < this.rule('blueFlagGapSec');
-    });
+        && distance * lapDistanceMeters / Math.max(1, c.currentSpeedKmh / 3.6) < this.rule('blueFlagGapSec')
+        && distance < bestDistance) { best = c; bestDistance = distance; }
+    }
+    return best;
   }
 
   // [Q14] Despliegue y retirada del Safety Car por el motor (también los usa el botón DEV): sale de su garaje en el
@@ -474,24 +517,45 @@ export class RaceSimulation {
   }
 
   update(dtRaw: number) {
-    // Pasos de <=50 ms simulados: los cruces se procesan también a x16/x32.
-    const steps = Math.max(1, Math.ceil(dtRaw * this.getEffectiveTimeScale() / 0.05));
-    for (let step = 0; step < steps; step++) {
+    const simDt = dtRaw * this.getEffectiveTimeScale();
+    if (this.fixedStepSec !== null) {
+      // [R02] Paso fijo: el tiempo simulado se acumula y se consume en pasos idénticos.
+      const fixed = this.fixedStepSec;
+      if (!this.isPaused && !this.isFinished) this.stepAccumulator += simDt;
+      while (this.stepAccumulator >= fixed - 1e-9) {
+        this.stepAccumulator -= fixed;
+        this.step(fixed);
+        this.fixedStepCount++;
+        this.onFixedStep?.();
+      }
+    } else {
+      // Pasos de <=50 ms simulados: los cruces se procesan también a x16/x32.
+      const steps = Math.max(1, Math.ceil(simDt / 0.05));
+      for (let step = 0; step < steps; step++) this.step(simDt / steps);
+    }
+    // Después de todas las ramas y ajustes del motor, antes de dibujar el frame.
+    this.updateWorldPositions();
+  }
+
+  /** Un paso del motor de `dt` segundos simulados. */
+  private step(dt: number) {
+    useRng(this.stream('motor'));
+    try {
       const previous = this.cars.map(car => car.progress);
       const onTrack = this.cars.map(car => car.status === 'running' && !car.isInPitLane && !car.pitStop.isPitting);
       const racing = this.lightState === 'racing' && !this.isPaused && !this.isFinished;
-      this.advanceSimulation(dtRaw / steps);
+      this.advanceSimulation(dt);
       if (racing) {
-        const dt = dtRaw / steps * this.getEffectiveTimeScale();
         this.drsPermissions.record(this.cars.map((car, i) => ({
           id: car.id, from: previous[i], to: car.progress,
           onTrack: onTrack[i] && !car.isInPitLane && !car.pitStop.isPitting,
         })), this.activeTrack.drsDetections || [], this.raceTimeSec - dt, dt);
       }
       if (racing) this.cars.forEach((car, index) => {
+        useRng(this.stream(`coche-${car.id}`));
         const wasInPitLane = car.isInPitLane;
         PitStopModel.processCrossings(car, previous[index], this.activeTrack,
-          dtRaw / steps * this.getEffectiveTimeScale(), this.raceFlagState, this.safetyCar.mode);
+          dt, this.raceFlagState, this.safetyCar.mode);
         // [Q16] Reinicio de contadores ERS en el mismo cruce de la entrada de boxes (sin flujo: dt = 0).
         if (!wasInPitLane && car.isInPitLane && car.energy) {
           EnergyModel.update(car.energy, car.engineMode, false, 0, car.currentLap, true, car.fuelKg > 0, this.energyLimits);
@@ -499,9 +563,9 @@ export class RaceSimulation {
         const order = car.pitStop.activeBoxOrder;
         if (order?.status === 'consumed' && order.consumedAt === undefined) order.consumedAt = this.raceTimeSec;
       });
+    } finally {
+      useRng(null);
     }
-    // Después de todas las ramas y ajustes del motor, antes de dibujar el frame.
-    this.updateWorldPositions();
   }
 
   private updateWorldPositions() {
@@ -511,10 +575,11 @@ export class RaceSimulation {
     }
   }
 
-  private advanceSimulation(dtRaw: number) {
+  private advanceSimulation(dt: number) {
     if (this.isPaused || this.isFinished) return;
 
-    const dt = dtRaw * this.getEffectiveTimeScale();
+    // Los semáforos van en tiempo real, no simulado.
+    const dtRaw = dt / this.getEffectiveTimeScale();
 
     if (this.lightState === 'formation-lap') {
       this.updateFormationLap(dt);
@@ -555,11 +620,20 @@ export class RaceSimulation {
     const points = this.activeTrack.points;
     const totalPoints = points.length;
     const lapDistanceMeters = this.activeTrack.lapLengthMeters;
-    const sortedActive = [...this.cars].filter(c => c.status !== 'out').sort((a, b) => b.progress - a.progress);
+    const sortedActive = [...this.cars].filter(c => c.status !== 'out').sort((a, b) => b.progress - a.progress || a.id - b.id);
     const leaderCar = sortedActive[0];
+    // [R02] Estado del campo al inicio del paso: cada coche lee a los demás tal y como estaban, sin ventaja
+    // por su posición en la lista. Las huellas de goma se depositan al final del paso.
+    const field = this.cars.map(fieldCar);
+    const fieldById = new Map(field.map(c => [c.id, c]));
+    const rubber: [number, number][] = [];
+    const timingLines: TimingLine[] = [
+      { id: 's1', t: this.activeTrack.sector1EndT }, { id: 's2', t: this.activeTrack.sector2EndT }, { id: 'meta', t: 0 },
+    ];
 
     for (const car of this.cars) {
       if (car.status === 'finished') continue;
+      useRng(this.stream(`coche-${car.id}`));
 
       if (car.status === 'out') {
         car.currentSpeedKmh = Math.max(0, car.currentSpeedKmh - dt * 45);
@@ -589,11 +663,11 @@ export class RaceSimulation {
       const teamUnreliability = Math.max(0.01, 1.0 - car.team.reliability);
       const dnfStepChance = baseDnfChancePerSec * unluckFactor * (teamUnreliability * 50) * dt;
 
-      if (car.currentLap > 3 && Math.random() < dnfStepChance) {
+      if (car.currentLap > 3 && random() < dnfStepChance) {
         car.status = 'out';
         
         let incidentType: 'dnf' | 'crash' | 'major_crash' = 'dnf';
-        const crashRoll = Math.random();
+        const crashRoll = random();
         
         if (crashRoll < 0.05) {
           incidentType = 'major_crash';
@@ -603,13 +677,13 @@ export class RaceSimulation {
           car.dnfReason = '💥 ACCIDENTE CONTRA MURO';
         } else {
           const failureTypes = ['🔥 FALLO MOTOR V6', '⚙️ CAJA DE CAMBIOS', '🔌 FALLO MGU-K', '💧 PRESIÓN HIDRÁULICA'];
-          car.dnfReason = failureTypes[Math.floor(Math.random() * failureTypes.length)];
+          car.dnfReason = failureTypes[Math.floor(random() * failureTypes.length)];
         }
 
         // ── Activar efectos visuales de retirada ──
         car.isRetiredVisible = true;
         car.smokeOpacity = incidentType === 'dnf' ? 1.0 : 0.4; // Menos humo en choques puros
-        car.retireTimer = 15 + Math.random() * 10; // 15-25s hasta que la grúa se lo lleve
+        car.retireTimer = 15 + random() * 10; // 15-25s hasta que la grúa se lo lleve
         // ── Registrar incidente y evaluar respuesta ──
         const incident = IncidentModel.registerIncident(car, incidentType);
         this.incidents.push(incident);
@@ -661,7 +735,7 @@ export class RaceSimulation {
       }
 
       const punctureChance = 0.000006 * unluckFactor * dt;
-      if (car.currentLap > 2 && !car.hasPuncture && !car.pitStop.isPitting && Math.random() < punctureChance) {
+      if (car.currentLap > 2 && !car.hasPuncture && !car.pitStop.isPitting && random() < punctureChance) {
         car.hasPuncture = true;
         car.tires.health = 0;
       }
@@ -689,17 +763,20 @@ export class RaceSimulation {
         car.targetLateralOffset = 0;
         car.isBlueFlagged = false;
 
-        const prevLap = Math.floor(Math.max(0, prevProgress));
-        const currLap = Math.floor(Math.max(0, car.progress));
-        if (currLap > prevLap && prevProgress >= 0) {
-          car.currentLap = currLap;
+        // [R02] Cruce de meta con hora interpolada dentro del paso.
+        const pitLapCrossing = prevProgress >= 0
+          ? lineCrossings(prevProgress, car.progress, this.raceTimeSec - dt, dt, [{ id: 'meta', t: 0 }]).filter(e => e.lap >= 1).pop()
+          : undefined;
+        if (pitLapCrossing) {
+          car.currentLap = pitLapCrossing.lap;
           car.tires.lapsOnTire += 1;
           if (car.lapStartTime > 0) {
-            car.lastLapTime = this.raceTimeSec - car.lapStartTime;
+            car.lastLapTime = pitLapCrossing.time - car.lapStartTime;
           }
-          car.lapStartTime = this.raceTimeSec;
-          car.sectorStartTime = this.raceTimeSec;
+          car.lapStartTime = pitLapCrossing.time;
+          car.sectorStartTime = pitLapCrossing.time;
           car.currentSector = 1;
+          this.rawSectors.delete(car.id);
           
           if (car.currentLap >= this.totalLaps && !this.leaderFinished) {
             this.leaderFinished = true;
@@ -720,7 +797,7 @@ export class RaceSimulation {
 
       // [Q15] Bandera azul: señal inmediata; la cesión (nivel 0..1) sube y baja de forma gradual y solo es completa
       // donde hay espacio (recta con al menos dos coches de ancho). En curva lenta mantiene la trazada.
-      const carApproachingBehind = this.raceFlagState === 'green' ? this.lappingCarBehind(car, lapDistanceMeters) : undefined;
+      const carApproachingBehind = this.raceFlagState === 'green' ? this.lappingCarBehind(car, lapDistanceMeters, field) : undefined;
       car.isBlueFlagged = Boolean(carApproachingBehind);
       const roomToYield = trackPoint.speedLimitFactor >= 0.65 &&
         (trackPoint.trackWidthCars ?? OFFICIAL_CIRCUITS[this.circuitId]?.trackWidthCars ?? 3) >= 2;
@@ -730,7 +807,7 @@ export class RaceSimulation {
         ? Math.min(yieldTarget, yieldLevel + dt / RaceSimulation.BLUE_FLAG_RAMP_IN_SEC)
         : Math.max(yieldTarget, yieldLevel - dt / RaceSimulation.BLUE_FLAG_RAMP_OUT_SEC);
 
-      const carAhead = car.carAheadId !== null ? this.getCarById(car.carAheadId) : null;
+      const carAhead = car.carAheadId !== null ? fieldById.get(car.carAheadId) ?? null : null;
       const pace = this.getPaceStatus(car.id)!;
       let effectiveEngineMode = 'standard';
       let effectiveAggression = 'balanced';
@@ -848,8 +925,8 @@ export class RaceSimulation {
       const scMaxSpeed = SafetyCarModel.getMaxAllowedSpeed(this.raceFlagState, this.safetyCar.mode);
       // [FIX A1] isCatchingPack: comparar con el coche de delante, no con el líder.
       // Solo si NO hay ningún coche no-pitting por delante a menos de 0.08 de vuelta
-      const nearestAheadOnTrack = this.cars.find(c => 
-        c.id !== car.id && c.status === 'running' && !c.pitStop.isPitting && !c.isInPitLane
+      const nearestAheadOnTrack = field.some(c =>
+        c.id !== car.id && c.status === 'running' && !c.isPitting && !c.isInPitLane
         && c.progress > car.progress && (c.progress - car.progress) < 0.08
       );
       const isCatchingPack = !nearestAheadOnTrack && scMaxSpeed !== null && this.safetyCar.isDeployed;
@@ -924,14 +1001,14 @@ export class RaceSimulation {
       
       let tireDeltaAdvantage = 0;
       if (carAhead) {
-        tireDeltaAdvantage = (tireResult.gripMultiplier - (carAhead.tires.health / 100)) * 0.06;
+        tireDeltaAdvantage = (tireResult.gripMultiplier - (carAhead.tireHealth / 100)) * 0.06;
       }
 
       const hasOvertakePace = (effectivePace + tireDeltaAdvantage) > 1.002;
-      const rareCornerOvertakeChance = Math.random() < 0.00008 && tireResult.gripMultiplier > 1.04;
+      const rareCornerOvertakeChance = random() < 0.00008 && tireResult.gripMultiplier > 1.04;
 
       // Ya está definida arriba isWaitingForScRestartLine
-      if (carAhead && !carAhead.pitStop.isPitting && !car.isBlueFlagged && carAhead.status === 'running') {
+      if (carAhead && !carAhead.isPitting && !car.isBlueFlagged && carAhead.status === 'running') {
         const deltaProgress = carAhead.progress - car.progress;
 
         if (deltaProgress > 0 && deltaProgress < minSafeSpacing) {
@@ -1001,23 +1078,27 @@ export class RaceSimulation {
       const prevProgress = car.progress;
       car.progress += car.speed * dt;
       if (isOnIdealLine && this.raceFlagState === 'green' && this.weather.waterDepthMm === 0) {
-        depositRubber(points, prevProgress, car.progress);
+        rubber.push([prevProgress, car.progress]);
       }
 
-      this.updateCarSectors(car, normalizedT);
-
-      const prevLap = Math.floor(Math.max(0, prevProgress));
-      const currLap = Math.floor(Math.max(0, car.progress));
-
-      if (currLap > prevLap && prevProgress >= 0) {
+      // [R02] Sectores y vuelta salen de los cruces de línea con hora interpolada, en el orden en que ocurren.
+      for (const crossing of lineCrossings(prevProgress, car.progress, this.raceTimeSec - dt, dt, timingLines)) {
+        if (crossing.id !== 'meta') {
+          this.updateCarSectors(car, crossing.id === 's1' ? 1 : 2, crossing.time);
+          continue;
+        }
+        if (crossing.lap < 1 || prevProgress < 0) continue;
+        const currLap = crossing.lap;
+        const crossTime = crossing.time;
         car.currentLap = currLap;
         car.tires.lapsOnTire += 1;
 
         if (car.lapStartTime > 0) {
-          const lapTime = this.raceTimeSec - car.lapStartTime;
+          const lapTime = crossTime - car.lapStartTime;
           car.lastLapTime = lapTime;
 
-          const s3Time = this.raceTimeSec - car.sectorStartTime;
+          const s3Time = crossTime - car.sectorStartTime;
+          const raw = this.rawSectors.get(car.id) ?? {};
           car.sectors.s3 = Number(s3Time.toFixed(3));
           if (!car.sectors.personalBestS3 || s3Time < car.sectors.personalBestS3) {
             car.sectors.personalBestS3 = Number(s3Time.toFixed(3));
@@ -1042,16 +1123,17 @@ export class RaceSimulation {
           car.lapHistory.push({
             lap: currLap,
             lapTime,
-            sector1: car.sectors.s1 || lapTime * 0.28,
-            sector2: car.sectors.s2 || lapTime * 0.34,
-            sector3: car.sectors.s3 || lapTime * 0.38,
+            sector1: raw.s1 ?? lapTime * 0.28,
+            sector2: raw.s2 ?? lapTime * 0.34,
+            sector3: raw.s1 !== undefined && raw.s2 !== undefined ? s3Time : lapTime * 0.38,
             compound: car.tires.compound,
             tireHealth: Math.round(car.tires.health)
           });
         }
-        car.lapStartTime = this.raceTimeSec;
-        car.sectorStartTime = this.raceTimeSec;
+        car.lapStartTime = crossTime;
+        car.sectorStartTime = crossTime;
         car.currentSector = 1;
+        this.rawSectors.delete(car.id);
 
         // Decrementar contador de DRS deshabilitado tras SC/VSC
         if (this.drsDisabledLaps > 0 && car.id === (leaderCar ? leaderCar.id : -1)) {
@@ -1064,6 +1146,7 @@ export class RaceSimulation {
         } else if (this.leaderFinished) {
           car.status = 'finished';
         }
+        if (car.status === 'finished') break;
       }
 
       const wearPerLapEst = Math.max(3.5, (100 - car.tires.health) / Math.max(1, car.tires.lapsOnTire));
@@ -1151,6 +1234,13 @@ export class RaceSimulation {
         currentPaceDelta: car.lastLapTime ? Number((car.lastLapTime - RaceSimulation.BASE_LAP_TIME_SEC).toFixed(3)) : 0
       };
     }
+
+    useRng(this.stream('motor'));
+    for (const [from, to] of rubber) depositRubber(points, from, to);
+    // [R02] Lazos de cronometraje: hora interpolada de paso de cada coche en este paso.
+    this.timing.record(this.cars.filter(c => c.status !== 'out').map(c => ({
+      id: c.id, from: fieldById.get(c.id)!.progress, to: c.progress,
+    })), this.raceTimeSec - dt, dt);
 
     // ══════════════════════════════════════════════════════════
     // ── ACTUALIZACIÓN DE BANDERAS, SAFETY CAR E INCIDENTES ──
@@ -1251,9 +1341,11 @@ export class RaceSimulation {
     }
   }
 
-  updateCarSectors(car: CarState, trackT: number) {
-    if (car.currentSector === 1 && trackT >= this.activeTrack.sector1EndT && trackT < 0.50) {
-      const s1Time = this.raceTimeSec - car.sectorStartTime;
+  /** [R02] Cruce de la línea de fin de sector 1 o 2 a la hora `time` (interpolada). */
+  updateCarSectors(car: CarState, sector: 1 | 2, time: number) {
+    if (car.currentSector === 1 && sector === 1) {
+      const s1Time = time - car.sectorStartTime;
+      this.rawSectors.set(car.id, { s1: s1Time });
       car.sectors.s1 = Number(s1Time.toFixed(3));
       if (!car.sectors.personalBestS1 || s1Time < car.sectors.personalBestS1) {
         car.sectors.personalBestS1 = Number(s1Time.toFixed(3));
@@ -1262,11 +1354,13 @@ export class RaceSimulation {
         this.overallBestS1 = Number(s1Time.toFixed(3));
       }
       car.currentSector = 2;
-      car.sectorStartTime = this.raceTimeSec;
+      car.sectorStartTime = time;
     }
 
-    if (car.currentSector === 2 && trackT >= this.activeTrack.sector2EndT && trackT < 0.85) {
-      const s2Time = this.raceTimeSec - car.sectorStartTime;
+    if (car.currentSector === 2 && sector === 2) {
+      const s2Time = time - car.sectorStartTime;
+      const raw = this.rawSectors.get(car.id);
+      if (raw) raw.s2 = s2Time;
       car.sectors.s2 = Number(s2Time.toFixed(3));
       if (!car.sectors.personalBestS2 || s2Time < car.sectors.personalBestS2) {
         car.sectors.personalBestS2 = Number(s2Time.toFixed(3));
@@ -1275,7 +1369,7 @@ export class RaceSimulation {
         this.overallBestS2 = Number(s2Time.toFixed(3));
       }
       car.currentSector = 3;
-      car.sectorStartTime = this.raceTimeSec;
+      car.sectorStartTime = time;
     }
   }
 
@@ -1379,7 +1473,7 @@ export class RaceSimulation {
 
   updateLeaderboardPositions() {
     const runningCars = this.cars.filter(c => c.status !== 'out');
-    const sortedRunning = [...runningCars].sort((a, b) => b.progress - a.progress);
+    const sortedRunning = [...runningCars].sort((a, b) => b.progress - a.progress || a.id - b.id);
     const outCars = this.cars.filter(c => c.status === 'out');
     const sortedAll = [...sortedRunning, ...outCars];
 
@@ -1388,6 +1482,25 @@ export class RaceSimulation {
     const leaderCompletedLaps = Math.max(0, Math.floor(leaderProgress));
 
     this.leaderLap = Math.min(this.totalLaps, leaderCompletedLaps + 1);
+    const lapMeters = this.activeTrack.lapLengthMeters;
+    // [R02] Hueco en tiempo: diferencia de horas en el último lazo común; si aún no hay lazo común, distancia
+    // entre ambos a la velocidad del coche de detrás.
+    const gapSec = (behind: CarState, ahead: CarState) => {
+      const measured = this.timing.gapAtLastCommonLoop(behind.id, ahead.id);
+      if (Number.isFinite(measured)) return measured;
+      return (ahead.progress - behind.progress) * lapMeters / Math.max(10, behind.currentSpeedKmh / 3.6);
+    };
+    // [R02] Vecino físico: el coche más cercano delante en pista (fuera del pit lane), sea cual sea su vuelta.
+    const onTrack = runningCars.filter(c => c.status === 'running' && !c.isInPitLane && !c.pitStop.isPitting);
+    for (const car of this.cars) {
+      car.lapsBehindLeader = car.status === 'out' ? 0 : Math.max(0, Math.floor(leaderProgress - car.progress));
+      let nearest: CarState | null = null, nearestDistance = Infinity;
+      if (car.status !== 'out') for (const other of onTrack) {
+        const distance = ((other.progress - car.progress) % 1 + 1) % 1;
+        if (other.id !== car.id && distance > 0 && distance < nearestDistance) { nearest = other; nearestDistance = distance; }
+      }
+      car.physicalAheadId = nearest ? nearest.id : null;
+    }
 
     sortedAll.forEach((car, index) => {
       car.previousPosition = car.currentPosition;
@@ -1407,13 +1520,11 @@ export class RaceSimulation {
         car.carAheadId = null;
         car.aheadInfo = null;
       } else {
-        const leaderDiffProgress = leaderProgress - car.progress;
-        car.gapToLeaderSec = leaderDiffProgress * RaceSimulation.BASE_LAP_TIME_SEC;
+        car.gapToLeaderSec = gapSec(car, leader);
 
         const carAhead = sortedRunning[index - 1];
         if (carAhead) {
-          const aheadDiffProgress = carAhead.progress - car.progress;
-          const gapAhead = aheadDiffProgress * RaceSimulation.BASE_LAP_TIME_SEC;
+          const gapAhead = gapSec(car, carAhead);
           car.gapToCarAheadSec = gapAhead;
           car.carAheadId = carAhead.id;
 
@@ -1431,8 +1542,7 @@ export class RaceSimulation {
 
       const carBehind = sortedRunning[index + 1];
       if (carBehind) {
-        const behindDiffProgress = car.progress - carBehind.progress;
-        const gapBehind = behindDiffProgress * RaceSimulation.BASE_LAP_TIME_SEC;
+        const gapBehind = gapSec(carBehind, car);
 
         car.behindInfo = {
           id: carBehind.id,
@@ -1468,9 +1578,9 @@ export class RaceSimulation {
 
   // ── MÉTODOS DE EVENTO DE SUERTE CON DADO D20 ──
   triggerD20LuckRoll(triggerType: 'sc' | 'vsc' | 'red', playerDriverId?: string): D20LuckEvent {
-    const roll = Math.floor(Math.random() * 20) + 1; // 1 al 20
+    const roll = Math.floor(random() * 20) + 1; // 1 al 20
     const runningCars = this.cars.filter(c => c.status === 'running');
-    let luckyCar = runningCars[Math.floor(Math.random() * runningCars.length)] || this.cars[0];
+    let luckyCar = runningCars[Math.floor(random() * runningCars.length)] || this.cars[0];
 
     // Tirada alta favorece al piloto seleccionado por el jugador
     if (roll >= 14 && playerDriverId) {
@@ -1646,4 +1756,22 @@ export class RaceSimulation {
   getBoxOrder(carId: number): BoxOrder | null {
     return this.getCarById(carId)?.pitStop.activeBoxOrder || null;
   }
+}
+
+/** [R02] Estado de otro coche al inicio del paso (lo que ven los demás durante ese paso). */
+export interface FieldCar {
+  id: number;
+  progress: number;
+  currentSpeedKmh: number;
+  status: CarState['status'];
+  isInPitLane: boolean;
+  isPitting: boolean;
+  tireHealth: number;
+}
+
+function fieldCar(car: CarState): FieldCar {
+  return {
+    id: car.id, progress: car.progress, currentSpeedKmh: car.currentSpeedKmh, status: car.status,
+    isInPitLane: car.isInPitLane, isPitting: car.pitStop.isPitting, tireHealth: car.tires.health,
+  };
 }

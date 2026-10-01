@@ -60,7 +60,8 @@ export const App: React.FC = () => {
   const [selectedDriverId, setSelectedDriverId] = useState<string>('alonso');
   const [selectedCircuitId, setSelectedCircuitId] = useState<string>('barcelona');
 
-  const simulation = useMemo(() => new RaceSimulation(selectedCircuitId), []);
+  // [R02] Paso fijo de 20 ms simulados: mismo resultado sea cual sea el FPS o la velocidad.
+  const simulation = useMemo(() => { const sim = new RaceSimulation(selectedCircuitId); sim.setFixedStep(0.02); return sim; }, []);
   const camera = useMemo(() => new Camera(), []);
 
   // Vista actual: 'landing', 'home' o 'race'
