@@ -37,6 +37,7 @@ import { lineCrossings, TimingLine, TimingService } from './Timing';
 import { brakeDecelFactor, brakeTempStep, engineTempStep, gearFor, rpmFor } from './PowertrainModel';
 import { chassisGripAt, resolveTechnical } from '../data/teamProfiles';
 import { availableSets, COMPOUND_LABEL, createInventory, TireCompliance, tireCompliance } from './TireInventory';
+import { localFlagsFrom, LocalFlag, marshalSectorOf, Permissions, permissionsFor } from './RaceControl';
 import { AERO, CAR_DRY_MASS_KG, cornerMassFactor, dirtyAirLevel, holdThrottle, longitudinalAccel, slipstreamLevel, topSpeedKmh } from './AeroModel';
 import { mulberry32, random, Rng, rngState, streamSeed, useRng } from './Random';
 
@@ -663,6 +664,7 @@ export class RaceSimulation {
     // [R02] Estado del campo al inicio del paso: cada coche lee a los demás tal y como estaban, sin ventaja
     // por su posición en la lista. Las huellas de goma se depositan al final del paso.
     const field = this.cars.map(fieldCar);
+    const localFlags = this.localFlags();
     const fieldById = new Map(field.map(c => [c.id, c]));
     const rubber: [number, number][] = [];
     const timingLines: TimingLine[] = [
@@ -784,7 +786,10 @@ export class RaceSimulation {
       const punctureChance = 0.000006 * unluckFactor * dt;
       if (car.currentLap > 2 && !car.hasPuncture && !car.pitStop.isPitting && random() < punctureChance) {
         car.hasPuncture = true;
-        car.tires.health = 0;
+        // [R09] El pinchazo deja a 0 una rueda: la salud global es la media de las cuatro y se recalcula cada paso.
+        const wheel = (['healthFL', 'healthFR', 'healthRL', 'healthRR'] as const)[Math.floor(random() * 4)];
+        car.tires[wheel] = 0;
+        car.tires.health = ((car.tires.healthFL ?? 0) + (car.tires.healthFR ?? 0) + (car.tires.healthRL ?? 0) + (car.tires.healthRR ?? 0)) / 4;
       }
 
         // Actualizar Pit Stops
@@ -851,7 +856,9 @@ export class RaceSimulation {
 
       // [Q15] Bandera azul: señal inmediata; la cesión (nivel 0..1) sube y baja de forma gradual y solo es completa
       // donde hay espacio (recta con al menos dos coches de ancho). En curva lenta mantiene la trazada.
-      const carApproachingBehind = this.raceFlagState === 'green' ? this.lappingCarBehind(car, lapDistanceMeters, field) : undefined;
+      // [R09] Permisos de Dirección de Carrera para este coche y paso (antes del movimiento); nada posterior los amplía.
+      const perms = permissionsFor({ marshalSector: marshalSectorOf(normalizedT), globalFlag: this.raceFlagState, vscActive: this.vscActive, localFlags });
+      const carApproachingBehind = perms.blueFlags ? this.lappingCarBehind(car, lapDistanceMeters, field) : undefined;
       car.isBlueFlagged = Boolean(carApproachingBehind);
       const roomToYield = trackPoint.speedLimitFactor >= 0.65 &&
         (trackPoint.trackWidthCars ?? OFFICIAL_CIRCUITS[this.circuitId]?.trackWidthCars ?? 3) >= 2;
@@ -873,7 +880,7 @@ export class RaceSimulation {
       car.aggression = effectiveAggression as CarState['aggression'];
 
       // DRS — Desactivado bajo SC, VSC o banderas amarillas
-      const drsBlockedByFlags = this.raceFlagState !== 'green' || this.drsDisabledLaps > 0;
+      const drsBlockedByFlags = !perms.drs || this.drsDisabledLaps > 0;
       car.drsEligible = !drsBlockedByFlags && car.currentLap > 1 &&
         this.drsPermissions.eligible(car.id, trackPoint.drsZoneId);
       car.drsActive = this.drsPermissions.activation(car.id,
@@ -956,7 +963,7 @@ export class RaceSimulation {
       effectivePace *= 1 - 0.015 * offline;
 
       // Automatically try to follow the ideal racing line if not overtaking/blue flagged
-      if (!car.isOvertaking && !car.isBlueFlagged && this.raceFlagState === 'green' && !car.pitStop.isPitting && !car.isInPitLane) {
+      if (!car.isOvertaking && !car.isBlueFlagged && !perms.neutralized && !car.pitStop.isPitting && !car.isInPitLane) {
         car.targetLateralOffset = trackPoint.idealLineOffset || 0;
       }
 
@@ -1049,11 +1056,8 @@ export class RaceSimulation {
         }
       }
 
-      // Bandera amarilla local: reducir velocidad en el sector afectado
-      const carSector: 1 | 2 | 3 = normalizedT < 0.33 ? 1 : normalizedT < 0.66 ? 2 : 3;
-      if (this.sectorFlags[carSector - 1] !== 'green' && this.raceFlagState === 'green') {
-        targetKmh = Math.min(targetKmh, targetKmh * 0.75);
-      }
+      // [R09] Bandera amarilla local: velocidad reducida solo en el sector de comisarios afectado.
+      targetKmh *= perms.speedFactor;
 
       // El líder (y el resto) no pueden acelerar a velocidad de carrera completa hasta pasar la meta en la resalida
       const isWaitingForScRestartLine = this.scEndingLap !== null && car.currentLap <= this.scEndingLap;
@@ -1138,7 +1142,7 @@ export class RaceSimulation {
           const isCatchingPackUnderSc = isCatchingPack && this.safetyCar.isDeployed;
           const wantsToOvertake = ((canOvertakeHere || rareCornerOvertakeChance) && hasOvertakePace) || isCatchingPackUnderSc;
 
-          if (wantsToOvertake && !isWaitingForScRestartLine && this.raceFlagState === 'green') {
+          if (wantsToOvertake && !isWaitingForScRestartLine && perms.overtake) {
             car.isOvertaking = true;
             car.targetLateralOffset = car.id % 2 === 0 ? 0.55 : -0.55;
           } else {
@@ -1162,7 +1166,7 @@ export class RaceSimulation {
         }
       } else if (!car.isBlueFlagged) {
         car.isOvertaking = false;
-        car.targetLateralOffset = this.raceFlagState === 'green' ? (trackPoint.idealLineOffset || 0) : 0;
+        car.targetLateralOffset = !perms.neutralized ? (trackPoint.idealLineOffset || 0) : 0;
       }
 
       // [Q15] Apartarse hacia el lado contrario a la trazada en proporción a la cesión.
@@ -1193,14 +1197,14 @@ export class RaceSimulation {
           car.speed = Math.min(car.speed, Math.max(0, gap - 0.005) / Math.max(dt, 1e-9));
         }
       }
-      if ((this.raceFlagState !== 'green' || isWaitingForScRestartLine) && carAhead &&
+      if ((!perms.overtake || isWaitingForScRestartLine) && carAhead &&
           !carAhead.isInPitLane && carAhead.progress > car.progress) {
         car.speed = Math.min(car.speed, Math.max(0, carAhead.progress - car.progress - 0.0025) / Math.max(dt, 1e-9));
       }
       car.currentSpeedKmh = car.speed * lapDistanceMeters * 3.6;
       const prevProgress = car.progress;
       car.progress += car.speed * dt;
-      if (isOnIdealLine && this.raceFlagState === 'green' && this.weather.waterDepthMm === 0) {
+      if (isOnIdealLine && !perms.neutralized && this.weather.waterDepthMm === 0) {
         rubber.push([prevProgress, car.progress]);
       }
 
@@ -1719,6 +1723,16 @@ export class RaceSimulation {
     return !pit.playerControlled && pit.scheduledLap > 0 && car.currentLap >= pit.scheduledLap;
   }
 
+  /** [R09] Banderas amarillas locales por sector de comisarios. */
+  localFlags(): Map<number, LocalFlag> {
+    return localFlagsFrom(this.incidents);
+  }
+
+  /** [R09] Permisos de Dirección de Carrera de un coche en su posición actual. */
+  permissionsForCar(car: CarState): Permissions {
+    return permissionsFor({ marshalSector: marshalSectorOf(car.trackT), globalFlag: this.raceFlagState, vscActive: this.vscActive, localFlags: this.localFlags() });
+  }
+
   getCarById(id: number): CarState | undefined {
     return this.cars.find(c => c.id === id);
   }
@@ -1855,8 +1869,8 @@ export class RaceSimulation {
     else if (this.raceFlagState === 'sc') reason = 'Safety Car';
     else if (this.raceFlagState === 'vsc' || this.vscActive) reason = 'Virtual Safety Car';
     else if (this.raceFlagState === 'red') reason = 'Bandera roja';
-    else if (this.raceFlagState === 'yellow' || this.raceFlagState === 'double-yellow') reason = 'Bandera amarilla';
-    if (this.raceFlagState !== 'green' || this.vscActive || car.isInPitLane || car.pitStop.isPitting) {
+    else if (this.permissionsForCar(car).speedFactor < 1) reason = 'Bandera amarilla';
+    if (this.permissionsForCar(car).neutralized || this.permissionsForCar(car).speedFactor < 1 || car.isInPitLane || car.pitStop.isPitting) {
       effective = 'save';
     }
     // These resource limits reduce propulsion directly; they do not erase the order.

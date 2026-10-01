@@ -46,6 +46,10 @@ export interface TrackIncident {
   isCleared: boolean;
   clearTimer: number;
   reason: string;
+  /** [R09] Sector de comisarios (independiente de los sectores cronometrados), causa y responsabilidad. */
+  marshalSector?: number;
+  cause?: 'mecanica' | 'accidente' | 'trompo';
+  responsibility?: 'ninguna' | 'propio' | 'sin-determinar';
 }
 
 export interface DnfNotification {

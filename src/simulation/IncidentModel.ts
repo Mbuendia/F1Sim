@@ -1,5 +1,6 @@
 import { random } from './Random';
 import { TrackIncident, CarState, RaceFlagState } from '../types/f1';
+import { marshalSectorOf } from './RaceControl';
 
 export class IncidentModel {
   private static nextId = 1;
@@ -49,6 +50,10 @@ export class IncidentModel {
       isCleared: false,
       clearTimer,
       reason: car.dnfReason || (type === 'spin' ? '🔄 TROMPO EN PISTA' : 'Unknown'),
+      // [R09] Ubicación en sector de comisarios, causa y responsabilidad (incidente de un solo coche).
+      marshalSector: marshalSectorOf(car.trackT),
+      cause: type === 'dnf' ? 'mecanica' : type === 'spin' ? 'trompo' : 'accidente',
+      responsibility: type === 'dnf' ? 'ninguna' : 'propio',
     };
 
     return incident;
