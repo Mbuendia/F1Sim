@@ -328,6 +328,8 @@ export interface CarState {
   massKg?: number;
   fuelBurnedKg?: number;
   coastedSec?: number;
+  /** [R16] Potencia de fricción de los frenos en el último paso (MW): la frenada que no recupera el MGU-K. */
+  brakeFrictionMW?: number;
 
   aheadInfo: RelativeCarInfo | null;
   behindInfo: RelativeCarInfo | null;

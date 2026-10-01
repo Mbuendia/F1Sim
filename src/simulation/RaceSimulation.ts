@@ -34,6 +34,7 @@ import { RejoinModel } from './RejoinModel';
 import { IncidentModel } from './IncidentModel';
 import { calculateCarWorldPosition, lapsToPitEntry, limitLateralChange } from '../utils/carPosition';
 import { lineCrossings, TimingLine, TimingService } from './Timing';
+import { brakeDecelFactor, brakeTempStep, engineTempStep, gearFor, rpmFor } from './PowertrainModel';
 import { AERO, CAR_DRY_MASS_KG, cornerMassFactor, dirtyAirLevel, holdThrottle, longitudinalAccel, slipstreamLevel, topSpeedKmh } from './AeroModel';
 import { mulberry32, random, Rng, rngState, streamSeed, useRng } from './Random';
 
@@ -696,10 +697,9 @@ export class RaceSimulation {
       }
 
       // ── EVALUACIÓN DE FACTOR SUERTE: AVERÍAS MECÁNICAS & PINCHAZOS ──
-      const baseDnfChancePerSec = 0.000008;
       const unluckFactor = Math.max(0.2, 1.2 - car.driver.luckRating);
-      const teamUnreliability = Math.max(0.01, 1.0 - car.team.reliability);
-      const dnfStepChance = baseDnfChancePerSec * unluckFactor * (teamUnreliability * 50) * dt;
+      // [R16] Riesgo ligado al estado: fiabilidad, suerte y estrés térmico del motor.
+      const dnfStepChance = this.failureHazardPerSec(car) * dt;
 
       if (car.currentLap > 3 && random() < dnfStepChance) {
         car.status = 'out';
@@ -885,6 +885,7 @@ export class RaceSimulation {
 
 
       car.energy ??= EnergyModel.create();
+      const harvestBefore = car.energy.ledger?.brakingHarvestMJ ?? 0;
       const energyDeployment = EnergyModel.update(car.energy, car.engineMode, trackPoint.isBrakingZone,
         dt, car.currentLap, false, car.fuelKg > 0, this.energyLimits, { speedKmh: car.currentSpeedKmh });
       const enginePerf = EngineModel.getEnginePerformance(car.engineMode);
@@ -907,6 +908,8 @@ export class RaceSimulation {
       const onTrackRunning = !car.isInPitLane && !car.pitStop.isPitting;
       car.slipstreamLevel = onTrackRunning && !isCornering ? slipstreamLevel(wakeGapSec, wakeLateral) : 0;
       car.dirtyAirLevel = onTrackRunning && isCornering ? dirtyAirLevel(wakeGapSec, wakeLateral) : 0;
+      // [R16] Estela para la refrigeración (recta o curva): menos aire en radiadores y frenos.
+      const wake = onTrackRunning ? slipstreamLevel(wakeGapSec, wakeLateral) : 0;
 
       const carBasePerf = car.team.carPerformance;
       let effectivePace = 
@@ -1046,6 +1049,7 @@ export class RaceSimulation {
       let throttleVal = 0;
       let brakeVal = 0;
       let fuelThrottle = 0;
+      let brakeFrictionMW = 0;
 
       if (coasting) {
         // Sin potencia: solo drag y rodadura frenan el coche.
@@ -1054,9 +1058,15 @@ export class RaceSimulation {
       } else if (targetKmh < car.currentSpeedKmh) {
         // FRENADA: Desaceleración violenta de F1 (hasta 55 m/s² ~ 190 km/h por segundo)
         // [R14] Sin combustible no hay frenada de carrera: el piloto se aparta y se detiene (~3 m/s²).
-        const brakeForce = car.fuelKg <= 0 ? 11 : trackPoint.isBrakingZone ? 180 : 120;
+        // [R16] La temperatura de los frenos al inicio del paso limita la deceleración de este paso.
+        const brakeForce = car.fuelKg <= 0 ? 11 : (trackPoint.isBrakingZone ? 180 : 120) * brakeDecelFactor(car.brakeTempCelsius);
         const deltaSpeed = (car.currentSpeedKmh - targetKmh);
         const speedDrop = Math.min(deltaSpeed, brakeForce * dt);
+        // Potencia disipada (m·a·v) menos la que recupera el MGU-K: lo que queda calienta los discos.
+        const meanMs = (car.currentSpeedKmh - speedDrop / 2) / 3.6;
+        const totalMW = aeroInput.massKg * (speedDrop / 3.6 / Math.max(dt, 1e-9)) * meanMs / 1e6;
+        const regenMW = ((car.energy.ledger?.brakingHarvestMJ ?? 0) - harvestBefore) / Math.max(dt, 1e-9);
+        brakeFrictionMW = Math.max(0, totalMW - regenMW);
         car.currentSpeedKmh -= speedDrop;
         brakeVal = Math.min(100, Math.round((speedDrop / (brakeForce * dt + 0.001)) * 100));
         throttleVal = 0;
@@ -1241,52 +1251,16 @@ export class RaceSimulation {
       const projectedLapsLeft = Math.max(0, Math.floor(car.tires.health / wearPerLapEst));
       const lapsToEnd = this.totalLaps - car.currentLap;
 
-      // Marchas y RPM reales
+      // [R16] Caja de 8 marchas: RPM proporcionales a la velocidad dentro de cada marcha.
       const kmh = Math.round(car.currentSpeedKmh);
-      let gearVal = 8;
-      if (kmh < 95) gearVal = 2;
-      else if (kmh < 135) gearVal = 3;
-      else if (kmh < 180) gearVal = 4;
-      else if (kmh < 225) gearVal = 5;
-      else if (kmh < 270) gearVal = 6;
-      else if (kmh < 315) gearVal = 7;
+      const gearVal = gearFor(car.currentSpeedKmh);
+      const finalRpm = Math.round(rpmFor(car.currentSpeedKmh, gearVal));
 
-      const baseRpm = 9500 + (kmh / 355) * 3800 + (throttleVal > 80 ? 400 : 0);
-      const finalRpm = Math.min(13600, Math.max(8000, Math.round(baseRpm)));
-
-      // ── MODELO TERMODINÁMICO CONTINUO DE FRENOS ──
-      // Frenada fuerte calienta los discos de carbono hasta 800-1050°C
-      // En recta con ventilación aerodinámica se enfrían gradualmente a ~300-400°C
-      const brakeThermalInput = brakeVal > 0
-        ? 350 + brakeVal * 7.5 + (car.currentSpeedKmh / 350) * 200  // Más calor a alta velocidad
-        : 0;
-      const brakeAmbientTarget = 280 + (car.currentSpeedKmh / 350) * 80; // Refrigeración por aire
-      const brakeCoolingRate = car.currentSpeedKmh > 100 ? 2.5 : 1.2; // Más aire = más enfriamiento
-      
-      if (brakeThermalInput > car.brakeTempCelsius) {
-        // Calentamiento rápido durante frenada (los discos se calientan instantáneamente)
-        car.brakeTempCelsius += (brakeThermalInput - car.brakeTempCelsius) * Math.min(1.0, dt * 8.0);
-      } else {
-        // Enfriamiento gradual por convección aerodinámica
-        car.brakeTempCelsius += (brakeAmbientTarget - car.brakeTempCelsius) * Math.min(1.0, dt * brakeCoolingRate);
-      }
-      car.brakeTempCelsius = Math.max(250, Math.min(1080, car.brakeTempCelsius));
-
-      // ── MODELO TERMODINÁMICO CONTINUO DE MOTOR V6 TURBO HÍBRIDO ──
-      // Push/Overtake mode genera más calor; Low mode enfría activamente
-      let engineHeatInput = 95; // Temperatura base del motor
-      if (car.engineMode === 'push') engineHeatInput = 108;
-      else if (car.engineMode === 'overtake') engineHeatInput = 118;
-      else if (car.engineMode === 'low') engineHeatInput = 88;
-
-      // RPM altas y slipstream calientan más
-      engineHeatInput += (finalRpm - 10000) / 3600 * 4; // +4°C a 13600 RPM
-      if (car.currentSpeedKmh > 300) engineHeatInput += 3; // Carga térmica alta velocidad
-      
-      // Enfriamiento: radiadores más efectivos a velocidad alta
-      const engineCoolRate = 0.8 + (car.currentSpeedKmh / 350) * 0.6;
-      car.engineTempCelsius += (engineHeatInput - car.engineTempCelsius) * Math.min(1.0, dt * engineCoolRate);
-      car.engineTempCelsius = Math.max(80, Math.min(135, car.engineTempCelsius));
+      // [R16] Temperaturas tras el paso: los frenos con su potencia de fricción, el motor con su demanda; ambos se
+      // refrigeran peor en la estela. El paso siguiente frena y empuja con estas temperaturas.
+      car.brakeFrictionMW = brakeFrictionMW;
+      car.brakeTempCelsius = brakeTempStep(car.brakeTempCelsius, brakeFrictionMW, car.currentSpeedKmh, wake, dt);
+      car.engineTempCelsius = engineTempStep(car.engineTempCelsius, car.engineMode, finalRpm, car.currentSpeedKmh, wake, dt);
 
       car.stats = {
         pushLaps: Math.floor(car.currentLap * 0.35),
@@ -1651,6 +1625,14 @@ export class RaceSimulation {
         car.behindInfo = null;
       }
     });
+  }
+
+  /** [R16] Riesgo de avería por segundo: fiabilidad del equipo, suerte del piloto y estrés térmico del motor. */
+  failureHazardPerSec(car: CarState): number {
+    const unluckFactor = Math.max(0.2, 1.2 - car.driver.luckRating);
+    const teamUnreliability = Math.max(0.01, 1.0 - car.team.reliability);
+    const thermalStress = 1 + Math.max(0, car.engineTempCelsius - 112) / 8;
+    return 0.000008 * unluckFactor * (teamUnreliability * 50) * thermalStress;
   }
 
   getCarById(id: number): CarState | undefined {
