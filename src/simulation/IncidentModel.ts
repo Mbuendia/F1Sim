@@ -9,6 +9,11 @@ export class IncidentModel {
     this.nextId = 1;
   }
 
+  /** [R28] Siguiente id de incidente (estado que guarda el snapshot). */
+  static peekNextId(): number {
+    return this.nextId;
+  }
+
   // Registrar un nuevo incidente cuando un coche se retira o hace un trompo
   static registerIncident(
     car: { id: number; driver: { code: string }; trackT: number; dnfReason?: string },

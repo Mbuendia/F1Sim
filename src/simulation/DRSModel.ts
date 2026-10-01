@@ -19,6 +19,17 @@ export class DrsPermissions {
     this.zonePassages.clear();
   }
 
+  /** [R28] Estado serializable (pasos por detección, permisos y pasada por zona). */
+  serialize() {
+    return {
+      gapThresholdSec: this.gapThresholdSec,
+      passages: [...this.passages.entries()].map(([id, list]) => [id, list.map(p => ({ ...p }))] as const),
+      permissions: [...this.permissions.entries()].map(([carId, grants]) =>
+        [carId, [...grants.entries()].map(([id, p]) => [id, { zones: [...p.zones], eligible: p.eligible }] as const)] as const),
+      zonePassages: [...this.zonePassages.entries()].map(([carId, p]) => [carId, { ...p }] as const),
+    };
+  }
+
   /** Una frenada cierra esta pasada, sin borrar el permiso de otras zonas. */
   activation(carId: number, zoneId: number | undefined, eligible: boolean, braking: boolean): boolean {
     if (zoneId === undefined) {

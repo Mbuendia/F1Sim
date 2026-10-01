@@ -17,15 +17,27 @@ export function useRng(rng: Rng | null): void {
   current = rng ?? defaultRng;
 }
 
+// [R28] Estado interno de cada flujo, para guardarlo: mulberry32(rngState(r)) continúa la secuencia de r.
+const states = new WeakMap<Rng, { state: number }>();
+
 export function mulberry32(seed: number): Rng {
-  let state = seed >>> 0;
-  return () => {
-    state = (state + 0x6d2b79f5) >>> 0;
-    let t = state;
+  const box = { state: seed >>> 0 };
+  const rng: Rng = () => {
+    box.state = (box.state + 0x6d2b79f5) >>> 0;
+    let t = box.state;
     t = Math.imul(t ^ (t >>> 15), t | 1);
     t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
+  states.set(rng, box);
+  return rng;
+}
+
+/** Estado actual (uint32) de un flujo creado con mulberry32. */
+export function rngState(rng: Rng): number {
+  const box = states.get(rng);
+  if (!box) throw new Error('El flujo no tiene estado reproducible (Math.random)');
+  return box.state;
 }
 
 /** Semilla de un flujo a partir de la semilla de la carrera y su nombre. */

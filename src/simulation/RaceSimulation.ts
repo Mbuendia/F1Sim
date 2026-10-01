@@ -34,7 +34,7 @@ import { RejoinModel } from './RejoinModel';
 import { IncidentModel } from './IncidentModel';
 import { calculateCarWorldPosition, lapsToPitEntry, limitLateralChange } from '../utils/carPosition';
 import { lineCrossings, TimingLine, TimingService } from './Timing';
-import { mulberry32, random, Rng, streamSeed, useRng } from './Random';
+import { mulberry32, random, Rng, rngState, streamSeed, useRng } from './Random';
 
 // Q20: distancia previa a la entrada de boxes en la que un coche que va a parar se coloca en el eje.
 const PIT_APPROACH_METERS = 250;
@@ -144,6 +144,25 @@ export class RaceSimulation {
     if (stepSec !== null && !(stepSec > 0)) throw new Error('El paso fijo debe ser positivo');
     this.fixedStepSec = stepSec;
     this.stepAccumulator = 0;
+  }
+
+  /** [R28] Estado interno que no es público: lo lee Snapshot para el esquema versionado. */
+  internalState() {
+    const streams: Record<string, number> = {};
+    if (this.seed !== null) {
+      // Crear un flujo que aún no se ha usado no cambia sus números: depende solo de la semilla y su nombre.
+      for (const key of ['motor', ...this.cars.map(car => `coche-${car.id}`)]) this.stream(key);
+      for (const [key, rng] of this.rngStreams) streams[key] = rngState(rng);
+    }
+    return {
+      rng: { seed: this.seed, streams },
+      fixedStepSec: this.fixedStepSec,
+      stepAccumulator: this.stepAccumulator,
+      counters: { nextBoxOrderId: this.nextBoxOrderId, luckEventSeq: this.luckEventSeq, nextIncidentId: IncidentModel.peekNextId() },
+      drsPermissions: this.drsPermissions.serialize(),
+      timing: this.timing.serialize(),
+      rawSectors: [...this.rawSectors.entries()].map(([carId, s]) => [carId, { ...s }] as const),
+    };
   }
 
   private stream(key: string): Rng | null {

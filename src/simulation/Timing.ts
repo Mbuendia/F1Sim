@@ -43,6 +43,11 @@ export class TimingService {
     this.passes.clear();
   }
 
+  /** [R28] Horas de paso por coche y lazo, serializables. */
+  serialize(): [number, [number, number][]][] {
+    return [...this.passes.entries()].map(([carId, history]) => [carId, [...history.entries()]]);
+  }
+
   /** Registra los lazos cruzados por cada coche en un paso de `dt` segundos que empieza en `t0`. */
   record(cars: { id: number; from: number; to: number }[], t0: number, dt: number): void {
     const n = TimingService.LOOPS_PER_LAP;
