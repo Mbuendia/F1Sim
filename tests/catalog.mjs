@@ -505,5 +505,6 @@ export const modules = [
   { "id": "race-control-r09", "tasks": ["R09"], "sprint": "2.9", "kind": "contract" },
   { "id": "safety-car-r10", "tasks": ["R10"], "sprint": "2.9", "kind": "contract" },
   { "id": "vsc-r11", "tasks": ["R11"], "sprint": "2.9", "kind": "contract" },
-  { "id": "red-flag-r12", "tasks": ["R12", "R35"], "sprint": "2.9", "kind": "contract" }
+  { "id": "red-flag-r12", "tasks": ["R12", "R35"], "sprint": "2.9", "kind": "contract" },
+  { "id": "stewards-r13", "tasks": ["R13"], "sprint": "2.9", "kind": "contract" }
 ];
