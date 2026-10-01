@@ -154,27 +154,45 @@ export class RejoinModel {
     const cached = cache.get(key);
     if (cached !== undefined) return cached;
     const pace = trackPace(car), aero = aeroOf(car, pace);
+    // [R08] Ambos salen 600 m antes de la entrada: el que para frena a tiempo para cruzar la línea del limitador a la
+    // velocidad límite, frena hasta el límite y luego hasta el cajón, y acelera a fondo solo tras la línea final.
     const len = this.pitLaneLength(track), entry = track.pitEntryT, finish = entry + len + this.MEASURE_AFTER_EXIT;
+    const L = track.lapLengthMeters, laneMeters = len * L;
+    const { start: limitStart, end: limitEnd } = PitStopModel.limitFractions(laneMeters);
     const points = track.points, n = points.length;
-    let entrySpeed = targetKmh(points[Math.floor(entry * n) % n].speedLimitFactor, aero, pace);
-    if (capKmh !== null) entrySpeed = Math.min(entrySpeed, capKmh);
-    const ghost = { p: entry, v: entrySpeed };
-    const pit = { p: entry, v: entrySpeed };
+    const from = entry - 600 / L;
+    let startSpeed = targetKmh(points[Math.floor((((from % 1) + 1) % 1) * n) % n].speedLimitFactor, aero, pace);
+    if (capKmh !== null) startSpeed = Math.min(startSpeed, capKmh);
+    const ghost = { p: from, v: startSpeed };
+    const pit = { p: from, v: startSpeed };
     const box = PitStopModel.getBoxProgress(car as CarState);
-    const limit = PitStopModel.PIT_SPEED_LIMIT_KMH;
-    let stopped = 0, served = false, inLane = true, t = 0, ghostAt: number | null = null, pitAt: number | null = null;
+    const limit = PitStopModel.PIT_SPEED_LIMIT_KMH, limitMs = limit / 3.6;
+    let stopped = 0, served = false, inLane = false, done = false, t = 0, ghostAt: number | null = null, pitAt: number | null = null;
     while ((ghostAt === null || pitAt === null) && t < 600) {
       this.stepOnTrack(track, aero, pace, capKmh, ghost);
-      if (inLane) {
+      if (!inLane && !done) {
+        const toLimitM = (entry - pit.p) * L + limitStart * laneMeters;
+        const preCap = Math.sqrt(limitMs * limitMs + 2 * 45 * Math.max(0, toLimitM - 5)) * 3.6;
+        this.stepOnTrack(track, aero, pace, capKmh === null ? preCap : Math.min(capKmh, preCap), pit);
+        if (pit.p >= entry) inLane = true;
+      } else if (inLane) {
         const laneProgress = Math.min(1, (pit.p - entry) / len);
-        if (laneProgress >= 1) inLane = false;
-        else if (laneProgress < box) pit.v = laneProgress < 0.05 ? Math.max(limit, pit.v - DT * 280) : limit;
+        if (laneProgress >= 1) { inLane = false; done = true; }
+        else if (laneProgress < box) {
+          if (laneProgress < limitStart) pit.v = Math.max(limit, pit.v - DT * PitStopModel.MAX_BRAKE_KMH_S);
+          else pit.v = Math.max(Math.min(limit, pit.v), Math.min(limit, pit.v - DT * PitStopModel.MAX_BRAKE_KMH_S));
+          const toBox = Math.max(3, Math.sqrt(2 * PitStopModel.BOX_BRAKE_MS2 * Math.max(0, (box - laneProgress) * laneMeters)) * 3.6);
+          pit.v = Math.min(pit.v, Math.max(toBox, pit.v - DT * PitStopModel.MAX_BRAKE_KMH_S));
+        }
         else if (stopped < serviceSec) { stopped += DT; pit.v = 0; }
         else {
-          if (!served) { served = true; pit.v = 20; }
-          pit.v = laneProgress > 0.95 ? Math.min(260, pit.v + DT * 200) : Math.min(limit, pit.v + DT * 100);
+          if (!served) { served = true; pit.v = 0; }
+          else {
+            if (pit.v === 0) pit.v = 20;
+            pit.v = laneProgress >= limitEnd ? Math.min(260, pit.v + DT * 200) : Math.min(limit, pit.v + DT * 100);
+          }
         }
-        if (inLane) pit.p += DT * pit.v / 3.6 / track.lapLengthMeters;
+        if (inLane) pit.p += DT * pit.v / 3.6 / L;
       } else {
         this.stepOnTrack(track, aero, pace, capKmh, pit);
       }

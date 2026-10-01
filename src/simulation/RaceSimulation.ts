@@ -124,6 +124,8 @@ export class RaceSimulation {
   }
 
   private nextBoxOrderId = 1;
+  /** [R08] Entrada al pit lane cerrada por Dirección de Carrera. */
+  pitEntryClosed = false;
   private drsPermissions = new DrsPermissions();
 
   // [R02] Cronometraje por lazos: huecos medidos como diferencia de horas de paso.
@@ -588,9 +590,10 @@ export class RaceSimulation {
       }
       if (racing) this.cars.forEach((car, index) => {
         useRng(this.stream(`coche-${car.id}`));
+        this.issuePlannedStop(car);
         const wasInPitLane = car.isInPitLane;
         PitStopModel.processCrossings(car, previous[index], this.activeTrack,
-          dt, this.raceFlagState, this.safetyCar.mode);
+          dt, this.raceFlagState, this.safetyCar.mode, this.pitEntryClosed);
         // [Q16] Reinicio de contadores ERS en el mismo cruce de la entrada de boxes (sin flujo: dt = 0).
         if (!wasInPitLane && car.isInPitLane && car.energy) {
           EnergyModel.update(car.energy, car.engineMode, false, 0, car.currentLap, true, car.fuelKg > 0, this.energyLimits);
@@ -1000,6 +1003,16 @@ export class RaceSimulation {
 
       // [Q15] Levantar en proporción a la cesión (máx. BLUE_FLAG_LIFT), sin salto de velocidad objetivo.
       targetKmh *= 1 - RaceSimulation.BLUE_FLAG_LIFT * (car.blueFlagLevel ?? 0);
+
+      // [R08] Con la parada decidida, frenar a tiempo para cruzar la línea del limitador a la velocidad límite.
+      if (!car.isInPitLane && (!this.pitEntryClosed || car.hasPuncture) && this.pitIntent(car)) {
+        const laneMeters = PitStopModel.laneLengthMeters(this.activeTrack);
+        const toLimitM = lapsToPitEntry(this.activeTrack, car.progress) * lapDistanceMeters + PitStopModel.limitFractions(laneMeters).start * laneMeters;
+        if (toLimitM < 600) {
+          const limitMs = PitStopModel.PIT_SPEED_LIMIT_KMH / 3.6;
+          targetKmh = Math.min(targetKmh, Math.sqrt(limitMs * limitMs + 2 * 45 * Math.max(0, toLimitM - 5)) * 3.6);
+        }
+      }
 
       // ── RESTRICCIONES DE VELOCIDAD BAJO SC / VSC / BANDERA AMARILLA ──
       const scMaxSpeed = SafetyCarModel.getMaxAllowedSpeed(this.raceFlagState, this.safetyCar.mode);
@@ -1664,6 +1677,46 @@ export class RaceSimulation {
       car.classification = 'DSQ';
       car.classificationReason = compliance.warning ?? 'Incumplimiento de S30.5m';
     }
+  }
+
+  /** [R08] Abre o cierra la entrada al pit lane (Dirección de Carrera). */
+  setPitEntryClosed(closed: boolean) {
+    this.pitEntryClosed = closed;
+  }
+
+  /** [R08] Programa paradas futuras (vuelta y compuesto); se rechaza si falta stock para alguna. */
+  programPitStops(carId: number, plans: { lap: number; compound: TireCompound }[]): boolean {
+    const car = this.getCarById(carId);
+    if (!car || !plans.length) return false;
+    if (car.tireInventory) {
+      const needed = new Map<TireCompound, number>();
+      for (const plan of plans) needed.set(plan.compound, (needed.get(plan.compound) ?? 0) + 1);
+      for (const [compound, n] of needed) {
+        if (availableSets(car.tireInventory, compound) < n) {
+          car.pitStop.lastOrderRejection = `Sin juegos de ${COMPOUND_LABEL[compound]} suficientes para el programa`;
+          return false;
+        }
+      }
+    }
+    car.pitStop.plannedStops = [...plans].sort((a, b) => a.lap - b.lap);
+    car.pitStop.lastOrderRejection = undefined;
+    return true;
+  }
+
+  /** [R08] Emite la siguiente parada programada al llegar a su vuelta, si no hay otra orden en curso. */
+  private issuePlannedStop(car: CarState) {
+    const plan = car.pitStop.plannedStops?.[0];
+    if (!plan || car.currentLap < plan.lap || car.isInPitLane || car.pitStop.isPitting) return;
+    if (orderIsActive(car.pitStop.activeBoxOrder)) return;
+    if (this.issueBoxOrder(car.id, plan.compound, 'player')) car.pitStop.plannedStops!.shift();
+  }
+
+  /** [R08] El coche va a entrar en boxes en la próxima entrada (para frenar a tiempo). */
+  private pitIntent(car: CarState): boolean {
+    const pit = car.pitStop;
+    if (car.hasPuncture || car.tires.health <= 5 || pit.isPitting) return true;
+    if (pit.activeBoxOrder?.status === 'committed') return true;
+    return !pit.playerControlled && pit.scheduledLap > 0 && car.currentLap >= pit.scheduledLap;
   }
 
   getCarById(id: number): CarState | undefined {

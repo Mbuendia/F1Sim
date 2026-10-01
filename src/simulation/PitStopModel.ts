@@ -10,6 +10,44 @@ import { nextCrossing, orderIsActive, updateOrderCommitment } from './BoxOrders'
 export class PitStopModel {
   /** [R01] Límite del pit lane (decisión de Dirección de Carrera), del perfil por defecto. */
   static readonly PIT_SPEED_LIMIT_KMH = DEFAULT_RULES.pitLaneSpeedKmh;
+  // [R08] Líneas del limitador a esta distancia de la entrada y de la salida (m), frenada máxima (km/h/s), frenada
+  // hacia el cajón (m/s²) y distancia de tráfico que retiene la liberación (m). Calibración del juego.
+  static readonly LIMIT_LINE_M = 60;
+  static readonly MAX_BRAKE_KMH_S = 180;
+  static readonly BOX_BRAKE_MS2 = 12;
+  static readonly RELEASE_CLEARANCE_M = 15;
+
+  /** Longitud del pit lane medida sobre el trazado (m). */
+  static laneLengthMeters(track: Pick<TrackDefinition, 'pitEntryT' | 'pitExitT' | 'lapLengthMeters'>): number {
+    const len = track.pitExitT > track.pitEntryT ? track.pitExitT - track.pitEntryT : 1 - track.pitEntryT + track.pitExitT;
+    return len * track.lapLengthMeters;
+  }
+
+  /** Fracciones del pit lane donde empieza y termina el límite de velocidad. */
+  static limitFractions(laneMeters: number): { start: number; end: number } {
+    const f = Math.min(0.3, this.LIMIT_LINE_M / Math.max(1, laneMeters));
+    return { start: f, end: 1 - f };
+  }
+
+  /** Coche que circula por el carril hacia el cajón de `car` a menos de RELEASE_CLEARANCE_M (bloquea su salida). */
+  static releaseBlockedBy(car: CarState, allCars: CarState[], laneMeters: number): CarState | null {
+    const box = this.getBoxProgress(car);
+    for (const other of allCars) {
+      if (other.id === car.id || !other.isInPitLane || other.currentSpeedKmh <= 0 || other.pitStop.waitingForBox) continue;
+      const gap = (box - other.pitStop.pitLaneProgress) * laneMeters;
+      if (gap >= 0 && gap < this.RELEASE_CLEARANCE_M) return other;
+    }
+    return null;
+  }
+
+  private static closeLog(car: CarState) {
+    const pit = car.pitStop;
+    if (!pit.pendingLog) return;
+    const totalSec = pit.laneTimer ?? 0, queueSec = pit.boxWaitTimer, releaseHoldSec = pit.releaseHoldSec ?? 0;
+    (pit.stopLog ??= []).push({ ...pit.pendingLog, totalSec, queueSec, releaseHoldSec,
+      transitSec: totalSec - pit.pendingLog.serviceSec - queueSec - releaseHoldSec });
+    pit.pendingLog = null;
+  }
 
   static shouldEnterPit(car: CarState, dt: number, raceFlagState?: string, scMode?: string): boolean {
     if (car.hasPuncture) return true;
@@ -110,7 +148,9 @@ export class PitStopModel {
     // La entrada se decide por cruce de línea en processCrossings, nunca por una ventana >= t.
     if (pit.isPitting && car.isInPitLane) {
       // [FIX M9] Si ya ha completado el tránsito del pit lane, restaurar a running
+      pit.laneTimer = (pit.laneTimer ?? 0) + dt;
       if (pit.pitLaneProgress >= 1.0) {
+        this.closeLog(car);
         pit.isPitting = false;
         car.isInPitLane = false;
         pit.pitLaneProgress = 0.0;
@@ -144,12 +184,24 @@ export class PitStopModel {
 
       if (pit.pitLaneProgress < boxProgress) {
 
-        // Entrando al pit box
-        if (pit.pitLaneProgress < 0.05) {
-          car.currentSpeedKmh = Math.max(this.PIT_SPEED_LIMIT_KMH, car.currentSpeedKmh - dt * 280);
+        // [R08] Entrando al cajón: frenada real hasta la línea del limitador, limitador hasta el cajón y frenada final.
+        const laneMeters = pitLength * lapDistanceMeters;
+        const { start } = this.limitFractions(laneMeters);
+        const limit = this.PIT_SPEED_LIMIT_KMH;
+        if (pit.pitLaneProgress < start) {
+          car.currentSpeedKmh = Math.max(limit, car.currentSpeedKmh - dt * this.MAX_BRAKE_KMH_S);
         } else {
-          car.currentSpeedKmh = this.PIT_SPEED_LIMIT_KMH;
+          if (!pit.limitStartChecked) {
+            pit.limitStartChecked = true;
+            if (car.currentSpeedKmh > limit + 0.5) {
+              (pit.infractions ??= []).push({ type: 'exceso-velocidad', line: 'inicio', overKmh: car.currentSpeedKmh - limit, lap: car.currentLap });
+            }
+          }
+          car.currentSpeedKmh = Math.max(Math.min(limit, car.currentSpeedKmh), Math.min(limit, car.currentSpeedKmh - dt * this.MAX_BRAKE_KMH_S));
         }
+        const toBoxM = (boxProgress - pit.pitLaneProgress) * laneMeters;
+        const boxApproachKmh = Math.max(3, Math.sqrt(2 * this.BOX_BRAKE_MS2 * Math.max(0, toBoxM)) * 3.6);
+        car.currentSpeedKmh = Math.min(car.currentSpeedKmh, Math.max(boxApproachKmh, car.currentSpeedKmh - dt * this.MAX_BRAKE_KMH_S));
         // [Q11] Clear waiting state while approaching (not yet at box)
         pit.waitingForBox = false;
       } 
@@ -235,6 +287,7 @@ export class PitStopModel {
           else if (!inventory) car.tires = TireModel.createFreshTire(nextCompound);
           car.hasPuncture = false; // [FIX A5] Clear puncture after tires are changed
           pit.totalPitStops += 1;
+          pit.pendingLog = { lap: car.currentLap, setId: car.tireInventory?.mountedId ?? null, compound: nextCompound, serviceSec: pit.currentStopTimer };
 
           // [FIX A6] Cerrar el stint anterior
           if (pit.stints.length > 0) {
@@ -249,19 +302,33 @@ export class PitStopModel {
             expectedLaps
           });
           
-          // Al terminar la parada, le damos un empujón para que despegue físicamente del pit box
-          car.currentSpeedKmh = 20; 
+          // Al terminar la parada, el coche despega del cajón cuando la liberación es segura (abajo).
+          car.currentSpeedKmh = 0;
         }
 
-        // Saliendo del pit lane orgánicamente
-        if (pit.pitLaneProgress > 0.95) {
+        // [R08] Liberación segura: retener mientras otro coche llega por el carril hacia el cajón.
+        const laneMetersOut = pitLength * lapDistanceMeters;
+        if (allCars && pit.pitLaneProgress < boxProgress + 0.5 / Math.max(1, laneMetersOut) && this.releaseBlockedBy(car, allCars, laneMetersOut)) {
+          pit.releaseHoldSec = (pit.releaseHoldSec ?? 0) + dt;
+          car.currentSpeedKmh = 0;
+          return true;
+        }
+        if (car.currentSpeedKmh === 0) car.currentSpeedKmh = 20;
+        const { end } = this.limitFractions(laneMetersOut);
+        // Saliendo del pit lane: limitador hasta la línea final; después, aceleración libre.
+        if (pit.pitLaneProgress >= end) {
           car.currentSpeedKmh = Math.min(260, car.currentSpeedKmh + dt * 200);
         } else {
+          if (car.currentSpeedKmh > this.PIT_SPEED_LIMIT_KMH + 0.5 && !pit.limitEndFlagged) {
+            pit.limitEndFlagged = true;
+            (pit.infractions ??= []).push({ type: 'exceso-velocidad', line: 'fin', overKmh: car.currentSpeedKmh - this.PIT_SPEED_LIMIT_KMH, lap: car.currentLap });
+          }
           // Aceleración hasta el limitador (80 km/h)
           car.currentSpeedKmh = Math.min(this.PIT_SPEED_LIMIT_KMH, car.currentSpeedKmh + dt * 100);
         }
 
         if (pit.pitLaneProgress >= 1.0) {
+          this.closeLog(car);
           pit.isPitting = false;
           car.isInPitLane = false;
           pit.pitLaneProgress = 0.0;
@@ -283,7 +350,7 @@ export class PitStopModel {
   }
 
   static processCrossings(car: CarState, previousProgress: number, track: TrackDefinition,
-    dt: number, flag?: string, scMode?: string): void {
+    dt: number, flag?: string, scMode?: string, pitClosed = false): void {
     const pit = car.pitStop;
     if (car.status === 'out' || car.status === 'finished') {
       if (orderIsActive(pit.activeBoxOrder)) {
@@ -301,6 +368,11 @@ export class PitStopModel {
     const emergency = car.hasPuncture || car.tires.health <= 5 || pit.isPitting;
     const automatic = !pit.playerControlled && this.shouldEnterPit(car, dt, flag, scMode);
     if (!ordered && !emergency && !automatic) return;
+    // [R08] Entrada cerrada por Dirección de Carrera: solo reparación esencial (pinchazo).
+    if (pitClosed && !car.hasPuncture) {
+      if (orderIsActive(order)) order!.message = 'Pit cerrado: entrada aplazada a la siguiente vuelta.';
+      return;
+    }
     pit.isPitting = true;
     car.isInPitLane = true;
     car.status = 'pit';
@@ -311,6 +383,7 @@ export class PitStopModel {
     pit.lastStopDuration = null;
     pit.waitingForBox = false;
     pit.boxWaitTimer = 0;
+    pit.laneTimer = 0; pit.releaseHoldSec = 0; pit.limitStartChecked = false; pit.limitEndFlagged = false; pit.pendingLog = null;
     const roll = random();
     pit.stopDuration = Number((roll < .2 ? 1.8 + random() * .4 :
       roll < .75 ? 2.2 + random() * .8 : roll < .9 ? 3 + random() : 4 + random() * 4).toFixed(2));

@@ -194,6 +194,18 @@ export interface PitStopState {
   activeBoxOrder: BoxOrder | null;   // Q9: Binding compound order
   /** [R07] Motivo del último rechazo de una orden de boxes (p. ej. sin juegos del compuesto). */
   lastOrderRejection?: string;
+  /** [R08] Infracciones registradas en boxes (las sanciones las aplica R13). */
+  infractions?: PitInfraction[];
+  /** [R08] Registro de cada parada con tiempos separados. */
+  stopLog?: PitStopLog[];
+  /** [R08] Paradas programadas pendientes (vuelta y compuesto). */
+  plannedStops?: { lap: number; compound: TireCompound }[];
+  /** [R08] Contadores de la parada en curso. */
+  laneTimer?: number;
+  releaseHoldSec?: number;
+  limitStartChecked?: boolean;
+  limitEndFlagged?: boolean;
+  pendingLog?: Omit<PitStopLog, 'totalSec' | 'transitSec' | 'queueSec' | 'releaseHoldSec'> | null;
   playerControlled?: boolean;
   entryProgress?: number;
   // Q11: Double stack — waiting state
@@ -201,6 +213,26 @@ export interface PitStopState {
   boxWaitTimer: number;              // accumulated wait time (sim seconds) behind teammate
   // Q17: beneficio D20 de servicio pendiente (se consume en la próxima parada real dentro de su validez)
   crewBenefit?: CrewServiceBenefit | null;
+}
+
+/** [R08] Infracción en el pit lane. */
+export interface PitInfraction {
+  type: 'exceso-velocidad';
+  line: 'inicio' | 'fin';
+  overKmh: number;
+  lap: number;
+}
+
+/** [R08] Parada registrada: la pérdida sale de tránsito, servicio, cola y retención, no de una cifra fija. */
+export interface PitStopLog {
+  lap: number;
+  setId: string | null;
+  compound: TireCompound;
+  totalSec: number;
+  transitSec: number;
+  serviceSec: number;
+  queueSec: number;
+  releaseHoldSec: number;
 }
 
 // [Q17] Beneficio de preparación de boxes: solo acota la duración del servicio; no toca tránsito ni recursos.
