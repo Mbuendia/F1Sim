@@ -1,4 +1,5 @@
 import { random } from './Random';
+import { mountSet, pickSet, COMPOUND_LABEL, tireCompliance } from './TireInventory';
 import { DEFAULT_RULES } from '../rules/ruleSets';
 import { CarState, TireCompound } from '../types/f1';
 import { TireModel } from './TireModel';
@@ -201,12 +202,37 @@ export class PitStopModel {
               else if (r < 0.66) { nextCompound = 'medium'; expectedLaps = 24; } 
               else { nextCompound = 'hard'; expectedLaps = 36; }
             }
+            // [R07] La estrategia rival conoce S30.5m: si aún falta una segunda especificación slick, elige otra.
+            const inv = car.tireInventory;
+            if (inv) {
+              const compliance = tireCompliance(inv, ''); // solo especificaciones; el número de juegos lo cubren las paradas
+              if (!compliance.usedWetWeather && compliance.slickSpecs.length < 2 && compliance.slickSpecs.includes(nextCompound)) {
+                const other = (['hard', 'medium', 'soft'] as TireCompound[]).find(c => !compliance.slickSpecs.includes(c) && pickSet(inv, c));
+                if (other) { nextCompound = other; expectedLaps = this.getExpectedLapsForCompound(other); }
+              }
+            }
+          }
+
+          // [R07] Montar un juego concreto del inventario (nuevo primero; si no, usado con su desgaste). La IA rival
+          // solo elige compuestos que tiene; una orden del jugador ya se validó contra el stock al emitirse.
+          const inventory = car.tireInventory;
+          let set = inventory ? pickSet(inventory, nextCompound) : null;
+          if (inventory && !set && !(pit.activeBoxOrder?.issuer === 'player')) {
+            for (const alternative of ['medium', 'hard', 'soft', 'intermediate', 'wet'] as TireCompound[]) {
+              set = pickSet(inventory, alternative);
+              if (set) { nextCompound = alternative; expectedLaps = this.getExpectedLapsForCompound(alternative); break; }
+            }
+          }
+          if (inventory && !set) {
+            pit.lastOrderRejection = `Sin juegos de ${COMPOUND_LABEL[nextCompound]} disponibles: se mantiene el juego montado`;
+            nextCompound = car.tires.compound;
           }
 
           // [Q9] Actualizar targetCompound para reflejar lo realmente montado
           pit.targetCompound = nextCompound;
 
-          car.tires = TireModel.createFreshTire(nextCompound);
+          if (inventory && set) car.tires = mountSet(inventory, set, car.tires);
+          else if (!inventory) car.tires = TireModel.createFreshTire(nextCompound);
           car.hasPuncture = false; // [FIX A5] Clear puncture after tires are changed
           pit.totalPitStops += 1;
 

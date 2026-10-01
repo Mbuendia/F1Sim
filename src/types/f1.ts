@@ -192,6 +192,8 @@ export interface PitStopState {
   targetCompound: TireCompound;
   stints: StintLog[];
   activeBoxOrder: BoxOrder | null;   // Q9: Binding compound order
+  /** [R07] Motivo del último rechazo de una orden de boxes (p. ej. sin juegos del compuesto). */
+  lastOrderRejection?: string;
   playerControlled?: boolean;
   entryProgress?: number;
   // Q11: Double stack — waiting state
@@ -332,6 +334,10 @@ export interface CarState {
   brakeFrictionMW?: number;
   /** [R17] Perfil técnico resuelto para este evento (chasis, PU y paquete aerodinámico). */
   technical?: import('../data/teamProfiles').CarTechnical;
+  /** [R07] Juegos de neumáticos del coche y clasificación reglamentaria (DSQ por incumplir S30.5m). */
+  tireInventory?: import('../simulation/TireInventory').TireInventory;
+  classification?: 'DSQ';
+  classificationReason?: string;
 
   aheadInfo: RelativeCarInfo | null;
   behindInfo: RelativeCarInfo | null;

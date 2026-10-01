@@ -36,6 +36,7 @@ import { calculateCarWorldPosition, lapsToPitEntry, limitLateralChange } from '.
 import { lineCrossings, TimingLine, TimingService } from './Timing';
 import { brakeDecelFactor, brakeTempStep, engineTempStep, gearFor, rpmFor } from './PowertrainModel';
 import { chassisGripAt, resolveTechnical } from '../data/teamProfiles';
+import { availableSets, COMPOUND_LABEL, createInventory, TireCompliance, tireCompliance } from './TireInventory';
 import { AERO, CAR_DRY_MASS_KG, cornerMassFactor, dirtyAirLevel, holdThrottle, longitudinalAccel, slipstreamLevel, topSpeedKmh } from './AeroModel';
 import { mulberry32, random, Rng, rngState, streamSeed, useRng } from './Random';
 
@@ -371,6 +372,8 @@ export class RaceSimulation {
     for (const car of this.cars) {
       // [R17] Perfil técnico resuelto una vez por coche y evento (chasis, PU y paquete del circuito).
       car.technical = resolveTechnical(car.team.id, this.circuitId);
+      // [R07] Inventario de juegos: mismo stock y reglas para todos; sale con un medio.
+      car.tireInventory = createInventory(this.circuitId, car.tires.compound);
       const load = Math.min(this.rule('initialFuelKg'), FuelModel.initialFuelFor(RejoinModel.lapFuelKg(this.activeTrack, car), this.totalLaps));
       car.fuelKg = load; car.telemetry.fuelKg = load;
       car.massKg = CAR_DRY_MASS_KG + load; car.fuelBurnedKg = 0; car.coastedSec = 0;
@@ -827,8 +830,10 @@ export class RaceSimulation {
           if (car.currentLap >= this.totalLaps && !this.leaderFinished) {
             this.leaderFinished = true;
             car.status = 'finished';
+          this.applyTireRules(car);
           } else if (this.leaderFinished) {
             car.status = 'finished';
+          this.applyTireRules(car);
           }
         }
         
@@ -1248,8 +1253,10 @@ export class RaceSimulation {
         if (car.currentLap >= this.totalLaps && !this.leaderFinished) {
           this.leaderFinished = true;
           car.status = 'finished';
+          this.applyTireRules(car);
         } else if (this.leaderFinished) {
           car.status = 'finished';
+          this.applyTireRules(car);
         }
         if (car.status === 'finished') break;
       }
@@ -1642,6 +1649,23 @@ export class RaceSimulation {
     return 0.000008 * unluckFactor * (teamUnreliability * 50) * thermalStress;
   }
 
+  /** [R07] Estado de cumplimiento de S30.5m (dos especificaciones; Mónaco tres juegos) con aviso preventivo. */
+  getTireCompliance(carId: number): TireCompliance {
+    const car = this.getCarById(carId);
+    if (!car?.tireInventory) return { slickSpecs: [], usedWetWeather: false, setsUsed: 0, setsRequired: 0, satisfied: true, warning: null };
+    return tireCompliance(car.tireInventory, this.circuitId);
+  }
+
+  /** [R07] Carrera terminada normalmente sin cumplir S30.5m → DSQ (el juego no cambia neumáticos para evitarlo). */
+  private applyTireRules(car: CarState) {
+    if (!car.tireInventory || car.classification) return;
+    const compliance = tireCompliance(car.tireInventory, this.circuitId);
+    if (!compliance.satisfied) {
+      car.classification = 'DSQ';
+      car.classificationReason = compliance.warning ?? 'Incumplimiento de S30.5m';
+    }
+  }
+
   getCarById(id: number): CarState | undefined {
     return this.cars.find(c => c.id === id);
   }
@@ -1802,6 +1826,12 @@ export class RaceSimulation {
     if (!car || car.status !== 'running' || car.isInPitLane || car.pitStop.isPitting ||
       this.lightState !== 'racing' || this.isFinished || this.raceFlagState === 'red' ||
       !['soft', 'medium', 'hard', 'intermediate', 'wet'].includes(compound)) return null;
+    // [R07] Sin juegos del compuesto pedido: rechazo explicado, sin sustituirlo por otro.
+    if (car.tireInventory && availableSets(car.tireInventory, compound) === 0) {
+      car.pitStop.lastOrderRejection = `Sin juegos de ${COMPOUND_LABEL[compound]} disponibles`;
+      return null;
+    }
+    car.pitStop.lastOrderRejection = undefined;
     updateOrderCommitment(car);
     const previous = car.pitStop.activeBoxOrder;
     if (previous?.status === 'committed' || (issuer === 'ai' && car.pitStop.playerControlled)) return null;
