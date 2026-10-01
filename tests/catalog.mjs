@@ -496,5 +496,6 @@ export const modules = [
   { "id": "bench", "tasks": ["R27"], "sprint": "2.9", "kind": "contract" },
   { "id": "aero", "tasks": ["R05", "R40"], "sprint": "2.9", "kind": "contract" },
   { "id": "tires-r06", "tasks": ["R06"], "sprint": "2.9", "kind": "contract" },
-  { "id": "fuel", "tasks": ["R14"], "sprint": "2.9", "kind": "contract" }
+  { "id": "fuel", "tasks": ["R14"], "sprint": "2.9", "kind": "contract" },
+  { "id": "ers-r15", "tasks": ["R15"], "sprint": "2.9", "kind": "contract" }
 ];
