@@ -499,5 +499,6 @@ export const modules = [
   { "id": "fuel", "tasks": ["R14"], "sprint": "2.9", "kind": "contract" },
   { "id": "ers-r15", "tasks": ["R15"], "sprint": "2.9", "kind": "contract" },
   { "id": "powertrain-r16", "tasks": ["R16"], "sprint": "2.9", "kind": "contract" },
-  { "id": "teams-r17", "tasks": ["R17"], "sprint": "2.9", "kind": "contract" }
+  { "id": "teams-r17", "tasks": ["R17"], "sprint": "2.9", "kind": "contract" },
+  { "id": "tire-sets", "tasks": ["R07"], "sprint": "2.9", "kind": "contract" }
 ];
