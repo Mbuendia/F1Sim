@@ -67,7 +67,8 @@ export default async function run({ server, assert, test }) {
   };
 
   await test('R02: el hueco se mide en tiempo, no con 77,8 s por vuelta', () => {
-    const { sim, a, b } = pair(1.5);
+    // Separación 2,0 s (antes 1,5 s; cambiada con autorización del usuario el 01/10/2026: con R05 coincidía por azar).
+    const { sim, a, b } = pair(2.0);
     const t0 = sim.raceTimeSec;
     while (sim.raceTimeSec < t0 + 8) sim.update(1 / 60);
     // Hueco esperado: diferencia real de tiempos de paso por el último lazo común.

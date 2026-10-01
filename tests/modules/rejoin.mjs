@@ -22,8 +22,9 @@ export default async function run({assert, server}) {
           } else {
             const projection = sim.getRejoinProjection(car1.id);
             // Revisión autorizada 30/09/2026: la pérdida sale del pit lane simulado (80 km/h + servicio medio), no de la ficha.
-            // Barcelona medida en el simulador: 35,6 s con servicio de 2,6 s (tests/modules/rejoin-loss.mjs).
-            assert(projection.timeLossSec >= 34.5 && projection.timeLossSec <= 37.5, 'Q13: El predictor base usa la pérdida simulada de boxes y el servicio medio', `${projection.timeLossSec.toFixed(2)} s`);
+            // Barcelona medida en el simulador: 33,7 s con servicio de 2,6 s tras R05 (antes 35,6 s; rango actualizado con
+            // autorización del usuario el 01/10/2026; validación predicción/medida en tests/modules/rejoin-loss.mjs).
+            assert(projection.timeLossSec >= 32.5 && projection.timeLossSec <= 35.5, 'Q13: El predictor base usa la pérdida simulada de boxes y el servicio medio', `${projection.timeLossSec.toFixed(2)} s`);
           }
         }
 
