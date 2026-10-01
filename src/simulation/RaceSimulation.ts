@@ -24,7 +24,8 @@ import { TireModel } from './TireModel';
 import { FuelModel } from './FuelModel';
 import { EngineModel } from './EngineModel';
 import { DrsPermissions } from './DRSModel';
-import { EnergyModel } from './EnergyModel';
+import { EnergyModel, EnergyLimits, energyLimitsFor } from './EnergyModel';
+import { DEFAULT_RULE_SET_ID, DEFAULT_RULES, getRuleSet, ruleValue, validateRuleSet, RuleSet } from '../rules/ruleSets';
 import { depositRubber } from '../utils/racingLine';
 import { PitStopModel } from './PitStopModel';
 import { commitmentT, nextCrossing, orderIsActive, updateOrderCommitment } from './BoxOrders';
@@ -117,6 +118,23 @@ export class RaceSimulation {
   private nextBoxOrderId = 1;
   private drsPermissions = new DrsPermissions();
 
+  // [R01] Perfil de reglas activo: el motor lee de aquí los valores reglamentarios.
+  rules: RuleSet = getRuleSet(DEFAULT_RULE_SET_ID);
+  private energyLimits: EnergyLimits = energyLimitsFor(this.rules);
+
+  /** Cambia el perfil de reglas (validado). Afecta a las decisiones siguientes, no recoloca nada. */
+  setRuleSet(set: RuleSet) {
+    const errors = validateRuleSet(set);
+    if (errors.length) throw new Error(`Perfil de reglas inválido: ${errors.join('; ')}`);
+    this.rules = set;
+    this.energyLimits = energyLimitsFor(set);
+    this.drsPermissions.gapThresholdSec = ruleValue(set, 'drsGapSec');
+  }
+
+  private rule(key: Parameters<typeof ruleValue>[1]): number {
+    return ruleValue(this.rules, key);
+  }
+
   initRace() {
     IncidentModel.reset();
     this.activeLuckEvent = null;
@@ -168,7 +186,7 @@ export class RaceSimulation {
         drsAvailable: false,
         engineMode: 'standard',
         aggression: 'balanced',
-        fuelKg: FuelModel.INITIAL_FUEL_KG,
+        fuelKg: this.rule('initialFuelKg'),
         fuelPerLap: FuelModel.BASE_CONSUMPTION_PER_LAP,
         batterySoc: 100,
         ersDeploying: false,
@@ -224,7 +242,7 @@ export class RaceSimulation {
         paceMode: 'balanced',
 
         tires: initialTires,
-        fuelKg: FuelModel.INITIAL_FUEL_KG,
+        fuelKg: this.rule('initialFuelKg'),
         engineMode: 'standard',
         aggression: 'balanced',
         drsActive: false,
@@ -304,7 +322,7 @@ export class RaceSimulation {
   }
 
   // [Q15] Banderas azules: consulta común de tráfico y ajustes de cesión (ajustes de juego, no cifras FIA).
-  static readonly BLUE_FLAG_GAP_SEC = 1.2;
+  static readonly BLUE_FLAG_GAP_SEC = DEFAULT_RULES.blueFlagGapSec;
   static readonly BLUE_FLAG_RAMP_IN_SEC = 2.0;
   static readonly BLUE_FLAG_RAMP_OUT_SEC = 1.5;
   static readonly BLUE_FLAG_LIFT = 0.15;
@@ -318,7 +336,7 @@ export class RaceSimulation {
       const distance = ((car.progress - c.progress) % 1 + 1) % 1;
       return c.id !== car.id && c.status === 'running' && !c.isInPitLane && !c.pitStop.isPitting
         && c.progress - car.progress > 0.5 && distance > 0
-        && distance * lapDistanceMeters / Math.max(1, c.currentSpeedKmh / 3.6) < RaceSimulation.BLUE_FLAG_GAP_SEC;
+        && distance * lapDistanceMeters / Math.max(1, c.currentSpeedKmh / 3.6) < this.rule('blueFlagGapSec');
     });
   }
 
@@ -476,7 +494,7 @@ export class RaceSimulation {
           dtRaw / steps * this.getEffectiveTimeScale(), this.raceFlagState, this.safetyCar.mode);
         // [Q16] Reinicio de contadores ERS en el mismo cruce de la entrada de boxes (sin flujo: dt = 0).
         if (!wasInPitLane && car.isInPitLane && car.energy) {
-          EnergyModel.update(car.energy, car.engineMode, false, 0, car.currentLap, true, car.fuelKg > 0);
+          EnergyModel.update(car.energy, car.engineMode, false, 0, car.currentLap, true, car.fuelKg > 0, this.energyLimits);
         }
         const order = car.pitStop.activeBoxOrder;
         if (order?.status === 'consumed' && order.consumedAt === undefined) order.consumedAt = this.raceTimeSec;
@@ -663,7 +681,7 @@ export class RaceSimulation {
         car.trackT = ((car.progress % 1) + 1) % 1;
         // [Q16] En boxes: reinicio reglamentario de los contadores por vuelta al entrar, sin flujos ni recarga.
         car.energy ??= EnergyModel.create();
-        EnergyModel.update(car.energy, car.engineMode, false, dt, car.currentLap, true, car.fuelKg > 0);
+        EnergyModel.update(car.energy, car.engineMode, false, dt, car.currentLap, true, car.fuelKg > 0, this.energyLimits);
         car.telemetry.batterySoc = car.energy.storedMJ * 25;
         car.telemetry.ersDeploying = false;
         car.telemetry.speedKmh = Math.round(car.currentSpeedKmh);
@@ -753,7 +771,7 @@ export class RaceSimulation {
 
       car.energy ??= EnergyModel.create();
       const energyDeployment = EnergyModel.update(car.energy, car.engineMode, trackPoint.isBrakingZone,
-        dt, car.currentLap, false, car.fuelKg > 0);
+        dt, car.currentLap, false, car.fuelKg > 0, this.energyLimits);
       const enginePerf = EngineModel.getEnginePerformance(car.engineMode);
       
       const driverSkillMultiplier = 
@@ -1164,7 +1182,7 @@ export class RaceSimulation {
         this.raceFlagState = 'green';
         // [Q19] S22.1: una vuelta completada tras el SC. El contador baja en cada cruce del líder por la línea: el
         // primero es la línea de reanudación (el SC libera antes de ella) y el segundo completa esa vuelta.
-        this.drsDisabledLaps = 2;
+        this.drsDisabledLaps = this.rule('drsLapsAfterSafetyCar');
       }
     }
 
@@ -1175,7 +1193,7 @@ export class RaceSimulation {
         this.vscActive = false;
         this.raceFlagState = 'green';
         // [Q19] S22.1: tras el VSC no hay espera adicional de DRS (antes 1 vuelta).
-        this.drsDisabledLaps = 0;
+        this.drsDisabledLaps = this.rule('drsLapsAfterVsc');
       }
     }
 
@@ -1191,7 +1209,7 @@ export class RaceSimulation {
       if (allCleared) {
         // Await restart confirmation without teleporting or granting resources.
         this.raceFlagState = 'green';
-        this.drsDisabledLaps = 2;
+        this.drsDisabledLaps = this.rule('drsLapsAfterSafetyCar');
         this.scEndingLap = Math.floor(Math.max(0, ...this.cars.filter(c => c.status !== 'out').map(c => c.progress)));
         for (const car of this.cars) {
           if (car.status === 'out' || car.status === 'finished') continue;

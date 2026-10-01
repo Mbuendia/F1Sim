@@ -1,4 +1,5 @@
 import { SplinePoint } from '../utils/spline';
+import { DEFAULT_RULES } from '../rules/ruleSets';
 
 export interface DrsDetection { id: string; t: number; zoneIds: number[]; source: 'calibrated' | 'verified'; }
 interface Passage { carId: number; time: number; }
@@ -6,6 +7,8 @@ interface Permission { zones: number[]; eligible: boolean; }
 
 /** Tiempos de cruce por ruta principal y permiso persistente hasta otra detección. */
 export class DrsPermissions {
+  /** [R01] Umbral de detección del perfil de reglas activo (s). */
+  gapThresholdSec: number = DEFAULT_RULES.drsGapSec;
   private passages = new Map<string, Passage[]>();
   private permissions = new Map<number, Map<string, Permission>>();
   private zonePassages = new Map<number, { zoneId: number; closedByBraking: boolean }>();
@@ -48,7 +51,7 @@ export class DrsPermissions {
       const ahead = [...history].reverse().find(p => p.carId !== event.carId);
       const gap = ahead ? event.time - ahead.time : Infinity;
       const grants = this.permissions.get(event.carId) || new Map<string, Permission>();
-      grants.set(event.detection.id, {zones: event.detection.zoneIds, eligible: gap >= 0 && gap < 1});
+      grants.set(event.detection.id, {zones: event.detection.zoneIds, eligible: gap >= 0 && gap < this.gapThresholdSec});
       this.permissions.set(event.carId, grants);
       history.push({carId: event.carId, time: event.time});
       this.passages.set(event.detection.id, history.filter(p => p.time >= event.time - 2));
@@ -94,5 +97,5 @@ export class DRSModel {
 }
 
 function gapAheadInRange(gapSec: number): boolean {
-  return gapSec > 0 && gapSec < 1.0;
+  return gapSec > 0 && gapSec < DEFAULT_RULES.drsGapSec;
 }

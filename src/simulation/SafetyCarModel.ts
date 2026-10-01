@@ -1,5 +1,6 @@
 import { SafetyCarState, CarState, TrackIncident, RaceFlagState } from '../types/f1';
 import { IncidentModel } from './IncidentModel';
+import { DEFAULT_RULES } from '../rules/ruleSets';
 
 type PitGeometry = { pitEntryT: number; pitExitT: number };
 type TrackPointLike = { speedLimitFactor: number };
@@ -62,7 +63,7 @@ export class SafetyCarModel {
 
   // ── [Q14] SC FÍSICO: sale del pit lane, espera despacio al líder y vuelve por el pit lane ──
   /** Límite del pit lane (km/h). */
-  static readonly PIT_LANE_KMH = 80;
+  static readonly PIT_LANE_KMH = DEFAULT_RULES.pitLaneSpeedKmh;
   /** Velocidad máxima en pista mientras espera a que el líder lo alcance. */
   static readonly SC_WAIT_KMH = 100;
   /** Velocidad máxima liderando el pelotón (coincide con el límite de los coches bajo SC). */

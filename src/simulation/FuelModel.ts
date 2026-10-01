@@ -1,7 +1,9 @@
 import { EngineMode } from '../types/f1';
+import { DEFAULT_RULES } from '../rules/ruleSets';
 
 export class FuelModel {
-  static readonly INITIAL_FUEL_KG = 110;
+  /** [R01] Ajuste del juego (no es un máximo reglamentario), del perfil por defecto. */
+  static readonly INITIAL_FUEL_KG = DEFAULT_RULES.initialFuelKg;
   static readonly BASE_CONSUMPTION_PER_LAP = 1.65; // ~109 kg en 66 vueltas
 
   /**

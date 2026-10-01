@@ -1,3 +1,4 @@
+import { DEFAULT_RULES } from '../rules/ruleSets';
 import { CarState, TireCompound } from '../types/f1';
 import { TireModel } from './TireModel';
 import { TrackDefinition } from '../data/barcelonaTrack';
@@ -5,7 +6,8 @@ import { TEAMS } from '../data/teams';
 import { nextCrossing, orderIsActive, updateOrderCommitment } from './BoxOrders';
 
 export class PitStopModel {
-  static readonly PIT_SPEED_LIMIT_KMH = 80;
+  /** [R01] Límite del pit lane (decisión de Dirección de Carrera), del perfil por defecto. */
+  static readonly PIT_SPEED_LIMIT_KMH = DEFAULT_RULES.pitLaneSpeedKmh;
 
   static shouldEnterPit(car: CarState, dt: number, raceFlagState?: string, scMode?: string): boolean {
     if (car.hasPuncture) return true;
