@@ -34,7 +34,13 @@ export interface SafetyCarState {
   triggerReason: string;
   deployedAtRaceTime: number;
   isInPitLane?: boolean;       // Q14: circulando por el pit lane (salida o retirada)
+  /** [R10] Fase del procedimiento (S55), registro de fases y lista de doblados autorizados a desdoblarse. */
+  phase?: SafetyCarPhase;
+  phaseLog?: { phase: SafetyCarPhase; time: number; message: string }[];
+  unlapEligible?: number[] | null;
 }
+
+export type SafetyCarPhase = 'despliegue' | 'recogida' | 'fila' | 'desdoblamiento' | 'retirada' | 'relanzamiento' | 'verde';
 
 export interface TrackIncident {
   id: number;
@@ -368,6 +374,8 @@ export interface CarState {
   coastedSec?: number;
   /** [R16] Potencia de fricción de los frenos en el último paso (MW): la frenada que no recupera el MGU-K. */
   brakeFrictionMW?: number;
+  /** [R10] Doblado autorizado que está adelantando a la fila y al SC para recuperar su vuelta. */
+  scUnlapping?: boolean;
   /** [R17] Perfil técnico resuelto para este evento (chasis, PU y paquete aerodinámico). */
   technical?: import('../data/teamProfiles').CarTechnical;
   /** [R07] Juegos de neumáticos del coche y clasificación reglamentaria (DSQ por incumplir S30.5m). */

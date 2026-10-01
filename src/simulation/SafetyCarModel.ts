@@ -237,7 +237,7 @@ export class SafetyCarModel {
   // Compactar el grupo detrás del safety car
   static compactField(cars: CarState[], scProgress: number, dt: number): void {
     const activeCars = cars
-      .filter(c => c.status === 'running' && !c.pitStop.isPitting && !c.isInPitLane)
+      .filter(c => c.status === 'running' && !c.pitStop.isPitting && !c.isInPitLane && !c.scUnlapping)
       .sort((a, b) => b.progress - a.progress);
     
     const targetGap = 0.0025;
