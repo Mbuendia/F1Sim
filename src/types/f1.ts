@@ -315,6 +315,10 @@ export interface CarState {
   lapsBehindLeader?: number;
   /** [R02] Coche inmediatamente delante en pista (sin pit lane), sea cual sea su vuelta. */
   physicalAheadId?: number | null;
+  /** [R05] Rebufo 0..1 del coche físicamente delante (solo en recta). */
+  slipstreamLevel?: number;
+  /** [R05] Aire sucio 0..1 en curva. */
+  dirtyAirLevel?: number;
 
   aheadInfo: RelativeCarInfo | null;
   behindInfo: RelativeCarInfo | null;

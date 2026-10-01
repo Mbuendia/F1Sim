@@ -1,6 +1,7 @@
 import type { TrackDefinition } from '../data/barcelonaTrack';
 import type { CarState } from '../types/f1';
 import { PitStopModel } from './PitStopModel';
+import { CAR_DRY_MASS_KG, LongitudinalInput, longitudinalAccel, topSpeedKmh } from './AeroModel';
 
 // [Q13] Modelo de reincorporación: réplica 1D de la física longitudinal del motor (misma velocidad objetivo por
 // tramo, frenada 180/120 km/h/s, aceleración por potencia, limitador de boxes, servicio y salida) para medir cuánto
@@ -16,11 +17,20 @@ const trackPace = (car: CarLike) => {
   return car.team.carPerformance * (0.92 + 0.08 * skill);
 };
 
+// [R05] Mismo modelo longitudinal que RaceSimulation: masa con combustible medio de carrera, ERS en modo estándar
+// (la mitad del MGU-K), sin DRS ni rebufo.
+const REJOIN_FUEL_KG = 50;
+type Aero = Omit<LongitudinalInput, 'speedKmh'> & { topKmh: number };
+const aeroOf = (car: CarLike, pace: number): Aero => {
+  const input = { massKg: CAR_DRY_MASS_KG + REJOIN_FUEL_KG, powerKw: (car.team.horsepower * 0.7457 - 120) * pace ** 3 + 120 * 0.5, drsOpen: false, slipstream: 0 };
+  return { ...input, topKmh: topSpeedKmh(input) };
+};
+
 // Misma tabla de velocidades objetivo que RaceSimulation (tramo recto / curva rápida / media / lenta).
-const targetKmh = (speedLimitFactor: number, car: CarLike, pace: number): number => {
+const targetKmh = (speedLimitFactor: number, aero: Aero, pace: number): number => {
   const f = speedLimitFactor;
-  const base = f >= 0.9 ? 338 + (car.team.carPerformance - 0.88) * 120
-    : f >= 0.65 ? 190 + (f - 0.65) * 450
+  if (f >= 0.9) return aero.topKmh;
+  const base = f >= 0.65 ? 190 + (f - 0.65) * 450
     : f >= 0.4 ? 120 + (f - 0.4) * 280
     : 68 + (f - 0.2) * 240;
   return base * pace;
@@ -53,19 +63,15 @@ export class RejoinModel {
     return track.pitExitT > track.pitEntryT ? track.pitExitT - track.pitEntryT : 1 - track.pitEntryT + track.pitExitT;
   }
 
-  private static stepOnTrack(track: TrackDefinition, car: CarLike, pace: number, accel: number,
+  private static stepOnTrack(track: TrackDefinition, aero: Aero, pace: number,
     capKmh: number | null, state: { p: number; v: number }) {
     const points = track.points, n = points.length;
     const point = points[Math.floor((((state.p % 1) + 1) % 1) * n) % n];
-    let target = targetKmh(point.speedLimitFactor, car, pace);
+    let target = targetKmh(point.speedLimitFactor, aero, pace);
     if (capKmh !== null) target = Math.min(target, capKmh);
     if (target < state.v) state.v -= Math.min(state.v - target, (point.isBrakingZone ? 180 : 120) * DT);
-    else state.v += Math.min(target - state.v, accel * DT);
+    else state.v += Math.min(target - state.v, Math.max(0, longitudinalAccel({ ...aero, speedKmh: state.v })) * 3.6 * DT);
     state.p += DT * state.v / 3.6 / track.lapLengthMeters;
-  }
-
-  private static accelOf(car: CarLike, pace: number) {
-    return (50 + (car.team.horsepower - 1000) * 0.4) * pace;
   }
 
   /** Perfil de tiempos de una vuelta estable (segunda vuelta de una simulación 1D). */
@@ -73,15 +79,15 @@ export class RejoinModel {
     const cache = cacheFor(profileCache, track), key = carKey(car, capKmh);
     const cached = cache.get(key);
     if (cached) return cached;
-    const n = track.points.length, pace = trackPace(car), accel = this.accelOf(car, pace);
+    const n = track.points.length, pace = trackPace(car), aero = aeroOf(car, pace);
     const state = { p: 0, v: 150 };
     let t = 0;
-    while (state.p < 1) { this.stepOnTrack(track, car, pace, accel, capKmh, state); t += DT; }
+    while (state.p < 1) { this.stepOnTrack(track, aero, pace, capKmh, state); t += DT; }
     const times = new Float64Array(n + 1);
     const t0 = t;
     let next = 1;
     while (next <= n) {
-      this.stepOnTrack(track, car, pace, accel, capKmh, state);
+      this.stepOnTrack(track, aero, pace, capKmh, state);
       t += DT;
       while (next <= n && state.p - 1 >= next / n) { times[next] = t - t0; next++; }
     }
@@ -121,10 +127,10 @@ export class RejoinModel {
     const cache = cacheFor(lossCache, track), key = `${carKey(car, capKmh)}|${serviceSec.toFixed(3)}`;
     const cached = cache.get(key);
     if (cached !== undefined) return cached;
-    const pace = trackPace(car), accel = this.accelOf(car, pace);
+    const pace = trackPace(car), aero = aeroOf(car, pace);
     const len = this.pitLaneLength(track), entry = track.pitEntryT, finish = entry + len + this.MEASURE_AFTER_EXIT;
     const points = track.points, n = points.length;
-    let entrySpeed = targetKmh(points[Math.floor(entry * n) % n].speedLimitFactor, car, pace);
+    let entrySpeed = targetKmh(points[Math.floor(entry * n) % n].speedLimitFactor, aero, pace);
     if (capKmh !== null) entrySpeed = Math.min(entrySpeed, capKmh);
     const ghost = { p: entry, v: entrySpeed };
     const pit = { p: entry, v: entrySpeed };
@@ -132,7 +138,7 @@ export class RejoinModel {
     const limit = PitStopModel.PIT_SPEED_LIMIT_KMH;
     let stopped = 0, served = false, inLane = true, t = 0, ghostAt: number | null = null, pitAt: number | null = null;
     while ((ghostAt === null || pitAt === null) && t < 600) {
-      this.stepOnTrack(track, car, pace, accel, capKmh, ghost);
+      this.stepOnTrack(track, aero, pace, capKmh, ghost);
       if (inLane) {
         const laneProgress = Math.min(1, (pit.p - entry) / len);
         if (laneProgress >= 1) inLane = false;
@@ -144,7 +150,7 @@ export class RejoinModel {
         }
         if (inLane) pit.p += DT * pit.v / 3.6 / track.lapLengthMeters;
       } else {
-        this.stepOnTrack(track, car, pace, accel, capKmh, pit);
+        this.stepOnTrack(track, aero, pace, capKmh, pit);
       }
       t += DT;
       if (ghostAt === null && ghost.p >= finish) ghostAt = t;

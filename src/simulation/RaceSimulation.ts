@@ -34,6 +34,7 @@ import { RejoinModel } from './RejoinModel';
 import { IncidentModel } from './IncidentModel';
 import { calculateCarWorldPosition, lapsToPitEntry, limitLateralChange } from '../utils/carPosition';
 import { lineCrossings, TimingLine, TimingService } from './Timing';
+import { AERO, CAR_DRY_MASS_KG, dirtyAirLevel, longitudinalAccel, slipstreamLevel, topSpeedKmh } from './AeroModel';
 import { mulberry32, random, Rng, rngState, streamSeed, useRng } from './Random';
 
 // Q20: distancia previa a la entrada de boxes en la que un coche que va a parar se coloca en el eje.
@@ -877,20 +878,33 @@ export class RaceSimulation {
 
       const consistencyNoise = (1.0 - car.driver.consistency) * (Math.sin(car.currentLap * 1.7 + car.id) * 0.003);
       const raceDayVariance = 1.0 + car.raceDayLuckFactor + ((car.driver.luckRating - 0.75) * 0.002) + consistencyNoise;
-      const slipstreamBonus = (car.gapToCarAheadSec > 0 && car.gapToCarAheadSec < 0.85 && !isCornering) ? 1.018 : 1.0;
+      // [R05] Coche físicamente delante (vecino en pista, sea cual sea su vuelta) para rebufo y aire sucio.
+      let wakeGapSec = Infinity, wakeLateral = 0, wakeDistance = Infinity;
+      for (const other of field) {
+        if (other.id === car.id || other.status !== 'running' || other.isInPitLane || other.isPitting) continue;
+        const distance = (((other.progress - car.progress) % 1) + 1) % 1;
+        if (distance > 0 && distance < wakeDistance) { wakeDistance = distance; wakeLateral = other.lateralOffset - car.lateralOffset; }
+      }
+      if (Number.isFinite(wakeDistance)) wakeGapSec = wakeDistance * lapDistanceMeters / Math.max(10, car.currentSpeedKmh / 3.6);
+      const onTrackRunning = !car.isInPitLane && !car.pitStop.isPitting;
+      car.slipstreamLevel = onTrackRunning && !isCornering ? slipstreamLevel(wakeGapSec, wakeLateral) : 0;
+      car.dirtyAirLevel = onTrackRunning && isCornering ? dirtyAirLevel(wakeGapSec, wakeLateral) : 0;
 
       const carBasePerf = car.team.carPerformance;
       let effectivePace = 
         carBasePerf * 
         (0.92 + 0.08 * driverSkillMultiplier) * 
         tireResult.speedMultiplier * 
-        fuelResult.weightAdvantageMultiplier * 
         enginePerf.speedFactor * 
-        (car.drsActive ? 1.07 : 1.0) * 
-        slipstreamBonus * 
-        raceDayVariance * (1 + energyDeployment * 0.025);
+        raceDayVariance;
+      // [R05] DRS, rebufo, masa y ERS ya no multiplican el ritmo: actúan una sola vez en el modelo longitudinal.
+      // [R05] Ritmo de potencia: coche, piloto y motor (incluida la temperatura), sin neumáticos ni pista, que actúan
+      // sobre el agarre y no sobre los caballos.
+      let powerPace = carBasePerf * (0.92 + 0.08 * driverSkillMultiplier) * raceDayVariance;
       if (car.engineTempCelsius > 115) {
-        effectivePace *= Math.max(0.92, 1 - (car.engineTempCelsius - 115) / 20 * 0.08);
+        const thermal = Math.max(0.92, 1 - (car.engineTempCelsius - 115) / 20 * 0.08);
+        effectivePace *= thermal;
+        powerPace *= thermal;
       }
 
       // Q8: Dynamic Rubber Grip Accumulation
@@ -915,6 +929,16 @@ export class RaceSimulation {
         effectivePace *= 0.35;
       }
 
+      // [R05] Entrada del modelo longitudinal: potencia del motor térmico escalada por el ritmo del coche (la punta
+      // varía con la raíz cúbica de la potencia) más el MGU-K realmente desplegado; masa con el combustible.
+      const iceKw = car.team.horsepower * 0.7457 - 120;
+      const aeroInput = {
+        massKg: CAR_DRY_MASS_KG + Math.max(0, car.fuelKg),
+        powerKw: car.fuelKg > 0 ? iceKw * enginePerf.powerFactor * powerPace ** 3 + 120 * energyDeployment : 0,
+        drsOpen: car.drsActive,
+        slipstream: car.slipstreamLevel ?? 0,
+      };
+
       // ── FÍSICA LONGITUDINAL REALISTA: FRENADAS VIOLENTAS Y ACELERACIÓN A FONDO ──
       // Velocidad objetivo real en km/h según la curva / recta
       const speedLimitFactor = trackPoint.speedLimitFactor;
@@ -923,9 +947,8 @@ export class RaceSimulation {
       if (car.hasPuncture) {
         targetKmh = 70;
       } else if (speedLimitFactor >= 0.90) {
-        // Recta a fondo
-        const topStraightSpeed = 338 + (car.drsActive ? 18 : 0) + (car.engineMode === 'push' ? 5 : 0) + (car.team.carPerformance - 0.88) * 120;
-        targetKmh = topStraightSpeed * effectivePace;
+        // [R05] Recta a fondo: la punta es el equilibrio potencia = resistencia del modelo aerodinámico.
+        targetKmh = topSpeedKmh(aeroInput);
       } else if (speedLimitFactor >= 0.65) {
         // Curva rápida de media-alta velocidad
         targetKmh = (190 + (speedLimitFactor - 0.65) * 450) * effectivePace;
@@ -936,6 +959,9 @@ export class RaceSimulation {
         // Horquilla o chicane lenta
         targetKmh = (68 + (speedLimitFactor - 0.20) * 240) * effectivePace;
       }
+
+      // [R05] Aire sucio: menos apoyo en curva al seguir de cerca.
+      if (speedLimitFactor < 0.90) targetKmh *= 1 - AERO.dirtyAirMaxLoss * (car.dirtyAirLevel ?? 0);
 
       // [Q15] Levantar en proporción a la cesión (máx. BLUE_FLAG_LIFT), sin salto de velocidad objetivo.
       targetKmh *= 1 - RaceSimulation.BLUE_FLAG_LIFT * (car.blueFlagLevel ?? 0);
@@ -990,6 +1016,7 @@ export class RaceSimulation {
       if (car.fuelKg <= 0) targetKmh = 0;
 
       // Aceleración vs Frenada
+      const stepStartKmh = car.currentSpeedKmh;
       let throttleVal = 0;
       let brakeVal = 0;
 
@@ -1002,12 +1029,12 @@ export class RaceSimulation {
         brakeVal = Math.min(100, Math.round((speedDrop / (brakeForce * dt + 0.001)) * 100));
         throttleVal = 0;
       } else {
-        // ACELERACIÓN: Aceleración potente según potencia motor (12-16 m/s² ~ 45-60 km/h por segundo)
-        const accelForce = (50 + (car.team.horsepower - 1000) * 0.4) * effectivePace;
+        // [R05] ACELERACIÓN: potencia limitada por tracción contra drag y rodadura (modelo aerodinámico).
+        const accelKmhPerSec = Math.max(0, longitudinalAccel({ ...aeroInput, speedKmh: car.currentSpeedKmh })) * 3.6;
         const deltaSpeed = (targetKmh - car.currentSpeedKmh);
-        const speedGain = Math.min(deltaSpeed, accelForce * dt);
+        const speedGain = Math.min(deltaSpeed, accelKmhPerSec * dt);
         car.currentSpeedKmh += speedGain;
-        throttleVal = Math.min(100, Math.round((speedGain / (accelForce * dt + 0.001)) * 100));
+        throttleVal = Math.min(100, Math.round((speedGain / (accelKmhPerSec * dt + 0.001)) * 100));
         brakeVal = 0;
       }
 
@@ -1046,7 +1073,8 @@ export class RaceSimulation {
             if (isWaitingForScRestartLine && deltaProgress < 0.0025) {
                car.currentSpeedKmh = Math.min(car.currentSpeedKmh, carAhead.currentSpeedKmh);
             } else {
-               car.currentSpeedKmh = Math.min(car.currentSpeedKmh, carAhead.currentSpeedKmh * 0.99);
+               // [R05] Ajustarse al de delante sin superar en el paso la frenada máxima (180 km/h por segundo).
+               car.currentSpeedKmh = Math.min(car.currentSpeedKmh, Math.max(carAhead.currentSpeedKmh * 0.99, stepStartKmh - 180 * dt));
             }
             car.speed = (car.currentSpeedKmh / 3.6) / lapDistanceMeters;
           }
@@ -1786,11 +1814,13 @@ export interface FieldCar {
   isInPitLane: boolean;
   isPitting: boolean;
   tireHealth: number;
+  lateralOffset: number;
 }
 
 function fieldCar(car: CarState): FieldCar {
   return {
     id: car.id, progress: car.progress, currentSpeedKmh: car.currentSpeedKmh, status: car.status,
     isInPitLane: car.isInPitLane, isPitting: car.pitStop.isPitting, tireHealth: car.tires.health,
+    lateralOffset: car.lateralOffset,
   };
 }
