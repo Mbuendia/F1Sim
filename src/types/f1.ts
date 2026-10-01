@@ -204,6 +204,12 @@ export interface PitStopState {
   activeBoxOrder: BoxOrder | null;   // Q9: Binding compound order
   /** [R07] Motivo del último rechazo de una orden de boxes (p. ej. sin juegos del compuesto). */
   lastOrderRejection?: string;
+  /** [R13] Paso por boxes en curso: servicio, drive-through o stop-and-go; espera de sanción antes del servicio. */
+  passMode?: 'service' | 'drive-through' | 'stop-go';
+  penaltyHoldSec?: number;
+  penaltyPlannedSec?: number;
+  servingDecisionIds?: string[];
+  mustServePenalty?: boolean;
   /** [R08] Infracciones registradas en boxes (las sanciones las aplica R13). */
   infractions?: PitInfraction[];
   /** [R08] Registro de cada parada con tiempos separados. */
@@ -236,6 +242,8 @@ export interface PitInfraction {
 /** [R08] Parada registrada: la pérdida sale de tránsito, servicio, cola y retención, no de una cifra fija. */
 export interface PitStopLog {
   lap: number;
+  /** [R13] Segundos de sanción cumplidos en el cajón antes del servicio. */
+  penaltySec?: number;
   setId: string | null;
   compound: TireCompound;
   totalSec: number;
@@ -383,6 +391,8 @@ export interface CarState {
   vscPitExit?: boolean;
   /** [R12] Bandera roja: el coche va a la fila del carril rápido y espera (sin parada) / sale tras la reanudación. */
   redFlagHold?: boolean;
+  /** [R13] Hora a la que cruzó la meta al terminar la carrera. */
+  finishTimeSec?: number;
   redFlagRelease?: boolean;
   /** [R11] Infracciones de pista registradas (las sanciones las aplica R13). */
   infractions?: { type: 'delta-vsc'; value: number; lap: number; time: number }[];

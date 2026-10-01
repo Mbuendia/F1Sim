@@ -44,8 +44,9 @@ export class PitStopModel {
     const pit = car.pitStop;
     if (!pit.pendingLog) return;
     const totalSec = pit.laneTimer ?? 0, queueSec = pit.boxWaitTimer, releaseHoldSec = pit.releaseHoldSec ?? 0;
+    const penaltySec = pit.pendingLog.penaltySec ?? 0;
     (pit.stopLog ??= []).push({ ...pit.pendingLog, totalSec, queueSec, releaseHoldSec,
-      transitSec: totalSec - pit.pendingLog.serviceSec - queueSec - releaseHoldSec });
+      transitSec: totalSec - pit.pendingLog.serviceSec - queueSec - releaseHoldSec - penaltySec });
     pit.pendingLog = null;
   }
 
@@ -162,6 +163,17 @@ export class PitStopModel {
 
       // [FIX M9] Establecer estado 'pit' mientras transita por el pit lane
       car.status = 'pit';
+      // [R13] Drive-through: atravesar el pit lane al limitador sin detenerse en el cajón.
+      if (pit.passMode === 'drive-through') {
+        const dtLaneMeters = pitLength * lapDistanceMeters;
+        let dtDistance = pit.entryProgress !== undefined ? Math.max(0, car.progress - pit.entryProgress) : 0;
+        pit.pitLaneProgress = Math.min(1, dtDistance / pitLength);
+        const { start: dtStart, end: dtEnd } = this.limitFractions(dtLaneMeters);
+        if (pit.pitLaneProgress < dtStart) car.currentSpeedKmh = Math.max(this.PIT_SPEED_LIMIT_KMH, car.currentSpeedKmh - dt * this.MAX_BRAKE_KMH_S);
+        else if (pit.pitLaneProgress < dtEnd) car.currentSpeedKmh = Math.min(this.PIT_SPEED_LIMIT_KMH, Math.max(car.currentSpeedKmh, 20));
+        else car.currentSpeedKmh = Math.min(260, car.currentSpeedKmh + dt * 200);
+        return true;
+      }
 
       // [FIX PitStop] Distancia recorrida en boxes con soporte para cualquier topología de circuito
       let distanceInPit = 0;
@@ -205,7 +217,7 @@ export class PitStopModel {
         // [Q11] Clear waiting state while approaching (not yet at box)
         pit.waitingForBox = false;
       } 
-      else if (pit.pitLaneProgress >= boxProgress && pit.currentStopTimer < pit.stopDuration) {
+      else if (pit.pitLaneProgress >= boxProgress && (pit.currentStopTimer < pit.stopDuration || (pit.penaltyHoldSec ?? 0) > 0)) {
         // [Q11] Check if teammate is occupying the box
         const teammateInBox = allCars ? this.getTeammateInBox(car, allCars) : null;
         if (teammateInBox) {
@@ -216,6 +228,13 @@ export class PitStopModel {
           // Don't increment service timer while waiting
           return true;
         }
+        // [R13] Sanción de tiempo o stop-and-go: el coche espera parado antes de que se trabaje en él.
+        if ((pit.penaltyHoldSec ?? 0) > 0) {
+          pit.waitingForBox = false;
+          pit.penaltyHoldSec = (pit.penaltyHoldSec ?? 0) - dt;
+          car.currentSpeedKmh = 0;
+          return true;
+        }
         // Box is free — begin or continue service
         pit.waitingForBox = false;
         pit.currentStopTimer += dt;
@@ -223,8 +242,13 @@ export class PitStopModel {
       }
 
       // Al completar o sobrepasar el tiempo de parada en el pit box
-      if (pit.pitLaneProgress >= boxProgress && pit.currentStopTimer >= pit.stopDuration && !pit.waitingForBox) {
-        if (pit.lastStopDuration !== pit.stopDuration) {
+      if (pit.pitLaneProgress >= boxProgress && pit.currentStopTimer >= pit.stopDuration && !pit.waitingForBox && !((pit.penaltyHoldSec ?? 0) > 0)) {
+        // [R13] Stop-and-go: sin ningún trabajo en el coche.
+        if (pit.passMode === 'stop-go' && pit.lastStopDuration !== pit.stopDuration) {
+          pit.lastStopDuration = pit.stopDuration;
+          car.currentSpeedKmh = 0;
+        }
+        else if (pit.lastStopDuration !== pit.stopDuration) {
           pit.lastStopDuration = pit.stopDuration;
           // [Q17] El beneficio de servicio se consume al completar el servicio.
           if (pit.crewBenefit?.inUse) pit.crewBenefit = null;
@@ -287,7 +311,7 @@ export class PitStopModel {
           else if (!inventory) car.tires = TireModel.createFreshTire(nextCompound);
           car.hasPuncture = false; // [FIX A5] Clear puncture after tires are changed
           pit.totalPitStops += 1;
-          pit.pendingLog = { lap: car.currentLap, setId: car.tireInventory?.mountedId ?? null, compound: nextCompound, serviceSec: pit.currentStopTimer };
+          pit.pendingLog = { lap: car.currentLap, setId: car.tireInventory?.mountedId ?? null, compound: nextCompound, serviceSec: pit.currentStopTimer, penaltySec: pit.penaltyPlannedSec ?? 0 };
 
           // [FIX A6] Cerrar el stint anterior
           if (pit.stints.length > 0) {
@@ -367,7 +391,8 @@ export class PitStopModel {
     const ordered = order?.status === 'committed' && order.entryProgress <= entry + 1e-10;
     const emergency = car.hasPuncture || car.tires.health <= 5 || pit.isPitting;
     const automatic = !pit.playerControlled && this.shouldEnterPit(car, dt, flag, scMode);
-    if (!ordered && !emergency && !automatic) return;
+    const penalty = pit.mustServePenalty === true;
+    if (!ordered && !emergency && !automatic && !penalty) return;
     // [R08] Entrada cerrada por Dirección de Carrera: solo reparación esencial (pinchazo).
     if (pitClosed && !car.hasPuncture) {
       if (orderIsActive(order)) order!.message = 'Pit cerrado: entrada aplazada a la siguiente vuelta.';

@@ -38,6 +38,7 @@ import { brakeDecelFactor, brakeTempStep, engineTempStep, gearFor, rpmFor } from
 import { chassisGripAt, resolveTechnical } from '../data/teamProfiles';
 import { availableSets, COMPOUND_LABEL, createInventory, mountSet, pickSet, TireCompliance, tireCompliance } from './TireInventory';
 import { localFlagsFrom, LocalFlag, marshalSectorOf, Permissions, permissionsFor } from './RaceControl';
+import { Decision, PenaltyType, Stewards } from './Stewards';
 import { AERO, CAR_DRY_MASS_KG, cornerMassFactor, dirtyAirLevel, holdThrottle, longitudinalAccel, slipstreamLevel, topSpeedKmh } from './AeroModel';
 import { mulberry32, random, Rng, rngState, streamSeed, useRng } from './Random';
 
@@ -152,6 +153,8 @@ export class RaceSimulation {
   }
 
   private nextBoxOrderId = 1;
+  /** [R13] Comisarios: decisiones y cumplimiento de sanciones. */
+  stewards = new Stewards();
   /** [R08] Entrada al pit lane cerrada por Dirección de Carrera. */
   pitEntryClosed = false;
   private drsPermissions = new DrsPermissions();
@@ -261,6 +264,7 @@ export class RaceSimulation {
     this.vscState = { phase: null };
     this.vscLog = [];
     this.redFlag = { phase: null, order: [], suspensionSec: 0, log: [] };
+    this.stewards.reset();
     this.scEndingLap = null; // [FIX C5] Reset scEndingLap en cada nueva carrera
 
     this.cars = STARTING_GRID_ORDER.map((driverId, idx) => {
@@ -611,6 +615,7 @@ export class RaceSimulation {
     useRng(this.stream('motor'));
     try {
       const previous = this.cars.map(car => car.progress);
+      const laneBefore = this.cars.map(car => car.isInPitLane);
       const onTrack = this.cars.map(car => car.status === 'running' && !car.isInPitLane && !car.pitStop.isPitting);
       const racing = this.lightState === 'racing' && !this.isPaused && !this.isFinished;
       this.advanceSimulation(dt);
@@ -624,8 +629,16 @@ export class RaceSimulation {
         useRng(this.stream(`coche-${car.id}`));
         this.issuePlannedStop(car);
         const wasInPitLane = car.isInPitLane;
+        // [R13] Drive-through / stop-and-go pendiente: entrar en boxes (no se cumple bajo neutralización).
+        car.pitStop.mustServePenalty = Boolean(this.stewards.pendingDrive(car.id)) && !this.isNeutralized();
         PitStopModel.processCrossings(car, previous[index], this.activeTrack,
           dt, this.raceFlagState, this.safetyCar.mode, this.pitEntryClosed);
+        // [R13] Al entrar: decidir qué se cumple en este paso por boxes; al salir, marcar lo cumplido.
+        if (!wasInPitLane && car.isInPitLane && car.pitStop.isPitting) this.configurePenaltyPass(car);
+        if (laneBefore[index] && !car.isInPitLane && car.pitStop.servingDecisionIds?.length) {
+          this.stewards.markServed(car.pitStop.servingDecisionIds, this.raceTimeSec);
+          car.pitStop.servingDecisionIds = []; car.pitStop.passMode = 'service';
+        }
         // [R12] Con la roja, el coche entra al pit lane por la línea de entrada para ir a la fila (sin servicio).
         if (car.redFlagHold && !car.isInPitLane && car.status === 'running' && car.progress > previous[index]) {
           const entry = nextCrossing(previous[index], this.activeTrack.pitEntryT);
@@ -644,6 +657,7 @@ export class RaceSimulation {
         const order = car.pitStop.activeBoxOrder;
         if (order?.status === 'consumed' && order.consumedAt === undefined) order.consumedAt = this.raceTimeSec;
       });
+      if (racing) this.processInfractions();
     } finally {
       useRng(null);
     }
@@ -1256,6 +1270,8 @@ export class RaceSimulation {
         if (crossing.lap < 1 || prevProgress < 0) continue;
         const currLap = crossing.lap;
         const crossTime = crossing.time;
+        const expired = this.stewards.onLineCrossing(car.id, this.isNeutralized());
+        if (expired) { car.classification = 'DSQ'; car.classificationReason = `${expired.reason}: ${expired.penalty} sin cumplir en plazo`; }
         car.currentLap = currLap;
         car.tires.lapsOnTire += 1;
 
@@ -1709,12 +1725,73 @@ export class RaceSimulation {
 
   /** [R07] Carrera terminada normalmente sin cumplir S30.5m → DSQ (el juego no cambia neumáticos para evitarlo). */
   private applyTireRules(car: CarState) {
+    car.finishTimeSec ??= this.raceTimeSec;
+    // [R13] Lo pendiente se suma al final (convertido si es drive-through o stop-and-go).
+    this.stewards.finalize(car.id);
     if (!car.tireInventory || car.classification) return;
     const compliance = tireCompliance(car.tireInventory, this.circuitId);
-    if (!compliance.satisfied) {
-      car.classification = 'DSQ';
-      car.classificationReason = compliance.warning ?? 'Incumplimiento de S30.5m';
+    if (!compliance.satisfied) this.imposePenalty(car.id, 'dsq', 'S30.5m', compliance.warning ?? 'Incumplimiento de S30.5m');
+  }
+
+  private isNeutralized(): boolean {
+    return this.raceFlagState === 'sc' || this.raceFlagState === 'vsc' || this.raceFlagState === 'red' || this.vscActive;
+  }
+
+  /** [R13] Convierte las infracciones registradas (boxes, VSC…) en decisiones; idempotente. Anula las de retirados. */
+  processInfractions() {
+    for (const car of this.cars) {
+      if (car.status === 'out') { this.stewards.annul(car.id); continue; }
+      const late = car.status === 'finished' || car.currentLap >= this.totalLaps - 3;
+      (car.pitStop.infractions ?? []).forEach((inf, i) => {
+        const d = this.stewards.processInfraction(`${car.id}:boxes:${i}`, car.id, inf.type, this.raceTimeSec, car.currentLap, late);
+        if (d && car.status === 'finished') this.stewards.finalize(car.id);
+      });
+      (car.infractions ?? []).forEach((inf, i) => {
+        this.stewards.processInfraction(`${car.id}:pista:${i}`, car.id, inf.type, this.raceTimeSec, car.currentLap, late);
+      });
     }
+  }
+
+  /** [R13] Impone una sanción (comisarios). En las tres últimas vueltas o tras el final se convierte en tiempo. */
+  imposePenalty(carId: number, penalty: PenaltyType, article: string, reason: string): Decision | null {
+    const car = this.getCarById(carId);
+    if (!car) return null;
+    const late = car.status === 'finished' || car.currentLap >= this.totalLaps - 3;
+    const decision = this.stewards.impose(car.id, penalty, article, reason, this.raceTimeSec, car.currentLap, late);
+    if (penalty === 'dsq') { car.classification = 'DSQ'; car.classificationReason = `${article}: ${reason}`; }
+    return decision;
+  }
+
+  /** [R13] Paso por boxes: drive-through, stop-and-go (10 s sin trabajos) o servicio precedido de las sanciones de tiempo. */
+  private configurePenaltyPass(car: CarState) {
+    const pit = car.pitStop;
+    pit.servingDecisionIds = []; pit.penaltyHoldSec = 0; pit.penaltyPlannedSec = 0; pit.passMode = 'service';
+    const drive = this.stewards.pendingDrive(car.id);
+    if (drive && pit.mustServePenalty) {
+      pit.passMode = drive.penalty === 'drive-through' ? 'drive-through' : 'stop-go';
+      pit.servingDecisionIds = [drive.id];
+      if (pit.passMode === 'stop-go') { pit.stopDuration = 0; pit.penaltyHoldSec = 10; pit.penaltyPlannedSec = 10; }
+      return;
+    }
+    const timed = this.stewards.pending(car.id).filter(d => d.penalty === 'time-5' || d.penalty === 'time-10');
+    if (timed.length) {
+      pit.penaltyHoldSec = timed.reduce((s, d) => s + d.seconds, 0);
+      pit.penaltyPlannedSec = pit.penaltyHoldSec;
+      pit.servingDecisionIds = timed.map(d => d.id);
+    }
+  }
+
+  /** [R13] Clasificación: vueltas y tiempo de llegada más sanciones; retirados y DSQ aparte. La UI solo la lee. */
+  getClassification(): { carId: number; position: number; laps: number; timeSec: number; penaltySec: number; status: 'clasificado' | 'DNF' | 'DSQ' }[] {
+    const rows = this.cars.map(car => {
+      const penaltySec = this.stewards.finalPenaltySec(car.id);
+      const status: 'clasificado' | 'DNF' | 'DSQ' = car.classification === 'DSQ' ? 'DSQ' : car.status === 'out' ? 'DNF' : 'clasificado';
+      const base = car.finishTimeSec ?? Infinity;
+      return { carId: car.id, position: 0, laps: car.currentLap, timeSec: base + penaltySec, penaltySec, status, progress: car.progress };
+    });
+    const rank = { clasificado: 0, DNF: 1, DSQ: 2 } as const;
+    rows.sort((a, b) => rank[a.status] - rank[b.status] || b.laps - a.laps || a.timeSec - b.timeSec || b.progress - a.progress);
+    return rows.map(({ progress, ...row }, i) => ({ ...row, position: i + 1 }));
   }
 
   /** [R08] Abre o cierra la entrada al pit lane (Dirección de Carrera). */
@@ -1753,7 +1830,7 @@ export class RaceSimulation {
   private pitIntent(car: CarState): boolean {
     const pit = car.pitStop;
     if (car.hasPuncture || car.tires.health <= 5 || pit.isPitting) return true;
-    if (pit.activeBoxOrder?.status === 'committed' || car.redFlagHold) return true;
+    if (pit.activeBoxOrder?.status === 'committed' || car.redFlagHold || pit.mustServePenalty) return true;
     return !pit.playerControlled && pit.scheduledLap > 0 && car.currentLap >= pit.scheduledLap;
   }
 
