@@ -324,6 +324,10 @@ export interface CarState {
   slipstreamLevel?: number;
   /** [R05] Aire sucio 0..1 en curva. */
   dirtyAirLevel?: number;
+  /** [R14] Masa actual (seca + combustible, kg), combustible quemado acumulado (kg) y tiempo en lift-and-coast (s). */
+  massKg?: number;
+  fuelBurnedKg?: number;
+  coastedSec?: number;
 
   aheadInfo: RelativeCarInfo | null;
   behindInfo: RelativeCarInfo | null;

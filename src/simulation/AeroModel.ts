@@ -70,6 +70,25 @@ export function longitudinalAccel(input: LongitudinalInput, params: AeroParams =
   return (drive - drag - rolling) / input.massKg;
 }
 
+/** [R14] Masa de referencia de los pasos por curva (seca + carga media de combustible). */
+export const REFERENCE_MASS_KG = CAR_DRY_MASS_KG + 50;
+
+/** [R14] Factor de velocidad de paso por curva por masa: con el mismo apoyo, más masa da menos aceleración lateral. */
+export function cornerMassFactor(massKg: number): number {
+  return Math.pow(REFERENCE_MASS_KG / Math.max(1, massKg), 0.15);
+}
+
+/** [R14] Fracción de la potencia necesaria para mantener la velocidad (drag + rodadura frente a empuje disponible). */
+export function holdThrottle(input: LongitudinalInput, params: AeroParams = AERO): number {
+  const v = Math.max(1, input.speedKmh / 3.6);
+  const drive = Math.min(input.powerKw * 1000 * params.drivetrainEfficiency / v, input.massKg * params.tractionLimit);
+  if (!(drive > 0)) return 0;
+  const cdA = params.cdA * (1 - (input.drsOpen ? params.drsDragReduction : 0))
+    * (1 - params.slipstreamMaxReduction * Math.min(1, Math.max(0, input.slipstream)));
+  const needed = 0.5 * params.rho * cdA * v * v + params.rollingCoeff * input.massKg * 9.81;
+  return Math.min(1, needed / drive);
+}
+
 /** Velocidad punta de equilibrio (km/h) en recta ilimitada. */
 export function topSpeedKmh(input: Omit<LongitudinalInput, 'speedKmh'>, params: AeroParams = AERO): number {
   // En la punta la tracción no limita: P·η = (½ρ·CdA·v² + Crr·m·g)·v. Newton sobre esa cúbica (converge en pocas

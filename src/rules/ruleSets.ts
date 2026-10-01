@@ -82,7 +82,7 @@ const FIA_2025_VALUES: Record<RegulationKey, RuleValue> = {
 
 const GAME_2025_VALUES: Record<GameKey, RuleValue> = {
   initialFuelKg: {
-    value: 110, unit: 'kg', origin: 'juego', source: 'Ajuste del simulador (carga inicial fija)',
+    value: 110, unit: 'kg', origin: 'juego', source: 'Ajuste del simulador (carga máxima; la carga real se calcula por distancia, R14)',
     note: 'Parámetro del juego; no es un máximo acreditado por el reglamento.',
   },
   blueFlagGapSec: {

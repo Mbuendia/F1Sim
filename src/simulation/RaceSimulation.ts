@@ -34,7 +34,7 @@ import { RejoinModel } from './RejoinModel';
 import { IncidentModel } from './IncidentModel';
 import { calculateCarWorldPosition, lapsToPitEntry, limitLateralChange } from '../utils/carPosition';
 import { lineCrossings, TimingLine, TimingService } from './Timing';
-import { AERO, CAR_DRY_MASS_KG, dirtyAirLevel, longitudinalAccel, slipstreamLevel, topSpeedKmh } from './AeroModel';
+import { AERO, CAR_DRY_MASS_KG, cornerMassFactor, dirtyAirLevel, holdThrottle, longitudinalAccel, slipstreamLevel, topSpeedKmh } from './AeroModel';
 import { mulberry32, random, Rng, rngState, streamSeed, useRng } from './Random';
 
 // Q20: distancia previa a la entrada de boxes en la que un coche que va a parar se coloca en el eje.
@@ -65,6 +65,8 @@ export class RaceSimulation {
 
   podiumCars: CarState[] = [];
   static readonly BASE_LAP_TIME_SEC = 77.8;
+  /** [R14] Distancia de lift-and-coast antes de cada frenada en modo ahorro (m), calibración del juego. */
+  static readonly LIFT_AND_COAST_M = 35;
 
   // ── TELEMETRÍA AMBIENTAL & CONDICIONES DE PISTA ──
   weather: TrackWeatherState = {
@@ -363,6 +365,12 @@ export class RaceSimulation {
 
       return car;
     });
+    // [R14] Carga por distancia: consumo estimado de cada coche × vueltas, con margen y muestra; tope del perfil.
+    for (const car of this.cars) {
+      const load = Math.min(this.rule('initialFuelKg'), FuelModel.initialFuelFor(RejoinModel.lapFuelKg(this.activeTrack, car), this.totalLaps));
+      car.fuelKg = load; car.telemetry.fuelKg = load;
+      car.massKg = CAR_DRY_MASS_KG + load; car.fuelBurnedKg = 0; car.coastedSec = 0;
+    }
     this.updateWorldPositions();
   }
 
@@ -677,6 +685,16 @@ export class RaceSimulation {
         continue;
       }
 
+      // [R14] Sin combustible y detenido en pista: retirada física.
+      if (car.fuelKg <= 0 && car.currentSpeedKmh < 1 && !car.isInPitLane && !car.pitStop.isPitting) {
+        car.status = 'out';
+        car.dnfReason = 'SIN COMBUSTIBLE';
+        car.currentSpeedKmh = 0;
+        car.isRetiredVisible = true;
+        car.retireTimer = 20;
+        continue;
+      }
+
       // ── EVALUACIÓN DE FACTOR SUERTE: AVERÍAS MECÁNICAS & PINCHAZOS ──
       const baseDnfChancePerSec = 0.000008;
       const unluckFactor = Math.max(0.2, 1.2 - car.driver.luckRating);
@@ -778,6 +796,11 @@ export class RaceSimulation {
         EnergyModel.update(car.energy, car.engineMode, false, dt, car.currentLap, true, car.fuelKg > 0, this.energyLimits);
         car.telemetry.batterySoc = car.energy.storedMJ * 25;
         car.telemetry.ersDeploying = false;
+        // [R14] En boxes, a velocidad limitada o parado: consumo al ralentí.
+        const pitFuel = FuelModel.burn(car.fuelKg, 0, car.engineMode, dt);
+        car.fuelBurnedKg = (car.fuelBurnedKg ?? 0) + (car.fuelKg - pitFuel);
+        car.fuelKg = pitFuel;
+        car.massKg = CAR_DRY_MASS_KG + car.fuelKg;
         car.telemetry.speedKmh = Math.round(car.currentSpeedKmh);
         car.lateralOffset = 0;
         car.targetLateralOffset = 0;
@@ -860,13 +883,6 @@ export class RaceSimulation {
         { turn: trackPoint.turn ?? 0, speedKmh: car.currentSpeedKmh }
       );
 
-      const fuelResult = FuelModel.updateFuel(
-        car.fuelKg,
-        car.engineMode,
-        dt,
-        RaceSimulation.BASE_LAP_TIME_SEC
-      );
-      car.fuelKg = fuelResult.remainingFuelKg;
 
       car.energy ??= EnergyModel.create();
       const energyDeployment = EnergyModel.update(car.energy, car.engineMode, trackPoint.isBrakingZone,
@@ -964,6 +980,8 @@ export class RaceSimulation {
 
       // [R05] Aire sucio: menos apoyo en curva al seguir de cerca.
       if (speedLimitFactor < 0.90) targetKmh *= 1 - AERO.dirtyAirMaxLoss * (car.dirtyAirLevel ?? 0);
+      // [R14] Masa: con más combustible, menos velocidad de paso con el mismo apoyo.
+      if (speedLimitFactor < 0.90) targetKmh *= cornerMassFactor(aeroInput.massKg);
 
       // [Q15] Levantar en proporción a la cesión (máx. BLUE_FLAG_LIFT), sin salto de velocidad objetivo.
       targetKmh *= 1 - RaceSimulation.BLUE_FLAG_LIFT * (car.blueFlagLevel ?? 0);
@@ -1017,14 +1035,26 @@ export class RaceSimulation {
 
       if (car.fuelKg <= 0) targetKmh = 0;
 
+      // [R14] Lift-and-coast en modo ahorro: levantar en recta ~100 m antes de la frenada.
+      const liftPoints = Math.ceil(RaceSimulation.LIFT_AND_COAST_M / (lapDistanceMeters / totalPoints));
+      const coasting = car.engineMode === 'low' && !car.hasPuncture && car.fuelKg > 0 && speedLimitFactor >= 0.9
+        && !trackPoint.isBrakingZone && car.currentSpeedKmh > 200 && targetKmh >= car.currentSpeedKmh
+        && points[(pointIndex + liftPoints) % totalPoints].isBrakingZone;
+
       // Aceleración vs Frenada
       const stepStartKmh = car.currentSpeedKmh;
       let throttleVal = 0;
       let brakeVal = 0;
+      let fuelThrottle = 0;
 
-      if (targetKmh < car.currentSpeedKmh) {
+      if (coasting) {
+        // Sin potencia: solo drag y rodadura frenan el coche.
+        car.currentSpeedKmh = Math.max(0, car.currentSpeedKmh + longitudinalAccel({ ...aeroInput, powerKw: 0, speedKmh: car.currentSpeedKmh }) * 3.6 * dt);
+        car.coastedSec = (car.coastedSec ?? 0) + dt;
+      } else if (targetKmh < car.currentSpeedKmh) {
         // FRENADA: Desaceleración violenta de F1 (hasta 55 m/s² ~ 190 km/h por segundo)
-        const brakeForce = trackPoint.isBrakingZone ? 180 : 120;
+        // [R14] Sin combustible no hay frenada de carrera: el piloto se aparta y se detiene (~3 m/s²).
+        const brakeForce = car.fuelKg <= 0 ? 11 : trackPoint.isBrakingZone ? 180 : 120;
         const deltaSpeed = (car.currentSpeedKmh - targetKmh);
         const speedDrop = Math.min(deltaSpeed, brakeForce * dt);
         car.currentSpeedKmh -= speedDrop;
@@ -1038,7 +1068,16 @@ export class RaceSimulation {
         car.currentSpeedKmh += speedGain;
         throttleVal = Math.min(100, Math.round((speedGain / (accelKmhPerSec * dt + 0.001)) * 100));
         brakeVal = 0;
+        // [R14] Acelerador para el consumo: mantener la velocidad contra el drag + la parte que acelera.
+        const hold = holdThrottle({ ...aeroInput, speedKmh: car.currentSpeedKmh });
+        fuelThrottle = accelKmhPerSec > 0 ? hold + (1 - hold) * speedGain / (accelKmhPerSec * dt) : hold;
       }
+
+      // [R14] Consumo por caudal del paso (el último paso consume solo el resto) y masa resultante.
+      const fuelLeft = car.fuelKg > 0 ? FuelModel.burn(car.fuelKg, fuelThrottle, car.engineMode, dt) : 0;
+      car.fuelBurnedKg = (car.fuelBurnedKg ?? 0) + (car.fuelKg - fuelLeft);
+      car.fuelKg = fuelLeft;
+      car.massKg = CAR_DRY_MASS_KG + car.fuelKg;
 
       // Velocidad angular en la pista (progreso / segundo)
       car.speed = (car.currentSpeedKmh / 3.6) / lapDistanceMeters;

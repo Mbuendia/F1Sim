@@ -1,7 +1,8 @@
 import type { TrackDefinition } from '../data/barcelonaTrack';
 import type { CarState } from '../types/f1';
 import { PitStopModel } from './PitStopModel';
-import { CAR_DRY_MASS_KG, LongitudinalInput, longitudinalAccel, topSpeedKmh } from './AeroModel';
+import { CAR_DRY_MASS_KG, LongitudinalInput, holdThrottle, longitudinalAccel, topSpeedKmh } from './AeroModel';
+import { FuelModel } from './FuelModel';
 
 // [Q13] Modelo de reincorporación: réplica 1D de la física longitudinal del motor (misma velocidad objetivo por
 // tramo, frenada 180/120 km/h/s, aceleración por potencia, limitador de boxes, servicio y salida) para medir cuánto
@@ -40,6 +41,8 @@ interface LapProfile {
   // Tiempo acumulado (s) al llegar a cada punto de la pista desde el punto 0, en régimen estable.
   times: Float64Array;
   lapTime: number;
+  /** [R14] Segundos equivalentes a fondo en la vuelta (acelerar + mantener contra el drag). */
+  throttleSec: number;
 }
 
 const profileCache = new WeakMap<TrackDefinition, Map<string, LapProfile>>();
@@ -64,14 +67,23 @@ export class RejoinModel {
   }
 
   private static stepOnTrack(track: TrackDefinition, aero: Aero, pace: number,
-    capKmh: number | null, state: { p: number; v: number }) {
+    capKmh: number | null, state: { p: number; v: number }): number {
     const points = track.points, n = points.length;
     const point = points[Math.floor((((state.p % 1) + 1) % 1) * n) % n];
     let target = targetKmh(point.speedLimitFactor, aero, pace);
     if (capKmh !== null) target = Math.min(target, capKmh);
+    // [R14] Devuelve la fracción de acelerador del paso (para estimar el consumo).
+    let throttle = 0;
     if (target < state.v) state.v -= Math.min(state.v - target, (point.isBrakingZone ? 180 : 120) * DT);
-    else state.v += Math.min(target - state.v, Math.max(0, longitudinalAccel({ ...aero, speedKmh: state.v })) * 3.6 * DT);
+    else {
+      const full = Math.max(0, longitudinalAccel({ ...aero, speedKmh: state.v })) * 3.6 * DT;
+      const gain = Math.min(target - state.v, full);
+      const hold = holdThrottle({ ...aero, speedKmh: state.v });
+      throttle = full > 0 ? hold + (1 - hold) * gain / full : hold;
+      state.v += gain;
+    }
     state.p += DT * state.v / 3.6 / track.lapLengthMeters;
+    return throttle;
   }
 
   /** Perfil de tiempos de una vuelta estable (segunda vuelta de una simulación 1D). */
@@ -85,15 +97,22 @@ export class RejoinModel {
     while (state.p < 1) { this.stepOnTrack(track, aero, pace, capKmh, state); t += DT; }
     const times = new Float64Array(n + 1);
     const t0 = t;
-    let next = 1;
+    let next = 1, throttleSec = 0;
     while (next <= n) {
-      this.stepOnTrack(track, aero, pace, capKmh, state);
+      throttleSec += this.stepOnTrack(track, aero, pace, capKmh, state) * DT;
       t += DT;
       while (next <= n && state.p - 1 >= next / n) { times[next] = t - t0; next++; }
     }
-    const profile = { times, lapTime: times[n] };
+    const profile = { times, lapTime: times[n], throttleSec };
     cache.set(key, profile);
     return profile;
+  }
+
+  /** [R14] Consumo estimado por vuelta (kg) en modo estándar: ralentí toda la vuelta + caudal por acelerador. */
+  static lapFuelKg(track: TrackDefinition, car: CarLike): number {
+    const profile = this.lapProfile(track, car, null);
+    const idle = FuelModel.flowKgPerSec(0, 'standard');
+    return idle * profile.lapTime + (FuelModel.flowKgPerSec(1, 'standard') - idle) * profile.throttleSec;
   }
 
   /** Tiempo (s) en régimen estable para ir de `fromProgress` a `toProgress` (puede abarcar varias vueltas). */
