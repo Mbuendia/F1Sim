@@ -22,7 +22,7 @@
 
 ## 🧭 2. ROADMAP Y ESTADO GLOBAL DE SPRINTS
 
-**Orden vigente:** Sprint **2.9** · Tarea actual **R01** · Siguiente **R02** (Sprint 2.8 completado y validado el 30/09/2026, integrado en main mediante PR; la implementación de 2.9 requiere autorización expresa).
+**Orden vigente:** Sprint **2.9** · Tarea actual **R01** · Siguiente **R02** (R01 implementado el 01/10/2026 en la rama sprint/2.9 con contrato de tests acordado; cada tarea del 2.9 sigue requiriendo autorización expresa).
 
 **Prioridad acordada tras la auditoría (30/09/2026, `docs/reviews/auditoria-q12-q19.md`):** Q19 → Q16 → Q13 → Q17 → Q12 → Q18/Q14/Q15. Decisiones del usuario: detecciones DRS desde las notas oficiales FIA; el Safety Car debe salir del pit lane (Q14); tests estructurales sin dependencias nuevas para Q18; tolerancias de calibración Q12 propuestas.
 
@@ -624,7 +624,8 @@ Todas las tareas siguientes están **pendientes**. P0 = corregir validez del nú
 
 #### Entrega A — Reglas, circuito y DRS verificables
 
-* **R01 — Perfil de reglas versionado y procedencia (P0):** `[ ]`
+* **R01 — Perfil de reglas versionado y procedencia (P0):** `[ ] EN REVISIÓN LOCAL — IMPLEMENTADO 01/10/2026 CON CONTRATO DE TESTS ACORDADO`
+  * *Entrega 01/10/2026 (contrato aprobado por el usuario):* `src/rules/ruleSets.ts` con dos perfiles: «fia-2025» (solo reglas FIA 2025 y decisiones de Dirección de Carrera) y «personalizado-2025» (comportamiento actual del juego, por defecto). Cada valor declara unidad, origen (fia / direccion / juego) y fuente con artículo: DRS 1 s y vueltas sin DRS tras SC/VSC (S22.1), MGU-K 120 kW (T5.3.3), 4/2 MJ por vuelta y 4 MJ de ventana del ES (T5.3.2), pit lane 80 km/h (notas del Director de Carrera); combustible inicial de 110 kg y aviso azul de 1,2 s como ajustes del juego. `validateRuleSet` rechaza campos, unidades, orígenes o artículos que faltan, y ajustes del juego dentro de un perfil FIA; `getRuleSet` rechaza perfiles desconocidos nombrando los disponibles. `RaceSimulation.setRuleSet` inyecta el perfil: umbral de detección DRS, vueltas sin DRS tras SC/VSC/roja, límites del ERS, combustible inicial y aviso azul se leen del perfil activo. El paddock muestra el perfil con el que se correrá. Test `rule-set` (17 PASS); sin cambio de comportamiento (suite completa en verde). *Límite:* el límite del pit lane y la velocidad del SC en boxes se leen del perfil por defecto (constante estática), no del perfil inyectado por carrera; no hay selector de perfil en la interfaz.
   * Crear `RuleSet2025` y contratos de evento, con unidades explícitas y artículos del registro anterior. Separar configuración reglamentaria, decisiones de Dirección y ajustes de dificultad. Mantener el perfil personalizado existente hasta aprobar cambios de comportamiento.
   * *Aceptación:* fixtures de estas dos ediciones, límites validados y mensajes que identifican perfil/año. No importar cambios 2026, ayudas arcade o constantes sin origen como reglas FIA.
 * **R02 — Cronometraje por cruces y tráfico físico (P0):** `[ ]`
