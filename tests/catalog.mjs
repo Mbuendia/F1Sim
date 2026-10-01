@@ -503,5 +503,6 @@ export const modules = [
   { "id": "tire-sets", "tasks": ["R07"], "sprint": "2.9", "kind": "contract" },
   { "id": "pit-r08", "tasks": ["R08"], "sprint": "2.9", "kind": "contract" },
   { "id": "race-control-r09", "tasks": ["R09"], "sprint": "2.9", "kind": "contract" },
-  { "id": "safety-car-r10", "tasks": ["R10"], "sprint": "2.9", "kind": "contract" }
+  { "id": "safety-car-r10", "tasks": ["R10"], "sprint": "2.9", "kind": "contract" },
+  { "id": "vsc-r11", "tasks": ["R11"], "sprint": "2.9", "kind": "contract" }
 ];
