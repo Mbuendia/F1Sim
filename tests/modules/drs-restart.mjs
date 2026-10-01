@@ -11,7 +11,9 @@ export default async function run({ server, assert, test }) {
     await test('Q19: tras el VSC no hay espera adicional de DRS', () => {
       const sim = make('barcelona', 2);
       sim.raceFlagState = 'vsc'; sim.vscActive = true; sim.vscTimer = 0; sim.vscDuration = 0.01; sim.incidents = [];
-      sim.update(0.02);
+      // R11 (S56): la verde llega 10–15 s después del aviso de final; se avanza hasta ella (cambio autorizado por el
+      // usuario el 01/10/2026, antes un solo paso).
+      for (let i = 0; i < 1000 && sim.vscActive; i++) sim.update(0.02);
       assert(sim.raceFlagState === 'green' && !sim.vscActive, 'Q19: fixture: el VSC termina');
       assert(sim.drsDisabledLaps === 0, 'Q19: el DRS queda habilitado al volver a verde tras el VSC', `${sim.drsDisabledLaps} vueltas de espera`);
     });
