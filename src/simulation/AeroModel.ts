@@ -56,12 +56,14 @@ export interface LongitudinalInput {
   drsOpen: boolean;
   /** Nivel de rebufo 0..1 (ver slipstreamLevel). */
   slipstream: number;
+  /** [R17] Multiplicador del drag del coche (paquete aerodinámico y refrigeración). */
+  dragFactor?: number;
 }
 
 /** Aceleración longitudinal a fondo (m/s²); negativa por encima de la velocidad de equilibrio. */
 export function longitudinalAccel(input: LongitudinalInput, params: AeroParams = AERO): number {
   const v = Math.max(1, input.speedKmh / 3.6);
-  const cdA = params.cdA
+  const cdA = params.cdA * (input.dragFactor ?? 1)
     * (1 - (input.drsOpen ? params.drsDragReduction : 0))
     * (1 - params.slipstreamMaxReduction * Math.min(1, Math.max(0, input.slipstream)));
   const drive = Math.min(input.powerKw * 1000 * params.drivetrainEfficiency / v, input.massKg * params.tractionLimit);
@@ -83,7 +85,7 @@ export function holdThrottle(input: LongitudinalInput, params: AeroParams = AERO
   const v = Math.max(1, input.speedKmh / 3.6);
   const drive = Math.min(input.powerKw * 1000 * params.drivetrainEfficiency / v, input.massKg * params.tractionLimit);
   if (!(drive > 0)) return 0;
-  const cdA = params.cdA * (1 - (input.drsOpen ? params.drsDragReduction : 0))
+  const cdA = params.cdA * (input.dragFactor ?? 1) * (1 - (input.drsOpen ? params.drsDragReduction : 0))
     * (1 - params.slipstreamMaxReduction * Math.min(1, Math.max(0, input.slipstream)));
   const needed = 0.5 * params.rho * cdA * v * v + params.rollingCoeff * input.massKg * 9.81;
   return Math.min(1, needed / drive);
@@ -93,7 +95,7 @@ export function holdThrottle(input: LongitudinalInput, params: AeroParams = AERO
 export function topSpeedKmh(input: Omit<LongitudinalInput, 'speedKmh'>, params: AeroParams = AERO): number {
   // En la punta la tracción no limita: P·η = (½ρ·CdA·v² + Crr·m·g)·v. Newton sobre esa cúbica (converge en pocas
   // iteraciones; se usa en cada paso del motor).
-  const k = 0.5 * params.rho * params.cdA
+  const k = 0.5 * params.rho * params.cdA * (input.dragFactor ?? 1)
     * (1 - (input.drsOpen ? params.drsDragReduction : 0))
     * (1 - params.slipstreamMaxReduction * Math.min(1, Math.max(0, input.slipstream)));
   const r = params.rollingCoeff * input.massKg * 9.81;

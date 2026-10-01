@@ -14,6 +14,9 @@ export interface TireContext {
   /** Sentido e intensidad de la curva: > 0 a derechas, < 0 a izquierdas (−1..1). */
   turn: number;
   speedKmh: number;
+  /** [R17] Calentamiento y desgaste del chasis (1 = referencia). */
+  heat?: number;
+  wear?: number;
 }
 
 export class TireModel {
@@ -242,9 +245,9 @@ export class TireModel {
       for (const { wheel, temp: tempKey, health: healthKey } of WHEEL_KEYS) {
         const current = tires[tempKey] ?? tires.tempCelsius;
         const target = 103 + modeHeat + 30 * cornering * (loads[wheel] - 0.7) - airCooling;
-        const temp = current + (target - current) * Math.min(1, dt / 12);
+        const temp = current + (target - current) * Math.min(1, dt / 12 * (context.heat ?? 1));
         tires[tempKey] = temp;
-        const wheelWear = deltaWear * (isCornering ? loads[wheel] : 1) * this.tempWearFactor(tires.compound, temp);
+        const wheelWear = deltaWear * (isCornering ? loads[wheel] : 1) * this.tempWearFactor(tires.compound, temp) * (context.wear ?? 1);
         tires[healthKey] = Math.max(0, (tires[healthKey] as number) - wheelWear);
         gripSum += this.tempGripFactor(tires.compound, temp);
       }

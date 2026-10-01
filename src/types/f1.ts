@@ -330,6 +330,8 @@ export interface CarState {
   coastedSec?: number;
   /** [R16] Potencia de fricción de los frenos en el último paso (MW): la frenada que no recupera el MGU-K. */
   brakeFrictionMW?: number;
+  /** [R17] Perfil técnico resuelto para este evento (chasis, PU y paquete aerodinámico). */
+  technical?: import('../data/teamProfiles').CarTechnical;
 
   aheadInfo: RelativeCarInfo | null;
   behindInfo: RelativeCarInfo | null;

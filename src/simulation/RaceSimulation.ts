@@ -35,6 +35,7 @@ import { IncidentModel } from './IncidentModel';
 import { calculateCarWorldPosition, lapsToPitEntry, limitLateralChange } from '../utils/carPosition';
 import { lineCrossings, TimingLine, TimingService } from './Timing';
 import { brakeDecelFactor, brakeTempStep, engineTempStep, gearFor, rpmFor } from './PowertrainModel';
+import { chassisGripAt, resolveTechnical } from '../data/teamProfiles';
 import { AERO, CAR_DRY_MASS_KG, cornerMassFactor, dirtyAirLevel, holdThrottle, longitudinalAccel, slipstreamLevel, topSpeedKmh } from './AeroModel';
 import { mulberry32, random, Rng, rngState, streamSeed, useRng } from './Random';
 
@@ -368,6 +369,8 @@ export class RaceSimulation {
     });
     // [R14] Carga por distancia: consumo estimado de cada coche × vueltas, con margen y muestra; tope del perfil.
     for (const car of this.cars) {
+      // [R17] Perfil técnico resuelto una vez por coche y evento (chasis, PU y paquete del circuito).
+      car.technical = resolveTechnical(car.team.id, this.circuitId);
       const load = Math.min(this.rule('initialFuelKg'), FuelModel.initialFuelFor(RejoinModel.lapFuelKg(this.activeTrack, car), this.totalLaps));
       car.fuelKg = load; car.telemetry.fuelKg = load;
       car.massKg = CAR_DRY_MASS_KG + load; car.fuelBurnedKg = 0; car.coastedSec = 0;
@@ -880,7 +883,7 @@ export class RaceSimulation {
         dt,
         RaceSimulation.BASE_LAP_TIME_SEC,
         // [R06] Sentido de la curva y velocidad: carga y temperatura de cada rueda.
-        { turn: trackPoint.turn ?? 0, speedKmh: car.currentSpeedKmh }
+        { turn: trackPoint.turn ?? 0, speedKmh: car.currentSpeedKmh, heat: car.technical?.tyreHeat, wear: car.technical?.tyreWear }
       );
 
 
@@ -911,9 +914,12 @@ export class RaceSimulation {
       // [R16] Estela para la refrigeración (recta o curva): menos aire en radiadores y frenos.
       const wake = onTrackRunning ? slipstreamLevel(wakeGapSec, wakeLateral) : 0;
 
-      const carBasePerf = car.team.carPerformance;
+      // [R17] El chasis aporta su agarre según el tipo de curva (más carga cuanto más rápida, agarre mecánico en lentas); ya no
+      // se multiplica el rating antiguo `carPerformance`.
+      const technical = (car.technical ??= resolveTechnical(car.team.id, this.circuitId));
+      const chassisGrip = chassisGripAt(technical, trackPoint.speedLimitFactor);
       let effectivePace = 
-        carBasePerf * 
+        chassisGrip * 
         (0.92 + 0.08 * driverSkillMultiplier) * 
         tireResult.speedMultiplier * 
         enginePerf.speedFactor * 
@@ -921,7 +927,7 @@ export class RaceSimulation {
       // [R05] DRS, rebufo, masa y ERS ya no multiplican el ritmo: actúan una sola vez en el modelo longitudinal.
       // [R05] Ritmo de potencia: coche, piloto y motor (incluida la temperatura), sin neumáticos ni pista, que actúan
       // sobre el agarre y no sobre los caballos.
-      let powerPace = carBasePerf * (0.92 + 0.08 * driverSkillMultiplier) * raceDayVariance;
+      let powerPace = (0.92 + 0.08 * driverSkillMultiplier) * raceDayVariance;
       if (car.engineTempCelsius > 115) {
         const thermal = Math.max(0.92, 1 - (car.engineTempCelsius - 115) / 20 * 0.08);
         effectivePace *= thermal;
@@ -952,12 +958,13 @@ export class RaceSimulation {
 
       // [R05] Entrada del modelo longitudinal: potencia del motor térmico escalada por el ritmo del coche (la punta
       // varía con la raíz cúbica de la potencia) más el MGU-K realmente desplegado; masa con el combustible.
-      const iceKw = car.team.horsepower * 0.7457 - 120;
+      const iceKw = technical.iceKw;
       const aeroInput = {
         massKg: CAR_DRY_MASS_KG + Math.max(0, car.fuelKg),
         powerKw: car.fuelKg > 0 ? iceKw * enginePerf.powerFactor * powerPace ** 3 + 120 * energyDeployment : 0,
         drsOpen: car.drsActive,
         slipstream: car.slipstreamLevel ?? 0,
+        dragFactor: technical.dragFactor,
       };
 
       // ── FÍSICA LONGITUDINAL REALISTA: FRENADAS VIOLENTAS Y ACELERACIÓN A FONDO ──
@@ -1260,7 +1267,7 @@ export class RaceSimulation {
       // refrigeran peor en la estela. El paso siguiente frena y empuja con estas temperaturas.
       car.brakeFrictionMW = brakeFrictionMW;
       car.brakeTempCelsius = brakeTempStep(car.brakeTempCelsius, brakeFrictionMW, car.currentSpeedKmh, wake, dt);
-      car.engineTempCelsius = engineTempStep(car.engineTempCelsius, car.engineMode, finalRpm, car.currentSpeedKmh, wake, dt);
+      car.engineTempCelsius = engineTempStep(car.engineTempCelsius, car.engineMode, finalRpm, car.currentSpeedKmh, wake, dt, technical.cooling);
 
       car.stats = {
         pushLaps: Math.floor(car.currentLap * 0.35),

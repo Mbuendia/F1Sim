@@ -24,12 +24,15 @@ export function brakeTempStep(tempC: number, frictionMW: number, speedKmh: numbe
 }
 
 /** Temperatura del motor tras `dt` según modo, RPM, velocidad y estela (menos aire en los radiadores). */
-export function engineTempStep(tempC: number, mode: string, rpm: number, speedKmh: number, wake: number, dt: number): number {
+export function engineTempStep(tempC: number, mode: string, rpm: number, speedKmh: number, wake: number, dt: number,
+  cooling = 1): number {
   let heat = mode === 'push' ? 108 : mode === 'overtake' ? 118 : mode === 'low' ? 88 : 95;
   heat += (rpm - 10000) / 3600 * 4;
   if (speedKmh > 300) heat += 3;
   heat += 6 * wake;
-  const coolRate = (0.8 + (speedKmh / 350) * 0.6) * (1 - 0.35 * wake);
+  // [R17] La eficiencia de refrigeración del chasis acelera el enfriamiento y reduce la carga térmica en estela.
+  heat -= (cooling - 1) * 10;
+  const coolRate = (0.8 + (speedKmh / 350) * 0.6) * (1 - 0.35 * wake) * cooling;
   const next = tempC + (heat - tempC) * Math.min(1, dt * coolRate);
   return Math.max(80, Math.min(135, next));
 }

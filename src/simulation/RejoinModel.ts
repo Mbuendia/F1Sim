@@ -3,28 +3,32 @@ import type { CarState } from '../types/f1';
 import { PitStopModel } from './PitStopModel';
 import { CAR_DRY_MASS_KG, LongitudinalInput, holdThrottle, longitudinalAccel, topSpeedKmh } from './AeroModel';
 import { FuelModel } from './FuelModel';
+import { CarTechnical, chassisGripAt, resolveTechnical } from '../data/teamProfiles';
 
 // [Q13] Modelo de reincorporación: réplica 1D de la física longitudinal del motor (misma velocidad objetivo por
 // tramo, frenada 180/120 km/h/s, aceleración por potencia, limitador de boxes, servicio y salida) para medir cuánto
 // tiempo cuesta parar frente a no parar, y el perfil de tiempos de vuelta para comparar huecos en segundos.
 // Validado contra el simulador en los 23 circuitos (tests/modules/rejoin-loss.mjs). Ignora tráfico, DRS y rebufo.
 
-type CarLike = Pick<CarState, 'team' | 'driver'>;
+type CarLike = Pick<CarState, 'team' | 'driver'> & { technical?: CarTechnical };
 
 const DT = 0.02;
 
+// [R17] Ritmo del piloto; el coche aporta su perfil técnico (curvas, drag y PU), igual que en RaceSimulation.
 const trackPace = (car: CarLike) => {
   const skill = 0.55 * car.driver.talentRating + 0.25 * car.driver.palmaresScore + 0.2 * car.driver.consistency;
-  return car.team.carPerformance * (0.92 + 0.08 * skill);
+  return 0.92 + 0.08 * skill;
 };
+const technicalOf = (car: CarLike) => car.technical ?? resolveTechnical(car.team.id, 'barcelona');
 
 // [R05] Mismo modelo longitudinal que RaceSimulation: masa con combustible medio de carrera, ERS en modo estándar
 // (la mitad del MGU-K), sin DRS ni rebufo.
 const REJOIN_FUEL_KG = 50;
-type Aero = Omit<LongitudinalInput, 'speedKmh'> & { topKmh: number };
+type Aero = Omit<LongitudinalInput, 'speedKmh'> & { topKmh: number; fastGrip: number; slowGrip: number };
 const aeroOf = (car: CarLike, pace: number): Aero => {
-  const input = { massKg: CAR_DRY_MASS_KG + REJOIN_FUEL_KG, powerKw: (car.team.horsepower * 0.7457 - 120) * pace ** 3 + 120 * 0.5, drsOpen: false, slipstream: 0 };
-  return { ...input, topKmh: topSpeedKmh(input) };
+  const tech = technicalOf(car);
+  const input = { massKg: CAR_DRY_MASS_KG + REJOIN_FUEL_KG, powerKw: tech.iceKw * pace ** 3 + 120 * 0.5, drsOpen: false, slipstream: 0, dragFactor: tech.dragFactor };
+  return { ...input, topKmh: topSpeedKmh(input), fastGrip: tech.fastCornerGrip, slowGrip: tech.slowCornerGrip };
 };
 
 // Misma tabla de velocidades objetivo que RaceSimulation (tramo recto / curva rápida / media / lenta).
@@ -34,7 +38,7 @@ const targetKmh = (speedLimitFactor: number, aero: Aero, pace: number): number =
   const base = f >= 0.65 ? 190 + (f - 0.65) * 450
     : f >= 0.4 ? 120 + (f - 0.4) * 280
     : 68 + (f - 0.2) * 240;
-  return base * pace;
+  return base * pace * chassisGripAt({ fastCornerGrip: aero.fastGrip, slowCornerGrip: aero.slowGrip }, f);
 };
 
 interface LapProfile {
@@ -54,7 +58,10 @@ const cacheFor = <T>(cache: WeakMap<TrackDefinition, Map<string, T>>, track: Tra
   return map;
 };
 
-const carKey = (car: CarLike, capKmh: number | null) => `${car.team.id}|${car.driver.id}|${capKmh ?? '-'}`;
+const carKey = (car: CarLike, capKmh: number | null) => {
+  const t = technicalOf(car);
+  return `${car.team.id}|${car.driver.id}|${capKmh ?? '-'}|${t.package}|${t.fastCornerGrip}|${t.slowCornerGrip}|${t.dragFactor}|${t.iceKw}`;
+};
 
 export class RejoinModel {
   /** Distancia de medida tras la salida de boxes (fracción de vuelta), igual que el test de validación. */
