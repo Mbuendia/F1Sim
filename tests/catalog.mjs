@@ -489,5 +489,6 @@ export const modules = [
   { "id": "landing-compound", "tasks": ["R30"], "sprint": "2.9", "kind": "contract" },
   { "id": "race-menu", "tasks": ["R32"], "sprint": "2.9", "kind": "contract" },
   { "id": "camera-zoom", "tasks": ["R32"], "sprint": "2.9", "kind": "contract" },
-  { "id": "rule-set", "tasks": ["R01"], "sprint": "2.9", "kind": "contract" }
+  { "id": "rule-set", "tasks": ["R01"], "sprint": "2.9", "kind": "contract" },
+  { "id": "timing", "tasks": ["R02"], "sprint": "2.9", "kind": "contract" }
 ];
