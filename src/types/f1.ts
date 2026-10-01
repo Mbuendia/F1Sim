@@ -376,6 +376,13 @@ export interface CarState {
   brakeFrictionMW?: number;
   /** [R10] Doblado autorizado que está adelantando a la fila y al SC para recuperar su vuelta. */
   scUnlapping?: boolean;
+  /** [R11] Referencia del VSC (progreso virtual) y delta en segundos (≥ 0 = detrás de la referencia). */
+  vscRef?: number;
+  vscDeltaSec?: number;
+  /** [R11] Acaba de salir de boxes bajo VSC: su referencia arranca con el margen de recuperación (delta continuo). */
+  vscPitExit?: boolean;
+  /** [R11] Infracciones de pista registradas (las sanciones las aplica R13). */
+  infractions?: { type: 'delta-vsc'; value: number; lap: number; time: number }[];
   /** [R17] Perfil técnico resuelto para este evento (chasis, PU y paquete aerodinámico). */
   technical?: import('../data/teamProfiles').CarTechnical;
   /** [R07] Juegos de neumáticos del coche y clasificación reglamentaria (DSQ por incumplir S30.5m). */

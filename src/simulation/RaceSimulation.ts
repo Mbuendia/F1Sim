@@ -107,6 +107,17 @@ export class RaceSimulation {
   vscActive: boolean = false;
   vscTimer: number = 0;
   vscDuration: number = 0;
+  /** [R11] Fase del VSC (activo / final anunciado), hora del anuncio y de la verde, y registro con mensajes. */
+  vscState: { phase: 'activo' | 'final' | null; announcedAt?: number; greenAt?: number } = { phase: null };
+  vscLog: { phase: 'activo' | 'final' | 'verde' | 'sustituido'; time: number; message: string }[] = [];
+  /** [R11] Perfil de referencia del VSC: vuelta estable con tope de 160 km/h (calibración) y tolerancia de delta (s). */
+  static readonly VSC_REFERENCE_KMH = 160;
+  /** [R11] Desfase máximo que un coche puede recuperar frente a su referencia (s): se corrigen los errores de seguimiento,
+   * no una pérdida real de tiempo. Calibración. */
+  static readonly VSC_MAX_RECOVERY_SEC = 1.0;
+  /** [R11] Referencia común del VSC: la vuelta estable más lenta (tope de 160 km/h) al desplegarlo, que todos pueden seguir. */
+  private vscProfile: ReturnType<typeof RejoinModel.lapProfile> | null = null;
+  static readonly VSC_DELTA_TOLERANCE_SEC = 0.05;
   
   // Para controlar que no adelanten hasta pasar meta tras el SC
   scEndingLap: number | null = null;
@@ -234,6 +245,8 @@ export class RaceSimulation {
     this.vscActive = false;
     this.vscTimer = 0;
     this.vscDuration = 0;
+    this.vscState = { phase: null };
+    this.vscLog = [];
     this.scEndingLap = null; // [FIX C5] Reset scEndingLap en cada nueva carrera
 
     this.cars = STARTING_GRID_ORDER.map((driverId, idx) => {
@@ -434,7 +447,7 @@ export class RaceSimulation {
     this.afterSafetyCarDeploy(reason);
     if (options.targetLaps !== undefined) this.safetyCar.targetLaps = options.targetLaps;
     this.raceFlagState = 'sc';
-    this.vscActive = false; this.vscTimer = 0;
+    this.clearVirtualSafetyCar('Sustituido por Safety Car');
     return true;
   }
 
@@ -599,6 +612,8 @@ export class RaceSimulation {
         const wasInPitLane = car.isInPitLane;
         PitStopModel.processCrossings(car, previous[index], this.activeTrack,
           dt, this.raceFlagState, this.safetyCar.mode, this.pitEntryClosed);
+        // [R11] Al entrar en el pit lane deja de aplicarse el delta del VSC (manda el limitador).
+        if (car.isInPitLane) { car.vscRef = undefined; car.vscDeltaSec = undefined; car.vscPitExit = true; }
         // [Q16] Reinicio de contadores ERS en el mismo cruce de la entrada de boxes (sin flujo: dt = 0).
         if (!wasInPitLane && car.isInPitLane && car.energy) {
           EnergyModel.update(car.energy, car.engineMode, false, 0, car.currentLap, true, car.fuelKg > 0, this.energyLimits);
@@ -777,6 +792,8 @@ export class RaceSimulation {
         car.lateralOffset = 0;
         car.targetLateralOffset = 0;
         car.isBlueFlagged = false;
+        // [R11] En el pit lane manda el limitador, no el delta del VSC.
+        car.vscRef = undefined; car.vscDeltaSec = undefined; car.vscPitExit = true;
 
         // [R02] Cruce de meta con hora interpolada dentro del paso.
         const pitLapCrossing = prevProgress >= 0
@@ -1168,9 +1185,30 @@ export class RaceSimulation {
       if ((perms.neutralized || isWaitingForScRestartLine) && !car.scUnlapping && Number.isFinite(wakeDistance)) {
         car.speed = Math.min(car.speed, Math.max(0, wakeDistance - 0.0025) / Math.max(dt, 1e-9));
       }
+      // [R11] Delta del VSC: el coche no puede ir por delante de su referencia ni recuperar tiempo perdido.
+      let vscNextRef: number | undefined;
+      let vscProfile: ReturnType<typeof RejoinModel.lapProfile> | undefined;
+      if ((this.vscActive || this.raceFlagState === 'vsc') && !car.isInPitLane && !car.pitStop.isPitting) {
+        vscProfile = this.vscReferenceProfile();
+        // Tras una parada el delta sigue siendo positivo (FIA): la referencia arranca con el margen de recuperación.
+        if (car.vscRef === undefined) car.vscRef = car.vscPitExit ? RejoinModel.progressAfter(vscProfile, car.progress, RaceSimulation.VSC_MAX_RECOVERY_SEC) : car.progress;
+        car.vscPitExit = false;
+        const deltaNow = RejoinModel.timeBetween(vscProfile, car.progress, car.vscRef);
+        if (deltaNow < -RaceSimulation.VSC_DELTA_TOLERANCE_SEC && !(car.infractions ?? []).some(x => x.type === 'delta-vsc' && x.time >= this.vscStartedAt)) {
+          (car.infractions ??= []).push({ type: 'delta-vsc', value: deltaNow, lap: car.currentLap, time: this.raceTimeSec });
+        }
+        // Una pérdida mayor que el margen de recuperación no se recupera: la referencia se retrasa hasta ese margen.
+        if (deltaNow > RaceSimulation.VSC_MAX_RECOVERY_SEC) car.vscRef = RejoinModel.progressAfter(vscProfile, car.progress, RaceSimulation.VSC_MAX_RECOVERY_SEC);
+        vscNextRef = RejoinModel.progressAfter(vscProfile, car.vscRef, dt);
+        car.speed = Math.min(car.speed, Math.max(0, vscNextRef - car.progress) / Math.max(dt, 1e-9));
+      }
       car.currentSpeedKmh = car.speed * lapDistanceMeters * 3.6;
       const prevProgress = car.progress;
       car.progress += car.speed * dt;
+      if (vscNextRef !== undefined && vscProfile) {
+        car.vscRef = vscNextRef;
+        car.vscDeltaSec = RejoinModel.timeBetween(vscProfile, car.progress, car.vscRef);
+      }
       if (isOnIdealLine && !perms.neutralized && this.weather.waterDepthMm === 0) {
         rubber.push([prevProgress, car.progress]);
       }
@@ -1342,10 +1380,19 @@ export class RaceSimulation {
 
     // 4. Actualizar Virtual Safety Car
     if (this.vscActive) {
+      // VSC activado sin pasar por startVirtualSafetyCar (estado escrito directamente): se trata como activo.
+      if (this.vscState.phase === null) { this.vscState = { phase: 'activo' }; this.vscEndsWhenClear = true; }
       this.vscTimer += dt;
-      if (this.vscTimer >= this.vscDuration || IncidentModel.isTrackClear(this.incidents)) {
+      // [R11] Aviso de final al cumplirse el tiempo o despejarse la pista; la verde llega 10–15 s después (S56).
+      if (this.vscState.phase === 'activo' && (this.vscTimer >= this.vscDuration || (this.vscEndsWhenClear && IncidentModel.isTrackClear(this.incidents)))) {
+        this.endVirtualSafetyCar();
+      }
+      if (this.vscState.phase === 'final' && this.raceTimeSec >= (this.vscState.greenAt ?? Infinity) - 1e-9) {
         this.vscActive = false;
         this.raceFlagState = 'green';
+        this.vscState = { phase: null };
+        this.vscLog.push({ phase: 'verde', time: this.raceTimeSec, message: 'Fin del VSC: pista verde' });
+        for (const c of this.cars) { c.vscRef = undefined; c.vscDeltaSec = undefined; }
         // [Q19] S22.1: tras el VSC no hay espera adicional de DRS (antes 1 vuelta).
         this.drsDisabledLaps = this.rule('drsLapsAfterVsc');
       }
@@ -1737,7 +1784,7 @@ export class RaceSimulation {
     const response = SafetyCarModel.evaluateResponse(incident, activeIncidents, car.currentLap, this.totalLaps, sc.isDeployed && !retiring);
     if (response === 'red') {
       this.raceFlagState = 'red';
-      this.vscActive = false; this.vscTimer = 0;
+      this.clearVirtualSafetyCar('Sustituido por Safety Car o bandera roja');
       this.triggerD20LuckRoll('red');
       for (const c of this.cars) if (c.status === 'running') c.pitStop.isPitting = true;
     } else if (retiring && (response === 'sc' || response === 'vsc' || response === 'yellow')) {
@@ -1748,13 +1795,10 @@ export class RaceSimulation {
       SafetyCarModel.deploy(sc, `Abandono de ${car.driver.code}`, leaderProgress, this.raceTimeSec, (OFFICIAL_CIRCUITS[this.circuitId] || OFFICIAL_CIRCUITS.barcelona).trackType, this.activeTrack);
       this.afterSafetyCarDeploy(`Abandono de ${car.driver.code}`);
       this.raceFlagState = 'sc';
-      this.vscActive = false; this.vscTimer = 0;
+      this.clearVirtualSafetyCar('Sustituido por Safety Car o bandera roja');
       this.triggerD20LuckRoll('sc');
     } else if (response === 'vsc' && this.raceFlagState !== 'red') {
-      this.raceFlagState = 'vsc';
-      this.vscActive = true;
-      this.vscTimer = 0;
-      this.vscDuration = incident.clearTimer + 5;
+      this.startVirtualSafetyCar(incident.clearTimer + 5, true);
       this.triggerD20LuckRoll('vsc');
     }
   }
@@ -1822,6 +1866,50 @@ export class RaceSimulation {
       sc.mode = 'leading';
       this.setSafetyCarPhase('desdoblamiento', `Los coches doblados pueden adelantar: ${eligible.map(c => c.driver.code).join(', ')}`);
     } else announce();
+  }
+
+  private vscStartedAt = 0;
+  /** [R11] El VSC por incidente termina al despejarse la pista; uno con duración fijada, al cumplirla. */
+  private vscEndsWhenClear = false;
+
+  /** [R11] Despliega el VSC durante `durationSec` (hasta el aviso de final). */
+  startVirtualSafetyCar(durationSec: number, endWhenTrackClear = false) {
+    this.vscEndsWhenClear = endWhenTrackClear;
+    this.raceFlagState = 'vsc';
+    this.vscActive = true;
+    this.vscTimer = 0;
+    this.vscDuration = durationSec;
+    this.vscStartedAt = this.raceTimeSec;
+    this.vscProfile = null;
+    this.vscState = { phase: 'activo' };
+    for (const c of this.cars) { c.vscRef = undefined; c.vscDeltaSec = undefined; }
+    this.vscLog.push({ phase: 'activo', time: this.raceTimeSec, message: 'Virtual Safety Car desplegado' });
+  }
+
+  private vscReferenceProfile() {
+    if (!this.vscProfile) {
+      const running = this.cars.filter(c => c.status === 'running');
+      const profiles = (running.length ? running : this.cars).map(c => RejoinModel.lapProfile(this.activeTrack, c, RaceSimulation.VSC_REFERENCE_KMH));
+      this.vscProfile = profiles.reduce((slowest, p) => (p.lapTime > slowest.lapTime ? p : slowest));
+    }
+    return this.vscProfile;
+  }
+
+  /** [R11] Anuncia el final del VSC: la verde llega entre 10 y 15 s después (flujo de azar propio, reproducible). */
+  endVirtualSafetyCar() {
+    if (!this.vscActive || this.vscState.phase !== 'activo') return;
+    const rng = this.stream('vsc');
+    const delay = 10 + 5 * (rng ? rng() : random());
+    this.vscState = { phase: 'final', announcedAt: this.raceTimeSec, greenAt: this.raceTimeSec + delay };
+    this.vscLog.push({ phase: 'final', time: this.raceTimeSec, message: `VSC ending: verde en ${delay.toFixed(1)} s` });
+  }
+
+  /** [R11] El VSC termina por escalada (SC o roja): limpia temporizadores, aviso y referencias. */
+  private clearVirtualSafetyCar(message: string) {
+    if (this.vscActive || this.vscState.phase) this.vscLog.push({ phase: 'sustituido', time: this.raceTimeSec, message });
+    this.vscActive = false; this.vscTimer = 0;
+    this.vscState = { phase: null };
+    for (const c of this.cars) { c.vscRef = undefined; c.vscDeltaSec = undefined; }
   }
 
   getCarById(id: number): CarState | undefined {

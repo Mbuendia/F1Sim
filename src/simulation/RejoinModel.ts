@@ -134,6 +134,17 @@ export class RejoinModel {
     return lap * profile.lapTime + within;
   }
 
+  /** [R11] Progreso que se alcanza `seconds` después de `progress` siguiendo el perfil. */
+  static progressAfter(profile: LapProfile, progress: number, seconds: number): number {
+    const target = this.timeAt(profile, progress) + seconds;
+    let lo = progress, hi = progress + Math.ceil(seconds / profile.lapTime + 1);
+    for (let i = 0; i < 50; i++) {
+      const mid = (lo + hi) / 2;
+      if (this.timeAt(profile, mid) < target) lo = mid; else hi = mid;
+    }
+    return (lo + hi) / 2;
+  }
+
   /** Progreso que está `seconds` por detrás de `progress` según el perfil (inversa de timeAt). */
   static progressBefore(profile: LapProfile, progress: number, seconds: number): number {
     const target = this.timeAt(profile, progress) - seconds;
