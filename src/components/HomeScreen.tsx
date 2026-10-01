@@ -1,3 +1,4 @@
+import { getRuleSet, DEFAULT_RULE_SET_ID } from '../rules/ruleSets';
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import styles from './HomeScreen.module.css';
 import { DRIVERS } from '../data/drivers';
@@ -987,6 +988,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* R01: perfil de reglas con el que se correrá */}
+          <div className={styles.rulesProfile} title={getRuleSet(DEFAULT_RULE_SET_ID).id}>
+            Reglas: <strong>{getRuleSet(DEFAULT_RULE_SET_ID).label}</strong>
           </div>
 
           <button className={styles.launchBigButton} onClick={onStartRace}>
