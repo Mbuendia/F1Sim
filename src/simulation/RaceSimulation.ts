@@ -39,6 +39,7 @@ import { chassisGripAt, resolveTechnical } from '../data/teamProfiles';
 import { availableSets, COMPOUND_LABEL, createInventory, mountSet, pickSet, TireCompliance, tireCompliance } from './TireInventory';
 import { localFlagsFrom, LocalFlag, marshalSectorOf, Permissions, permissionsFor } from './RaceControl';
 import { Decision, PenaltyType, Stewards } from './Stewards';
+import { tyreWaterGrip, WeatherModel, WeatherScenario } from './WeatherModel';
 import { AERO, CAR_DRY_MASS_KG, cornerMassFactor, dirtyAirLevel, holdThrottle, longitudinalAccel, slipstreamLevel, topSpeedKmh } from './AeroModel';
 import { mulberry32, random, Rng, rngState, streamSeed, useRng } from './Random';
 
@@ -153,6 +154,11 @@ export class RaceSimulation {
   }
 
   private nextBoxOrderId = 1;
+  /** [R22] Tiempo físico: fuente única de agua, visibilidad y previsión. */
+  weatherModel = new WeatherModel();
+  private weatherVsc = false;
+  private weatherDisplayTick = -1;
+  private forecastCache: { key: string; value: { rain5: number; rain15: number; uncertainty: number } } | null = null;
   /** [R13] Comisarios: decisiones y cumplimiento de sanciones. */
   stewards = new Stewards();
   /** [R08] Entrada al pit lane cerrada por Dirección de Carrera. */
@@ -265,6 +271,11 @@ export class RaceSimulation {
     this.vscLog = [];
     this.redFlag = { phase: null, order: [], suspensionSec: 0, log: [] };
     this.stewards.reset();
+    this.weatherModel.reset();
+    this.weatherVsc = false;
+    this.weatherDisplayTick = -1;
+    this.forecastCache = null;
+    Object.assign(this.weather, { condition: 'dry', conditionLabel: 'SECO / DESPEJADO', waterDepthMm: 0, waterPercentage: 0, gripMultiplier: 1, rainProbabilityPct: 4 });
     this.scEndingLap = null; // [FIX C5] Reset scEndingLap en cada nueva carrera
 
     this.cars = STARTING_GRID_ORDER.map((driverId, idx) => {
@@ -628,6 +639,7 @@ export class RaceSimulation {
       if (racing) this.cars.forEach((car, index) => {
         useRng(this.stream(`coche-${car.id}`));
         this.issuePlannedStop(car);
+        this.aiWeatherTyres(car);
         const wasInPitLane = car.isInPitLane;
         // [R13] Drive-through / stop-and-go pendiente: entrar en boxes (no se cumple bajo neutralización).
         car.pitStop.mustServePenalty = Boolean(this.stewards.pendingDrive(car.id)) && !this.isNeutralized();
@@ -903,7 +915,7 @@ export class RaceSimulation {
       car.aggression = effectiveAggression as CarState['aggression'];
 
       // DRS — Desactivado bajo SC, VSC o banderas amarillas
-      const drsBlockedByFlags = !perms.drs || this.drsDisabledLaps > 0;
+      const drsBlockedByFlags = !perms.drs || this.drsDisabledLaps > 0 || this.weatherDrsBlocked();
       car.drsEligible = !drsBlockedByFlags && car.currentLap > 1 &&
         this.drsPermissions.eligible(car.id, trackPoint.drsZoneId);
       car.drsActive = this.drsPermissions.activation(car.id,
@@ -962,6 +974,9 @@ export class RaceSimulation {
         tireResult.speedMultiplier * 
         enginePerf.speedFactor * 
         raceDayVariance;
+      // [R22] Agua del tramo: agarre del compuesto montado relativo a su agarre en seco (el seco ya lo da TireModel).
+      const waterDepth = this.weatherModel.depthAt(normalizedT);
+      if (waterDepth > 0) effectivePace *= tyreWaterGrip(car.tires.compound, waterDepth) / tyreWaterGrip(car.tires.compound, 0);
       // [R05] DRS, rebufo, masa y ERS ya no multiplican el ritmo: actúan una sola vez en el modelo longitudinal.
       // [R05] Ritmo de potencia: coche, piloto y motor (incluida la temperatura), sin neumáticos ni pista, que actúan
       // sobre el agarre y no sobre los caballos.
@@ -1950,6 +1965,8 @@ export class RaceSimulation {
     // El modelo del SC señala que se podría retirar (pista despejada, vueltas cumplidas): decide Dirección de Carrera.
     const ready = modeBefore === 'leading' && sc.mode === 'returning' && sc.phase !== 'retirada';
     if (!ready) return;
+    // [R22] Con visibilidad baja el SC no se retira.
+    if (this.weatherModel.visibility < 0.4) { sc.mode = 'leading'; return; }
     const hardTimeout = sc.lapCount >= sc.targetLaps + 3;
     if (sc.phase !== 'fila' && !hardTimeout) { sc.mode = 'leading'; return; }
     const eligible = this.cars.filter(c => c.status === 'running' && !c.isInPitLane && !c.pitStop.isPitting && (c.lapsBehindLeader ?? 0) >= 1);
@@ -2244,6 +2261,82 @@ export class RaceSimulation {
     this.weather.trackTempCelsius = Math.round((38.5 + tempOscillation) * 10) / 10;
     this.weather.airTempCelsius = Math.round((24.2 + tempOscillation * 0.4) * 10) / 10;
     this.weather.windSpeedKmh = Math.round((14.0 + Math.cos(this.raceTimeSec * 0.08) * 3.5) * 10) / 10;
+    // [R22] Agua por tramo, secado y visibilidad; el estado visible sale de la misma fuente.
+    const wm = this.weatherModel;
+    wm.step(this.raceTimeSec, dt, this.weather.trackTempCelsius, this.cars.filter(c => c.status === 'running' && !c.isInPitLane).map(c => c.trackT));
+    this.applyWeatherSafety();
+    // El estado visible (textos y porcentajes) se refresca cada medio segundo simulado; la física usa el modelo directamente.
+    const displayTick = Math.floor(this.raceTimeSec * 2);
+    if (displayTick === this.weatherDisplayTick) return;
+    this.weatherDisplayTick = displayTick;
+    const mean = wm.meanDepth(), rain = wm.rainNowMmH;
+    this.weather.waterDepthMm = Math.round(mean * 100) / 100;
+    this.weather.waterPercentage = Math.round(Math.min(100, mean / 2 * 100));
+    this.weather.gripMultiplier = Math.round(tyreWaterGrip('medium', mean) * 100) / 100;
+    const [condition, label] = rain <= 0 ? (mean > 0.05 ? ['dry', 'SECÁNDOSE'] : ['dry', 'SECO / DESPEJADO'])
+      : rain < 2.5 ? ['drizzle', 'LLOVIZNA'] : rain < 10 ? ['rain', 'LLUVIA'] : rain < 30 ? ['heavy_rain', 'LLUVIA FUERTE'] : ['storm', 'TORMENTA'];
+    this.weather.condition = condition as TrackWeatherState['condition'];
+    this.weather.conditionLabel = label;
+    const forecast = this.getForecast();
+    this.weather.rainProbabilityPct = Math.round(forecast.rain15 * 100);
+    this.weather.forecast5Min = `${Math.round(forecast.rain5 * 100)} % LLUVIA (±${Math.round(forecast.uncertainty * 100)})`;
+    this.weather.forecast15Min = `${Math.round(forecast.rain15 * 100)} % LLUVIA (±${Math.round(forecast.uncertainty * 100)})`;
+  }
+
+  /** [R22] Fija el escenario meteorológico (determinista) y reinicia el estado del agua. */
+  setWeatherScenario(scenario: WeatherScenario) {
+    this.weatherModel.reset(scenario);
+  }
+
+  /** [R22] Dirección de Carrera desactiva el DRS con pista mojada o visibilidad reducida. */
+  weatherDrsBlocked(): boolean {
+    return this.weatherModel.meanDepth() > 0.5 || this.weatherModel.visibility < 0.5;
+  }
+
+  /** [R22] Visibilidad muy baja: VSC (y SC si empeora); el VSC por tiempo termina al recuperarse la visibilidad. */
+  private applyWeatherSafety() {
+    const v = this.weatherModel.visibility;
+    if (this.raceFlagState === 'red' || this.lightState !== 'racing') return;
+    if (v < 0.15 && !this.safetyCar.isDeployed) { this.deploySafetyCar('Visibilidad insuficiente'); this.weatherVsc = false; return; }
+    if (v < 0.3 && !this.vscActive && !this.safetyCar.isDeployed && this.raceFlagState !== 'sc') {
+      this.startVirtualSafetyCar(1e9);
+      this.weatherVsc = true;
+      return;
+    }
+    if (this.weatherVsc && this.vscActive && v >= 0.4) { this.endVirtualSafetyCar(); this.weatherVsc = false; }
+  }
+
+  /** [R22] Previsión con incertidumbre a partir de lo observado (lluvia actual y tendencia), sin acceso al escenario. */
+  getForecast(): { rain5: number; rain15: number; uncertainty: number } {
+    const wm = this.weatherModel;
+    const recent = wm.recentRainMmH() > 1e-9 ? wm.recentRainMmH() : 0;
+    const window = Math.floor(this.raceTimeSec / 30);
+    const key = `${window}|${wm.rainNowMmH > 0}|${recent > 0}`;
+    if (this.forecastCache?.key === key) return this.forecastCache.value;
+    const noise = mulberry32(streamSeed(this.seed ?? 0, `meteo-${window}`))() - 0.5;
+    const base5 = wm.rainNowMmH > 0 ? 0.85 : recent > 0 ? 0.4 : 0.05;
+    const base15 = wm.rainNowMmH > 0 ? 0.7 : recent > 0 ? 0.35 : 0.08;
+    const uncertainty = 0.1 + (recent > 0 && wm.rainNowMmH === 0 ? 0.15 : 0);
+    const clamp = (x: number) => Math.round(Math.min(1, Math.max(0, x)) * 1000) / 1000;
+    const value = { rain5: clamp(base5 + noise * uncertainty), rain15: clamp(base15 + noise * uncertainty * 1.5), uncertainty };
+    this.forecastCache = { key, value };
+    return value;
+  }
+
+  /** [R22] La IA pide neumáticos para el agua actual de la pista (sin conocer el futuro); el jugador decide por sí mismo. */
+  private aiWeatherTyres(car: CarState) {
+    const pit = car.pitStop;
+    if (pit.playerControlled || car.status !== 'running' || car.isInPitLane || pit.isPitting || orderIsActive(pit.activeBoxOrder)) return;
+    if (this.isNeutralized() && this.raceFlagState === 'red') return;
+    const depth = this.weatherModel.meanDepth();
+    const current = tyreWaterGrip(car.tires.compound, depth);
+    let best: TireCompound | null = null, bestGrip = current;
+    for (const compound of ['medium', 'intermediate', 'wet'] as TireCompound[]) {
+      if (car.tireInventory && availableSets(car.tireInventory, compound) === 0) continue;
+      const g = tyreWaterGrip(compound, depth);
+      if (g > bestGrip + 0.05) { best = compound; bestGrip = g; }
+    }
+    if (best) this.issueBoxOrder(car.id, best, 'ai');
   }
 
   // Órdenes del muro: aceptación no equivale a compromiso de entrada.
