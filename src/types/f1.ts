@@ -111,6 +111,11 @@ export interface TireState {
   healthFR?: number;
   healthRL?: number;
   healthRR?: number;
+  /** [R06] Temperatura de cada rueda (°C). */
+  tempFL?: number;
+  tempFR?: number;
+  tempRL?: number;
+  tempRR?: number;
 }
 
 export interface TelemetryData {

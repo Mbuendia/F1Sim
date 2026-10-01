@@ -855,7 +855,9 @@ export class RaceSimulation {
         trackPoint.speedLimitFactor,
         isCornering,
         dt,
-        RaceSimulation.BASE_LAP_TIME_SEC
+        RaceSimulation.BASE_LAP_TIME_SEC,
+        // [R06] Sentido de la curva y velocidad: carga y temperatura de cada rueda.
+        { turn: trackPoint.turn ?? 0, speedKmh: car.currentSpeedKmh }
       );
 
       const fuelResult = FuelModel.updateFuel(
@@ -1269,8 +1271,9 @@ export class RaceSimulation {
         drsAvailable: car.drsEligible,
         engineMode: car.engineMode,
         aggression: car.aggression,
-        fuelKg: Number(car.fuelKg.toFixed(1)),
-        fuelPerLap: Number(FuelModel.BASE_CONSUMPTION_PER_LAP.toFixed(2)),
+        // Redondeos sin toFixed: se ejecutan en cada paso de cada coche.
+        fuelKg: Math.round(car.fuelKg * 10) / 10,
+        fuelPerLap: Math.round(FuelModel.BASE_CONSUMPTION_PER_LAP * 100) / 100,
         batterySoc: car.energy.storedMJ * 25,
         ersDeploying: energyDeployment > 0,
         tireWear: Math.round(car.tires.health),
@@ -1278,7 +1281,7 @@ export class RaceSimulation {
         tireHealthFR: Math.round(tireResult.tireHealthFR),
         tireHealthRL: Math.round(tireResult.tireHealthRL),
         tireHealthRR: Math.round(tireResult.tireHealthRR),
-        currentPaceDelta: car.lastLapTime ? Number((car.lastLapTime - RaceSimulation.BASE_LAP_TIME_SEC).toFixed(3)) : 0
+        currentPaceDelta: car.lastLapTime ? Math.round((car.lastLapTime - RaceSimulation.BASE_LAP_TIME_SEC) * 1000) / 1000 : 0
       };
     }
 
@@ -1581,7 +1584,7 @@ export class RaceSimulation {
             driverCode: carAhead.driver.code,
             teamName: carAhead.team.shortName,
             teamColor: carAhead.team.color,
-            gapSec: Number(gapAhead.toFixed(1)),
+            gapSec: Math.round(gapAhead * 10) / 10,
             position: carAhead.currentPosition
           };
         }
@@ -1597,7 +1600,7 @@ export class RaceSimulation {
           driverCode: carBehind.driver.code,
           teamName: carBehind.team.shortName,
           teamColor: carBehind.team.color,
-          gapSec: Number(gapBehind.toFixed(1)),
+          gapSec: Math.round(gapBehind * 10) / 10,
           position: carBehind.currentPosition
         };
       } else {
@@ -1720,9 +1723,9 @@ export class RaceSimulation {
   updateWeather(dt: number) {
     // Evolución sutil y continua de temperatura de asfalto y viento
     const tempOscillation = Math.sin(this.raceTimeSec * 0.05) * 1.5;
-    this.weather.trackTempCelsius = Number((38.5 + tempOscillation).toFixed(1));
-    this.weather.airTempCelsius = Number((24.2 + tempOscillation * 0.4).toFixed(1));
-    this.weather.windSpeedKmh = Number((14.0 + Math.cos(this.raceTimeSec * 0.08) * 3.5).toFixed(1));
+    this.weather.trackTempCelsius = Math.round((38.5 + tempOscillation) * 10) / 10;
+    this.weather.airTempCelsius = Math.round((24.2 + tempOscillation * 0.4) * 10) / 10;
+    this.weather.windSpeedKmh = Math.round((14.0 + Math.cos(this.raceTimeSec * 0.08) * 3.5) * 10) / 10;
   }
 
   // Órdenes del muro: aceptación no equivale a compromiso de entrada.

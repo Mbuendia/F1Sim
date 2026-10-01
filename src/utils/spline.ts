@@ -20,6 +20,8 @@ export interface SplinePoint extends Point2D {
   trackWidthCars: number;
   idealLineOffset: number;
   rubberGrip: number;
+  /** [R06] Sentido e intensidad de la curva: > 0 a derechas, < 0 a izquierdas, 0 en recta (−1..1). */
+  turn?: number;
 }
 
 /**

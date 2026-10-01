@@ -1,6 +1,53 @@
 import { TireState, TireCompound, EngineMode, AggressionLevel, Driver } from '../types/f1';
 
+type Wheel = 'FL' | 'FR' | 'RL' | 'RR';
+// Claves precalculadas: el bucle por rueda corre en cada paso de cada coche.
+const WHEEL_KEYS = [
+  { wheel: 'FL', temp: 'tempFL', health: 'healthFL' },
+  { wheel: 'FR', temp: 'tempFR', health: 'healthFR' },
+  { wheel: 'RL', temp: 'tempRL', health: 'healthRL' },
+  { wheel: 'RR', temp: 'tempRR', health: 'healthRR' },
+] as const;
+
+/** [R06] Contexto de pista para el modelo por rueda. */
+export interface TireContext {
+  /** Sentido e intensidad de la curva: > 0 a derechas, < 0 a izquierdas (−1..1). */
+  turn: number;
+  speedKmh: number;
+}
+
 export class TireModel {
+  // [R06] Ventana de trabajo por compuesto (°C): calibración del juego, no tabla oficial.
+  static readonly TEMP_WINDOW: Record<TireCompound, { min: number; max: number }> = {
+    soft: { min: 85, max: 110 },
+    medium: { min: 90, max: 115 },
+    hard: { min: 95, max: 120 },
+    intermediate: { min: 50, max: 85 },
+    wet: { min: 40, max: 75 },
+  };
+  /** Temperatura de las mantas al montar un juego nuevo (°C). */
+  static readonly BLANKET_TEMP_C = 70;
+
+  /** Agarre relativo por temperatura: 1 dentro de la ventana, menos por debajo y por encima. */
+  static tempGripFactor(compound: TireCompound, tempC: number): number {
+    const { min, max } = this.TEMP_WINDOW[compound] ?? this.TEMP_WINDOW.medium;
+    if (tempC < min) return Math.max(0.9, 1 - (min - tempC) * 0.003);
+    if (tempC > max) return Math.max(0.9, 1 - (tempC - max) * 0.002);
+    return 1;
+  }
+
+  /** Desgaste relativo por temperatura: sobrecalentar degrada más deprisa. */
+  static tempWearFactor(compound: TireCompound, tempC: number): number {
+    const { max } = this.TEMP_WINDOW[compound] ?? this.TEMP_WINDOW.medium;
+    return tempC > max ? 1 + (tempC - max) * 0.04 : 1;
+  }
+
+  /** Reparto de carga por rueda (media 1): en curva a derechas cargan las izquierdas, y al revés. */
+  static wheelLoads(turn: number): Record<Wheel, number> {
+    const lateral = Math.max(-1, Math.min(1, turn)) * 0.35;
+    return { FL: 1.08 + lateral, FR: 1.08 - lateral, RL: 0.92 + lateral * 0.8, RR: 0.92 - lateral * 0.8 };
+  }
+
   /**
    * Obtiene los parámetros físicos base según el compuesto
    */
@@ -69,7 +116,8 @@ export class TireModel {
     speedFactor: number,
     isCornering: boolean,
     dt: number,
-    lapLengthSeconds?: number
+    lapLengthSeconds?: number,
+    context?: TireContext
   ): { 
     tireHealthFL: number; 
     tireHealthFR: number; 
@@ -101,7 +149,8 @@ export class TireModel {
     arg5?: any,
     arg6?: any,
     arg7?: any,
-    arg8?: any
+    arg8?: any,
+    arg9?: TireContext
   ): { 
     tireHealthFL: number; 
     tireHealthFR: number; 
@@ -136,6 +185,7 @@ export class TireModel {
       dt = typeof arg7 === 'number' ? arg7 : 0.016;
       lapLengthSeconds = typeof arg8 === 'number' ? arg8 : 78;
     }
+    const context = typeof arg2 === 'number' ? undefined : arg9;
 
     const props = this.getCompoundProperties(tires.compound);
 
@@ -179,25 +229,48 @@ export class TireModel {
     if (tires.healthRL === undefined) tires.healthRL = tires.health;
     if (tires.healthRR === undefined) tires.healthRR = tires.health;
 
-    // Distribución asimétrica de carga por fuerzas laterales en curva
-    const flWearBias = isCornering ? 1.28 : 1.0;
-    const frWearBias = isCornering ? 0.92 : 1.0;
-    const rlWearBias = isCornering ? 1.15 : 1.0;
-    const rrWearBias = isCornering ? 0.90 : 1.0;
-
     const deltaWear = wearRateThisStep * dt;
-    tires.healthFL = Math.max(0, tires.healthFL - deltaWear * flWearBias);
-    tires.healthFR = Math.max(0, tires.healthFR - deltaWear * frWearBias);
-    tires.healthRL = Math.max(0, tires.healthRL - deltaWear * rlWearBias);
-    tires.healthRR = Math.max(0, tires.healthRR - deltaWear * rrWearBias);
+    let tempGrip = 1;
+    if (context) {
+      // [R06] Carga por sentido de curva y temperatura por rueda; el desgaste crece con la carga y el sobrecalentamiento.
+      const loads = this.wheelLoads(context.turn);
+      const cornering = Math.abs(context.turn);
+      const modeHeat = (engineMode === 'push' ? 6 : engineMode === 'overtake' ? 10 : engineMode === 'low' ? -5 : 0)
+        + (aggression === 'maximum' ? 8 : aggression === 'aggressive' ? 5 : aggression === 'conservative' ? -4 : 0);
+      const airCooling = Math.min(1, context.speedKmh / 300) * 8;
+      let gripSum = 0;
+      for (const { wheel, temp: tempKey, health: healthKey } of WHEEL_KEYS) {
+        const current = tires[tempKey] ?? tires.tempCelsius;
+        const target = 103 + modeHeat + 30 * cornering * (loads[wheel] - 0.7) - airCooling;
+        const temp = current + (target - current) * Math.min(1, dt / 12);
+        tires[tempKey] = temp;
+        const wheelWear = deltaWear * (isCornering ? loads[wheel] : 1) * this.tempWearFactor(tires.compound, temp);
+        tires[healthKey] = Math.max(0, (tires[healthKey] as number) - wheelWear);
+        gripSum += this.tempGripFactor(tires.compound, temp);
+      }
+      tempGrip = gripSum / 4;
+      tires.tempCelsius = (tires.tempFL! + tires.tempFR! + tires.tempRL! + tires.tempRR!) / 4;
+    } else {
+      // Firma sin contexto (compatibilidad): reparto fijo de carga en curva.
+      const flWearBias = isCornering ? 1.28 : 1.0;
+      const frWearBias = isCornering ? 0.92 : 1.0;
+      const rlWearBias = isCornering ? 1.15 : 1.0;
+      const rrWearBias = isCornering ? 0.90 : 1.0;
+      tires.healthFL = Math.max(0, tires.healthFL - deltaWear * flWearBias);
+      tires.healthFR = Math.max(0, tires.healthFR - deltaWear * frWearBias);
+      tires.healthRL = Math.max(0, tires.healthRL - deltaWear * rlWearBias);
+      tires.healthRR = Math.max(0, tires.healthRR - deltaWear * rrWearBias);
+    }
 
     // La salud general es la media de las 4 ruedas (estrictamente monótona, 0 curaciones)
     tires.health = (tires.healthFL + tires.healthFR + tires.healthRL + tires.healthRR) / 4;
     tires.wearRate = wearRateThisStep;
 
-    // Temperatura
-    const targetTemp = 85 + (abuseFactor * 25) + (isCornering ? 15 : 0);
-    tires.tempCelsius += (targetTemp - tires.tempCelsius) * Math.min(1, dt * 0.1);
+    if (!context) {
+      // Temperatura global (firma sin contexto)
+      const targetTemp = 85 + (abuseFactor * 25) + (isCornering ? 15 : 0);
+      tires.tempCelsius += (targetTemp - tires.tempCelsius) * Math.min(1, dt * 0.1);
+    }
 
     // Multiplicador de agarre dinámico
     let healthGrip = 1.0;
@@ -214,13 +287,13 @@ export class TireModel {
     if (tires.isBlistered) healthGrip *= 0.92;
 
     const finalGripMultiplier = Math.max(0.4, props.baseGripMultiplier * healthGrip);
-    const finalSpeedMultiplier = props.baseSpeedMultiplier * (0.85 + 0.15 * healthGrip);
+    const finalSpeedMultiplier = props.baseSpeedMultiplier * (0.85 + 0.15 * healthGrip) * tempGrip;
 
     return {
-      tireHealthFL: Number(Math.min(100, tires.healthFL).toFixed(2)),
-      tireHealthFR: Number(Math.min(100, tires.healthFR).toFixed(2)),
-      tireHealthRL: Number(Math.min(100, tires.healthRL).toFixed(2)),
-      tireHealthRR: Number(Math.min(100, tires.healthRR).toFixed(2)),
+      tireHealthFL: Math.round(Math.min(100, tires.healthFL) * 100) / 100,
+      tireHealthFR: Math.round(Math.min(100, tires.healthFR) * 100) / 100,
+      tireHealthRL: Math.round(Math.min(100, tires.healthRL) * 100) / 100,
+      tireHealthRR: Math.round(Math.min(100, tires.healthRR) * 100) / 100,
       gripMultiplier: finalGripMultiplier,
       speedMultiplier: finalSpeedMultiplier
     };
@@ -232,12 +305,17 @@ export class TireModel {
       compound,
       lapsOnTire: 0,
       wearRate: 0,
-      tempCelsius: 90,
+      tempCelsius: TireModel.BLANKET_TEMP_C,
       isBlistered: false,
       healthFL: 100,
       healthFR: 100,
       healthRL: 100,
-      healthRR: 100
+      healthRR: 100,
+      // [R06] Juego nuevo a temperatura de mantas, por debajo de la ventana de trabajo.
+      tempFL: TireModel.BLANKET_TEMP_C,
+      tempFR: TireModel.BLANKET_TEMP_C,
+      tempRL: TireModel.BLANKET_TEMP_C,
+      tempRR: TireModel.BLANKET_TEMP_C
     };
   }
 }
