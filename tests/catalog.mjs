@@ -491,5 +491,6 @@ export const modules = [
   { "id": "camera-zoom", "tasks": ["R32"], "sprint": "2.9", "kind": "contract" },
   { "id": "rule-set", "tasks": ["R01"], "sprint": "2.9", "kind": "contract" },
   { "id": "timing", "tasks": ["R02"], "sprint": "2.9", "kind": "contract" },
-  { "id": "track-data", "tasks": ["R03"], "sprint": "2.9", "kind": "contract" }
+  { "id": "track-data", "tasks": ["R03"], "sprint": "2.9", "kind": "contract" },
+  { "id": "snapshot", "tasks": ["R28"], "sprint": "2.9", "kind": "contract" }
 ];
