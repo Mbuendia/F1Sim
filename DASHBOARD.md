@@ -22,7 +22,7 @@
 
 ## 🧭 2. ROADMAP Y ESTADO GLOBAL DE SPRINTS
 
-**Orden vigente:** Sprint **2.9** · Tarea actual **R03** · Siguiente **R28** (esquema transversal del bloque 2.9-A; R01, R02 y la base inicial de R03 implementados el 01/10/2026 en la rama sprint/2.9 con contrato de tests acordado; cada tarea del 2.9 sigue requiriendo autorización expresa).
+**Orden vigente:** Sprint **2.9** · Tarea actual **R28** · Siguiente **R27** (bloque 2.9-A: R01, R02, la base inicial de R03 y el esquema de R28 implementados el 01/10/2026 en la rama sprint/2.9 con contrato de tests acordado; cada tarea del 2.9 sigue requiriendo autorización expresa).
 
 **Prioridad acordada tras la auditoría (30/09/2026, `docs/reviews/auditoria-q12-q19.md`):** Q19 → Q16 → Q13 → Q17 → Q12 → Q18/Q14/Q15. Decisiones del usuario: detecciones DRS desde las notas oficiales FIA; el Safety Car debe salir del pit lane (Q14); tests estructurales sin dependencias nuevas para Q18; tolerancias de calibración Q12 propuestas.
 
@@ -720,9 +720,10 @@ Todas las tareas siguientes están **pendientes**. P0 = corregir validez del nú
 * **R27 — Banco de escenarios y calibración de experiencia (P0/P1; todas las entregas):** `[ ]`
   * Añadir pruebas por comportamiento a `test-suite.mjs`, fixtures con semilla y carreras completas de referencia. Comparar baseline antes/después: cronometraje, continuidad, adelantamientos, pit loss, energía, temperatura y resultado. Validar geometría real además de escenarios sintéticos.
   * *Aceptación:* suite y build PASS; cero usos DRS sin permiso, cero recursos creados, cero adelantamientos ilegales no detectados, cero saltos de posición; invariancia de reglas con FPS/velocidad de simulación. Objetivo inicial de precisión de cruce ≤1 ms en fixtures; calibración de tiempos por circuito frente a fuentes identificadas, sin prometer precisión no medida. Revisión humana de carreras seca/mojada/SC/roja antes de publicar nuevas mecánicas.
-* **R28 — Guardado, reinicio y calidad de datos (P1; R01/R02, Q18):** `[ ]`
+* **R28 — Guardado, reinicio y calidad de datos (P1; R01/R02, Q18):** `[ ] ESQUEMA EN REVISIÓN LOCAL — 01/10/2026 CON CONTRATO DE TESTS ACORDADO`
   * Snapshot versionado: semilla, reloj, órdenes, permisos DRS, inventario, energía/contadores, sanciones, eventos, mejoras y temporada. Reinicio limpia timers, IDs y permisos. Validador de circuitos/unidades y migraciones con diagnóstico de datos faltantes.
   * *Aceptación:* guardar/cargar antes de detección, durante pit, SC/VSC/roja y tras fin; continuar con mismo resultado. Cambiar circuito no hereda DRS ni incidentes, y datos provisionales nunca pasan a oficiales silenciosamente.
+  * *Entrega parcial 01/10/2026 (solo esquema, aprobado por el usuario; R28 sigue abierta):* `src/simulation/Snapshot.ts` con `createSnapshot` y `validateSnapshot`. Esquema «f1sim-carrera» versión 1, JSON puro: referencias al perfil de reglas (R01) y al circuito (la geometría se reconstruye, no se guarda); reloj (tiempo de carrera, paso fijo, acumulador, pasos, semáforos); semilla y estado uint32 de cada flujo de azar (motor y uno por coche; `rngState` en `Random.ts`); coches completos, banderas, SC/VSC, incidentes, permisos DRS, lazos de cronometraje, contadores (órdenes, eventos D20, incidentes), meteorología, récords y eventos activos. Valores no representables pasarían a null con diagnóstico (0 en una carrera de 22 coches; ~87 KB). El validador acepta antes de la salida, con SC, en boxes y al terminar, y rechaza esquema o versión desconocidos (nombra la recibida y la soportada; sin migración), perfil o circuito inexistentes y falta de reloj, azar o coches. Tomar un snapshot no altera la carrera. Test `snapshot` (30 PASS); suite completa 1421 PASS. *Pendiente de R28:* cargar y continuar con el mismo resultado (antes de detección, en pit, SC/VSC/roja y tras fin), migraciones, botones de guardar/cargar, limpieza completa al reiniciar o cambiar de circuito y validador de circuitos/unidades en el arranque.
 
 #### Entrega E — Rediseño de escritorio aprobado en entrevista (29/09/2026)
 
