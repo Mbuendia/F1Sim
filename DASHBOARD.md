@@ -22,7 +22,7 @@
 
 ## 🧭 2. ROADMAP Y ESTADO GLOBAL DE SPRINTS
 
-**Orden vigente:** Sprint **2.9** · Tarea actual **R36** · Siguiente **R37** (bloque 2.9-A pendiente de revisión: R01, R02, la base inicial de R03, el esquema de R28 y la base de R27; 2.9-B en primera pasada completa: R05 con R40 y las primeras entregas de R06, R14, R15, R16 y R17; 2.9-C en primera pasada completa: R07, R08, R09, R10, R11, R12 (con R35), R13, R22 y R25; hallazgo R42 (adelantamientos) con primera entrega y R41 (compactación del SC) en revisión, ambos el 02/10/2026; resto el 01/10/2026 en la rama sprint/2.9 con contrato de tests acordado; cada tarea del 2.9 sigue requiriendo autorización expresa).
+**Orden vigente:** Sprint **2.9** · Tarea actual **R37** · Siguiente **R38** (bloque 2.9-A pendiente de revisión: R01, R02, la base inicial de R03, el esquema de R28 y la base de R27; 2.9-B en primera pasada completa: R05 con R40 y las primeras entregas de R06, R14, R15, R16 y R17; 2.9-C en primera pasada completa: R07, R08, R09, R10, R11, R12 (con R35), R13, R22 y R25; hallazgo R42 (adelantamientos) con primera entrega y R41 (compactación del SC) en revisión, ambos el 02/10/2026; resto el 01/10/2026 en la rama sprint/2.9 con contrato de tests acordado; cada tarea del 2.9 sigue requiriendo autorización expresa).
 
 **Prioridad acordada tras la auditoría (30/09/2026, `docs/reviews/auditoria-q12-q19.md`):** Q19 → Q16 → Q13 → Q17 → Q12 → Q18/Q14/Q15. Decisiones del usuario: detecciones DRS desde las notas oficiales FIA; el Safety Car debe salir del pit lane (Q14); tests estructurales sin dependencias nuevas para Q18; tolerancias de calibración Q12 propuestas.
 
@@ -801,12 +801,13 @@ Origen: revisión en local de Q12-Q23 jugando una carrera en Barcelona con el bu
   * *Tests antes de implementación:* ampliar neutralization-motion: roja → espera → relanzamiento en carrera real; paradas, compuesto, salud y posiciones antes/después; ∫v·dt durante la detención.
   * *Entrega 01/10/2026:* resuelto dentro de R12: la roja ya no marca `isPitting`; los coches esperan en la fila del carril rápido sin servicio, `totalPitStops`, juego montado, salud y combustible se conservan (también con dos rojas) y nadie aparece como «PIT» durante la espera. Cambio de neumáticos solo como decisión explícita (`requestRedFlagTyres` o IA con juego gastado).
 
-* **R36 — Aviso de bandera azul con tiempo suficiente para ceder:** `[ ] PLANIFICADO`
+* **R36 — Aviso de bandera azul con tiempo suficiente para ceder:** `[ ] EN REVISIÓN LOCAL — IMPLEMENTADO 02/10/2026 CON CONTRATO DE TESTS ACORDADO`
   * *Prioridad/dependencias:* P1; continúa Q15; coordina R02/R09 (tráfico físico).
   * *Hallazgo:* en adelantamientos reales la señal dura unos 0,6 s y la cesión solo llega al 30 % (nivel máximo 0,30 en 20 vueltas); el doblado apenas se aparta. El líder no queda bloqueado físicamente por el doblado.
   * *Alcance:* anticipar el aviso (propuesta ≈ 3 s de hueco en lugar de 1,2 s, ajuste de juego a validar) manteniendo la rampa gradual de Q15; valorar que el líder no atraviese al doblado mientras no haya cedido.
   * *Aceptación:* en carrera real el doblado alcanza cesión ≥ 0,9 antes de ser adelantado en recta; sin frenadas bruscas (criterio de blue-flags-yield) ni señales falsas con coches de la misma vuelta.
   * *Tests antes de implementación:* ampliar blue-flags-yield con un adelantamiento completo en carrera real y el nivel máximo alcanzado; conservar blue-flags.
+  * *Entrega 02/10/2026 (aprobada por el usuario; pendiente de revisión):* el aviso pasa de 1,2 s a 3 s (`blueFlagGapSec` del perfil de reglas, ajuste del juego) y el coche que dobla ya no atraviesa al doblado: se queda detrás (misma regla de seguimiento, con frenada máxima) hasta que este se ha apartado al menos 0,3 de separación lateral (`BLUE_FLAG_CLEAR_OFFSET`); en curva lenta o tramo estrecho espera a la siguiente recta. `blue-flags-yield` ampliado con un doblaje completo en carrera real (Barcelona): señal de 32 s antes del adelantamiento, cesión 1,00, sin frenada brusca en recta, 0 pasos «encima» del doblado (antes 23) y paso con separación lateral; sin señal entre coches de la misma vuelta. Con autorización del usuario, el test de R01 comprueba ahora 3 s. Suite completa 1837 PASS. *Observación:* el doblado levanta (hasta un 15 %) durante todo el aviso; si el líder se acerca despacio, eso le cuesta tiempo durante muchos segundos. No se ha medido en una carrera de 22 coches con doblajes.
 
 * **R37 — Beneficio del D20 útil bajo bandera roja:** `[ ] PLANIFICADO`
   * *Prioridad/dependencias:* P2; continúa Q17; coordina R26.
