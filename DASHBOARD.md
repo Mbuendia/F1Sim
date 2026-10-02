@@ -22,7 +22,7 @@
 
 ## 🧭 2. ROADMAP Y ESTADO GLOBAL DE SPRINTS
 
-**Orden vigente:** Sprint **2.10** · Tarea actual **R19** · Siguiente **R18** (R43, R44, R45, R46 y las primeras entregas de R20 y R19 entregadas y en revisión el 02/10/2026 en la rama sprint/2.10; Sprint 2.9 cerrado por el usuario el 02/10/2026 y fusionado en main: R01-R17, R21, R22, R25-R28 y R35-R42 entregadas; Sprint 2.10 planificado el mismo día con R43-R46 y lo heredado del 2.9 en el orden de 6.9; cada tarea sigue requiriendo contrato de tests y autorización expresa).
+**Orden vigente:** Sprint **2.10** · Tarea actual **R18** · Siguiente **R04** (punto de reanudación en 6.10; R43, R44, R45, R46 y las primeras entregas de R20 y R19 entregadas y en revisión el 02/10/2026 en la rama sprint/2.10; Sprint 2.9 cerrado por el usuario el 02/10/2026 y fusionado en main: R01-R17, R21, R22, R25-R28 y R35-R42 entregadas; Sprint 2.10 planificado el mismo día con R43-R46 y lo heredado del 2.9 en el orden de 6.9; cada tarea sigue requiriendo contrato de tests y autorización expresa).
 
 **Prioridad acordada tras la auditoría (30/09/2026, `docs/reviews/auditoria-q12-q19.md`):** Q19 → Q16 → Q13 → Q17 → Q12 → Q18/Q14/Q15. Decisiones del usuario: detecciones DRS desde las notas oficiales FIA; el Safety Car debe salir del pit lane (Q14); tests estructurales sin dependencias nuevas para Q18; tolerancias de calibración Q12 propuestas.
 
@@ -990,6 +990,28 @@ Origen: petición del usuario tras ver el tráiler de Motorsport Manager 2 (carr
 4. Partes pendientes de las tareas entregadas por fases: figuran como «Pendiente de Rxx» en cada entrada (R03, R06-R17, R22, R25, R27, R28, R42). Destacan las zonas de adelantamiento por circuito (R42), el muro de dos pilotos del estratega (R25), cargar y continuar una partida (R28) y separar el aviso de bandera azul del momento en que el doblado levanta (R36).
 
 **Orden propuesto:** R43 → R44 → R45 → R46 → R20 → R19 → R18 → R04/R23/R24.
+
+### 6.10 Punto de reanudación del Sprint 2.10 (02/10/2026)
+
+**Estado:** todo el trabajo está en la rama `sprint/2.10` (subida a GitHub, sin PR abierto y sin fusionar en main). Suite completa 2074 PASS / 0 FAIL en 106 módulos; `npm run build` correcto. `main` contiene el Sprint 2.9 completo (PR #5).
+
+**Entregado en esta rama y pendiente de la revisión del usuario:** R43 (fluidez), R44 (lluvia visible y radar), R45 (atributos y mejora de pilotos), R46 (coche en 3D) y las primeras entregas de R20 (clasificación y parrilla) y R19 (componentes y cupos). Qué mirar al revisar:
+
+1. R43: la suavidad en movimiento a 60 Hz o más (no se pudo juzgar desde el panel de pruebas).
+2. R44: el spray y el radar del minimapa en seguimiento con lluvia; gotas en pantalla no están hechas.
+3. R45: si el reparto de 1–3 puntos por carrera es demasiado rápido o lento; los atributos solo se ven en la pantalla final.
+4. R46: el modelo 3D es de bloques; decidir si basta o se quiere más detalle. Luz trasera y marca de rueda del coche de pista no se han visto en pantalla.
+5. R20: los tiempos de vuelta salen ≈1:37 en Barcelona (el motor rueda ≈1:41 en carrera frente a ≈1:11 real).
+6. R19: las sanciones en GP directo se aplican pero no se avisan.
+
+**Siguiente tarea: R18 (mejoras, setup, parc fermé y desarrollo).** Antes de escribir su contrato de tests hacen falta dos decisiones del usuario:
+
+* **Duración de la temporada:** cuántas carreras tiene, para que los cupos de R19 se renueven y el desarrollo tenga principio y fin (propuesta: 24 carreras, con cierre de temporada que reinicia cupos y conserva los atributos de R45).
+* **Economía:** presupuesto para mejoras o solo plazos de desarrollo (propuesta: solo plazos y un número limitado de proyectos simultáneos, sin dinero; el reglamento financiero no está entre los PDF aportados).
+
+**Después de R18, en este orden:** R04 (lectura visual del DRS), R23 (SVG/Canvas que explica la física), R24 (telemetría y mensajes de muro por eventos) y las partes pendientes anotadas en cada tarea. Candidatas a adelantarse si el usuario lo prefiere: recalibrar los tiempos de vuelta para acercarlos a los reales (afecta al banco R27 y a las tolerancias de pace-calibration), zonas de adelantamiento reales por circuito (pendiente de R42), cargar y continuar una partida (pendiente de R28) y fin de temporada (pendiente de R19).
+
+**Cierre del sprint:** cuando el usuario apruebe lo entregado, PR de `sprint/2.10` a main como en los sprints anteriores.
 
 ## 🔮 7. SPRINT 3: AUDIO, TELEMETRÍA AVANZADA, RADAR GPS & CLIMA (4 TAREAS DEFINIDAS)
 
