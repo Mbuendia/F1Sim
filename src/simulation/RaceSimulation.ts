@@ -596,6 +596,13 @@ export class RaceSimulation {
     }
   }
 
+  /** [R42] Adelantamiento: ventaja relativa mínima, equivalencia de DRS y rebufo, y ventaja para pasar en cualquier punto. */
+  static readonly OVERTAKE = {
+    MIN_ADVANTAGE: 0.012, CLOSING_AID_PER_KMH: 0.0005, CLOSING_AID_MAX: 0.009, ANYWHERE_ADVANTAGE: 0.15,
+    /** Distancia a la que el atacante está en paralelo (m) y velocidad a la que el adelantado le cede la curva. */
+    ALONGSIDE_M: 6, YIELD_FACTOR: 0.95,
+  };
+
   isOvertakingAllowedZone(t: number): boolean {
     if (t >= 0.92 || t <= 0.10) return true;
     if (t >= 0.40 && t <= 0.60) return true;
@@ -979,6 +986,11 @@ export class RaceSimulation {
       // [R22] Agua del tramo: agarre del compuesto montado relativo a su agarre en seco (el seco ya lo da TireModel).
       const waterDepth = this.weatherModel.depthAt(normalizedT);
       if (waterDepth > 0) effectivePace *= tyreWaterGrip(car.tires.compound, waterDepth) / tyreWaterGrip(car.tires.compound, 0);
+      // [R42] Ritmo propio del coche (neumáticos, chasis, piloto, motor, agua, temperatura y pinchazo), sin los efectos de
+      // trazada: es lo que los demás comparan para decidir un adelantamiento.
+      const paceIndex = effectivePace * (car.engineTempCelsius > 115 ? Math.max(0.92, 1 - (car.engineTempCelsius - 115) / 20 * 0.08) : 1)
+        * (car.hasPuncture ? 0.35 : 1);
+      car.paceIndex = paceIndex;
       // [R05] DRS, rebufo, masa y ERS ya no multiplican el ritmo: actúan una sola vez en el modelo longitudinal.
       // [R05] Ritmo de potencia: coche, piloto y motor (incluida la temperatura), sin neumáticos ni pista, que actúan
       // sobre el agarre y no sobre los caballos.
@@ -1047,6 +1059,13 @@ export class RaceSimulation {
       if (speedLimitFactor < 0.90) targetKmh *= 1 - AERO.dirtyAirMaxLoss * (car.dirtyAirLevel ?? 0);
       // [R14] Masa: con más combustible, menos velocidad de paso con el mismo apoyo.
       if (speedLimitFactor < 0.90) targetKmh *= cornerMassFactor(aeroInput.massKg);
+
+      // [R42] Fuera de las rectas, el coche al que ya tienen en paralelo cede la curva al que le adelanta.
+      if (perms.overtake && (speedLimitFactor < 0.90 || trackPoint.isBrakingZone)) {
+        const alongsideLaps = RaceSimulation.OVERTAKE.ALONGSIDE_M / lapDistanceMeters;
+        const attacker = field.find(o => o.attackingId === car.id && car.progress - o.progress > 0 && car.progress - o.progress < alongsideLaps);
+        if (attacker) targetKmh = Math.min(targetKmh, attacker.currentSpeedKmh * RaceSimulation.OVERTAKE.YIELD_FACTOR);
+      }
 
       // [Q15] Levantar en proporción a la cesión (máx. BLUE_FLAG_LIFT), sin salto de velocidad objetivo.
       targetKmh *= 1 - RaceSimulation.BLUE_FLAG_LIFT * (car.blueFlagLevel ?? 0);
@@ -1166,16 +1185,20 @@ export class RaceSimulation {
       car.speed = (car.currentSpeedKmh / 3.6) / lapDistanceMeters;
 
       // Gestión de adelantamientos
-      const minSafeSpacing = 0.0030;
+      // [R42] Distancia de seguimiento: la de siempre a alta velocidad y más corta en curvas lentas (tiempo constante),
+      // para que el coche rápido no pierda en la salida de curva lo que gana en ella.
+      const minSafeSpacing = perms.neutralized ? 0.0030 : Math.min(0.0030, Math.max(OT_FOLLOW.MIN_M, OT_FOLLOW.GAP_SEC * car.currentSpeedKmh / 3.6) / lapDistanceMeters);
       const canOvertakeHere = this.isOvertakingAllowedZone(normalizedT);
       
-      let tireDeltaAdvantage = 0;
-      if (carAhead) {
-        tireDeltaAdvantage = (tireResult.gripMultiplier - (carAhead.tireHealth / 100)) * 0.06;
-      }
-
-      const hasOvertakePace = (effectivePace + tireDeltaAdvantage) > 1.002;
-      const rareCornerOvertakeChance = random() < 0.00008 && tireResult.gripMultiplier > 1.04;
+      // [R42] La decisión es relativa al coche de delante: ventaja de ritmo propio más la velocidad real de aproximación
+      // (que ya incluye DRS y rebufo), con tope para que dos coches iguales no se pasen solo con las ayudas. Con una
+      // diferencia enorme (pinchazo, avería) se pasa en cualquier punto. Umbrales: calibración del juego.
+      const OT = RaceSimulation.OVERTAKE;
+      const paceAdvantage = carAhead ? paceIndex / Math.max(1e-6, carAhead.paceIndex) - 1 : 0;
+      const closingKmh = carAhead ? car.currentSpeedKmh - carAhead.currentSpeedKmh : 0;
+      const hasOvertakePace = closingKmh > 0
+        && paceAdvantage + Math.min(OT.CLOSING_AID_MAX, closingKmh * OT.CLOSING_AID_PER_KMH) > OT.MIN_ADVANTAGE;
+      const overtakeAnywhere = closingKmh > 0 && paceAdvantage > OT.ANYWHERE_ADVANTAGE;
 
       // Ya está definida arriba isWaitingForScRestartLine
       if (carAhead && !carAhead.isPitting && !car.isBlueFlagged && carAhead.status === 'running') {
@@ -1184,7 +1207,9 @@ export class RaceSimulation {
         if (deltaProgress > 0 && deltaProgress < minSafeSpacing) {
           // Si está lejos bajo SC, SIEMPRE puede adelantar para desdoblarse/alcanzar
           const isCatchingPackUnderSc = isCatchingPack && this.safetyCar.isDeployed;
-          const wantsToOvertake = ((canOvertakeHere || rareCornerOvertakeChance) && hasOvertakePace) || isCatchingPackUnderSc;
+          // Ya en paralelo, la maniobra iniciada se mantiene mientras dure la zona.
+          const alongside = car.isOvertaking && deltaProgress * lapDistanceMeters < OT.ALONGSIDE_M;
+          const wantsToOvertake = (canOvertakeHere && (hasOvertakePace || alongside)) || overtakeAnywhere || isCatchingPackUnderSc;
 
           if (wantsToOvertake && !isWaitingForScRestartLine && perms.overtake) {
             car.isOvertaking = true;
@@ -2487,6 +2512,9 @@ export class RaceSimulation {
   }
 }
 
+/** [R42] Seguimiento de cerca: distancia mínima (m) y hueco en tiempo (s). */
+const OT_FOLLOW = { MIN_M: 7, GAP_SEC: 0.17 };
+
 /** [R02] Estado de otro coche al inicio del paso (lo que ven los demás durante ese paso). */
 export interface FieldCar {
   id: number;
@@ -2497,12 +2525,17 @@ export interface FieldCar {
   isPitting: boolean;
   tireHealth: number;
   lateralOffset: number;
+  /** [R42] Ritmo propio del coche en su último paso. */
+  paceIndex: number;
+  /** [R42] Coche al que está adelantando, si hay maniobra en curso. */
+  attackingId: number | null;
 }
 
 function fieldCar(car: CarState): FieldCar {
   return {
     id: car.id, progress: car.progress, currentSpeedKmh: car.currentSpeedKmh, status: car.status,
     isInPitLane: car.isInPitLane, isPitting: car.pitStop.isPitting, tireHealth: car.tires.health,
-    lateralOffset: car.lateralOffset,
+    lateralOffset: car.lateralOffset, paceIndex: car.paceIndex ?? 1,
+    attackingId: car.isOvertaking ? car.carAheadId : null,
   };
 }

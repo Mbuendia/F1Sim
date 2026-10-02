@@ -39,7 +39,7 @@ export const AERO: AeroParams = {
   slipstreamMaxReduction: 0.10,
   slipstreamFullSec: 0.2,
   slipstreamZeroSec: 1.5,
-  dirtyAirMaxLoss: 0.04,
+  dirtyAirMaxLoss: 0.015,
   dirtyAirFullSec: 0.3,
   dirtyAirZeroSec: 1.5,
   wakeWidth: 0.6,
