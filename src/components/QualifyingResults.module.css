@@ -100,3 +100,8 @@
 .continue:focus-visible {
   background: #ff1e17;
 }
+
+.penalty {
+  color: #f87171;
+  font-weight: 600;
+}

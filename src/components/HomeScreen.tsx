@@ -10,6 +10,8 @@ import { ChampionshipTable } from './ChampionshipTable';
 import { WeatherScenarioSelect } from './WeatherScenarioSelect';
 import { CarShowcase } from './CarShowcase';
 import { RaceFormatSelect } from './RaceFormatSelect';
+import { ComponentsPanel } from './ComponentsPanel';
+import type { ComponentState, ComponentType } from '../simulation/ComponentPool';
 import type { RaceFormatId } from './RaceFormatSelect';
 import type { ChampionshipState } from '../simulation/Championship';
 import { FlagIcon } from './FlagIcon';
@@ -54,6 +56,10 @@ interface HomeScreenProps {
   /** [R44] Meteorología elegida para la carrera. */
   weatherScenarioId?: string;
   onSelectWeather?: (id: string) => void;
+  /** [R19] Componentes de la unidad de potencia y montaje de unidades nuevas. */
+  components?: ComponentState;
+  onFitComponent?: (driverId: string, type: ComponentType) => void;
+  onUndoComponent?: (driverId: string, type: ComponentType) => void;
   /** [R20] GP directo o con clasificación. */
   raceFormat?: RaceFormatId;
   onSelectFormat?: (format: RaceFormatId) => void;
@@ -71,7 +77,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   weatherScenarioId,
   onSelectWeather,
   raceFormat,
-  onSelectFormat
+  onSelectFormat,
+  components,
+  onFitComponent,
+  onUndoComponent
 }) => {
   const [activeTab, setActiveTab] = useState<'drivers' | 'circuits'>('drivers');
   const [driverSubTab, setDriverSubTab] = useState<'specs' | 'strategy' | 'records'>('specs');
@@ -229,6 +238,16 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             <span>Campeonato ({championship.races.length})</span>
           </summary>
           <ChampionshipTable championship={championship} onReset={onResetChampionship} />
+        </details>
+      )}
+
+      {components && (
+        <details className={styles.historySection}>
+          <summary className={styles.historyTitle}>
+            <span>Componentes de la unidad de potencia</span>
+          </summary>
+          <ComponentsPanel state={components} drivers={Object.values(DRIVERS).filter(d => d.teamId === (DRIVERS[selectedDriverId] ?? DRIVERS.alonso).teamId)}
+            onFitNew={onFitComponent} onUndo={onUndoComponent} />
         </details>
       )}
 

@@ -130,6 +130,14 @@ export class RaceSimulation {
       this.getCarById(attackerId)?.driver.development?.overtake, this.getCarById(defenderId)?.driver.development?.defence);
   }
 
+  /** [R19] Riesgo de avería por piloto según sus componentes; se aplica a los coches actuales y a las carreras siguientes. */
+  private failureFactors: Record<string, number> = {};
+
+  setFailureFactors(factors: Record<string, number>) {
+    this.failureFactors = { ...factors };
+    for (const car of this.cars) car.failureFactor = this.failureFactors[car.driver.id];
+  }
+
   /** [R20] Parrilla de salida: la de la clasificación o, en GP directo, la prefijada. */
   private startingGrid: string[] | null = null;
   get gridSource(): 'prefijada' | 'clasificacion' {
@@ -412,6 +420,7 @@ export class RaceSimulation {
         driver,
         team,
         gridPosition: idx + 1,
+        failureFactor: this.failureFactors[driverId],
         currentPosition: idx + 1,
         previousPosition: idx + 1,
         progress: initialProgress,
@@ -1922,7 +1931,8 @@ export class RaceSimulation {
     const unluckFactor = Math.max(0.2, 1.2 - car.driver.luckRating);
     const teamUnreliability = Math.max(0.01, 1.0 - car.team.reliability);
     const thermalStress = 1 + Math.max(0, car.engineTempCelsius - 112) / 8;
-    return 0.000008 * unluckFactor * (teamUnreliability * 50) * thermalStress;
+    // [R19] Componentes pasados de su vida nominal: más riesgo (factor 1 con unidades dentro de su vida).
+    return 0.000008 * unluckFactor * (teamUnreliability * 50) * thermalStress * (car.failureFactor ?? 1);
   }
 
   /** [R07] Estado de cumplimiento de S30.5m (dos especificaciones; Mónaco tres juegos) con aviso preventivo. */

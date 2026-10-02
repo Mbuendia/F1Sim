@@ -2,14 +2,17 @@ import React from 'react';
 import styles from './QualifyingResults.module.css';
 import { formatLapTime } from '../simulation/Qualifying';
 import type { QualifyingResult } from '../simulation/Qualifying';
+import type { GridChange } from '../simulation/ComponentPool';
 
 interface QualifyingResultsProps {
   result: QualifyingResult;
   onContinue?: () => void;
+  /** [R19] Cambios de parrilla por sanciones de componentes. */
+  gridChanges?: GridChange[];
 }
 
 /** [R20] Resultado de la clasificación: parrilla, tiempos y zona de eliminación. */
-export const QualifyingResults: React.FC<QualifyingResultsProps> = ({ result, onContinue }) => {
+export const QualifyingResults: React.FC<QualifyingResultsProps> = ({ result, onContinue, gridChanges = [] }) => {
   const pole = result.grid[0];
   const note = (slot: QualifyingResult['grid'][number]) =>
     slot.noTime ? 'Sin tiempo' : slot.outside107 ? 'Fuera del 107 %' : slot.eliminatedIn ? `Eliminado en ${slot.eliminatedIn}` : slot.position === 1 ? 'Pole' : 'Q3';
@@ -27,7 +30,12 @@ export const QualifyingResults: React.FC<QualifyingResultsProps> = ({ result, on
                 <td><span className={styles.dot} style={{ background: slot.teamColor }} />{slot.code}</td>
                 <td>{slot.teamName}</td>
                 <td>{formatLapTime(slot.bestSec)}</td>
-                <td>{note(slot)}</td>
+                <td>
+                  {note(slot)}
+                  {gridChanges.filter(change => change.driverId === slot.driverId).map(change => (
+                    <span key={change.driverId} className={styles.penalty}> · +{change.places} puestos{change.backOfGrid ? ' (fondo de parrilla)' : ''}: sale P{change.to}</span>
+                  ))}
+                </td>
               </tr>
             ))}
           </tbody>

@@ -21,6 +21,8 @@ import { RaceNotices, RaceNotice, RaceNoticeTone } from './components/RaceNotice
 import { OFFICIAL_CIRCUITS } from './data/circuits';
 import { buildWeatherScenario } from './data/weatherScenarios';
 import { runQualifying } from './simulation/Qualifying';
+import { aiReplace, applyGridPenalties, completeRace, emptyComponents, ensureDriver, fitNew, hazardFactor, markRaceStart, parseComponents, undoFit, COMPONENTS_STORAGE_KEY } from './simulation/ComponentPool';
+import type { ComponentState, GridChange } from './simulation/ComponentPool';
 import type { QualifyingResult } from './simulation/Qualifying';
 import { QualifyingResults } from './components/QualifyingResults';
 import qualifyingStyles from './components/QualifyingResults.module.css';
@@ -117,6 +119,18 @@ export const App: React.FC = () => {
     const row = result.rows.find(r => r.driverCode === driver.code);
     return row ? { position: row.position, status: row.status, points: row.points } : undefined;
   }, simulation.totalLaps), [development, simulation]);
+
+  // [R19] Componentes de la unidad de potencia de todos los pilotos, guardados en el navegador
+  const [components, setComponents] = useState<ComponentState>(() => {
+    let state = emptyComponents();
+    try { state = parseComponents(localStorage.getItem(COMPONENTS_STORAGE_KEY)); } catch { /* sin almacenamiento */ }
+    return Object.keys(DRIVERS).reduce((s, id) => ensureDriver(s, id), state);
+  });
+  const saveComponents = useCallback((next: ComponentState) => {
+    setComponents(next);
+    try { localStorage.setItem(COMPONENTS_STORAGE_KEY, JSON.stringify(next)); } catch (e) { console.error(e); }
+  }, []);
+  const [gridChanges, setGridChanges] = useState<GridChange[]>([]);
 
   // [R20] Formato del Gran Premio y resultado de la clasificación pendiente de mostrar
   const [raceFormat, setRaceFormat] = useState<RaceFormatId>('directo');
@@ -273,7 +287,17 @@ export const App: React.FC = () => {
     simulation.setCircuit(selectedCircuitId);
     // [R20] Con clasificación, la parrilla sale de Q1-Q3 y se enseña antes de formar; el GP directo usa la prefijada.
     const quali = raceFormat === 'clasificacion' ? runQualifying(simulation.qualifyingEntrants(), Date.now() % 2147483647) : null;
-    if (quali) simulation.setStartingGrid(quali.grid.map(slot => slot.driverId));
+    // [R19] Antes de salir: la IA sustituye lo agotado, las unidades sin estrenar cuentan como usadas y sus sanciones
+    // recolocan la parrilla (la de la clasificación o la prefijada).
+    const playerTeam = (DRIVERS[selectedDriverId] ?? DRIVERS.alonso).teamId;
+    const prepared = aiReplace(components, Object.values(DRIVERS).filter(d => d.teamId !== playerTeam).map(d => d.id));
+    const started = markRaceStart(prepared);
+    saveComponents(started.state);
+    simulation.setFailureFactors(Object.fromEntries(Object.keys(DRIVERS).map(id => [id, hazardFactor(started.state, id)])));
+    const baseGrid = quali ? quali.grid.map(slot => slot.driverId) : simulation.cars.map(c => c.driver.id);
+    const penalized = applyGridPenalties(baseGrid, started.penalties);
+    if (quali || penalized.moved.length) simulation.setStartingGrid(penalized.order);
+    setGridChanges(penalized.moved);
     setQualifying(quali);
     // [R44] Meteorología elegida en el paddock, ajustada a la duración prevista de la carrera.
     simulation.setWeatherScenario(buildWeatherScenario(weatherScenarioId, simulation.totalLaps * 90));
@@ -284,7 +308,7 @@ export const App: React.FC = () => {
     setIsFinished(false);
     setCurrentView('race');
     if (!quali) simulation.startRaceSequence();
-  }, [simulation, camera, selectedCircuitId, weatherScenarioId, development, raceFormat]);
+  }, [simulation, camera, selectedCircuitId, weatherScenarioId, development, raceFormat, components, saveComponents, selectedDriverId]);
 
   const handleStartFormationLap = useCallback(() => {
     if (simulation.lightState === 'grid-ready') {
@@ -333,6 +357,8 @@ export const App: React.FC = () => {
       if (finalResult) {
         saveChampionship(addRace(championship, newHistoryItem.id, selectedCircuitId, finalResult, simulation.raceFormat));
         saveDevelopment(developmentAfter(finalResult));
+        // [R19] Las unidades montadas suman la carrera y sus kilómetros.
+        saveComponents(completeRace(components, simulation.leaderLap * simulation.activeTrack.lapLengthMeters / 1000));
       }
 
       const updatedHistory = [newHistoryItem, ...raceHistory].slice(0, 10);
@@ -345,7 +371,7 @@ export const App: React.FC = () => {
     }
 
     setCurrentView('home');
-  }, [simulation, selectedDriverId, selectedCircuitId, raceHistory, championship, saveChampionship, saveDevelopment, developmentAfter]);
+  }, [simulation, selectedDriverId, selectedCircuitId, raceHistory, championship, saveChampionship, saveDevelopment, developmentAfter, components, saveComponents]);
 
   const handleCycleCameraMode = useCallback(() => {
     camera.cycleMode();
@@ -457,7 +483,13 @@ export const App: React.FC = () => {
         onStartRace={handleStartRaceFromHome}
         raceHistory={raceHistory}
         championship={championship}
-        onResetChampionship={() => { saveChampionship(emptyChampionship()); saveDevelopment(emptyDevelopment()); }}
+        onResetChampionship={() => {
+          saveChampionship(emptyChampionship()); saveDevelopment(emptyDevelopment());
+          saveComponents(Object.keys(DRIVERS).reduce((s, id) => ensureDriver(s, id), emptyComponents()));
+        }}
+        components={components}
+        onFitComponent={(driverId, type) => saveComponents(fitNew(components, driverId, type))}
+        onUndoComponent={(driverId, type) => saveComponents(undoFit(components, driverId, type))}
         raceFormat={raceFormat}
         onSelectFormat={setRaceFormat}
         weatherScenarioId={weatherScenarioId}
@@ -611,7 +643,7 @@ export const App: React.FC = () => {
 
             {qualifying && (
               <div className={qualifyingStyles.overlay}>
-                <QualifyingResults result={qualifying} onContinue={() => { setQualifying(null); simulation.startRaceSequence(); }} />
+                <QualifyingResults result={qualifying} gridChanges={gridChanges} onContinue={() => { setQualifying(null); simulation.startRaceSequence(); }} />
               </div>
             )}
 
