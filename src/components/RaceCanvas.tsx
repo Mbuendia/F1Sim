@@ -6,6 +6,7 @@ import { TrackRenderer } from '../renderer/TrackRenderer';
 import { CarRenderer } from '../renderer/CarRenderer';
 import { renderLeftMinimap } from '../renderer/MinimapRenderer';
 import { RenderInterpolator } from '../renderer/RenderPose';
+import { WeatherRenderer, weatherLayers } from '../renderer/WeatherRenderer';
 import { OFFICIAL_CIRCUITS } from '../data/circuits';
 import { Compass, RotateCw } from 'lucide-react';
 
@@ -98,13 +99,18 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
 
       TrackRenderer.renderTrack(ctx, simulation.activeTrack, camera, dpr, simulation.weather, simulation.circuitId);
 
+      // [R44] Pista mojada por tramo, radar de lluvia y spray (antes de los coches y sus etiquetas).
+      const weatherView = weatherLayers(simulation.weatherModel, simulation.raceTimeSec);
+      WeatherRenderer.render(ctx, simulation.activeTrack, camera, weatherView, simulation.raceTimeSec);
+      if (weatherView) WeatherRenderer.renderSpray(ctx, frame.cars, camera, t => simulation.weatherModel.depthAt(t));
+
       const circuitSpec = OFFICIAL_CIRCUITS[simulation.circuitId];
       const trackWidthCarsCapacity = circuitSpec?.trackWidthCars ?? 3;
       CarRenderer.renderCars(ctx, frame.cars, camera, selectedCarId, simulation.activeTrack, trackWidthCarsCapacity, frame.safetyCar);
 
       // ── MINIMAPA A LA IZQUIERDA DEL TODO (visible al seguir un coche) ──
       if (camera.followingCarId !== null) {
-        renderLeftMinimap(ctx, simulation, camera, simulation.getRejoinEstimate(camera.followingCarId));
+        renderLeftMinimap(ctx, simulation, camera, simulation.getRejoinEstimate(camera.followingCarId), weatherView);
       }
 
       ctx.restore();

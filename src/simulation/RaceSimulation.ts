@@ -44,7 +44,8 @@ import { localFlagsFrom, LocalFlag, marshalSectorOf, Permissions, permissionsFor
 import { Decision, PenaltyType, Stewards } from './Stewards';
 import { classify, constructorStandings, pointsTable, resultDifferences } from './RaceResult';
 import type { EndReason, RaceResult, ResultEntry } from './RaceResult';
-import { tyreWaterGrip, WeatherModel, WeatherScenario } from './WeatherModel';
+import { tyreCrossover, tyreClassOf, tyreWaterGrip, WeatherModel, WeatherScenario } from './WeatherModel';
+import type { TyreClass } from './WeatherModel';
 import { chooseCompound, STRATEGY, StrategyState } from './Strategist';
 import { AERO, CAR_DRY_MASS_KG, cornerMassFactor, dirtyAirLevel, holdThrottle, longitudinalAccel, slipstreamLevel, topSpeedKmh } from './AeroModel';
 import { mulberry32, random, Rng, rngState, streamSeed, useRng } from './Random';
@@ -2556,6 +2557,15 @@ export class RaceSimulation {
   /** [R22] Fija el escenario meteorológico (determinista) y reinicia el estado del agua. */
   setWeatherScenario(scenario: WeatherScenario) {
     this.weatherModel.reset(scenario);
+  }
+
+  /** [R44] Cruce de compuestos: la clase que pide el agua media actual frente a la montada. */
+  getTyreCrossover(carId: number): { recommended: TyreClass; mounted: TyreClass; depthMm: number; advise: boolean } {
+    const car = this.getCarById(carId);
+    const depthMm = this.weatherModel.meanDepth();
+    const recommended = tyreCrossover(depthMm);
+    const mounted = tyreClassOf(car?.tires.compound ?? 'medium');
+    return { recommended, mounted, depthMm, advise: Boolean(car) && car!.status === 'running' && recommended !== mounted };
   }
 
   /** [R22] Dirección de Carrera desactiva el DRS con pista mojada o visibilidad reducida. */

@@ -19,6 +19,7 @@ import { D20LuckModal } from './components/D20LuckModal';
 import { RaceMenu } from './components/RaceMenu';
 import { RaceNotices, RaceNotice, RaceNoticeTone } from './components/RaceNotices';
 import { OFFICIAL_CIRCUITS } from './data/circuits';
+import { buildWeatherScenario } from './data/weatherScenarios';
 import { addRace, emptyChampionship, parseChampionship, CHAMPIONSHIP_STORAGE_KEY } from './simulation/Championship';
 import type { ChampionshipState } from './simulation/Championship';
 import { DRIVERS } from './data/drivers';
@@ -94,6 +95,9 @@ export const App: React.FC = () => {
     setChampionship(next);
     try { localStorage.setItem(CHAMPIONSHIP_STORAGE_KEY, JSON.stringify(next)); } catch (e) { console.error(e); }
   }, []);
+
+  // [R44] Meteorología de la próxima carrera
+  const [weatherScenarioId, setWeatherScenarioId] = useState<string>('seco');
 
   // Historial de carreras guardadas
   const [raceHistory, setRaceHistory] = useState<RaceResultHistory[]>(() => {
@@ -239,6 +243,8 @@ export const App: React.FC = () => {
 
   const handleStartRaceFromHome = useCallback(() => {
     simulation.setCircuit(selectedCircuitId);
+    // [R44] Meteorología elegida en el paddock, ajustada a la duración prevista de la carrera.
+    simulation.setWeatherScenario(buildWeatherScenario(weatherScenarioId, simulation.totalLaps * 90));
     camera.resetToFullTrack();
     setSelectedCarId(null);
     setDetailOpen(false);
@@ -246,7 +252,7 @@ export const App: React.FC = () => {
     setIsFinished(false);
     setCurrentView('race');
     simulation.startRaceSequence();
-  }, [simulation, camera, selectedCircuitId]);
+  }, [simulation, camera, selectedCircuitId, weatherScenarioId]);
 
   const handleStartFormationLap = useCallback(() => {
     if (simulation.lightState === 'grid-ready') {
@@ -417,6 +423,8 @@ export const App: React.FC = () => {
         raceHistory={raceHistory}
         championship={championship}
         onResetChampionship={() => saveChampionship(emptyChampionship())}
+        weatherScenarioId={weatherScenarioId}
+        onSelectWeather={setWeatherScenarioId}
       />
     );
   }

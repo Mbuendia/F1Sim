@@ -15,7 +15,12 @@ export interface RainCell {
   driftTPerSec?: number;
 }
 
-export interface WeatherScenario { id: string; cells: RainCell[] }
+export interface WeatherScenario {
+  id: string;
+  cells: RainCell[];
+  /** [R44] Agua en toda la pista al empezar (mm): salida en mojado. */
+  initialWaterMm?: number;
+}
 
 export const DRY_SCENARIO: WeatherScenario = { id: 'seco', cells: [] };
 export const SEGMENTS = 36;
@@ -44,6 +49,18 @@ export function tyreWaterGrip(compound: TireCompound, depthMm: number): number {
   return curve[curve.length - 1][1];
 }
 
+export type TyreClass = 'slick' | 'intermediate' | 'wet';
+
+export function tyreClassOf(compound: TireCompound): TyreClass {
+  return compound === 'intermediate' || compound === 'wet' ? compound : 'slick';
+}
+
+/** [R44] Clase de neumático con más agarre para `depthMm` de agua. */
+export function tyreCrossover(depthMm: number): TyreClass {
+  const options: [TyreClass, TireCompound][] = [['slick', 'medium'], ['intermediate', 'intermediate'], ['wet', 'wet']];
+  return options.reduce((best, option) => tyreWaterGrip(option[1], depthMm) > tyreWaterGrip(best[1], depthMm) ? option : best)[0];
+}
+
 export class WeatherModel {
   scenario: WeatherScenario = DRY_SCENARIO;
   water: number[] = new Array(SEGMENTS).fill(0);
@@ -60,9 +77,10 @@ export class WeatherModel {
 
   reset(scenario: WeatherScenario = this.scenario) {
     this.scenario = scenario;
-    this.water = new Array(SEGMENTS).fill(0);
+    const initial = Math.min(MAX_WATER_MM, Math.max(0, scenario.initialWaterMm ?? 0));
+    this.water = new Array(SEGMENTS).fill(initial);
     this.visibility = 1;
-    this.dry = true;
+    this.dry = initial === 0;
     this.rainNowMmH = 0;
     this.history.fill(0); this.historyCount = 0; this.historyIndex = 0; this.historySum = 0;
   }
@@ -110,6 +128,15 @@ export class WeatherModel {
   /** Lluvia media observada en los últimos 3000 pasos (mm/h). */
   recentRainMmH(): number {
     return this.historyCount ? Math.max(0, this.historySum) / this.historyCount : 0;
+  }
+
+  /** [R44] Agua (mm) y lluvia actual (mm/h) por tramo, para pintar lo mismo que usa la física. */
+  waterBySegment(): readonly number[] {
+    return this.water;
+  }
+
+  rainBySegment(timeSec: number): number[] {
+    return Array.from({ length: SEGMENTS }, (_, i) => this.rainRateAt((i + 0.5) / SEGMENTS, timeSec));
   }
 
   depthAt(t: number): number {

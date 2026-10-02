@@ -6,6 +6,8 @@ import { PaceControls } from './PaceControls';
 import { CompoundBadge } from './CompoundBadge';
 import { COMPOUND_STYLES, TIRE_COMPOUNDS } from '../utils/compounds';
 
+const CROSSOVER_LABEL = { slick: 'neumático de seco', intermediate: 'INTERMEDIO', wet: 'LLUVIA' } as const;
+
 // [Q11] Panel dual de pilotos del equipo — controles independientes de boxes para ambos coches.
 export function BoxControls({ car, simulation, teamCars }: {
   car: CarState;
@@ -13,6 +15,8 @@ export function BoxControls({ car, simulation, teamCars }: {
   teamCars?: CarState[];
 }) {
   // State is keyed per car id so toggling between pilots doesn't lose compound selection
+  // [R44] Cruce de compuestos según el agua actual.
+  const crossover = (carId: number) => simulation.getTyreCrossover(carId);
   const [compounds, setCompounds] = useState<Record<number, TireCompound>>({});
   const [feedbacks, setFeedbacks] = useState<Record<number, string>>({});
 
@@ -65,6 +69,12 @@ export function BoxControls({ car, simulation, teamCars }: {
                 <span>V{p.currentLap} · {Math.round(p.tires.health)}%</span>
                 <span className={styles.stops}>Stops: {p.pitStop.totalPitStops}</span>
               </div>
+              {crossover(p.id).advise && (
+                <div className={styles.benefitInfo} data-weather-crossover={crossover(p.id).recommended}
+                  title="Cruce de compuestos según el agua media actual de la pista">
+                  🌧️ Cruce: conviene {CROSSOVER_LABEL[crossover(p.id).recommended]} ({crossover(p.id).depthMm.toFixed(1).replace('.', ',')} mm de agua)
+                </div>
+              )}
               {p.pitStop.crewBenefit && p.currentLap <= p.pitStop.crewBenefit.expiresLap && (
                 <div className={styles.benefitInfo} data-crew-benefit={p.pitStop.crewBenefit.eventId}
                   title="Beneficio D20: solo acorta el servicio de la próxima parada; el tránsito por el pit lane no cambia">

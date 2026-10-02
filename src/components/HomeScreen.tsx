@@ -7,6 +7,7 @@ import { OFFICIAL_CIRCUITS, CircuitSpec } from '../data/circuits';
 import { buildTrackFromSvg } from '../utils/svgTrackParser';
 import { RaceResultHistory } from '../types/f1';
 import { ChampionshipTable } from './ChampionshipTable';
+import { WeatherScenarioSelect } from './WeatherScenarioSelect';
 import type { ChampionshipState } from '../simulation/Championship';
 import { FlagIcon } from './FlagIcon';
 import { F1WheelSvg } from './F1WheelSvg';
@@ -47,6 +48,9 @@ interface HomeScreenProps {
   /** [R21] Campeonato acumulado y su reinicio. */
   championship?: ChampionshipState;
   onResetChampionship?: () => void;
+  /** [R44] Meteorología elegida para la carrera. */
+  weatherScenarioId?: string;
+  onSelectWeather?: (id: string) => void;
 }
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({
@@ -57,7 +61,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   onStartRace,
   raceHistory,
   championship,
-  onResetChampionship
+  onResetChampionship,
+  weatherScenarioId,
+  onSelectWeather
 }) => {
   const [activeTab, setActiveTab] = useState<'drivers' | 'circuits'>('drivers');
   const [driverSubTab, setDriverSubTab] = useState<'specs' | 'strategy' | 'records'>('specs');
@@ -1010,6 +1016,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           <div className={styles.rulesProfile} title={getRuleSet(DEFAULT_RULE_SET_ID).id}>
             Reglas: <strong>{getRuleSet(DEFAULT_RULE_SET_ID).label}</strong>
           </div>
+
+          {onSelectWeather && (
+            <WeatherScenarioSelect className={styles.rulesProfile} value={weatherScenarioId ?? 'seco'} onChange={onSelectWeather} />
+          )}
 
           <button className={styles.launchBigButton} onClick={onStartRace}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

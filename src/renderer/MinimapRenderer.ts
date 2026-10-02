@@ -4,11 +4,16 @@ import type { RejoinEstimate } from '../types/f1';
 import { getPitRoute, isCarVisible } from '../utils/carPosition';
 
 // ── RENDERIZADO DEL MINIMAPA A LA IZQUIERDA DEL TODO ──
+import { WeatherRenderer } from './WeatherRenderer';
+import type { WeatherLayers } from './WeatherRenderer';
+
 export function renderLeftMinimap(
   ctx: CanvasRenderingContext2D,
   simulation: Pick<RaceSimulation, 'activeTrack' | 'cars'>,
   camera: Camera,
-  rejoin: RejoinEstimate | null = null
+  rejoin: RejoinEstimate | null = null,
+  /** [R44] Capas de lluvia para el radar del minimapa. */
+  weather: WeatherLayers | null = null
 ): { x: number; y: number; worldX: number; worldY: number } | null {
   const mmW = 180;
   const mmH = 115;
@@ -72,6 +77,9 @@ export function renderLeftMinimap(
     ctx.lineWidth = 1.5;
     ctx.stroke();
   }
+
+  WeatherRenderer.renderMinimapRain(ctx, simulation.activeTrack, weather,
+    (x, y) => ({ x: mmOffsetX + (x - b.minX) * mmScale, y: mmOffsetY + (y - b.minY) * mmScale }));
 
   for (const car of simulation.cars) {
     if (!isCarVisible(car)) continue;

@@ -60,7 +60,6 @@ export class TrackRenderer {
     const zoom = camera.zoom;
     const trackWidth = (track.trackWidthMeters || 26) * 1.75 * zoom;
     const isWet = (weather?.waterPercentage || 0) > 10;
-    const waterDepth = weather?.waterDepthMm || 0;
 
     const buildPath = () => {
       ctx.beginPath();
@@ -142,10 +141,7 @@ export class TrackRenderer {
       ctx.stroke();
     }
 
-    // ── CHARCOS DE AGUA DINÁMICOS ──
-    if (isWet && waterDepth > 0.2) {
-      this.renderRainPuddles(ctx, track, camera, waterDepth);
-    }
+    // [R44] El agua por tramo y el radar de lluvia los pinta WeatherRenderer con los datos del modelo.
 
     // ── BARRERAS (solo escenario Q6, se pintan encima del asfalto) ──
     if (!isLegacy) {
@@ -307,49 +303,6 @@ export class TrackRenderer {
         ctx.restore();
       }
     }
-
-    ctx.restore();
-  }
-
-  /**
-   * Renderiza charcos y acumulaciones de agua brillante en frenadas y curvas
-   */
-  private static renderRainPuddles(
-    ctx: CanvasRenderingContext2D,
-    track: TrackDefinition,
-    camera: Camera,
-    waterDepth: number
-  ) {
-    const zoom = camera.zoom;
-    const puddleOpacity = Math.min(0.65, 0.15 + (waterDepth / 5.0) * 0.5);
-
-    ctx.save();
-    // Charcos en zonas estratégicas del circuito (curvas lentas y puntos bajos)
-    const puddleLocations = [0.12, 0.24, 0.38, 0.52, 0.68, 0.85];
-    const totalPts = track.points.length;
-
-    puddleLocations.forEach((t) => {
-      const idx = Math.floor(t * totalPts) % totalPts;
-      const pt = track.points[idx];
-      const screen = camera.worldToScreen(pt.x, pt.y);
-
-      const rad = (18 + (t * 10) % 15) * zoom;
-      const grad = ctx.createRadialGradient(screen.x, screen.y, 2, screen.x, screen.y, rad);
-      grad.addColorStop(0, `rgba(56, 189, 248, ${puddleOpacity * 1.3})`);
-      grad.addColorStop(0.5, `rgba(2, 132, 199, ${puddleOpacity * 0.8})`);
-      grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-
-      ctx.fillStyle = grad;
-      ctx.beginPath();
-      ctx.arc(screen.x, screen.y, rad, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Reflejo brillante de superficie
-      ctx.fillStyle = `rgba(255, 255, 255, ${puddleOpacity * 0.45})`;
-      ctx.beginPath();
-      ctx.ellipse(screen.x - rad * 0.2, screen.y - rad * 0.2, rad * 0.35, rad * 0.18, 0.4, 0, Math.PI * 2);
-      ctx.fill();
-    });
 
     ctx.restore();
   }
