@@ -8,6 +8,7 @@ import { buildTrackFromSvg } from '../utils/svgTrackParser';
 import { RaceResultHistory } from '../types/f1';
 import { ChampionshipTable } from './ChampionshipTable';
 import { WeatherScenarioSelect } from './WeatherScenarioSelect';
+import { CarShowcase } from './CarShowcase';
 import type { ChampionshipState } from '../simulation/Championship';
 import { FlagIcon } from './FlagIcon';
 import { F1WheelSvg } from './F1WheelSvg';
@@ -383,6 +384,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
               {driverSubTab === 'specs' && (
                 <div className={styles.detailContentGrid}>
+                  {/* [R46] Monoplaza del piloto en 3D (silueta 2D sin WebGL) */}
+                  <div className={styles.detailCardBox} style={{ gridColumn: '1 / -1' }}>
+                    <CarShowcase teamColor={inspectedTeam.color} accentColor={inspectedTeam.accentColor} number={inspectedDriver.number}
+                      compound="medium" label={`Monoplaza de ${inspectedTeam.name} · ${inspectedDriver.code}`} />
+                  </div>
                   <div className={styles.detailCardBox}>
                     <div className={styles.detailCardTitle}>
                       <Wrench size={14} />
