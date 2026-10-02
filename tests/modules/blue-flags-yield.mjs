@@ -111,4 +111,59 @@ export default async function run({ server, assert, test }) {
       void L;
     });
   });
+
+  // R36 (contrato aprobado por el usuario el 02/10/2026): aviso con tiempo suficiente y doblaje completo en carrera real.
+  // Doblado más lento (duro gastado, del jugador para que no pare) y líder lanzado a 4 s por detrás.
+  const lapping = () => {
+    const sim = make('barcelona', 2), [leader, lapped] = sim.cars;
+    const L = sim.activeTrack.lapLengthMeters, t = 0.15;
+    Object.assign(lapped, { progress: 2 + t, trackT: t, currentLap: 2, currentSpeedKmh: 200, currentPosition: 2 });
+    Object.assign(lapped.tires, { compound: 'hard', health: 40, healthFL: 40, healthFR: 40, healthRL: 40, healthRR: 40 });
+    lapped.pitStop.playerControlled = true;
+    const p = 3 + t - 4 * (200 / 3.6) / L;
+    Object.assign(leader, { progress: p, trackT: frac(p), currentLap: 3, currentSpeedKmh: 200, currentPosition: 1 });
+    sim.setSeed(36); sim.setFixedStep(0.02);
+    return { sim, leader, lapped, L };
+  };
+
+  await test('R36: doblaje completo con aviso suficiente', () => {
+    const { sim, leader, lapped } = lapping();
+    const pts = sim.activeTrack.points;
+    const behind = () => frac(leader.progress - lapped.progress) >= 0.5;
+    let signalAt = null, passedAt = null, maxLevel = 0, lateralAtPass = null, throughCar = 0;
+    const samples = [];
+    sim.onFixedStep = () => {
+      if (passedAt !== null) return;
+      const point = pts[Math.floor(lapped.trackT * pts.length) % pts.length];
+      if (lapped.isBlueFlagged) { signalAt ??= sim.raceTimeSec; samples.push({ t: sim.raceTimeSec, v: lapped.currentSpeedKmh, straight: point.speedLimitFactor >= 0.9 && !point.isBrakingZone }); }
+      else if (behind()) { signalAt = null; samples.length = 0; }
+      const lateral = Math.abs(leader.lateralOffset - lapped.lateralOffset);
+      const gapM = frac(lapped.progress - leader.progress) * sim.activeTrack.lapLengthMeters;
+      if (behind() && gapM < 4 && lateral < 0.3) throughCar++;
+      if (behind()) maxLevel = Math.max(maxLevel, lapped.blueFlagLevel ?? 0);
+      else { passedAt = sim.raceTimeSec; lateralAtPass = lateral; }
+    };
+    while (passedAt === null && sim.raceTimeSec < 600) sim.update(1 / 60);
+    assert(passedAt !== null && signalAt !== null, 'R36: el líder alcanza y dobla al coche lento', `${sim.raceTimeSec.toFixed(0)} s`);
+    assert(passedAt - signalAt >= 2, 'R36: la señal dura al menos 2 s antes del adelantamiento', `${(passedAt - signalAt).toFixed(2)} s`);
+    assert(maxLevel >= 0.9, 'R36: el doblado llega a ceder del todo antes de ser pasado', maxLevel.toFixed(2));
+    let maxDecel = 0;
+    for (let i = 0; i < samples.length; i++) {
+      const j = samples.findIndex(s => s.t >= samples[i].t + 0.5);
+      if (j > 0 && samples.slice(i, j + 1).every(s => s.straight)) maxDecel = Math.max(maxDecel, (samples[i].v - samples[j].v) / (samples[j].t - samples[i].t));
+    }
+    assert(maxDecel <= 40, 'R36: sin frenada brusca del doblado en recta (≤ 40 km/h/s de media en 0,5 s)', `${maxDecel.toFixed(1)} km/h/s`);
+    assert(throughCar === 0 && lateralAtPass >= 0.3, 'R36: el líder no atraviesa al doblado (pasa con separación lateral)', `${throughCar} pasos encima · lateral ${lateralAtPass?.toFixed(2)}`);
+    assert(passedAt - signalAt < 100, 'R36: el doblaje se completa en menos de una vuelta desde el aviso', `${(passedAt - signalAt).toFixed(1)} s`);
+  });
+
+  await test('R36: sin señales falsas entre coches de la misma vuelta', () => {
+    const { sim, leader, lapped, L } = lapping();
+    leader.progress -= 1; leader.currentLap -= 1; // misma vuelta, a 4 s
+    leader.progress += 2 * (200 / 3.6) / L; leader.trackT = frac(leader.progress); // a 2 s
+    let flagged = false;
+    sim.onFixedStep = () => { if (lapped.isBlueFlagged || leader.isBlueFlagged) flagged = true; };
+    while (sim.raceTimeSec < 60) sim.update(1 / 60);
+    assert(!flagged, 'R36: un coche de la misma vuelta a 2 s no provoca bandera azul');
+  });
 }

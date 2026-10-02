@@ -41,7 +41,8 @@ export default async function run({ server, assert, test }) {
     assert(v.drsGapSec.value === 1 && v.drsLapsAfterSafetyCar.value === 2 && v.drsLapsAfterVsc.value === 0 &&
       v.pitLaneSpeedKmh.value === 80 && v.mgukMaxPowerKw.value === 120 && v.esDeployMaxMjPerLap.value === 4 &&
       v.esRecoverMaxMjPerLap.value === 2 && v.esStorageMj.value === 4 && v.initialFuelKg.value === 110 &&
-      v.blueFlagGapSec.value === 1.2, 'R01: valores idénticos a las constantes actuales del motor');
+      v.blueFlagGapSec.value === 3, // R36: aviso de bandera azul de 1,2 s a 3 s (cambio autorizado por el usuario el 02/10/2026)
+      'R01: valores idénticos a las constantes actuales del motor');
   });
 
   await test('R01: perfil desconocido o incompleto se rechaza con mensaje claro', () => {
