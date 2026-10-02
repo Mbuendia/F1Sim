@@ -274,8 +274,11 @@ export interface RestartReport {
   changeAdvised: boolean;
   recommended: TireCompound | null;
 }
+/** [R26] Qué clase de ayuda es: información, preparación del box, reducción acotada del riesgo en el servicio o ninguna. */
+export type D20BenefitCategory = 'informacion' | 'preparacion' | 'riesgo' | 'ninguna';
 export interface D20Benefit {
   kind: D20BenefitKind;
+  category?: D20BenefitCategory;
   label: string;
   serviceMinSec?: number;
   serviceMaxSec?: number;
@@ -484,6 +487,10 @@ export interface D20LuckEvent {
   rewardDescription: string;
   optimalCompound: TireCompound;
   benefit: D20Benefit;
+  /** [R26] Identificación de la variante, causa de la tirada y alcance exacto del beneficio. */
+  variant?: string;
+  cause?: string;
+  scope?: string;
   applied: boolean;
   timestamp: number;
 }

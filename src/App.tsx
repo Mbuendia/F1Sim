@@ -194,13 +194,8 @@ export const App: React.FC = () => {
     randomCar.smokeOpacity = 1.0;
     randomCar.retireTimer = 60;
 
-    // Forzar bandera roja directamente
-    simulation.raceFlagState = 'red';
-    simulation.safetyCar.isDeployed = false;
-    simulation.safetyCar.mode = 'idle';
-    for (const c of simulation.cars) {
-      if (c.status === 'running') c.pitStop.isPitting = true;
-    }
+    // [R26] Bandera roja por el procedimiento real de R12 (sin marcar paradas a mano).
+    simulation.startRedFlag('PRUEBA MANUAL (DEV)');
     simulation.triggerD20LuckRoll('red');
   }, [simulation]);
 
@@ -214,6 +209,18 @@ export const App: React.FC = () => {
   const handleApplyLuckReward = useCallback((eventId: string) => {
     simulation.applyLuckEventReward(eventId);
   }, [simulation]);
+  // [R26] Variante D20: preferencia guardada en el navegador.
+  const [luckVariantEnabled, setLuckVariantEnabled] = useState<boolean>(() => {
+    try { return localStorage.getItem('f1_d20_variant') !== 'off'; } catch { return true; }
+  });
+  useEffect(() => { simulation.luckVariantEnabled = luckVariantEnabled; }, [simulation, luckVariantEnabled]);
+  const handleToggleLuckVariant = useCallback(() => {
+    setLuckVariantEnabled(value => {
+      try { localStorage.setItem('f1_d20_variant', value ? 'off' : 'on'); } catch (e) { console.error(e); }
+      return !value;
+    });
+  }, []);
+
   const handleDismissLuckEvent = useCallback(() => {
     simulation.activeLuckEvent = null;
     setActiveLuckEvent(null);
@@ -500,6 +507,8 @@ export const App: React.FC = () => {
             safetyCarDeployed={simulation.safetyCar.isDeployed}
             onToggleSafetyCarTest={handleSafetyCarTest}
             onRedFlagTest={handleRedFlagTest}
+            luckVariantEnabled={luckVariantEnabled}
+            onToggleLuckVariant={handleToggleLuckVariant}
           />
         </div>
       </header>

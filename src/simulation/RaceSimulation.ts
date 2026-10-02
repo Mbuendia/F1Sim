@@ -15,6 +15,8 @@ import {
   BoxOrderIssuer,
   RejoinEstimate,
   RestartReport,
+  D20BenefitKind,
+  D20BenefitCategory,
 } from '../types/f1';
 import { DRIVERS } from '../data/drivers';
 import { TEAMS, STARTING_GRID_ORDER } from '../data/teams';
@@ -101,6 +103,15 @@ export class RaceSimulation {
   // ── DADO D20 DE LA SUERTE ANTE INCIDENTES ──
   activeLuckEvent: D20LuckEvent | null = null;
   private luckEventSeq = 0;
+  /** [R26] El D20 es una variante opcional del juego; el perfil FIA 2025 nunca la usa. */
+  luckVariantEnabled = true;
+  static readonly LUCK_VARIANT_LABEL = 'D20 — variante del juego (no es reglamento FIA)';
+  /** [R26] Registro de tiradas: causa, beneficio, alcance y si se aceptó. */
+  luckLog: { eventId: string; time: number; lap: number; trigger: 'sc' | 'vsc' | 'red'; roll: number; carId: number; kind: D20BenefitKind; category: D20BenefitCategory; scope: string; applied: boolean }[] = [];
+
+  isLuckVariantActive(): boolean {
+    return this.luckVariantEnabled && this.rules.id !== 'fia-2025';
+  }
   static readonly D20_BENEFIT_VALID_LAPS = 3;
 
   // ── SISTEMA DE BANDERAS Y SAFETY CAR ──
@@ -263,6 +274,7 @@ export class RaceSimulation {
   initRace() {
     IncidentModel.reset();
     this.activeLuckEvent = null;
+    this.luckLog = [];
     this.drsPermissions.reset();
     this.timing.reset();
     this.rawSectors.clear();
@@ -2341,10 +2353,15 @@ export class RaceSimulation {
   }
 
   // ── MÉTODOS DE EVENTO DE SUERTE CON DADO D20 ──
-  triggerD20LuckRoll(triggerType: 'sc' | 'vsc' | 'red', playerDriverId?: string): D20LuckEvent {
-    const roll = Math.floor(random() * 20) + 1; // 1 al 20
+  triggerD20LuckRoll(triggerType: 'sc' | 'vsc' | 'red', playerDriverId?: string): D20LuckEvent | null {
+    // [R26] Variante opcional: desactivada o con el perfil FIA no hay tirada. El dado tiene su propio flujo de azar,
+    // así que usarlo no altera el resto de la carrera.
+    if (!this.isLuckVariantActive()) return null;
+    const rng = this.stream('d20');
+    const draw = () => (rng ? rng() : random());
+    const roll = Math.floor(draw() * 20) + 1; // 1 al 20
     const runningCars = this.cars.filter(c => c.status === 'running');
-    let luckyCar = runningCars[Math.floor(random() * runningCars.length)] || this.cars[0];
+    let luckyCar = runningCars[Math.floor(draw() * runningCars.length)] || this.cars[0];
 
     // Tirada alta favorece al piloto seleccionado por el jugador
     if (roll >= 14 && playerDriverId) {
@@ -2402,8 +2419,18 @@ export class RaceSimulation {
       rewardDescription = `La ${red ? 'bandera roja' : 'neutralización'} no ofrece ventaja a ${code}: revisa combustible, neumáticos y tráfico. ${advice}`;
     }
 
+    // [R26] Categoría y alcance exacto: ningún beneficio toca neumáticos, combustible, energía, potencia ni aerodinámica.
+    const service = benefit.kind === 'crew-ready' || benefit.kind === 'crew-alert';
+    benefit.category = benefit.kind === 'crew-ready' ? 'preparacion' : benefit.kind === 'crew-alert' ? 'riesgo' : benefit.kind === 'none' ? 'ninguna' : 'informacion';
+    const scope = service
+      ? `Solo acota la duración del servicio de la próxima parada real de ${code} en ${RaceSimulation.D20_BENEFIT_VALID_LAPS} vueltas; no cambia neumáticos, combustible, energía, potencia ni aerodinámica.`
+      : benefit.kind === 'none' ? 'Sin efecto.' : 'Solo información para el muro; no cambia nada en el coche.';
+
     const event: D20LuckEvent = {
       id: `d20_${Date.now()}_${++this.luckEventSeq}_${roll}`,
+      variant: RaceSimulation.LUCK_VARIANT_LABEL,
+      cause: `Tirada ${roll} tras ${triggerType === 'sc' ? 'Safety Car' : triggerType === 'vsc' ? 'Virtual Safety Car' : 'bandera roja'}`,
+      scope,
       triggerType,
       rollValue: roll,
       luckyCarId: luckyCar.id,
@@ -2421,6 +2448,8 @@ export class RaceSimulation {
       timestamp: Date.now(),
     };
 
+    this.luckLog.push({ eventId: event.id, time: this.raceTimeSec, lap: luckyCar.currentLap, trigger: triggerType, roll, carId: luckyCar.id,
+      kind: benefit.kind, category: benefit.category!, scope, applied: false });
     this.activeLuckEvent = event;
     return event;
   }
@@ -2449,6 +2478,8 @@ export class RaceSimulation {
     // nada cambia en pista (neumáticos, combustible, energía y tránsito intactos).
     const event = this.activeLuckEvent;
     event.applied = true;
+    const logged = this.luckLog.find(l => l.eventId === event.id);
+    if (logged) logged.applied = true;
     const car = this.getCarById(event.luckyCarId);
     const { benefit } = event;
     if (!car || car.status === 'out' || car.status === 'finished') return;
