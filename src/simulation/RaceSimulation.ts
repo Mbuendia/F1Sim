@@ -13,7 +13,8 @@ import {
   TireCompound,
   BoxOrder,
   BoxOrderIssuer,
-  RejoinEstimate
+  RejoinEstimate,
+  RestartReport,
 } from '../types/f1';
 import { DRIVERS } from '../data/drivers';
 import { TEAMS, STARTING_GRID_ORDER } from '../data/teams';
@@ -126,6 +127,8 @@ export class RaceSimulation {
   } = { phase: null, order: [], suspensionSec: 0, log: [] };
   /** [R12] Aviso mínimo de reanudación (s): 10 minutos en el perfil FIA (S58), 60 s en el personalizado (ajuste del juego). */
   static readonly RED_FLAG_NOTICE_FIA_SEC = 600;
+  /** [R12/R37] Salud por debajo de la cual conviene cambiar el juego durante la suspensión (%). */
+  static readonly RED_FLAG_CHANGE_HEALTH = 70;
   static readonly RED_FLAG_NOTICE_GAME_SEC = 60;
   static readonly RED_FLAG_SLOT_M = 8;
   /** [R11] Perfil de referencia del VSC: vuelta estable con tope de 160 km/h (calibración) y tolerancia de delta (s). */
@@ -2242,7 +2245,7 @@ export class RaceSimulation {
       this.redFlagLog('detenida', 'Coches detenidos en el carril rápido; salida de boxes cerrada');
       // Trabajos permitidos: la IA cambia neumáticos solo si su juego está gastado (decisión propia).
       for (const car of holders) {
-        if (car.pitStop.playerControlled || car.tires.health >= 70 || !car.tireInventory) continue;
+        if (car.pitStop.playerControlled || car.tires.health >= RaceSimulation.RED_FLAG_CHANGE_HEALTH || !car.tireInventory) continue;
         const compliance = tireCompliance(car.tireInventory, this.circuitId);
         const choice = (['medium', 'hard', 'soft'] as TireCompound[]).find(c => !compliance.slickSpecs.includes(c) && pickSet(car.tireInventory!, c))
           ?? (['medium', 'hard', 'soft'] as TireCompound[]).find(c => pickSet(car.tireInventory!, c));
@@ -2364,6 +2367,7 @@ export class RaceSimulation {
     let rewardTitle = '';
     let rewardDescription = '';
     let benefit: D20LuckEvent['benefit'];
+    const red = triggerType === 'red';
 
     if (roll >= 14) {
       const ready = roll === 20;
@@ -2371,8 +2375,20 @@ export class RaceSimulation {
       benefit = { kind: ready ? 'crew-ready' : 'crew-alert', label: ready ? 'Box preparado' : 'Equipo en alerta',
         serviceMinSec: min, serviceMaxSec: max, validLaps: RaceSimulation.D20_BENEFIT_VALID_LAPS };
       rewardTitle = ready ? '💥 ¡ÉXITO CRÍTICO! BOX PREPARADO (NAT 20)' : `✨ EQUIPO EN ALERTA (DADO ${roll})`;
-      rewardDescription = `El equipo de ${code} prepara el box: si para en las próximas ${RaceSimulation.D20_BENEFIT_VALID_LAPS} vueltas, ` +
+      rewardDescription = `El equipo de ${code} ${red ? 'aprovecha la bandera roja para preparar' : 'prepara'} el box: si para en las próximas ${RaceSimulation.D20_BENEFIT_VALID_LAPS} vueltas, ` +
         `servicio de ${fmt(min)}–${fmt(max)} s. Requiere una orden de boxes; el paso por el pit lane no cambia. ${advice}`;
+    } else if (roll >= 8 && red) {
+      // [R37] Bajo roja la estimación de reincorporación no existe: informe de relanzamiento con lo observable.
+      const restart = this.restartReport(luckyCar);
+      const tyre = (t: { compound: TireCompound; health: number }) => `${COMPOUND_LABEL[t.compound]} al ${Math.round(t.health)} %`;
+      benefit = { kind: 'restart-report', label: 'Informe de relanzamiento', restart };
+      rewardTitle = `📡 INFORME DE RELANZAMIENTO (DADO ${roll})`;
+      rewardDescription = `${code} relanzará P${restart.queuePos} con ${tyre(restart.own)}. `
+        + (restart.ahead ? `Delante, ${restart.ahead.code} con ${tyre(restart.ahead)}. ` : 'Sin coche delante. ')
+        + (restart.behind ? `Detrás, ${restart.behind.code} con ${tyre(restart.behind)}. ` : 'Sin coche detrás. ')
+        + (restart.changeAdvised && restart.recommended
+          ? `Conviene cambiar a ${COMPOUND_LABEL[restart.recommended]} durante la suspensión: bajo bandera roja el cambio no cuenta como parada.`
+          : 'Conviene mantener el juego montado durante la suspensión.');
     } else if (roll >= 8) {
       const rejoin = this.getRejoinEstimate(luckyCar.id);
       benefit = { kind: 'engineer-report', label: 'Informe del ingeniero', rejoin };
@@ -2383,7 +2399,7 @@ export class RaceSimulation {
     } else {
       benefit = { kind: 'none', label: 'Sin ventaja' };
       rewardTitle = `🎲 SIN VENTAJA (DADO ${roll})`;
-      rewardDescription = `La neutralización no ofrece ventaja a ${code}: revisa combustible, neumáticos y tráfico. ${advice}`;
+      rewardDescription = `La ${red ? 'bandera roja' : 'neutralización'} no ofrece ventaja a ${code}: revisa combustible, neumáticos y tráfico. ${advice}`;
     }
 
     const event: D20LuckEvent = {
@@ -2407,6 +2423,23 @@ export class RaceSimulation {
 
     this.activeLuckEvent = event;
     return event;
+  }
+
+  /** [R37] Lo que el muro puede ver para el relanzamiento: fila, neumáticos propios y de los vecinos, y si conviene cambiar. */
+  private restartReport(car: CarState): RestartReport {
+    const queue = (this.redFlag.order.length ? this.redFlag.order.map(id => this.getCarById(id)) : this.getSortedCars())
+      .filter((c): c is CarState => Boolean(c) && c!.status !== 'out');
+    const index = queue.findIndex(c => c.id === car.id);
+    const neighbour = (c: CarState | undefined) => c ? { code: c.driver.code, compound: c.tires.compound, health: c.tires.health } : null;
+    const changeAdvised = car.tires.health < RaceSimulation.RED_FLAG_CHANGE_HEALTH;
+    const recommended = changeAdvised
+      ? chooseCompound(this.totalLaps - car.currentLap, car.tireInventory, this.getTireCompliance(car.id), this.weatherModel.meanDepth())
+      : null;
+    return {
+      queuePos: index + 1, own: { compound: car.tires.compound, health: car.tires.health },
+      ahead: neighbour(queue[index - 1]), behind: neighbour(queue[index + 1]),
+      changeAdvised: changeAdvised && recommended !== null, recommended,
+    };
   }
 
   applyLuckEventReward(eventId: string) {

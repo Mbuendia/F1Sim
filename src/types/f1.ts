@@ -264,7 +264,16 @@ export interface CrewServiceBenefit {
 }
 
 // [Q17] Catálogo de beneficios del D20 por tramo de tirada.
-export type D20BenefitKind = 'crew-ready' | 'crew-alert' | 'engineer-report' | 'none';
+export type D20BenefitKind = 'crew-ready' | 'crew-alert' | 'engineer-report' | 'restart-report' | 'none';
+/** [R37] Informe de relanzamiento bajo bandera roja (solo información). */
+export interface RestartReport {
+  queuePos: number;
+  own: { compound: TireCompound; health: number };
+  ahead: { code: string; compound: TireCompound; health: number } | null;
+  behind: { code: string; compound: TireCompound; health: number } | null;
+  changeAdvised: boolean;
+  recommended: TireCompound | null;
+}
 export interface D20Benefit {
   kind: D20BenefitKind;
   label: string;
@@ -272,6 +281,7 @@ export interface D20Benefit {
   serviceMaxSec?: number;
   validLaps?: number;
   rejoin?: RejoinEstimate;
+  restart?: RestartReport;
 }
 
 export type StartLightState = 
