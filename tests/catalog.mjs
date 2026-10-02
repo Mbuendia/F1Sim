@@ -510,5 +510,6 @@ export const modules = [
   { "id": "weather-r22", "tasks": ["R22"], "sprint": "2.9", "kind": "contract" },
   { "id": "strategy-r25", "tasks": ["R25"], "sprint": "2.9", "kind": "contract" },
   { "id": "overtake-r42", "tasks": ["R42"], "sprint": "2.9", "kind": "contract" },
-  { "id": "sc-compaction-r41", "tasks": ["R41"], "sprint": "2.9", "kind": "contract" }
+  { "id": "sc-compaction-r41", "tasks": ["R41"], "sprint": "2.9", "kind": "contract" },
+  { "id": "result-r21", "tasks": ["R21"], "sprint": "2.9", "kind": "contract" }
 ];
