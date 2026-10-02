@@ -27,7 +27,7 @@ export default async function run({ server, assert, test }) {
     const { sim, L } = race();
     sim.startRedFlag('Prueba');
     const order = [...sim.redFlag.order];
-    let jump = 0;
+    let jump = 0, stopped = false;
     const travelled = new Map(sim.cars.map(c => [c.id, 0]));
     let last = new Map(sim.cars.map(c => [c.id, c.progress]));
     sim.onFixedStep = () => {
@@ -37,9 +37,12 @@ export default async function run({ server, assert, test }) {
         if (moved < -1e-9 || moved > 400 / 3.6 * 0.02 + 0.01) jump++;
       }
       last = new Map(sim.cars.map(c => [c.id, c.progress]));
+      // La fase «detenida» dura un paso del motor si la pista ya está despejada: se detecta por paso (corrección
+      // autorizada por el usuario el 02/10/2026; antes se miraba una vez por frame).
+      if (sim.redFlag.phase === 'detenida') stopped = true;
     };
-    until(sim, () => sim.redFlag.phase === 'detenida');
-    assert(sim.redFlag.phase === 'detenida', 'R12: todos los coches quedan detenidos', sim.redFlag.phase);
+    until(sim, () => stopped);
+    assert(stopped, 'R12: todos los coches quedan detenidos', sim.redFlag.phase);
     assert(sim.cars.every(c => c.isInPitLane && c.currentSpeedKmh === 0), 'R12: en el pit lane y parados');
     assert(JSON.stringify(laneOrder(sim)) === JSON.stringify(order), 'R12: en fila en el orden de la roja', `${laneOrder(sim)} / ${order}`);
     assert(jump === 0, 'R12: ningún coche cambia de posición por asignación (sin saltos)', String(jump));
