@@ -514,5 +514,6 @@ export const modules = [
   { "id": "result-r21", "tasks": ["R21"], "sprint": "2.9", "kind": "contract" },
   { "id": "luck-variant-r26", "tasks": ["R26"], "sprint": "2.9", "kind": "contract" },
   { "id": "render-smooth-r43", "tasks": ["R43"], "sprint": "2.10", "kind": "contract" },
-  { "id": "weather-view-r44", "tasks": ["R44"], "sprint": "2.10", "kind": "contract" }
+  { "id": "weather-view-r44", "tasks": ["R44"], "sprint": "2.10", "kind": "contract" },
+  { "id": "driver-dev-r45", "tasks": ["R45"], "sprint": "2.10", "kind": "contract" }
 ];
