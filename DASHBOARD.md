@@ -22,7 +22,7 @@
 
 ## 🧭 2. ROADMAP Y ESTADO GLOBAL DE SPRINTS
 
-**Orden vigente:** Sprint **2.10** · Tarea actual **R43** · Siguiente **R44** (Sprint 2.9 cerrado por el usuario el 02/10/2026 y fusionado en main: R01-R17, R21, R22, R25-R28 y R35-R42 entregadas; Sprint 2.10 planificado el mismo día con R43-R46 y lo heredado del 2.9 en el orden de 6.9; cada tarea sigue requiriendo contrato de tests y autorización expresa).
+**Orden vigente:** Sprint **2.10** · Tarea actual **R43** · Siguiente **R44** (R43 entregada y en revisión el 02/10/2026 en la rama sprint/2.10; Sprint 2.9 cerrado por el usuario el 02/10/2026 y fusionado en main: R01-R17, R21, R22, R25-R28 y R35-R42 entregadas; Sprint 2.10 planificado el mismo día con R43-R46 y lo heredado del 2.9 en el orden de 6.9; cada tarea sigue requiriendo contrato de tests y autorización expresa).
 
 **Prioridad acordada tras la auditoría (30/09/2026, `docs/reviews/auditoria-q12-q19.md`):** Q19 → Q16 → Q13 → Q17 → Q12 → Q18/Q14/Q15. Decisiones del usuario: detecciones DRS desde las notas oficiales FIA; el Safety Car debe salir del pit lane (Q14); tests estructurales sin dependencias nuevas para Q18; tolerancias de calibración Q12 propuestas.
 
@@ -951,12 +951,13 @@ Complementa, no sustituye, las reglas y escenarios de 6.3/6.5. **No hay módulos
 
 Origen: petición del usuario tras ver el tráiler de Motorsport Manager 2 (carrera en 3D con pista mojada, radar de lluvia sobre el mapa, garaje con el coche en 3D y pantalla de mejora de atributos del piloto). Decisión del usuario: no se rehace la carrera en 3D; se mejora el 2D actual y se añade un visor 3D solo para el coche. Prioridades declaradas: mejora de estadísticas, detalle de los coches, lluvia y fluidez de conducción. Los umbrales y fórmulas de este bloque son diseño del juego, no reglamento.
 
-* **R43 — Fluidez de conducción en pantalla:** `[ ] PLANIFICADO`
+* **R43 — Fluidez de conducción en pantalla:** `[ ] EN REVISIÓN LOCAL — IMPLEMENTADO 02/10/2026 CON CONTRATO DE TESTS ACORDADO`
   * *Prioridad/dependencias:* P0 del bloque; R02 (paso fijo), Q4/Q5 (posición y cámara).
   * *Hallazgo:* el motor avanza a 50 pasos por segundo y cada fotograma pinta el último paso sin interpolar; el giro del coche y el cambio de trazada no se suavizan al pintar.
   * *Alcance:* interpolar posición, lateral y orientación entre el paso anterior y el actual según el resto del acumulador; orientación continua (sin saltos de ángulo en horquillas ni en la entrada y salida de boxes); cámara de seguimiento estable. Sin cambios en la física ni en el determinismo.
   * *Aceptación:* a 60, 120 y 144 Hz el desplazamiento pintado por fotograma es proporcional al tiempo real (sin fotogramas repetidos ni dobles); el ángulo pintado no salta más de un umbral por fotograma; el banco R27 no cambia.
   * *Tests antes de implementación:* función pura de interpolación de pose; prueba de fotogramas a varias frecuencias; revisión en navegador.
+  * *Entrega 02/10/2026 (aprobada por el usuario; pendiente de revisión):* el motor guarda la pose de cada coche y del Safety Car antes del último paso de cada fotograma (`previousPose`, `renderAlpha`); `RenderPose.ts` (`interpolatePose`, `RenderInterpolator`) pinta la pose intermedia, gira por el camino corto, no interpola recolocaciones (> 30 m) y limita el giro pintado a 6 rad por segundo simulado. El lienzo y la cámara de seguimiento usan esa pose; la selección con clic, el minimapa y la física no cambian. Dato que explica el tirón anterior: a velocidad x1 el tiempo simulado corre 2,33 veces el real, así que a 60 Hz cada fotograma avanzaba 1 o 2 pasos de forma alterna. Test `render-smooth-r43` (17 PASS): a 60, 120 y 144 Hz ningún fotograma repite posición y el avance queda dentro del ±6 % del esperado; giro máximo 2,07 rad/s incluida la entrada y salida de boxes; banco R27 idéntico; el snapshot no guarda datos de pintado. Suite completa 1931 PASS. Revisado en el navegador (build de producción): coches, etiquetas y cámara de seguimiento correctos y sin errores; la suavidad en movimiento no se puede juzgar desde el panel oculto y queda para la revisión del usuario.
 
 * **R44 — Lluvia visible y radar meteorológico:** `[ ] PLANIFICADO`
   * *Prioridad/dependencias:* P1; R22 (el motor ya calcula celdas de lluvia, agua por tramo, secado y previsión); coordina T3.2 y T3.4 del Sprint 3.
