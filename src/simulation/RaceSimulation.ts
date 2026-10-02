@@ -40,6 +40,7 @@ import { availableSets, COMPOUND_LABEL, createInventory, mountSet, pickSet, Tire
 import { localFlagsFrom, LocalFlag, marshalSectorOf, Permissions, permissionsFor } from './RaceControl';
 import { Decision, PenaltyType, Stewards } from './Stewards';
 import { tyreWaterGrip, WeatherModel, WeatherScenario } from './WeatherModel';
+import { chooseCompound, STRATEGY, StrategyState } from './Strategist';
 import { AERO, CAR_DRY_MASS_KG, cornerMassFactor, dirtyAirLevel, holdThrottle, longitudinalAccel, slipstreamLevel, topSpeedKmh } from './AeroModel';
 import { mulberry32, random, Rng, rngState, streamSeed, useRng } from './Random';
 
@@ -386,7 +387,8 @@ export class RaceSimulation {
         sectorStartTime: 0,
 
         pitStop: {
-          scheduledLap: 24,
+          // [R25] Sin parada fija: la decide el estratega con el desgaste medido.
+          scheduledLap: 0,
           isPitting: false,
           pitLaneProgress: 0,
           stopDuration: team.pitStopAverageTime,
@@ -639,7 +641,7 @@ export class RaceSimulation {
       if (racing) this.cars.forEach((car, index) => {
         useRng(this.stream(`coche-${car.id}`));
         this.issuePlannedStop(car);
-        this.aiWeatherTyres(car);
+        this.runStrategist(car);
         const wasInPitLane = car.isInPitLane;
         // [R13] Drive-through / stop-and-go pendiente: entrar en boxes (no se cumple bajo neutralización).
         car.pitStop.mustServePenalty = Boolean(this.stewards.pendingDrive(car.id)) && !this.isNeutralized();
@@ -2323,20 +2325,79 @@ export class RaceSimulation {
     return value;
   }
 
-  /** [R22] La IA pide neumáticos para el agua actual de la pista (sin conocer el futuro); el jugador decide por sí mismo. */
-  private aiWeatherTyres(car: CarState) {
+  private strategyLog(car: CarState, action: StrategyState['log'][number]['action'], detail: string, onceKey?: string) {
+    const st = car.strategy!;
+    if (onceKey && st.lastLogKey === onceKey) return;
+    if (onceKey) st.lastLogKey = onceKey;
+    st.log.push({ time: this.raceTimeSec, lap: car.currentLap, action, detail });
+  }
+
+  /** [R25] Estratega de la IA: ritmo por combustible, neumáticos por agua y paradas por desgaste, SC, compañero y tráfico. */
+  private runStrategist(car: CarState) {
     const pit = car.pitStop;
-    if (pit.playerControlled || car.status !== 'running' || car.isInPitLane || pit.isPitting || orderIsActive(pit.activeBoxOrder)) return;
-    if (this.isNeutralized() && this.raceFlagState === 'red') return;
-    const depth = this.weatherModel.meanDepth();
-    const current = tyreWaterGrip(car.tires.compound, depth);
-    let best: TireCompound | null = null, bestGrip = current;
-    for (const compound of ['medium', 'intermediate', 'wet'] as TireCompound[]) {
-      if (car.tireInventory && availableSets(car.tireInventory, compound) === 0) continue;
-      const g = tyreWaterGrip(compound, depth);
-      if (g > bestGrip + 0.05) { best = compound; bestGrip = g; }
+    if (pit.playerControlled || car.status !== 'running' || car.isInPitLane || pit.isPitting || this.raceFlagState === 'red' || car.redFlagHold) return;
+    const st = (car.strategy ??= { log: [], postponeStartLap: null, lastLogKey: '' });
+    const L = this.activeTrack.lapLengthMeters;
+    // Combustible: consumo de la última vuelta medida (o la estimación por distancia antes de tenerla).
+    if (st.lapOfFuelMark !== car.currentLap) {
+      if (st.lapOfFuelMark !== undefined && st.fuelAtLapStart !== undefined && car.currentLap === st.lapOfFuelMark + 1) st.lastLapBurnKg = st.fuelAtLapStart - car.fuelKg;
+      st.lapOfFuelMark = car.currentLap; st.fuelAtLapStart = car.fuelKg;
     }
-    if (best) this.issueBoxOrder(car.id, best, 'ai');
+    if (!car.paceByPlayer) {
+      // Consumo medido de la última vuelta si es representativo (±25 % de la estimación); si no, la estimación.
+      const estimate = RejoinModel.lapFuelKg(this.activeTrack, car);
+      const measured = st.lastLapBurnKg;
+      const perLap = measured !== undefined && Math.abs(measured - estimate) <= estimate * 0.25 ? measured : estimate;
+      const need = perLap * Math.max(0, this.totalLaps - car.progress) + STRATEGY.FUEL_MARGIN_KG;
+      // Solo se ahorra si el déficit es recuperable ahorrando; con un déficit mayor no tiene sentido penalizar el ritmo.
+      const recoverable = need <= car.fuelKg * (1 + STRATEGY.FUEL_RECOVERABLE);
+      if (need > car.fuelKg && recoverable && car.paceMode !== 'save') { car.paceMode = 'save'; this.strategyLog(car, 'ahorro', `Combustible: necesita ${need.toFixed(1)} kg, lleva ${car.fuelKg.toFixed(1)} kg`); }
+      else if (car.paceMode === 'save' && need < car.fuelKg * 0.9) { car.paceMode = 'balanced'; this.strategyLog(car, 'ritmo', 'Combustible suficiente: ritmo normal'); }
+    }
+    if (orderIsActive(pit.activeBoxOrder)) return;
+    const lapsToEnd = this.totalLaps - car.currentLap;
+    const depth = this.weatherModel.meanDepth();
+    const compliance = car.tireInventory ? tireCompliance(car.tireInventory, this.circuitId) : { satisfied: true, slickSpecs: [], usedWetWeather: false, setsUsed: 0, setsRequired: 0, warning: null };
+    // Agua actual: compuesto claramente mejor para la pista de ahora.
+    const current = tyreWaterGrip(car.tires.compound, depth);
+    const weatherChoice = chooseCompound(lapsToEnd, car.tireInventory, compliance, depth);
+    let reason: string | null = null;
+    if (weatherChoice && tyreWaterGrip(weatherChoice, depth) > current + 0.05) reason = depth > 0.3 ? 'lluvia' : 'pista seca';
+    if (lapsToEnd <= 1 && reason === null) return;
+    const wearPerLap = Math.max(1.5, (100 - car.tires.health) / Math.max(1, car.tires.lapsOnTire));
+    const lapsLeftOnTyre = (car.tires.health - STRATEGY.TARGET_HEALTH) / wearPerLap;
+    const underSc = this.raceFlagState === 'sc' && this.safetyCar.mode === 'leading';
+    if (!reason && underSc && car.tires.health < STRATEGY.SC_PIT_HEALTH && lapsToEnd > STRATEGY.SC_MIN_LAPS_LEFT) reason = 'safety car';
+    else if (!reason && lapsLeftOnTyre <= STRATEGY.PIT_LAPS_MARGIN && lapsLeftOnTyre < lapsToEnd
+      && (lapsToEnd > STRATEGY.FINAL_LAPS || car.tires.health < STRATEGY.FINAL_LAPS_HEALTH)) reason = 'desgaste';
+    else if (!reason && !compliance.satisfied && lapsToEnd <= 3) reason = 'reglamento S30.5m';
+    if (!reason) return;
+    const critical = car.tires.health <= STRATEGY.CRITICAL_HEALTH;
+    if (!critical && !underSc && reason === 'desgaste') {
+      const mate = this.cars.find(c => c.id !== car.id && c.driver.teamId === car.driver.teamId && c.status !== 'out');
+      if (mate && (orderIsActive(mate.pitStop.activeBoxOrder) || mate.isInPitLane)) {
+        this.strategyLog(car, 'aplaza', 'Compañero en boxes o con parada pedida', `compañero-${car.currentLap}`);
+        return;
+      }
+      st.postponeStartLap ??= car.currentLap;
+      if (car.currentLap - st.postponeStartLap < STRATEGY.MAX_POSTPONE_LAPS) {
+        const est = this.getRejoinEstimate(car.id);
+        if (est.available) {
+          const window = STRATEGY.TRAFFIC_GAP_SEC * Math.max(30, car.currentSpeedKmh / 3.6);
+          const blocker = this.cars.find(c => c.id !== car.id && c.status === 'running' && !c.isInPitLane && !c.pitStop.isPitting &&
+            ((((c.progress - est.rejoinProgress) % 1) + 1) % 1) * L < window);
+          if (blocker) {
+            this.strategyLog(car, 'aplaza', `Saldría en tráfico detrás de ${blocker.driver.code}`, `tráfico-${car.currentLap}`);
+            return;
+          }
+        }
+      }
+    }
+    const compound = reason === 'lluvia' || reason === 'pista seca' ? weatherChoice : chooseCompound(lapsToEnd, car.tireInventory, compliance, depth);
+    if (compound && this.issueBoxOrder(car.id, compound, 'ai')) {
+      st.postponeStartLap = null;
+      this.strategyLog(car, 'parada', `${reason}: ${COMPOUND_LABEL[compound]}`);
+    }
   }
 
   // Órdenes del muro: aceptación no equivale a compromiso de entrada.
@@ -2372,6 +2433,7 @@ export class RaceSimulation {
     if (!car || !paceMode || !['push', 'balanced', 'save'].includes(paceMode) ||
         !this.getPaceStatus(carId)?.available) return false;
     car.paceMode = paceMode;
+    car.paceByPlayer = true;
     return true;
   }
 

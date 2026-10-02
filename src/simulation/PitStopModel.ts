@@ -40,13 +40,23 @@ export class PitStopModel {
     return null;
   }
 
+  /** [R25] El registro se crea al terminar el servicio (cola y servicio ya conocidos) y se completa al salir. */
+  static openLog(car: CarState) {
+    const pit = car.pitStop;
+    if (!pit.pendingLog) return;
+    (pit.stopLog ??= []).push({ ...pit.pendingLog, totalSec: 0, queueSec: pit.boxWaitTimer, releaseHoldSec: 0, transitSec: 0 });
+  }
+
   static closeLog(car: CarState) {
     const pit = car.pitStop;
     if (!pit.pendingLog) return;
     const totalSec = pit.laneTimer ?? 0, queueSec = pit.boxWaitTimer, releaseHoldSec = pit.releaseHoldSec ?? 0;
     const penaltySec = pit.pendingLog.penaltySec ?? 0;
-    (pit.stopLog ??= []).push({ ...pit.pendingLog, totalSec, queueSec, releaseHoldSec,
-      transitSec: totalSec - pit.pendingLog.serviceSec - queueSec - releaseHoldSec - penaltySec });
+    const entry = { ...pit.pendingLog, totalSec, queueSec, releaseHoldSec,
+      transitSec: totalSec - pit.pendingLog.serviceSec - queueSec - releaseHoldSec - penaltySec };
+    const log = (pit.stopLog ??= []);
+    if (log.length && log[log.length - 1].lap === entry.lap && log[log.length - 1].totalSec === 0) log[log.length - 1] = entry;
+    else log.push(entry);
     pit.pendingLog = null;
   }
 
@@ -75,15 +85,7 @@ export class PitStopModel {
     ) {
       return true;
     }
-    // Parada estratégica bajo Safety Car (solo si el SC está liderando, no entrando ni saliendo)
-    if (raceFlagState === 'sc' && scMode === 'leading' && car.tires.health < 60 && !car.pitStop.isPitting) {
-      // Un coche decide parar bajo SC si sus neumáticos están desgastados, perdiendo mucha menos penalización de tiempo
-      // [FIX A4] random() debe escalarse por el dt (simulando 60 FPS = 0.016s)
-      // Si a 60 FPS (0.016s) el rate original era 0.02, la tasa por segundo es 0.02 / 0.016 = 1.25.
-      if (random() < 1.25 * dt) { 
-        return true;
-      }
-    }
+    // [R25] La parada bajo Safety Car la decide el estratega (determinista), no un sorteo por paso.
     return false;
   }
 
@@ -312,6 +314,7 @@ export class PitStopModel {
           car.hasPuncture = false; // [FIX A5] Clear puncture after tires are changed
           pit.totalPitStops += 1;
           pit.pendingLog = { lap: car.currentLap, setId: car.tireInventory?.mountedId ?? null, compound: nextCompound, serviceSec: pit.currentStopTimer, penaltySec: pit.penaltyPlannedSec ?? 0 };
+          this.openLog(car);
 
           // [FIX A6] Cerrar el stint anterior
           if (pit.stints.length > 0) {

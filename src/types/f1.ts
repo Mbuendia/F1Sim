@@ -393,6 +393,9 @@ export interface CarState {
   redFlagHold?: boolean;
   /** [R13] Hora a la que cruzó la meta al terminar la carrera. */
   finishTimeSec?: number;
+  /** [R25] Estado y registro del estratega de la IA; el ritmo lo fijó el jugador. */
+  strategy?: import('../simulation/Strategist').StrategyState;
+  paceByPlayer?: boolean;
   redFlagRelease?: boolean;
   /** [R11] Infracciones de pista registradas (las sanciones las aplica R13). */
   infractions?: { type: 'delta-vsc'; value: number; lap: number; time: number }[];
