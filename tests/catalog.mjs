@@ -512,5 +512,6 @@ export const modules = [
   { "id": "overtake-r42", "tasks": ["R42"], "sprint": "2.9", "kind": "contract" },
   { "id": "sc-compaction-r41", "tasks": ["R41"], "sprint": "2.9", "kind": "contract" },
   { "id": "result-r21", "tasks": ["R21"], "sprint": "2.9", "kind": "contract" },
-  { "id": "luck-variant-r26", "tasks": ["R26"], "sprint": "2.9", "kind": "contract" }
+  { "id": "luck-variant-r26", "tasks": ["R26"], "sprint": "2.9", "kind": "contract" },
+  { "id": "render-smooth-r43", "tasks": ["R43"], "sprint": "2.10", "kind": "contract" }
 ];
