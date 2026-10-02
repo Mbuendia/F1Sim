@@ -33,7 +33,10 @@ export const PodiumModal: React.FC<PodiumModalProps> = ({ podiumCars, result, on
       });
     }
 
-    animate(`.${styles.podiumStep}`, {
+    // [R38] Se animan los elementos ya montados del propio modal (sin avisos «No target found»).
+    const steps = containerRef.current?.querySelectorAll(`.${styles.podiumStep}`);
+    const trophies = containerRef.current?.querySelectorAll(`.${styles.trophyIcon}`);
+    if (steps && steps.length) animate(steps, {
       translateY: [160, 0],
       opacity: [0, 1],
       delay: stagger(180, { start: 250 }),
@@ -41,7 +44,7 @@ export const PodiumModal: React.FC<PodiumModalProps> = ({ podiumCars, result, on
       duration: 800
     });
 
-    animate(`.${styles.trophyIcon}`, {
+    if (trophies && trophies.length) animate(trophies, {
       translateY: [-6, 6],
       rotate: [-3, 3],
       alternate: true,

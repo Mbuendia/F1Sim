@@ -3,6 +3,7 @@ import styles from './Leaderboard.module.css';
 import { CarState, RejoinEstimate } from '../types/f1';
 import { Timer, AlertTriangle } from 'lucide-react';
 import { animate, stagger } from 'animejs';
+import { detectPositionChanges } from './positionChanges';
 import { FlagIcon } from './FlagIcon';
 import { CompoundBadge } from './CompoundBadge';
 
@@ -31,8 +32,10 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
   const POSITION_CHANGE_MS = 4000;
 
   useEffect(() => {
-    if (containerRef.current) {
-      animate(`.${styles.row}`, {
+    // [R38] Solo si ya hay filas en pantalla (sin avisos «No target found»).
+    const rows = containerRef.current?.querySelectorAll(`.${styles.row}`);
+    if (rows && rows.length) {
+      animate(rows, {
         translateX: [-18, 0],
         opacity: [0, 1],
         delay: stagger(22),
@@ -42,17 +45,20 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
     }
   }, []);
 
+  // [R38] Los cambios se detectan antes de pintar (así la flecha sale en este mismo render) y se animan después,
+  // cuando el elemento ya está en el DOM: una vez por cambio y sin avisos «No target found».
+  const pendingArrows = useRef<number[]>([]);
+  for (const change of detectPositionChanges(lastPositions.current, cars)) {
+    recentChanges.current.set(change.carId, { delta: change.delta, at: Date.now() });
+    pendingArrows.current.push(change.carId);
+  }
+
   useEffect(() => {
-    const now = Date.now();
-    for (const car of cars) {
-      const last = lastPositions.current.get(car.id);
-      if (last !== undefined && last !== car.currentPosition && car.status !== 'out') {
-        recentChanges.current.set(car.id, { delta: last - car.currentPosition, at: now });
-        if (containerRef.current) {
-          animate(`[data-pos-car="${car.id}"]`, { scale: [1.8, 1], opacity: [0, 1], duration: 450, ease: 'outBack' });
-        }
-      }
-      lastPositions.current.set(car.id, car.currentPosition);
+    const ids = pendingArrows.current;
+    pendingArrows.current = [];
+    for (const id of ids) {
+      const arrow = containerRef.current?.querySelector(`[data-pos-car="${id}"]`);
+      if (arrow) animate(arrow, { scale: [1.8, 1], opacity: [0, 1], duration: 450, ease: 'outBack' });
     }
   });
 
