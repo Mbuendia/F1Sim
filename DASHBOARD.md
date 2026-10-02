@@ -22,7 +22,7 @@
 
 ## 🧭 2. ROADMAP Y ESTADO GLOBAL DE SPRINTS
 
-**Orden vigente:** Sprint **2.9** · Tarea actual **R42** · Siguiente **R41** (bloque 2.9-A pendiente de revisión: R01, R02, la base inicial de R03, el esquema de R28 y la base de R27; 2.9-B en primera pasada completa: R05 con R40 y las primeras entregas de R06, R14, R15, R16 y R17; 2.9-C en primera pasada completa: R07, R08, R09, R10, R11, R12 (con R35), R13, R22 y R25; hallazgo R42 (adelantamientos) con primera entrega el 02/10/2026 y pendiente R41 (compactación del SC); resto el 01/10/2026 en la rama sprint/2.9 con contrato de tests acordado; cada tarea del 2.9 sigue requiriendo autorización expresa).
+**Orden vigente:** Sprint **2.9** · Tarea actual **R41** · Siguiente **R21** (bloque 2.9-A pendiente de revisión: R01, R02, la base inicial de R03, el esquema de R28 y la base de R27; 2.9-B en primera pasada completa: R05 con R40 y las primeras entregas de R06, R14, R15, R16 y R17; 2.9-C en primera pasada completa: R07, R08, R09, R10, R11, R12 (con R35), R13, R22 y R25; hallazgo R42 (adelantamientos) con primera entrega y R41 (compactación del SC) en revisión, ambos el 02/10/2026; resto el 01/10/2026 en la rama sprint/2.9 con contrato de tests acordado; cada tarea del 2.9 sigue requiriendo autorización expresa).
 
 **Prioridad acordada tras la auditoría (30/09/2026, `docs/reviews/auditoria-q12-q19.md`):** Q19 → Q16 → Q13 → Q17 → Q12 → Q18/Q14/Q15. Decisiones del usuario: detecciones DRS desde las notas oficiales FIA; el Safety Car debe salir del pit lane (Q14); tests estructurales sin dependencias nuevas para Q18; tolerancias de calibración Q12 propuestas.
 
@@ -836,12 +836,13 @@ Origen: revisión en local de Q12-Q23 jugando una carrera en Barcelona con el bu
   * *Tests antes de implementación:* acordar el rango por circuito y su fuente; ampliar el banco con la punta por coche y con/sin DRS.
   * *Entrega 01/10/2026:* resuelto dentro de R05 (DRS contado una vez en el drag). Punta del banco R27: 321,1 km/h en Barcelona (antes 407,2) y 297,1 km/h en Mónaco; rango provisional 315–340 km/h en Barcelona y máximo de 370 km/h en todas las carreras del banco, pendientes de una fuente oficial de speed trap.
 
-* **R41 — Compactación del Safety Car con frenazos instantáneos:** `[ ] PLANIFICADO`
+* **R41 — Compactación del Safety Car con frenazos instantáneos:** `[ ] EN REVISIÓN LOCAL — IMPLEMENTADO 02/10/2026 CON CONTRATO DE TESTS ACORDADO`
   * *Prioridad/dependencias:* P1; detectado por el banco R27 el 01/10/2026 durante R06; coordina R10 (SC) y Q14.
   * *Hallazgo:* `SafetyCarModel.compactField` fija la velocidad con `Math.min(…, 120/130 km/h)` y con el 98 % del coche de delante sin límite de frenada: en Mónaco (semilla 2025, paso 7999) LEC pasa de 184 a 130 km/h en un paso de 20 ms (≈750 m/s²). Con la calibración de R06 el banco no lo marca, pero queda a milímetros del umbral de «salto».
   * *Alcance:* la compactación reduce velocidad con la frenada máxima del coche y la distancia disponible, sin saltos.
   * *Aceptación:* invariante del banco R27 con margen; ninguna deceleración bajo SC por encima de 55 m/s².
   * *Tests antes de implementación:* ampliar el banco con deceleración máxima bajo neutralización.
+  * *Entrega 02/10/2026 (aprobada por el usuario; pendiente de revisión):* `SafetyCarModel.compactField` reduce la velocidad con la frenada máxima del motor (180 km/h por segundo ≈ 50 m/s²) contando lo ya frenado en el paso, en vez de fijarla de golpe. La nueva invariante del banco destapó un segundo origen, también corregido: el límite de distancia en fila (0,0025 de vuelta) recortaba la velocidad en un paso cuando un coche llegaba lanzado o cuando el SC salía con dos coches a menos de esa distancia (hasta 1044 m/s² en Mónaco). Ahora, bajo neutralización o antes de la línea de relanzamiento, el coche se acerca al de delante con curva de frenada (a = 12 m/s²) y el límite de distancia respeta la frenada máxima, con un muro absoluto que impide alcanzar al coche de delante. Banco R27: invariante «deceleración bajo neutralización > 55 m/s²» a cero en los cuatro escenarios (antes 7 en Barcelona y 63 en Mónaco); test `sc-compaction-r41` (4 PASS): de 750 m/s² a 50 m/s², sin adelantar y fila a 14 m. Suite completa 1773 PASS; baseline R27 regenerada con autorización.
 
 * **R42 — Adelantar en verde es casi imposible:** `[ ] PRIMERA ENTREGA EN REVISIÓN LOCAL — 02/10/2026 CON CONTRATO DE TESTS ACORDADO`
   * *Prioridad/dependencias:* P0; detectado el 01/10/2026 durante R09; coordina R05 (adelantamiento físico) y R25 (estrategia).
