@@ -9,6 +9,8 @@ import { RaceResultHistory } from '../types/f1';
 import { ChampionshipTable } from './ChampionshipTable';
 import { WeatherScenarioSelect } from './WeatherScenarioSelect';
 import { CarShowcase } from './CarShowcase';
+import { RaceFormatSelect } from './RaceFormatSelect';
+import type { RaceFormatId } from './RaceFormatSelect';
 import type { ChampionshipState } from '../simulation/Championship';
 import { FlagIcon } from './FlagIcon';
 import { F1WheelSvg } from './F1WheelSvg';
@@ -52,6 +54,9 @@ interface HomeScreenProps {
   /** [R44] Meteorología elegida para la carrera. */
   weatherScenarioId?: string;
   onSelectWeather?: (id: string) => void;
+  /** [R20] GP directo o con clasificación. */
+  raceFormat?: RaceFormatId;
+  onSelectFormat?: (format: RaceFormatId) => void;
 }
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({
@@ -64,7 +69,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   championship,
   onResetChampionship,
   weatherScenarioId,
-  onSelectWeather
+  onSelectWeather,
+  raceFormat,
+  onSelectFormat
 }) => {
   const [activeTab, setActiveTab] = useState<'drivers' | 'circuits'>('drivers');
   const [driverSubTab, setDriverSubTab] = useState<'specs' | 'strategy' | 'records'>('specs');
@@ -1023,6 +1030,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             Reglas: <strong>{getRuleSet(DEFAULT_RULE_SET_ID).label}</strong>
           </div>
 
+          {onSelectFormat && (
+            <RaceFormatSelect className={styles.rulesProfile} value={raceFormat ?? 'directo'} onChange={onSelectFormat} />
+          )}
           {onSelectWeather && (
             <WeatherScenarioSelect className={styles.rulesProfile} value={weatherScenarioId ?? 'seco'} onChange={onSelectWeather} />
           )}

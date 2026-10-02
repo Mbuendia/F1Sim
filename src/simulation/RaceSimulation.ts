@@ -44,6 +44,7 @@ import { localFlagsFrom, LocalFlag, marshalSectorOf, Permissions, permissionsFor
 import { Decision, PenaltyType, Stewards } from './Stewards';
 import { applyAttributes, fitnessNoiseFactor, overtakeAdvantageNeeded, wetGripFactor } from './DriverDevelopment';
 import type { DriverAttributes } from './DriverDevelopment';
+import type { QualiEntrant } from './Qualifying';
 import { classify, constructorStandings, pointsTable, resultDifferences } from './RaceResult';
 import type { EndReason, RaceResult, ResultEntry } from './RaceResult';
 import { tyreCrossover, tyreClassOf, tyreWaterGrip, WeatherModel, WeatherScenario } from './WeatherModel';
@@ -127,6 +128,29 @@ export class RaceSimulation {
   overtakeAdvantageFor(attackerId: number, defenderId: number): number {
     return overtakeAdvantageNeeded(RaceSimulation.OVERTAKE.MIN_ADVANTAGE,
       this.getCarById(attackerId)?.driver.development?.overtake, this.getCarById(defenderId)?.driver.development?.defence);
+  }
+
+  /** [R20] Parrilla de salida: la de la clasificación o, en GP directo, la prefijada. */
+  private startingGrid: string[] | null = null;
+  get gridSource(): 'prefijada' | 'clasificacion' {
+    return this.startingGrid ? 'clasificacion' : 'prefijada';
+  }
+
+  /** [R20] Fija la parrilla (ids de piloto en orden) y prepara la carrera; `null` vuelve a la prefijada. */
+  setStartingGrid(driverIds: string[] | null): boolean {
+    if (driverIds && (new Set(driverIds).size !== STARTING_GRID_ORDER.length || !driverIds.every(id => STARTING_GRID_ORDER.includes(id)))) return false;
+    this.startingGrid = driverIds ? [...driverIds] : null;
+    this.initRace();
+    return true;
+  }
+
+  /** [R20] Participantes de la clasificación con la vuelta de referencia del motor para su coche y piloto. */
+  qualifyingEntrants(): QualiEntrant[] {
+    return this.cars.map(car => ({
+      driverId: car.driver.id, code: car.driver.code, name: `${car.driver.firstName} ${car.driver.lastName}`,
+      teamName: car.team.name, teamColor: car.team.color, consistency: car.driver.consistency,
+      referenceLapSec: RejoinModel.lapProfile(this.activeTrack, car, null).lapTime,
+    }));
   }
 
   isLuckVariantActive(): boolean {
@@ -338,7 +362,7 @@ export class RaceSimulation {
     Object.assign(this.weather, { condition: 'dry', conditionLabel: 'SECO / DESPEJADO', waterDepthMm: 0, waterPercentage: 0, gripMultiplier: 1, rainProbabilityPct: 4 });
     this.scEndingLap = null; // [FIX C5] Reset scEndingLap en cada nueva carrera
 
-    this.cars = STARTING_GRID_ORDER.map((driverId, idx) => {
+    this.cars = (this.startingGrid ?? STARTING_GRID_ORDER).map((driverId, idx) => {
       // [R45] Piloto con sus atributos actuales (idéntico al de siempre si no hay mejoras).
       const driver = applyAttributes(DRIVERS[driverId], this.driverAttributes[driverId]);
       const team = TEAMS[driver.teamId];

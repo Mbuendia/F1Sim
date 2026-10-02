@@ -20,6 +20,11 @@ import { RaceMenu } from './components/RaceMenu';
 import { RaceNotices, RaceNotice, RaceNoticeTone } from './components/RaceNotices';
 import { OFFICIAL_CIRCUITS } from './data/circuits';
 import { buildWeatherScenario } from './data/weatherScenarios';
+import { runQualifying } from './simulation/Qualifying';
+import type { QualifyingResult } from './simulation/Qualifying';
+import { QualifyingResults } from './components/QualifyingResults';
+import qualifyingStyles from './components/QualifyingResults.module.css';
+import type { RaceFormatId } from './components/RaceFormatSelect';
 import { attributesOf, developAfterRace, emptyDevelopment, parseDevelopment, DEVELOPMENT_STORAGE_KEY } from './simulation/DriverDevelopment';
 import type { DevelopmentState } from './simulation/DriverDevelopment';
 import type { RaceResult } from './simulation/RaceResult';
@@ -112,6 +117,10 @@ export const App: React.FC = () => {
     const row = result.rows.find(r => r.driverCode === driver.code);
     return row ? { position: row.position, status: row.status, points: row.points } : undefined;
   }, simulation.totalLaps), [development, simulation]);
+
+  // [R20] Formato del Gran Premio y resultado de la clasificación pendiente de mostrar
+  const [raceFormat, setRaceFormat] = useState<RaceFormatId>('directo');
+  const [qualifying, setQualifying] = useState<QualifyingResult | null>(null);
 
   // [R44] Meteorología de la próxima carrera
   const [weatherScenarioId, setWeatherScenarioId] = useState<string>('seco');
@@ -260,7 +269,12 @@ export const App: React.FC = () => {
 
   const handleStartRaceFromHome = useCallback(() => {
     simulation.setDriverAttributes(development.attributes);
+    simulation.setStartingGrid(null);
     simulation.setCircuit(selectedCircuitId);
+    // [R20] Con clasificación, la parrilla sale de Q1-Q3 y se enseña antes de formar; el GP directo usa la prefijada.
+    const quali = raceFormat === 'clasificacion' ? runQualifying(simulation.qualifyingEntrants(), Date.now() % 2147483647) : null;
+    if (quali) simulation.setStartingGrid(quali.grid.map(slot => slot.driverId));
+    setQualifying(quali);
     // [R44] Meteorología elegida en el paddock, ajustada a la duración prevista de la carrera.
     simulation.setWeatherScenario(buildWeatherScenario(weatherScenarioId, simulation.totalLaps * 90));
     camera.resetToFullTrack();
@@ -269,8 +283,8 @@ export const App: React.FC = () => {
     clearNotices();
     setIsFinished(false);
     setCurrentView('race');
-    simulation.startRaceSequence();
-  }, [simulation, camera, selectedCircuitId, weatherScenarioId, development]);
+    if (!quali) simulation.startRaceSequence();
+  }, [simulation, camera, selectedCircuitId, weatherScenarioId, development, raceFormat]);
 
   const handleStartFormationLap = useCallback(() => {
     if (simulation.lightState === 'grid-ready') {
@@ -444,6 +458,8 @@ export const App: React.FC = () => {
         raceHistory={raceHistory}
         championship={championship}
         onResetChampionship={() => { saveChampionship(emptyChampionship()); saveDevelopment(emptyDevelopment()); }}
+        raceFormat={raceFormat}
+        onSelectFormat={setRaceFormat}
         weatherScenarioId={weatherScenarioId}
         onSelectWeather={setWeatherScenarioId}
       />
@@ -592,6 +608,12 @@ export const App: React.FC = () => {
               }}
               onStartClick={handleStartFormationLap}
             />
+
+            {qualifying && (
+              <div className={qualifyingStyles.overlay}>
+                <QualifyingResults result={qualifying} onContinue={() => { setQualifying(null); simulation.startRaceSequence(); }} />
+              </div>
+            )}
 
             {isFinished && podiumCars.length >= 3 && (
               <PodiumModal
