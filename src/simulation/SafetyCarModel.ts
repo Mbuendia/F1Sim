@@ -1,5 +1,7 @@
+import { random } from './Random';
 import { SafetyCarState, CarState, TrackIncident, RaceFlagState } from '../types/f1';
 import { IncidentModel } from './IncidentModel';
+import { DEFAULT_RULES } from '../rules/ruleSets';
 
 type PitGeometry = { pitEntryT: number; pitExitT: number };
 type TrackPointLike = { speedLimitFactor: number };
@@ -62,7 +64,7 @@ export class SafetyCarModel {
 
   // ── [Q14] SC FÍSICO: sale del pit lane, espera despacio al líder y vuelve por el pit lane ──
   /** Límite del pit lane (km/h). */
-  static readonly PIT_LANE_KMH = 80;
+  static readonly PIT_LANE_KMH = DEFAULT_RULES.pitLaneSpeedKmh;
   /** Velocidad máxima en pista mientras espera a que el líder lo alcance. */
   static readonly SC_WAIT_KMH = 100;
   /** Velocidad máxima liderando el pelotón (coincide con el límite de los coches bajo SC). */
@@ -106,7 +108,7 @@ export class SafetyCarModel {
     sc.trackT = ((sc.progress % 1) + 1) % 1;
     sc.currentSpeedKmh = 0;
     sc.lapCount = 0;
-    sc.targetLaps = trackType === 'street' ? 10 : 2 + Math.floor(Math.random() * 2); // 2-3 vueltas
+    sc.targetLaps = trackType === 'street' ? 10 : 2 + Math.floor(random() * 2); // 2-3 vueltas
     sc.triggerReason = reason;
     sc.deployedAtRaceTime = raceTimeSec;
   }
@@ -233,9 +235,17 @@ export class SafetyCarModel {
   }
 
   // Compactar el grupo detrás del safety car
-  static compactField(cars: CarState[], scProgress: number, dt: number): void {
+  /** [R41] Frenada máxima con la que la compactación reduce la velocidad (km/h por segundo), como el resto del motor. */
+  static readonly COMPACT_BRAKE_KMH_S = 180;
+
+  // [R41] `stepStartKmh`: velocidad de cada coche al inicio del paso; la reducción total del paso no supera la frenada máxima.
+  static compactField(cars: CarState[], scProgress: number, dt: number, stepStartKmh?: Map<number, number>): void {
+    const capped = (car: CarState, limitKmh: number) => {
+      const floor = (stepStartKmh?.get(car.id) ?? car.currentSpeedKmh) - SafetyCarModel.COMPACT_BRAKE_KMH_S * dt;
+      return Math.max(Math.min(car.currentSpeedKmh, limitKmh), Math.min(car.currentSpeedKmh, floor));
+    };
     const activeCars = cars
-      .filter(c => c.status === 'running' && !c.pitStop.isPitting && !c.isInPitLane)
+      .filter(c => c.status === 'running' && !c.pitStop.isPitting && !c.isInPitLane && !c.scUnlapping)
       .sort((a, b) => b.progress - a.progress);
     
     const targetGap = 0.0025;
@@ -247,15 +257,15 @@ export class SafetyCarModel {
         if (car.progress < targetProgress) {
           // Dejar que alcance naturalmente
         } else if (car.progress > targetProgress + 0.002) {
-          car.currentSpeedKmh = Math.min(car.currentSpeedKmh, 120);
+          car.currentSpeedKmh = capped(car, 120);
         }
       } else {
         const carAhead = activeCars[i - 1];
         const gap = carAhead.progress - car.progress;
         if (gap > targetGap * 2 && car.fuelKg > 0) {
-          car.currentSpeedKmh = Math.min(car.currentSpeedKmh + dt * 15, 130);
+          car.currentSpeedKmh = car.currentSpeedKmh > 130 ? capped(car, 130) : Math.min(car.currentSpeedKmh + dt * 15, 130);
         } else if (gap < targetGap) {
-          car.currentSpeedKmh = Math.min(car.currentSpeedKmh, carAhead.currentSpeedKmh * 0.98);
+          car.currentSpeedKmh = capped(car, carAhead.currentSpeedKmh * 0.98);
         }
       }
     }

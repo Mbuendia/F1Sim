@@ -143,6 +143,10 @@ export function buildTrackFromSvg(circuit: CircuitSpec, sampleCount: number = 75
     smoothedCurvatures.push(sumC / (windowSize * 2 + 1));
     smoothedSignedCurvatures.push(sumSignedC / (windowSize * 2 + 1));
   }
+  // [R06] Un circuito horario gira a derechas en conjunto: el signo neto de la curvatura de un trazado horario marca
+  // las curvas a derechas (y al revés en uno antihorario).
+  const netSignedCurvature = smoothedSignedCurvatures.reduce((sum, c) => sum + c, 0);
+  const rightHandSign = (targetClockwise ? 1 : -1) * (Math.sign(netSignedCurvature) || 1);
 
   // Velocidades locales en función de la curvatura
   const rawSpeedLimits: number[] = [];
@@ -238,7 +242,8 @@ export function buildTrackFromSvg(circuit: CircuitSpec, sampleCount: number = 75
       trackWidthMeters: segmentWidth,
       trackWidthCars: segmentCars,
       idealLineOffset: idealOffset,
-      rubberGrip: 0.0 // Grip starts at 0 and goes up to 1.0 across laps
+      rubberGrip: 0.0, // Grip starts at 0 and goes up to 1.0 across laps
+      turn: Math.max(-1, Math.min(1, signedCurvature * 25)) * rightHandSign
     });
 
     accumDist += distances[i];

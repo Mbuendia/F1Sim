@@ -19,6 +19,8 @@ import { D20LuckModal } from './components/D20LuckModal';
 import { RaceMenu } from './components/RaceMenu';
 import { RaceNotices, RaceNotice, RaceNoticeTone } from './components/RaceNotices';
 import { OFFICIAL_CIRCUITS } from './data/circuits';
+import { addRace, emptyChampionship, parseChampionship, CHAMPIONSHIP_STORAGE_KEY } from './simulation/Championship';
+import type { ChampionshipState } from './simulation/Championship';
 import { DRIVERS } from './data/drivers';
 import { TEAMS } from './data/teams';
 import { RaceResultHistory, StartLightState, CarState, RaceFlagState, SafetyCarState, DnfNotification, D20LuckEvent, TrackWeatherState } from './types/f1';
@@ -60,7 +62,8 @@ export const App: React.FC = () => {
   const [selectedDriverId, setSelectedDriverId] = useState<string>('alonso');
   const [selectedCircuitId, setSelectedCircuitId] = useState<string>('barcelona');
 
-  const simulation = useMemo(() => new RaceSimulation(selectedCircuitId), []);
+  // [R02] Paso fijo de 20 ms simulados: mismo resultado sea cual sea el FPS o la velocidad.
+  const simulation = useMemo(() => { const sim = new RaceSimulation(selectedCircuitId); sim.setFixedStep(0.02); return sim; }, []);
   const camera = useMemo(() => new Camera(), []);
 
   // Vista actual: 'landing', 'home' o 'race'
@@ -82,6 +85,15 @@ export const App: React.FC = () => {
 
   // Camera mode
   const [cameraMode, setCameraMode] = useState<string>('overview');
+
+  // [R21] Campeonato acumulado (resultados finales), guardado en el navegador
+  const [championship, setChampionship] = useState<ChampionshipState>(() => {
+    try { return parseChampionship(localStorage.getItem(CHAMPIONSHIP_STORAGE_KEY)); } catch { return emptyChampionship(); }
+  });
+  const saveChampionship = useCallback((next: ChampionshipState) => {
+    setChampionship(next);
+    try { localStorage.setItem(CHAMPIONSHIP_STORAGE_KEY, JSON.stringify(next)); } catch (e) { console.error(e); }
+  }, []);
 
   // Historial de carreras guardadas
   const [raceHistory, setRaceHistory] = useState<RaceResultHistory[]>(() => {
@@ -182,13 +194,8 @@ export const App: React.FC = () => {
     randomCar.smokeOpacity = 1.0;
     randomCar.retireTimer = 60;
 
-    // Forzar bandera roja directamente
-    simulation.raceFlagState = 'red';
-    simulation.safetyCar.isDeployed = false;
-    simulation.safetyCar.mode = 'idle';
-    for (const c of simulation.cars) {
-      if (c.status === 'running') c.pitStop.isPitting = true;
-    }
+    // [R26] Bandera roja por el procedimiento real de R12 (sin marcar paradas a mano).
+    simulation.startRedFlag('PRUEBA MANUAL (DEV)');
     simulation.triggerD20LuckRoll('red');
   }, [simulation]);
 
@@ -202,6 +209,18 @@ export const App: React.FC = () => {
   const handleApplyLuckReward = useCallback((eventId: string) => {
     simulation.applyLuckEventReward(eventId);
   }, [simulation]);
+  // [R26] Variante D20: preferencia guardada en el navegador.
+  const [luckVariantEnabled, setLuckVariantEnabled] = useState<boolean>(() => {
+    try { return localStorage.getItem('f1_d20_variant') !== 'off'; } catch { return true; }
+  });
+  useEffect(() => { simulation.luckVariantEnabled = luckVariantEnabled; }, [simulation, luckVariantEnabled]);
+  const handleToggleLuckVariant = useCallback(() => {
+    setLuckVariantEnabled(value => {
+      try { localStorage.setItem('f1_d20_variant', value ? 'off' : 'on'); } catch (e) { console.error(e); }
+      return !value;
+    });
+  }, []);
+
   const handleDismissLuckEvent = useCallback(() => {
     simulation.activeLuckEvent = null;
     setActiveLuckEvent(null);
@@ -271,6 +290,10 @@ export const App: React.FC = () => {
         totalRaceTime: formatRaceTime(simulation.raceTimeSec)
       };
 
+      // [R21] Al salir, el resultado queda confirmado y suma al campeonato.
+      const finalResult = simulation.confirmResult();
+      if (finalResult) saveChampionship(addRace(championship, newHistoryItem.id, selectedCircuitId, finalResult, simulation.raceFormat));
+
       const updatedHistory = [newHistoryItem, ...raceHistory].slice(0, 10);
       setRaceHistory(updatedHistory);
       try {
@@ -281,7 +304,7 @@ export const App: React.FC = () => {
     }
 
     setCurrentView('home');
-  }, [simulation, selectedDriverId, selectedCircuitId, raceHistory]);
+  }, [simulation, selectedDriverId, selectedCircuitId, raceHistory, championship, saveChampionship]);
 
   const handleCycleCameraMode = useCallback(() => {
     camera.cycleMode();
@@ -392,6 +415,8 @@ export const App: React.FC = () => {
         onSelectCircuit={setSelectedCircuitId}
         onStartRace={handleStartRaceFromHome}
         raceHistory={raceHistory}
+        championship={championship}
+        onResetChampionship={() => saveChampionship(emptyChampionship())}
       />
     );
   }
@@ -482,6 +507,8 @@ export const App: React.FC = () => {
             safetyCarDeployed={simulation.safetyCar.isDeployed}
             onToggleSafetyCarTest={handleSafetyCarTest}
             onRedFlagTest={handleRedFlagTest}
+            luckVariantEnabled={luckVariantEnabled}
+            onToggleLuckVariant={handleToggleLuckVariant}
           />
         </div>
       </header>
@@ -514,6 +541,7 @@ export const App: React.FC = () => {
               raceFlagState={raceFlagState}
               sectorFlags={sectorFlags}
               safetyCar={safetyCar}
+              onEndRace={() => { simulation.endRaceSuspended(); }}
             />
 
             <RaceNotices notices={notices} />
@@ -539,6 +567,8 @@ export const App: React.FC = () => {
             {isFinished && podiumCars.length >= 3 && (
               <PodiumModal
                 podiumCars={podiumCars}
+                result={simulation.getRaceResult()}
+                onConfirmResult={() => { simulation.confirmResult(); setPodiumCars([...simulation.podiumCars]); }}
                 onRestart={handleResetRace}
                 onGoHome={handleGoHome}
               />

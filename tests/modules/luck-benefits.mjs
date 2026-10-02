@@ -134,4 +134,64 @@ export default async function run({ server, assert, test }) {
         `${before.timeLossSec.toFixed(1)} → ${after.timeLossSec.toFixed(1)} s`);
     });
   });
+
+  // R37 (contrato aprobado por el usuario el 02/10/2026): bajo bandera roja ningún tramo da un beneficio vacío; 8–13 da
+  // un informe de relanzamiento (solo información).
+  const redScene = (ownHealth = 40) => {
+    const sim = make('barcelona', 3), [ahead, own, behind] = sim.cars;
+    const L = sim.activeTrack.lapLengthMeters;
+    const tyres = (car, compound, health) => Object.assign(car.tires, { compound, health, healthFL: health, healthFR: health, healthRL: health, healthRR: health });
+    sim.cars.forEach((c, i) => { const p = 5.3 - i * 80 / L; Object.assign(c, { progress: p, trackT: p % 1, currentLap: 5, currentPosition: i + 1 }); });
+    tyres(ahead, 'hard', 80); tyres(own, 'medium', ownHealth); tyres(behind, 'soft', 95);
+    sim.startRedFlag('Prueba');
+    return { sim, ahead, own, behind };
+  };
+  const rollRed = (sim, roll, car, trigger = 'red') => {
+    const original = Math.random;
+    Math.random = () => (roll - 0.5) / 20;
+    try { return sim.triggerD20LuckRoll(trigger, car.driver.id); } finally { Math.random = original; }
+  };
+
+  await fixedRandom(0.5, async () => {
+    await test('R37: bajo bandera roja ningún tramo queda vacío', () => {
+      const { sim, own } = redScene();
+      for (let roll = 1; roll <= 20; roll++) {
+        const event = rollRed(sim, roll, own);
+        const text = `${event.rewardTitle} ${event.rewardDescription}`;
+        assert(event.rewardDescription.length > 20 && !/sin estimación/i.test(text) && event.benefit.kind !== 'engineer-report', `R37 tirada ${roll}: beneficio con contenido`, event.benefit.kind);
+        assert(/bandera roja|relanzamiento|suspensión/i.test(text) && !/neutralización/i.test(text), `R37 tirada ${roll}: el texto habla de la bandera roja`, text.slice(0, 80));
+      }
+      assert(rollRed(sim, 20, own).benefit.kind === 'crew-ready' && rollRed(sim, 15, own).benefit.kind === 'crew-alert' && rollRed(sim, 3, own).benefit.kind === 'none',
+        'R37: 14–20 preparan el box y 1–7 no dan ventaja');
+    });
+
+    await test('R37: informe de relanzamiento con 8–13', () => {
+      const { sim, ahead, own, behind } = redScene();
+      const before = JSON.stringify({ tires: sim.cars.map(c => c.tires), sets: sim.cars.map(c => c.tireInventory), fuel: sim.cars.map(c => c.fuelKg) });
+      const event = rollRed(sim, 10, own);
+      const r = event.benefit.restart;
+      assert(event.benefit.kind === 'restart-report' && event.luckyCarId === own.id && r, 'R37: beneficio «Informe de relanzamiento» para el coche elegido', event.benefit.kind);
+      assert(r.queuePos === 2 && r.own.compound === 'medium' && Math.round(r.own.health) === 40, 'R37: puesto en la fila y neumático propio');
+      assert(r.ahead.code === ahead.driver.code && r.ahead.compound === 'hard' && r.behind.code === behind.driver.code && r.behind.compound === 'soft', 'R37: neumáticos de los coches de delante y detrás');
+      assert(r.changeAdvised === true && ['soft', 'medium', 'hard'].includes(r.recommended), 'R37: recomienda cambiar un juego gastado por uno disponible', String(r.recommended));
+      const text = event.rewardDescription;
+      assert(text.includes('P2') && text.includes(ahead.driver.code) && text.includes(behind.driver.code) && /cambiar/i.test(text) && /gratis|sin coste|no cuenta/i.test(text),
+        'R37: el texto describe exactamente el informe', text);
+      sim.applyLuckEventReward(event.id);
+      assert(JSON.stringify({ tires: sim.cars.map(c => c.tires), sets: sim.cars.map(c => c.tireInventory), fuel: sim.cars.map(c => c.fuelKg) }) === before && !own.pitStop.crewBenefit,
+        'R37: el informe solo informa: no cambia neumáticos, juegos ni combustible');
+      const fresh = redScene(92);
+      const keep = rollRed(fresh.sim, 10, fresh.own);
+      assert(keep.benefit.restart.changeAdvised === false && /mantener/i.test(keep.rewardDescription), 'R37: con el juego en buen estado recomienda mantenerlo', keep.rewardDescription);
+    });
+
+    await test('R37: bajo Safety Car no cambia y el modal muestra el informe', async () => {
+      const { D20LuckResult } = await server.ssrLoadModule('/src/components/D20LuckModal.tsx');
+      const plain = setup();
+      assert(rollWith(plain.sim, 10, plain.car.id).benefit.kind === 'engineer-report', 'R37: con SC el tramo 8–13 sigue siendo el informe del ingeniero');
+      const { sim, ahead, own } = redScene();
+      const html = renderToStaticMarkup(createElement(D20LuckResult, { event: rollRed(sim, 10, own) }));
+      assert(html.includes('data-d20-benefit="restart-report"') && html.includes('Informe de relanzamiento') && html.includes(ahead.driver.code), 'R37: el modal muestra el informe de relanzamiento');
+    });
+  });
 }

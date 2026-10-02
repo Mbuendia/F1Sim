@@ -5,14 +5,19 @@ import { Trophy, RotateCcw, Home, Sparkles } from 'lucide-react';
 import { animate, stagger } from 'animejs';
 import { FlagIcon } from './FlagIcon';
 import { F1CarSilhouette } from './F1CarSilhouette';
+import { ResultsTable } from './ResultsTable';
+import type { RaceResult } from '../simulation/RaceResult';
 
 interface PodiumModalProps {
   podiumCars: CarState[];
+  /** [R21] Clasificación completa y confirmación del resultado. */
+  result?: RaceResult;
+  onConfirmResult?: () => void;
   onRestart: () => void;
   onGoHome: () => void;
 }
 
-export const PodiumModal: React.FC<PodiumModalProps> = ({ podiumCars, onRestart, onGoHome }) => {
+export const PodiumModal: React.FC<PodiumModalProps> = ({ podiumCars, result, onConfirmResult, onRestart, onGoHome }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const confettiCanvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -28,7 +33,10 @@ export const PodiumModal: React.FC<PodiumModalProps> = ({ podiumCars, onRestart,
       });
     }
 
-    animate(`.${styles.podiumStep}`, {
+    // [R38] Se animan los elementos ya montados del propio modal (sin avisos «No target found»).
+    const steps = containerRef.current?.querySelectorAll(`.${styles.podiumStep}`);
+    const trophies = containerRef.current?.querySelectorAll(`.${styles.trophyIcon}`);
+    if (steps && steps.length) animate(steps, {
       translateY: [160, 0],
       opacity: [0, 1],
       delay: stagger(180, { start: 250 }),
@@ -36,7 +44,7 @@ export const PodiumModal: React.FC<PodiumModalProps> = ({ podiumCars, onRestart,
       duration: 800
     });
 
-    animate(`.${styles.trophyIcon}`, {
+    if (trophies && trophies.length) animate(trophies, {
       translateY: [-6, 6],
       rotate: [-3, 3],
       alternate: true,
@@ -204,6 +212,8 @@ export const PodiumModal: React.FC<PodiumModalProps> = ({ podiumCars, onRestart,
             </div>
           </div>
         </div>
+
+        {result && <ResultsTable result={result} onConfirm={onConfirmResult} />}
 
         <div style={{ display: 'flex', gap: '14px' }}>
           <button className={styles.restartBtn} onClick={onRestart}>

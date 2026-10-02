@@ -1,4 +1,6 @@
+import { random } from './Random';
 import { TrackIncident, CarState, RaceFlagState } from '../types/f1';
+import { marshalSectorOf } from './RaceControl';
 
 export class IncidentModel {
   private static nextId = 1;
@@ -6,6 +8,11 @@ export class IncidentModel {
   // [FIX B4] Reiniciar contador de incidentes entre carreras y tests
   static reset(): void {
     this.nextId = 1;
+  }
+
+  /** [R28] Siguiente id de incidente (estado que guarda el snapshot). */
+  static peekNextId(): number {
+    return this.nextId;
   }
 
   // Registrar un nuevo incidente cuando un coche se retira o hace un trompo
@@ -24,13 +31,13 @@ export class IncidentModel {
     // Configurar clearTimer según el tipo
     let clearTimer = 0;
     if (type === 'dnf') {
-      clearTimer = 12 + Math.random() * 8; // 12-20s
+      clearTimer = 12 + random() * 8; // 12-20s
     } else if (type === 'crash') {
-      clearTimer = 25 + Math.random() * 15; // 25-40s
+      clearTimer = 25 + random() * 15; // 25-40s
     } else if (type === 'major_crash') {
-      clearTimer = 45 + Math.random() * 35; // 45-80s (Bandera roja garantizada)
+      clearTimer = 45 + random() * 35; // 45-80s (Bandera roja garantizada)
     } else if (type === 'spin') {
-      clearTimer = 8 + Math.random() * 4; // 8-12s
+      clearTimer = 8 + random() * 4; // 8-12s
     }
 
     const incident: TrackIncident = {
@@ -43,6 +50,10 @@ export class IncidentModel {
       isCleared: false,
       clearTimer,
       reason: car.dnfReason || (type === 'spin' ? '🔄 TROMPO EN PISTA' : 'Unknown'),
+      // [R09] Ubicación en sector de comisarios, causa y responsabilidad (incidente de un solo coche).
+      marshalSector: marshalSectorOf(car.trackT),
+      cause: type === 'dnf' ? 'mecanica' : type === 'spin' ? 'trompo' : 'accidente',
+      responsibility: type === 'dnf' ? 'ninguna' : 'propio',
     };
 
     return incident;

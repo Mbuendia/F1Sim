@@ -733,3 +733,7 @@
 .launchBigButton { font-family: var(--font-ui); font-size: 20px; font-weight: 700; letter-spacing: 0.02em; min-height: 64px; background: var(--accion); box-shadow: none; }
 .launchBigButton:hover { background: var(--accion-hover); }
 .launchSub { font-size: 14px; font-weight: 600; opacity: 0.9; letter-spacing: 0; }
+
+/* R01: perfil de reglas activo */
+.rulesProfile { margin-top: auto; margin-bottom: 12px; padding: 10px 12px; border-radius: var(--radio-m); background: var(--panel-2); font-size: 15px; color: var(--text-2); }
+.rulesProfile strong { color: var(--text); font-weight: 700; }

@@ -31,6 +31,9 @@
   padding: 32px 42px;
   text-align: center;
   max-width: 920px;
+  /* [R21] Con la tabla de resultados el contenido puede superar la altura de la ventana. */
+  max-height: 96vh;
+  overflow-y: auto;
   width: 94%;
   display: flex;
   flex-direction: column;

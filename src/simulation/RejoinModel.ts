@@ -1,35 +1,52 @@
 import type { TrackDefinition } from '../data/barcelonaTrack';
 import type { CarState } from '../types/f1';
 import { PitStopModel } from './PitStopModel';
+import { CAR_DRY_MASS_KG, LongitudinalInput, holdThrottle, longitudinalAccel, topSpeedKmh } from './AeroModel';
+import { FuelModel } from './FuelModel';
+import { CarTechnical, chassisGripAt, resolveTechnical } from '../data/teamProfiles';
 
 // [Q13] Modelo de reincorporación: réplica 1D de la física longitudinal del motor (misma velocidad objetivo por
 // tramo, frenada 180/120 km/h/s, aceleración por potencia, limitador de boxes, servicio y salida) para medir cuánto
 // tiempo cuesta parar frente a no parar, y el perfil de tiempos de vuelta para comparar huecos en segundos.
 // Validado contra el simulador en los 23 circuitos (tests/modules/rejoin-loss.mjs). Ignora tráfico, DRS y rebufo.
 
-type CarLike = Pick<CarState, 'team' | 'driver'>;
+type CarLike = Pick<CarState, 'team' | 'driver'> & { technical?: CarTechnical };
 
 const DT = 0.02;
 
+// [R17] Ritmo del piloto; el coche aporta su perfil técnico (curvas, drag y PU), igual que en RaceSimulation.
 const trackPace = (car: CarLike) => {
   const skill = 0.55 * car.driver.talentRating + 0.25 * car.driver.palmaresScore + 0.2 * car.driver.consistency;
-  return car.team.carPerformance * (0.92 + 0.08 * skill);
+  return 0.92 + 0.08 * skill;
+};
+const technicalOf = (car: CarLike) => car.technical ?? resolveTechnical(car.team.id, 'barcelona');
+
+// [R05] Mismo modelo longitudinal que RaceSimulation: masa con combustible medio de carrera, ERS en modo estándar
+// (la mitad del MGU-K), sin DRS ni rebufo.
+const REJOIN_FUEL_KG = 50;
+type Aero = Omit<LongitudinalInput, 'speedKmh'> & { topKmh: number; fastGrip: number; slowGrip: number };
+const aeroOf = (car: CarLike, pace: number): Aero => {
+  const tech = technicalOf(car);
+  const input = { massKg: CAR_DRY_MASS_KG + REJOIN_FUEL_KG, powerKw: tech.iceKw * pace ** 3 + 120 * 0.5, drsOpen: false, slipstream: 0, dragFactor: tech.dragFactor };
+  return { ...input, topKmh: topSpeedKmh(input), fastGrip: tech.fastCornerGrip, slowGrip: tech.slowCornerGrip };
 };
 
 // Misma tabla de velocidades objetivo que RaceSimulation (tramo recto / curva rápida / media / lenta).
-const targetKmh = (speedLimitFactor: number, car: CarLike, pace: number): number => {
+const targetKmh = (speedLimitFactor: number, aero: Aero, pace: number): number => {
   const f = speedLimitFactor;
-  const base = f >= 0.9 ? 338 + (car.team.carPerformance - 0.88) * 120
-    : f >= 0.65 ? 190 + (f - 0.65) * 450
+  if (f >= 0.9) return aero.topKmh;
+  const base = f >= 0.65 ? 190 + (f - 0.65) * 450
     : f >= 0.4 ? 120 + (f - 0.4) * 280
     : 68 + (f - 0.2) * 240;
-  return base * pace;
+  return base * pace * chassisGripAt({ fastCornerGrip: aero.fastGrip, slowCornerGrip: aero.slowGrip }, f);
 };
 
 interface LapProfile {
   // Tiempo acumulado (s) al llegar a cada punto de la pista desde el punto 0, en régimen estable.
   times: Float64Array;
   lapTime: number;
+  /** [R14] Segundos equivalentes a fondo en la vuelta (acelerar + mantener contra el drag). */
+  throttleSec: number;
 }
 
 const profileCache = new WeakMap<TrackDefinition, Map<string, LapProfile>>();
@@ -41,7 +58,10 @@ const cacheFor = <T>(cache: WeakMap<TrackDefinition, Map<string, T>>, track: Tra
   return map;
 };
 
-const carKey = (car: CarLike, capKmh: number | null) => `${car.team.id}|${car.driver.id}|${capKmh ?? '-'}`;
+const carKey = (car: CarLike, capKmh: number | null) => {
+  const t = technicalOf(car);
+  return `${car.team.id}|${car.driver.id}|${capKmh ?? '-'}|${t.package}|${t.fastCornerGrip}|${t.slowCornerGrip}|${t.dragFactor}|${t.iceKw}`;
+};
 
 export class RejoinModel {
   /** Distancia de medida tras la salida de boxes (fracción de vuelta), igual que el test de validación. */
@@ -53,19 +73,24 @@ export class RejoinModel {
     return track.pitExitT > track.pitEntryT ? track.pitExitT - track.pitEntryT : 1 - track.pitEntryT + track.pitExitT;
   }
 
-  private static stepOnTrack(track: TrackDefinition, car: CarLike, pace: number, accel: number,
-    capKmh: number | null, state: { p: number; v: number }) {
+  private static stepOnTrack(track: TrackDefinition, aero: Aero, pace: number,
+    capKmh: number | null, state: { p: number; v: number }): number {
     const points = track.points, n = points.length;
     const point = points[Math.floor((((state.p % 1) + 1) % 1) * n) % n];
-    let target = targetKmh(point.speedLimitFactor, car, pace);
+    let target = targetKmh(point.speedLimitFactor, aero, pace);
     if (capKmh !== null) target = Math.min(target, capKmh);
+    // [R14] Devuelve la fracción de acelerador del paso (para estimar el consumo).
+    let throttle = 0;
     if (target < state.v) state.v -= Math.min(state.v - target, (point.isBrakingZone ? 180 : 120) * DT);
-    else state.v += Math.min(target - state.v, accel * DT);
+    else {
+      const full = Math.max(0, longitudinalAccel({ ...aero, speedKmh: state.v })) * 3.6 * DT;
+      const gain = Math.min(target - state.v, full);
+      const hold = holdThrottle({ ...aero, speedKmh: state.v });
+      throttle = full > 0 ? hold + (1 - hold) * gain / full : hold;
+      state.v += gain;
+    }
     state.p += DT * state.v / 3.6 / track.lapLengthMeters;
-  }
-
-  private static accelOf(car: CarLike, pace: number) {
-    return (50 + (car.team.horsepower - 1000) * 0.4) * pace;
+    return throttle;
   }
 
   /** Perfil de tiempos de una vuelta estable (segunda vuelta de una simulación 1D). */
@@ -73,21 +98,28 @@ export class RejoinModel {
     const cache = cacheFor(profileCache, track), key = carKey(car, capKmh);
     const cached = cache.get(key);
     if (cached) return cached;
-    const n = track.points.length, pace = trackPace(car), accel = this.accelOf(car, pace);
+    const n = track.points.length, pace = trackPace(car), aero = aeroOf(car, pace);
     const state = { p: 0, v: 150 };
     let t = 0;
-    while (state.p < 1) { this.stepOnTrack(track, car, pace, accel, capKmh, state); t += DT; }
+    while (state.p < 1) { this.stepOnTrack(track, aero, pace, capKmh, state); t += DT; }
     const times = new Float64Array(n + 1);
     const t0 = t;
-    let next = 1;
+    let next = 1, throttleSec = 0;
     while (next <= n) {
-      this.stepOnTrack(track, car, pace, accel, capKmh, state);
+      throttleSec += this.stepOnTrack(track, aero, pace, capKmh, state) * DT;
       t += DT;
       while (next <= n && state.p - 1 >= next / n) { times[next] = t - t0; next++; }
     }
-    const profile = { times, lapTime: times[n] };
+    const profile = { times, lapTime: times[n], throttleSec };
     cache.set(key, profile);
     return profile;
+  }
+
+  /** [R14] Consumo estimado por vuelta (kg) en modo estándar: ralentí toda la vuelta + caudal por acelerador. */
+  static lapFuelKg(track: TrackDefinition, car: CarLike): number {
+    const profile = this.lapProfile(track, car, null);
+    const idle = FuelModel.flowKgPerSec(0, 'standard');
+    return idle * profile.lapTime + (FuelModel.flowKgPerSec(1, 'standard') - idle) * profile.throttleSec;
   }
 
   /** Tiempo (s) en régimen estable para ir de `fromProgress` a `toProgress` (puede abarcar varias vueltas). */
@@ -100,6 +132,17 @@ export class RejoinModel {
     const lap = Math.floor(progress), x = (progress - lap) * n, i = Math.min(n - 1, Math.floor(x));
     const within = profile.times[i] + (profile.times[i + 1] - profile.times[i]) * (x - i);
     return lap * profile.lapTime + within;
+  }
+
+  /** [R11] Progreso que se alcanza `seconds` después de `progress` siguiendo el perfil. */
+  static progressAfter(profile: LapProfile, progress: number, seconds: number): number {
+    const target = this.timeAt(profile, progress) + seconds;
+    let lo = progress, hi = progress + Math.ceil(seconds / profile.lapTime + 1);
+    for (let i = 0; i < 50; i++) {
+      const mid = (lo + hi) / 2;
+      if (this.timeAt(profile, mid) < target) lo = mid; else hi = mid;
+    }
+    return (lo + hi) / 2;
   }
 
   /** Progreso que está `seconds` por detrás de `progress` según el perfil (inversa de timeAt). */
@@ -121,30 +164,48 @@ export class RejoinModel {
     const cache = cacheFor(lossCache, track), key = `${carKey(car, capKmh)}|${serviceSec.toFixed(3)}`;
     const cached = cache.get(key);
     if (cached !== undefined) return cached;
-    const pace = trackPace(car), accel = this.accelOf(car, pace);
+    const pace = trackPace(car), aero = aeroOf(car, pace);
+    // [R08] Ambos salen 600 m antes de la entrada: el que para frena a tiempo para cruzar la línea del limitador a la
+    // velocidad límite, frena hasta el límite y luego hasta el cajón, y acelera a fondo solo tras la línea final.
     const len = this.pitLaneLength(track), entry = track.pitEntryT, finish = entry + len + this.MEASURE_AFTER_EXIT;
+    const L = track.lapLengthMeters, laneMeters = len * L;
+    const { start: limitStart, end: limitEnd } = PitStopModel.limitFractions(laneMeters);
     const points = track.points, n = points.length;
-    let entrySpeed = targetKmh(points[Math.floor(entry * n) % n].speedLimitFactor, car, pace);
-    if (capKmh !== null) entrySpeed = Math.min(entrySpeed, capKmh);
-    const ghost = { p: entry, v: entrySpeed };
-    const pit = { p: entry, v: entrySpeed };
+    const from = entry - 600 / L;
+    let startSpeed = targetKmh(points[Math.floor((((from % 1) + 1) % 1) * n) % n].speedLimitFactor, aero, pace);
+    if (capKmh !== null) startSpeed = Math.min(startSpeed, capKmh);
+    const ghost = { p: from, v: startSpeed };
+    const pit = { p: from, v: startSpeed };
     const box = PitStopModel.getBoxProgress(car as CarState);
-    const limit = PitStopModel.PIT_SPEED_LIMIT_KMH;
-    let stopped = 0, served = false, inLane = true, t = 0, ghostAt: number | null = null, pitAt: number | null = null;
+    const limit = PitStopModel.PIT_SPEED_LIMIT_KMH, limitMs = limit / 3.6;
+    let stopped = 0, served = false, inLane = false, done = false, t = 0, ghostAt: number | null = null, pitAt: number | null = null;
     while ((ghostAt === null || pitAt === null) && t < 600) {
-      this.stepOnTrack(track, car, pace, accel, capKmh, ghost);
-      if (inLane) {
+      this.stepOnTrack(track, aero, pace, capKmh, ghost);
+      if (!inLane && !done) {
+        const toLimitM = (entry - pit.p) * L + limitStart * laneMeters;
+        const preCap = Math.sqrt(limitMs * limitMs + 2 * 45 * Math.max(0, toLimitM - 5)) * 3.6;
+        this.stepOnTrack(track, aero, pace, capKmh === null ? preCap : Math.min(capKmh, preCap), pit);
+        if (pit.p >= entry) inLane = true;
+      } else if (inLane) {
         const laneProgress = Math.min(1, (pit.p - entry) / len);
-        if (laneProgress >= 1) inLane = false;
-        else if (laneProgress < box) pit.v = laneProgress < 0.05 ? Math.max(limit, pit.v - DT * 280) : limit;
+        if (laneProgress >= 1) { inLane = false; done = true; }
+        else if (laneProgress < box) {
+          if (laneProgress < limitStart) pit.v = Math.max(limit, pit.v - DT * PitStopModel.MAX_BRAKE_KMH_S);
+          else pit.v = Math.max(Math.min(limit, pit.v), Math.min(limit, pit.v - DT * PitStopModel.MAX_BRAKE_KMH_S));
+          const toBox = Math.max(3, Math.sqrt(2 * PitStopModel.BOX_BRAKE_MS2 * Math.max(0, (box - laneProgress) * laneMeters)) * 3.6);
+          pit.v = Math.min(pit.v, Math.max(toBox, pit.v - DT * PitStopModel.MAX_BRAKE_KMH_S));
+        }
         else if (stopped < serviceSec) { stopped += DT; pit.v = 0; }
         else {
-          if (!served) { served = true; pit.v = 20; }
-          pit.v = laneProgress > 0.95 ? Math.min(260, pit.v + DT * 200) : Math.min(limit, pit.v + DT * 100);
+          if (!served) { served = true; pit.v = 0; }
+          else {
+            if (pit.v === 0) pit.v = 20;
+            pit.v = laneProgress >= limitEnd ? Math.min(260, pit.v + DT * 200) : Math.min(limit, pit.v + DT * 100);
+          }
         }
-        if (inLane) pit.p += DT * pit.v / 3.6 / track.lapLengthMeters;
+        if (inLane) pit.p += DT * pit.v / 3.6 / L;
       } else {
-        this.stepOnTrack(track, car, pace, accel, capKmh, pit);
+        this.stepOnTrack(track, aero, pace, capKmh, pit);
       }
       t += DT;
       if (ghostAt === null && ghost.p >= finish) ghostAt = t;

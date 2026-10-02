@@ -1,9 +1,10 @@
 // Q12 — Calibración de los modos de ritmo (tolerancias acordadas tras la auditoría del 30/09/2026):
 // media de cinco vueltas frente a Balanced, mismo piloto, pista libre y recursos iniciales iguales.
-// Push −0,3 ± 0,15 s/vuelta; Save +0,4 ± 0,2 s/vuelta.
+// Push −0,3 ± 0,2 s/vuelta (ampliada de ±0,15 con autorización del usuario el 01/10/2026 por R05: el ERS ya no
+// acelera en curva); Save +0,4 ± 0,2 s/vuelta.
 export default async function run({ server, assert, test }) {
   const { RaceSimulation } = await server.ssrLoadModule('/src/simulation/RaceSimulation.ts');
-  const TARGET = { push: { mean: -0.3, tol: 0.15 }, save: { mean: 0.4, tol: 0.2 } };
+  const TARGET = { push: { mean: -0.3, tol: 0.2 }, save: { mean: 0.4, tol: 0.2 } };
 
   const fiveLapMean = (circuit, mode) => {
     const sim = new RaceSimulation(circuit);

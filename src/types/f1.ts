@@ -34,7 +34,13 @@ export interface SafetyCarState {
   triggerReason: string;
   deployedAtRaceTime: number;
   isInPitLane?: boolean;       // Q14: circulando por el pit lane (salida o retirada)
+  /** [R10] Fase del procedimiento (S55), registro de fases y lista de doblados autorizados a desdoblarse. */
+  phase?: SafetyCarPhase;
+  phaseLog?: { phase: SafetyCarPhase; time: number; message: string }[];
+  unlapEligible?: number[] | null;
 }
+
+export type SafetyCarPhase = 'despliegue' | 'recogida' | 'fila' | 'desdoblamiento' | 'retirada' | 'relanzamiento' | 'verde';
 
 export interface TrackIncident {
   id: number;
@@ -46,6 +52,10 @@ export interface TrackIncident {
   isCleared: boolean;
   clearTimer: number;
   reason: string;
+  /** [R09] Sector de comisarios (independiente de los sectores cronometrados), causa y responsabilidad. */
+  marshalSector?: number;
+  cause?: 'mecanica' | 'accidente' | 'trompo';
+  responsibility?: 'ninguna' | 'propio' | 'sin-determinar';
 }
 
 export interface DnfNotification {
@@ -111,6 +121,11 @@ export interface TireState {
   healthFR?: number;
   healthRL?: number;
   healthRR?: number;
+  /** [R06] Temperatura de cada rueda (°C). */
+  tempFL?: number;
+  tempFR?: number;
+  tempRL?: number;
+  tempRR?: number;
 }
 
 export interface TelemetryData {
@@ -187,6 +202,26 @@ export interface PitStopState {
   targetCompound: TireCompound;
   stints: StintLog[];
   activeBoxOrder: BoxOrder | null;   // Q9: Binding compound order
+  /** [R07] Motivo del último rechazo de una orden de boxes (p. ej. sin juegos del compuesto). */
+  lastOrderRejection?: string;
+  /** [R13] Paso por boxes en curso: servicio, drive-through o stop-and-go; espera de sanción antes del servicio. */
+  passMode?: 'service' | 'drive-through' | 'stop-go';
+  penaltyHoldSec?: number;
+  penaltyPlannedSec?: number;
+  servingDecisionIds?: string[];
+  mustServePenalty?: boolean;
+  /** [R08] Infracciones registradas en boxes (las sanciones las aplica R13). */
+  infractions?: PitInfraction[];
+  /** [R08] Registro de cada parada con tiempos separados. */
+  stopLog?: PitStopLog[];
+  /** [R08] Paradas programadas pendientes (vuelta y compuesto). */
+  plannedStops?: { lap: number; compound: TireCompound }[];
+  /** [R08] Contadores de la parada en curso. */
+  laneTimer?: number;
+  releaseHoldSec?: number;
+  limitStartChecked?: boolean;
+  limitEndFlagged?: boolean;
+  pendingLog?: Omit<PitStopLog, 'totalSec' | 'transitSec' | 'queueSec' | 'releaseHoldSec'> | null;
   playerControlled?: boolean;
   entryProgress?: number;
   // Q11: Double stack — waiting state
@@ -194,6 +229,28 @@ export interface PitStopState {
   boxWaitTimer: number;              // accumulated wait time (sim seconds) behind teammate
   // Q17: beneficio D20 de servicio pendiente (se consume en la próxima parada real dentro de su validez)
   crewBenefit?: CrewServiceBenefit | null;
+}
+
+/** [R08] Infracción en el pit lane. */
+export interface PitInfraction {
+  type: 'exceso-velocidad';
+  line: 'inicio' | 'fin';
+  overKmh: number;
+  lap: number;
+}
+
+/** [R08] Parada registrada: la pérdida sale de tránsito, servicio, cola y retención, no de una cifra fija. */
+export interface PitStopLog {
+  lap: number;
+  /** [R13] Segundos de sanción cumplidos en el cajón antes del servicio. */
+  penaltySec?: number;
+  setId: string | null;
+  compound: TireCompound;
+  totalSec: number;
+  transitSec: number;
+  serviceSec: number;
+  queueSec: number;
+  releaseHoldSec: number;
 }
 
 // [Q17] Beneficio de preparación de boxes: solo acota la duración del servicio; no toca tránsito ni recursos.
@@ -207,14 +264,27 @@ export interface CrewServiceBenefit {
 }
 
 // [Q17] Catálogo de beneficios del D20 por tramo de tirada.
-export type D20BenefitKind = 'crew-ready' | 'crew-alert' | 'engineer-report' | 'none';
+export type D20BenefitKind = 'crew-ready' | 'crew-alert' | 'engineer-report' | 'restart-report' | 'none';
+/** [R37] Informe de relanzamiento bajo bandera roja (solo información). */
+export interface RestartReport {
+  queuePos: number;
+  own: { compound: TireCompound; health: number };
+  ahead: { code: string; compound: TireCompound; health: number } | null;
+  behind: { code: string; compound: TireCompound; health: number } | null;
+  changeAdvised: boolean;
+  recommended: TireCompound | null;
+}
+/** [R26] Qué clase de ayuda es: información, preparación del box, reducción acotada del riesgo en el servicio o ninguna. */
+export type D20BenefitCategory = 'informacion' | 'preparacion' | 'riesgo' | 'ninguna';
 export interface D20Benefit {
   kind: D20BenefitKind;
+  category?: D20BenefitCategory;
   label: string;
   serviceMinSec?: number;
   serviceMaxSec?: number;
   validLaps?: number;
   rejoin?: RejoinEstimate;
+  restart?: RestartReport;
 }
 
 export type StartLightState = 
@@ -311,6 +381,47 @@ export interface CarState {
   gapToLeaderSec: number;
   gapToCarAheadSec: number;
   carAheadId: number | null;
+  /** [R02] Vueltas completas por detrás del líder (el líder ya lo ha adelantado en pista). */
+  lapsBehindLeader?: number;
+  /** [R02] Coche inmediatamente delante en pista (sin pit lane), sea cual sea su vuelta. */
+  physicalAheadId?: number | null;
+  /** [R05] Rebufo 0..1 del coche físicamente delante (solo en recta). */
+  slipstreamLevel?: number;
+  /** [R05] Aire sucio 0..1 en curva. */
+  dirtyAirLevel?: number;
+  /** [R42] Ritmo propio del coche en su último paso (lo comparan los demás para decidir un adelantamiento). */
+  paceIndex?: number;
+  /** [R14] Masa actual (seca + combustible, kg), combustible quemado acumulado (kg) y tiempo en lift-and-coast (s). */
+  massKg?: number;
+  fuelBurnedKg?: number;
+  coastedSec?: number;
+  /** [R16] Potencia de fricción de los frenos en el último paso (MW): la frenada que no recupera el MGU-K. */
+  brakeFrictionMW?: number;
+  /** [R10] Doblado autorizado que está adelantando a la fila y al SC para recuperar su vuelta. */
+  scUnlapping?: boolean;
+  /** [R11] Referencia del VSC (progreso virtual) y delta en segundos (≥ 0 = detrás de la referencia). */
+  vscRef?: number;
+  vscDeltaSec?: number;
+  /** [R11] Acaba de salir de boxes bajo VSC: su referencia arranca con el margen de recuperación (delta continuo). */
+  vscPitExit?: boolean;
+  /** [R12] Bandera roja: el coche va a la fila del carril rápido y espera (sin parada) / sale tras la reanudación. */
+  redFlagHold?: boolean;
+  /** [R13] Hora a la que cruzó la meta al terminar la carrera. */
+  finishTimeSec?: number;
+  /** [R21] Hora de paso por meta al empezar cada vuelta (índice: `currentLap` tras el paso). */
+  lapCrossTimes?: Record<number, number>;
+  /** [R25] Estado y registro del estratega de la IA; el ritmo lo fijó el jugador. */
+  strategy?: import('../simulation/Strategist').StrategyState;
+  paceByPlayer?: boolean;
+  redFlagRelease?: boolean;
+  /** [R11] Infracciones de pista registradas (las sanciones las aplica R13). */
+  infractions?: { type: 'delta-vsc'; value: number; lap: number; time: number }[];
+  /** [R17] Perfil técnico resuelto para este evento (chasis, PU y paquete aerodinámico). */
+  technical?: import('../data/teamProfiles').CarTechnical;
+  /** [R07] Juegos de neumáticos del coche y clasificación reglamentaria (DSQ por incumplir S30.5m). */
+  tireInventory?: import('../simulation/TireInventory').TireInventory;
+  classification?: 'DSQ';
+  classificationReason?: string;
 
   aheadInfo: RelativeCarInfo | null;
   behindInfo: RelativeCarInfo | null;
@@ -376,6 +487,10 @@ export interface D20LuckEvent {
   rewardDescription: string;
   optimalCompound: TireCompound;
   benefit: D20Benefit;
+  /** [R26] Identificación de la variante, causa de la tirada y alcance exacto del beneficio. */
+  variant?: string;
+  cause?: string;
+  scope?: string;
   applied: boolean;
   timestamp: number;
 }

@@ -135,7 +135,8 @@ export default async function run({assert, server}) {
       sim.lightState = 'racing';
       sim.raceFlagState = 'red';
       sim.update(0.016);
-      assert(sim.lightState === 'grid-ready' && positionsAreCurrent(), 'Q4: Recolocación tras roja actualiza posición en el mismo frame');
+      // R12: la roja ya no recoloca en parrilla; inicia la suspensión (ajuste autorizado por el usuario el 01/10/2026).
+      assert(sim.redFlag.phase === 'suspension' && positionsAreCurrent(), 'Q4: Recolocación tras roja actualiza posición en el mismo frame');
       sim.setCircuit('monaco');
       assert(positionsAreCurrent(), 'Q4: Cambiar circuito reinicializa posiciones con su capacidad');
       sim.initRace();

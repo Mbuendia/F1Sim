@@ -8,6 +8,9 @@ interface RaceMenuProps {
   onRedFlagTest: () => void;
   /** Solo para pruebas y maquetas: abrir el menú de inicio. */
   defaultOpen?: boolean;
+  /** [R26] Variante D20: activada o no, y su interruptor. */
+  luckVariantEnabled?: boolean;
+  onToggleLuckVariant?: () => void;
 }
 
 // R32: menú secundario de carrera. Las herramientas de prueba (Safety Car y bandera roja) viven aquí, cerradas por
@@ -17,6 +20,8 @@ export const RaceMenu: React.FC<RaceMenuProps> = ({
   onToggleSafetyCarTest,
   onRedFlagTest,
   defaultOpen = false,
+  luckVariantEnabled = true,
+  onToggleLuckVariant,
 }) => {
   const [open, setOpen] = useState(defaultOpen);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -57,6 +62,14 @@ export const RaceMenu: React.FC<RaceMenuProps> = ({
       </button>
       {open && (
         <div className={styles.menu} role="menu" aria-label="Menú de carrera">
+          {onToggleLuckVariant && (
+            <>
+              <div className={styles.section}>Variantes del juego</div>
+              <button type="button" role="menuitemcheckbox" aria-checked={luckVariantEnabled} className={styles.item} onClick={run(onToggleLuckVariant)}>
+                {luckVariantEnabled ? 'D20 de suerte: activado' : 'D20 de suerte: desactivado'}
+              </button>
+            </>
+          )}
           <div className={styles.section}>Herramientas de desarrollo</div>
           <button type="button" role="menuitem" className={`${styles.item} ${styles.itemSc}`} onClick={run(onToggleSafetyCarTest)}>
             {safetyCarDeployed ? 'Prueba: retirar Safety Car' : 'Prueba: desplegar Safety Car'}
