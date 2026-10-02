@@ -47,6 +47,7 @@ export async function createBench(server) {
     const invariants = {
       'DRS sin permiso': 0, 'combustible que sube': 0, 'neumático que mejora sin parar': 0, 'energía fuera de límites': 0,
       'retroceso': 0, 'salto incoherente con la velocidad': 0, 'NaN o Infinity': 0, 'adelantamiento bajo neutralización': 0,
+      'deceleración bajo neutralización > 55 m/s²': 0,
     };
     const onTrack = c => c.status === 'running' && !c.isInPitLane && !c.pitStop.isPitting;
     const snap = () => new Map(sim.cars.map(c => [c.id, {
@@ -79,6 +80,10 @@ export async function createBench(server) {
         // Salto = desplazamiento mayor que el que permite la velocidad del propio coche en el paso (teletransporte).
         const allowedMeters = Math.max(before.speedKmh, c.currentSpeedKmh) / 3.6 * 0.02 * 1.01 + 0.01;
         if ((c.progress - before.progress) * L > allowedMeters) invariants['salto incoherente con la velocidad']++;
+        // [R41] Frenada físicamente posible también bajo SC, VSC o amarilla global.
+        if (neutralized && before.onTrack && onTrack(c) && (before.speedKmh - c.currentSpeedKmh) / 3.6 / 0.02 > 55 + 1e-6) {
+          invariants['deceleración bajo neutralización > 55 m/s²']++;
+        }
         topSpeedKmh = Math.max(topSpeedKmh, c.currentSpeedKmh);
         if (![c.progress, c.gapToLeaderSec, c.gapToCarAheadSec, c.fuelKg, sim.raceTimeSec].every(Number.isFinite)) invariants['NaN o Infinity']++;
         if (c.isInPitLane && !pitEnteredAt.has(c.id)) pitEnteredAt.set(c.id, sim.raceTimeSec);
