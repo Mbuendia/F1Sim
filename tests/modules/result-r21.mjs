@@ -10,6 +10,12 @@ export default async function run({ server, assert, test }) {
   const make = await raceFactory(server);
   const { classify, pointsTable, constructorStandings, POINTS_2025 } = await server.ssrLoadModule('/src/simulation/RaceResult.ts');
   const { ResultsTable } = await server.ssrLoadModule('/src/components/ResultsTable.tsx');
+  // Segunda entrega (contrato aprobado por el usuario el 02/10/2026): sprint, campeonato, snapshot, clasificación única e interfaz.
+  const { SPRINT_POINTS } = await server.ssrLoadModule('/src/simulation/RaceResult.ts');
+  const champ = await server.ssrLoadModule('/src/simulation/Championship.ts');
+  const { createSnapshot, validateSnapshot } = await server.ssrLoadModule('/src/simulation/Snapshot.ts');
+  const { ChampionshipTable } = await server.ssrLoadModule('/src/components/ChampionshipTable.tsx');
+  const { default: RaceFlagsHUD } = await server.ssrLoadModule('/src/components/RaceFlagsHUD.tsx');
 
   const entry = (code, laps, timeSec, extra = {}) => ({
     carId: code.charCodeAt(0), driverCode: code, driverName: code, teamId: extra.teamId ?? `t${code}`, teamName: extra.teamId ?? `T${code}`,
@@ -150,5 +156,70 @@ export default async function run({ server, assert, test }) {
     }));
     assert(['AAA', 'BBB', 'CCC', 'DDD'].every(code => html.includes(code)), 'R21 UI: lista a todos los pilotos');
     assert(html.includes('NC') && html.includes('DSQ') && html.includes('+5 s') && html.includes('Provisional'), 'R21 UI: estado, sanciones y carácter provisional');
+  });
+
+  await test('R21: sprint', () => {
+    const sprint = (leaderLaps, suspended) => pointsTable({ totalLaps: 22, leaderLaps, greenLaps: 10, suspended, format: 'sprint' }).join();
+    assert(SPRINT_POINTS.join() === '8,7,6,5,4,3,2,1' && sprint(22, false) === SPRINT_POINTS.join(), 'R21: puntos de sprint 8-7-6-5-4-3-2-1');
+    assert(sprint(10, true) === '' && sprint(11, true) === SPRINT_POINTS.join(), 'R21: sprint suspendido con < 50 % no puntúa');
+    const rows = classify(Array.from({ length: 10 }, (_, i) => entry(String.fromCharCode(65 + i), 22, 2000 + i)), { totalLaps: 22, suspended: false, greenLaps: 20, format: 'sprint' });
+    assert(rows[0].points === 8 && rows[7].points === 1 && rows[8].points === 0, 'R21: en sprint puntúan ocho');
+    const { sim } = race();
+    sim.raceFormat = 'sprint';
+    until(sim, () => sim.isFinished);
+    assert(sim.getRaceResult().rows.map(r => r.points).join() === '8,7,6', 'R21: el motor aplica la tabla de sprint', sim.getRaceResult().rows.map(r => r.points).join());
+  });
+
+  await test('R21: campeonato de pilotos y constructores', () => {
+    const result = (order, status = 'final') => {
+      const rows = classify([...order].map((code, i) => entry(code, 66, 6000 + i)), full);
+      return { status, endReason: 'distancia', rows, pointsTable: POINTS_2025, fastestLap: null, constructors: constructorStandings(rows), differences: [] };
+    };
+    let state = champ.emptyChampionship();
+    state = champ.addRace(state, 'gp1', 'barcelona', result('ABCDEFGHIJ'));
+    state = champ.addRace(state, 'gp2', 'monaco', result('CDEFGBHIJA'));
+    const drivers = champ.driverStandings(state);
+    const a = drivers.findIndex(d => d.driverCode === 'A'), b = drivers.findIndex(d => d.driverCode === 'B');
+    assert(drivers[0].driverCode === 'C' && drivers[0].points === 40, 'R21: suma de puntos de las carreras', `${drivers[0].driverCode} ${drivers[0].points}`);
+    assert(drivers[a].points === 26 && drivers[b].points === 26 && a < b, 'R21: empate resuelto por mejores resultados (una victoria)', `A ${a} · B ${b}`);
+    assert(champ.constructorsChampionship(state).find(t => t.teamId === 'tC').points === 40, 'R21: campeonato de constructores');
+    assert(champ.addRace(state, 'gp2', 'monaco', result('ABCDEFGHIJ')).races.length === 2, 'R21: una carrera no se suma dos veces');
+    assert(champ.addRace(state, 'gp3', 'monza', result('ABCDEFGHIJ', 'provisional')).races.length === 2, 'R21: solo cuentan resultados finales');
+    const restored = JSON.parse(JSON.stringify(state));
+    assert(JSON.stringify(champ.driverStandings(restored)) === JSON.stringify(drivers), 'R21: se guarda y se recupera como JSON');
+    assert(champ.driverStandings(champ.emptyChampionship()).length === 0, 'R21: se puede reiniciar');
+  });
+
+  await test('R21: el snapshot guarda el resultado', () => {
+    const { sim } = race();
+    until(sim, () => sim.isFinished);
+    const snapshot = createSnapshot(sim);
+    const saved = snapshot.state.result;
+    assert(validateSnapshot(snapshot).length === 0, 'R21: snapshot válido con resultado', validateSnapshot(snapshot).join('; '));
+    assert(saved && saved.endReason === 'distancia' && saved.provisional.rows.length === 3 && saved.final === null && Number.isInteger(saved.greenLapsLed),
+      'R21: provisional, motivo del final y vueltas en verde');
+    assert(snapshot.state.cars.every(c => c.lapCrossTimes && Object.keys(c.lapCrossTimes).length > 0), 'R21: horas de paso por vuelta');
+    const broken = structuredClone(snapshot);
+    broken.state.result.endReason = 'otra cosa';
+    assert(validateSnapshot(broken).some(e => /resultado/i.test(e)), 'R21: un resultado inválido se rechaza con diagnóstico');
+  });
+
+  await test('R21: una sola clasificación', () => {
+    const { sim, L } = race();
+    sim.cars[2].progress -= 800 / L; sim.cars[2].trackT = sim.cars[2].progress % 1;
+    until(sim, () => sim.isFinished);
+    sim.imposePenalty(sim.getRaceResult().rows[0].carId, 'time-5', 'S54.3', 'Investigación posterior');
+    const old = sim.getClassification().map(r => r.carId).join();
+    assert(old === sim.confirmResult().rows.map(r => r.carId).join(), 'R21: la clasificación de R13 coincide con el resultado', old);
+  });
+
+  await test('R21: campeonato en el inicio y fin de carrera bajo roja', () => {
+    const rows = classify([entry('AAA', 66, 6000), entry('BBB', 66, 6004)], full);
+    const state = champ.addRace(champ.emptyChampionship(), 'gp1', 'barcelona',
+      { status: 'final', endReason: 'distancia', rows, pointsTable: POINTS_2025, fastestLap: null, constructors: constructorStandings(rows), differences: [] });
+    const html = renderToStaticMarkup(createElement(ChampionshipTable, { championship: state, onReset: () => {} }));
+    assert(html.includes('AAA') && html.includes('25') && html.includes('Constructores') && html.includes('Reiniciar'), 'R21 UI: tabla de campeonato con pilotos, puntos y constructores');
+    const hud = flag => renderToStaticMarkup(createElement(RaceFlagsHUD, { raceFlagState: flag, sectorFlags: ['green', 'green', 'green'], safetyCar: null, onEndRace: () => {} }));
+    assert(hud('red').includes('Dar por terminada la carrera') && !hud('sc').includes('Dar por terminada la carrera'), 'R21 UI: el fin de carrera solo se ofrece con bandera roja');
   });
 }
