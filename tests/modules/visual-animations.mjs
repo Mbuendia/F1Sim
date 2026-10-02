@@ -135,5 +135,25 @@ export default async function run({ server, assert, test }) {
 
     assert(error === null, 'TelemetryPanel renderiza sin error en SSR');
   });
-}
 
+  // R38 (contrato aprobado por el usuario el 02/10/2026): la flecha de cambio de posición se anima cuando ya está en
+  // pantalla, una vez por cambio y sin avisos «No target found».
+  await test('R38: detección de cambios de posición', async () => {
+    const { detectPositionChanges } = await server.ssrLoadModule('/src/components/positionChanges.ts');
+    const cars = [{ id: 1, currentPosition: 1, status: 'running' }, { id: 2, currentPosition: 2, status: 'running' }, { id: 3, currentPosition: 3, status: 'out' }];
+    const last = new Map();
+    assert(detectPositionChanges(last, cars).length === 0, 'R38: el primer render no anima nada');
+    cars[0].currentPosition = 2; cars[1].currentPosition = 1; cars[2].currentPosition = 4;
+    const changes = detectPositionChanges(last, cars);
+    assert(JSON.stringify(changes) === JSON.stringify([{ carId: 1, delta: -1 }, { carId: 2, delta: 1 }]), 'R38: un cambio por coche con su signo; los retirados no cuentan', JSON.stringify(changes));
+    assert(detectPositionChanges(last, cars).length === 0, 'R38: cada cambio se detecta una sola vez');
+  });
+
+  await test('R38: la torre solo anima flechas que ya están en pantalla', async () => {
+    const { readFileSync } = await import('node:fs');
+    const source = readFileSync(new URL('../../src/components/Leaderboard.tsx', import.meta.url), 'utf8');
+    assert(!source.includes('animate(`[data-pos-car'), 'R38: no se anima por selector de texto (origen de «No target found»)');
+    assert(source.includes('querySelector(`[data-pos-car=') && source.includes('if (arrow) animate(arrow,'), 'R38: se anima el elemento solo si existe');
+    assert(source.includes('detectPositionChanges('), 'R38: los cambios se detectan antes de pintar la fila');
+  });
+}
