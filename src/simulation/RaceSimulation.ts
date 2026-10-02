@@ -603,6 +603,9 @@ export class RaceSimulation {
     ALONGSIDE_M: 6, YIELD_FACTOR: 0.95,
   };
 
+  /** [R41] Distancia mínima en fila bajo neutralización (fracción de vuelta). */
+  static readonly QUEUE_GAP_LAPS = 0.0025;
+
   isOvertakingAllowedZone(t: number): boolean {
     if (t >= 0.92 || t <= 0.10) return true;
     if (t >= 0.40 && t <= 0.60) return true;
@@ -743,6 +746,7 @@ export class RaceSimulation {
     const field = this.cars.map(fieldCar);
     const localFlags = this.localFlags();
     const fieldById = new Map(field.map(c => [c.id, c]));
+    const startKmhById = new Map(field.map(c => [c.id, c.currentSpeedKmh]));
     const rubber: [number, number][] = [];
     const timingLines: TimingLine[] = [
       { id: 's1', t: this.activeTrack.sector1EndT }, { id: 's2', t: this.activeTrack.sector2EndT }, { id: 'meta', t: 0 },
@@ -960,11 +964,11 @@ export class RaceSimulation {
       const consistencyNoise = (1.0 - car.driver.consistency) * (Math.sin(car.currentLap * 1.7 + car.id) * 0.003);
       const raceDayVariance = 1.0 + car.raceDayLuckFactor + ((car.driver.luckRating - 0.75) * 0.002) + consistencyNoise;
       // [R05] Coche físicamente delante (vecino en pista, sea cual sea su vuelta) para rebufo y aire sucio.
-      let wakeGapSec = Infinity, wakeLateral = 0, wakeDistance = Infinity;
+      let wakeGapSec = Infinity, wakeLateral = 0, wakeDistance = Infinity, wakeSpeedKmh = 0;
       for (const other of field) {
         if (other.id === car.id || other.status !== 'running' || other.isInPitLane || other.isPitting) continue;
         const distance = (((other.progress - car.progress) % 1) + 1) % 1;
-        if (distance > 0 && distance < wakeDistance) { wakeDistance = distance; wakeLateral = other.lateralOffset - car.lateralOffset; }
+        if (distance > 0 && distance < wakeDistance) { wakeDistance = distance; wakeLateral = other.lateralOffset - car.lateralOffset; wakeSpeedKmh = other.currentSpeedKmh; }
       }
       if (Number.isFinite(wakeDistance)) wakeGapSec = wakeDistance * lapDistanceMeters / Math.max(10, car.currentSpeedKmh / 3.6);
       const onTrackRunning = !car.isInPitLane && !car.pitStop.isPitting;
@@ -1119,6 +1123,14 @@ export class RaceSimulation {
         }
       }
 
+      // [R41] En fila (neutralización o antes de la línea de relanzamiento), acercarse al coche de delante con curva de
+      // frenada (v² = v_delante² + 2·a·d, a = 12 m/s²) en vez de llegar lanzado al límite de distancia.
+      if ((perms.neutralized || this.scEndingLap !== null && car.currentLap <= this.scEndingLap) && !car.scUnlapping && Number.isFinite(wakeDistance)) {
+        const roomM = Math.max(0, wakeDistance * lapDistanceMeters - (RaceSimulation.QUEUE_GAP_LAPS * lapDistanceMeters + 1));
+        const vAhead = wakeSpeedKmh / 3.6;
+        targetKmh = Math.min(targetKmh, Math.sqrt(vAhead * vAhead + 2 * 12 * roomM) * 3.6);
+      }
+
       // [R09] Bandera amarilla local: velocidad reducida solo en el sector de comisarios afectado.
       targetKmh *= perms.speedFactor;
 
@@ -1266,14 +1278,22 @@ export class RaceSimulation {
           car.speed = Math.min(car.speed, Math.max(0, gap - 0.005) / Math.max(dt, 1e-9));
         }
       }
+      // [R41] Límite de distancia en fila sin frenazos imposibles: se respeta la frenada máxima del paso y, como muro
+      // absoluto, no se alcanza al coche de delante.
+      const queueCap = (distanceLaps: number) => {
+        const brakeFloor = Math.max(0, stepStartKmh - 180 * dt) / 3.6 / lapDistanceMeters;
+        const wanted = Math.max(0, distanceLaps - RaceSimulation.QUEUE_GAP_LAPS) / Math.max(dt, 1e-9);
+        const wall = Math.max(0, distanceLaps - 1 / lapDistanceMeters) / Math.max(dt, 1e-9);
+        return Math.min(Math.max(Math.min(car.speed, wanted), Math.min(car.speed, brakeFloor)), wall);
+      };
       if ((!perms.overtake || isWaitingForScRestartLine) && carAhead && !car.scUnlapping &&
           !carAhead.isInPitLane && carAhead.progress > car.progress) {
-        car.speed = Math.min(car.speed, Math.max(0, carAhead.progress - car.progress - 0.0025) / Math.max(dt, 1e-9));
+        car.speed = queueCap(carAhead.progress - car.progress);
       }
       // [R10] En neutralización o antes de la línea de relanzamiento, nadie atraviesa al coche que tiene físicamente delante
       // (incluye doblados dentro de la fila), salvo el doblado autorizado a desdoblarse.
       if ((perms.neutralized || isWaitingForScRestartLine) && !car.scUnlapping && Number.isFinite(wakeDistance)) {
-        car.speed = Math.min(car.speed, Math.max(0, wakeDistance - 0.0025) / Math.max(dt, 1e-9));
+        car.speed = queueCap(wakeDistance);
       }
       // [R11] Delta del VSC: el coche no puede ir por delante de su referencia ni recuperar tiempo perdido.
       let vscNextRef: number | undefined;
@@ -1454,7 +1474,7 @@ export class RaceSimulation {
       this.updateSafetyCarProcedure(scModeBefore);
       // Compactar el pelotón detrás del SC
       if (this.safetyCar.mode === 'leading') {
-        SafetyCarModel.compactField(this.cars, this.safetyCar.progress, dt);
+        SafetyCarModel.compactField(this.cars, this.safetyCar.progress, dt, startKmhById);
       }
       // [Q14] SC entrando al pit lane en su retirada (o ya en su garaje) → preparamos bandera verde una sola vez
       const scEnteredPits = this.safetyCar.mode === 'in' || (this.safetyCar.mode === 'returning' && this.safetyCar.isInPitLane);
