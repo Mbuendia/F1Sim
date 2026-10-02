@@ -117,4 +117,23 @@ export default async function run({ server, assert, test }) {
     assert(base === trace(true), 'R25: decisiones idénticas antes de un incidente futuro');
     assert(base === trace(false), 'R25: misma semilla, misma estrategia');
   });
+
+  // Corrección del 02/10/2026 (contrato aprobado por el usuario): el desgaste por vuelta se mide, no se deduce del
+  // contador de vueltas del juego (que vuelve a 0 al montar un juego usado).
+  await test('R25: un juego usado recién montado no provoca otra parada', () => {
+    const { sim } = setup(1, { health: 60, lapsOnTire: 0 });
+    const car = sim.cars[0];
+    until(sim, () => car.currentLap >= 22 || order(car) !== null || car.pitStop.totalPitStops > 0);
+    assert(car.currentLap >= 22 && order(car) === null && car.pitStop.totalPitStops === 0, 'R25: sin orden de parada en las dos vueltas siguientes',
+      `vuelta ${car.currentLap}, ${(car.strategy?.log ?? []).map(l => l.detail).join(' | ')}`);
+  });
+
+  await test('R25: con desgaste real alto sigue parando a tiempo', () => {
+    const { sim } = setup(1, { health: 32, lapsOnTire: 10 });
+    const car = sim.cars[0];
+    let healthAtOrder = null;
+    sim.onFixedStep = () => { if (healthAtOrder === null && order(car)) healthAtOrder = car.tires.health; };
+    until(sim, () => healthAtOrder !== null || car.pitStop.totalPitStops > 0 || car.currentLap >= 26);
+    assert(healthAtOrder !== null && healthAtOrder > 25, 'R25: pide la parada antes de bajar del 25 %', String(healthAtOrder));
+  });
 }
