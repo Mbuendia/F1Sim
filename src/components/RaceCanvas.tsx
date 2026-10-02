@@ -5,6 +5,7 @@ import { Camera } from '../renderer/Camera';
 import { TrackRenderer } from '../renderer/TrackRenderer';
 import { CarRenderer } from '../renderer/CarRenderer';
 import { renderLeftMinimap } from '../renderer/MinimapRenderer';
+import { RenderInterpolator } from '../renderer/RenderPose';
 import { OFFICIAL_CIRCUITS } from '../data/circuits';
 import { Compass, RotateCw } from 'lucide-react';
 
@@ -77,12 +78,15 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
     }
     window.addEventListener('resize', handleResize);
 
+    const interpolator = new RenderInterpolator();
     const loop = (currentTime: number) => {
       const dtRaw = Math.min((currentTime - lastTime) / 1000, 0.1);
       lastTime = currentTime;
 
       simulation.update(dtRaw);
-      camera.update(simulation.cars, dtRaw, simulation.activeTrack);
+      // [R43] Coches y Safety Car con la pose interpolada de este fotograma (pintado y cámara).
+      const frame = interpolator.frame(simulation, dtRaw);
+      camera.update(frame.cars, dtRaw, simulation.activeTrack);
 
       ctx.save();
       const dpr = window.devicePixelRatio || 1;
@@ -96,7 +100,7 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
 
       const circuitSpec = OFFICIAL_CIRCUITS[simulation.circuitId];
       const trackWidthCarsCapacity = circuitSpec?.trackWidthCars ?? 3;
-      CarRenderer.renderCars(ctx, simulation.cars, camera, selectedCarId, simulation.activeTrack, trackWidthCarsCapacity, simulation.safetyCar);
+      CarRenderer.renderCars(ctx, frame.cars, camera, selectedCarId, simulation.activeTrack, trackWidthCarsCapacity, frame.safetyCar);
 
       // ── MINIMAPA A LA IZQUIERDA DEL TODO (visible al seguir un coche) ──
       if (camera.followingCarId !== null) {

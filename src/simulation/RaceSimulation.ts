@@ -661,6 +661,8 @@ export class RaceSimulation {
       if (!this.isPaused && !this.isFinished) this.stepAccumulator += simDt;
       while (this.stepAccumulator >= fixed - 1e-9) {
         this.stepAccumulator -= fixed;
+        // [R43] Antes del último paso de este fotograma se guarda la pose, para pintar interpolando entre ambos.
+        if (this.stepAccumulator < fixed - 1e-9) this.capturePreviousPoses();
         this.step(fixed);
         this.fixedStepCount++;
         this.onFixedStep?.();
@@ -726,6 +728,34 @@ export class RaceSimulation {
     } finally {
       useRng(null);
     }
+  }
+
+  // [R43] Datos de pintado (no son estado de la carrera: no se guardan ni afectan a la física).
+  private previousPoses = new Map<number, { worldX: number; worldY: number; worldAngle: number }>();
+  private previousSafetyCar: { progress: number; isInPitLane: boolean } | null = null;
+
+  private capturePreviousPoses() {
+    this.updateWorldPositions();
+    for (const car of this.cars) {
+      const pose = this.previousPoses.get(car.id);
+      if (pose) { pose.worldX = car.worldX; pose.worldY = car.worldY; pose.worldAngle = car.worldAngle; }
+      else this.previousPoses.set(car.id, { worldX: car.worldX, worldY: car.worldY, worldAngle: car.worldAngle });
+    }
+    this.previousSafetyCar = { progress: this.safetyCar.progress, isInPitLane: Boolean(this.safetyCar.isInPitLane) };
+  }
+
+  /** [R43] Fracción del paso en curso ya transcurrida (0..1): cuánto hay que avanzar al pintar desde la pose anterior. */
+  get renderAlpha(): number {
+    return this.fixedStepSec ? Math.min(1, Math.max(0, this.stepAccumulator / this.fixedStepSec)) : 1;
+  }
+
+  /** [R43] Pose del coche antes del último paso del motor. */
+  previousPose(carId: number) {
+    return this.previousPoses.get(carId);
+  }
+
+  previousSafetyCarRoute() {
+    return this.previousSafetyCar;
   }
 
   private updateWorldPositions() {
