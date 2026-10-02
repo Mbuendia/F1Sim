@@ -517,5 +517,6 @@ export const modules = [
   { "id": "weather-view-r44", "tasks": ["R44"], "sprint": "2.10", "kind": "contract" },
   { "id": "driver-dev-r45", "tasks": ["R45"], "sprint": "2.10", "kind": "contract" },
   { "id": "car-3d-r46", "tasks": ["R46"], "sprint": "2.10", "kind": "contract" },
-  { "id": "qualifying-r20", "tasks": ["R20"], "sprint": "2.10", "kind": "contract" }
+  { "id": "qualifying-r20", "tasks": ["R20"], "sprint": "2.10", "kind": "contract" },
+  { "id": "components-r19", "tasks": ["R19"], "sprint": "2.10", "kind": "contract" }
 ];
