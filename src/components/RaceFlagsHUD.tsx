@@ -6,6 +6,8 @@ interface RaceFlagsHUDProps {
   raceFlagState: RaceFlagState;
   sectorFlags: [RaceFlagState, RaceFlagState, RaceFlagState];
   safetyCar: SafetyCarState | null;
+  /** [R21] Suspensión definitiva: solo se ofrece con bandera roja. */
+  onEndRace?: () => void;
 }
 
 const FLAG_CONFIG: Record<RaceFlagState, { icon: string; label: string; className: string; subtextClass: string }> = {
@@ -25,7 +27,7 @@ function getSectorDotClass(flag: RaceFlagState): string {
   }
 }
 
-const RaceFlagsHUD: React.FC<RaceFlagsHUDProps> = ({ raceFlagState, sectorFlags, safetyCar }) => {
+const RaceFlagsHUD: React.FC<RaceFlagsHUDProps> = ({ raceFlagState, sectorFlags, safetyCar, onEndRace }) => {
   const config = FLAG_CONFIG[raceFlagState];
   
   // No mostrar banner verde a menos que haya sectores con bandera
@@ -69,6 +71,10 @@ const RaceFlagsHUD: React.FC<RaceFlagsHUDProps> = ({ raceFlagState, sectorFlags,
         <div className={`${styles.flagSubtext} ${config.subtextClass ? styles[config.subtextClass] : ''}`}>
           {subtext}
         </div>
+      )}
+
+      {raceFlagState === 'red' && onEndRace && (
+        <button type="button" className={styles.endRace} onClick={onEndRace}>Dar por terminada la carrera</button>
       )}
 
       {/* Barra de sectores */}

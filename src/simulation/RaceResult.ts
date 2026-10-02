@@ -6,6 +6,8 @@
 // 25 %, 50 % y 75 % de la distancia.
 
 export const POINTS_2025 = [25, 18, 15, 12, 10, 8, 6, 4, 2, 1];
+/** Sprint: puntúan ocho; suspendido sin reanudar con menos del 50 % no puntúa. */
+export const SPRINT_POINTS = [8, 7, 6, 5, 4, 3, 2, 1];
 export const REDUCED_POINTS = {
   under25: [6, 4, 3, 2, 1],
   under50: [13, 10, 8, 6, 5, 4, 3, 2, 1],
@@ -43,13 +45,16 @@ export interface PointsContext {
   suspended: boolean;
   /** Vueltas del líder completadas sin SC ni VSC. */
   greenLaps: number;
+  format?: 'gp' | 'sprint';
 }
 
 /** Tabla de puntos aplicable. Con bandera a cuadros siempre es la completa. */
 export function pointsTable(ctx: PointsContext & { leaderLaps: number }): number[] {
-  if (!ctx.suspended) return POINTS_2025;
+  const sprint = ctx.format === 'sprint';
+  if (!ctx.suspended) return sprint ? SPRINT_POINTS : POINTS_2025;
   if (ctx.greenLaps < 2) return [];
   const fraction = ctx.leaderLaps / Math.max(1, ctx.totalLaps);
+  if (sprint) return fraction < 0.5 ? [] : SPRINT_POINTS;
   if (fraction < 0.25) return REDUCED_POINTS.under25;
   if (fraction < 0.5) return REDUCED_POINTS.under50;
   if (fraction < 0.75) return REDUCED_POINTS.under75;
@@ -76,6 +81,16 @@ export function classify(entries: ResultEntry[], ctx: PointsContext): ResultRow[
   ];
 }
 
+/** Desempate por mejores resultados: más primeros puestos, luego segundos… (negativo si `a` va delante). */
+export function compareByResults(a: number[], b: number[]): number {
+  const last = Math.max(0, ...a, ...b);
+  for (let p = 1; p <= last; p++) {
+    const diff = b.filter(x => x === p).length - a.filter(x => x === p).length;
+    if (diff) return diff;
+  }
+  return 0;
+}
+
 export interface ConstructorRow { teamId: string; teamName: string; points: number; positions: number[] }
 
 /** Constructores: suma de puntos; el empate se resuelve por mejores resultados (más primeros, luego segundos…). */
@@ -87,16 +102,8 @@ export function constructorStandings(rows: ResultRow[]): ConstructorRow[] {
     if (r.position) team.positions.push(r.position);
     teams.set(r.teamId, team);
   }
-  const countback = (a: ConstructorRow, b: ConstructorRow) => {
-    const last = Math.max(0, ...a.positions, ...b.positions);
-    for (let p = 1; p <= last; p++) {
-      const diff = b.positions.filter(x => x === p).length - a.positions.filter(x => x === p).length;
-      if (diff) return diff;
-    }
-    return 0;
-  };
   return [...teams.values()].map(t => ({ ...t, positions: [...t.positions].sort((a, b) => a - b) }))
-    .sort((a, b) => b.points - a.points || countback(a, b));
+    .sort((a, b) => b.points - a.points || compareByResults(a.positions, b.positions));
 }
 
 export interface RaceResult {
@@ -114,7 +121,7 @@ export interface RaceResult {
 /** Explica qué cambia entre el resultado provisional y el final. */
 export function resultDifferences(provisional: ResultRow[], final: ResultRow[]): string[] {
   const label = (r: ResultRow) => r.position ? `P${r.position}` : r.status;
-  const out: string[] = [];
+  const own: string[] = [], dragged: string[] = [];
   for (const now of final) {
     const before = provisional.find(r => r.carId === now.carId);
     if (!before || (label(before) === label(now) && before.points === now.points && before.penaltySec === now.penaltySec)) continue;
@@ -122,7 +129,8 @@ export function resultDifferences(provisional: ResultRow[], final: ResultRow[]):
     const why = now.status === 'DSQ' && before.status !== 'DSQ' ? 'descalificado'
       : extra > 0 ? `sanción de ${extra} s`
       : 'por los cambios de otros pilotos';
-    out.push(`${now.driverCode}: ${label(before)} → ${label(now)} (${why}); puntos ${before.points} → ${now.points}`);
+    // Primero quien cambia por su propia sanción; después los arrastrados.
+    (why === 'por los cambios de otros pilotos' ? dragged : own).push(`${now.driverCode}: ${label(before)} → ${label(now)} (${why}); puntos ${before.points} → ${now.points}`);
   }
-  return out;
+  return [...own, ...dragged];
 }

@@ -167,3 +167,21 @@
     opacity: 0.75;
   }
 }
+
+/* [R21] Suspensión definitiva bajo bandera roja */
+.endRace {
+  pointer-events: auto;
+  margin-top: 4px;
+  padding: 5px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 6px;
+  background: rgba(127, 29, 29, 0.85);
+  color: #fff;
+  font: 600 12px 'Segoe UI', sans-serif;
+  cursor: pointer;
+}
+
+.endRace:hover,
+.endRace:focus-visible {
+  background: rgba(185, 28, 28, 0.95);
+}

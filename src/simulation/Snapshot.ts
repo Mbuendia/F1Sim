@@ -37,6 +37,8 @@ export interface RaceSnapshot {
     counters: { nextBoxOrderId: number; luckEventSeq: number; nextIncidentId: number };
     weather: unknown;
     records: Record<string, unknown>;
+    /** [R21] Resultado de la carrera: formato, motivo del final, vueltas en verde y resultado provisional/final. */
+    result: { format: string; endReason: string | null; greenLapsLed: number; provisional: unknown; final: unknown } & Record<string, unknown>;
     events: Record<string, unknown>;
   };
   /** Valores no representables en JSON (NaN, ±Infinity) que se guardaron como null. */
@@ -103,6 +105,7 @@ export function createSnapshot(sim: RaceSimulation): RaceSnapshot {
         fastestLap: sim.fastestLap, overallBestS1: sim.overallBestS1, overallBestS2: sim.overallBestS2,
         overallBestS3: sim.overallBestS3, podiumCarIds: sim.podiumCars.map(car => car.id),
       },
+      result: internal.result,
       events: { activeLuckEvent: sim.activeLuckEvent, latestDnf: sim.latestDnf },
     },
   };
@@ -148,6 +151,16 @@ export function validateSnapshot(snapshot: unknown): string[] {
     else if (new Set(cars.map(c => c?.id)).size !== cars.length) errors.push('Estado: ids de coche duplicados');
     for (const part of ['flags', 'safetyCar', 'incidents', 'drsPermissions', 'timing', 'counters', 'weather'] as const) {
       if (state[part] === undefined) errors.push(`Estado: falta «${part}»`);
+    }
+    // [R21] Resultado de la carrera.
+    const result = state.result;
+    if (!result || typeof result !== 'object') errors.push('Estado: falta el resultado de la carrera («result»)');
+    else {
+      if (!(result.endReason === null || ['distancia', 'tiempo', 'suspendida'].includes(result.endReason))) {
+        errors.push(`Resultado: motivo del final «${String(result.endReason)}» no reconocido`);
+      }
+      if (result.format !== 'gp' && result.format !== 'sprint') errors.push(`Resultado: formato «${String(result.format)}» no reconocido`);
+      if (!Number.isInteger(result.greenLapsLed) || result.greenLapsLed < 0) errors.push('Resultado: vueltas en verde inválidas');
     }
   }
   return errors;

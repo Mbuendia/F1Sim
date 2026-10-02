@@ -169,6 +169,8 @@ export class RaceSimulation {
   totalTimeLimitSec = 10800;
   /** [R21] Vueltas del líder completadas sin SC ni VSC, motivo del final y vuelta de referencia si se suspende sin reanudar. */
   greenLapsLed = 0;
+  /** [R21] Formato de la carrera: decide la tabla de puntos. */
+  raceFormat: 'gp' | 'sprint' = 'gp';
   endReason: EndReason | null = null;
   private lapNeutralized = false;
   private lastLeaderLap: number | null = null;
@@ -222,6 +224,12 @@ export class RaceSimulation {
       drsPermissions: this.drsPermissions.serialize(),
       timing: this.timing.serialize(),
       rawSectors: [...this.rawSectors.entries()].map(([carId, s]) => [carId, { ...s }] as const),
+      // [R21] Resultado y lo necesario para reconstruirlo.
+      result: {
+        format: this.raceFormat, endReason: this.endReason, greenLapsLed: this.greenLapsLed, lapNeutralized: this.lapNeutralized,
+        lastLeaderLap: this.lastLeaderLap, redFlagSignalLap: this.redFlagSignalLap, suspendedRefLap: this.suspendedRefLap,
+        provisional: this.provisionalResult, final: this.finalResult,
+      },
     };
   }
 
@@ -1905,7 +1913,7 @@ export class RaceSimulation {
   }
 
   private buildResult(status: RaceResult['status']): RaceResult {
-    const ctx = { totalLaps: this.totalLaps, suspended: this.endReason === 'suspendida', greenLaps: this.greenLapsLed };
+    const ctx = { totalLaps: this.totalLaps, suspended: this.endReason === 'suspendida', greenLaps: this.greenLapsLed, format: this.raceFormat };
     const rows = classify(this.resultEntries(this.suspendedRefLap), ctx);
     return {
       status, endReason: this.endReason, rows,
@@ -1961,15 +1969,11 @@ export class RaceSimulation {
 
   /** [R13] Clasificación: vueltas y tiempo de llegada más sanciones; retirados y DSQ aparte. La UI solo la lee. */
   getClassification(): { carId: number; position: number; laps: number; timeSec: number; penaltySec: number; status: 'clasificado' | 'DNF' | 'DSQ' }[] {
-    const rows = this.cars.map(car => {
-      const penaltySec = this.stewards.finalPenaltySec(car.id);
-      const status: 'clasificado' | 'DNF' | 'DSQ' = car.classification === 'DSQ' ? 'DSQ' : car.status === 'out' ? 'DNF' : 'clasificado';
-      const base = car.finishTimeSec ?? Infinity;
-      return { carId: car.id, position: 0, laps: car.currentLap, timeSec: base + penaltySec, penaltySec, status, progress: car.progress };
-    });
-    const rank = { clasificado: 0, DNF: 1, DSQ: 2 } as const;
-    rows.sort((a, b) => rank[a.status] - rank[b.status] || b.laps - a.laps || a.timeSec - b.timeSec || b.progress - a.progress);
-    return rows.map(({ progress, ...row }, i) => ({ ...row, position: i + 1 }));
+    // [R21] Sale del mismo resultado que la pantalla final; aquí los no clasificados conservan su número de orden.
+    return this.buildResult('en-curso').rows.map((r, i) => ({
+      carId: r.carId, position: i + 1, laps: r.laps, timeSec: r.timeSec, penaltySec: r.penaltySec,
+      status: r.status === 'DSQ' ? 'DSQ' as const : r.retired ? 'DNF' as const : 'clasificado' as const,
+    }));
   }
 
   /** [R08] Abre o cierra la entrada al pit lane (Dirección de Carrera). */

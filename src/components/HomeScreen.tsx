@@ -6,6 +6,8 @@ import { TEAMS, STARTING_GRID_ORDER } from '../data/teams';
 import { OFFICIAL_CIRCUITS, CircuitSpec } from '../data/circuits';
 import { buildTrackFromSvg } from '../utils/svgTrackParser';
 import { RaceResultHistory } from '../types/f1';
+import { ChampionshipTable } from './ChampionshipTable';
+import type { ChampionshipState } from '../simulation/Championship';
 import { FlagIcon } from './FlagIcon';
 import { F1WheelSvg } from './F1WheelSvg';
 import { 
@@ -42,6 +44,9 @@ interface HomeScreenProps {
   onSelectCircuit: (circuitId: string) => void;
   onStartRace: () => void;
   raceHistory: RaceResultHistory[];
+  /** [R21] Campeonato acumulado y su reinicio. */
+  championship?: ChampionshipState;
+  onResetChampionship?: () => void;
 }
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({
@@ -50,7 +55,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   onSelectDriver,
   onSelectCircuit,
   onStartRace,
-  raceHistory
+  raceHistory,
+  championship,
+  onResetChampionship
 }) => {
   const [activeTab, setActiveTab] = useState<'drivers' | 'circuits'>('drivers');
   const [driverSubTab, setDriverSubTab] = useState<'specs' | 'strategy' | 'records'>('specs');
@@ -199,6 +206,15 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               </div>
             ))}
           </div>
+        </details>
+      )}
+
+      {championship && championship.races.length > 0 && (
+        <details className={styles.historySection}>
+          <summary className={styles.historyTitle}>
+            <span>Campeonato ({championship.races.length})</span>
+          </summary>
+          <ChampionshipTable championship={championship} onReset={onResetChampionship} />
         </details>
       )}
 

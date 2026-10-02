@@ -1,0 +1,58 @@
+.championship {
+  padding: 10px 14px 14px;
+  color: #e2e8f0;
+  font-size: 13px;
+}
+
+.tables {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.table {
+  flex: 1 1 260px;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.table caption {
+  padding-bottom: 6px;
+  text-align: left;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.table th,
+.table td {
+  padding: 4px 10px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.table th {
+  color: #94a3b8;
+  font-weight: 600;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.table tbody tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.reset {
+  margin-top: 12px;
+  padding: 5px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  background: transparent;
+  color: #e2e8f0;
+  font: inherit;
+  cursor: pointer;
+}
+
+.reset:hover,
+.reset:focus-visible {
+  background: rgba(255, 255, 255, 0.1);
+}

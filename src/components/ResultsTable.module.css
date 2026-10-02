@@ -74,6 +74,8 @@
 }
 
 .differences {
+  max-height: 84px;
+  overflow-y: auto;
   margin: 8px 0 0;
   padding-left: 18px;
   color: #cbd5e1;
