@@ -86,8 +86,8 @@ const GAME_2025_VALUES: Record<GameKey, RuleValue> = {
     note: 'Parámetro del juego; no es un máximo acreditado por el reglamento.',
   },
   blueFlagGapSec: {
-    value: 1.2, unit: 's', origin: 'juego', source: 'Ajuste del simulador (Q15)',
-    note: 'Hueco con el que se avisa al doblado; ajuste de juego a validar.',
+    value: 3, unit: 's', origin: 'juego', source: 'Ajuste del simulador (Q15; R36: de 1,2 s a 3 s)',
+    note: 'Hueco con el que se avisa al doblado para que tenga tiempo de apartarse; ajuste de juego.',
   },
 };
 

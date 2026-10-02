@@ -476,6 +476,8 @@ export class RaceSimulation {
   static readonly BLUE_FLAG_LIFT = 0.15;
   static readonly BLUE_FLAG_OFFSET = 0.7;
   static readonly BLUE_FLAG_NARROW_LEVEL = 0.1;
+  /** [R36] Separación lateral a partir de la cual el doblado deja paso. */
+  static readonly BLUE_FLAG_CLEAR_OFFSET = 0.3;
 
   /** Coche con al menos media vuelta más de progreso que viene físicamente detrás a menos de BLUE_FLAG_GAP_SEC. */
   lappingCarBehind(car: CarState, lapDistanceMeters = this.activeTrack.lapLengthMeters, field: FieldCar[] = this.cars.map(fieldCar)): FieldCar | undefined {
@@ -988,11 +990,11 @@ export class RaceSimulation {
       const consistencyNoise = (1.0 - car.driver.consistency) * (Math.sin(car.currentLap * 1.7 + car.id) * 0.003);
       const raceDayVariance = 1.0 + car.raceDayLuckFactor + ((car.driver.luckRating - 0.75) * 0.002) + consistencyNoise;
       // [R05] Coche físicamente delante (vecino en pista, sea cual sea su vuelta) para rebufo y aire sucio.
-      let wakeGapSec = Infinity, wakeLateral = 0, wakeDistance = Infinity, wakeSpeedKmh = 0;
+      let wakeGapSec = Infinity, wakeLateral = 0, wakeDistance = Infinity, wakeSpeedKmh = 0, wakeIsLapped = false;
       for (const other of field) {
         if (other.id === car.id || other.status !== 'running' || other.isInPitLane || other.isPitting) continue;
         const distance = (((other.progress - car.progress) % 1) + 1) % 1;
-        if (distance > 0 && distance < wakeDistance) { wakeDistance = distance; wakeLateral = other.lateralOffset - car.lateralOffset; wakeSpeedKmh = other.currentSpeedKmh; }
+        if (distance > 0 && distance < wakeDistance) { wakeDistance = distance; wakeLateral = other.lateralOffset - car.lateralOffset; wakeSpeedKmh = other.currentSpeedKmh; wakeIsLapped = car.progress - other.progress > 0.5; }
       }
       if (Number.isFinite(wakeDistance)) wakeGapSec = wakeDistance * lapDistanceMeters / Math.max(10, car.currentSpeedKmh / 3.6);
       const onTrackRunning = !car.isInPitLane && !car.pitStop.isPitting;
@@ -1272,6 +1274,12 @@ export class RaceSimulation {
       } else if (!car.isBlueFlagged) {
         car.isOvertaking = false;
         car.targetLateralOffset = !perms.neutralized ? (trackPoint.idealLineOffset || 0) : 0;
+      }
+
+      // [R36] El coche que dobla no atraviesa al doblado: se queda detrás hasta que este se ha apartado lo suficiente.
+      if (perms.overtake && wakeIsLapped && wakeDistance < minSafeSpacing && Math.abs(wakeLateral) < RaceSimulation.BLUE_FLAG_CLEAR_OFFSET) {
+        car.currentSpeedKmh = Math.min(car.currentSpeedKmh, Math.max(wakeSpeedKmh * 0.99, stepStartKmh - 180 * dt));
+        car.speed = (car.currentSpeedKmh / 3.6) / lapDistanceMeters;
       }
 
       // [Q15] Apartarse hacia el lado contrario a la trazada en proporción a la cesión.
