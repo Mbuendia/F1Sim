@@ -540,6 +540,8 @@ export const App: React.FC = () => {
             {isFinished && podiumCars.length >= 3 && (
               <PodiumModal
                 podiumCars={podiumCars}
+                result={simulation.getRaceResult()}
+                onConfirmResult={() => { simulation.confirmResult(); setPodiumCars([...simulation.podiumCars]); }}
                 onRestart={handleResetRace}
                 onGoHome={handleGoHome}
               />

@@ -1,0 +1,80 @@
+.results {
+  width: 100%;
+  margin: 4px 0 18px;
+  text-align: left;
+  color: #e2e8f0;
+  font-size: 13px;
+}
+
+.heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 16px;
+  margin-bottom: 8px;
+  color: #94a3b8;
+}
+
+.heading strong {
+  color: #ffd700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.confirm {
+  margin-left: auto;
+  padding: 5px 12px;
+  border: 1px solid rgba(255, 215, 0, 0.6);
+  border-radius: 8px;
+  background: transparent;
+  color: #ffd700;
+  font: inherit;
+  cursor: pointer;
+}
+
+.confirm:hover,
+.confirm:focus-visible {
+  background: rgba(255, 215, 0, 0.12);
+}
+
+.scroll {
+  max-height: 190px;
+  overflow-y: auto;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.table th,
+.table td {
+  padding: 5px 10px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.table th {
+  position: sticky;
+  top: 0;
+  background: #131728;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.table tbody tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.unclassified td {
+  color: #94a3b8;
+}
+
+.differences {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  color: #cbd5e1;
+}

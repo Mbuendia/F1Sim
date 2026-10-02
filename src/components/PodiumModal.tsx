@@ -5,14 +5,19 @@ import { Trophy, RotateCcw, Home, Sparkles } from 'lucide-react';
 import { animate, stagger } from 'animejs';
 import { FlagIcon } from './FlagIcon';
 import { F1CarSilhouette } from './F1CarSilhouette';
+import { ResultsTable } from './ResultsTable';
+import type { RaceResult } from '../simulation/RaceResult';
 
 interface PodiumModalProps {
   podiumCars: CarState[];
+  /** [R21] Clasificación completa y confirmación del resultado. */
+  result?: RaceResult;
+  onConfirmResult?: () => void;
   onRestart: () => void;
   onGoHome: () => void;
 }
 
-export const PodiumModal: React.FC<PodiumModalProps> = ({ podiumCars, onRestart, onGoHome }) => {
+export const PodiumModal: React.FC<PodiumModalProps> = ({ podiumCars, result, onConfirmResult, onRestart, onGoHome }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const confettiCanvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -204,6 +209,8 @@ export const PodiumModal: React.FC<PodiumModalProps> = ({ podiumCars, onRestart,
             </div>
           </div>
         </div>
+
+        {result && <ResultsTable result={result} onConfirm={onConfirmResult} />}
 
         <div style={{ display: 'flex', gap: '14px' }}>
           <button className={styles.restartBtn} onClick={onRestart}>

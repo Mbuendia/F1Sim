@@ -39,6 +39,8 @@ import { chassisGripAt, resolveTechnical } from '../data/teamProfiles';
 import { availableSets, COMPOUND_LABEL, createInventory, mountSet, pickSet, TireCompliance, tireCompliance } from './TireInventory';
 import { localFlagsFrom, LocalFlag, marshalSectorOf, Permissions, permissionsFor } from './RaceControl';
 import { Decision, PenaltyType, Stewards } from './Stewards';
+import { classify, constructorStandings, pointsTable, resultDifferences } from './RaceResult';
+import type { EndReason, RaceResult, ResultEntry } from './RaceResult';
 import { tyreWaterGrip, WeatherModel, WeatherScenario } from './WeatherModel';
 import { chooseCompound, STRATEGY, StrategyState } from './Strategist';
 import { AERO, CAR_DRY_MASS_KG, cornerMassFactor, dirtyAirLevel, holdThrottle, longitudinalAccel, slipstreamLevel, topSpeedKmh } from './AeroModel';
@@ -162,6 +164,18 @@ export class RaceSimulation {
   private forecastCache: { key: string; value: { rain5: number; rain15: number; uncertainty: number } } | null = null;
   /** [R13] Comisarios: decisiones y cumplimiento de sanciones. */
   stewards = new Stewards();
+  /** [R21] Límites de tiempo (S5.4): 2 h de carrera y 3 h en total con suspensiones; la bandera cae en el siguiente paso del líder. */
+  raceTimeLimitSec = 7200;
+  totalTimeLimitSec = 10800;
+  /** [R21] Vueltas del líder completadas sin SC ni VSC, motivo del final y vuelta de referencia si se suspende sin reanudar. */
+  greenLapsLed = 0;
+  endReason: EndReason | null = null;
+  private lapNeutralized = false;
+  private lastLeaderLap: number | null = null;
+  private redFlagSignalLap: number | null = null;
+  private suspendedRefLap: number | null = null;
+  private provisionalResult: RaceResult | null = null;
+  private finalResult: RaceResult | null = null;
   /** [R08] Entrada al pit lane cerrada por Dirección de Carrera. */
   pitEntryClosed = false;
   private drsPermissions = new DrsPermissions();
@@ -257,6 +271,8 @@ export class RaceSimulation {
     this.overallBestS2 = null;
     this.overallBestS3 = null;
     this.podiumCars = [];
+    this.greenLapsLed = 0; this.endReason = null; this.lapNeutralized = false; this.lastLeaderLap = null;
+    this.redFlagSignalLap = null; this.suspendedRefLap = null; this.provisionalResult = null; this.finalResult = null;
 
     // Reset sistema de banderas y safety car
     this.raceFlagState = 'green';
@@ -883,7 +899,7 @@ export class RaceSimulation {
           car.currentSector = 1;
           this.rawSectors.delete(car.id);
           
-          if (car.currentLap >= this.totalLaps && !this.leaderFinished) {
+          if (!this.leaderFinished && this.takesChequeredFlag(car)) {
             this.leaderFinished = true;
             car.status = 'finished';
           this.applyTireRules(car);
@@ -1286,7 +1302,7 @@ export class RaceSimulation {
         const wall = Math.max(0, distanceLaps - 1 / lapDistanceMeters) / Math.max(dt, 1e-9);
         return Math.min(Math.max(Math.min(car.speed, wanted), Math.min(car.speed, brakeFloor)), wall);
       };
-      if ((!perms.overtake || isWaitingForScRestartLine) && carAhead && !car.scUnlapping &&
+      if ((!perms.overtake || isWaitingForScRestartLine) && carAhead && carAhead.status === 'running' && !car.scUnlapping &&
           !carAhead.isInPitLane && carAhead.progress > car.progress) {
         car.speed = queueCap(carAhead.progress - car.progress);
       }
@@ -1384,7 +1400,7 @@ export class RaceSimulation {
           this.drsDisabledLaps--;
         }
 
-        if (car.currentLap >= this.totalLaps && !this.leaderFinished) {
+        if (!this.leaderFinished && this.takesChequeredFlag(car)) {
           this.leaderFinished = true;
           car.status = 'finished';
           this.applyTireRules(car);
@@ -1540,10 +1556,28 @@ export class RaceSimulation {
 
     this.updateLeaderboardPositions();
 
+    // [R21] Hora de paso por meta de cada vuelta y vueltas del líder completadas sin SC/VSC.
+    let leadLap = 0;
+    for (const car of this.cars) {
+      if (car.status !== 'out' && car.currentLap > leadLap) leadLap = car.currentLap;
+      if (car.lapStartTime > 0) {
+        const times = (car.lapCrossTimes ??= {});
+        if (times[car.currentLap] === undefined) times[car.currentLap] = car.lapStartTime;
+      }
+    }
+    if (this.lastLeaderLap === null) this.lastLeaderLap = leadLap;
+    else if (leadLap > this.lastLeaderLap) {
+      if (!this.lapNeutralized) this.greenLapsLed += leadLap - this.lastLeaderLap;
+      this.lastLeaderLap = leadLap;
+      this.lapNeutralized = false;
+    }
+    if (this.isNeutralized()) this.lapNeutralized = true;
+
     const activeRunningOrPit = this.cars.filter(c => c.status === 'running' || c.status === 'pit');
-    if (activeRunningOrPit.length === 0 && this.cars.length > 0) {
+    if (activeRunningOrPit.length === 0 && this.cars.length > 0 && !this.isFinished) {
       this.isFinished = true;
-      this.podiumCars = this.getSortedCars().slice(0, 3);
+      this.endReason ??= 'distancia';
+      this.publishProvisional();
     }
   }
 
@@ -1684,7 +1718,11 @@ export class RaceSimulation {
 
   updateLeaderboardPositions() {
     const runningCars = this.cars.filter(c => c.status !== 'out');
-    const sortedRunning = [...runningCars].sort((a, b) => b.progress - a.progress || a.id - b.id);
+    // [R21] Entre coches que ya han terminado con las mismas vueltas manda el orden de llegada, no dónde quedaron parados.
+    const sortedRunning = [...runningCars].sort((a, b) =>
+      (a.status === 'finished' && b.status === 'finished' && Math.floor(a.progress) === Math.floor(b.progress)
+        ? (a.finishTimeSec ?? 0) - (b.finishTimeSec ?? 0) : 0)
+      || b.progress - a.progress || a.id - b.id);
     const outCars = this.cars.filter(c => c.status === 'out');
     const sortedAll = [...sortedRunning, ...outCars];
 
@@ -1841,6 +1879,84 @@ export class RaceSimulation {
       pit.penaltyPlannedSec = pit.penaltyHoldSec;
       pit.servingDecisionIds = timed.map(d => d.id);
     }
+  }
+
+  /** [R21] El coche que cruza la meta recibe la bandera: distancia completada, o tiempo agotado si es el líder. */
+  private takesChequeredFlag(car: CarState): boolean {
+    if (car.currentLap >= this.totalLaps) return true;
+    if (this.raceTimeSec - this.redFlag.suspensionSec < this.raceTimeLimitSec && this.raceTimeSec < this.totalTimeLimitSec) return false;
+    const isLeader = !this.cars.some(o => o.id !== car.id && o.status !== 'out' && o.progress > car.progress);
+    if (isLeader) this.endReason = 'tiempo';
+    return isLeader;
+  }
+
+  /** [R21] Entradas de la clasificación; con `refLap` (suspensión definitiva) cuenta hasta esa vuelta y su hora de paso. */
+  private resultEntries(refLap: number | null): ResultEntry[] {
+    return this.cars.map(car => {
+      const laps = refLap === null ? car.currentLap : Math.min(car.currentLap, refLap);
+      return {
+        carId: car.id, driverCode: car.driver.code, driverName: `${car.driver.firstName} ${car.driver.lastName}`,
+        teamId: car.team.id, teamName: car.team.name, laps,
+        timeSec: refLap === null ? car.finishTimeSec ?? Infinity : car.lapCrossTimes?.[laps] ?? Infinity,
+        penaltySec: this.stewards.finalPenaltySec(car.id), retired: car.status === 'out',
+        dsq: car.classification === 'DSQ', progress: car.progress,
+      };
+    });
+  }
+
+  private buildResult(status: RaceResult['status']): RaceResult {
+    const ctx = { totalLaps: this.totalLaps, suspended: this.endReason === 'suspendida', greenLaps: this.greenLapsLed };
+    const rows = classify(this.resultEntries(this.suspendedRefLap), ctx);
+    return {
+      status, endReason: this.endReason, rows,
+      pointsTable: pointsTable({ ...ctx, leaderLaps: rows[0]?.laps ?? 0 }),
+      fastestLap: this.fastestLap ? { driverName: this.fastestLap.driverName, timeSec: this.fastestLap.timeSec, lap: this.fastestLap.lap } : null,
+      constructors: constructorStandings(rows),
+      differences: [],
+    };
+  }
+
+  private setPodium(result: RaceResult) {
+    this.podiumCars = result.rows.slice(0, 3).map(r => this.getCarById(r.carId)!).filter(Boolean);
+  }
+
+  private publishProvisional() {
+    this.provisionalResult = this.buildResult('provisional');
+    this.finalResult = null;
+    this.setPodium(this.provisionalResult);
+  }
+
+  /** [R21] Resultado: en curso, provisional (al terminar) o final (tras `confirmResult`). La UI solo lo lee. */
+  getRaceResult(): RaceResult {
+    return this.finalResult ?? this.provisionalResult ?? this.buildResult('en-curso');
+  }
+
+  /** [R21] Cierra el resultado: aplica las decisiones posteriores a la carrera y explica las diferencias con el provisional. */
+  confirmResult(): RaceResult | null {
+    if (!this.provisionalResult) return null;
+    this.processInfractions();
+    for (const car of this.cars) if (car.status === 'finished') this.stewards.finalize(car.id);
+    const final = this.buildResult('final');
+    final.differences = resultDifferences(this.provisionalResult.rows, final.rows);
+    this.finalResult = final;
+    this.setPodium(final);
+    return final;
+  }
+
+  /** [R21] Suspensión definitiva bajo bandera roja: resultado en la penúltima vuelta anterior a la señal (S57). */
+  endRaceSuspended(): boolean {
+    if (this.raceFlagState !== 'red' || !this.redFlag.phase || this.redFlag.phase === 'reanudacion' || this.isFinished) return false;
+    this.suspendedRefLap = Math.max(0, (this.redFlagSignalLap ?? this.lastLeaderLap ?? 0) - 1);
+    this.endReason = 'suspendida';
+    for (const car of this.cars) {
+      if (car.status === 'out') continue;
+      car.status = 'finished';
+      car.finishTimeSec ??= this.raceTimeSec;
+      this.stewards.finalize(car.id);
+    }
+    this.isFinished = true;
+    this.publishProvisional();
+    return true;
   }
 
   /** [R13] Clasificación: vueltas y tiempo de llegada más sanciones; retirados y DSQ aparte. La UI solo la lee. */
@@ -2081,6 +2197,7 @@ export class RaceSimulation {
       if (!order.includes(car.id)) continue;
       car.redFlagHold = true; car.redFlagRelease = false; car.scUnlapping = false;
     }
+    this.redFlagSignalLap = Math.max(0, ...this.cars.filter(c => c.status !== 'out').map(c => c.currentLap));
     this.redFlag = { ...this.redFlag, phase: 'suspension', order, noticeEndsAt: undefined, releaseAt: undefined };
     this.redFlag.log.push({ phase: 'suspension', time: this.raceTimeSec, message: `Bandera roja: ${reason}` });
   }

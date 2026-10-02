@@ -395,6 +395,8 @@ export interface CarState {
   redFlagHold?: boolean;
   /** [R13] Hora a la que cruzó la meta al terminar la carrera. */
   finishTimeSec?: number;
+  /** [R21] Hora de paso por meta al empezar cada vuelta (índice: `currentLap` tras el paso). */
+  lapCrossTimes?: Record<number, number>;
   /** [R25] Estado y registro del estratega de la IA; el ritmo lo fijó el jugador. */
   strategy?: import('../simulation/Strategist').StrategyState;
   paceByPlayer?: boolean;
