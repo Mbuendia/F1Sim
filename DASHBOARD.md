@@ -22,7 +22,7 @@
 
 ## 🧭 2. ROADMAP Y ESTADO GLOBAL DE SPRINTS
 
-**Orden vigente:** Sprint **2.9** · Tarea actual **R37** · Siguiente **R38** (bloque 2.9-A pendiente de revisión: R01, R02, la base inicial de R03, el esquema de R28 y la base de R27; 2.9-B en primera pasada completa: R05 con R40 y las primeras entregas de R06, R14, R15, R16 y R17; 2.9-C en primera pasada completa: R07, R08, R09, R10, R11, R12 (con R35), R13, R22 y R25; hallazgo R42 (adelantamientos) con primera entrega y R41 (compactación del SC) en revisión, ambos el 02/10/2026; resto el 01/10/2026 en la rama sprint/2.9 con contrato de tests acordado; cada tarea del 2.9 sigue requiriendo autorización expresa).
+**Orden vigente:** Sprint **2.9** · Tarea actual **R38** · Siguiente **R18** (bloque 2.9-A pendiente de revisión: R01, R02, la base inicial de R03, el esquema de R28 y la base de R27; 2.9-B en primera pasada completa: R05 con R40 y las primeras entregas de R06, R14, R15, R16 y R17; 2.9-C en primera pasada completa: R07, R08, R09, R10, R11, R12 (con R35), R13, R22 y R25; hallazgo R42 (adelantamientos) con primera entrega y R41 (compactación del SC) en revisión, ambos el 02/10/2026; resto el 01/10/2026 en la rama sprint/2.9 con contrato de tests acordado; cada tarea del 2.9 sigue requiriendo autorización expresa).
 
 **Prioridad acordada tras la auditoría (30/09/2026, `docs/reviews/auditoria-q12-q19.md`):** Q19 → Q16 → Q13 → Q17 → Q12 → Q18/Q14/Q15. Decisiones del usuario: detecciones DRS desde las notas oficiales FIA; el Safety Car debe salir del pit lane (Q14); tests estructurales sin dependencias nuevas para Q18; tolerancias de calibración Q12 propuestas.
 
@@ -809,12 +809,13 @@ Origen: revisión en local de Q12-Q23 jugando una carrera en Barcelona con el bu
   * *Tests antes de implementación:* ampliar blue-flags-yield con un adelantamiento completo en carrera real y el nivel máximo alcanzado; conservar blue-flags.
   * *Entrega 02/10/2026 (aprobada por el usuario; pendiente de revisión):* el aviso pasa de 1,2 s a 3 s (`blueFlagGapSec` del perfil de reglas, ajuste del juego) y el coche que dobla ya no atraviesa al doblado: se queda detrás (misma regla de seguimiento, con frenada máxima) hasta que este se ha apartado al menos 0,3 de separación lateral (`BLUE_FLAG_CLEAR_OFFSET`); en curva lenta o tramo estrecho espera a la siguiente recta. `blue-flags-yield` ampliado con un doblaje completo en carrera real (Barcelona): señal de 32 s antes del adelantamiento, cesión 1,00, sin frenada brusca en recta, 0 pasos «encima» del doblado (antes 23) y paso con separación lateral; sin señal entre coches de la misma vuelta. Con autorización del usuario, el test de R01 comprueba ahora 3 s. Suite completa 1837 PASS. *Observación:* el doblado levanta (hasta un 15 %) durante todo el aviso; si el líder se acerca despacio, eso le cuesta tiempo durante muchos segundos. No se ha medido en una carrera de 22 coches con doblajes.
 
-* **R37 — Beneficio del D20 útil bajo bandera roja:** `[ ] PLANIFICADO`
+* **R37 — Beneficio del D20 útil bajo bandera roja:** `[ ] EN REVISIÓN LOCAL — IMPLEMENTADO 02/10/2026 CON CONTRATO DE TESTS ACORDADO`
   * *Prioridad/dependencias:* P2; continúa Q17; coordina R26.
   * *Hallazgo:* con tirada 8-13 bajo bandera roja, el «Informe del ingeniero» siempre dice «sin estimación: bandera roja, carrera detenida», porque la estimación Q13 no está disponible con roja.
   * *Alcance:* bajo roja, ofrecer otro beneficio del catálogo o una información útil para el relanzamiento; no mostrar un beneficio vacío.
   * *Aceptación:* ninguna tirada muestra un beneficio sin contenido; el texto describe exactamente el efecto.
   * *Tests antes de implementación:* ampliar luck-benefits con disparo `red` en los cuatro tramos.
+  * *Entrega 02/10/2026 (aprobada por el usuario; pendiente de revisión):* bajo bandera roja el tramo 8–13 da un «Informe de relanzamiento» (`restart-report`, solo información): puesto en la fila, neumático y desgaste propios y de los coches de delante y detrás, y si conviene cambiar el juego durante la suspensión (salud < 70 %, el mismo umbral que usa la IA; compuesto recomendado con stock y cumplimiento) recordando que bajo roja el cambio no cuenta como parada. Los tramos 14–20 (preparación del box) y 1–7 (sin ventaja) hablan de bandera roja en lugar de «neutralización». Bajo SC/VSC no cambia nada. `luck-benefits` ampliado (86 PASS): las 20 tiradas bajo roja tienen contenido y ninguna dice «sin estimación»; el informe no toca neumáticos, juegos ni combustible; el modal lo muestra. Suite completa 1887 PASS.
 
 * **R38 — Animación de cambio de posición que no se reproduce:** `[ ] PLANIFICADO`
   * *Prioridad/dependencias:* P2; continúa Q23.
