@@ -2548,6 +2548,12 @@ export class RaceSimulation {
     // Combustible: consumo de la última vuelta medida (o la estimación por distancia antes de tenerla).
     if (st.lapOfFuelMark !== car.currentLap) {
       if (st.lapOfFuelMark !== undefined && st.fuelAtLapStart !== undefined && car.currentLap === st.lapOfFuelMark + 1) st.lastLapBurnKg = st.fuelAtLapStart - car.fuelKg;
+      // Desgaste de la última vuelta completa con el mismo juego (el contador de vueltas del juego no sirve: vuelve a 0
+      // al montar un juego usado).
+      const setId = car.tireInventory?.mountedId ?? car.tires.compound;
+      st.lastLapWear = st.lapOfFuelMark !== undefined && car.currentLap === st.lapOfFuelMark + 1 && st.healthAtLapStart !== undefined && st.setAtLapStart === setId
+        ? st.healthAtLapStart - car.tires.health : undefined;
+      st.healthAtLapStart = car.tires.health; st.setAtLapStart = setId;
       st.lapOfFuelMark = car.currentLap; st.fuelAtLapStart = car.fuelKg;
     }
     if (!car.paceByPlayer) {
@@ -2571,7 +2577,10 @@ export class RaceSimulation {
     let reason: string | null = null;
     if (weatherChoice && tyreWaterGrip(weatherChoice, depth) > current + 0.05) reason = depth > 0.3 ? 'lluvia' : 'pista seca';
     if (lapsToEnd <= 1 && reason === null) return;
-    const wearPerLap = Math.max(1.5, (100 - car.tires.health) / Math.max(1, car.tires.lapsOnTire));
+    // Desgaste por vuelta: el medido; sin medida, el histórico del juego si lleva al menos 3 vueltas o el nominal del compuesto.
+    const nominalWear = (100 - STRATEGY.TARGET_HEALTH) / TireModel.getCompoundProperties(car.tires.compound).nominalLaps;
+    const historyWear = car.tires.lapsOnTire >= 3 ? (100 - car.tires.health) / car.tires.lapsOnTire : nominalWear;
+    const wearPerLap = Math.max(1.5, st.lastLapWear !== undefined && st.lastLapWear > 0 ? st.lastLapWear : historyWear);
     const lapsLeftOnTyre = (car.tires.health - STRATEGY.TARGET_HEALTH) / wearPerLap;
     const underSc = this.raceFlagState === 'sc' && this.safetyCar.mode === 'leading';
     if (!reason && underSc && car.tires.health < STRATEGY.SC_PIT_HEALTH && lapsToEnd > STRATEGY.SC_MIN_LAPS_LEFT) reason = 'safety car';

@@ -37,6 +37,10 @@ export interface StrategyState {
   fuelAtLapStart?: number;
   lapOfFuelMark?: number;
   lastLapBurnKg?: number;
+  /** Desgaste medido en la última vuelta completa con el mismo juego (puntos de salud). */
+  lastLapWear?: number;
+  healthAtLapStart?: number;
+  setAtLapStart?: string;
 }
 
 /** Compuesto para el siguiente stint: el más blando que llega al final; si ninguno, el más duro (otra parada). */
