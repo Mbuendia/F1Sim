@@ -6,6 +6,9 @@ import { animate, stagger } from 'animejs';
 import { FlagIcon } from './FlagIcon';
 import { F1CarSilhouette } from './F1CarSilhouette';
 import { ResultsTable } from './ResultsTable';
+import { DriverProgressPanel } from './DriverProgressPanel';
+import type { DriverProgressEntry } from './DriverProgressPanel';
+import type { FocusId } from '../simulation/DriverDevelopment';
 import type { RaceResult } from '../simulation/RaceResult';
 
 interface PodiumModalProps {
@@ -13,11 +16,14 @@ interface PodiumModalProps {
   /** [R21] Clasificación completa y confirmación del resultado. */
   result?: RaceResult;
   onConfirmResult?: () => void;
+  /** [R45] Mejora de los pilotos del jugador y cambio de enfoque. */
+  progress?: DriverProgressEntry[];
+  onFocusChange?: (driverId: string, focus: FocusId) => void;
   onRestart: () => void;
   onGoHome: () => void;
 }
 
-export const PodiumModal: React.FC<PodiumModalProps> = ({ podiumCars, result, onConfirmResult, onRestart, onGoHome }) => {
+export const PodiumModal: React.FC<PodiumModalProps> = ({ podiumCars, result, onConfirmResult, progress, onFocusChange, onRestart, onGoHome }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const confettiCanvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -212,6 +218,8 @@ export const PodiumModal: React.FC<PodiumModalProps> = ({ podiumCars, result, on
             </div>
           </div>
         </div>
+
+        {progress && progress.length > 0 && <DriverProgressPanel entries={progress} onFocusChange={onFocusChange} />}
 
         {result && <ResultsTable result={result} onConfirm={onConfirmResult} />}
 

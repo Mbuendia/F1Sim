@@ -90,6 +90,8 @@ export interface Driver {
   tireManagement: number;
   raceCraft: number;
   consistency: number;
+  /** [R45] Puntos ganados en los atributos con efecto propio (cero sin mejoras). */
+  development?: { overtake: number; defence: number; wet: number; fitness: number };
 }
 
 export interface Team {

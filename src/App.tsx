@@ -20,6 +20,9 @@ import { RaceMenu } from './components/RaceMenu';
 import { RaceNotices, RaceNotice, RaceNoticeTone } from './components/RaceNotices';
 import { OFFICIAL_CIRCUITS } from './data/circuits';
 import { buildWeatherScenario } from './data/weatherScenarios';
+import { attributesOf, developAfterRace, emptyDevelopment, parseDevelopment, DEVELOPMENT_STORAGE_KEY } from './simulation/DriverDevelopment';
+import type { DevelopmentState } from './simulation/DriverDevelopment';
+import type { RaceResult } from './simulation/RaceResult';
 import { addRace, emptyChampionship, parseChampionship, CHAMPIONSHIP_STORAGE_KEY } from './simulation/Championship';
 import type { ChampionshipState } from './simulation/Championship';
 import { DRIVERS } from './data/drivers';
@@ -95,6 +98,20 @@ export const App: React.FC = () => {
     setChampionship(next);
     try { localStorage.setItem(CHAMPIONSHIP_STORAGE_KEY, JSON.stringify(next)); } catch (e) { console.error(e); }
   }, []);
+
+  // [R45] Atributos y enfoque de los pilotos, guardados en el navegador
+  const [development, setDevelopment] = useState<DevelopmentState>(() => {
+    try { return parseDevelopment(localStorage.getItem(DEVELOPMENT_STORAGE_KEY)); } catch { return emptyDevelopment(); }
+  });
+  const saveDevelopment = useCallback((next: DevelopmentState) => {
+    setDevelopment(next);
+    try { localStorage.setItem(DEVELOPMENT_STORAGE_KEY, JSON.stringify(next)); } catch (e) { console.error(e); }
+  }, []);
+  /** Mejora que dará la carrera terminada con el resultado actual (se guarda al volver al inicio). */
+  const developmentAfter = useCallback((result: RaceResult) => developAfterRace(development, Object.values(DRIVERS), driver => {
+    const row = result.rows.find(r => r.driverCode === driver.code);
+    return row ? { position: row.position, status: row.status, points: row.points } : undefined;
+  }, simulation.totalLaps), [development, simulation]);
 
   // [R44] Meteorología de la próxima carrera
   const [weatherScenarioId, setWeatherScenarioId] = useState<string>('seco');
@@ -242,6 +259,7 @@ export const App: React.FC = () => {
   }, [simulation, camera]);
 
   const handleStartRaceFromHome = useCallback(() => {
+    simulation.setDriverAttributes(development.attributes);
     simulation.setCircuit(selectedCircuitId);
     // [R44] Meteorología elegida en el paddock, ajustada a la duración prevista de la carrera.
     simulation.setWeatherScenario(buildWeatherScenario(weatherScenarioId, simulation.totalLaps * 90));
@@ -252,7 +270,7 @@ export const App: React.FC = () => {
     setIsFinished(false);
     setCurrentView('race');
     simulation.startRaceSequence();
-  }, [simulation, camera, selectedCircuitId, weatherScenarioId]);
+  }, [simulation, camera, selectedCircuitId, weatherScenarioId, development]);
 
   const handleStartFormationLap = useCallback(() => {
     if (simulation.lightState === 'grid-ready') {
@@ -298,7 +316,10 @@ export const App: React.FC = () => {
 
       // [R21] Al salir, el resultado queda confirmado y suma al campeonato.
       const finalResult = simulation.confirmResult();
-      if (finalResult) saveChampionship(addRace(championship, newHistoryItem.id, selectedCircuitId, finalResult, simulation.raceFormat));
+      if (finalResult) {
+        saveChampionship(addRace(championship, newHistoryItem.id, selectedCircuitId, finalResult, simulation.raceFormat));
+        saveDevelopment(developmentAfter(finalResult));
+      }
 
       const updatedHistory = [newHistoryItem, ...raceHistory].slice(0, 10);
       setRaceHistory(updatedHistory);
@@ -310,7 +331,7 @@ export const App: React.FC = () => {
     }
 
     setCurrentView('home');
-  }, [simulation, selectedDriverId, selectedCircuitId, raceHistory, championship, saveChampionship]);
+  }, [simulation, selectedDriverId, selectedCircuitId, raceHistory, championship, saveChampionship, saveDevelopment, developmentAfter]);
 
   const handleCycleCameraMode = useCallback(() => {
     camera.cycleMode();
@@ -422,7 +443,7 @@ export const App: React.FC = () => {
         onStartRace={handleStartRaceFromHome}
         raceHistory={raceHistory}
         championship={championship}
-        onResetChampionship={() => saveChampionship(emptyChampionship())}
+        onResetChampionship={() => { saveChampionship(emptyChampionship()); saveDevelopment(emptyDevelopment()); }}
         weatherScenarioId={weatherScenarioId}
         onSelectWeather={setWeatherScenarioId}
       />
@@ -577,6 +598,13 @@ export const App: React.FC = () => {
                 podiumCars={podiumCars}
                 result={simulation.getRaceResult()}
                 onConfirmResult={() => { simulation.confirmResult(); setPodiumCars([...simulation.podiumCars]); }}
+                progress={(() => {
+                  const after = developmentAfter(simulation.getRaceResult());
+                  return teamCars.map(c => DRIVERS[c.driver.id]).filter(Boolean).map(driver => ({
+                    driver, attributes: attributesOf(after, driver), gains: after.lastGains[driver.id] ?? {}, focus: development.focus[driver.id] ?? 'equilibrado',
+                  }));
+                })()}
+                onFocusChange={(driverId, focus) => saveDevelopment({ ...development, focus: { ...development.focus, [driverId]: focus } })}
                 onRestart={handleResetRace}
                 onGoHome={handleGoHome}
               />
