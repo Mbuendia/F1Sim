@@ -14,6 +14,13 @@ export const REFERENCE_SCENARIOS = ['barcelona', 'monaco'].map(id => ({
   events: [{ step: 3000, type: 'box', car: 2, compound: 'hard' }, { step: 6000, type: 'sc' }],
 }));
 
+/** [R42] Remontadas: parrilla invertida y los coches rápidos (detrás) con blando nuevo frente a duro al 55 % con 20
+ * vueltas; 300 s en verde y sin eventos, para medir adelantamientos. */
+export const OVERTAKE_SCENARIOS = ['barcelona', 'monaco'].map(id => ({
+  id: `${id}-remontada`, circuit: id, cars: 8, seed: 2025, steps: 15000, fps: 60, speed: 1, grid: 'remontada', events: [],
+}));
+export const ALL_SCENARIOS = [...REFERENCE_SCENARIOS, ...OVERTAKE_SCENARIOS];
+
 /** Tolerancia relativa de las magnitudes continuas; las discretas deben coincidir exactamente. */
 export const CONTINUOUS_TOLERANCE = 1e-6;
 const CONTINUOUS = new Set(['lapTimes', 'pitLaneSec', 'energyDeployedMJ', 'energyRecoveredMJ', 'maxBrakeTempC', 'maxEngineTempC', 'topSpeedKmh', 'raceTimeSec']);
@@ -26,8 +33,14 @@ export async function createBench(server) {
 
   function runBench(scenario) {
     const sim = make(scenario.circuit, scenario.cars);
+    const comeback = scenario.grid === 'remontada';
     sim.cars.forEach((c, i) => {
-      c.progress = 1.2 - i * 0.008; c.trackT = ((c.progress % 1) + 1) % 1; c.currentLap = 1; c.pitStop.scheduledLap = 99;
+      const slot = comeback ? sim.cars.length - 1 - i : i;
+      c.progress = 1.2 - slot * 0.008; c.trackT = ((c.progress % 1) + 1) % 1; c.currentLap = 1; c.pitStop.scheduledLap = 99;
+      if (comeback) {
+        const worn = slot < sim.cars.length / 2, health = worn ? 55 : 100;
+        Object.assign(c.tires, { compound: worn ? 'hard' : 'soft', health, healthFL: health, healthFR: health, healthRL: health, healthRR: health, lapsOnTire: worn ? 20 : 0 });
+      }
     });
     sim.setSeed(scenario.seed); sim.setFixedStep(0.02); sim.setSpeed(scenario.speed);
     const L = sim.activeTrack.lapLengthMeters;
@@ -43,6 +56,7 @@ export async function createBench(server) {
     const pitEnteredAt = new Map();
     const pitLaneSec = [];
     let maxBrake = 0, maxEngine = 0, topSpeedKmh = 0, safetyCarDeployed = false;
+    const greenOvertakes = { zona: 0, fuera: 0 };
 
     sim.onFixedStep = () => {
       const step = sim.fixedStepCount;
@@ -71,12 +85,14 @@ export async function createBench(server) {
         if (!c.isInPitLane && pitEnteredAt.has(c.id)) { pitLaneSec.push(sim.raceTimeSec - pitEnteredAt.get(c.id)); pitEnteredAt.delete(c.id); }
         maxBrake = Math.max(maxBrake, c.brakeTempCelsius); maxEngine = Math.max(maxEngine, c.engineTempCelsius);
       }
-      if (neutralized) {
+      {
         const cars = sim.cars.filter(onTrack);
         for (const a of cars) for (const b of cars) {
           const pa = previous.get(a.id), pb = previous.get(b.id);
           if (a.id !== b.id && pa.onTrack && pb.onTrack && pa.progress < pb.progress && a.progress > b.progress) {
-            invariants['adelantamiento bajo neutralización']++;
+            if (neutralized) invariants['adelantamiento bajo neutralización']++;
+            // [R42] Adelantamientos en verde, según ocurran en zona permitida o fuera.
+            else greenOvertakes[sim.isOvertakingAllowedZone(a.trackT) ? 'zona' : 'fuera']++;
           }
         }
       }
@@ -93,6 +109,7 @@ export async function createBench(server) {
       pitStops: sim.cars.reduce((n, c) => n + c.pitStop.totalPitStops, 0),
       pitLaneSec: [...pitLaneSec],
       safetyCarDeployed,
+      greenOvertakes: { ...greenOvertakes },
       energyDeployedMJ: sim.cars.map(c => c.energy?.deployedMJ ?? 0),
       energyRecoveredMJ: sim.cars.map(c => c.energy?.recoveredMJ ?? 0),
       maxBrakeTempC: maxBrake,
@@ -136,7 +153,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1] && pro
   try {
     const { runBench } = await createBench(server);
     const baseline = {};
-    for (const scenario of REFERENCE_SCENARIOS) {
+    for (const scenario of ALL_SCENARIOS) {
       const { invariants, result } = runBench(scenario);
       const broken = Object.entries(invariants).filter(([, n]) => n > 0);
       if (broken.length) throw new Error(`${scenario.id}: invariantes rotas, no se guarda la baseline: ${broken.map(([k, n]) => `${k}=${n}`).join(', ')}`);

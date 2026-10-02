@@ -5,13 +5,13 @@
 //  3. Precisión de cruce ≤ 1 ms en un fixture analítico de frenada.
 //  4. Métricas iguales a la baseline (exactas las discretas; 1e-6 relativo las continuas).
 import { readFileSync } from 'node:fs';
-import { createBench, REFERENCE_SCENARIOS, compareToBaseline, BASELINE_PATH } from '../support/bench.mjs';
+import { createBench, REFERENCE_SCENARIOS, OVERTAKE_SCENARIOS, ALL_SCENARIOS, compareToBaseline, BASELINE_PATH } from '../support/bench.mjs';
 
 export default async function run({ server, assert, test }) {
   const { runBench } = await createBench(server);
   const { lineCrossings } = await server.ssrLoadModule('/src/simulation/Timing.ts');
   const reference = {};
-  for (const scenario of REFERENCE_SCENARIOS) reference[scenario.id] = runBench(scenario);
+  for (const scenario of ALL_SCENARIOS) reference[scenario.id] = runBench(scenario);
 
   await test('R27: invariantes a cero en las carreras de referencia', () => {
     for (const scenario of REFERENCE_SCENARIOS) {
@@ -22,6 +22,19 @@ export default async function run({ server, assert, test }) {
       }
       assert(result.pitStops >= 1 && result.safetyCarDeployed, `R27: ${scenario.id} ejercita la parada y el Safety Car programados`,
         `${result.pitStops} paradas · SC ${result.safetyCarDeployed}`);
+    }
+  });
+
+  // R42 (contrato aprobado por el usuario el 02/10/2026): con coches de ritmo distinto hay adelantamientos en verde. Las
+  // carreras de referencia salen ordenadas por ritmo y acaban bajo Safety Car, así que se mide en escenarios de remontada
+  // (decisión del usuario del 02/10/2026).
+  await test('R42: adelantamientos en verde en las remontadas', () => {
+    for (const scenario of OVERTAKE_SCENARIOS) {
+      const { invariants, result } = reference[scenario.id];
+      const broken = Object.entries(invariants).filter(([, n]) => n > 0).map(([k, n]) => `${k}=${n}`);
+      assert(broken.length === 0, `R42: ${scenario.id} sin invariantes rotas`, broken.join(', '));
+      const { zona, fuera } = result.greenOvertakes;
+      assert(zona > 0, `R42: ${scenario.id} tiene adelantamientos en verde en zona permitida`, `${zona} en zona · ${fuera} fuera`);
     }
   });
 
@@ -57,7 +70,7 @@ export default async function run({ server, assert, test }) {
 
   await test('R27: métricas iguales a la baseline', () => {
     const baseline = JSON.parse(readFileSync(BASELINE_PATH, 'utf8'));
-    for (const scenario of REFERENCE_SCENARIOS) {
+    for (const scenario of ALL_SCENARIOS) {
       const diffs = compareToBaseline(baseline[scenario.id], reference[scenario.id].result);
       assert(baseline[scenario.id] && diffs.length === 0, `R27: ${scenario.id} coincide con la baseline`, diffs.slice(0, 6).join(' | '));
     }
