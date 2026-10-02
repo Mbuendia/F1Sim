@@ -78,6 +78,9 @@ export default async function run({ server, assert, test }) {
       const sim = make(circuit, 1), car = sim.cars[0];
       sim.totalLaps = 4;
       Object.assign(car, { progress: 1.05, trackT: 0.05, currentLap: 1 });
+      // Coche del jugador: decide su estrategia (el estratega de la IA de R25 pararía para cumplir). Corrección
+      // autorizada por el usuario el 02/10/2026.
+      car.pitStop.playerControlled = true;
       sim.setSeed(7); sim.setFixedStep(0.02);
       let warned = false;
       for (const compound of plan) {

@@ -112,6 +112,9 @@ export default async function run({ server, assert, test }) {
     sim.update(1 / 60);
     assert(decisionsOf(sim, car)[0].status === 'anulada', 'R13: la penalización de un retirado no se aplica', decisionsOf(sim, car)[0].status);
     const other = sim.cars[1];
+    // Coche del jugador, que decide no cumplir: el estratega de la IA (R25) sí pararía a por la segunda especificación
+    // (corrección autorizada por el usuario el 02/10/2026).
+    other.pitStop.playerControlled = true;
     sim.totalLaps = other.currentLap + 2;
     until(sim, () => other.status === 'finished', 4000);
     const dsq = decisionsOf(sim, other).find(d => d.penalty === 'dsq');
