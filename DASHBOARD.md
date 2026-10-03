@@ -22,7 +22,7 @@
 
 ## 🧭 2. ROADMAP Y ESTADO GLOBAL DE SPRINTS
 
-**Orden vigente:** Sprint **2.10** · Tarea actual **R18** · Siguiente **R04** (R43-R46 y primeras entregas de R18-R20 aprobadas y fusionadas en main el 03/10/2026; punto de reanudación en 6.10; R43, R44, R45, R46 y las primeras entregas de R20 y R19 entregadas y en revisión el 02/10/2026 en la rama sprint/2.10; Sprint 2.9 cerrado por el usuario el 02/10/2026 y fusionado en main: R01-R17, R21, R22, R25-R28 y R35-R42 entregadas; Sprint 2.10 planificado el mismo día con R43-R46 y lo heredado del 2.9 en el orden de 6.9; cada tarea sigue requiriendo contrato de tests y autorización expresa).
+**Orden vigente:** Sprint **2.11** · Tarea actual **R47** · Siguiente **R48** (Sprint 2.10 aprobado y fusionado en main el 03/10/2026; Sprint 2.11 planificado el mismo día en la rama sprint/2.11, orden y alcance en 6.11; cada tarea sigue requiriendo contrato de tests y autorización expresa).
 
 **Prioridad acordada tras la auditoría (30/09/2026, `docs/reviews/auditoria-q12-q19.md`):** Q19 → Q16 → Q13 → Q17 → Q12 → Q18/Q14/Q15. Decisiones del usuario: detecciones DRS desde las notas oficiales FIA; el Safety Car debe salir del pit lane (Q14); tests estructurales sin dependencias nuevas para Q18; tolerancias de calibración Q12 propuestas.
 
@@ -51,7 +51,8 @@ Leyenda de Estado:
 | **Sprint 2.5** | **Deuda Técnica de Auditoría (M1-M10, B1-B7)** | ✅ **COMPLETADO (17/17 Tareas - 46 Tests PASS)** |
 | **Sprint 2.8** | **Salto de Calidad: Fidelidad de Simulación, Geometría, Muro Táctico y revisión DRS (Q1-Q23)** | ✅ **COMPLETADO — Q1-Q23 validadas por el usuario (30/09/2026); hallazgos de la revisión en local trasladados a R35-R39; PR a main** |
 | **Sprint 2.9** | **Reglamento FIA 2025, identidad técnica de equipos y experiencia de carrera y rediseño de escritorio (R01-R42)** | ✅ **COMPLETADO — cerrado por el usuario el 02/10/2026 y fusionado en main; R04, R18, R19, R20, R23, R24 y las partes pendientes pasan al Sprint 2.10** |
-| **Sprint 2.10** | **Experiencia de carrera y progresión: fluidez, lluvia visible y radar, atributos y mejora de pilotos, coche en 3D (R43-R46) y lo heredado del 2.9** | 🟡 **EN CURSO — R43-R46 y las primeras entregas de R18-R20 aprobadas y fusionadas en main el 03/10/2026; quedan R04, R23, R24 y las partes pendientes** |
+| **Sprint 2.10** | **Experiencia de carrera y progresión: fluidez, lluvia visible y radar, atributos y mejora de pilotos, coche en 3D (R43-R46) y primeras entregas de R18-R20** | ✅ **COMPLETADO — aprobado por el usuario y fusionado en main el 03/10/2026 (PR #6); R04, R23, R24 y las partes pendientes pasan al Sprint 2.11** |
+| **Sprint 2.11** | **Ritmo real, partidas guardadas y fin de semana completo: tiempos de vuelta, cargar y continuar, setup y parc fermé con salida desde boxes, zonas de adelantamiento por circuito, temporada visible y sprint (R47-R54) más R04, R23 y R24** | 🟡 **PLANIFICADO (03/10/2026) — cada tarea requiere contrato de tests y autorización expresa** |
 | **Sprint 3** | **Audio, Telemetría Avanzada, Radar GPS & Clima (4 tareas definidas; desglose histórico de 16 incompleto)** | ⏳ **PLANIFICADO (Después del Sprint 2.9; coordinar clima con R22)** |
 | **Sprint 4** | **Épica: F1 Team Principal & Race Manager (estimación histórica de 12 tareas sin desglose)** | ⏳ **BACKLOG — requiere definición antes de implementar** |
 
@@ -637,7 +638,7 @@ Todas las tareas siguientes están **pendientes**. P0 = corregir validez del nú
   * Extender `CircuitSpec`/`TrackDefinition` con detecciones, zonas asociadas, límites de velocidad, líneas SC1/SC2, sectores de comisarios, límites de pista, entrada/salida y cajones. Una transformación SVG→metros compartida con cámara/minimapa/hit-testing (Q4/Q7). Auditar trazado, sentido, meta y número de curvas del año elegido.
   * *Aceptación:* Barcelona y Mónaco de referencia; intervalos que cruzan meta, dirección inversa y pit que no cruza meta. Datos no verificados llevan estado provisional. Obtener notas y mapas oficiales de cada GP antes de declarar una detección «real».
   * *Entrega parcial 01/10/2026 (base inicial aprobada por el usuario; R03 sigue abierta):* `src/data/trackGeometry.ts` documenta las convenciones (t = fracción de vuelta desde la meta en el sentido de marcha; un único factor metros/unidad por circuito = vuelta oficial / longitud de la polilínea; sentido de giro con la convención del parser; `trackWidthMeters` es visual) y ofrece `createTrackScale` (mundo↔metros, t↔metros, `arcDistance` en el sentido de marcha) y `trackInterval` (intervalos que cruzan la meta). `src/data/eventData.ts` registra para Barcelona y Mónaco meta, sectores, detecciones y zonas DRS, entrada, salida y compromiso de boxes con unidad y procedencia (verificado / calibrado / provisional / sintético) sin cambiar ningún valor; `validateEventData` rechaza rangos, duplicados, zonas inexistentes o sin detección, verificados sin fuente y unidades ausentes. Validado: sentido de giro e inverso, vuelta de 4657 m y 3337 m, t equivale a distancia (error máximo 0,1 m y 0,6 m), zona DRS 2 de Barcelona a través de la meta (862,5 m), pit de Barcelona cruza la meta y el de Mónaco no. D2 de Barcelona sigue calibrada; meta, boxes y compromiso son calibrados y los sectores 0,33/0,67 son provisionales del juego. Test `track-data` (43 PASS); suite completa 1391 PASS, sin cambio de comportamiento. *Pendiente de R03:* transformación compartida con cámara/minimapa/hit-testing (Q4/Q7), líneas SC1/SC2, sectores de comisarios, límites de pista, cajones, límites de velocidad por evento, auditoría de curvas del año y resto de circuitos; notas y mapas oficiales antes de declarar «real» cualquier dato calibrado.
-* **R04 — Integración y lectura visual del DRS (P0; depende de Q19/R01-R03):** `[ ] TRASLADADA AL SPRINT 2.10`
+* **R04 — Integración y lectura visual del DRS (P0; depende de Q19/R01-R03):** `[ ] TRASLADADA AL SPRINT 2.11`
   * Reutilizar Q19 como implementación única. Mostrar punto de detección, segmento de activación y estados «sin permiso / permiso obtenido / abierto / bloqueado» con motivo y gap detectado. Animar flap según estado real T3.10.10; piloto IA solicita apertura, el usuario dirige desde el muro.
   * *Aceptación:* todos los escenarios Q19 probados entrando por `RaceSimulation`, contador real de usos y revisión visual de adelantamiento antes/después de detección. No cerrar esta tarea solo porque cambie el badge de DRS.
 
@@ -733,10 +734,10 @@ Todas las tareas siguientes están **pendientes**. P0 = corregir validez del nú
 
 #### Entrega E — Presentación, honestidad de telemetría y validación
 
-* **R23 — SVG/Canvas que explica la física (P1; Q4/Q5, Q7/Q8 pendientes, R03-R16; Q6 excluida):** `[ ] TRASLADADA AL SPRINT 2.10`
+* **R23 — SVG/Canvas que explica la física (P1; Q4/Q5, Q7/Q8 pendientes, R03-R16; Q6 excluida):** `[ ] TRASLADADA AL SPRINT 2.11`
   * Usar geometría y escenario existentes para explicar el estado físico: detección DRS diferenciada de activación cuando Q19/R04 estén disponibles; flap, daño, luces y contacto de suelo vinculados al motor. Preservar proporciones, LOD, cámara/minimapa/selección compartiendo coordenadas y transiciones suaves. Nuevos escenarios por capas, edificios, escapatorias y pianos localizados de Q6 quedan fuera de esta planificación.
   * *Aceptación:* coherencia de las señales con el estado real, coches y boxes a distintos zooms sobre Barcelona/Mónaco existentes, colores legibles sin depender solo de rojo/verde y coste medido con 20 coches/lluvia cuando exista ese estado. La eliminación de grava genérica en Mónaco y el rediseño de identidad visual de los escenarios siguen en Q6 excluida; no son criterios que obliguen a implementarla para cerrar R23. Q7/Q8 pendientes limitan las verificaciones que dependan de su geometría.
-* **R24 — Telemetría y mensajes de muro basados en eventos (P1; R02/R04/R07-R16):** `[ ] TRASLADADA AL SPRINT 2.10`
+* **R24 — Telemetría y mensajes de muro basados en eventos (P1; R02/R04/R07-R16):** `[ ] TRASLADADA AL SPRINT 2.11`
   * Mostrar gap real, permiso DRS y causa, energía recuperada/desplegada/restante, combustible previsto y reserva, neumáticos disponibles/obligatorios, delta VSC, sanciones, daños y estado de mejoras. Sustituir porcentajes ficticios de Push/ahorro y puestos ganados como contador de adelantamientos por registros reales.
   * *Aceptación:* cada cifra reconstruible desde eventos; misma información en panel/torre/minimapa; diferenciar adelantamiento en pista, ganancia por pit y sanción; pocas alertas prioritarias y explicaciones claras sin inundar al jugador de artículos.
 * **R27 — Banco de escenarios y calibración de experiencia (P0/P1; todas las entregas):** `[x] COMPLETADO — APROBADO POR EL USUARIO Y FUSIONADO EN MAIN (02/10/2026); PARTES PENDIENTES TRASLADADAS AL SPRINT 2.10`
@@ -1013,6 +1014,67 @@ Origen: petición del usuario tras ver el tráiler de Motorsport Manager 2 (carr
 **Después de R18, en este orden:** R04 (lectura visual del DRS), R23 (SVG/Canvas que explica la física), R24 (telemetría y mensajes de muro por eventos) y las partes pendientes anotadas en cada tarea. Candidatas a adelantarse si el usuario lo prefiere: recalibrar los tiempos de vuelta para acercarlos a los reales (afecta al banco R27 y a las tolerancias de pace-calibration), zonas de adelantamiento reales por circuito (pendiente de R42), cargar y continuar una partida (pendiente de R28) y fin de temporada (pendiente de R19).
 
 **Cierre del sprint:** cuando el usuario apruebe lo entregado, PR de `sprint/2.10` a main como en los sprints anteriores.
+
+### 6.11 Sprint 2.11 — Ritmo real, partidas guardadas y fin de semana completo (planificado el 03/10/2026)
+
+**Punto de partida:** `main` contiene los sprints 2.9 y 2.10 (PR #5 y #6). Se trabaja en la rama `sprint/2.11`, creada desde main. Suite de referencia: 2120 PASS / 0 FAIL en 107 módulos.
+
+**Objetivo:** que una temporada se pueda jugar de principio a fin con sensación real: tiempos de vuelta creíbles, partida que se guarda y se retoma, fin de semana con setup, parc fermé y sprint, adelantamientos según el circuito y la temporada visible en la interfaz. Reúne lo que quedó pendiente en las entregas por fases de R18-R21, R28, R42 y R44.
+
+* **R47 — Tiempos de vuelta reales:** `[ ] PLANIFICADO`
+  * *Prioridad/dependencias:* P0; R05, R14-R17, R20, R27.
+  * *Hallazgo:* el motor rueda ≈1:41 en Barcelona en carrera y la pole sale ≈1:37, frente a ≈1:16 y ≈1:11 reales; el tiempo de carrera (y la escala de tiempo x1) se alarga en la misma proporción.
+  * *Alcance:* recalibrar velocidad de paso por curva, aceleración y frenada para acercar la vuelta de cada circuito a su referencia (por ejemplo, vuelta rápida de carrera 2024-2025, documentada como calibración); mantener el orden relativo entre equipos y las relaciones ya calibradas (modos de ritmo, desgaste, combustible, ERS, adelantamientos).
+  * *Aceptación:* en los 24 circuitos la vuelta de referencia del motor queda dentro de ±3 % de la referencia documentada; el banco R27 sin invariantes rotas (baseline regenerada con autorización); los tests de calibración de ritmo, combustible y energía siguen en verde o se ajustan con autorización.
+  * *Tests antes de implementación:* tabla de referencias por circuito y test de tolerancia; recalcular el banco.
+
+* **R48 — Cargar y continuar una partida:** `[ ] PLANIFICADO`
+  * *Prioridad/dependencias:* P0; R28 (esquema de snapshot), R18, R19, R21, R45.
+  * *Alcance:* guardar la carrera en curso (snapshot R28 completo, migraciones de versión) y la carrera profesional (campeonato, temporada, desarrollo, componentes, atributos) en una ranura con nombre; continuar desde el paddock o al recargar la página; exportar e importar el archivo.
+  * *Aceptación:* cargar en mitad de una carrera da exactamente la misma continuación que no haber guardado (misma semilla); un guardado de versión anterior se migra o se rechaza con diagnóstico; no se pierde nada de la carrera profesional.
+  * *Tests antes de implementación:* ida y vuelta del snapshot con continuación idéntica, migración, ranuras y un test de interfaz.
+
+* **R49 — Setup, parc fermé y salida desde boxes:** `[ ] PLANIFICADO`
+  * *Prioridad/dependencias:* P1; R18, R20 (pendientes de ambas).
+  * *Alcance:* setup básico antes de la clasificación (carga aerodinámica, rigidez, relación de cambio) con contrapartidas sobre el perfil técnico; parc fermé desde la clasificación: un cambio no permitido obliga a salir desde el pit lane; procedimiento de salida desde boxes en el motor (semáforo del pit lane, salida tras pasar el último coche).
+  * *Aceptación:* ajuste permitido sin sanción; cambio prohibido → sale desde boxes y lo declara; la salida desde boxes no adelanta a nadie antes de la línea; sin setup el motor es idéntico.
+  * *Tests antes de implementación:* reglas de parc fermé, procedimiento de salida desde boxes, efecto del setup y un test de interfaz.
+
+* **R50 — Zonas de adelantamiento por circuito:** `[ ] PLANIFICADO`
+  * *Prioridad/dependencias:* P1; R42 (pendiente), Q7 (anchura de pista), R04.
+  * *Alcance:* sustituir las fracciones fijas de vuelta por zonas derivadas del trazado (rectas, frenadas fuertes y zonas DRS) y de la anchura por tramo; defensa básica del coche de delante (elegir la trazada interior).
+  * *Aceptación:* Mónaco con muy pocos adelantamientos con ritmos parejos y pocos incluso con un 5 % de ventaja; Monza y Bahréin con bastantes; ningún adelantamiento fuera de zona salvo diferencia enorme; banco R27 con la métrica por circuito.
+  * *Tests antes de implementación:* zonas calculadas por circuito, escenarios de remontada por circuito y métrica del banco.
+
+* **R51 — Temporada visible:** `[ ] PLANIFICADO`
+  * *Prioridad/dependencias:* P1; R18, R19, R21.
+  * *Alcance:* calendario de 24 Grandes Premios con el siguiente elegido por la temporada (el jugador puede saltar); pantalla de cierre de temporada con campeones e historial de temporadas; avisos de sanciones de componentes también en GP directo; atributos de los pilotos en la ficha del paddock.
+  * *Aceptación:* la temporada avanza sola por el calendario; el cierre se ve y se archiva; ninguna sanción se aplica sin aviso.
+  * *Tests antes de implementación:* calendario y avance, cierre visible, aviso de sanciones y un test de interfaz por pieza.
+
+* **R52 — Fin de semana sprint:** `[ ] PLANIFICADO`
+  * *Prioridad/dependencias:* P2; R20, R21 (puntos de sprint ya disponibles).
+  * *Alcance:* formato sprint en los circuitos que lo tienen: clasificación sprint (SQ1-SQ3 con neumáticos de S30.5), sprint de un tercio de distancia sin paradas obligatorias, clasificación del GP y carrera; puntos del sprint al campeonato.
+  * *Aceptación:* orden de sesiones correcto, neumáticos de la clasificación sprint, puntos 8-1 y parc fermé coherente con R49.
+  * *Tests antes de implementación:* formato, neumáticos y puntos.
+
+* **R53 — Lluvia completa:** `[ ] PLANIFICADO`
+  * *Prioridad/dependencias:* P2; R44 (pendiente), R22, R25.
+  * *Alcance:* gotas en pantalla según la lluvia en la zona visible, previsión por tramos de tiempo (cuándo y dónde lloverá), uso de la previsión por el estratega de la IA y medida de rendimiento con 22 coches.
+  * *Aceptación:* la previsión no conoce el futuro más allá de su incertidumbre; la IA anticipa el cruce de compuestos; coste por fotograma acotado.
+  * *Tests antes de implementación:* previsión sin futuro, decisión de la IA con previsión y medición de rendimiento.
+
+* **R54 — Muro del jugador con sus dos pilotos:** `[ ] PLANIFICADO`
+  * *Prioridad/dependencias:* P2; R25 (pendiente), Q12.
+  * *Alcance:* el estratega de la IA propone al jugador (sin ejecutar) la parada, el compuesto y el ritmo de cada uno de sus dos pilotos con su motivo; el jugador acepta o descarta; gestión de energía por vuelta.
+  * *Aceptación:* las propuestas usan solo información observable y nunca actúan sin confirmación.
+  * *Tests antes de implementación:* propuestas, aceptación y descarte, y un test de interfaz.
+
+**Heredadas del Sprint 2.10 (mismo contenido y criterios que su entrada en 6.5):** R04 (lectura visual del DRS), R24 (telemetría y mensajes de muro por eventos) y R23 (dibujos que explican la física).
+
+**Orden propuesto:** R47 → R48 → R49 → R50 → R51 → R04 → R52 → R24 → R23 → R53 → R54. R47 va primero porque cambia los tiempos que verán todas las demás; R48 después porque una temporada de 24 carreras necesita poder guardarse.
+
+**Para empezar:** en la rama `sprint/2.11`, proponer al usuario el contrato de tests de R47 (tabla de referencias por circuito, tolerancia y autorización para regenerar la baseline R27 y ajustar las tolerancias de calibración que se muevan).
 
 ## 🔮 7. SPRINT 3: AUDIO, TELEMETRÍA AVANZADA, RADAR GPS & CLIMA (4 TAREAS DEFINIDAS)
 
