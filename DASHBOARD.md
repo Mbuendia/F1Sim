@@ -22,7 +22,7 @@
 
 ## 🧭 2. ROADMAP Y ESTADO GLOBAL DE SPRINTS
 
-**Orden vigente:** Sprint **2.10** · Tarea actual **R18** · Siguiente **R04** (punto de reanudación en 6.10; R43, R44, R45, R46 y las primeras entregas de R20 y R19 entregadas y en revisión el 02/10/2026 en la rama sprint/2.10; Sprint 2.9 cerrado por el usuario el 02/10/2026 y fusionado en main: R01-R17, R21, R22, R25-R28 y R35-R42 entregadas; Sprint 2.10 planificado el mismo día con R43-R46 y lo heredado del 2.9 en el orden de 6.9; cada tarea sigue requiriendo contrato de tests y autorización expresa).
+**Orden vigente:** Sprint **2.10** · Tarea actual **R18** · Siguiente **R04** (punto de reanudación en 6.10, R18 entregada el 03/10/2026; R43, R44, R45, R46 y las primeras entregas de R20 y R19 entregadas y en revisión el 02/10/2026 en la rama sprint/2.10; Sprint 2.9 cerrado por el usuario el 02/10/2026 y fusionado en main: R01-R17, R21, R22, R25-R28 y R35-R42 entregadas; Sprint 2.10 planificado el mismo día con R43-R46 y lo heredado del 2.9 en el orden de 6.9; cada tarea sigue requiriendo contrato de tests y autorización expresa).
 
 **Prioridad acordada tras la auditoría (30/09/2026, `docs/reviews/auditoria-q12-q19.md`):** Q19 → Q16 → Q13 → Q17 → Q12 → Q18/Q14/Q15. Decisiones del usuario: detecciones DRS desde las notas oficiales FIA; el Safety Car debe salir del pit lane (Q14); tests estructurales sin dependencias nuevas para Q18; tolerancias de calibración Q12 propuestas.
 
@@ -709,9 +709,10 @@ Todas las tareas siguientes están **pendientes**. P0 = corregir validez del nú
 
 #### Entrega D — Fin de semana y evolución de equipos
 
-* **R18 — Mejoras, setup, parc fermé y desarrollo ATR (P2; R01/R17):** `[ ] TRASLADADA AL SPRINT 2.10`
+* **R18 — Mejoras, setup, parc fermé y desarrollo ATR (P2; R01/R17):** `[ ] PRIMERA ENTREGA EN REVISIÓN LOCAL — 03/10/2026 CON CONTRATO DE TESTS ACORDADO (SPRINT 2.10)`
   * Catálogo versionado LTC/SSC/TRC/OSC; investigación/producción e instalación con fechas, unidades para cada coche y contrapartidas. ATR según tabla de 6.3 como presupuesto de desarrollo; no convertir más túnel en bonus garantizado. Validar dossier PU y cambios autorizados; bloquear cambios de setup fuera de excepciones de parc fermé.
   * *Aceptación:* mejora disponible para un piloto, paquete retrasado, reglamento común pese a equipo distinto; mismo proveedor no vende deliberadamente una PU de inferior especificación. Cambio de suspensión en parc fermé produce salida de boxes; ajuste permitido no la produce. Costes/plazos son diseño del juego; el reglamento financiero no está entre los PDF aportados.
+  * *Entrega parcial 03/10/2026 (aprobada por el usuario; R18 sigue abierta):* decisiones del usuario: temporada de 24 carreras y sin dinero (solo plazos, máximo 2 proyectos a la vez). `Development.ts`: catálogo versionado (`desarrollo-2025.1`) de cinco proyectos —alerones, suelo y difusor, refrigeración, eficiencia aerodinámica y gestión de neumáticos—, cada uno con ganancia y contrapartida sobre el perfil técnico de R17 y sin tocar la unidad de potencia; investigación escalada por el túnel de viento según la posición en constructores (P1 70 % … P10 115 %: el último investiga antes, pero la mejora es la misma) más una carrera de producción; la primera unidad va al coche elegido y el compañero la recibe en la carrera siguiente; el perfil técnico del motor lleva la versión con las mejoras (`technicalWith`, `setTechnicalUpgrades`; sin mejoras el motor es idéntico). La IA desarrolla y monta con semilla. `Season.ts`: al completar las 24 carreras se archiva la temporada con sus campeones, se renuevan campeonato, cupos de componentes y programa de desarrollo, y se conservan los atributos de los pilotos. Panel «Desarrollo del coche» en el paddock. Test `development-r18` (46 PASS); suite completa 2120 PASS. Revisado en el navegador: panel, inicio de dos proyectos y bloqueo del catálogo. *Pendiente de R18:* setup del coche y parc fermé (requieren la salida desde boxes de R20), retrasos de paquetes, dossier de PU y una vista del historial de temporadas.
 * **R19 — Vida de componentes y cupos de temporada (P2; R13/R16/R18/R21):** `[ ] PRIMERA ENTREGA EN REVISIÓN LOCAL — 02/10/2026 CON CONTRATO DE TESTS ACORDADO (SPRINT 2.10)`
   * Pool por piloto, seriales, kilometraje/ciclos, daños, mantenimiento permitido y elección de sustitución. Separar límite de unidades de homologación de mejoras. Registrar transferencia a piloto sustituto y primer uso al salir del pit.
   * *Aceptación:* cuarto/quinto ICE, tercer ES, múltiples excesos y arrastre entre eventos; +10/+5 por tipo y algoritmo S42 para parrilla. No inventar un cupo antiguo de cajas de cambio: S29 figura VOID en esta edición; gestionar vida mecánica aparte.
@@ -1004,7 +1005,7 @@ Origen: petición del usuario tras ver el tráiler de Motorsport Manager 2 (carr
 5. R20: los tiempos de vuelta salen ≈1:37 en Barcelona (el motor rueda ≈1:41 en carrera frente a ≈1:11 real).
 6. R19: las sanciones en GP directo se aplican pero no se avisan.
 
-**Siguiente tarea: R18 (mejoras, setup, parc fermé y desarrollo).** Antes de escribir su contrato de tests hacen falta dos decisiones del usuario:
+**R18 entregada el 03/10/2026 (primera entrega)** con las decisiones del usuario: 24 carreras por temporada y sin dinero. Quedan de R18 el setup y el parc fermé. Decisiones que se tomaron:
 
 * **Duración de la temporada:** cuántas carreras tiene, para que los cupos de R19 se renueven y el desarrollo tenga principio y fin (propuesta: 24 carreras, con cierre de temporada que reinicia cupos y conserva los atributos de R45).
 * **Economía:** presupuesto para mejoras o solo plazos de desarrollo (propuesta: solo plazos y un número limitado de proyectos simultáneos, sin dinero; el reglamento financiero no está entre los PDF aportados).
