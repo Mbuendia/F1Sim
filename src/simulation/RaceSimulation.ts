@@ -45,6 +45,7 @@ import { Decision, PenaltyType, Stewards } from './Stewards';
 import { applyAttributes, fitnessNoiseFactor, overtakeAdvantageNeeded, wetGripFactor } from './DriverDevelopment';
 import type { DriverAttributes } from './DriverDevelopment';
 import type { QualiEntrant } from './Qualifying';
+import { technicalWith } from './Development';
 import { classify, constructorStandings, pointsTable, resultDifferences } from './RaceResult';
 import type { EndReason, RaceResult, ResultEntry } from './RaceResult';
 import { tyreCrossover, tyreClassOf, tyreWaterGrip, WeatherModel, WeatherScenario } from './WeatherModel';
@@ -136,6 +137,14 @@ export class RaceSimulation {
   setFailureFactors(factors: Record<string, number>) {
     this.failureFactors = { ...factors };
     for (const car of this.cars) car.failureFactor = this.failureFactors[car.driver.id];
+  }
+
+  /** [R18] Mejoras de desarrollo montadas por piloto; se aplican al perfil técnico ahora y en las carreras siguientes. */
+  private technicalUpgrades: Record<string, string[]> = {};
+
+  setTechnicalUpgrades(upgrades: Record<string, string[]>) {
+    this.technicalUpgrades = { ...upgrades };
+    for (const car of this.cars) car.technical = technicalWith(resolveTechnical(car.team.id, this.circuitId), this.technicalUpgrades[car.driver.id] ?? []);
   }
 
   /** [R20] Parrilla de salida: la de la clasificación o, en GP directo, la prefijada. */
@@ -514,7 +523,7 @@ export class RaceSimulation {
     // [R14] Carga por distancia: consumo estimado de cada coche × vueltas, con margen y muestra; tope del perfil.
     for (const car of this.cars) {
       // [R17] Perfil técnico resuelto una vez por coche y evento (chasis, PU y paquete del circuito).
-      car.technical = resolveTechnical(car.team.id, this.circuitId);
+      car.technical = technicalWith(resolveTechnical(car.team.id, this.circuitId), this.technicalUpgrades[car.driver.id] ?? []);
       // [R07] Inventario de juegos: mismo stock y reglas para todos; sale con un medio.
       car.tireInventory = createInventory(this.circuitId, car.tires.compound);
       const load = Math.min(this.rule('initialFuelKg'), FuelModel.initialFuelFor(RejoinModel.lapFuelKg(this.activeTrack, car), this.totalLaps));

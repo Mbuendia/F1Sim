@@ -11,6 +11,8 @@ import { WeatherScenarioSelect } from './WeatherScenarioSelect';
 import { CarShowcase } from './CarShowcase';
 import { RaceFormatSelect } from './RaceFormatSelect';
 import { ComponentsPanel } from './ComponentsPanel';
+import { DevelopmentPanel } from './DevelopmentPanel';
+import type { DevelopmentProgram } from '../simulation/Development';
 import type { ComponentState, ComponentType } from '../simulation/ComponentPool';
 import type { RaceFormatId } from './RaceFormatSelect';
 import type { ChampionshipState } from '../simulation/Championship';
@@ -56,6 +58,11 @@ interface HomeScreenProps {
   /** [R44] Meteorología elegida para la carrera. */
   weatherScenarioId?: string;
   onSelectWeather?: (id: string) => void;
+  /** [R18] Programa de desarrollo del equipo del jugador. */
+  development?: {
+    program: DevelopmentProgram; raceIndex: number; constructorsPosition: number;
+    onStart: (key: string) => void; onInstall: (projectId: string, driverId: string) => void;
+  };
   /** [R19] Componentes de la unidad de potencia y montaje de unidades nuevas. */
   components?: ComponentState;
   onFitComponent?: (driverId: string, type: ComponentType) => void;
@@ -80,7 +87,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   onSelectFormat,
   components,
   onFitComponent,
-  onUndoComponent
+  onUndoComponent,
+  development
 }) => {
   const [activeTab, setActiveTab] = useState<'drivers' | 'circuits'>('drivers');
   const [driverSubTab, setDriverSubTab] = useState<'specs' | 'strategy' | 'records'>('specs');
@@ -238,6 +246,18 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             <span>Campeonato ({championship.races.length})</span>
           </summary>
           <ChampionshipTable championship={championship} onReset={onResetChampionship} />
+        </details>
+      )}
+
+      {development && (
+        <details className={styles.historySection}>
+          <summary className={styles.historyTitle}>
+            <span>Desarrollo del coche</span>
+          </summary>
+          <DevelopmentPanel program={development.program} teamId={(DRIVERS[selectedDriverId] ?? DRIVERS.alonso).teamId}
+            drivers={Object.values(DRIVERS).filter(d => d.teamId === (DRIVERS[selectedDriverId] ?? DRIVERS.alonso).teamId)}
+            raceIndex={development.raceIndex} constructorsPosition={development.constructorsPosition}
+            onStart={development.onStart} onInstall={development.onInstall} />
         </details>
       )}
 
