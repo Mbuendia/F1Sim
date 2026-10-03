@@ -1,0 +1,92 @@
+.panel {
+  width: 100%;
+  margin: 0 0 16px;
+  text-align: left;
+  color: #e2e8f0;
+  font-size: 13px;
+}
+
+.title {
+  margin: 0 0 8px;
+  font-size: 14px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #ffd700;
+}
+
+.drivers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.driver {
+  flex: 1 1 300px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 12px;
+  margin-bottom: 8px;
+}
+
+.focus {
+  color: #94a3b8;
+}
+
+.focus select {
+  font: inherit;
+  color: #e2e8f0;
+  background: #131728;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 6px;
+  padding: 2px 6px;
+}
+
+.attributes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.attributes li {
+  display: grid;
+  grid-template-columns: 1fr auto 24px;
+  align-items: baseline;
+  gap: 6px;
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+
+.label {
+  color: #94a3b8;
+}
+
+.value {
+  font-weight: 700;
+}
+
+.gain {
+  color: #4ade80;
+  font-weight: 700;
+}
+
+.gained {
+  background: rgba(74, 222, 128, 0.12);
+}
+
+.none {
+  margin: 8px 0 0;
+  color: #94a3b8;
+}

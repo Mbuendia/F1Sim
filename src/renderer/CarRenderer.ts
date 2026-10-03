@@ -1,8 +1,15 @@
 import { CarState, SafetyCarState } from '../types/f1';
 import { TrackDefinition } from '../data/barcelonaTrack';
 import { Camera } from './Camera';
+import { rearLight, wheelMarkPhase } from './carDetail';
+import { compoundStyle } from '../utils/compounds';
 import { getTrackHalfWidth, getLateralDisplacement, isCarVisible, calculateCarWorldPosition } from '../utils/carPosition';
 import { OVERVIEW_ZOOM, renderCarLabels } from './CarLabels';
+
+export interface CarEffects {
+  depthAt?: (trackT: number) => number;
+  timeSec?: number;
+}
 
 export class CarRenderer {
   static readonly BASE_CAR_LEN = 14;
@@ -71,7 +78,9 @@ export class CarRenderer {
     selectedCarId: number | null,
     track: TrackDefinition,
     trackWidthCarsCapacity: number = 2,
-    safetyCar?: SafetyCarState | null
+    safetyCar?: SafetyCarState | null,
+    /** [R46] Datos para el detalle del coche: agua del tramo y hora de carrera (luz trasera). */
+    effects: CarEffects = {}
   ) {
     const activeCars = cars.filter(isCarVisible);
 
@@ -128,7 +137,8 @@ export class CarRenderer {
       if (camera.zoom <= OVERVIEW_ZOOM) {
         this.drawOverviewCar(ctx, screen.x, screen.y, car, isSelected, retiredOpacity);
       } else {
-        this.drawSingleCar(ctx, screen.x, screen.y, angle + camera.rotation, car, camera.zoom, isSelected, dimensions, retiredOpacity);
+        this.drawSingleCar(ctx, screen.x, screen.y, angle + camera.rotation, car, camera.zoom, isSelected, dimensions, retiredOpacity,
+          { wetMm: effects.depthAt?.(car.trackT) ?? 0, timeSec: effects.timeSec ?? 0, distanceM: car.progress * (track.lapLengthMeters || 0) });
       }
     }
 
@@ -235,7 +245,8 @@ export class CarRenderer {
     zoom: number,
     isSelected: boolean,
     dimensions: ReturnType<typeof CarRenderer.getCarDimensions>,
-    opacity: number = 1.0
+    opacity: number = 1.0,
+    detail: { wetMm: number; timeSec: number; distanceM: number } = { wetMm: 0, timeSec: 0, distanceM: 0 }
   ) {
     ctx.save();
     ctx.globalAlpha = opacity;
@@ -277,10 +288,10 @@ export class CarRenderer {
       const wheelW = cl * 0.35;
       const wheelH = cw * 0.45;
       const tireColor = '#1a1a1a';
-      let compoundColor = '#ffffff';
-      if (car.tires.compound === 'soft') compoundColor = '#e10600';
-      if (car.tires.compound === 'medium') compoundColor = '#ffd700';
-      
+      // [R46] Color real del compuesto (también intermedio y lluvia) y marca que avanza con la distancia recorrida.
+      const compoundColor = compoundStyle(car.tires.compound).color;
+      const markPhase = wheelMarkPhase(detail.distanceM);
+
       const drawWheel = (wx: number, wy: number) => {
         ctx.fillStyle = tireColor;
         ctx.beginPath();
@@ -289,6 +300,9 @@ export class CarRenderer {
         if (zoom > 1.1) {
           ctx.fillStyle = compoundColor;
           ctx.fillRect(wx - wheelW/4, wy - 0.5*scale, wheelW/2, 1*scale);
+          // Marca de la banda de rodadura: recorre la rueda de delante hacia atrás al girar.
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+          ctx.fillRect(wx + wheelW/2 - wheelW * markPhase - 0.5*scale, wy - wheelH/2, 1*scale, wheelH);
         }
       };
 
@@ -350,6 +364,16 @@ export class CarRenderer {
       // T-Cam (Negra)
       ctx.fillStyle = '#000';
       ctx.fillRect(-cl * 0.15, -cw * 0.1, cl * 0.15, cw * 0.2);
+
+      // [R46] Luz trasera: parpadea con pista mojada y queda fija al recargar en frenada.
+      const light = rearLight({ wetMm: detail.wetMm, braking: car.status === 'running' && car.telemetry.brake > 20, timeSec: detail.timeSec });
+      if (light.lit) {
+        ctx.fillStyle = '#ff2d2d';
+        ctx.shadowColor = '#ff2d2d';
+        ctx.shadowBlur = 6 * scale;
+        ctx.fillRect(-cl * 0.93, -cw * 0.12, cl * 0.06, cw * 0.24);
+        ctx.shadowBlur = 0;
+      }
 
     ctx.restore();
 

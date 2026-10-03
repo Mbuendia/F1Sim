@@ -90,6 +90,8 @@ export interface Driver {
   tireManagement: number;
   raceCraft: number;
   consistency: number;
+  /** [R45] Puntos ganados en los atributos con efecto propio (cero sin mejoras). */
+  development?: { overtake: number; defence: number; wet: number; fitness: number };
 }
 
 export interface Team {
@@ -408,6 +410,8 @@ export interface CarState {
   redFlagHold?: boolean;
   /** [R13] Hora a la que cruzó la meta al terminar la carrera. */
   finishTimeSec?: number;
+  /** [R19] Multiplicador del riesgo de avería por el desgaste de los componentes montados (1 = sin efecto). */
+  failureFactor?: number;
   /** [R21] Hora de paso por meta al empezar cada vuelta (índice: `currentLap` tras el paso). */
   lapCrossTimes?: Record<number, number>;
   /** [R25] Estado y registro del estratega de la IA; el ritmo lo fijó el jugador. */

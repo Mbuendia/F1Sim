@@ -1,0 +1,53 @@
+.panel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 10px 14px 14px;
+  color: #e2e8f0;
+  font-size: 13px;
+}
+
+.table {
+  flex: 1 1 360px;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.table caption {
+  padding-bottom: 6px;
+  text-align: left;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.table th,
+.table td {
+  padding: 4px 10px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.table th {
+  color: #94a3b8;
+  font-weight: 600;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.worn {
+  color: #fbbf24;
+}
+
+.action {
+  padding: 3px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 6px;
+  background: transparent;
+  color: #e2e8f0;
+  font: inherit;
+  cursor: pointer;
+}
+
+.action:hover,
+.action:focus-visible {
+  background: rgba(255, 255, 255, 0.1);
+}

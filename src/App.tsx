@@ -19,6 +19,22 @@ import { D20LuckModal } from './components/D20LuckModal';
 import { RaceMenu } from './components/RaceMenu';
 import { RaceNotices, RaceNotice, RaceNoticeTone } from './components/RaceNotices';
 import { OFFICIAL_CIRCUITS } from './data/circuits';
+import { buildWeatherScenario } from './data/weatherScenarios';
+import { runQualifying } from './simulation/Qualifying';
+import { aiDevelop, emptyProgram, installFirst, parseProgram, startProject, upgradesFor, PROGRAM_STORAGE_KEY } from './simulation/Development';
+import type { DevelopmentProgram } from './simulation/Development';
+import { closeSeason, parseArchive, seasonComplete, SEASONS_STORAGE_KEY } from './simulation/Season';
+import type { SeasonSummary } from './simulation/Season';
+import { constructorsChampionship } from './simulation/Championship';
+import { aiReplace, applyGridPenalties, completeRace, emptyComponents, ensureDriver, fitNew, hazardFactor, markRaceStart, parseComponents, undoFit, COMPONENTS_STORAGE_KEY } from './simulation/ComponentPool';
+import type { ComponentState, GridChange } from './simulation/ComponentPool';
+import type { QualifyingResult } from './simulation/Qualifying';
+import { QualifyingResults } from './components/QualifyingResults';
+import qualifyingStyles from './components/QualifyingResults.module.css';
+import type { RaceFormatId } from './components/RaceFormatSelect';
+import { attributesOf, developAfterRace, emptyDevelopment, parseDevelopment, DEVELOPMENT_STORAGE_KEY } from './simulation/DriverDevelopment';
+import type { DevelopmentState } from './simulation/DriverDevelopment';
+import type { RaceResult } from './simulation/RaceResult';
 import { addRace, emptyChampionship, parseChampionship, CHAMPIONSHIP_STORAGE_KEY } from './simulation/Championship';
 import type { ChampionshipState } from './simulation/Championship';
 import { DRIVERS } from './data/drivers';
@@ -94,6 +110,56 @@ export const App: React.FC = () => {
     setChampionship(next);
     try { localStorage.setItem(CHAMPIONSHIP_STORAGE_KEY, JSON.stringify(next)); } catch (e) { console.error(e); }
   }, []);
+
+  // [R45] Atributos y enfoque de los pilotos, guardados en el navegador
+  const [development, setDevelopment] = useState<DevelopmentState>(() => {
+    try { return parseDevelopment(localStorage.getItem(DEVELOPMENT_STORAGE_KEY)); } catch { return emptyDevelopment(); }
+  });
+  const saveDevelopment = useCallback((next: DevelopmentState) => {
+    setDevelopment(next);
+    try { localStorage.setItem(DEVELOPMENT_STORAGE_KEY, JSON.stringify(next)); } catch (e) { console.error(e); }
+  }, []);
+  /** Mejora que dará la carrera terminada con el resultado actual (se guarda al volver al inicio). */
+  const developmentAfter = useCallback((result: RaceResult) => developAfterRace(development, Object.values(DRIVERS), driver => {
+    const row = result.rows.find(r => r.driverCode === driver.code);
+    return row ? { position: row.position, status: row.status, points: row.points } : undefined;
+  }, simulation.totalLaps), [development, simulation]);
+
+  // [R19] Componentes de la unidad de potencia de todos los pilotos, guardados en el navegador
+  const [components, setComponents] = useState<ComponentState>(() => {
+    let state = emptyComponents();
+    try { state = parseComponents(localStorage.getItem(COMPONENTS_STORAGE_KEY)); } catch { /* sin almacenamiento */ }
+    return Object.keys(DRIVERS).reduce((s, id) => ensureDriver(s, id), state);
+  });
+  const saveComponents = useCallback((next: ComponentState) => {
+    setComponents(next);
+    try { localStorage.setItem(COMPONENTS_STORAGE_KEY, JSON.stringify(next)); } catch (e) { console.error(e); }
+  }, []);
+  const [gridChanges, setGridChanges] = useState<GridChange[]>([]);
+
+  // [R18] Programa de desarrollo y temporadas archivadas, guardados en el navegador
+  const [program, setProgram] = useState<DevelopmentProgram>(() => {
+    try { return parseProgram(localStorage.getItem(PROGRAM_STORAGE_KEY)); } catch { return emptyProgram(); }
+  });
+  const saveProgram = useCallback((next: DevelopmentProgram) => {
+    setProgram(next);
+    try { localStorage.setItem(PROGRAM_STORAGE_KEY, JSON.stringify(next)); } catch (e) { console.error(e); }
+  }, []);
+  const [seasonArchive, setSeasonArchive] = useState<SeasonSummary[]>(() => {
+    try { return parseArchive(localStorage.getItem(SEASONS_STORAGE_KEY)); } catch { return []; }
+  });
+  /** Posición del equipo en constructores (7 si aún no ha puntuado o no hay carreras). */
+  const constructorsPosition = useCallback((teamId: string) => {
+    const index = constructorsChampionship(championship).findIndex(t => t.teamId === teamId || t.teamName === TEAMS[teamId]?.name);
+    return index >= 0 ? Math.min(10, index + 1) : 7;
+  }, [championship]);
+
+  // [R20] Formato del Gran Premio y resultado de la clasificación pendiente de mostrar
+  const [raceFormat, setRaceFormat] = useState<RaceFormatId>('directo');
+  const [qualifying, setQualifying] = useState<QualifyingResult | null>(null);
+
+  // [R44] Meteorología de la próxima carrera
+  const [weatherScenarioId, setWeatherScenarioId] = useState<string>('seco');
 
   // Historial de carreras guardadas
   const [raceHistory, setRaceHistory] = useState<RaceResultHistory[]>(() => {
@@ -238,15 +304,40 @@ export const App: React.FC = () => {
   }, [simulation, camera]);
 
   const handleStartRaceFromHome = useCallback(() => {
+    simulation.setDriverAttributes(development.attributes);
+    simulation.setStartingGrid(null);
     simulation.setCircuit(selectedCircuitId);
+    // [R20] Con clasificación, la parrilla sale de Q1-Q3 y se enseña antes de formar; el GP directo usa la prefijada.
+    const quali = raceFormat === 'clasificacion' ? runQualifying(simulation.qualifyingEntrants(), Date.now() % 2147483647) : null;
+    // [R19] Antes de salir: la IA sustituye lo agotado, las unidades sin estrenar cuentan como usadas y sus sanciones
+    // recolocan la parrilla (la de la clasificación o la prefijada).
+    const playerTeam = (DRIVERS[selectedDriverId] ?? DRIVERS.alonso).teamId;
+    const prepared = aiReplace(components, Object.values(DRIVERS).filter(d => d.teamId !== playerTeam).map(d => d.id));
+    const started = markRaceStart(prepared);
+    saveComponents(started.state);
+    simulation.setFailureFactors(Object.fromEntries(Object.keys(DRIVERS).map(id => [id, hazardFactor(started.state, id)])));
+    // [R18] La IA desarrolla y monta sus mejoras; cada coche corre con las suyas.
+    const raceIndex = championship.races.length;
+    const aiTeams = [...new Set(Object.values(DRIVERS).map(d => d.teamId))].filter(t => t !== playerTeam);
+    const developed = aiDevelop(program, aiTeams, raceIndex, Object.fromEntries(aiTeams.map(t => [t, constructorsPosition(t)])), raceIndex + 1,
+      teamId => Object.values(DRIVERS).find(d => d.teamId === teamId)?.id ?? teamId);
+    saveProgram(developed);
+    simulation.setTechnicalUpgrades(Object.fromEntries(Object.values(DRIVERS).map(d => [d.id, upgradesFor(developed, d.teamId, d.id, raceIndex)])));
+    const baseGrid = quali ? quali.grid.map(slot => slot.driverId) : simulation.cars.map(c => c.driver.id);
+    const penalized = applyGridPenalties(baseGrid, started.penalties);
+    if (quali || penalized.moved.length) simulation.setStartingGrid(penalized.order);
+    setGridChanges(penalized.moved);
+    setQualifying(quali);
+    // [R44] Meteorología elegida en el paddock, ajustada a la duración prevista de la carrera.
+    simulation.setWeatherScenario(buildWeatherScenario(weatherScenarioId, simulation.totalLaps * 90));
     camera.resetToFullTrack();
     setSelectedCarId(null);
     setDetailOpen(false);
     clearNotices();
     setIsFinished(false);
     setCurrentView('race');
-    simulation.startRaceSequence();
-  }, [simulation, camera, selectedCircuitId]);
+    if (!quali) simulation.startRaceSequence();
+  }, [simulation, camera, selectedCircuitId, weatherScenarioId, development, raceFormat, components, saveComponents, selectedDriverId, program, saveProgram, championship, constructorsPosition]);
 
   const handleStartFormationLap = useCallback(() => {
     if (simulation.lightState === 'grid-ready') {
@@ -292,7 +383,22 @@ export const App: React.FC = () => {
 
       // [R21] Al salir, el resultado queda confirmado y suma al campeonato.
       const finalResult = simulation.confirmResult();
-      if (finalResult) saveChampionship(addRace(championship, newHistoryItem.id, selectedCircuitId, finalResult, simulation.raceFormat));
+      if (finalResult) {
+        saveChampionship(addRace(championship, newHistoryItem.id, selectedCircuitId, finalResult, simulation.raceFormat));
+        saveDevelopment(developmentAfter(finalResult));
+        // [R19] Las unidades montadas suman la carrera y sus kilómetros.
+        const nextComponents = completeRace(components, simulation.leaderLap * simulation.activeTrack.lapLengthMeters / 1000);
+        const nextChampionship = addRace(championship, newHistoryItem.id, selectedCircuitId, finalResult, simulation.raceFormat);
+        // [R18] Al completar las 24 carreras se cierra la temporada.
+        if (seasonComplete(nextChampionship)) {
+          const closed = closeSeason({ championship: nextChampionship, components: nextComponents, program, archive: seasonArchive });
+          saveChampionship(closed.championship); saveComponents(closed.components); saveProgram(closed.program);
+          setSeasonArchive(closed.archive);
+          try { localStorage.setItem(SEASONS_STORAGE_KEY, JSON.stringify(closed.archive)); } catch (e) { console.error(e); }
+        } else {
+          saveComponents(nextComponents);
+        }
+      }
 
       const updatedHistory = [newHistoryItem, ...raceHistory].slice(0, 10);
       setRaceHistory(updatedHistory);
@@ -304,7 +410,7 @@ export const App: React.FC = () => {
     }
 
     setCurrentView('home');
-  }, [simulation, selectedDriverId, selectedCircuitId, raceHistory, championship, saveChampionship]);
+  }, [simulation, selectedDriverId, selectedCircuitId, raceHistory, championship, saveChampionship, saveDevelopment, developmentAfter, components, saveComponents, program, saveProgram, seasonArchive]);
 
   const handleCycleCameraMode = useCallback(() => {
     camera.cycleMode();
@@ -416,7 +522,25 @@ export const App: React.FC = () => {
         onStartRace={handleStartRaceFromHome}
         raceHistory={raceHistory}
         championship={championship}
-        onResetChampionship={() => saveChampionship(emptyChampionship())}
+        onResetChampionship={() => {
+          saveChampionship(emptyChampionship()); saveDevelopment(emptyDevelopment());
+          saveComponents(Object.keys(DRIVERS).reduce((s, id) => ensureDriver(s, id), emptyComponents()));
+          saveProgram(emptyProgram());
+        }}
+        components={components}
+        development={{
+          program, raceIndex: championship.races.length,
+          constructorsPosition: constructorsPosition((DRIVERS[selectedDriverId] ?? DRIVERS.alonso).teamId),
+          onStart: key => saveProgram(startProject(program, (DRIVERS[selectedDriverId] ?? DRIVERS.alonso).teamId, key, championship.races.length,
+            constructorsPosition((DRIVERS[selectedDriverId] ?? DRIVERS.alonso).teamId)).program),
+          onInstall: (projectId, driverId) => saveProgram(installFirst(program, projectId, driverId, championship.races.length).program),
+        }}
+        onFitComponent={(driverId, type) => saveComponents(fitNew(components, driverId, type))}
+        onUndoComponent={(driverId, type) => saveComponents(undoFit(components, driverId, type))}
+        raceFormat={raceFormat}
+        onSelectFormat={setRaceFormat}
+        weatherScenarioId={weatherScenarioId}
+        onSelectWeather={setWeatherScenarioId}
       />
     );
   }
@@ -564,11 +688,24 @@ export const App: React.FC = () => {
               onStartClick={handleStartFormationLap}
             />
 
+            {qualifying && (
+              <div className={qualifyingStyles.overlay}>
+                <QualifyingResults result={qualifying} gridChanges={gridChanges} onContinue={() => { setQualifying(null); simulation.startRaceSequence(); }} />
+              </div>
+            )}
+
             {isFinished && podiumCars.length >= 3 && (
               <PodiumModal
                 podiumCars={podiumCars}
                 result={simulation.getRaceResult()}
                 onConfirmResult={() => { simulation.confirmResult(); setPodiumCars([...simulation.podiumCars]); }}
+                progress={(() => {
+                  const after = developmentAfter(simulation.getRaceResult());
+                  return teamCars.map(c => DRIVERS[c.driver.id]).filter(Boolean).map(driver => ({
+                    driver, attributes: attributesOf(after, driver), gains: after.lastGains[driver.id] ?? {}, focus: development.focus[driver.id] ?? 'equilibrado',
+                  }));
+                })()}
+                onFocusChange={(driverId, focus) => saveDevelopment({ ...development, focus: { ...development.focus, [driverId]: focus } })}
                 onRestart={handleResetRace}
                 onGoHome={handleGoHome}
               />

@@ -42,9 +42,14 @@ import { chassisGripAt, resolveTechnical } from '../data/teamProfiles';
 import { availableSets, COMPOUND_LABEL, createInventory, mountSet, pickSet, TireCompliance, tireCompliance } from './TireInventory';
 import { localFlagsFrom, LocalFlag, marshalSectorOf, Permissions, permissionsFor } from './RaceControl';
 import { Decision, PenaltyType, Stewards } from './Stewards';
+import { applyAttributes, fitnessNoiseFactor, overtakeAdvantageNeeded, wetGripFactor } from './DriverDevelopment';
+import type { DriverAttributes } from './DriverDevelopment';
+import type { QualiEntrant } from './Qualifying';
+import { technicalWith } from './Development';
 import { classify, constructorStandings, pointsTable, resultDifferences } from './RaceResult';
 import type { EndReason, RaceResult, ResultEntry } from './RaceResult';
-import { tyreWaterGrip, WeatherModel, WeatherScenario } from './WeatherModel';
+import { tyreCrossover, tyreClassOf, tyreWaterGrip, WeatherModel, WeatherScenario } from './WeatherModel';
+import type { TyreClass } from './WeatherModel';
 import { chooseCompound, STRATEGY, StrategyState } from './Strategist';
 import { AERO, CAR_DRY_MASS_KG, cornerMassFactor, dirtyAirLevel, holdThrottle, longitudinalAccel, slipstreamLevel, topSpeedKmh } from './AeroModel';
 import { mulberry32, random, Rng, rngState, streamSeed, useRng } from './Random';
@@ -108,6 +113,62 @@ export class RaceSimulation {
   static readonly LUCK_VARIANT_LABEL = 'D20 — variante del juego (no es reglamento FIA)';
   /** [R26] Registro de tiradas: causa, beneficio, alcance y si se aceptó. */
   luckLog: { eventId: string; time: number; lap: number; trigger: 'sc' | 'vsc' | 'red'; roll: number; carId: number; kind: D20BenefitKind; category: D20BenefitCategory; scope: string; applied: boolean }[] = [];
+
+  /** [R45] Atributos de los pilotos (por id): se aplican a los coches actuales y a las carreras siguientes. */
+  private driverAttributes: Record<string, DriverAttributes> = {};
+
+  setDriverAttributes(attributes: Record<string, DriverAttributes>) {
+    this.driverAttributes = { ...attributes };
+    for (const car of this.cars) {
+      const base = DRIVERS[car.driver.id];
+      if (base) car.driver = applyAttributes(base, this.driverAttributes[base.id]);
+    }
+  }
+
+  /** [R45] Ventaja que necesita `attackerId` para atacar a `defenderId`. */
+  overtakeAdvantageFor(attackerId: number, defenderId: number): number {
+    return overtakeAdvantageNeeded(RaceSimulation.OVERTAKE.MIN_ADVANTAGE,
+      this.getCarById(attackerId)?.driver.development?.overtake, this.getCarById(defenderId)?.driver.development?.defence);
+  }
+
+  /** [R19] Riesgo de avería por piloto según sus componentes; se aplica a los coches actuales y a las carreras siguientes. */
+  private failureFactors: Record<string, number> = {};
+
+  setFailureFactors(factors: Record<string, number>) {
+    this.failureFactors = { ...factors };
+    for (const car of this.cars) car.failureFactor = this.failureFactors[car.driver.id];
+  }
+
+  /** [R18] Mejoras de desarrollo montadas por piloto; se aplican al perfil técnico ahora y en las carreras siguientes. */
+  private technicalUpgrades: Record<string, string[]> = {};
+
+  setTechnicalUpgrades(upgrades: Record<string, string[]>) {
+    this.technicalUpgrades = { ...upgrades };
+    for (const car of this.cars) car.technical = technicalWith(resolveTechnical(car.team.id, this.circuitId), this.technicalUpgrades[car.driver.id] ?? []);
+  }
+
+  /** [R20] Parrilla de salida: la de la clasificación o, en GP directo, la prefijada. */
+  private startingGrid: string[] | null = null;
+  get gridSource(): 'prefijada' | 'clasificacion' {
+    return this.startingGrid ? 'clasificacion' : 'prefijada';
+  }
+
+  /** [R20] Fija la parrilla (ids de piloto en orden) y prepara la carrera; `null` vuelve a la prefijada. */
+  setStartingGrid(driverIds: string[] | null): boolean {
+    if (driverIds && (new Set(driverIds).size !== STARTING_GRID_ORDER.length || !driverIds.every(id => STARTING_GRID_ORDER.includes(id)))) return false;
+    this.startingGrid = driverIds ? [...driverIds] : null;
+    this.initRace();
+    return true;
+  }
+
+  /** [R20] Participantes de la clasificación con la vuelta de referencia del motor para su coche y piloto. */
+  qualifyingEntrants(): QualiEntrant[] {
+    return this.cars.map(car => ({
+      driverId: car.driver.id, code: car.driver.code, name: `${car.driver.firstName} ${car.driver.lastName}`,
+      teamName: car.team.name, teamColor: car.team.color, consistency: car.driver.consistency,
+      referenceLapSec: RejoinModel.lapProfile(this.activeTrack, car, null).lapTime,
+    }));
+  }
 
   isLuckVariantActive(): boolean {
     return this.luckVariantEnabled && this.rules.id !== 'fia-2025';
@@ -318,8 +379,9 @@ export class RaceSimulation {
     Object.assign(this.weather, { condition: 'dry', conditionLabel: 'SECO / DESPEJADO', waterDepthMm: 0, waterPercentage: 0, gripMultiplier: 1, rainProbabilityPct: 4 });
     this.scEndingLap = null; // [FIX C5] Reset scEndingLap en cada nueva carrera
 
-    this.cars = STARTING_GRID_ORDER.map((driverId, idx) => {
-      const driver = DRIVERS[driverId];
+    this.cars = (this.startingGrid ?? STARTING_GRID_ORDER).map((driverId, idx) => {
+      // [R45] Piloto con sus atributos actuales (idéntico al de siempre si no hay mejoras).
+      const driver = applyAttributes(DRIVERS[driverId], this.driverAttributes[driverId]);
       const team = TEAMS[driver.teamId];
 
       const gridSpacing = 0.0035;
@@ -367,6 +429,7 @@ export class RaceSimulation {
         driver,
         team,
         gridPosition: idx + 1,
+        failureFactor: this.failureFactors[driverId],
         currentPosition: idx + 1,
         previousPosition: idx + 1,
         progress: initialProgress,
@@ -460,7 +523,7 @@ export class RaceSimulation {
     // [R14] Carga por distancia: consumo estimado de cada coche × vueltas, con margen y muestra; tope del perfil.
     for (const car of this.cars) {
       // [R17] Perfil técnico resuelto una vez por coche y evento (chasis, PU y paquete del circuito).
-      car.technical = resolveTechnical(car.team.id, this.circuitId);
+      car.technical = technicalWith(resolveTechnical(car.team.id, this.circuitId), this.technicalUpgrades[car.driver.id] ?? []);
       // [R07] Inventario de juegos: mismo stock y reglas para todos; sale con un medio.
       car.tireInventory = createInventory(this.circuitId, car.tires.compound);
       const load = Math.min(this.rule('initialFuelKg'), FuelModel.initialFuelFor(RejoinModel.lapFuelKg(this.activeTrack, car), this.totalLaps));
@@ -661,6 +724,8 @@ export class RaceSimulation {
       if (!this.isPaused && !this.isFinished) this.stepAccumulator += simDt;
       while (this.stepAccumulator >= fixed - 1e-9) {
         this.stepAccumulator -= fixed;
+        // [R43] Antes del último paso de este fotograma se guarda la pose, para pintar interpolando entre ambos.
+        if (this.stepAccumulator < fixed - 1e-9) this.capturePreviousPoses();
         this.step(fixed);
         this.fixedStepCount++;
         this.onFixedStep?.();
@@ -726,6 +791,34 @@ export class RaceSimulation {
     } finally {
       useRng(null);
     }
+  }
+
+  // [R43] Datos de pintado (no son estado de la carrera: no se guardan ni afectan a la física).
+  private previousPoses = new Map<number, { worldX: number; worldY: number; worldAngle: number }>();
+  private previousSafetyCar: { progress: number; isInPitLane: boolean } | null = null;
+
+  private capturePreviousPoses() {
+    this.updateWorldPositions();
+    for (const car of this.cars) {
+      const pose = this.previousPoses.get(car.id);
+      if (pose) { pose.worldX = car.worldX; pose.worldY = car.worldY; pose.worldAngle = car.worldAngle; }
+      else this.previousPoses.set(car.id, { worldX: car.worldX, worldY: car.worldY, worldAngle: car.worldAngle });
+    }
+    this.previousSafetyCar = { progress: this.safetyCar.progress, isInPitLane: Boolean(this.safetyCar.isInPitLane) };
+  }
+
+  /** [R43] Fracción del paso en curso ya transcurrida (0..1): cuánto hay que avanzar al pintar desde la pose anterior. */
+  get renderAlpha(): number {
+    return this.fixedStepSec ? Math.min(1, Math.max(0, this.stepAccumulator / this.fixedStepSec)) : 1;
+  }
+
+  /** [R43] Pose del coche antes del último paso del motor. */
+  previousPose(carId: number) {
+    return this.previousPoses.get(carId);
+  }
+
+  previousSafetyCarRoute() {
+    return this.previousSafetyCar;
   }
 
   private updateWorldPositions() {
@@ -1002,7 +1095,9 @@ export class RaceSimulation {
         0.25 * car.driver.palmaresScore + 
         0.20 * car.driver.consistency;
 
-      const consistencyNoise = (1.0 - car.driver.consistency) * (Math.sin(car.currentLap * 1.7 + car.id) * 0.003);
+      // [R45] La forma física reduce la variación en el último tercio (factor 1 sin mejoras).
+      const consistencyNoise = (1.0 - car.driver.consistency) * (Math.sin(car.currentLap * 1.7 + car.id) * 0.003)
+        * fitnessNoiseFactor(car.progress / Math.max(1, this.totalLaps), car.driver.development?.fitness);
       const raceDayVariance = 1.0 + car.raceDayLuckFactor + ((car.driver.luckRating - 0.75) * 0.002) + consistencyNoise;
       // [R05] Coche físicamente delante (vecino en pista, sea cual sea su vuelta) para rebufo y aire sucio.
       let wakeGapSec = Infinity, wakeLateral = 0, wakeDistance = Infinity, wakeSpeedKmh = 0, wakeIsLapped = false;
@@ -1030,7 +1125,8 @@ export class RaceSimulation {
         raceDayVariance;
       // [R22] Agua del tramo: agarre del compuesto montado relativo a su agarre en seco (el seco ya lo da TireModel).
       const waterDepth = this.weatherModel.depthAt(normalizedT);
-      if (waterDepth > 0) effectivePace *= tyreWaterGrip(car.tires.compound, waterDepth) / tyreWaterGrip(car.tires.compound, 0);
+      // [R45] Los puntos de lluvia del piloto recuperan parte de la pérdida de agarre.
+      if (waterDepth > 0) effectivePace *= wetGripFactor(tyreWaterGrip(car.tires.compound, waterDepth) / tyreWaterGrip(car.tires.compound, 0), car.driver.development?.wet);
       // [R42] Ritmo propio del coche (neumáticos, chasis, piloto, motor, agua, temperatura y pinchazo), sin los efectos de
       // trazada: es lo que los demás comparan para decidir un adelantamiento.
       const paceIndex = effectivePace * (car.engineTempCelsius > 115 ? Math.max(0.92, 1 - (car.engineTempCelsius - 115) / 20 * 0.08) : 1)
@@ -1250,7 +1346,7 @@ export class RaceSimulation {
       const paceAdvantage = carAhead ? paceIndex / Math.max(1e-6, carAhead.paceIndex) - 1 : 0;
       const closingKmh = carAhead ? car.currentSpeedKmh - carAhead.currentSpeedKmh : 0;
       const hasOvertakePace = closingKmh > 0
-        && paceAdvantage + Math.min(OT.CLOSING_AID_MAX, closingKmh * OT.CLOSING_AID_PER_KMH) > OT.MIN_ADVANTAGE;
+        && paceAdvantage + Math.min(OT.CLOSING_AID_MAX, closingKmh * OT.CLOSING_AID_PER_KMH) > overtakeAdvantageNeeded(OT.MIN_ADVANTAGE, car.driver.development?.overtake, carAhead?.defencePoints);
       const overtakeAnywhere = closingKmh > 0 && paceAdvantage > OT.ANYWHERE_ADVANTAGE;
 
       // Ya está definida arriba isWaitingForScRestartLine
@@ -1844,7 +1940,8 @@ export class RaceSimulation {
     const unluckFactor = Math.max(0.2, 1.2 - car.driver.luckRating);
     const teamUnreliability = Math.max(0.01, 1.0 - car.team.reliability);
     const thermalStress = 1 + Math.max(0, car.engineTempCelsius - 112) / 8;
-    return 0.000008 * unluckFactor * (teamUnreliability * 50) * thermalStress;
+    // [R19] Componentes pasados de su vida nominal: más riesgo (factor 1 con unidades dentro de su vida).
+    return 0.000008 * unluckFactor * (teamUnreliability * 50) * thermalStress * (car.failureFactor ?? 1);
   }
 
   /** [R07] Estado de cumplimiento de S30.5m (dos especificaciones; Mónaco tres juegos) con aviso preventivo. */
@@ -2528,6 +2625,15 @@ export class RaceSimulation {
     this.weatherModel.reset(scenario);
   }
 
+  /** [R44] Cruce de compuestos: la clase que pide el agua media actual frente a la montada. */
+  getTyreCrossover(carId: number): { recommended: TyreClass; mounted: TyreClass; depthMm: number; advise: boolean } {
+    const car = this.getCarById(carId);
+    const depthMm = this.weatherModel.meanDepth();
+    const recommended = tyreCrossover(depthMm);
+    const mounted = tyreClassOf(car?.tires.compound ?? 'medium');
+    return { recommended, mounted, depthMm, advise: Boolean(car) && car!.status === 'running' && recommended !== mounted };
+  }
+
   /** [R22] Dirección de Carrera desactiva el DRS con pista mojada o visibilidad reducida. */
   weatherDrsBlocked(): boolean {
     return this.weatherModel.meanDepth() > 0.5 || this.weatherModel.visibility < 0.5;
@@ -2751,6 +2857,8 @@ export interface FieldCar {
   paceIndex: number;
   /** [R42] Coche al que está adelantando, si hay maniobra en curso. */
   attackingId: number | null;
+  /** [R45] Puntos de defensa ganados por el piloto. */
+  defencePoints: number;
 }
 
 function fieldCar(car: CarState): FieldCar {
@@ -2759,5 +2867,6 @@ function fieldCar(car: CarState): FieldCar {
     isInPitLane: car.isInPitLane, isPitting: car.pitStop.isPitting, tireHealth: car.tires.health,
     lateralOffset: car.lateralOffset, paceIndex: car.paceIndex ?? 1,
     attackingId: car.isOvertaking ? car.carAheadId : null,
+    defencePoints: car.driver.development?.defence ?? 0,
   };
 }

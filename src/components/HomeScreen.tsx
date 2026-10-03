@@ -7,6 +7,14 @@ import { OFFICIAL_CIRCUITS, CircuitSpec } from '../data/circuits';
 import { buildTrackFromSvg } from '../utils/svgTrackParser';
 import { RaceResultHistory } from '../types/f1';
 import { ChampionshipTable } from './ChampionshipTable';
+import { WeatherScenarioSelect } from './WeatherScenarioSelect';
+import { CarShowcase } from './CarShowcase';
+import { RaceFormatSelect } from './RaceFormatSelect';
+import { ComponentsPanel } from './ComponentsPanel';
+import { DevelopmentPanel } from './DevelopmentPanel';
+import type { DevelopmentProgram } from '../simulation/Development';
+import type { ComponentState, ComponentType } from '../simulation/ComponentPool';
+import type { RaceFormatId } from './RaceFormatSelect';
 import type { ChampionshipState } from '../simulation/Championship';
 import { FlagIcon } from './FlagIcon';
 import { F1WheelSvg } from './F1WheelSvg';
@@ -47,6 +55,21 @@ interface HomeScreenProps {
   /** [R21] Campeonato acumulado y su reinicio. */
   championship?: ChampionshipState;
   onResetChampionship?: () => void;
+  /** [R44] Meteorología elegida para la carrera. */
+  weatherScenarioId?: string;
+  onSelectWeather?: (id: string) => void;
+  /** [R18] Programa de desarrollo del equipo del jugador. */
+  development?: {
+    program: DevelopmentProgram; raceIndex: number; constructorsPosition: number;
+    onStart: (key: string) => void; onInstall: (projectId: string, driverId: string) => void;
+  };
+  /** [R19] Componentes de la unidad de potencia y montaje de unidades nuevas. */
+  components?: ComponentState;
+  onFitComponent?: (driverId: string, type: ComponentType) => void;
+  onUndoComponent?: (driverId: string, type: ComponentType) => void;
+  /** [R20] GP directo o con clasificación. */
+  raceFormat?: RaceFormatId;
+  onSelectFormat?: (format: RaceFormatId) => void;
 }
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({
@@ -57,7 +80,15 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   onStartRace,
   raceHistory,
   championship,
-  onResetChampionship
+  onResetChampionship,
+  weatherScenarioId,
+  onSelectWeather,
+  raceFormat,
+  onSelectFormat,
+  components,
+  onFitComponent,
+  onUndoComponent,
+  development
 }) => {
   const [activeTab, setActiveTab] = useState<'drivers' | 'circuits'>('drivers');
   const [driverSubTab, setDriverSubTab] = useState<'specs' | 'strategy' | 'records'>('specs');
@@ -215,6 +246,28 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             <span>Campeonato ({championship.races.length})</span>
           </summary>
           <ChampionshipTable championship={championship} onReset={onResetChampionship} />
+        </details>
+      )}
+
+      {development && (
+        <details className={styles.historySection}>
+          <summary className={styles.historyTitle}>
+            <span>Desarrollo del coche</span>
+          </summary>
+          <DevelopmentPanel program={development.program} teamId={(DRIVERS[selectedDriverId] ?? DRIVERS.alonso).teamId}
+            drivers={Object.values(DRIVERS).filter(d => d.teamId === (DRIVERS[selectedDriverId] ?? DRIVERS.alonso).teamId)}
+            raceIndex={development.raceIndex} constructorsPosition={development.constructorsPosition}
+            onStart={development.onStart} onInstall={development.onInstall} />
+        </details>
+      )}
+
+      {components && (
+        <details className={styles.historySection}>
+          <summary className={styles.historyTitle}>
+            <span>Componentes de la unidad de potencia</span>
+          </summary>
+          <ComponentsPanel state={components} drivers={Object.values(DRIVERS).filter(d => d.teamId === (DRIVERS[selectedDriverId] ?? DRIVERS.alonso).teamId)}
+            onFitNew={onFitComponent} onUndo={onUndoComponent} />
         </details>
       )}
 
@@ -377,6 +430,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
               {driverSubTab === 'specs' && (
                 <div className={styles.detailContentGrid}>
+                  {/* [R46] Monoplaza del piloto en 3D (silueta 2D sin WebGL) */}
+                  <div className={styles.detailCardBox} style={{ gridColumn: '1 / -1' }}>
+                    <CarShowcase teamColor={inspectedTeam.color} accentColor={inspectedTeam.accentColor} number={inspectedDriver.number}
+                      compound="medium" label={`Monoplaza de ${inspectedTeam.name} · ${inspectedDriver.code}`} />
+                  </div>
                   <div className={styles.detailCardBox}>
                     <div className={styles.detailCardTitle}>
                       <Wrench size={14} />
@@ -1010,6 +1068,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           <div className={styles.rulesProfile} title={getRuleSet(DEFAULT_RULE_SET_ID).id}>
             Reglas: <strong>{getRuleSet(DEFAULT_RULE_SET_ID).label}</strong>
           </div>
+
+          {onSelectFormat && (
+            <RaceFormatSelect className={styles.rulesProfile} value={raceFormat ?? 'directo'} onChange={onSelectFormat} />
+          )}
+          {onSelectWeather && (
+            <WeatherScenarioSelect className={styles.rulesProfile} value={weatherScenarioId ?? 'seco'} onChange={onSelectWeather} />
+          )}
 
           <button className={styles.launchBigButton} onClick={onStartRace}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

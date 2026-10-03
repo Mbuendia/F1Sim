@@ -512,5 +512,12 @@ export const modules = [
   { "id": "overtake-r42", "tasks": ["R42"], "sprint": "2.9", "kind": "contract" },
   { "id": "sc-compaction-r41", "tasks": ["R41"], "sprint": "2.9", "kind": "contract" },
   { "id": "result-r21", "tasks": ["R21"], "sprint": "2.9", "kind": "contract" },
-  { "id": "luck-variant-r26", "tasks": ["R26"], "sprint": "2.9", "kind": "contract" }
+  { "id": "luck-variant-r26", "tasks": ["R26"], "sprint": "2.9", "kind": "contract" },
+  { "id": "render-smooth-r43", "tasks": ["R43"], "sprint": "2.10", "kind": "contract" },
+  { "id": "weather-view-r44", "tasks": ["R44"], "sprint": "2.10", "kind": "contract" },
+  { "id": "driver-dev-r45", "tasks": ["R45"], "sprint": "2.10", "kind": "contract" },
+  { "id": "car-3d-r46", "tasks": ["R46"], "sprint": "2.10", "kind": "contract" },
+  { "id": "qualifying-r20", "tasks": ["R20"], "sprint": "2.10", "kind": "contract" },
+  { "id": "components-r19", "tasks": ["R19"], "sprint": "2.10", "kind": "contract" },
+  { "id": "development-r18", "tasks": ["R18"], "sprint": "2.10", "kind": "contract" }
 ];
