@@ -1,7 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
-import { SAFETY_CAR_MODEL, modelUrl, textColorOn } from '../renderer/carModel3d';
-import { SAFETY_CAR_LIVERY } from '../data/liveries';
+import { SAFETY_CAR_MODEL, modelUrl } from '../renderer/carModel3d';
 
 /**
  * [R55] Safety Car en 3D para el aviso de carrera: visto de lado y meciéndose despacio (así siempre se le ve el
@@ -35,13 +34,10 @@ const SafetyCar3D: React.FC = () => {
     let cancelled = false, frame = 0, previous = performance.now(), clock = 0;
     let release: (() => void) | null = null;
 
-    import('../renderer/modelScene').then(async ({ loadModel, textTexture, setDecal, materialsNamed, disposeModel }) => {
+    import('../renderer/modelScene').then(async ({ loadModel, dressSafetyCar, disposeModel }) => {
       const gltf = await loadModel(modelUrl(import.meta.env.BASE_URL, SAFETY_CAR_MODEL.file));
       if (cancelled) { disposeModel(gltf.scene); return; }
-      for (const paint of materialsNamed(gltf.scene, SAFETY_CAR_MODEL.materials.paint)) paint.color.set(SAFETY_CAR_LIVERY.body);
-      setDecal(gltf.scene, SAFETY_CAR_MODEL.decals.door, textTexture('Safety Car', SAFETY_CAR_LIVERY.accent, 3.8));
-      setDecal(gltf.scene, SAFETY_CAR_MODEL.decals.hood, textTexture(SAFETY_CAR_LIVERY.sponsors[0] ?? '', textColorOn(SAFETY_CAR_LIVERY.body), 1.7));
-      lights = materialsNamed(gltf.scene, SAFETY_CAR_MODEL.materials.lightbar);
+      lights = dressSafetyCar(gltf.scene);
       const clip = gltf.animations.find(animation => animation.name === SAFETY_CAR_MODEL.animation);
       if (clip) { mixer = new THREE.AnimationMixer(gltf.scene); mixer.clipAction(clip).play(); }
       scene.add(gltf.scene);

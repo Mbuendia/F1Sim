@@ -1,14 +1,9 @@
 import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { buildCarModelSpec } from '../renderer/carModelSpec';
-import { CAR_MODEL, DECAL_BACKGROUND, applyLivery, decalTexts, liveryColors, modelUrl, textColorOn } from '../renderer/carModel3d';
+import { CAR_MODEL, modelUrl } from '../renderer/carModel3d';
 import { liveryFor } from '../data/liveries';
 import { compoundStyle } from '../utils/compounds';
-
-/** Proporción (ancho/alto) de cada superficie de rótulos del modelo. */
-const DECAL_ASPECT: Record<string, number> = {
-  [CAR_MODEL.decals.sidepod]: 2.7, [CAR_MODEL.decals.engine]: 5.3, [CAR_MODEL.decals.rearwing]: 2.2, [CAR_MODEL.decals.nose]: 0.55,
-};
 
 interface Car3DViewerProps {
   teamColor: string;
@@ -101,14 +96,11 @@ const Car3DViewer: React.FC<Car3DViewerProps> = ({ teamColor, accentColor, numbe
     let cancelled = false;
     let releaseModel: (() => void) | null = null;
     host.dataset.carModel = 'geometria';
-    import('../renderer/modelScene').then(async ({ loadModel, textTexture, setDecal, disposeModel }) => {
+    import('../renderer/modelScene').then(async ({ loadModel, dressCar, disposeModel }) => {
       const gltf = await loadModel(modelUrl(import.meta.env.BASE_URL, CAR_MODEL.file));
       if (cancelled) { disposeModel(gltf.scene); return; }
       const livery = teamId ? liveryFor(teamId) : { primary: teamColor, secondary: accentColor, sponsors: [] as string[] };
-      applyLivery(gltf.scene, liveryColors(livery, compoundStyle(compound).color));
-      for (const [material, text] of Object.entries(decalTexts(livery, number))) {
-        setDecal(gltf.scene, material, textTexture(text, textColorOn(livery[DECAL_BACKGROUND[material] ?? 'primary']), DECAL_ASPECT[material] ?? 4));
-      }
+      dressCar(gltf.scene, livery, number, compoundStyle(compound).color);
       const clip = gltf.animations.find(animation => animation.name === CAR_MODEL.animation);
       if (clip) { mixer = new THREE.AnimationMixer(gltf.scene); mixer.clipAction(clip).play(); }
       gltf.scene.rotation.y = car.rotation.y;

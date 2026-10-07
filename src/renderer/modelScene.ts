@@ -2,6 +2,8 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { CAR_MODEL, DECAL_BACKGROUND, SAFETY_CAR_MODEL, applyLivery, decalTexts, liveryColors, textColorOn } from './carModel3d';
+import { SAFETY_CAR_LIVERY } from '../data/liveries';
 
 export function loadModel(url: string): Promise<GLTF> {
   return new GLTFLoader().loadAsync(url);
@@ -63,6 +65,36 @@ export function materialsNamed(root: THREE.Object3D, name: string): THREE.MeshSt
     if (mesh.isMesh) for (const material of materialsOf(mesh)) if (material.name === name) found.add(material as THREE.MeshStandardMaterial);
   });
   return [...found];
+}
+
+/** Proporción (ancho/alto) de cada superficie de rótulos del monoplaza. */
+const DECAL_ASPECT: Record<string, number> = {
+  [CAR_MODEL.decals.sidepod]: 2.7, [CAR_MODEL.decals.engine]: 5.3, [CAR_MODEL.decals.rearwing]: 2.2, [CAR_MODEL.decals.nose]: 0.55,
+};
+
+/**
+ * Viste el monoplaza con una librea: pintura, patrocinadores, dorsal y banda del compuesto. Devuelve cómo liberar
+ * las texturas de los rótulos (para vestir después el mismo modelo con otra librea).
+ */
+export function dressCar(
+  root: THREE.Object3D, livery: { primary: string; secondary: string; sponsors: string[] }, number: number, compoundColor: string,
+): () => void {
+  applyLivery(root, liveryColors(livery, compoundColor));
+  const textures: THREE.Texture[] = [];
+  for (const [material, text] of Object.entries(decalTexts(livery, number))) {
+    const texture = textTexture(text, textColorOn(livery[DECAL_BACKGROUND[material] ?? 'primary']), DECAL_ASPECT[material] ?? 4);
+    setDecal(root, material, texture);
+    textures.push(texture);
+  }
+  return () => { for (const texture of textures) texture.dispose(); };
+}
+
+/** Viste el Safety Car (pintura y rótulos) y devuelve los materiales de su barra de luces. */
+export function dressSafetyCar(root: THREE.Object3D): THREE.MeshStandardMaterial[] {
+  for (const paint of materialsNamed(root, SAFETY_CAR_MODEL.materials.paint)) paint.color.set(SAFETY_CAR_LIVERY.body);
+  setDecal(root, SAFETY_CAR_MODEL.decals.door, textTexture('Safety Car', SAFETY_CAR_LIVERY.accent, 3.8));
+  setDecal(root, SAFETY_CAR_MODEL.decals.hood, textTexture(SAFETY_CAR_LIVERY.sponsors[0] ?? '', textColorOn(SAFETY_CAR_LIVERY.body), 1.7));
+  return materialsNamed(root, SAFETY_CAR_MODEL.materials.lightbar);
 }
 
 /** Libera geometrías, materiales y texturas del modelo. */

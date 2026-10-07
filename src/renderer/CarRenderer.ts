@@ -1,7 +1,8 @@
 import { CarState, SafetyCarState } from '../types/f1';
 import { TrackDefinition } from '../data/barcelonaTrack';
 import { Camera } from './Camera';
-import { rearLight, wheelMarkPhase } from './carDetail';
+import { rearLight, safetyCarLightOn, wheelMarkPhase } from './carDetail';
+import { TopSprite, carPixelsPerMeter, carSpriteKey, carSpriteSize, getCarSprite, getSafetyCarSprite, spriteLevel } from './carSprites';
 import { compoundStyle } from '../utils/compounds';
 import { getTrackHalfWidth, getLateralDisplacement, isCarVisible, calculateCarWorldPosition } from '../utils/carPosition';
 import { OVERVIEW_ZOOM, renderCarLabels } from './CarLabels';
@@ -185,6 +186,13 @@ export class CarRenderer {
     const carLen = 16 * scale;
     const carWid = 7.5 * scale;
 
+    const flash = safetyCarLightOn(performance.now());
+    const sprite = getSafetyCarSprite();
+    // [R56] Con imagen, el Safety Car va a la misma escala que los monoplazas, sin bajar del tamaño mínimo que lo
+    // mantiene visible de lejos (el del dibujo anterior).
+    const length = sprite ? Math.max(16 * 0.9, sprite.lengthM * carPixelsPerMeter(CarRenderer.getCarDimensions(zoom))) : carLen;
+    const width = sprite ? length * sprite.widthM / sprite.lengthM : carWid;
+
     ctx.save();
     ctx.translate(screen.x, screen.y);
     ctx.rotate(angle + camera.rotation);
@@ -192,33 +200,45 @@ export class CarRenderer {
     // Sombra del Safety Car
     ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
     ctx.beginPath();
-    ctx.ellipse(1, 2, carLen * 0.54, carWid * 0.5, 0, 0, Math.PI * 2);
+    ctx.ellipse(1, 2, length * 0.54, width * 0.5, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // Carrocería Aston Martin Vantage Safety Car (British Racing Green)
-    ctx.fillStyle = '#00594f';
-    ctx.beginPath();
-    ctx.roundRect(-carLen * 0.5, -carWid * 0.45, carLen, carWid * 0.9, 3 * scale);
-    ctx.fill();
-    ctx.strokeStyle = '#22c55e';
-    ctx.lineWidth = 1.2;
-    ctx.stroke();
+    if (sprite) {
+      // Imagen del modelo 3D visto desde arriba y, encima, el destello de la barra de luces.
+      ctx.drawImage(spriteLevel(sprite, length * CarRenderer.pixelRatio()) as CanvasImageSource, -length / 2, -width / 2, length, width);
+      if (sprite.lightbar) {
+        const perMeter = length / sprite.lengthM, barLength = Math.max(2, sprite.lightbar.lengthM * perMeter);
+        ctx.fillStyle = flash ? '#f59e0b' : '#ef4444';
+        ctx.shadowColor = '#f59e0b';
+        ctx.shadowBlur = 10;
+        ctx.fillRect(sprite.lightbar.x * perMeter - barLength / 2, -sprite.lightbar.halfWidth * perMeter, barLength, 2 * sprite.lightbar.halfWidth * perMeter);
+        ctx.shadowBlur = 0;
+      }
+    } else {
+      // Carrocería Aston Martin Vantage Safety Car (British Racing Green)
+      ctx.fillStyle = '#00594f';
+      ctx.beginPath();
+      ctx.roundRect(-carLen * 0.5, -carWid * 0.45, carLen, carWid * 0.9, 3 * scale);
+      ctx.fill();
+      ctx.strokeStyle = '#22c55e';
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
 
-    // Luna delantera y trasera
-    ctx.fillStyle = '#0f172a';
-    ctx.fillRect(-carLen * 0.15, -carWid * 0.35, carLen * 0.35, carWid * 0.7);
+      // Luna delantera y trasera
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(-carLen * 0.15, -carWid * 0.35, carLen * 0.35, carWid * 0.7);
 
-    // Barra de luces estroboscópicas en el techo (Amber / Orange LEDs)
-    const flash = Math.sin(performance.now() * 0.018) > 0;
-    ctx.fillStyle = flash ? '#f59e0b' : '#ef4444';
-    ctx.shadowColor = '#f59e0b';
-    ctx.shadowBlur = 10;
-    ctx.fillRect(-carLen * 0.05, -carWid * 0.38, 3.5 * scale, carWid * 0.76);
-    ctx.shadowBlur = 0;
+      // Barra de luces estroboscópicas en el techo (Amber / Orange LEDs)
+      ctx.fillStyle = flash ? '#f59e0b' : '#ef4444';
+      ctx.shadowColor = '#f59e0b';
+      ctx.shadowBlur = 10;
+      ctx.fillRect(-carLen * 0.05, -carWid * 0.38, 3.5 * scale, carWid * 0.76);
+      ctx.shadowBlur = 0;
 
-    // Alerón trasero
-    ctx.fillStyle = '#1e293b';
-    ctx.fillRect(-carLen * 0.52, -carWid * 0.48, 2.5 * scale, carWid * 0.96);
+      // Alerón trasero
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(-carLen * 0.52, -carWid * 0.48, 2.5 * scale, carWid * 0.96);
+    }
 
     ctx.restore();
 
@@ -248,6 +268,14 @@ export class CarRenderer {
     opacity: number = 1.0,
     detail: { wetMm: number; timeSec: number; distanceM: number } = { wetMm: 0, timeSec: 0, distanceM: 0 }
   ) {
+    // [R56] Con la imagen de su modelo 3D ya generada, el coche se pinta con ella; si no, el dibujo vectorial.
+    const sprite = getCarSprite(carSpriteKey(car));
+    if (sprite) {
+      this.drawSpriteCar(ctx, x, y, angle, car, zoom, dimensions, opacity, detail, sprite);
+      this.drawCarHighlight(ctx, x, y, car, isSelected, dimensions.scale);
+      return;
+    }
+
     ctx.save();
     ctx.globalAlpha = opacity;
 
@@ -377,6 +405,73 @@ export class CarRenderer {
 
     ctx.restore();
 
+    this.drawCarHighlight(ctx, x, y, car, isSelected, scale);
+  }
+
+  /** Píxeles reales por píxel de pantalla (para elegir el nivel de imagen). */
+  private static pixelRatio(): number {
+    return (typeof window !== 'undefined' && window.devicePixelRatio) || 1;
+  }
+
+  /** [R56] Coche pintado con la imagen cenital de su modelo 3D, más las marcas que cambian en carrera. */
+  private static drawSpriteCar(
+    ctx: CanvasRenderingContext2D, x: number, y: number, angle: number, car: CarState, zoom: number,
+    dimensions: ReturnType<typeof CarRenderer.getCarDimensions>, opacity: number,
+    detail: { wetMm: number; timeSec: number; distanceM: number }, sprite: TopSprite
+  ) {
+    const { scale } = dimensions;
+    const size = carSpriteSize(dimensions, sprite.lengthM / sprite.widthM);
+    const perMeter = size.length / sprite.lengthM;
+
+    ctx.save();
+    ctx.globalAlpha = opacity;
+
+    // Sombra fija en pantalla, como la del dibujo vectorial.
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+    ctx.beginPath();
+    ctx.ellipse(x + 2 * scale, y + 3 * scale, size.length * 0.5, size.width * 0.5, angle, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+    ctx.drawImage(spriteLevel(sprite, size.length * CarRenderer.pixelRatio()) as CanvasImageSource, -size.length / 2, -size.width / 2, size.length, size.width);
+
+    // Neumáticos: color real del compuesto y marca que avanza con la distancia recorrida (solo de cerca).
+    if (zoom > 1.1 && sprite.wheels && sprite.tyre) {
+      const tyreLength = sprite.tyre.lengthM * perMeter, tyreWidth = sprite.tyre.widthM * perMeter;
+      const compoundColor = compoundStyle(car.tires.compound).color;
+      const markPhase = wheelMarkPhase(detail.distanceM);
+      for (const [wheelX, wheelY] of sprite.wheels) {
+        const wx = wheelX * perMeter, wy = wheelY * perMeter;
+        ctx.fillStyle = compoundColor;
+        ctx.fillRect(wx - tyreLength / 4, wy - 0.5 * scale, tyreLength / 2, 1 * scale);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+        ctx.fillRect(wx + tyreLength / 2 - (tyreLength - 1 * scale) * markPhase - 1 * scale, wy - tyreWidth / 2, 1 * scale, tyreWidth);
+      }
+    }
+
+    // DRS abierto: el plano del alerón trasero en verde.
+    if (car.drsActive && sprite.rearWing) {
+      ctx.fillStyle = '#00ff66';
+      ctx.fillRect(sprite.rearWing.x0 * perMeter, -sprite.rearWing.halfWidth * perMeter,
+        (sprite.rearWing.x1 - sprite.rearWing.x0) * perMeter, 2 * sprite.rearWing.halfWidth * perMeter);
+    }
+
+    // Luz trasera: parpadea con pista mojada y queda fija al recargar en frenada.
+    const light = rearLight({ wetMm: detail.wetMm, braking: car.status === 'running' && car.telemetry.brake > 20, timeSec: detail.timeSec });
+    if (light.lit) {
+      ctx.fillStyle = '#ff2d2d';
+      ctx.shadowColor = '#ff2d2d';
+      ctx.shadowBlur = 6 * scale;
+      ctx.fillRect(-size.length / 2, -0.6 * scale, 1 * scale, 1.2 * scale);
+      ctx.shadowBlur = 0;
+    }
+
+    ctx.restore();
+  }
+
+  /** Aro del coche seleccionado, con bandera azul o retirado. */
+  private static drawCarHighlight(ctx: CanvasRenderingContext2D, x: number, y: number, car: CarState, isSelected: boolean, scale: number) {
     // ── EFECTO DE GLOW SI ESTÁ SELECCIONADO ──
     if (isSelected || car.isBlueFlagged || car.status === 'out') {
       ctx.save();
@@ -389,6 +484,5 @@ export class CarRenderer {
       ctx.stroke();
       ctx.restore();
     }
-
   }
 }

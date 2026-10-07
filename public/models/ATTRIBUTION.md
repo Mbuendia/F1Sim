@@ -23,5 +23,8 @@ Los dos modelos de esta carpeta son obras de otros autores, publicadas en Sketch
 - **Cambios:** se han quitado las texturas, los emblemas y los rótulos de marcas; materiales planos; ruedas y barra de
   luces como piezas aparte con animación de giro; superficies para rótulos (los pone el juego).
 
+El juego usa estos modelos en el visor 3D del paddock, en el aviso de Safety Car y, vistos desde arriba, para pintar
+los coches y el Safety Car en la pista. El crédito visible va junto al visor del paddock y en el aviso de Safety Car.
+
 Los archivos se preparan en Blender y se terminan con `node scripts/finalize-models.mjs`, que une la animación de las
 ruedas en un clip y escribe esta atribución dentro de cada `.glb`.

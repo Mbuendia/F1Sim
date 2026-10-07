@@ -8,6 +8,7 @@ import { renderLeftMinimap } from '../renderer/MinimapRenderer';
 import { RenderInterpolator } from '../renderer/RenderPose';
 import { WeatherRenderer, weatherLayers } from '../renderer/WeatherRenderer';
 import { OFFICIAL_CIRCUITS } from '../data/circuits';
+import { supportsWebGL } from './CarShowcase';
 import { Compass, RotateCw } from 'lucide-react';
 
 interface RaceCanvasProps {
@@ -39,12 +40,26 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
     }
   }, [selectedCarId, camera, simulation.activeTrack]);
 
+  // [R56] Imágenes de los modelos 3D vistos desde arriba para los coches de pista. Se generan aparte al entrar en
+  // carrera; hasta que están (o si no hay WebGL o falla la carga) la pista sigue con su dibujo vectorial.
+  useEffect(() => {
+    if (!supportsWebGL()) return;
+    let cancelled = false;
+    import('../renderer/carSprites3d')
+      .then(sprites => sprites.buildCarSprites(simulation.cars, import.meta.env.BASE_URL, () => cancelled))
+      .catch(() => { /* sin imágenes: dibujo vectorial */ });
+    return () => { cancelled = true; };
+  }, [simulation]);
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
     const ctx = canvas.getContext('2d', { alpha: false });
     if (!ctx) return;
+
+    // [R56] La imagen del Safety Car se pide la primera vez que sale a pista.
+    let safetyCarImageRequested = !supportsWebGL();
 
     let animationFrameId: number;
     let lastTime = performance.now();
@@ -103,6 +118,13 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
       const weatherView = weatherLayers(simulation.weatherModel, simulation.raceTimeSec);
       WeatherRenderer.render(ctx, simulation.activeTrack, camera, weatherView, simulation.raceTimeSec);
       if (weatherView) WeatherRenderer.renderSpray(ctx, frame.cars, camera, t => simulation.weatherModel.depthAt(t));
+
+      if (frame.safetyCar?.isDeployed && !safetyCarImageRequested) {
+        safetyCarImageRequested = true;
+        import('../renderer/carSprites3d')
+          .then(sprites => sprites.buildSafetyCarSprite(import.meta.env.BASE_URL))
+          .catch(() => { /* sin imagen: dibujo anterior del Safety Car */ });
+      }
 
       const circuitSpec = OFFICIAL_CIRCUITS[simulation.circuitId];
       const trackWidthCarsCapacity = circuitSpec?.trackWidthCars ?? 3;

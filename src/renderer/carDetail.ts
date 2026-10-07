@@ -17,6 +17,11 @@ export function rearLight({ wetMm, braking, timeSec }: { wetMm: number; braking:
   return { mode: 'apagada', lit: false };
 }
 
+/** [R56] Destello de la barra de luces del Safety Car (unas tres veces por segundo), según el reloj en milisegundos. */
+export function safetyCarLightOn(nowMs: number): boolean {
+  return Math.sin(nowMs * 0.018) > 0;
+}
+
 /** Fase (0..1) de la marca de la rueda según la distancia recorrida: no cambia con el coche parado. */
 export function wheelMarkPhase(distanceM: number): number {
   const turns = distanceM / WHEEL_CIRCUMFERENCE_M;
