@@ -38,6 +38,9 @@ export default async function run({ server, assert, test }) {
     // (corrección autorizada por el usuario el 01/10/2026).
     const { sim } = vscRace();
     const gap = () => sim.timing.gapAtLastCommonLoop(sim.cars[2].id, sim.cars[0].id);
+    // El hueco inicial se toma 10 s después de declararse el VSC, cuando los coches ya ruedan en su delta: a la misma
+    // distancia, el hueco en segundos crece al reducir la velocidad (corrección autorizada por el usuario el 07/10/2026, R47).
+    while (sim.raceTimeSec < sim.vscStartedAt + 10) sim.update(1 / 60);
     const start = gap();
     for (let i = 0; i < 1500; i++) sim.update(1 / 60);
     const end = gap();
