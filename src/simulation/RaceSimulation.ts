@@ -57,6 +57,8 @@ import { chooseCompound, STRATEGY, StrategyState } from './Strategist';
 import { AERO, CAR_DRY_MASS_KG, cornerMassFactor, dirtyAirLevel, holdThrottle, longitudinalAccel, slipstreamLevel, topSpeedKmh } from './AeroModel';
 import { mulberry32, random, Rng, rngState, streamSeed, useRng } from './Random';
 import type { RaceSnapshot } from './Snapshot';
+import { overtakingZonesOf, zoneAt } from './OvertakingZones';
+import type { OvertakingZone } from './OvertakingZones';
 
 // Q20: distancia previa a la entrada de boxes en la que un coche que va a parar se coloca en el eje.
 const PIT_APPROACH_METERS = 250;
@@ -917,15 +919,49 @@ export class RaceSimulation {
     MIN_ADVANTAGE: 0.012, CLOSING_AID_PER_KMH: 0.0005, CLOSING_AID_MAX: 0.009, ANYWHERE_ADVANTAGE: 0.15,
     /** Distancia a la que el atacante está en paralelo (m) y velocidad a la que el adelantado le cede la curva. */
     ALONGSIDE_M: 6, YIELD_FACTOR: 0.95,
+    /**
+     * [R50] Defensa básica: el coche atacado dentro de una zona cubre el interior si el atacante aún no está en paralelo
+     * y está a menos de DEFENCE_RANGE_M; con el interior cubierto el atacante necesita DEFENCE_FACTOR veces más ventaja.
+     */
+    DEFENCE_FACTOR: 1.3, DEFENCE_RANGE_M: 30, DEFENCE_OFFSET: 0.5,
+    /** [R50] Donde la curva solo admite un coche hay que llegar en paralelo a la frenada: margen (m) de esa estimación. */
+    CLEAR_M: 2,
+    /**
+     * [R50] Al acabar la zona, quien va tan cerca y tan rápido que su inercia lo pone por delante termina la maniobra:
+     * metros que se ganan al dejar de atacar (frenando 180 km/h por segundo) por (km/h de aproximación)², y margen.
+     */
+    MOMENTUM_M_PER_KMH2: 0.0012, MOMENTUM_MARGIN_M: 0.1,
+    /** [R50] Distancia (m) por debajo de la cual un coche que no ataca está solapado con el de delante y debe ceder. */
+    OVERLAP_M: 3,
+    /** [R50] Un coche retenido rueda al 99 % del de delante: hasta esta fracción de su velocidad no se considera que pierde terreno. */
+    HELD_TOLERANCE: 0.015,
   };
 
   /** [R41] Distancia mínima en fila bajo neutralización (fracción de vuelta). */
   static readonly QUEUE_GAP_LAPS = 0.0025;
 
+  /** [R50] Zonas de adelantamiento del circuito activo, derivadas de su trazado (rectas, frenadas, DRS y anchura). */
+  get overtakingZones(): OvertakingZone[] {
+    return overtakingZonesOf(this.activeTrack);
+  }
+
+  overtakingZoneAt(t: number): OvertakingZone | undefined {
+    return zoneAt(this.overtakingZones, t);
+  }
+
+  /** Se puede intentar un adelantamiento normal en la fracción de vuelta `t` (dentro de una zona del circuito). */
   isOvertakingAllowedZone(t: number): boolean {
-    if (t >= 0.92 || t <= 0.10) return true;
-    if (t >= 0.40 && t <= 0.60) return true;
-    return false;
+    return this.overtakingZoneAt(t) !== undefined;
+  }
+
+  /**
+   * [R50] Zona a la que se atribuye un adelantamiento que acaba de hacer `carId`: la zona en la que está o, si la
+   * maniobra que traía de una zona termina justo al salir de ella, esa zona. Sin zona: null (fuera de zona).
+   */
+  overtakeZoneOf(carId: number): number | null {
+    const car = this.getCarById(carId);
+    if (!car) return null;
+    return this.overtakingZoneAt(car.trackT)?.id ?? (car.isOvertaking ? car.attackZoneId ?? null : null);
   }
 
   update(dtRaw: number) {
@@ -1361,6 +1397,8 @@ export class RaceSimulation {
         effectivePace *= thermal;
         powerPace *= thermal;
       }
+      // [R50] Ritmo en recta (potencia): lo comparan los demás donde el adelantamiento hay que terminarlo antes de frenar.
+      car.powerIndex = powerPace;
 
       // Q8: Dynamic Rubber Grip Accumulation
       // If car is close to the ideal line, increase pace slightly.
@@ -1423,6 +1461,16 @@ export class RaceSimulation {
       if (speedLimitFactor < 0.90) targetKmh *= 1 - AERO.dirtyAirMaxLoss * (car.dirtyAirLevel ?? 0);
       // [R14] Masa: con más combustible, menos velocidad de paso con el mismo apoyo.
       if (speedLimitFactor < 0.90) targetKmh *= cornerMassFactor(aeroInput.massKg);
+
+      // [R50] Defensa básica: atacado dentro de una zona, el coche cubre el interior de la curva que la cierra. Un solo
+      // movimiento por zona; si el atacante ya está en paralelo no se le cierra.
+      const zone = this.overtakingZoneAt(normalizedT);
+      if (car.defence && (!zone || zone.id !== car.defence.zoneId || !perms.overtake || car.isBlueFlagged)) car.defence = undefined;
+      if (!car.defence && zone && perms.overtake && !car.isBlueFlagged && !car.isOvertaking) {
+        const alongside = RaceSimulation.OVERTAKE.ALONGSIDE_M / lapDistanceMeters, range = RaceSimulation.OVERTAKE.DEFENCE_RANGE_M / lapDistanceMeters;
+        const threat = field.some(o => o.attackingId === car.id && car.progress - o.progress >= alongside && car.progress - o.progress < range);
+        if (threat) car.defence = { zoneId: zone.id, side: zone.insideSign };
+      }
 
       // [R42] Fuera de las rectas, el coche al que ya tienen en paralelo cede la curva al que le adelanta.
       if (perms.overtake && (speedLimitFactor < 0.90 || trackPoint.isBrakingZone)) {
@@ -1560,7 +1608,9 @@ export class RaceSimulation {
       // [R42] Distancia de seguimiento: la de siempre a alta velocidad y más corta en curvas lentas (tiempo constante),
       // para que el coche rápido no pierda en la salida de curva lo que gana en ella.
       const minSafeSpacing = perms.neutralized ? 0.0030 : Math.min(0.0030, Math.max(OT_FOLLOW.MIN_M, OT_FOLLOW.GAP_SEC * car.currentSpeedKmh / 3.6) / lapDistanceMeters);
-      const canOvertakeHere = this.isOvertakingAllowedZone(normalizedT);
+      // [R50] La zona del circuito fija cuánta ventaja hace falta; si el de delante ha cubierto el interior, más.
+      const canOvertakeHere = zone !== undefined;
+      const defended = zone !== undefined && carAhead?.defenceZoneId === zone.id;
       
       // [R42] La decisión es relativa al coche de delante: ventaja de ritmo propio más la velocidad real de aproximación
       // (que ya incluye DRS y rebufo), con tope para que dos coches iguales no se pasen solo con las ayudas. Con una
@@ -1568,34 +1618,66 @@ export class RaceSimulation {
       const OT = RaceSimulation.OVERTAKE;
       const paceAdvantage = carAhead ? paceIndex / Math.max(1e-6, carAhead.paceIndex) - 1 : 0;
       const closingKmh = carAhead ? car.currentSpeedKmh - carAhead.currentSpeedKmh : 0;
-      const hasOvertakePace = closingKmh > 0
-        && paceAdvantage + Math.min(OT.CLOSING_AID_MAX, closingKmh * OT.CLOSING_AID_PER_KMH) > overtakeAdvantageNeeded(OT.MIN_ADVANTAGE, car.driver.development?.overtake, carAhead?.defencePoints);
+      // [R50] Un coche retenido detrás rueda al 99 % del de delante y nunca «se acerca»: basta con que no pierda terreno.
+      const hasOvertakePace = closingKmh > -OT.HELD_TOLERANCE * car.currentSpeedKmh
+        && paceAdvantage + Math.min(OT.CLOSING_AID_MAX, Math.max(0, closingKmh) * OT.CLOSING_AID_PER_KMH)
+          > overtakeAdvantageNeeded(OT.MIN_ADVANTAGE * (zone?.difficulty ?? 1) * (defended ? OT.DEFENCE_FACTOR : 1), car.driver.development?.overtake, carAhead?.defencePoints);
       const overtakeAnywhere = closingKmh > 0 && paceAdvantage > OT.ANYWHERE_ADVANTAGE;
+      // [R50] ¿Permite la zona lanzar o mantener la maniobra aquí?
+      //  · Ya en paralelo (a menos de ALONGSIDE_M), la maniobra iniciada se mantiene hasta el final de la zona.
+      //  · Si la curva solo admite un coche hay que llegar en paralelo a la frenada: la maniobra solo se lanza si, con su
+      //    ventaja en recta (la real de aproximación o la de potencia), puede ponerse en paralelo antes de que la pista
+      //    se estreche; pasado ese punto solo sigue quien ya lo estaba.
+      const gapToAheadM = carAhead ? Math.max(0, carAhead.progress - car.progress) * lapDistanceMeters : 0;
+      let zoneAllows = false;
+      if (zone && carAhead) {
+        const lapsTo = (t: number) => (((t - normalizedT) % 1) + 1) % 1;
+        const alongsideNow = car.isOvertaking && gapToAheadM < OT.ALONGSIDE_M;
+        const beforeLaunchEnd = lapsTo(zone.launchEndT) <= (((zone.launchEndT - zone.startT) % 1) + 1) % 1;
+        if (zone.cornerWide) zoneAllows = hasOvertakePace || alongsideNow;
+        else if (beforeLaunchEnd) {
+          const straightAdvantage = Math.max(closingKmh / Math.max(1, car.currentSpeedKmh), powerPace / Math.max(1e-6, carAhead.powerIndex) - 1, 1e-3);
+          const canGetAlongside = lapsTo(zone.launchEndT) * lapDistanceMeters >= (Math.max(0, gapToAheadM - OT.ALONGSIDE_M) + OT.CLEAR_M) / straightAdvantage;
+          zoneAllows = (canGetAlongside && hasOvertakePace) || alongsideNow;
+        } else zoneAllows = alongsideNow;
+      }
+      // Justo al salir de su zona, quien ya no puede evitar pasar termina la maniobra (cuenta como de esa zona); el
+      // resto la abandona a tiempo: nadie completa por inercia un adelantamiento fuera de zona.
+      const committed = !zone && car.isOvertaking && car.attackZoneId != null && carAhead !== null && closingKmh > 0
+        && gapToAheadM <= closingKmh * closingKmh * OT.MOMENTUM_M_PER_KMH2 + OT.MOMENTUM_MARGIN_M;
 
       // Ya está definida arriba isWaitingForScRestartLine
-      if (carAhead && !carAhead.isPitting && !car.isBlueFlagged && carAhead.status === 'running') {
+      // [R50] Un coche con bandera azul (lo están doblando) no ataca, pero sigue sin poder atravesar al que tiene delante:
+      // antes quedaba fuera de este bloque y pasaba por rebufo, sin maniobra y en cualquier punto.
+      if (carAhead && !carAhead.isPitting && carAhead.status === 'running') {
         const deltaProgress = carAhead.progress - car.progress;
 
         if (deltaProgress > 0 && deltaProgress < minSafeSpacing) {
           // Si está lejos bajo SC, SIEMPRE puede adelantar para desdoblarse/alcanzar
           const isCatchingPackUnderSc = isCatchingPack && this.safetyCar.isDeployed;
-          // Ya en paralelo, la maniobra iniciada se mantiene mientras dure la zona.
-          const alongside = car.isOvertaking && deltaProgress * lapDistanceMeters < OT.ALONGSIDE_M;
-          const wantsToOvertake = (canOvertakeHere && (hasOvertakePace || alongside)) || overtakeAnywhere || isCatchingPackUnderSc;
+          const wantsToOvertake = (canOvertakeHere && zoneAllows) || committed || overtakeAnywhere || isCatchingPackUnderSc;
 
-          if (wantsToOvertake && !isWaitingForScRestartLine && perms.overtake) {
+          if (wantsToOvertake && !car.isBlueFlagged && !isWaitingForScRestartLine && perms.overtake) {
             car.isOvertaking = true;
-            car.targetLateralOffset = car.id % 2 === 0 ? 0.55 : -0.55;
+            car.attackZoneId = zone ? zone.id : committed ? car.attackZoneId : null;
+            // [R50] En zona, por el interior si está libre y por fuera si el de delante lo ha cubierto.
+            car.targetLateralOffset = zone ? (defended ? -zone.insideSign : zone.insideSign) * 0.55 : (car.id % 2 === 0 ? 0.55 : -0.55);
           } else {
             car.isOvertaking = false;
-            car.targetLateralOffset = 0;
+            // Con bandera azul el lado lo decide la cesión (más abajo).
+            if (!car.isBlueFlagged) car.targetLateralOffset = 0;
             
             // Si estamos en resalida de SC, forzamos un muro físico entre los coches para que hagan una fila india perfecta
             if (isWaitingForScRestartLine && deltaProgress < 0.0025) {
                car.currentSpeedKmh = Math.min(car.currentSpeedKmh, carAhead.currentSpeedKmh);
             } else {
                // [R05] Ajustarse al de delante sin superar en el paso la frenada máxima (180 km/h por segundo).
-               car.currentSpeedKmh = Math.min(car.currentSpeedKmh, Math.max(carAhead.currentSpeedKmh * 0.99, stepStartKmh - 180 * dt));
+               // [R50] Solapado con el de delante (acaba de ser adelantado o ha abandonado un ataque) cede de verdad: la
+               // referencia es la velocidad con la que el de delante puede terminar el paso si frena, no la que traía;
+               // si no, dos coches emparejados se intercambiaban el puesto en cada paso de una frenada.
+               const overlapped = deltaProgress * lapDistanceMeters < OT.OVERLAP_M;
+               const followKmh = overlapped ? carAhead.currentSpeedKmh * 0.97 - 180 * dt : carAhead.currentSpeedKmh * 0.99;
+               car.currentSpeedKmh = Math.min(car.currentSpeedKmh, Math.max(followKmh, stepStartKmh - 180 * dt));
             }
             car.speed = (car.currentSpeedKmh / 3.6) / lapDistanceMeters;
           }
@@ -1609,6 +1691,9 @@ export class RaceSimulation {
         car.isOvertaking = false;
         car.targetLateralOffset = !perms.neutralized ? (trackPoint.idealLineOffset || 0) : 0;
       }
+
+      // [R50] El coche que se defiende mantiene el interior hasta el final de la zona (si no está atacando él).
+      if (car.defence && !car.isOvertaking) car.targetLateralOffset = car.defence.side * OT.DEFENCE_OFFSET;
 
       // [R36] El coche que dobla no atraviesa al doblado: se queda detrás hasta que este se ha apartado lo suficiente.
       if (perms.overtake && wakeIsLapped && wakeDistance < minSafeSpacing && Math.abs(wakeLateral) < RaceSimulation.BLUE_FLAG_CLEAR_OFFSET) {
@@ -3083,6 +3168,10 @@ export interface FieldCar {
   attackingId: number | null;
   /** [R45] Puntos de defensa ganados por el piloto. */
   defencePoints: number;
+  /** [R50] Zona en la que el coche ha cubierto el interior, si se está defendiendo. */
+  defenceZoneId: number | null;
+  /** [R50] Ritmo en recta (potencia) del coche en su último paso. */
+  powerIndex: number;
 }
 
 function fieldCar(car: CarState): FieldCar {
@@ -3092,5 +3181,7 @@ function fieldCar(car: CarState): FieldCar {
     lateralOffset: car.lateralOffset, paceIndex: car.paceIndex ?? 1,
     attackingId: car.isOvertaking ? car.carAheadId : null,
     defencePoints: car.driver.development?.defence ?? 0,
+    defenceZoneId: car.defence?.zoneId ?? null,
+    powerIndex: car.powerIndex ?? 1,
   };
 }

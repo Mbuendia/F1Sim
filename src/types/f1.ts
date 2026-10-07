@@ -393,6 +393,8 @@ export interface CarState {
   dirtyAirLevel?: number;
   /** [R42] Ritmo propio del coche en su último paso (lo comparan los demás para decidir un adelantamiento). */
   paceIndex?: number;
+  /** [R50] Ritmo en recta (potencia) en su último paso. */
+  powerIndex?: number;
   /** [R14] Masa actual (seca + combustible, kg), combustible quemado acumulado (kg) y tiempo en lift-and-coast (s). */
   massKg?: number;
   fuelBurnedKg?: number;
@@ -410,6 +412,10 @@ export interface CarState {
   redFlagHold?: boolean;
   /** [R13] Hora a la que cruzó la meta al terminar la carrera. */
   finishTimeSec?: number;
+  /** [R50] Zona en la que se lanzó la maniobra de adelantamiento en curso (null: fuera de zona, por diferencia enorme). */
+  attackZoneId?: number | null;
+  /** [R50] Defensa en curso: zona en la que el coche ha cubierto el interior y lado elegido (un movimiento por zona). */
+  defence?: { zoneId: number; side: -1 | 1 };
   /** [R49] Salida desde el pit lane: espera con el semáforo en rojo / sale hacia la pista; y si empezó la carrera así. */
   pitLaneStart?: 'espera' | 'saliendo';
   startedFromPitLane?: boolean;
