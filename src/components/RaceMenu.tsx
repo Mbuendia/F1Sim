@@ -11,6 +11,9 @@ interface RaceMenuProps {
   /** [R26] Variante D20: activada o no, y su interruptor. */
   luckVariantEnabled?: boolean;
   onToggleLuckVariant?: () => void;
+  /** [R48] Guardar la partida (con la carrera en curso) en la ranura del nombre indicado. */
+  onSaveGame?: (name: string) => void;
+  saveName?: string;
 }
 
 // R32: menú secundario de carrera. Las herramientas de prueba (Safety Car y bandera roja) viven aquí, cerradas por
@@ -22,8 +25,12 @@ export const RaceMenu: React.FC<RaceMenuProps> = ({
   defaultOpen = false,
   luckVariantEnabled = true,
   onToggleLuckVariant,
+  onSaveGame,
+  saveName,
 }) => {
   const [open, setOpen] = useState(defaultOpen);
+  const [name, setName] = useState(saveName || 'Mi partida');
+  useEffect(() => { if (saveName) setName(saveName); }, [saveName]);
   const rootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -62,6 +69,15 @@ export const RaceMenu: React.FC<RaceMenuProps> = ({
       </button>
       {open && (
         <div className={styles.menu} role="menu" aria-label="Menú de carrera">
+          {onSaveGame && (
+            <>
+              <div className={styles.section}>Partida</div>
+              <form className={styles.saveForm} onSubmit={event => { event.preventDefault(); onSaveGame(name); setOpen(false); }}>
+                <input className={styles.saveInput} value={name} maxLength={40} aria-label="Nombre de la partida" onChange={event => setName(event.target.value)} />
+                <button type="submit" role="menuitem" className={styles.item}>Guardar partida</button>
+              </form>
+            </>
+          )}
           {onToggleLuckVariant && (
             <>
               <div className={styles.section}>Variantes del juego</div>

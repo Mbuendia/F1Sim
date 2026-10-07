@@ -30,6 +30,15 @@ export class DrsPermissions {
     };
   }
 
+  /** [R48] Recupera el estado guardado por `serialize`. */
+  restore(data: ReturnType<DrsPermissions['serialize']>): void {
+    this.gapThresholdSec = data.gapThresholdSec;
+    this.passages = new Map(data.passages.map(([id, list]) => [id, list.map(p => ({ ...p }))]));
+    this.permissions = new Map(data.permissions.map(([carId, grants]) =>
+      [carId, new Map(grants.map(([id, p]) => [id, { zones: [...p.zones], eligible: p.eligible }]))]));
+    this.zonePassages = new Map(data.zonePassages.map(([carId, p]) => [carId, { ...p }]));
+  }
+
   /** Una frenada cierra esta pasada, sin borrar el permiso de otras zonas. */
   activation(carId: number, zoneId: number | undefined, eligible: boolean, braking: boolean): boolean {
     if (zoneId === undefined) {

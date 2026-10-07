@@ -37,6 +37,10 @@ import type { DevelopmentState } from './simulation/DriverDevelopment';
 import type { RaceResult } from './simulation/RaceResult';
 import { addRace, emptyChampionship, parseChampionship, CHAMPIONSHIP_STORAGE_KEY } from './simulation/Championship';
 import type { ChampionshipState } from './simulation/Championship';
+import { createSnapshot, restoreSnapshot } from './simulation/Snapshot';
+import { AUTOSAVE_ID, AUTOSAVE_LABEL, SaveStore, createSave, exportSave, importSave } from './simulation/SaveGame';
+import type { SaveGame, SlotSummary } from './simulation/SaveGame';
+import type { SaveGameMessage } from './components/SaveGamePanel';
 import { DRIVERS } from './data/drivers';
 import { TEAMS } from './data/teams';
 import { RaceResultHistory, StartLightState, CarState, RaceFlagState, SafetyCarState, DnfNotification, D20LuckEvent, TrackWeatherState } from './types/f1';
@@ -62,6 +66,10 @@ const FLAG_NOTICES: Record<RaceFlagState, [RaceNoticeTone, string, string]> = {
   'red': ['danger', 'Roja', 'Bandera roja: carrera detenida'],
 };
 const NOTICE_MS = 8000;
+// [R48] Autoguardado de la carrera en curso (ms reales) y semilla propia de cada carrera.
+const AUTOSAVE_MS = 30000;
+const SAVE_NAME_KEY = 'f1_save_name';
+const newRaceSeed = () => (Math.floor(Math.random() * 0x7fffffff) ^ Date.now()) >>> 0;
 const TYRE_WORDS: Record<string, string> = { soft: 'blandos', medium: 'medios', hard: 'duros', intermediate: 'intermedios', wet: 'de lluvia' };
 
 const CAMERA_LABELS: Record<string, string> = {
@@ -153,6 +161,20 @@ export const App: React.FC = () => {
     const index = constructorsChampionship(championship).findIndex(t => t.teamId === teamId || t.teamName === TEAMS[teamId]?.name);
     return index >= 0 ? Math.min(10, index + 1) : 7;
   }, [championship]);
+
+  // [R48] Partidas guardadas. `raceLive`: hay en el motor una carrera empezada cuyo resultado aún no se ha anotado.
+  const saveStore = useMemo(() => {
+    try { return new SaveStore(window.localStorage); } catch { return null; }
+  }, []);
+  const [slots, setSlots] = useState<SlotSummary[]>(() => {
+    try { return saveStore ? saveStore.list() : []; } catch { return []; }
+  });
+  const [saveName, setSaveName] = useState<string>(() => {
+    try { return localStorage.getItem(SAVE_NAME_KEY) ?? ''; } catch { return ''; }
+  });
+  const [saveMessage, setSaveMessage] = useState<SaveGameMessage | null>(null);
+  const [raceLive, setRaceLive] = useState(false);
+  const autosaveWarned = useRef(false);
 
   // [R20] Formato del Gran Premio y resultado de la clasificación pendiente de mostrar
   const [raceFormat, setRaceFormat] = useState<RaceFormatId>('directo');
@@ -293,6 +315,8 @@ export const App: React.FC = () => {
   }, [simulation]);
 
   const handleResetRace = useCallback(() => {
+    // [R48] Carrera nueva, semilla nueva: reiniciar no repite la anterior.
+    simulation.setSeed(newRaceSeed());
     simulation.initRace();
     camera.resetToFullTrack();
     setSelectedCarId(null);
@@ -304,6 +328,12 @@ export const App: React.FC = () => {
   }, [simulation, camera]);
 
   const handleStartRaceFromHome = useCallback(() => {
+    // [R48] Cada carrera lleva su semilla (se guarda con ella): cargarla da siempre la misma continuación.
+    simulation.setSeed(newRaceSeed());
+    setRaceLive(true);
+    setSaveMessage(null);
+    autosaveWarned.current = false;
+    if (saveStore) { saveStore.remove(AUTOSAVE_ID); setSlots(saveStore.list()); }
     simulation.setDriverAttributes(development.attributes);
     simulation.setStartingGrid(null);
     simulation.setCircuit(selectedCircuitId);
@@ -337,7 +367,7 @@ export const App: React.FC = () => {
     setIsFinished(false);
     setCurrentView('race');
     if (!quali) simulation.startRaceSequence();
-  }, [simulation, camera, selectedCircuitId, weatherScenarioId, development, raceFormat, components, saveComponents, selectedDriverId, program, saveProgram, championship, constructorsPosition]);
+  }, [simulation, camera, selectedCircuitId, weatherScenarioId, development, raceFormat, components, saveComponents, selectedDriverId, program, saveProgram, championship, constructorsPosition, saveStore]);
 
   const handleStartFormationLap = useCallback(() => {
     if (simulation.lightState === 'grid-ready') {
@@ -400,6 +430,10 @@ export const App: React.FC = () => {
         }
       }
 
+      // [R48] Resultado anotado: ya no hay carrera en curso que continuar.
+      setRaceLive(false);
+      if (saveStore) { saveStore.remove(AUTOSAVE_ID); setSlots(saveStore.list()); }
+
       const updatedHistory = [newHistoryItem, ...raceHistory].slice(0, 10);
       setRaceHistory(updatedHistory);
       try {
@@ -410,7 +444,7 @@ export const App: React.FC = () => {
     }
 
     setCurrentView('home');
-  }, [simulation, selectedDriverId, selectedCircuitId, raceHistory, championship, saveChampionship, saveDevelopment, developmentAfter, components, saveComponents, program, saveProgram, seasonArchive]);
+  }, [simulation, selectedDriverId, selectedCircuitId, raceHistory, championship, saveChampionship, saveDevelopment, developmentAfter, components, saveComponents, program, saveProgram, seasonArchive, saveStore]);
 
   const handleCycleCameraMode = useCallback(() => {
     camera.cycleMode();
@@ -420,6 +454,9 @@ export const App: React.FC = () => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (currentView !== 'race') return;
+      // [R48] Al escribir (nombre de la partida) las teclas son texto, no atajos.
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
 
       if (e.key === 'Escape') {
         handleSelectCar(null);
@@ -475,6 +512,156 @@ export const App: React.FC = () => {
     lastFlag.current = 'green';
     lastPitLane.current.clear();
     lastDnfId.current = null;
+  }, []);
+
+  // ── [R48] Partidas: ranuras con nombre, autoguardado y carga ──
+  const refreshSlots = useCallback(() => setSlots(saveStore ? saveStore.list() : []), [saveStore]);
+
+  const buildSave = useCallback((name: string): SaveGame => createSave({
+    name,
+    savedAt: new Date().toISOString(),
+    career: { championship, development, components, program, archive: seasonArchive, history: raceHistory },
+    selection: { driverId: selectedDriverId, circuitId: selectedCircuitId, raceFormat, weatherScenarioId, luckVariant: luckVariantEnabled },
+    race: raceLive ? createSnapshot(simulation) : null,
+  }), [championship, development, components, program, seasonArchive, raceHistory, selectedDriverId, selectedCircuitId, raceFormat, weatherScenarioId, luckVariantEnabled, raceLive, simulation]);
+
+  const handleSaveGame = useCallback((name: string) => {
+    if (!saveStore) { setSaveMessage({ tone: 'error', text: 'Este navegador no permite guardar partidas' }); return; }
+    const save = buildSave(name);
+    const outcome = saveStore.save(save);
+    refreshSlots();
+    if (outcome.ok) {
+      setSaveName(save.name);
+      try { localStorage.setItem(SAVE_NAME_KEY, save.name); } catch (e) { console.error(e); }
+    }
+    const text = outcome.ok ? `Partida guardada: ${save.name}` : outcome.error ?? 'No se pudo guardar la partida';
+    setSaveMessage({ tone: outcome.ok ? 'ok' : 'error', text });
+    if (currentView === 'race') pushNotice(outcome.ok ? 'ok' : 'danger', 'Partida', text);
+  }, [saveStore, buildSave, refreshSlots, currentView, pushNotice]);
+
+  /** Sustituye la partida actual por `save`. Si lleva carrera, se carga primero: si falla, no se toca nada. */
+  const applySave = useCallback((save: SaveGame): string | null => {
+    if (save.race) {
+      const outcome = restoreSnapshot(simulation, save.race);
+      if (!outcome.ok) return outcome.errors.slice(0, 3).join(' · ');
+      simulation.setSpeed(0);
+    } else {
+      simulation.setStartingGrid(null);
+      simulation.setCircuit(OFFICIAL_CIRCUITS[save.selection.circuitId] ? save.selection.circuitId : 'barcelona');
+    }
+    const career = save.career, selection = save.selection;
+    saveChampionship(career.championship);
+    saveDevelopment(career.development);
+    saveComponents(Object.keys(DRIVERS).reduce((s, id) => ensureDriver(s, id), career.components));
+    saveProgram(career.program);
+    setSeasonArchive(career.archive);
+    setRaceHistory(career.history);
+    try {
+      localStorage.setItem(SEASONS_STORAGE_KEY, JSON.stringify(career.archive));
+      localStorage.setItem('f1_race_history', JSON.stringify(career.history));
+      localStorage.setItem('f1_d20_variant', selection.luckVariant ? 'on' : 'off');
+    } catch (e) { console.error(e); }
+    setSelectedDriverId(DRIVERS[selection.driverId] ? selection.driverId : 'alonso');
+    setSelectedCircuitId(save.race?.circuitId ?? (OFFICIAL_CIRCUITS[selection.circuitId] ? selection.circuitId : 'barcelona'));
+    setRaceFormat(selection.raceFormat === 'clasificacion' ? 'clasificacion' : 'directo');
+    setWeatherScenarioId(selection.weatherScenarioId);
+    setLuckVariantEnabled(selection.luckVariant);
+    setQualifying(null);
+    setGridChanges([]);
+    camera.resetToFullTrack();
+    setSelectedCarId(null);
+    setDetailOpen(false);
+    clearNotices();
+    setIsFinished(simulation.isFinished);
+    setPodiumCars(simulation.podiumCars);
+    setLightState(simulation.lightState);
+    setRaceLive(Boolean(save.race));
+    autosaveWarned.current = false;
+    setCurrentView(save.race ? 'race' : 'home');
+    return null;
+  }, [simulation, camera, saveChampionship, saveDevelopment, saveComponents, saveProgram, clearNotices]);
+
+  const handleLoadGame = useCallback((id: string) => {
+    if (!saveStore) return;
+    const loaded = saveStore.load(id);
+    if (!loaded.save) { setSaveMessage({ tone: 'error', text: `No se pudo cargar la partida: ${loaded.errors.slice(0, 3).join(' · ')}` }); return; }
+    const failure = applySave(loaded.save);
+    if (failure) { setSaveMessage({ tone: 'error', text: `No se pudo cargar la carrera en curso: ${failure}` }); return; }
+    if (id !== AUTOSAVE_ID) {
+      setSaveName(loaded.save.name);
+      try { localStorage.setItem(SAVE_NAME_KEY, loaded.save.name); } catch (e) { console.error(e); }
+    }
+    const label = id === AUTOSAVE_ID ? AUTOSAVE_LABEL : loaded.save.name;
+    setSaveMessage({ tone: loaded.diagnostics.length ? 'info' : 'ok', text: [`Partida cargada: ${label}.`, ...loaded.diagnostics].join(' ') });
+    if (loaded.save.race) pushNotice('info', 'Partida', `${label}: carrera cargada en pausa`);
+  }, [saveStore, applySave, pushNotice]);
+
+  const handleExportGame = useCallback((id: string) => {
+    if (!saveStore) return;
+    const loaded = saveStore.load(id);
+    if (!loaded.save) { setSaveMessage({ tone: 'error', text: `No se pudo exportar la partida: ${loaded.errors.slice(0, 3).join(' · ')}` }); return; }
+    const label = id === AUTOSAVE_ID ? AUTOSAVE_LABEL : loaded.save.name;
+    const url = URL.createObjectURL(new Blob([exportSave({ ...loaded.save, name: label })], { type: 'application/json' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `f1sim-${label.toLowerCase().replace(/[^a-z0-9áéíóúüñ]+/g, '-').replace(/^-|-$/g, '') || 'partida'}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+    setSaveMessage({ tone: 'ok', text: `Partida exportada: ${link.download}` });
+  }, [saveStore]);
+
+  const handleImportGame = useCallback((text: string) => {
+    if (!saveStore) return;
+    const outcome = importSave(text);
+    if (!outcome.save) { setSaveMessage({ tone: 'error', text: `No se pudo importar el archivo: ${outcome.errors.slice(0, 3).join(' · ')}` }); return; }
+    // No pisa una ranura que ya exista con ese nombre.
+    const taken = new Set(saveStore.list().map(slot => slot.id));
+    const base = outcome.save.name.trim() || 'Partida importada';
+    let name = base;
+    for (let copy = 2; taken.has(SaveStore.slotId(name)); copy++) name = `${base.slice(0, 34)} (${copy})`;
+    const stored = saveStore.save({ ...outcome.save, name });
+    refreshSlots();
+    setSaveMessage(stored.ok
+      ? { tone: outcome.diagnostics.length ? 'info' : 'ok', text: [`Partida importada: ${name}. Pulsa «${outcome.save.race ? 'Continuar carrera' : 'Cargar'}» para usarla.`, ...outcome.diagnostics].join(' ') }
+      : { tone: 'error', text: stored.error ?? 'No se pudo guardar la partida importada' });
+  }, [saveStore, refreshSlots]);
+
+  const handleDeleteGame = useCallback((id: string) => {
+    if (!saveStore) return;
+    saveStore.remove(id);
+    refreshSlots();
+    setSaveMessage({ tone: 'info', text: 'Partida borrada' });
+  }, [saveStore, refreshSlots]);
+
+  // Autoguardado: cada 30 s reales en carrera, al volver al paddock y al cerrar, recargar u ocultar la página.
+  const autosave = useCallback(() => {
+    if (!saveStore || !raceLive) return;
+    const outcome = saveStore.save(buildSave(AUTOSAVE_LABEL), { auto: true });
+    refreshSlots();
+    if (!outcome.ok && !autosaveWarned.current) {
+      autosaveWarned.current = true;
+      pushNotice('warning', 'Partida', 'Autoguardado sin espacio: borra o exporta alguna partida');
+    }
+  }, [saveStore, raceLive, buildSave, refreshSlots, pushNotice]);
+  const autosaveRef = useRef(autosave);
+  useEffect(() => { autosaveRef.current = autosave; }, [autosave]);
+  useEffect(() => {
+    if (!raceLive) return;
+    const onPageHide = () => autosaveRef.current();
+    const onVisibility = () => { if (document.visibilityState === 'hidden') autosaveRef.current(); };
+    window.addEventListener('pagehide', onPageHide);
+    document.addEventListener('visibilitychange', onVisibility);
+    const timer = currentView === 'race' ? window.setInterval(() => autosaveRef.current(), AUTOSAVE_MS) : undefined;
+    return () => {
+      window.removeEventListener('pagehide', onPageHide);
+      document.removeEventListener('visibilitychange', onVisibility);
+      if (timer !== undefined) window.clearInterval(timer);
+    };
+  }, [raceLive, currentView]);
+
+  const handleLeaveRace = useCallback(() => {
+    autosaveRef.current();
+    setCurrentView('home');
   }, []);
 
   useEffect(() => {
@@ -541,6 +728,10 @@ export const App: React.FC = () => {
         onSelectFormat={setRaceFormat}
         weatherScenarioId={weatherScenarioId}
         onSelectWeather={setWeatherScenarioId}
+        saveGames={saveStore ? {
+          slots, currentName: saveName, message: saveMessage,
+          onSave: handleSaveGame, onLoad: handleLoadGame, onExport: handleExportGame, onImport: handleImportGame, onDelete: handleDeleteGame,
+        } : undefined}
       />
     );
   }
@@ -566,7 +757,7 @@ export const App: React.FC = () => {
         <div className={styles.barGroup}>
           <button
             className={styles.homeBtn}
-            onClick={() => setCurrentView('home')}
+            onClick={handleLeaveRace}
             title="Volver a la selección"
           >
             <ArrowLeft size={14} />
@@ -633,6 +824,8 @@ export const App: React.FC = () => {
             onRedFlagTest={handleRedFlagTest}
             luckVariantEnabled={luckVariantEnabled}
             onToggleLuckVariant={handleToggleLuckVariant}
+            onSaveGame={saveStore ? handleSaveGame : undefined}
+            saveName={saveName}
           />
         </div>
       </header>

@@ -7,6 +7,9 @@ import { OFFICIAL_CIRCUITS, CircuitSpec } from '../data/circuits';
 import { buildTrackFromSvg } from '../utils/svgTrackParser';
 import { RaceResultHistory } from '../types/f1';
 import { ChampionshipTable } from './ChampionshipTable';
+import { SaveGamePanel } from './SaveGamePanel';
+import type { SaveGameMessage } from './SaveGamePanel';
+import type { SlotSummary } from '../simulation/SaveGame';
 import { WeatherScenarioSelect } from './WeatherScenarioSelect';
 import { CarShowcase } from './CarShowcase';
 import { RaceFormatSelect } from './RaceFormatSelect';
@@ -70,6 +73,12 @@ interface HomeScreenProps {
   /** [R20] GP directo o con clasificación. */
   raceFormat?: RaceFormatId;
   onSelectFormat?: (format: RaceFormatId) => void;
+  /** [R48] Partidas guardadas y sus acciones. */
+  saveGames?: {
+    slots: SlotSummary[]; currentName?: string; message?: SaveGameMessage | null;
+    onSave: (name: string) => void; onLoad: (id: string) => void; onExport: (id: string) => void;
+    onImport: (text: string) => void; onDelete: (id: string) => void;
+  };
 }
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({
@@ -88,7 +97,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   components,
   onFitComponent,
   onUndoComponent,
-  development
+  development,
+  saveGames
 }) => {
   const [activeTab, setActiveTab] = useState<'drivers' | 'circuits'>('drivers');
   const [driverSubTab, setDriverSubTab] = useState<'specs' | 'strategy' | 'records'>('specs');
@@ -237,6 +247,15 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               </div>
             ))}
           </div>
+        </details>
+      )}
+
+      {saveGames && (
+        <details className={styles.historySection} open={saveGames.slots.some(slot => slot.raceInProgress) || undefined}>
+          <summary className={styles.historyTitle}>
+            <span>Partidas ({saveGames.slots.length})</span>
+          </summary>
+          <SaveGamePanel key={saveGames.currentName ?? ''} {...saveGames} />
         </details>
       )}
 

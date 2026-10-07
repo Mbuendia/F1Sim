@@ -53,6 +53,7 @@ import type { TyreClass } from './WeatherModel';
 import { chooseCompound, STRATEGY, StrategyState } from './Strategist';
 import { AERO, CAR_DRY_MASS_KG, cornerMassFactor, dirtyAirLevel, holdThrottle, longitudinalAccel, slipstreamLevel, topSpeedKmh } from './AeroModel';
 import { mulberry32, random, Rng, rngState, streamSeed, useRng } from './Random';
+import type { RaceSnapshot } from './Snapshot';
 
 // Q20: distancia previa a la entrada de boxes en la que un coche que va a parar se coloca en el eje.
 const PIT_APPROACH_METERS = 250;
@@ -285,7 +286,7 @@ export class RaceSimulation {
     this.stepAccumulator = 0;
   }
 
-  /** [R28] Estado interno que no es público: lo lee Snapshot para el esquema versionado. */
+  /** [R28/R48] Estado interno que no es público: lo lee Snapshot para guardar la carrera completa. */
   internalState() {
     const streams: Record<string, number> = {};
     if (this.seed !== null) {
@@ -307,7 +308,103 @@ export class RaceSimulation {
         lastLeaderLap: this.lastLeaderLap, redFlagSignalLap: this.redFlagSignalLap, suspendedRefLap: this.suspendedRefLap,
         provisional: this.provisionalResult, final: this.finalResult,
       },
+      // [R48] Lo que faltaba para poder cargar y continuar: procedimientos, comisarios, tiempo físico, goma y preparación.
+      procedures: {
+        vscState: this.vscState, vscLog: this.vscLog, vscStartedAt: this.vscStartedAt, vscEndsWhenClear: this.vscEndsWhenClear,
+        vscProfile: this.vscProfile
+          ? { lapTime: this.vscProfile.lapTime, throttleSec: this.vscProfile.throttleSec, times: Array.from(this.vscProfile.times) } : null,
+        redFlag: this.redFlag, pitEntryClosed: this.pitEntryClosed, weatherVsc: this.weatherVsc,
+      },
+      stewards: this.stewards.serialize(),
+      weatherModel: { ...this.weatherModel.serialize(), displayTick: this.weatherDisplayTick, forecastCache: this.forecastCache },
+      rubber: this.activeTrack.points.some(p => p.rubberGrip !== 0) ? this.activeTrack.points.map(p => p.rubberGrip) : null,
+      luck: { variantEnabled: this.luckVariantEnabled, log: this.luckLog },
+      setup: {
+        driverAttributes: this.driverAttributes, failureFactors: this.failureFactors, technicalUpgrades: this.technicalUpgrades,
+        startingGrid: this.startingGrid, raceTimeLimitSec: this.raceTimeLimitSec, totalTimeLimitSec: this.totalTimeLimitSec,
+      },
     };
+  }
+
+  /**
+   * [R48] Sustituye la carrera por la de un snapshot de la versión actual. Lo llama `restoreSnapshot`, que antes migra,
+   * valida y entrega una copia propia: aquí no se comprueba nada ni se copia.
+   */
+  restoreState(snapshot: RaceSnapshot) {
+    const { clock, rng, state } = snapshot;
+    const spec = OFFICIAL_CIRCUITS[snapshot.circuitId];
+    if (!spec) throw new Error(`Circuito «${snapshot.circuitId}» inexistente`);
+    if (snapshot.circuitId !== this.circuitId) this.activeTrack = buildTrackFromSvg(spec);
+    this.circuitId = snapshot.circuitId;
+    this.setRuleSet(getRuleSet(snapshot.ruleSetId));
+
+    this.raceTimeSec = clock.raceTimeSec;
+    this.fixedStepSec = clock.fixedStepSec;
+    this.stepAccumulator = clock.stepAccumulator;
+    this.fixedStepCount = clock.fixedStepCount;
+    this.lightState = clock.lightState;
+    this.lightsTimer = clock.lightsTimer;
+    this.lightsRandomDelay = clock.lightsRandomDelay;
+    this.seed = rng.seed;
+    this.rngStreams = new Map(Object.entries(rng.streams).map(([key, streamState]) => [key, mulberry32(streamState)]));
+
+    this.cars = state.cars;
+    const flags = state.flags;
+    this.raceFlagState = flags.raceFlagState; this.sectorFlags = flags.sectorFlags;
+    this.vscActive = flags.vscActive; this.vscTimer = flags.vscTimer; this.vscDuration = flags.vscDuration;
+    this.drsDisabledLaps = flags.drsDisabledLaps; this.scEndingLap = flags.scEndingLap;
+    this.leaderLap = flags.leaderLap; this.leaderFinished = flags.leaderFinished; this.isFinished = flags.isFinished;
+    this.isPaused = flags.isPaused; this.speedMultiplier = flags.speedMultiplier; this.totalLaps = flags.totalLaps;
+    this.safetyCar = state.safetyCar;
+    this.incidents = state.incidents;
+    this.drsPermissions.restore(state.drsPermissions);
+    this.timing.restore(state.timing);
+    this.rawSectors = new Map(state.rawSectors);
+    this.nextBoxOrderId = state.counters.nextBoxOrderId;
+    this.luckEventSeq = state.counters.luckEventSeq;
+    IncidentModel.restoreNextId(state.counters.nextIncidentId);
+    Object.assign(this.weather, state.weather);
+    this.fastestLap = state.records.fastestLap;
+    this.overallBestS1 = state.records.overallBestS1; this.overallBestS2 = state.records.overallBestS2; this.overallBestS3 = state.records.overallBestS3;
+    this.podiumCars = state.records.podiumCarIds.map(id => this.cars.find(car => car.id === id)).filter((car): car is CarState => Boolean(car));
+    const result = state.result;
+    this.raceFormat = result.format; this.endReason = result.endReason; this.greenLapsLed = result.greenLapsLed;
+    this.lapNeutralized = result.lapNeutralized; this.lastLeaderLap = result.lastLeaderLap;
+    this.redFlagSignalLap = result.redFlagSignalLap; this.suspendedRefLap = result.suspendedRefLap;
+    this.provisionalResult = result.provisional; this.finalResult = result.final;
+    this.activeLuckEvent = state.events.activeLuckEvent;
+    this.latestDnf = state.events.latestDnf;
+
+    const procedures = state.procedures;
+    this.vscState = procedures.vscState; this.vscLog = procedures.vscLog;
+    this.vscStartedAt = procedures.vscStartedAt; this.vscEndsWhenClear = procedures.vscEndsWhenClear;
+    this.vscProfile = procedures.vscProfile
+      ? { lapTime: procedures.vscProfile.lapTime, throttleSec: procedures.vscProfile.throttleSec, times: Float64Array.from(procedures.vscProfile.times) } : null;
+    this.redFlag = procedures.redFlag; this.pitEntryClosed = procedures.pitEntryClosed; this.weatherVsc = procedures.weatherVsc;
+    this.stewards.restore(state.stewards);
+    this.weatherModel.restore(state.weatherModel);
+    this.weatherDisplayTick = state.weatherModel.displayTick;
+    this.forecastCache = state.weatherModel.forecastCache;
+    const points = this.activeTrack.points, rubber = state.rubber;
+    const rubberFits = Array.isArray(rubber) && rubber.length === points.length;
+    points.forEach((point, index) => { point.rubberGrip = rubberFits ? rubber[index] : 0; });
+    this.luckVariantEnabled = state.luck.variantEnabled; this.luckLog = state.luck.log;
+    const setup = state.setup;
+    this.driverAttributes = setup.driverAttributes; this.failureFactors = setup.failureFactors;
+    this.technicalUpgrades = setup.technicalUpgrades; this.startingGrid = setup.startingGrid;
+    this.raceTimeLimitSec = setup.raceTimeLimitSec; this.totalTimeLimitSec = setup.totalTimeLimitSec;
+
+    // Datos de pintado: se reconstruyen en el siguiente paso.
+    this.previousPoses.clear();
+    this.previousSafetyCar = null;
+    if (this.lightState === 'lights-out') this.armLightsOut();
+  }
+
+  /** La salida tras apagarse los semáforos va con reloj real. [R48] Se rearma al cargar un guardado hecho en ese instante. */
+  private armLightsOut() {
+    setTimeout(() => {
+      if (this.lightState === 'lights-out') this.lightState = 'racing';
+    }, 600);
   }
 
   private stream(key: string): Rng | null {
@@ -1841,11 +1938,7 @@ export class RaceSimulation {
         car.energy ??= EnergyModel.create();
         car.energy.standingStart = true;
       }
-      setTimeout(() => {
-        if (this.lightState === 'lights-out') {
-          this.lightState = 'racing';
-        }
-      }, 600);
+      this.armLightsOut();
     }
   }
 

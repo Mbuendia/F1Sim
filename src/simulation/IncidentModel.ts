@@ -15,6 +15,11 @@ export class IncidentModel {
     return this.nextId;
   }
 
+  /** [R48] Recupera el contador al cargar un snapshot. */
+  static restoreNextId(nextId: number): void {
+    this.nextId = nextId;
+  }
+
   // Registrar un nuevo incidente cuando un coche se retira o hace un trompo
   static registerIncident(
     car: { id: number; driver: { code: string }; trackT: number; dnfReason?: string },

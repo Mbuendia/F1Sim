@@ -48,6 +48,11 @@ export class TimingService {
     return [...this.passes.entries()].map(([carId, history]) => [carId, [...history.entries()]]);
   }
 
+  /** [R48] Recupera las horas de paso guardadas por `serialize`. */
+  restore(data: [number, [number, number][]][]): void {
+    this.passes = new Map(data.map(([carId, history]) => [carId, new Map(history)]));
+  }
+
   /** Registra los lazos cruzados por cada coche en un paso de `dt` segundos que empieza en `t0`. */
   record(cars: { id: number; from: number; to: number }[], t0: number, dt: number): void {
     const n = TimingService.LOOPS_PER_LAP;
