@@ -199,6 +199,8 @@ export class RaceSimulation {
   } = { phase: null, order: [], suspensionSec: 0, log: [] };
   /** [R12] Aviso mínimo de reanudación (s): 10 minutos en el perfil FIA (S58), 60 s en el personalizado (ajuste del juego). */
   static readonly RED_FLAG_NOTICE_FIA_SEC = 600;
+  /** [R47] Duración mínima de la fase «detenida» antes del aviso de reanudación (s). */
+  static readonly RED_FLAG_STOPPED_MIN_SEC = 1;
   /** [R12/R37] Salud por debajo de la cual conviene cambiar el juego durante la suspensión (%). */
   static readonly RED_FLAG_CHANGE_HEALTH = 70;
   static readonly RED_FLAG_NOTICE_GAME_SEC = 60;
@@ -579,6 +581,10 @@ export class RaceSimulation {
     const leader = [...this.cars].filter(c => c.status === 'running').sort((a, b) => b.progress - a.progress)[0];
     SafetyCarModel.deploy(this.safetyCar, reason, leader ? leader.progress : 0, this.raceTimeSec,
       (OFFICIAL_CIRCUITS[this.circuitId] || OFFICIAL_CIRCUITS.barcelona).trackType, this.activeTrack);
+    // [R47] Con semilla, las vueltas mínimas del SC salen de su propio flujo: el despliegue puede pedirse desde fuera
+    // del paso del motor (interfaz, banco de escenarios), donde no hay flujo activo y el sorteo no sería reproducible.
+    const scRng = this.stream('safety-car');
+    if (scRng && (OFFICIAL_CIRCUITS[this.circuitId] || OFFICIAL_CIRCUITS.barcelona).trackType !== 'street') this.safetyCar.targetLaps = 2 + Math.floor(scRng() * 2);
     this.afterSafetyCarDeploy(reason);
     if (options.targetLaps !== undefined) this.safetyCar.targetLaps = options.targetLaps;
     this.raceFlagState = 'sc';
@@ -2361,7 +2367,9 @@ export class RaceSimulation {
         if (choice) this.requestRedFlagTyres(car.id, choice);
       }
     }
-    else if (rf.phase === 'detenida' && IncidentModel.isTrackClear(this.incidents)) {
+    // [R47] La fase «detenida» dura al menos un segundo: es un estado visible, no un paso de trámite.
+    else if (rf.phase === 'detenida' && IncidentModel.isTrackClear(this.incidents)
+      && this.raceTimeSec >= (rf.log.filter(l => l.phase === 'detenida').pop()?.time ?? 0) + RaceSimulation.RED_FLAG_STOPPED_MIN_SEC) {
       const notice = this.rules.id === 'fia-2025' ? RaceSimulation.RED_FLAG_NOTICE_FIA_SEC : RaceSimulation.RED_FLAG_NOTICE_GAME_SEC;
       rf.phase = 'aviso';
       rf.noticeEndsAt = this.raceTimeSec + notice;
