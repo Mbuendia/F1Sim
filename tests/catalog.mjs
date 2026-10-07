@@ -527,5 +527,6 @@ export const modules = [
   { "id": "models-3d-r55", "tasks": ["R55"], "sprint": "2.11", "kind": "contract" },
   { "id": "track-sprites-r56", "tasks": ["R56"], "sprint": "2.11", "kind": "contract" },
   { "id": "season-r51", "tasks": ["R51"], "sprint": "2.11", "kind": "contract" },
-  { "id": "drs-visible-r04", "tasks": ["R04"], "sprint": "2.11", "kind": "contract" }
+  { "id": "drs-visible-r04", "tasks": ["R04"], "sprint": "2.11", "kind": "contract" },
+  { "id": "sprint-weekend-r52", "tasks": ["R52"], "sprint": "2.11", "kind": "contract" }
 ];
