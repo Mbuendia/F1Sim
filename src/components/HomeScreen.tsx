@@ -82,6 +82,8 @@ interface HomeScreenProps {
   /** [R20] GP directo o con clasificación. */
   raceFormat?: RaceFormatId;
   onSelectFormat?: (format: RaceFormatId) => void;
+  /** [R52] El circuito elegido admite el formato sprint ahora mismo. */
+  sprintAvailable?: boolean;
   /** [R49] Setup de los coches del jugador. */
   setup?: { setups: Record<string, CarSetup | undefined>; onChange: (driverId: string, setup: CarSetup) => void };
   /** [R48] Partidas guardadas y sus acciones. */
@@ -116,7 +118,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   saveGames,
   setup,
   season,
-  driverAttributes
+  driverAttributes,
+  sprintAvailable
 }) => {
   const nextRound = season?.rounds.find(round => round.status === 'siguiente');
   const freeRace = Boolean(nextRound) && nextRound?.circuitId !== selectedCircuitId;
@@ -1141,7 +1144,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           </div>
 
           {onSelectFormat && (
-            <RaceFormatSelect className={styles.rulesProfile} value={raceFormat ?? 'directo'} onChange={onSelectFormat} />
+            <RaceFormatSelect className={styles.rulesProfile} value={raceFormat ?? 'directo'} onChange={onSelectFormat} sprintAvailable={sprintAvailable} />
           )}
           {onSelectWeather && (
             <WeatherScenarioSelect className={styles.rulesProfile} value={weatherScenarioId ?? 'seco'} onChange={onSelectWeather} />
@@ -1152,7 +1155,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               <Play size={18} fill="#ffffff" aria-hidden="true" />
               <span>ENTRAR A PISTA</span>
             </div>
-            <span className={styles.launchSub}>{freeRace ? 'Carrera libre: no cuenta para la temporada' : nextRound ? `Empezar el Gran Premio · ronda ${nextRound.round} de ${SEASON_RACES}` : 'Empezar el Gran Premio'}</span>
+            <span className={styles.launchSub}>{freeRace ? 'Carrera libre: no cuenta para la temporada'
+              : nextRound ? `${raceFormat === 'sprint' ? 'Clasificación sprint y sprint' : nextRound.sprintDone ? 'Clasificación y Gran Premio' : 'Empezar el Gran Premio'} · ronda ${nextRound.round} de ${SEASON_RACES}`
+              : 'Empezar el Gran Premio'}</span>
           </button>
         </div>
       </div>

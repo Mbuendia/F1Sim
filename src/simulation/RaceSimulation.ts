@@ -42,7 +42,9 @@ import { chassisGripAt, resolveTechnical } from '../data/teamProfiles';
 import type { CarTechnical } from '../data/teamProfiles';
 import { applySetup, isNeutralSetup, normalizeSetup } from './Setup';
 import type { CarSetup } from './Setup';
-import { availableSets, COMPOUND_LABEL, createInventory, mountSet, pickSet, TireCompliance, tireCompliance } from './TireInventory';
+import { availableSets, COMPOUND_LABEL, createInventory, inventoryFromSets, mountSet, pickSet, TireCompliance, tireCompliance } from './TireInventory';
+import type { TireSet } from './TireInventory';
+import { sprintLaps } from './Weekend';
 import { localFlagsFrom, LocalFlag, marshalSectorOf, Permissions, permissionsFor } from './RaceControl';
 import { Decision, PenaltyType, Stewards } from './Stewards';
 import { applyAttributes, fitnessNoiseFactor, overtakeAdvantageNeeded, wetGripFactor } from './DriverDevelopment';
@@ -169,6 +171,8 @@ export class RaceSimulation {
 
   /** [R49] Pilotos que salen desde el pit lane (p. ej. por un cambio en parc fermé). */
   private pitLaneStarters: string[] = [];
+  /** [R52] Juegos de neumáticos de cada piloto que vienen de sesiones anteriores del fin de semana (o null). */
+  private weekendTyres: Record<string, TireSet[]> | null = null;
   /** Separación entre los coches que esperan en el pit lane (m), como en la fila de la bandera roja. */
   static readonly PIT_START_SLOT_M = 8;
 
@@ -328,10 +332,25 @@ export class RaceSimulation {
     this.initRace();
   }
 
+  /** [R52] Formato de la carrera: el sprint dura las vueltas mínimas que superan 100 km y no obliga a parar. */
+  setRaceFormat(format: 'gp' | 'sprint') {
+    this.raceFormat = format;
+    this.totalLaps = this.lapsFor(OFFICIAL_CIRCUITS[this.circuitId] || OFFICIAL_CIRCUITS['barcelona']);
+  }
+
+  private lapsFor(spec: { totalLaps: number; lapLengthMeters: number }): number {
+    return this.raceFormat === 'sprint' ? sprintLaps(spec.lapLengthMeters) : spec.totalLaps;
+  }
+
+  /** [R52] Juegos con los que cada piloto llega a esta carrera (los usados en sesiones anteriores, usados). */
+  setWeekendTyres(sets: Record<string, TireSet[]> | null) {
+    this.weekendTyres = sets;
+  }
+
   setCircuit(circuitId: string) {
     this.circuitId = circuitId;
     const spec = OFFICIAL_CIRCUITS[circuitId] || OFFICIAL_CIRCUITS['barcelona'];
-    this.totalLaps = spec.totalLaps;
+    this.totalLaps = this.lapsFor(spec);
     this.activeTrack = buildTrackFromSvg(spec);
     this.initRace();
   }
@@ -427,7 +446,7 @@ export class RaceSimulation {
         driverAttributes: this.driverAttributes, failureFactors: this.failureFactors, technicalUpgrades: this.technicalUpgrades,
         startingGrid: this.startingGrid, raceTimeLimitSec: this.raceTimeLimitSec, totalTimeLimitSec: this.totalTimeLimitSec,
         // [R49] Ausentes en los guardados anteriores: se leen como «sin setup» y «nadie desde el pit lane».
-        carSetups: this.carSetups, pitLaneStarters: this.pitLaneStarters,
+        carSetups: this.carSetups, pitLaneStarters: this.pitLaneStarters, weekendTyres: this.weekendTyres,
       },
     };
   }
@@ -506,6 +525,7 @@ export class RaceSimulation {
     this.technicalUpgrades = setup.technicalUpgrades; this.startingGrid = setup.startingGrid;
     this.raceTimeLimitSec = setup.raceTimeLimitSec; this.totalTimeLimitSec = setup.totalTimeLimitSec;
     this.carSetups = setup.carSetups ?? {}; this.pitLaneStarters = setup.pitLaneStarters ?? [];
+    this.weekendTyres = setup.weekendTyres ?? null;
 
     // Datos de pintado: se reconstruyen en el siguiente paso.
     this.previousPoses.clear();
@@ -744,7 +764,15 @@ export class RaceSimulation {
       // [R17] Perfil técnico resuelto una vez por coche y evento (chasis, PU y paquete del circuito).
       car.technical = this.technicalFor(car);
       // [R07] Inventario de juegos: mismo stock y reglas para todos; sale con un medio.
-      car.tireInventory = createInventory(this.circuitId, car.tires.compound);
+      const weekendSets = this.weekendTyres?.[car.driver.id];
+      if (weekendSets?.length) {
+        // [R52] Fin de semana sprint: se sale con un juego de los que quedan; los ya usados siguen en el inventario.
+        const start = inventoryFromSets(weekendSets, car.tires.compound);
+        car.tireInventory = start.inventory;
+        car.tires = start.tires;
+      } else {
+        car.tireInventory = createInventory(this.circuitId, car.tires.compound);
+      }
       const load = Math.min(this.rule('initialFuelKg'), FuelModel.initialFuelFor(RejoinModel.lapFuelKg(this.activeTrack, car), this.totalLaps));
       car.fuelKg = load; car.telemetry.fuelKg = load;
       car.massKg = CAR_DRY_MASS_KG + load; car.fuelBurnedKg = 0; car.coastedSec = 0;
@@ -2284,7 +2312,7 @@ export class RaceSimulation {
   getTireCompliance(carId: number): TireCompliance {
     const car = this.getCarById(carId);
     if (!car?.tireInventory) return { slickSpecs: [], usedWetWeather: false, setsUsed: 0, setsRequired: 0, satisfied: true, warning: null };
-    return tireCompliance(car.tireInventory, this.circuitId);
+    return tireCompliance(car.tireInventory, this.circuitId, this.raceFormat !== 'sprint');
   }
 
   /** [R07] Carrera terminada normalmente sin cumplir S30.5m → DSQ (el juego no cambia neumáticos para evitarlo). */
@@ -2293,7 +2321,7 @@ export class RaceSimulation {
     // [R13] Lo pendiente se suma al final (convertido si es drive-through o stop-and-go).
     this.stewards.finalize(car.id);
     if (!car.tireInventory || car.classification) return;
-    const compliance = tireCompliance(car.tireInventory, this.circuitId);
+    const compliance = tireCompliance(car.tireInventory, this.circuitId, this.raceFormat !== 'sprint');
     if (!compliance.satisfied) this.imposePenalty(car.id, 'dsq', 'S30.5m', compliance.warning ?? 'Incumplimiento de S30.5m');
   }
 
@@ -2691,7 +2719,7 @@ export class RaceSimulation {
       // Trabajos permitidos: la IA cambia neumáticos solo si su juego está gastado (decisión propia).
       for (const car of holders) {
         if (car.pitStop.playerControlled || car.tires.health >= RaceSimulation.RED_FLAG_CHANGE_HEALTH || !car.tireInventory) continue;
-        const compliance = tireCompliance(car.tireInventory, this.circuitId);
+        const compliance = tireCompliance(car.tireInventory, this.circuitId, this.raceFormat !== 'sprint');
         const choice = (['medium', 'hard', 'soft'] as TireCompound[]).find(c => !compliance.slickSpecs.includes(c) && pickSet(car.tireInventory!, c))
           ?? (['medium', 'hard', 'soft'] as TireCompound[]).find(c => pickSet(car.tireInventory!, c));
         if (choice) this.requestRedFlagTyres(car.id, choice);
@@ -3054,7 +3082,7 @@ export class RaceSimulation {
     if (orderIsActive(pit.activeBoxOrder)) return;
     const lapsToEnd = this.totalLaps - car.currentLap;
     const depth = this.weatherModel.meanDepth();
-    const compliance = car.tireInventory ? tireCompliance(car.tireInventory, this.circuitId) : { satisfied: true, slickSpecs: [], usedWetWeather: false, setsUsed: 0, setsRequired: 0, warning: null };
+    const compliance = car.tireInventory ? tireCompliance(car.tireInventory, this.circuitId, this.raceFormat !== 'sprint') : { satisfied: true, slickSpecs: [], usedWetWeather: false, setsUsed: 0, setsRequired: 0, warning: null };
     // Agua actual: compuesto claramente mejor para la pista de ahora.
     const current = tyreWaterGrip(car.tires.compound, depth);
     const weatherChoice = chooseCompound(lapsToEnd, car.tireInventory, compliance, depth);

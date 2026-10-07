@@ -123,6 +123,11 @@ export function completeRace(state: ComponentState, raceKm: number): ComponentSt
   return { ...state, race: state.race + 1, units: state.units.map(u => (u.fitted ? { ...u, races: u.races + 1, km: Math.round((u.km + raceKm) * 10) / 10 } : u)) };
 }
 
+/** [R52] Fin de un sprint: las unidades montadas suman sus kilómetros, pero no cuenta como carrera para su vida. */
+export function addDistance(state: ComponentState, raceKm: number): ComponentState {
+  return { ...state, units: state.units.map(u => (u.fitted ? { ...u, km: Math.round((u.km + raceKm) * 10) / 10 } : u)) };
+}
+
 /** Multiplicador del riesgo de avería: 1 hasta la vida nominal; sube hasta ×4 al 150 % de la vida. */
 export function wearFactor(unit: Pick<ComponentUnit, 'type' | 'races'>): number {
   const nominal = NOMINAL_RACES[unit.type];

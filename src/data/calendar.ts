@@ -7,7 +7,12 @@ export interface CalendarRound {
   circuitId: string;
   /** Sede real a la que sustituye este circuito, cuando el juego no la tiene. */
   substitutes?: string;
+  /** [R52] Ronda con fin de semana sprint. */
+  sprint?: boolean;
 }
+
+/** [R52] Sedes con fin de semana sprint (las de 2026 que decidió el usuario; sin contrastar con una fuente oficial). */
+export const SPRINT_VENUES = ['shanghai', 'miami', 'montreal', 'silverstone', 'zandvoort', 'marina-bay'];
 
 const ORDER: (string | [circuitId: string, substitutes: string])[] = [
   'melbourne', 'shanghai', 'suzuka', 'bahrain', 'jeddah', 'miami', 'montreal', 'monaco',
@@ -15,6 +20,7 @@ const ORDER: (string | [circuitId: string, substitutes: string])[] = [
   'baku', 'marina-bay', 'austin', 'mexico-city', 'interlagos', 'las-vegas', 'lusail', 'yas-marina',
 ];
 
-export const SEASON_CALENDAR: CalendarRound[] = ORDER.map((entry, index) => (
-  typeof entry === 'string' ? { round: index + 1, circuitId: entry } : { round: index + 1, circuitId: entry[0], substitutes: entry[1] }
-));
+export const SEASON_CALENDAR: CalendarRound[] = ORDER.map((entry, index) => {
+  const round: CalendarRound = typeof entry === 'string' ? { round: index + 1, circuitId: entry } : { round: index + 1, circuitId: entry[0], substitutes: entry[1] };
+  return SPRINT_VENUES.includes(round.circuitId) ? { ...round, sprint: true } : round;
+});

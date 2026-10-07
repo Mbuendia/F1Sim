@@ -4,11 +4,12 @@
 // Solo cuenta la carrera que se corre en el circuito de la ronda que toca; cualquier otra es una carrera libre.
 import { addRace, constructorsChampionship, driverStandings, emptyChampionship } from './Championship';
 import type { ChampionshipState } from './Championship';
-import { completeRace, emptyComponents, ensureDriver } from './ComponentPool';
+import { addDistance, completeRace, emptyComponents, ensureDriver } from './ComponentPool';
 import type { ComponentState } from './ComponentPool';
 import { emptyProgram } from './Development';
 import type { DevelopmentProgram } from './Development';
 import type { RaceResult } from './RaceResult';
+import type { TireSet } from './TireInventory';
 import { SEASON_CALENDAR } from '../data/calendar';
 import type { CalendarRound } from '../data/calendar';
 
@@ -34,8 +35,11 @@ export interface SeasonSummary {
   player?: { driverCode: string; position: number; points: number }[];
 }
 
+/** [R52] Fin de semana sprint a medias: el sprint de esa ronda ya se corrió y estos son los juegos que quedan. */
+export interface WeekendState { round: number; tyres: Record<string, TireSet[]> }
+
 /** Lo que la temporada recuerda además del campeonato: las rondas del calendario que se saltaron. */
-export interface SeasonState { version: 1; skipped: number[] }
+export interface SeasonState { version: 1; skipped: number[]; weekend?: WeekendState }
 
 export function emptySeason(): SeasonState {
   return { version: 1, skipped: [] };
@@ -48,7 +52,12 @@ const validRounds = (rounds: unknown[]): number[] =>
 export function parseSeason(text: string | null): SeasonState {
   try {
     const data = text ? JSON.parse(text) : null;
-    if (data && data.version === 1 && Array.isArray(data.skipped)) return { version: 1, skipped: validRounds(data.skipped) };
+    if (data && data.version === 1 && Array.isArray(data.skipped)) {
+      const weekend = data.weekend;
+      const valid = weekend && typeof weekend === 'object' && Number.isInteger(weekend.round) && weekend.round >= 1 && weekend.round <= SEASON_RACES
+        && weekend.tyres && typeof weekend.tyres === 'object' && !Array.isArray(weekend.tyres);
+      return valid ? { version: 1, skipped: validRounds(data.skipped), weekend: { round: weekend.round, tyres: weekend.tyres } } : { version: 1, skipped: validRounds(data.skipped) };
+    }
   } catch { /* guardado ilegible */ }
   return emptySeason();
 }
@@ -56,22 +65,36 @@ export function parseSeason(text: string | null): SeasonState {
 export type RoundStatus = 'disputada' | 'saltada' | 'siguiente' | 'pendiente';
 export interface RoundView extends CalendarRound {
   status: RoundStatus;
+  /** [R52] En la ronda que toca, si su sprint ya se ha disputado (falta el Gran Premio). */
+  sprintDone?: boolean;
   winner?: { driverCode: string; driverName: string; teamName: string };
 }
 
-/** El calendario con el estado de cada ronda: las carreras del campeonato ocupan, en orden, las rondas no saltadas. */
+/** [R52] Grandes Premios del campeonato: los sprints puntúan, pero no ocupan ronda ni cuentan como carrera disputada. */
+export function grandsPrix(championship: ChampionshipState): ChampionshipState['races'] {
+  return championship.races.filter(race => race.format !== 'sprint');
+}
+
+export function grandsPrixRun(championship: ChampionshipState): number {
+  return grandsPrix(championship).length;
+}
+
+/** El calendario con el estado de cada ronda: los Grandes Premios del campeonato ocupan, en orden, las rondas no saltadas. */
 export function calendarView(championship: ChampionshipState, season: SeasonState = emptySeason()): RoundView[] {
-  const skipped = new Set(season.skipped);
+  const skipped = new Set(season.skipped), races = grandsPrix(championship);
   let raced = 0, nextFound = false;
   return SEASON_CALENDAR.map(entry => {
     if (skipped.has(entry.round)) return { ...entry, status: 'saltada' as const };
-    const race = championship.races[raced];
+    const race = races[raced];
     if (race) {
       raced++;
       const first = race.rows.find(row => row.position === 1);
       return { ...entry, status: 'disputada' as const, winner: first && { driverCode: first.driverCode, driverName: first.driverName, teamName: first.teamName } };
     }
-    if (!nextFound) { nextFound = true; return { ...entry, status: 'siguiente' as const }; }
+    if (!nextFound) {
+      nextFound = true;
+      return entry.sprint ? { ...entry, status: 'siguiente' as const, sprintDone: season.weekend?.round === entry.round } : { ...entry, status: 'siguiente' as const };
+    }
     return { ...entry, status: 'pendiente' as const };
   });
 }
@@ -96,6 +119,12 @@ export function isSeasonRace(circuitId: string, championship: ChampionshipState,
   return nextRound(championship, season)?.circuitId === circuitId;
 }
 
+/** [R52] ¿Toca correr el sprint? Solo en una ronda sprint cuyo sprint aún no se ha disputado. */
+export function sprintPending(championship: ChampionshipState, season: SeasonState = emptySeason()): boolean {
+  const next = nextRound(championship, season);
+  return Boolean(next?.sprint) && season.weekend?.round !== next?.round;
+}
+
 /** Salta la ronda que toca: no se disputa y nadie puntúa. Sin rondas por disputar no cambia nada. */
 export function skipRound(championship: ChampionshipState, season: SeasonState = emptySeason()): SeasonState {
   const next = nextRound(championship, season);
@@ -116,7 +145,7 @@ export function closeSeason({ championship, components, program, archive, season
 }): { championship: ChampionshipState; components: ComponentState; program: DevelopmentProgram; archive: SeasonSummary[]; season: SeasonState; summary: SeasonSummary } {
   const drivers = driverStandings(championship), teams = constructorsChampionship(championship);
   const summary: SeasonSummary = {
-    season: archive.length + 1, races: championship.races.length,
+    season: archive.length + 1, races: grandsPrixRun(championship),
     champion: drivers[0]?.driverCode ?? null, constructorsChampion: teams[0]?.teamName ?? null,
     championName: drivers[0]?.driverName, championPoints: drivers[0]?.points, constructorsPoints: teams[0]?.points,
     skipped: season.skipped.length,
@@ -156,16 +185,28 @@ function closeIfComplete(career: CareerProgress, playerCodes: string[]): Settled
 
 /**
  * Anota una carrera terminada. Si no cuenta (carrera libre) o su resultado no es final, no cambia nada; si cuenta,
- * suma al campeonato, gasta los componentes montados y, tras la última ronda, cierra la temporada.
+ * suma al campeonato, gasta los componentes montados y, tras la última ronda, cierra la temporada. [R52] Un sprint
+ * suma sus puntos y sus kilómetros, deja anotado el fin de semana a medias (con los juegos que quedan) y no avanza
+ * de ronda; el Gran Premio la cierra.
  */
 export function settleRace(career: CareerProgress, race: {
   counts: boolean; id: string; circuitId: string; result: RaceResult; format: 'gp' | 'sprint'; raceKm: number; playerCodes?: string[];
+  /** Juegos de neumáticos de cada piloto al acabar (solo tras un sprint). */
+  tyres?: Record<string, TireSet[]>;
 }): SettledCareer {
   if (!race.counts || race.result.status !== 'final') return { ...career, closed: null };
+  const championship = addRace(career.championship, race.id, race.circuitId, race.result, race.format);
+  if (race.format === 'sprint') {
+    const round = nextRound(career.championship, career.season)?.round;
+    if (round === undefined) return { ...career, closed: null };
+    return {
+      ...career, championship, components: addDistance(career.components, race.raceKm),
+      season: { version: 1, skipped: career.season.skipped, weekend: { round, tyres: race.tyres ?? {} } }, closed: null,
+    };
+  }
   return closeIfComplete({
-    ...career,
-    championship: addRace(career.championship, race.id, race.circuitId, race.result, race.format),
-    components: completeRace(career.components, race.raceKm),
+    ...career, championship, components: completeRace(career.components, race.raceKm),
+    season: { version: 1, skipped: career.season.skipped },
   }, race.playerCodes ?? []);
 }
 

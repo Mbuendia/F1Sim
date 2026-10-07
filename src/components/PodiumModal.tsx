@@ -21,9 +21,11 @@ interface PodiumModalProps {
   onFocusChange?: (driverId: string, focus: FocusId) => void;
   onRestart: () => void;
   onGoHome: () => void;
+  /** [R52] Texto del botón de salida (tras un sprint, lo que falta del fin de semana). */
+  homeLabel?: string;
 }
 
-export const PodiumModal: React.FC<PodiumModalProps> = ({ podiumCars, result, onConfirmResult, progress, onFocusChange, onRestart, onGoHome }) => {
+export const PodiumModal: React.FC<PodiumModalProps> = ({ podiumCars, result, onConfirmResult, progress, onFocusChange, onRestart, onGoHome, homeLabel = 'VOLVER A LA PANTALLA PRINCIPAL' }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const confettiCanvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -234,7 +236,7 @@ export const PodiumModal: React.FC<PodiumModalProps> = ({ podiumCars, result, on
             onClick={onGoHome}
           >
             <Home size={18} />
-            <span>VOLVER A LA PANTALLA PRINCIPAL</span>
+            <span>{homeLabel}</span>
           </button>
         </div>
       </div>

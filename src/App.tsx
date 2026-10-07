@@ -23,7 +23,8 @@ import { buildWeatherScenario } from './data/weatherScenarios';
 import { runQualifying } from './simulation/Qualifying';
 import { aiDevelop, emptyProgram, installFirst, parseProgram, startProject, upgradesFor, PROGRAM_STORAGE_KEY } from './simulation/Development';
 import type { DevelopmentProgram } from './simulation/Development';
-import { calendarView, emptySeason, isSeasonRace, nextRound, parseArchive, parseSeason, settleRace, settleSkip, SEASONS_STORAGE_KEY, SEASON_STATE_KEY } from './simulation/Season';
+import { calendarView, emptySeason, grandsPrixRun, isSeasonRace, nextRound, parseArchive, parseSeason, settleRace, settleSkip, sprintPending, SEASONS_STORAGE_KEY, SEASON_STATE_KEY } from './simulation/Season';
+import { carryTyres, isSprintVenue, podiumHomeLabel, sprintWeekendTyres } from './simulation/Weekend';
 import type { SeasonState, SeasonSummary, SettledCareer } from './simulation/Season';
 import { SeasonEndScreen } from './components/SeasonEndScreen';
 import { GridPenaltyNotice } from './components/GridPenaltyNotice';
@@ -218,7 +219,12 @@ export const App: React.FC = () => {
   }, [setups, selectedDriverId]);
 
   // [R20] Formato del Gran Premio y resultado de la clasificación pendiente de mostrar
-  const [raceFormat, setRaceFormat] = useState<RaceFormatId>('directo');
+  // [R52] En una ronda sprint con el sprint por correr, el paddock propone el fin de semana sprint.
+  const [raceFormat, setRaceFormat] = useState<RaceFormatId>(() => {
+    try {
+      return sprintPending(parseChampionship(localStorage.getItem(CHAMPIONSHIP_STORAGE_KEY)), parseSeason(localStorage.getItem(SEASON_STATE_KEY))) ? 'sprint' : 'directo';
+    } catch { return 'directo'; }
+  });
   const [qualifying, setQualifying] = useState<QualifyingResult | null>(null);
 
   // [R44] Meteorología de la próxima carrera
@@ -368,6 +374,11 @@ export const App: React.FC = () => {
     simulation.startRaceSequence();
   }, [simulation, camera]);
 
+  // [R52] El sprint solo se ofrece donde lo hay: en una carrera libre de un circuito sprint o en la ronda sprint de la
+  // temporada mientras su sprint no se haya corrido.
+  const sprintAvailable = isSprintVenue(selectedCircuitId) && (!isSeasonRace(selectedCircuitId, championship, season) || sprintPending(championship, season));
+  const effectiveFormat: RaceFormatId = raceFormat === 'sprint' && !sprintAvailable ? 'clasificacion' : raceFormat;
+
   const handleStartRaceFromHome = useCallback(() => {
     // [R48] Cada carrera lleva su semilla (se guarda con ella): cargarla da siempre la misma continuación.
     simulation.setSeed(newRaceSeed());
@@ -379,28 +390,38 @@ export const App: React.FC = () => {
     // [R49] Setup del jugador antes de clasificar; nadie sale desde el pit lane hasta que lo decida el parc fermé.
     simulation.setCarSetups(playerSetups);
     simulation.setPitLaneStarters([]);
-    setQualifyingSetups(raceFormat === 'clasificacion' ? playerSetups : null);
+    // [R52] Fin de semana sprint: primero la clasificación sprint y el sprint (100 km, sin paradas obligatorias);
+    // el Gran Premio de esa ronda se corre después con los neumáticos que queden.
+    const format = effectiveFormat, sprintRace = format === 'sprint';
+    const seasonRace = isSeasonRace(selectedCircuitId, championship, season);
+    simulation.setRaceFormat(sprintRace ? 'sprint' : 'gp');
+    const weekendNow = season.weekend;
+    simulation.setWeekendTyres(!sprintRace && seasonRace && weekendNow && weekendNow.round === nextRound(championship, season)?.round ? weekendNow.tyres : null);
+    setQualifyingSetups(format !== 'directo' ? playerSetups : null);
     simulation.setStartingGrid(null);
     simulation.setCircuit(selectedCircuitId);
     // [R20] Con clasificación, la parrilla sale de Q1-Q3 y se enseña antes de formar; el GP directo usa la prefijada.
-    const quali = raceFormat === 'clasificacion' ? runQualifying(simulation.qualifyingEntrants(), Date.now() % 2147483647) : null;
+    const quali = format !== 'directo' ? runQualifying(simulation.qualifyingEntrants(), Date.now() % 2147483647, { format: sprintRace ? 'sprint' : 'gp' }) : null;
+    if (sprintRace && quali) simulation.setWeekendTyres(sprintWeekendTyres(selectedCircuitId, quali.tyreUse));
     // [R19] Antes de salir: la IA sustituye lo agotado, las unidades sin estrenar cuentan como usadas y sus sanciones
     // recolocan la parrilla (la de la clasificación o la prefijada).
     // [R51] Solo cuenta para la temporada la carrera del circuito que toca; una carrera libre no gasta componentes,
     // no sanciona y no mueve el desarrollo.
-    const counts = isSeasonRace(selectedCircuitId, championship, season);
+    const counts = seasonRace;
     setRaceCounts(counts);
+    // Componentes, sanciones y desarrollo son cosa del Gran Premio: el sprint no los mueve.
+    const careerRace = counts && !sprintRace;
     const playerTeam = (DRIVERS[selectedDriverId] ?? DRIVERS.alonso).teamId;
-    const prepared = counts ? aiReplace(components, Object.values(DRIVERS).filter(d => d.teamId !== playerTeam).map(d => d.id)) : components;
-    const started = counts ? markRaceStart(prepared) : { state: components, penalties: [] };
-    if (counts) saveComponents(started.state);
+    const prepared = careerRace ? aiReplace(components, Object.values(DRIVERS).filter(d => d.teamId !== playerTeam).map(d => d.id)) : components;
+    const started = careerRace ? markRaceStart(prepared) : { state: components, penalties: [] };
+    if (careerRace) saveComponents(started.state);
     simulation.setFailureFactors(Object.fromEntries(Object.keys(DRIVERS).map(id => [id, hazardFactor(started.state, id)])));
     // [R18] La IA desarrolla y monta sus mejoras; cada coche corre con las suyas.
-    const raceIndex = championship.races.length;
+    const raceIndex = grandsPrixRun(championship);
     const aiTeams = [...new Set(Object.values(DRIVERS).map(d => d.teamId))].filter(t => t !== playerTeam);
-    const developed = counts ? aiDevelop(program, aiTeams, raceIndex, Object.fromEntries(aiTeams.map(t => [t, constructorsPosition(t)])), raceIndex + 1,
+    const developed = careerRace ? aiDevelop(program, aiTeams, raceIndex, Object.fromEntries(aiTeams.map(t => [t, constructorsPosition(t)])), raceIndex + 1,
       teamId => Object.values(DRIVERS).find(d => d.teamId === teamId)?.id ?? teamId) : program;
-    if (counts) saveProgram(developed);
+    if (careerRace) saveProgram(developed);
     simulation.setTechnicalUpgrades(Object.fromEntries(Object.values(DRIVERS).map(d => [d.id, upgradesFor(developed, d.teamId, d.id, raceIndex)])));
     const baseGrid = quali ? quali.grid.map(slot => slot.driverId) : simulation.cars.map(c => c.driver.id);
     const penalized = applyGridPenalties(baseGrid, started.penalties);
@@ -421,7 +442,7 @@ export const App: React.FC = () => {
     setIsFinished(false);
     setCurrentView('race');
     if (gate === 'directo') simulation.startRaceSequence();
-  }, [simulation, camera, selectedCircuitId, weatherScenarioId, development, raceFormat, components, saveComponents, selectedDriverId, program, saveProgram, championship, constructorsPosition, saveStore, playerSetups, season]);
+  }, [simulation, camera, selectedCircuitId, weatherScenarioId, development, raceFormat, components, saveComponents, selectedDriverId, program, saveProgram, championship, constructorsPosition, saveStore, playerSetups, season, effectiveFormat]);
 
   /** [R51] Visto el aviso de sanciones, empieza la carrera. */
   const handleContinueFromPenalties = useCallback(() => {
@@ -441,6 +462,9 @@ export const App: React.FC = () => {
     // La temporada elige el Gran Premio siguiente.
     const next = nextRound(settled.championship, settled.season);
     if (next) setSelectedCircuitId(next.circuitId);
+    // [R52] En una ronda sprint se propone el sprint; corrido el sprint, la clasificación del Gran Premio.
+    const proposeSprint = sprintPending(settled.championship, settled.season);
+    setRaceFormat(current => (proposeSprint ? 'sprint' : current === 'sprint' ? 'clasificacion' : current));
   }, [saveChampionship, saveComponents, saveProgram, saveSeason]);
 
   const playerCodes = useMemo(() => {
@@ -483,7 +507,7 @@ export const App: React.FC = () => {
       const newHistoryItem: RaceResultHistory = {
         id: `gp_${Date.now()}`,
         dateFormatted: new Date().toLocaleDateString('es-ES', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }),
-        trackName: raceCounts ? circuit.name : `${circuit.name} · carrera libre`,
+        trackName: `${circuit.name}${simulation.raceFormat === 'sprint' ? ' · sprint' : ''}${raceCounts ? '' : ' · carrera libre'}`,
         winnerName: `${winner.driver.firstName} ${winner.driver.lastName}`,
         winnerTeam: winner.team.name,
         winnerTeamColor: winner.team.color,
@@ -500,10 +524,11 @@ export const App: React.FC = () => {
       // carrera libre no cambia nada de eso.
       const finalResult = simulation.confirmResult();
       if (finalResult) {
-        if (raceCounts) saveDevelopment(developmentAfter(finalResult));
+        if (raceCounts && simulation.raceFormat !== 'sprint') saveDevelopment(developmentAfter(finalResult));
         applyCareer(settleRace({ championship, components, program, season, archive: seasonArchive }, {
           counts: raceCounts, id: newHistoryItem.id, circuitId: selectedCircuitId, result: finalResult, format: simulation.raceFormat,
           raceKm: simulation.leaderLap * simulation.activeTrack.lapLengthMeters / 1000, playerCodes,
+          tyres: simulation.raceFormat === 'sprint' ? carryTyres(simulation.cars) : undefined,
         }));
       }
 
@@ -644,7 +669,7 @@ export const App: React.FC = () => {
     } catch (e) { console.error(e); }
     setSelectedDriverId(DRIVERS[selection.driverId] ? selection.driverId : 'alonso');
     setSelectedCircuitId(save.race?.circuitId ?? (OFFICIAL_CIRCUITS[selection.circuitId] ? selection.circuitId : 'barcelona'));
-    setRaceFormat(selection.raceFormat === 'clasificacion' ? 'clasificacion' : 'directo');
+    setRaceFormat(selection.raceFormat === 'clasificacion' || selection.raceFormat === 'sprint' ? selection.raceFormat : 'directo');
     setWeatherScenarioId(selection.weatherScenarioId);
     setLuckVariantEnabled(selection.luckVariant);
     saveSetups(Object.fromEntries(Object.entries(selection.setups ?? {}).map(([id, value]) => [id, normalizeSetup(value)])));
@@ -834,21 +859,27 @@ export const App: React.FC = () => {
         }}
         season={{
           rounds: calendarView(championship, season), seasonNumber: seasonArchive.length + 1, archive: seasonArchive,
-          onSelectNext: () => { const next = nextRound(championship, season); if (next) setSelectedCircuitId(next.circuitId); },
+          onSelectNext: () => {
+            const next = nextRound(championship, season);
+            if (!next) return;
+            setSelectedCircuitId(next.circuitId);
+            if (sprintPending(championship, season)) setRaceFormat('sprint');
+          },
           onSkip: handleSkipRound,
         }}
         driverAttributes={driver => attributesOf(development, driver)}
         components={components}
         development={{
-          program, raceIndex: championship.races.length,
+          program, raceIndex: grandsPrixRun(championship),
           constructorsPosition: constructorsPosition((DRIVERS[selectedDriverId] ?? DRIVERS.alonso).teamId),
-          onStart: key => saveProgram(startProject(program, (DRIVERS[selectedDriverId] ?? DRIVERS.alonso).teamId, key, championship.races.length,
+          onStart: key => saveProgram(startProject(program, (DRIVERS[selectedDriverId] ?? DRIVERS.alonso).teamId, key, grandsPrixRun(championship),
             constructorsPosition((DRIVERS[selectedDriverId] ?? DRIVERS.alonso).teamId)).program),
-          onInstall: (projectId, driverId) => saveProgram(installFirst(program, projectId, driverId, championship.races.length).program),
+          onInstall: (projectId, driverId) => saveProgram(installFirst(program, projectId, driverId, grandsPrixRun(championship)).program),
         }}
         onFitComponent={(driverId, type) => saveComponents(fitNew(components, driverId, type))}
         onUndoComponent={(driverId, type) => saveComponents(undoFit(components, driverId, type))}
-        raceFormat={raceFormat}
+        raceFormat={effectiveFormat}
+        sprintAvailable={sprintAvailable}
         onSelectFormat={setRaceFormat}
         weatherScenarioId={weatherScenarioId}
         onSelectWeather={setWeatherScenarioId}
@@ -1037,7 +1068,8 @@ export const App: React.FC = () => {
                 podiumCars={podiumCars}
                 result={simulation.getRaceResult()}
                 onConfirmResult={() => { simulation.confirmResult(); setPodiumCars([...simulation.podiumCars]); }}
-                progress={!raceCounts ? [] : (() => {
+                homeLabel={podiumHomeLabel(simulation.raceFormat, raceCounts)}
+                progress={!raceCounts || simulation.raceFormat === 'sprint' ? [] : (() => {
                   const after = developmentAfter(simulation.getRaceResult());
                   return teamCars.map(c => DRIVERS[c.driver.id]).filter(Boolean).map(driver => ({
                     driver, attributes: attributesOf(after, driver), gains: after.lastGains[driver.id] ?? {}, focus: development.focus[driver.id] ?? 'equilibrado',

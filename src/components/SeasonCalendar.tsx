@@ -34,7 +34,10 @@ export const SeasonCalendar: React.FC<SeasonCalendarProps> = ({ rounds, seasonNu
         <div className={styles.next}>
           <p className={styles.nextTitle}>
             Temporada {seasonNumber} · Ronda {next.round} de {SEASON_RACES}: <FlagIcon country={nextCircuit.country} emoji={nextCircuit.countryFlag} size={15} /> {nextCircuit.officialGpName}
-            <span className={styles.nextSub}>{nextCircuit.name}{next.substitutes ? ` · sustituye a ${next.substitutes}` : ''}</span>
+            <span className={styles.nextSub}>
+              {nextCircuit.name}{next.substitutes ? ` · sustituye a ${next.substitutes}` : ''}
+              {next.sprint ? (next.sprintDone ? ' · Sprint disputado: falta el Gran Premio (clasificación y carrera)' : ' · Fin de semana sprint') : ''}
+            </span>
           </p>
           <div className={styles.actions}>
             {freeRace && <button type="button" className={`${styles.button} ${styles.primary}`} onClick={onSelectNext}>Volver al Gran Premio que toca</button>}
@@ -59,11 +62,12 @@ export const SeasonCalendar: React.FC<SeasonCalendarProps> = ({ rounds, seasonNu
         {rounds.map(round => {
           const circuit = OFFICIAL_CIRCUITS[round.circuitId];
           return (
-            <li key={round.round} className={styles.round} data-round={round.round} data-status={round.status}>
+            <li key={round.round} className={styles.round} data-round={round.round} data-status={round.status} data-sprint={round.sprint ? 'true' : undefined}>
               <span className={styles.number}>{round.round}</span>
               <span>
                 {circuit && <FlagIcon country={circuit.country} emoji={circuit.countryFlag} size={13} />} {circuit?.officialGpName ?? round.circuitId}
                 {round.substitutes && <span className={styles.note}> · sustituye a {round.substitutes}</span>}
+                {round.sprint && <span className={styles.note}> · Sprint</span>}
               </span>
               <span className={styles.state}>{stateOf(round)}</span>
             </li>

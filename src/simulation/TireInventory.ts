@@ -36,6 +36,8 @@ export interface TireCompliance {
 
 /** S30.1: asignación por piloto en un fin de semana sin sprint ni ensayo adicional. */
 export const ALLOCATION: Record<TireCompound, number> = { hard: 2, medium: 3, soft: 8, intermediate: 5, wet: 2 };
+/** [R52] S30.1: en un fin de semana sprint, 2 duros, 4 medios y 6 blandos (12 juegos de seco). */
+export const SPRINT_ALLOCATION: Record<TireCompound, number> = { ...ALLOCATION, hard: 2, medium: 4, soft: 6 };
 /** S30.1: en Mónaco hay 3 juegos de wet. */
 export const MONACO_WET_SETS = 3;
 /** S30.5m: en Mónaco, al menos tres juegos durante la carrera. */
@@ -47,12 +49,41 @@ export const COMPOUND_LABEL: Record<TireCompound, string> = {
 };
 const SLICKS: TireCompound[] = ['soft', 'medium', 'hard'];
 
-export function createInventory(circuitId: string, startCompound: TireCompound = 'medium'): TireInventory {
+/** Juegos nuevos de una asignación (la normal o la de un fin de semana sprint). */
+export function allocationSets(circuitId: string, allocation: Record<TireCompound, number> = ALLOCATION): TireSet[] {
   const sets: TireSet[] = [];
-  for (const compound of Object.keys(ALLOCATION) as TireCompound[]) {
-    const total = compound === 'wet' && circuitId === 'monaco' ? MONACO_WET_SETS : ALLOCATION[compound];
+  for (const compound of Object.keys(allocation) as TireCompound[]) {
+    const total = compound === 'wet' && circuitId === 'monaco' ? MONACO_WET_SETS : allocation[compound];
     for (let i = 1; i <= total; i++) sets.push({ id: `${PREFIX[compound]}${i}`, compound, state: 'nuevo', laps: 0, tires: null });
   }
+  return sets;
+}
+
+/** Estado físico de un juego ya usado al volver a montarlo: conserva su desgaste y sale de las mantas. */
+function remounted(set: TireSet): TireState {
+  if (!set.tires) return TireModel.createFreshTire(set.compound);
+  const tires = structuredClone(set.tires);
+  tires.lapsOnTire = 0;
+  tires.tempCelsius = TireModel.BLANKET_TEMP_C;
+  tires.tempFL = tires.tempFR = tires.tempRL = tires.tempRR = TireModel.BLANKET_TEMP_C;
+  return tires;
+}
+
+/**
+ * [R52] Inventario de salida a partir de los juegos que quedan de sesiones anteriores del fin de semana: monta uno
+ * nuevo del compuesto pedido (si no queda, el usado con más vida; si tampoco, otro slick nuevo).
+ */
+export function inventoryFromSets(previous: TireSet[], startCompound: TireCompound = 'medium'): { inventory: TireInventory; tires: TireState } {
+  const sets = previous.map(set => ({ ...structuredClone(set), state: set.state === 'montado' ? 'usado' as const : set.state }));
+  const inventory: TireInventory = { sets, mountedId: '', usedIds: [] };
+  const start = pickSet(inventory, startCompound) ?? SLICKS.map(compound => pickSet(inventory, compound)).find(Boolean) ?? sets[0];
+  const tires = remounted(start);
+  start.state = 'montado';
+  return { inventory: { sets, mountedId: start.id, usedIds: [start.id] }, tires };
+}
+
+export function createInventory(circuitId: string, startCompound: TireCompound = 'medium', allocation: Record<TireCompound, number> = ALLOCATION): TireInventory {
+  const sets = allocationSets(circuitId, allocation);
   const start = sets.find(s => s.compound === startCompound)!;
   start.state = 'montado';
   return { sets, mountedId: start.id, usedIds: [start.id] };
@@ -85,19 +116,18 @@ export function mountSet(inventory: TireInventory, set: TireSet, dismounted: Tir
   set.state = 'montado';
   inventory.mountedId = set.id;
   if (!inventory.usedIds.includes(set.id)) inventory.usedIds.push(set.id);
-  if (!set.tires) return TireModel.createFreshTire(set.compound);
-  const tires = structuredClone(set.tires);
-  tires.lapsOnTire = 0;
-  tires.tempCelsius = TireModel.BLANKET_TEMP_C;
-  tires.tempFL = tires.tempFR = tires.tempRL = tires.tempRR = TireModel.BLANKET_TEMP_C;
-  return tires;
+  return remounted(set);
 }
 
-/** S30.5m: dos especificaciones slick salvo inter/wet; en Mónaco además tres juegos. */
-export function tireCompliance(inventory: TireInventory, circuitId: string): TireCompliance {
+/**
+ * S30.5m: dos especificaciones slick salvo inter/wet; en Mónaco además tres juegos. [R52] La obligación es de la
+ * carrera: en el sprint (`required` falso) no hay que parar ni usar dos compuestos.
+ */
+export function tireCompliance(inventory: TireInventory, circuitId: string, required = true): TireCompliance {
   const used = inventory.usedIds.map(id => inventory.sets.find(s => s.id === id)!).filter(Boolean);
   const slickSpecs = [...new Set(used.filter(s => SLICKS.includes(s.compound)).map(s => s.compound))];
   const usedWetWeather = used.some(s => s.compound === 'intermediate' || s.compound === 'wet');
+  if (!required) return { slickSpecs, usedWetWeather, setsUsed: used.length, setsRequired: 0, satisfied: true, warning: null };
   const setsRequired = circuitId === 'monaco' ? MONACO_SETS_REQUIRED : 0;
   const specsOk = usedWetWeather || slickSpecs.length >= 2;
   const setsOk = used.length >= setsRequired;
