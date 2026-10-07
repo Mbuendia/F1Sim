@@ -519,5 +519,6 @@ export const modules = [
   { "id": "car-3d-r46", "tasks": ["R46"], "sprint": "2.10", "kind": "contract" },
   { "id": "qualifying-r20", "tasks": ["R20"], "sprint": "2.10", "kind": "contract" },
   { "id": "components-r19", "tasks": ["R19"], "sprint": "2.10", "kind": "contract" },
-  { "id": "development-r18", "tasks": ["R18"], "sprint": "2.10", "kind": "contract" }
+  { "id": "development-r18", "tasks": ["R18"], "sprint": "2.10", "kind": "contract" },
+  { "id": "lap-times-r47", "tasks": ["R47"], "sprint": "2.11", "kind": "contract" }
 ];
