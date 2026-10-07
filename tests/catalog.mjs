@@ -524,5 +524,6 @@ export const modules = [
   { "id": "save-load-r48", "tasks": ["R48"], "sprint": "2.11", "kind": "contract" },
   { "id": "setup-r49", "tasks": ["R49"], "sprint": "2.11", "kind": "contract" },
   { "id": "overtake-zones-r50", "tasks": ["R50"], "sprint": "2.11", "kind": "contract" },
-  { "id": "models-3d-r55", "tasks": ["R55"], "sprint": "2.11", "kind": "contract" }
+  { "id": "models-3d-r55", "tasks": ["R55"], "sprint": "2.11", "kind": "contract" },
+  { "id": "track-sprites-r56", "tasks": ["R56"], "sprint": "2.11", "kind": "contract" }
 ];
