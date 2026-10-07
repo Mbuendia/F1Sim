@@ -39,6 +39,9 @@ import { calculateCarWorldPosition, lapsToPitEntry, limitLateralChange } from '.
 import { lineCrossings, TimingLine, TimingService } from './Timing';
 import { brakeDecelFactor, brakeTempStep, engineTempStep, gearFor, rpmFor } from './PowertrainModel';
 import { chassisGripAt, resolveTechnical } from '../data/teamProfiles';
+import type { CarTechnical } from '../data/teamProfiles';
+import { applySetup, isNeutralSetup, normalizeSetup } from './Setup';
+import type { CarSetup } from './Setup';
 import { availableSets, COMPOUND_LABEL, createInventory, mountSet, pickSet, TireCompliance, tireCompliance } from './TireInventory';
 import { localFlagsFrom, LocalFlag, marshalSectorOf, Permissions, permissionsFor } from './RaceControl';
 import { Decision, PenaltyType, Stewards } from './Stewards';
@@ -145,7 +148,104 @@ export class RaceSimulation {
 
   setTechnicalUpgrades(upgrades: Record<string, string[]>) {
     this.technicalUpgrades = { ...upgrades };
-    for (const car of this.cars) car.technical = technicalWith(resolveTechnical(car.team.id, this.circuitId), this.technicalUpgrades[car.driver.id] ?? []);
+    for (const car of this.cars) car.technical = this.technicalFor(car);
+  }
+
+  /** [R49] Setup por piloto (quien no figura corre con el neutro); se aplica al perfil técnico ahora y en las carreras siguientes. */
+  private carSetups: Record<string, CarSetup> = {};
+
+  setCarSetups(setups: Record<string, Partial<CarSetup> | null | undefined>) {
+    this.carSetups = {};
+    for (const [driverId, setup] of Object.entries(setups)) if (!isNeutralSetup(setup)) this.carSetups[driverId] = normalizeSetup(setup);
+    for (const car of this.cars) car.technical = this.technicalFor(car);
+  }
+
+  /** Perfil técnico del coche en este evento: equipo y circuito (R17), mejoras montadas (R18) y setup (R49). */
+  private technicalFor(car: Pick<CarState, 'team' | 'driver'>): CarTechnical {
+    return applySetup(technicalWith(resolveTechnical(car.team.id, this.circuitId), this.technicalUpgrades[car.driver.id] ?? []), this.carSetups[car.driver.id]);
+  }
+
+  /** [R49] Pilotos que salen desde el pit lane (p. ej. por un cambio en parc fermé). */
+  private pitLaneStarters: string[] = [];
+  /** Separación entre los coches que esperan en el pit lane (m), como en la fila de la bandera roja. */
+  static readonly PIT_START_SLOT_M = 8;
+
+  /** [R49] Fija quién sale desde el pit lane y prepara la carrera: dejan su puesto y la parrilla se cierra. */
+  setPitLaneStarters(driverIds: string[]) {
+    this.pitLaneStarters = [...new Set(driverIds.filter(id => STARTING_GRID_ORDER.includes(id)))];
+    this.initRace();
+  }
+
+  /** Salida del pit lane en la referencia de la parrilla (vuelta 0): justo antes o justo después de la meta. */
+  private pitExitProgress(): number {
+    const exit = this.activeTrack.pitExitT;
+    return exit < 0.5 ? exit : exit - 1;
+  }
+
+  /**
+   * [R49] Semáforo de la salida del pit lane: rojo hasta que todos los coches en marcha de la parrilla han pasado la
+   * salida tras la salida de la carrera (y mientras dura la suspensión de una bandera roja).
+   */
+  get pitExitLight(): 'rojo' | 'verde' {
+    if (this.lightState !== 'racing') return 'rojo';
+    if (this.redFlag.phase && this.redFlag.phase !== 'reanudacion') return 'rojo';
+    const exit = this.pitExitProgress();
+    return this.cars.every(c => c.status === 'out' || c.startedFromPitLane || c.progress >= exit) ? 'verde' : 'rojo';
+  }
+
+  /** Coloca en el pit lane, en fila ante el semáforo, a los coches que salen desde boxes (ya al final de `cars`). */
+  private placePitLaneStarters() {
+    const waiting = this.cars.filter(car => this.pitLaneStarters.includes(car.driver.id));
+    if (!waiting.length) return;
+    const len = RejoinModel.pitLaneLength(this.activeTrack), laneM = len * this.activeTrack.lapLengthMeters;
+    const entry = this.pitExitProgress() - len;
+    const { start, end } = PitStopModel.limitFractions(laneM);
+    waiting.forEach((car, index) => {
+      const slot = Math.max(start + 0.01, end - (index + 1) * RaceSimulation.PIT_START_SLOT_M / laneM);
+      car.pitLaneStart = 'espera';
+      car.startedFromPitLane = true;
+      car.isInPitLane = true;
+      car.pitStop.entryProgress = entry;
+      car.pitStop.pitLaneProgress = slot;
+      car.progress = entry + slot * len;
+      car.trackT = ((car.progress % 1) + 1) % 1;
+      car.lateralOffset = 0; car.targetLateralOffset = 0;
+    });
+  }
+
+  /** [R49] Coche que sale desde el pit lane: parado con el semáforo en rojo; en verde, limitador hasta la línea y a pista. */
+  private updatePitLaneStart(car: CarState, dt: number, lapDistanceMeters: number, green: boolean) {
+    const pit = car.pitStop;
+    const len = RejoinModel.pitLaneLength(this.activeTrack), laneM = len * lapDistanceMeters;
+    const entry = pit.entryProgress ?? car.progress;
+    car.lateralOffset = 0; car.targetLateralOffset = 0; car.isBlueFlagged = false; car.isOvertaking = false;
+    if (car.pitLaneStart === 'espera') {
+      if (!green) {
+        car.currentSpeedKmh = 0; car.speed = 0; car.telemetry.speedKmh = 0;
+        return;
+      }
+      car.pitLaneStart = 'saliendo';
+    }
+    const { end } = PitStopModel.limitFractions(laneM);
+    const lane = Math.min(1, Math.max(0, (car.progress - entry) / len));
+    const v = lane >= end ? Math.min(260, car.currentSpeedKmh + dt * 200) : Math.min(PitStopModel.PIT_SPEED_LIMIT_KMH, car.currentSpeedKmh + dt * 100);
+    car.currentSpeedKmh = v;
+    car.speed = v / 3.6 / lapDistanceMeters;
+    car.progress += car.speed * dt;
+    car.trackT = ((car.progress % 1) + 1) % 1;
+    car.telemetry.speedKmh = Math.round(v);
+    pit.pitLaneProgress = Math.min(1, Math.max(0, (car.progress - entry) / len));
+    if (pit.pitLaneProgress >= 1) {
+      car.isInPitLane = false;
+      car.pitLaneStart = undefined;
+      pit.pitLaneProgress = 0;
+      pit.entryProgress = undefined;
+    }
+  }
+
+  /** [R49] Orden por distancia; un coche que aún espera para salir desde el pit lane no cuenta como líder. */
+  private static aheadFirst(a: CarState, b: CarState): number {
+    return Number(Boolean(a.pitLaneStart)) - Number(Boolean(b.pitLaneStart)) || b.progress - a.progress;
   }
 
   /** [R20] Parrilla de salida: la de la clasificación o, en GP directo, la prefijada. */
@@ -322,6 +422,8 @@ export class RaceSimulation {
       setup: {
         driverAttributes: this.driverAttributes, failureFactors: this.failureFactors, technicalUpgrades: this.technicalUpgrades,
         startingGrid: this.startingGrid, raceTimeLimitSec: this.raceTimeLimitSec, totalTimeLimitSec: this.totalTimeLimitSec,
+        // [R49] Ausentes en los guardados anteriores: se leen como «sin setup» y «nadie desde el pit lane».
+        carSetups: this.carSetups, pitLaneStarters: this.pitLaneStarters,
       },
     };
   }
@@ -393,6 +495,7 @@ export class RaceSimulation {
     this.driverAttributes = setup.driverAttributes; this.failureFactors = setup.failureFactors;
     this.technicalUpgrades = setup.technicalUpgrades; this.startingGrid = setup.startingGrid;
     this.raceTimeLimitSec = setup.raceTimeLimitSec; this.totalTimeLimitSec = setup.totalTimeLimitSec;
+    this.carSetups = setup.carSetups ?? {}; this.pitLaneStarters = setup.pitLaneStarters ?? [];
 
     // Datos de pintado: se reconstruyen en el siguiente paso.
     this.previousPoses.clear();
@@ -478,7 +581,11 @@ export class RaceSimulation {
     Object.assign(this.weather, { condition: 'dry', conditionLabel: 'SECO / DESPEJADO', waterDepthMm: 0, waterPercentage: 0, gripMultiplier: 1, rainProbabilityPct: 4 });
     this.scEndingLap = null; // [FIX C5] Reset scEndingLap en cada nueva carrera
 
-    this.cars = (this.startingGrid ?? STARTING_GRID_ORDER).map((driverId, idx) => {
+    // [R49] Quien sale desde el pit lane deja su puesto: la parrilla se cierra y esos coches quedan al final.
+    const baseGrid = this.startingGrid ?? STARTING_GRID_ORDER;
+    const fromPitLane = baseGrid.filter(id => this.pitLaneStarters.includes(id));
+    const gridOrder = fromPitLane.length ? [...baseGrid.filter(id => !fromPitLane.includes(id)), ...fromPitLane] : baseGrid;
+    this.cars = gridOrder.map((driverId, idx) => {
       // [R45] Piloto con sus atributos actuales (idéntico al de siempre si no hay mejoras).
       const driver = applyAttributes(DRIVERS[driverId], this.driverAttributes[driverId]);
       const team = TEAMS[driver.teamId];
@@ -622,13 +729,14 @@ export class RaceSimulation {
     // [R14] Carga por distancia: consumo estimado de cada coche × vueltas, con margen y muestra; tope del perfil.
     for (const car of this.cars) {
       // [R17] Perfil técnico resuelto una vez por coche y evento (chasis, PU y paquete del circuito).
-      car.technical = technicalWith(resolveTechnical(car.team.id, this.circuitId), this.technicalUpgrades[car.driver.id] ?? []);
+      car.technical = this.technicalFor(car);
       // [R07] Inventario de juegos: mismo stock y reglas para todos; sale con un medio.
       car.tireInventory = createInventory(this.circuitId, car.tires.compound);
       const load = Math.min(this.rule('initialFuelKg'), FuelModel.initialFuelFor(RejoinModel.lapFuelKg(this.activeTrack, car), this.totalLaps));
       car.fuelKg = load; car.telemetry.fuelKg = load;
       car.massKg = CAR_DRY_MASS_KG + load; car.fuelBurnedKg = 0; car.coastedSec = 0;
     }
+    this.placePitLaneStarters();
     this.updateWorldPositions();
   }
 
@@ -637,6 +745,7 @@ export class RaceSimulation {
       this.lightState = 'formation-lap';
       this.lightsTimer = 0;
       this.cars.forEach((car, idx) => {
+        if (car.pitLaneStart) return;   // [R49] espera en el pit lane
         car.progress = -((idx + 1) * 0.0035);
         car.speed = 0.007;
         car.lateralOffset = idx % 2 === 0 ? 0.65 : -0.65;
@@ -675,7 +784,7 @@ export class RaceSimulation {
   // pit lane y vuelve a él; nunca se coloca en pista por asignación.
   deploySafetyCar(reason: string, options: { targetLaps?: number } = {}): boolean {
     if (this.safetyCar.isDeployed || this.raceFlagState === 'red') return false;
-    const leader = [...this.cars].filter(c => c.status === 'running').sort((a, b) => b.progress - a.progress)[0];
+    const leader = [...this.cars].filter(c => c.status === 'running').sort(RaceSimulation.aheadFirst)[0];
     SafetyCarModel.deploy(this.safetyCar, reason, leader ? leader.progress : 0, this.raceTimeSec,
       (OFFICIAL_CIRCUITS[this.circuitId] || OFFICIAL_CIRCUITS.barcelona).trackType, this.activeTrack);
     // [R47] Con semilla, las vueltas mínimas del SC salen de su propio flujo: el despliegue puede pedirse desde fuera
@@ -976,8 +1085,10 @@ export class RaceSimulation {
     const points = this.activeTrack.points;
     const totalPoints = points.length;
     const lapDistanceMeters = this.activeTrack.lapLengthMeters;
-    const sortedActive = [...this.cars].filter(c => c.status !== 'out').sort((a, b) => b.progress - a.progress || a.id - b.id);
+    const sortedActive = [...this.cars].filter(c => c.status !== 'out').sort((a, b) => RaceSimulation.aheadFirst(a, b) || a.id - b.id);
     const leaderCar = sortedActive[0];
+    // [R49] Semáforo del pit lane tal y como estaba al empezar el paso (solo se consulta si alguien espera).
+    const pitExitGreen = this.cars.some(c => c.pitLaneStart === 'espera') ? this.pitExitLight === 'verde' : true;
     // [R02] Estado del campo al inicio del paso: cada coche lee a los demás tal y como estaban, sin ventaja
     // por su posición en la lista. Las huellas de goma se depositan al final del paso.
     const field = this.cars.map(fieldCar);
@@ -1013,6 +1124,12 @@ export class RaceSimulation {
           }
         }
         continue;
+      }
+
+      // [R49] Salida desde el pit lane. Una bandera roja manda: el coche pasa a la fila del carril rápido.
+      if (car.pitLaneStart) {
+        if (car.redFlagHold) car.pitLaneStart = undefined;
+        else { this.updatePitLaneStart(car, dt, lapDistanceMeters, pitExitGreen); continue; }
       }
 
       // [R14] Sin combustible y detenido en pista: retirada física.
@@ -1276,6 +1393,9 @@ export class RaceSimulation {
         drsOpen: car.drsActive,
         slipstream: car.slipstreamLevel ?? 0,
         dragFactor: technical.dragFactor,
+        // [R49] Relación de cambio del setup (sin definir con la relación larga).
+        gearDrive: technical.gearDrive,
+        revLimitFactor: technical.revLimitFactor,
       };
 
       // ── FÍSICA LONGITUDINAL REALISTA: FRENADAS VIOLENTAS Y ACELERACIÓN A FONDO ──
@@ -1725,7 +1845,7 @@ export class RaceSimulation {
       // [Q14] SC entrando al pit lane en su retirada (o ya en su garaje) → preparamos bandera verde una sola vez
       const scEnteredPits = this.safetyCar.mode === 'in' || (this.safetyCar.mode === 'returning' && this.safetyCar.isInPitLane);
       if (scEnteredPits && this.raceFlagState === 'sc') {
-        const leader = [...this.cars].filter(c => c.status !== 'out').sort((a, b) => b.progress - a.progress)[0];
+        const leader = [...this.cars].filter(c => c.status !== 'out').sort(RaceSimulation.aheadFirst)[0];
         // Establecemos la vuelta a partir de la cual se podrá adelantar
         this.scEndingLap = leader ? Math.floor(leader.progress) : null;
         this.raceFlagState = 'green';
@@ -1847,6 +1967,7 @@ export class RaceSimulation {
     let allCompleted = true;
 
     this.cars.forEach((car, idx) => {
+      if (car.pitLaneStart) return;   // [R49] no hace la vuelta de formación
       const tireWeaveWave = Math.sin(this.lightsTimer * 3.5 + idx * 1.2);
       const elasticSpeedVar = 1.0 + tireWeaveWave * 0.18;
       const formationBaseSpeed = 0.0078 * elasticSpeedVar;
@@ -1874,7 +1995,9 @@ export class RaceSimulation {
   }
 
   updateGridParking(dt: number) {
-    this.cars.forEach((car, idx) => {
+    // [R49] Los coches que salen desde el pit lane van al final de `cars` y no ocupan puesto en la parrilla.
+    const gridCars = this.cars.filter(car => !car.pitLaneStart);
+    gridCars.forEach((car, idx) => {
       const gridTargetProgress = 1.0 - (idx + 1) * 0.0035;
 
       if (car.progress < gridTargetProgress) {
@@ -1892,11 +2015,11 @@ export class RaceSimulation {
       }
     });
 
-    const lastCar = this.cars[this.cars.length - 1];
-    const lastCarTarget = 1.0 - (this.cars.length) * 0.0035;
+    const lastCar = gridCars[gridCars.length - 1];
+    const lastCarTarget = 1.0 - (gridCars.length) * 0.0035;
 
-    if (lastCar.progress >= lastCarTarget - 0.0005) {
-      this.cars.forEach((car, idx) => {
+    if (!lastCar || lastCar.progress >= lastCarTarget - 0.0005) {
+      gridCars.forEach((car, idx) => {
         car.progress = -((idx + 1) * 0.0035);
         car.lateralOffset = idx % 2 === 0 ? 0.65 : -0.65;
         car.targetLateralOffset = car.lateralOffset;
@@ -1948,7 +2071,7 @@ export class RaceSimulation {
     const sortedRunning = [...runningCars].sort((a, b) =>
       (a.status === 'finished' && b.status === 'finished' && Math.floor(a.progress) === Math.floor(b.progress)
         ? (a.finishTimeSec ?? 0) - (b.finishTimeSec ?? 0) : 0)
-      || b.progress - a.progress || a.id - b.id);
+      || RaceSimulation.aheadFirst(a, b) || a.id - b.id);
     const outCars = this.cars.filter(c => c.status === 'out');
     const sortedAll = [...sortedRunning, ...outCars];
 
@@ -2251,7 +2374,7 @@ export class RaceSimulation {
     car.dnfReason ??= type === 'dnf' ? 'AVERÍA' : '💥 ACCIDENTE CONTRA MURO';
     car.isRetiredVisible = true;
     car.retireTimer = 20;
-    const leader = [...this.cars].filter(c => c.status !== 'out').sort((a, b) => b.progress - a.progress)[0];
+    const leader = [...this.cars].filter(c => c.status !== 'out').sort(RaceSimulation.aheadFirst)[0];
     this.respondToIncident(car, type, leader ? leader.progress : 0);
   }
 

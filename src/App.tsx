@@ -41,6 +41,9 @@ import { createSnapshot, restoreSnapshot } from './simulation/Snapshot';
 import { AUTOSAVE_ID, AUTOSAVE_LABEL, SaveStore, createSave, exportSave, importSave } from './simulation/SaveGame';
 import type { SaveGame, SlotSummary } from './simulation/SaveGame';
 import type { SaveGameMessage } from './components/SaveGamePanel';
+import { SetupPanel } from './components/SetupPanel';
+import { normalizeSetup, parcFermeCheck, pitLaneReason, withPitLaneStarts } from './simulation/Setup';
+import type { CarSetup } from './simulation/Setup';
 import { DRIVERS } from './data/drivers';
 import { TEAMS } from './data/teams';
 import { RaceResultHistory, StartLightState, CarState, RaceFlagState, SafetyCarState, DnfNotification, D20LuckEvent, TrackWeatherState } from './types/f1';
@@ -69,6 +72,7 @@ const NOTICE_MS = 8000;
 // [R48] Autoguardado de la carrera en curso (ms reales) y semilla propia de cada carrera.
 const AUTOSAVE_MS = 30000;
 const SAVE_NAME_KEY = 'f1_save_name';
+const SETUPS_KEY = 'f1_setups';
 const newRaceSeed = () => (Math.floor(Math.random() * 0x7fffffff) ^ Date.now()) >>> 0;
 const TYRE_WORDS: Record<string, string> = { soft: 'blandos', medium: 'medios', hard: 'duros', intermediate: 'intermedios', wet: 'de lluvia' };
 
@@ -175,6 +179,24 @@ export const App: React.FC = () => {
   const [saveMessage, setSaveMessage] = useState<SaveGameMessage | null>(null);
   const [raceLive, setRaceLive] = useState(false);
   const autosaveWarned = useRef(false);
+
+  // [R49] Setup de los coches del jugador (por piloto) y el que llevaban en la clasificación (parc fermé).
+  const [setups, setSetups] = useState<Record<string, CarSetup>>(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(SETUPS_KEY) ?? '{}');
+      return saved && typeof saved === 'object' ? Object.fromEntries(Object.entries(saved).map(([id, value]) => [id, normalizeSetup(value as Partial<CarSetup>)])) : {};
+    } catch { return {}; }
+  });
+  const saveSetups = useCallback((next: Record<string, CarSetup>) => {
+    setSetups(next);
+    try { localStorage.setItem(SETUPS_KEY, JSON.stringify(next)); } catch (e) { console.error(e); }
+  }, []);
+  const [qualifyingSetups, setQualifyingSetups] = useState<Record<string, CarSetup> | null>(null);
+  /** Setups de los pilotos del equipo del jugador (los rivales corren con el de referencia). */
+  const playerSetups = useMemo(() => {
+    const team = TEAMS[(DRIVERS[selectedDriverId] ?? DRIVERS.alonso).teamId];
+    return Object.fromEntries((team?.drivers ?? []).map(id => [id, normalizeSetup(setups[id])]));
+  }, [setups, selectedDriverId]);
 
   // [R20] Formato del Gran Premio y resultado de la clasificación pendiente de mostrar
   const [raceFormat, setRaceFormat] = useState<RaceFormatId>('directo');
@@ -335,6 +357,10 @@ export const App: React.FC = () => {
     autosaveWarned.current = false;
     if (saveStore) { saveStore.remove(AUTOSAVE_ID); setSlots(saveStore.list()); }
     simulation.setDriverAttributes(development.attributes);
+    // [R49] Setup del jugador antes de clasificar; nadie sale desde el pit lane hasta que lo decida el parc fermé.
+    simulation.setCarSetups(playerSetups);
+    simulation.setPitLaneStarters([]);
+    setQualifyingSetups(raceFormat === 'clasificacion' ? playerSetups : null);
     simulation.setStartingGrid(null);
     simulation.setCircuit(selectedCircuitId);
     // [R20] Con clasificación, la parrilla sale de Q1-Q3 y se enseña antes de formar; el GP directo usa la prefijada.
@@ -367,7 +393,7 @@ export const App: React.FC = () => {
     setIsFinished(false);
     setCurrentView('race');
     if (!quali) simulation.startRaceSequence();
-  }, [simulation, camera, selectedCircuitId, weatherScenarioId, development, raceFormat, components, saveComponents, selectedDriverId, program, saveProgram, championship, constructorsPosition, saveStore]);
+  }, [simulation, camera, selectedCircuitId, weatherScenarioId, development, raceFormat, components, saveComponents, selectedDriverId, program, saveProgram, championship, constructorsPosition, saveStore, playerSetups]);
 
   const handleStartFormationLap = useCallback(() => {
     if (simulation.lightState === 'grid-ready') {
@@ -521,9 +547,9 @@ export const App: React.FC = () => {
     name,
     savedAt: new Date().toISOString(),
     career: { championship, development, components, program, archive: seasonArchive, history: raceHistory },
-    selection: { driverId: selectedDriverId, circuitId: selectedCircuitId, raceFormat, weatherScenarioId, luckVariant: luckVariantEnabled },
+    selection: { driverId: selectedDriverId, circuitId: selectedCircuitId, raceFormat, weatherScenarioId, luckVariant: luckVariantEnabled, setups },
     race: raceLive ? createSnapshot(simulation) : null,
-  }), [championship, development, components, program, seasonArchive, raceHistory, selectedDriverId, selectedCircuitId, raceFormat, weatherScenarioId, luckVariantEnabled, raceLive, simulation]);
+  }), [setups, championship, development, components, program, seasonArchive, raceHistory, selectedDriverId, selectedCircuitId, raceFormat, weatherScenarioId, luckVariantEnabled, raceLive, simulation]);
 
   const handleSaveGame = useCallback((name: string) => {
     if (!saveStore) { setSaveMessage({ tone: 'error', text: 'Este navegador no permite guardar partidas' }); return; }
@@ -566,6 +592,8 @@ export const App: React.FC = () => {
     setRaceFormat(selection.raceFormat === 'clasificacion' ? 'clasificacion' : 'directo');
     setWeatherScenarioId(selection.weatherScenarioId);
     setLuckVariantEnabled(selection.luckVariant);
+    saveSetups(Object.fromEntries(Object.entries(selection.setups ?? {}).map(([id, value]) => [id, normalizeSetup(value)])));
+    setQualifyingSetups(null);
     setQualifying(null);
     setGridChanges([]);
     camera.resetToFullTrack();
@@ -579,7 +607,7 @@ export const App: React.FC = () => {
     autosaveWarned.current = false;
     setCurrentView(save.race ? 'race' : 'home');
     return null;
-  }, [simulation, camera, saveChampionship, saveDevelopment, saveComponents, saveProgram, clearNotices]);
+  }, [simulation, camera, saveChampionship, saveDevelopment, saveComponents, saveProgram, clearNotices, saveSetups]);
 
   const handleLoadGame = useCallback((id: string) => {
     if (!saveStore) return;
@@ -659,6 +687,39 @@ export const App: React.FC = () => {
     };
   }, [raceLive, currentView]);
 
+  // ── [R49] Parc fermé: cambios de setup tras la clasificación y salida desde el pit lane ──
+  const parcFermeStarts = useMemo(() => {
+    if (!qualifying || !qualifyingSetups) return [];
+    const starters = Object.keys(qualifyingSetups)
+      .map(driverId => ({ driverId, check: parcFermeCheck(qualifyingSetups[driverId], setups[driverId]) }))
+      .filter(entry => !entry.check.allowed)
+      .map(entry => ({ driverId: entry.driverId, reason: pitLaneReason(entry.check) }));
+    return withPitLaneStarts(simulation.cars.map(c => c.driver.id), starters).pitLane;
+  }, [qualifying, qualifyingSetups, setups, simulation]);
+
+  const handleSetupChange = useCallback((driverId: string, setup: CarSetup) => {
+    saveSetups({ ...setups, [driverId]: setup });
+  }, [setups, saveSetups]);
+
+  const handleContinueFromQualifying = useCallback(() => {
+    simulation.setCarSetups(playerSetups);
+    if (parcFermeStarts.length) simulation.setPitLaneStarters(parcFermeStarts.map(start => start.driverId));
+    setQualifying(null);
+    for (const start of parcFermeStarts) pushNotice('warning', 'Salida', `${DRIVERS[start.driverId]?.code ?? start.driverId} sale desde el pit lane: ${start.reason.toLowerCase()}`);
+    simulation.startRaceSequence();
+  }, [simulation, playerSetups, parcFermeStarts, pushNotice]);
+
+  // Aviso cuando el semáforo del pit lane se pone en verde para un coche del jugador.
+  const lastPitStart = useRef(new Map<number, string | undefined>());
+  useEffect(() => {
+    if (currentView !== 'race') return;
+    for (const car of teamCars) {
+      const was = lastPitStart.current.get(car.id);
+      lastPitStart.current.set(car.id, car.pitLaneStart);
+      if (was === 'espera' && car.pitLaneStart === 'saliendo') pushNotice('ok', 'Salida', `${car.driver.code}: semáforo del pit lane en verde`);
+    }
+  }, [teamCars, currentView, pushNotice]);
+
   const handleLeaveRace = useCallback(() => {
     autosaveRef.current();
     setCurrentView('home');
@@ -728,6 +789,7 @@ export const App: React.FC = () => {
         onSelectFormat={setRaceFormat}
         weatherScenarioId={weatherScenarioId}
         onSelectWeather={setWeatherScenarioId}
+        setup={{ setups, onChange: handleSetupChange }}
         saveGames={saveStore ? {
           slots, currentName: saveName, message: saveMessage,
           onSave: handleSaveGame, onLoad: handleLoadGame, onExport: handleExportGame, onImport: handleImportGame, onDelete: handleDeleteGame,
@@ -883,7 +945,14 @@ export const App: React.FC = () => {
 
             {qualifying && (
               <div className={qualifyingStyles.overlay}>
-                <QualifyingResults result={qualifying} gridChanges={gridChanges} onContinue={() => { setQualifying(null); simulation.startRaceSequence(); }} />
+                <QualifyingResults result={qualifying} gridChanges={gridChanges} pitLaneStarts={parcFermeStarts} onContinue={handleContinueFromQualifying}>
+                  {qualifyingSetups && (
+                    <details open={parcFermeStarts.length > 0 || undefined}>
+                      <summary className={qualifyingStyles.extraTitle}>Setup en parc fermé</summary>
+                      <SetupPanel drivers={Object.keys(qualifyingSetups).map(id => DRIVERS[id]).filter(Boolean)} setups={setups} parcFerme={qualifyingSetups} onChange={handleSetupChange} />
+                    </details>
+                  )}
+                </QualifyingResults>
               </div>
             )}
 

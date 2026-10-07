@@ -40,6 +40,9 @@ export interface CarTechnical {
   cooling: number;
   tyreHeat: number;
   tyreWear: number;
+  /** [R49] Relación de cambio del setup (diseño del juego): empuje y tope de punta; ausentes con la relación larga. */
+  gearDrive?: number;
+  revLimitFactor?: number;
 }
 
 export type PackageId = 'baja' | 'media' | 'alta';

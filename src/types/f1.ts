@@ -410,6 +410,9 @@ export interface CarState {
   redFlagHold?: boolean;
   /** [R13] Hora a la que cruzó la meta al terminar la carrera. */
   finishTimeSec?: number;
+  /** [R49] Salida desde el pit lane: espera con el semáforo en rojo / sale hacia la pista; y si empezó la carrera así. */
+  pitLaneStart?: 'espera' | 'saliendo';
+  startedFromPitLane?: boolean;
   /** [R19] Multiplicador del riesgo de avería por el desgaste de los componentes montados (1 = sin efecto). */
   failureFactor?: number;
   /** [R21] Hora de paso por meta al empezar cada vuelta (índice: `currentLap` tras el paso). */

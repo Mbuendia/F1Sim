@@ -1,0 +1,132 @@
+.panel {
+  padding: 10px 14px 14px;
+  color: #e2e8f0;
+  font-size: 13px;
+}
+
+.rule,
+.note {
+  margin: 0 0 10px;
+  color: #94a3b8;
+}
+
+.note {
+  margin: 10px 0 0;
+}
+
+.cars {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.car {
+  flex: 1 1 300px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.driver {
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.driver span {
+  margin-left: 6px;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px 10px;
+  align-items: center;
+  padding: 6px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.label {
+  font-weight: 600;
+}
+
+.stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.step {
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  background: transparent;
+  color: #e2e8f0;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.step:hover:not(:disabled),
+.step:focus-visible {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.step:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.value {
+  min-width: 76px;
+  text-align: center;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.effect {
+  grid-column: 1 / -1;
+  color: #94a3b8;
+}
+
+.status {
+  margin: 8px 0 0;
+  padding: 6px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  color: #cbd5e1;
+}
+
+.allowed {
+  border-color: #1f7a4d;
+  color: #86efac;
+}
+
+.breach {
+  border-color: #7f1d1d;
+  color: #fca5a5;
+}
+
+.reset {
+  margin-top: 8px;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  background: transparent;
+  color: #e2e8f0;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.reset:hover,
+.reset:focus-visible {
+  background: rgba(255, 255, 255, 0.1);
+}

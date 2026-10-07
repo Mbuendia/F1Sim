@@ -8,6 +8,8 @@ import { buildTrackFromSvg } from '../utils/svgTrackParser';
 import { RaceResultHistory } from '../types/f1';
 import { ChampionshipTable } from './ChampionshipTable';
 import { SaveGamePanel } from './SaveGamePanel';
+import { SetupPanel } from './SetupPanel';
+import type { CarSetup } from '../simulation/Setup';
 import type { SaveGameMessage } from './SaveGamePanel';
 import type { SlotSummary } from '../simulation/SaveGame';
 import { WeatherScenarioSelect } from './WeatherScenarioSelect';
@@ -73,6 +75,8 @@ interface HomeScreenProps {
   /** [R20] GP directo o con clasificación. */
   raceFormat?: RaceFormatId;
   onSelectFormat?: (format: RaceFormatId) => void;
+  /** [R49] Setup de los coches del jugador. */
+  setup?: { setups: Record<string, CarSetup | undefined>; onChange: (driverId: string, setup: CarSetup) => void };
   /** [R48] Partidas guardadas y sus acciones. */
   saveGames?: {
     slots: SlotSummary[]; currentName?: string; message?: SaveGameMessage | null;
@@ -98,7 +102,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   onFitComponent,
   onUndoComponent,
   development,
-  saveGames
+  saveGames,
+  setup
 }) => {
   const [activeTab, setActiveTab] = useState<'drivers' | 'circuits'>('drivers');
   const [driverSubTab, setDriverSubTab] = useState<'specs' | 'strategy' | 'records'>('specs');
@@ -287,6 +292,16 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           </summary>
           <ComponentsPanel state={components} drivers={Object.values(DRIVERS).filter(d => d.teamId === (DRIVERS[selectedDriverId] ?? DRIVERS.alonso).teamId)}
             onFitNew={onFitComponent} onUndo={onUndoComponent} />
+        </details>
+      )}
+
+      {setup && (
+        <details className={styles.historySection}>
+          <summary className={styles.historyTitle}>
+            <span>Setup del coche</span>
+          </summary>
+          <SetupPanel drivers={Object.values(DRIVERS).filter(d => d.teamId === (DRIVERS[selectedDriverId] ?? DRIVERS.alonso).teamId)}
+            setups={setup.setups} onChange={setup.onChange} />
         </details>
       )}
 

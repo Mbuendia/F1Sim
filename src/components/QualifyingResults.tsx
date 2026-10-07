@@ -3,16 +3,21 @@ import styles from './QualifyingResults.module.css';
 import { formatLapTime } from '../simulation/Qualifying';
 import type { QualifyingResult } from '../simulation/Qualifying';
 import type { GridChange } from '../simulation/ComponentPool';
+import type { PitLaneStart } from '../simulation/Setup';
 
 interface QualifyingResultsProps {
   result: QualifyingResult;
   onContinue?: () => void;
   /** [R19] Cambios de parrilla por sanciones de componentes. */
   gridChanges?: GridChange[];
+  /** [R49] Coches que salen desde el pit lane, con su motivo. */
+  pitLaneStarts?: PitLaneStart[];
+  /** [R49] Contenido adicional bajo la tabla (el setup en parc fermé). */
+  children?: React.ReactNode;
 }
 
 /** [R20] Resultado de la clasificación: parrilla, tiempos y zona de eliminación. */
-export const QualifyingResults: React.FC<QualifyingResultsProps> = ({ result, onContinue, gridChanges = [] }) => {
+export const QualifyingResults: React.FC<QualifyingResultsProps> = ({ result, onContinue, gridChanges = [], pitLaneStarts = [], children }) => {
   const pole = result.grid[0];
   const note = (slot: QualifyingResult['grid'][number]) =>
     slot.noTime ? 'Sin tiempo' : slot.outside107 ? 'Fuera del 107 %' : slot.eliminatedIn ? `Eliminado en ${slot.eliminatedIn}` : slot.position === 1 ? 'Pole' : 'Q3';
@@ -35,12 +40,16 @@ export const QualifyingResults: React.FC<QualifyingResultsProps> = ({ result, on
                   {gridChanges.filter(change => change.driverId === slot.driverId).map(change => (
                     <span key={change.driverId} className={styles.penalty}> · +{change.places} puestos{change.backOfGrid ? ' (fondo de parrilla)' : ''}: sale P{change.to}</span>
                   ))}
+                  {pitLaneStarts.filter(start => start.driverId === slot.driverId).map(start => (
+                    <span key={start.driverId} className={styles.penalty}> · sale desde el pit lane: {start.reason}</span>
+                  ))}
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+      {children && <div className={styles.extra}>{children}</div>}
       {onContinue && <button type="button" className={styles.continue} onClick={onContinue}>A la parrilla</button>}
     </section>
   );

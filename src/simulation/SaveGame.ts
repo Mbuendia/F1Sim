@@ -33,6 +33,8 @@ export interface SaveSelection {
   weatherScenarioId: string;
   /** Variante D20 activada. */
   luckVariant: boolean;
+  /** [R49] Setup de los coches del jugador (ausente en las partidas anteriores: setup de referencia). */
+  setups?: Record<string, { wing: number; stiffness: number; gearing: number }>;
 }
 
 export interface SaveGame {
