@@ -4,9 +4,9 @@ import type { ChampionshipState } from './Championship';
 import type { DevelopmentState } from './DriverDevelopment';
 import type { ComponentState } from './ComponentPool';
 import type { DevelopmentProgram } from './Development';
-import type { SeasonSummary } from './Season';
+import type { SeasonState, SeasonSummary } from './Season';
 import type { RaceResultHistory } from '../types/f1';
-import { seasonRaceNumber } from './Season';
+import { emptySeason, parseSeason, seasonRaceNumber } from './Season';
 import { migrateSnapshot, validateSnapshot } from './Snapshot';
 import type { RaceSnapshot } from './Snapshot';
 
@@ -23,6 +23,8 @@ export interface CareerData {
   program: DevelopmentProgram;
   archive: SeasonSummary[];
   history: RaceResultHistory[];
+  /** [R51] Rondas saltadas de la temporada en curso (ausente en las partidas anteriores: ninguna). */
+  season?: SeasonState;
 }
 
 export interface SaveSelection {
@@ -35,6 +37,8 @@ export interface SaveSelection {
   luckVariant: boolean;
   /** [R49] Setup de los coches del jugador (ausente en las partidas anteriores: setup de referencia). */
   setups?: Record<string, { wing: number; stiffness: number; gearing: number }>;
+  /** [R51] Si la carrera en curso cuenta para la temporada (ausente en las partidas anteriores: sí). */
+  counts?: boolean;
 }
 
 export interface SaveGame {
@@ -88,6 +92,8 @@ export function validateSave(save: unknown): string[] {
     if (!isObject(program) || program.version !== 1 || !isObject(program.teams)) errors.push('Carrera profesional: programa de desarrollo ausente o ilegible');
     if (!Array.isArray(career.archive)) errors.push('Carrera profesional: temporadas archivadas ausentes');
     if (!Array.isArray(career.history)) errors.push('Carrera profesional: historial de carreras ausente');
+    const season = career.season;
+    if (season !== undefined && !(isObject(season) && season.version === 1 && Array.isArray(season.skipped))) errors.push('Carrera profesional: temporada (rondas saltadas) ilegible');
   }
   const selection = save.selection;
   if (!isObject(selection) || typeof selection.driverId !== 'string' || typeof selection.circuitId !== 'string') errors.push('Partida: falta la selección de piloto y circuito');
@@ -134,11 +140,21 @@ export function importSave(text: string): SaveOutcome {
   return readSave(raw);
 }
 
+/** [R51] Rondas saltadas que guarda la partida (ninguna en las anteriores a R51). */
+export function savedSeason(save: SaveGame): SeasonState {
+  return save.career.season ? parseSeason(JSON.stringify(save.career.season)) : emptySeason();
+}
+
+/** [R51] Si la carrera guardada cuenta para la temporada (antes de R51 todas contaban). */
+export function savedRaceCounts(save: SaveGame): boolean {
+  return save.selection.counts !== false;
+}
+
 export function summarize(save: SaveGame, id: string, auto: boolean, sizeChars: number): SlotSummary {
   const race = save.race;
   return {
     id, name: auto ? AUTOSAVE_LABEL : save.name, savedAt: save.savedAt, auto,
-    raceNumber: seasonRaceNumber(save.career.championship),
+    raceNumber: seasonRaceNumber(save.career.championship, savedSeason(save)),
     raceInProgress: race ? { circuitId: race.circuitId, lap: race.state.flags.leaderLap, totalLaps: race.state.flags.totalLaps, finished: race.state.flags.isFinished } : null,
     sizeChars,
   };

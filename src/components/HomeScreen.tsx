@@ -21,6 +21,13 @@ import type { DevelopmentProgram } from '../simulation/Development';
 import type { ComponentState, ComponentType } from '../simulation/ComponentPool';
 import type { RaceFormatId } from './RaceFormatSelect';
 import type { ChampionshipState } from '../simulation/Championship';
+import { SeasonCalendar } from './SeasonCalendar';
+import { SeasonHistory } from './SeasonHistory';
+import { DriverAttributesCard } from './DriverAttributesCard';
+import { SEASON_RACES } from '../simulation/Season';
+import type { RoundView, SeasonSummary } from '../simulation/Season';
+import type { DriverAttributes } from '../simulation/DriverDevelopment';
+import type { Driver } from '../types/f1';
 import { FlagIcon } from './FlagIcon';
 import { F1WheelSvg } from './F1WheelSvg';
 import { 
@@ -83,6 +90,10 @@ interface HomeScreenProps {
     onSave: (name: string) => void; onLoad: (id: string) => void; onExport: (id: string) => void;
     onImport: (text: string) => void; onDelete: (id: string) => void;
   };
+  /** [R51] Temporada: calendario, Gran Premio que toca, salto de ronda e historial de temporadas cerradas. */
+  season?: { rounds: RoundView[]; seasonNumber: number; archive: SeasonSummary[]; onSelectNext: () => void; onSkip: () => void };
+  /** [R51] Atributos actuales de un piloto (R45), para su ficha. */
+  driverAttributes?: (driver: Driver) => DriverAttributes;
 }
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({
@@ -103,8 +114,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   onUndoComponent,
   development,
   saveGames,
-  setup
+  setup,
+  season,
+  driverAttributes
 }) => {
+  const nextRound = season?.rounds.find(round => round.status === 'siguiente');
+  const freeRace = Boolean(nextRound) && nextRound?.circuitId !== selectedCircuitId;
   const [activeTab, setActiveTab] = useState<'drivers' | 'circuits'>('drivers');
   const [driverSubTab, setDriverSubTab] = useState<'specs' | 'strategy' | 'records'>('specs');
   const [circuitSubTab, setCircuitSubTab] = useState<'overview' | 'drs' | 'telemetry'>('overview');
@@ -252,6 +267,25 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               </div>
             ))}
           </div>
+        </details>
+      )}
+
+      {season && (
+        <details className={styles.historySection} open>
+          <summary className={styles.historyTitle}>
+            <span>Temporada {season.seasonNumber}{nextRound ? ` · ronda ${nextRound.round} de ${SEASON_RACES}` : ''}</span>
+          </summary>
+          <SeasonCalendar rounds={season.rounds} seasonNumber={season.seasonNumber} selectedCircuitId={selectedCircuitId}
+            onSelectNext={season.onSelectNext} onSkip={season.onSkip} />
+        </details>
+      )}
+
+      {season && season.archive.length > 0 && (
+        <details className={styles.historySection}>
+          <summary className={styles.historyTitle}>
+            <span>Historial de temporadas ({season.archive.length})</span>
+          </summary>
+          <SeasonHistory archive={season.archive} />
         </details>
       )}
 
@@ -591,6 +625,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                       </div>
                     </div>
                   </div>
+
+                  {/* [R51] Atributos del piloto (R45) con lo que ha mejorado. */}
+                  {driverAttributes && <DriverAttributesCard driver={inspectedDriver} attributes={driverAttributes(inspectedDriver)} />}
                 </div>
               )}
 
@@ -1115,7 +1152,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               <Play size={18} fill="#ffffff" aria-hidden="true" />
               <span>ENTRAR A PISTA</span>
             </div>
-            <span className={styles.launchSub}>Empezar el Gran Premio</span>
+            <span className={styles.launchSub}>{freeRace ? 'Carrera libre: no cuenta para la temporada' : nextRound ? `Empezar el Gran Premio · ronda ${nextRound.round} de ${SEASON_RACES}` : 'Empezar el Gran Premio'}</span>
           </button>
         </div>
       </div>

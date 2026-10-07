@@ -173,3 +173,38 @@ export function applyGridPenalties(order: string[], penalties: { driverId: strin
     moved: final.map((e, i) => ({ driverId: e.driverId, from: e.index + 1, to: i + 1, places: e.places, backOfGrid: e.places > BACK_OF_GRID_PLACES })).filter(m => m.places > 0),
   };
 }
+
+/** [R51] Qué precede a la salida: la pantalla de clasificación, el aviso de sanciones (GP directo) o nada. */
+export type StartGate = 'clasificacion' | 'aviso-sanciones' | 'directo';
+
+export function raceStartGate(hasQualifying: boolean, gridChanges: GridChange[]): StartGate {
+  if (hasQualifying) return 'clasificacion';
+  return gridChanges.length > 0 ? 'aviso-sanciones' : 'directo';
+}
+
+/** Una línea del aviso de sanciones: quién pierde puestos, cuántos, de dónde a dónde y por qué componentes. */
+export interface PenaltyLine {
+  driverId: string;
+  name: string;
+  code: string;
+  places: number;
+  from: number;
+  to: number;
+  backOfGrid: boolean;
+  reasons: string[];
+}
+
+export function gridPenaltyLines(
+  changes: GridChange[], penalties: ComponentPenalty[], driverOf: (driverId: string) => { name: string; code: string } | undefined,
+): PenaltyLine[] {
+  return [...changes].sort((a, b) => a.to - b.to).map(change => {
+    const driver = driverOf(change.driverId);
+    return {
+      driverId: change.driverId, name: driver?.name ?? change.driverId, code: driver?.code ?? change.driverId,
+      places: change.places, from: change.from, to: change.to, backOfGrid: change.backOfGrid,
+      // El número de unidad es el final de su número de serie (tipo-piloto-ordinal).
+      reasons: penalties.filter(penalty => penalty.driverId === change.driverId)
+        .map(penalty => `${COMPONENT_LABEL[penalty.type]} nº ${penalty.serial.split('-').pop()}: ${penalty.places} puestos`),
+    };
+  });
+}

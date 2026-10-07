@@ -57,6 +57,12 @@ export function baseAttributes(driver: Driver): DriverAttributes {
   };
 }
 
+/** [R51] Los ocho atributos de un piloto para su ficha: valor actual y lo ganado respecto a su valor inicial. */
+export function attributeRows(driver: Driver, attributes: DriverAttributes): { key: AttributeKey; label: string; value: number; gain: number }[] {
+  const base = baseAttributes(driver);
+  return ATTRIBUTE_KEYS.map(key => ({ key, label: ATTRIBUTE_LABEL[key], value: attributes[key], gain: Math.round((attributes[key] - base[key]) * 100) / 100 }));
+}
+
 export interface DriverDeltas { overtake: number; defence: number; wet: number; fitness: number }
 
 /** Piloto para el motor con los atributos actuales: valores base desplazados por los puntos ganados y efectos nuevos. */
