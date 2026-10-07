@@ -113,6 +113,8 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
       ctx.fillRect(0, 0, camera.screenWidth, camera.screenHeight);
 
       TrackRenderer.renderTrack(ctx, simulation.activeTrack, camera, dpr, simulation.weather, simulation.circuitId);
+      // [R04] Puntos de detección y tramos de activación del DRS.
+      TrackRenderer.renderDrsMarkers(ctx, simulation.activeTrack, camera);
 
       // [R44] Pista mojada por tramo, radar de lluvia y spray (antes de los coches y sus etiquetas).
       const weatherView = weatherLayers(simulation.weatherModel, simulation.raceTimeSec);

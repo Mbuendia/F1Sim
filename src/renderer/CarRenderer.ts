@@ -2,6 +2,7 @@ import { CarState, SafetyCarState } from '../types/f1';
 import { TrackDefinition } from '../data/barcelonaTrack';
 import { Camera } from './Camera';
 import { rearLight, safetyCarLightOn, wheelMarkPhase } from './carDetail';
+import { flapOpenness } from '../simulation/DRSModel';
 import { TopSprite, carPixelsPerMeter, carSpriteKey, carSpriteSize, getCarSprite, getSafetyCarSprite, spriteLevel } from './carSprites';
 import { compoundStyle } from '../utils/compounds';
 import { getTrackHalfWidth, getLateralDisplacement, isCarVisible, calculateCarWorldPosition } from '../utils/carPosition';
@@ -367,14 +368,24 @@ export class CarRenderer {
       ctx.fillRect(cl * 0.78, -cw * 1.25, cl * 0.22, cw * 0.2);
       ctx.fillRect(cl * 0.78, cw * 1.05, cl * 0.22, cw * 0.2);
 
-      // Alerón Trasero
-      ctx.fillStyle = car.drsActive ? '#00ff66' : (car.team.accentColor || '#111827');
-      ctx.beginPath();
-      ctx.roundRect(-cl * 0.85, -cw * 0.8, cl * 0.2, cw * 1.6, 1 * scale);
-      ctx.fill();
-      // Endplates trasero
-      ctx.fillRect(-cl * 0.9, -cw * 0.8, cl * 0.3, cw * 0.2);
-      ctx.fillRect(-cl * 0.9, cw * 0.6, cl * 0.3, cw * 0.2);
+      // Alerón Trasero: en verde con el DRS abierto; el verde aparece y se va con la transición del flap (R04).
+      const drawRearWing = () => {
+        ctx.beginPath();
+        ctx.roundRect(-cl * 0.85, -cw * 0.8, cl * 0.2, cw * 1.6, 1 * scale);
+        ctx.fill();
+        // Endplates trasero
+        ctx.fillRect(-cl * 0.9, -cw * 0.8, cl * 0.3, cw * 0.2);
+        ctx.fillRect(-cl * 0.9, cw * 0.6, cl * 0.3, cw * 0.2);
+      };
+      ctx.fillStyle = car.team.accentColor || '#111827';
+      drawRearWing();
+      const flap = flapOpenness(car.drsActive, car.drsChangedAt, detail.timeSec);
+      if (flap > 0) {
+        ctx.globalAlpha = opacity * flap;
+        ctx.fillStyle = '#00ff66';
+        drawRearWing();
+        ctx.globalAlpha = opacity;
+      }
 
       // Halo
       ctx.strokeStyle = '#111'; // Halo de carbono negro
@@ -450,11 +461,14 @@ export class CarRenderer {
       }
     }
 
-    // DRS abierto: el plano del alerón trasero en verde.
-    if (car.drsActive && sprite.rearWing) {
+    // DRS: el plano del alerón trasero en verde, que aparece y se va con la transición del flap (R04).
+    const flap = flapOpenness(car.drsActive, car.drsChangedAt, detail.timeSec);
+    if (flap > 0 && sprite.rearWing) {
+      ctx.globalAlpha = opacity * flap;
       ctx.fillStyle = '#00ff66';
       ctx.fillRect(sprite.rearWing.x0 * perMeter, -sprite.rearWing.halfWidth * perMeter,
         (sprite.rearWing.x1 - sprite.rearWing.x0) * perMeter, 2 * sprite.rearWing.halfWidth * perMeter);
+      ctx.globalAlpha = opacity;
     }
 
     // Luz trasera: parpadea con pista mojada y queda fija al recargar en frenada.

@@ -14,6 +14,7 @@ import { CompoundBadge } from './CompoundBadge';
 import { CarChassisSvg } from './CarChassisSvg';
 import { tireHealthColor } from '../utils/tireHealth';
 import { useTweenedNumber } from '../utils/useTweenedNumber';
+import { DrsStatusBadge } from './DrsStatusBadge';
 
 export interface BottomTelemetryDockProps {
   car: CarState | null;
@@ -153,9 +154,8 @@ export const BottomTelemetryDock: React.FC<BottomTelemetryDockProps> = ({
         {/* Estado / DRS / Motor */}
         <div className={styles.statusCluster}>
           <div className={styles.statItem}>
-            <span className={`${styles.drsPill} ${telemetry.drsActive ? styles.drsOn : styles.drsOff}`}>
-              <Zap size={13} /> DRS {telemetry.drsActive ? 'ON' : 'OFF'}
-            </span>
+            {/* [R04] Estado del DRS con su motivo, el hueco medido en la detección y los usos. */}
+            <DrsStatusBadge status={car.drsStatus} uses={car.drsUses ?? 0} />
           </div>
           <div className={styles.statItem}>
             <Gauge size={13} color="#38bdf8" />

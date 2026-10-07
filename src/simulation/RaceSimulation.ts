@@ -26,7 +26,7 @@ import { buildTrackFromSvg } from '../utils/svgTrackParser';
 import { TireModel } from './TireModel';
 import { FuelModel } from './FuelModel';
 import { EngineModel } from './EngineModel';
-import { DrsPermissions } from './DRSModel';
+import { DrsPermissions, drsStatus } from './DRSModel';
 import { EnergyModel, EnergyLimits, energyLimitsFor } from './EnergyModel';
 import { DEFAULT_RULE_SET_ID, DEFAULT_RULES, getRuleSet, ruleValue, validateRuleSet, RuleSet } from '../rules/ruleSets';
 import { depositRubber } from '../utils/racingLine';
@@ -361,6 +361,8 @@ export class RaceSimulation {
   /** [R08] Entrada al pit lane cerrada por Dirección de Carrera. */
   pitEntryClosed = false;
   private drsPermissions = new DrsPermissions();
+  /** [R04] Con qué datos se calculó el estado visible del DRS de cada coche (para no rehacerlo en cada paso). */
+  private drsViews = new Map<number, { open: boolean; block: string | null; timeSec: number | null; closed: boolean; zone: number | undefined; pending: number }>();
 
   // [R02] Cronometraje por lazos: huecos medidos como diferencia de horas de paso.
   timing = new TimingService();
@@ -462,6 +464,12 @@ export class RaceSimulation {
     this.safetyCar = state.safetyCar;
     this.incidents = state.incidents;
     this.drsPermissions.restore(state.drsPermissions);
+    // [R04] Los guardados anteriores no traen contador ni estado visible del DRS: empiezan de cero y se recalculan.
+    this.drsViews.clear();
+    for (const car of this.cars) {
+      car.drsUses ??= 0;
+      car.drsStatus ??= drsStatus({ open: car.drsActive, block: null, reading: null, closedByBraking: false, thresholdSec: this.drsPermissions.gapThresholdSec });
+    }
     this.timing.restore(state.timing);
     this.rawSectors = new Map(state.rawSectors);
     this.nextBoxOrderId = state.counters.nextBoxOrderId;
@@ -541,6 +549,7 @@ export class RaceSimulation {
     this.activeLuckEvent = null;
     this.luckLog = [];
     this.drsPermissions.reset();
+    this.drsViews.clear();
     this.timing.reset();
     this.rawSectors.clear();
     this.fixedStepCount = 0;
@@ -623,7 +632,7 @@ export class RaceSimulation {
       const initialStats: DriverStatsSummary = {
         pushLaps: 0,
         savingLaps: 0,
-        drsZonesTraversed: 0,
+        drsUses: 0,
         projectedLapsRemainingOnTire: 24,
         willMakeToEndWithoutPit: false,
         optimalPitLap: 24,
@@ -670,6 +679,8 @@ export class RaceSimulation {
         aggression: 'balanced',
         drsActive: false,
         drsEligible: false,
+        drsUses: 0,
+        drsStatus: drsStatus({ open: false, block: null, reading: null, closedByBraking: false, thresholdSec: this.drsPermissions.gapThresholdSec }),
 
         brakeTempCelsius: 350,   // Temperatura de frenos al arrancar (calentados en formation lap)
         engineTempCelsius: 95,   // Temperatura de motor al arrancar (ya caliente)
@@ -1317,13 +1328,31 @@ export class RaceSimulation {
       car.engineMode = effectiveEngineMode as CarState['engineMode'];
       car.aggression = effectiveAggression as CarState['aggression'];
 
-      // DRS — Desactivado bajo SC, VSC o banderas amarillas
-      const drsBlockedByFlags = !perms.drs || this.drsDisabledLaps > 0 || this.weatherDrsBlocked();
-      car.drsEligible = !drsBlockedByFlags && car.currentLap > 1 &&
-        this.drsPermissions.eligible(car.id, trackPoint.drsZoneId);
-      car.drsActive = this.drsPermissions.activation(car.id,
-        trackPoint.isDrsZone ? trackPoint.drsZoneId : undefined,
-        car.drsEligible, trackPoint.isBrakingZone);
+      // DRS — Desactivado bajo SC, VSC, banderas amarillas, pista mojada o en la primera vuelta
+      const drsBlock = this.drsBlockReason(perms, car);
+      const drsWasOpen = car.drsActive;
+      const drsZone = trackPoint.isDrsZone ? trackPoint.drsZoneId : undefined;
+      car.drsEligible = drsBlock === null && this.drsPermissions.eligible(car.id, trackPoint.drsZoneId);
+      car.drsActive = this.drsPermissions.activation(car.id, drsZone, car.drsEligible, trackPoint.isBrakingZone);
+      // [R04] Usos reales (una vez por apertura), instante del cambio del flap y lo que se ve: estado, motivo y hueco
+      // medido en la detección. Solo se recalcula cuando cambia algo.
+      if (car.drsActive !== drsWasOpen) {
+        car.drsChangedAt = this.raceTimeSec;
+        if (car.drsActive) car.drsUses = (car.drsUses ?? 0) + 1;
+      }
+      car.drsUses ??= 0;
+      const drsReading = this.drsPermissions.reading(car.id, drsZone);
+      const drsClosed = drsZone !== undefined && this.drsPermissions.closedByBraking(car.id);
+      const drsSeen = this.drsViews.get(car.id), drsPending = drsReading?.pendingZoneIds.length ?? 0;
+      if (!car.drsStatus || !drsSeen || drsSeen.open !== car.drsActive || drsSeen.block !== drsBlock || drsSeen.timeSec !== (drsReading?.timeSec ?? null)
+        || drsSeen.closed !== drsClosed || drsSeen.zone !== drsZone || drsSeen.pending !== drsPending) {
+        this.drsViews.set(car.id, { open: car.drsActive, block: drsBlock, timeSec: drsReading?.timeSec ?? null, closed: drsClosed, zone: drsZone, pending: drsPending });
+        const drsAhead = drsReading && drsReading.aheadCarId !== null ? this.cars.find(other => other.id === drsReading.aheadCarId) : undefined;
+        car.drsStatus = drsStatus({
+          open: car.drsActive, block: drsBlock, reading: drsReading, closedByBraking: drsClosed,
+          thresholdSec: this.drsPermissions.gapThresholdSec, aheadCode: drsAhead?.driver.code, zoneId: drsZone,
+        });
+      }
 
       const isCornering = trackPoint.speedLimitFactor < 0.80;
       const tireResult = TireModel.updateTires(
@@ -1864,7 +1893,7 @@ export class RaceSimulation {
       car.stats = {
         pushLaps: Math.floor(car.currentLap * 0.35),
         savingLaps: Math.floor(car.currentLap * 0.65),
-        drsZonesTraversed: car.currentLap * 2 + (trackPoint.isDrsZone ? 1 : 0),
+        drsUses: car.drsUses,
         projectedLapsRemainingOnTire: projectedLapsLeft,
         willMakeToEndWithoutPit: projectedLapsLeft >= lapsToEnd,
         optimalPitLap: car.currentLap + projectedLapsLeft,
@@ -2941,6 +2970,15 @@ export class RaceSimulation {
     const recommended = tyreCrossover(depthMm);
     const mounted = tyreClassOf(car?.tires.compound ?? 'medium');
     return { recommended, mounted, depthMm, advise: Boolean(car) && car!.status === 'running' && recommended !== mounted };
+  }
+
+  /** [R04] Por qué no puede usarse el DRS ahora mismo (Dirección de Carrera o primera vuelta), o null si puede. */
+  private drsBlockReason(perms: { drs: boolean; reason: string }, car: CarState): string | null {
+    if (!perms.drs) return perms.reason;
+    if (this.drsDisabledLaps > 0) return `Espera tras Safety Car: ${this.drsDisabledLaps} ${this.drsDisabledLaps === 1 ? 'vuelta' : 'vueltas'}`;
+    if (this.weatherDrsBlocked()) return 'Pista mojada o poca visibilidad: Dirección de Carrera desactiva el DRS';
+    if (car.currentLap <= 1) return 'Primera vuelta: el DRS se habilita al completarla';
+    return null;
   }
 
   /** [R22] Dirección de Carrera desactiva el DRS con pista mojada o visibilidad reducida. */

@@ -166,7 +166,8 @@ export interface SectorTimes {
 export interface DriverStatsSummary {
   pushLaps: number;
   savingLaps: number;
-  drsZonesTraversed: number;
+  /** [R04] Veces que el coche ha abierto el DRS en la carrera (recuento real). */
+  drsUses: number;
   projectedLapsRemainingOnTire: number;
   willMakeToEndWithoutPit: boolean;
   optimalPitLap: number;
@@ -371,6 +372,10 @@ export interface CarState {
   aggression: AggressionLevel;
   drsActive: boolean;
   drsEligible: boolean;
+  /** [R04] Lo que se ve del DRS (estado, motivo y hueco medido), sus usos reales y cuándo cambió el flap (s de carrera). */
+  drsStatus?: import('../simulation/DRSModel').DrsStatus;
+  drsUses?: number;
+  drsChangedAt?: number;
 
   // ── MODELO TERMODINÁMICO CONTINUO ──
   brakeTempCelsius: number;    // 250°C (frío) → 1050°C (frenada extrema)
