@@ -1,6 +1,14 @@
 import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { buildCarModelSpec } from '../renderer/carModelSpec';
+import { CAR_MODEL, DECAL_BACKGROUND, applyLivery, decalTexts, liveryColors, modelUrl, textColorOn } from '../renderer/carModel3d';
+import { liveryFor } from '../data/liveries';
+import { compoundStyle } from '../utils/compounds';
+
+/** Proporción (ancho/alto) de cada superficie de rótulos del modelo. */
+const DECAL_ASPECT: Record<string, number> = {
+  [CAR_MODEL.decals.sidepod]: 2.7, [CAR_MODEL.decals.engine]: 5.3, [CAR_MODEL.decals.rearwing]: 2.2, [CAR_MODEL.decals.nose]: 0.55,
+};
 
 interface Car3DViewerProps {
   teamColor: string;
@@ -8,10 +16,16 @@ interface Car3DViewerProps {
   number: number;
   compound: string;
   label?: string;
+  /** [R55] Equipo: decide los patrocinadores (ficticios) del modelo. */
+  teamId?: string;
 }
 
-/** [R46] Monoplaza 3D del paddock: gira solo y se puede arrastrar para girarlo. Geometría propia. */
-const Car3DViewer: React.FC<Car3DViewerProps> = ({ teamColor, accentColor, number, compound, label = 'Monoplaza en 3D' }) => {
+/**
+ * [R46] Monoplaza 3D del paddock: gira solo y se puede arrastrar para girarlo. [R55] Primero se pinta el coche de
+ * geometría propia y, en cuanto carga, lo sustituye el modelo 3D con la librea del equipo y las ruedas girando; si el
+ * modelo falta o falla, se queda el de geometría propia.
+ */
+const Car3DViewer: React.FC<Car3DViewerProps> = ({ teamColor, accentColor, number, compound, label = 'Monoplaza en 3D', teamId }) => {
   const hostRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -81,9 +95,33 @@ const Car3DViewer: React.FC<Car3DViewerProps> = ({ teamColor, accentColor, numbe
     disposables.push(ground.geometry, ground.material as THREE.Material);
     scene.add(car);
 
+    // [R55] Modelo 3D con la librea del equipo (se descarga aparte; el visor ya enseña el coche de geometría propia).
+    let active: THREE.Object3D = car;
+    let mixer: THREE.AnimationMixer | null = null;
+    let cancelled = false;
+    let releaseModel: (() => void) | null = null;
+    host.dataset.carModel = 'geometria';
+    import('../renderer/modelScene').then(async ({ loadModel, textTexture, setDecal, disposeModel }) => {
+      const gltf = await loadModel(modelUrl(import.meta.env.BASE_URL, CAR_MODEL.file));
+      if (cancelled) { disposeModel(gltf.scene); return; }
+      const livery = teamId ? liveryFor(teamId) : { primary: teamColor, secondary: accentColor, sponsors: [] as string[] };
+      applyLivery(gltf.scene, liveryColors(livery, compoundStyle(compound).color));
+      for (const [material, text] of Object.entries(decalTexts(livery, number))) {
+        setDecal(gltf.scene, material, textTexture(text, textColorOn(livery[DECAL_BACKGROUND[material] ?? 'primary']), DECAL_ASPECT[material] ?? 4));
+      }
+      const clip = gltf.animations.find(animation => animation.name === CAR_MODEL.animation);
+      if (clip) { mixer = new THREE.AnimationMixer(gltf.scene); mixer.clipAction(clip).play(); }
+      gltf.scene.rotation.y = car.rotation.y;
+      scene.remove(car);
+      scene.add(gltf.scene);
+      active = gltf.scene;
+      releaseModel = () => disposeModel(gltf.scene);
+      host.dataset.carModel = 'modelo';
+    }).catch(() => { /* sin modelo (no está el archivo o falla la carga): sigue el coche de geometría propia */ });
+
     let dragging = false, lastX = 0, spin = 0.35, frame = 0, previous = performance.now();
     const down = (event: PointerEvent) => { dragging = true; lastX = event.clientX; renderer.domElement.setPointerCapture(event.pointerId); };
-    const move = (event: PointerEvent) => { if (dragging) { car.rotation.y += (event.clientX - lastX) * 0.012; lastX = event.clientX; } };
+    const move = (event: PointerEvent) => { if (dragging) { active.rotation.y += (event.clientX - lastX) * 0.012; lastX = event.clientX; } };
     const up = () => { dragging = false; };
     renderer.domElement.addEventListener('pointerdown', down);
     renderer.domElement.addEventListener('pointermove', move);
@@ -95,13 +133,16 @@ const Car3DViewer: React.FC<Car3DViewerProps> = ({ teamColor, accentColor, numbe
     const loop = (now: number) => {
       const dt = Math.min(0.1, (now - previous) / 1000);
       previous = now;
-      if (!dragging) car.rotation.y += spin * dt;
+      if (!dragging) active.rotation.y += spin * dt;
+      mixer?.update(dt);
       renderer.render(scene, camera);
       frame = requestAnimationFrame(loop);
     };
     frame = requestAnimationFrame(loop);
 
     return () => {
+      cancelled = true;
+      releaseModel?.();
       cancelAnimationFrame(frame);
       renderer.domElement.removeEventListener('pointerdown', down);
       renderer.domElement.removeEventListener('pointermove', move);
@@ -111,7 +152,7 @@ const Car3DViewer: React.FC<Car3DViewerProps> = ({ teamColor, accentColor, numbe
       renderer.dispose();
       renderer.domElement.remove();
     };
-  }, [teamColor, accentColor, number, compound]);
+  }, [teamColor, accentColor, number, compound, teamId]);
 
   return <div ref={hostRef} role="img" aria-label={label} style={{ width: '100%', height: 190 }} />;
 };

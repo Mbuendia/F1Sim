@@ -466,7 +466,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 <div className={styles.detailContentGrid}>
                   {/* [R46] Monoplaza del piloto en 3D (silueta 2D sin WebGL) */}
                   <div className={styles.detailCardBox} style={{ gridColumn: '1 / -1' }}>
-                    <CarShowcase teamColor={inspectedTeam.color} accentColor={inspectedTeam.accentColor} number={inspectedDriver.number}
+                    <CarShowcase teamId={inspectedTeam.id} teamColor={inspectedTeam.color} accentColor={inspectedTeam.accentColor} number={inspectedDriver.number}
                       compound="medium" label={`Monoplaza de ${inspectedTeam.name} · ${inspectedDriver.code}`} />
                   </div>
                   <div className={styles.detailCardBox}>

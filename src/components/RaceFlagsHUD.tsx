@@ -1,6 +1,7 @@
 import React from 'react';
 import { RaceFlagState, SafetyCarState } from '../types/f1';
 import styles from './RaceFlagsHUD.module.css';
+import { SafetyCarShowcase } from './SafetyCarShowcase';
 
 interface RaceFlagsHUDProps {
   raceFlagState: RaceFlagState;
@@ -72,6 +73,9 @@ const RaceFlagsHUD: React.FC<RaceFlagsHUDProps> = ({ raceFlagState, sectorFlags,
           {subtext}
         </div>
       )}
+
+      {/* [R55] Safety Car en 3D mientras está desplegado (se carga bajo demanda; sin WebGL no se muestra). */}
+      {raceFlagState === 'sc' && safetyCar && <SafetyCarShowcase />}
 
       {raceFlagState === 'red' && onEndRace && (
         <button type="button" className={styles.endRace} onClick={onEndRace}>Dar por terminada la carrera</button>
