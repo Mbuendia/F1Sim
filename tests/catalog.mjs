@@ -526,5 +526,6 @@ export const modules = [
   { "id": "overtake-zones-r50", "tasks": ["R50"], "sprint": "2.11", "kind": "contract" },
   { "id": "models-3d-r55", "tasks": ["R55"], "sprint": "2.11", "kind": "contract" },
   { "id": "track-sprites-r56", "tasks": ["R56"], "sprint": "2.11", "kind": "contract" },
-  { "id": "season-r51", "tasks": ["R51"], "sprint": "2.11", "kind": "contract" }
+  { "id": "season-r51", "tasks": ["R51"], "sprint": "2.11", "kind": "contract" },
+  { "id": "drs-visible-r04", "tasks": ["R04"], "sprint": "2.11", "kind": "contract" }
 ];
