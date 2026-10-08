@@ -45,8 +45,8 @@ import type { CarSetup } from './Setup';
 import { availableSets, COMPOUND_LABEL, createInventory, inventoryFromSets, mountSet, pickSet, TireCompliance, tireCompliance } from './TireInventory';
 import type { TireSet } from './TireInventory';
 import { sprintLaps } from './Weekend';
-import { classifyMove, emptyMoves, moveTotals } from './Wall';
-import type { PaceLaps, WallReading } from './Wall';
+import { classifyMove, emptyMoves, moveTotals, paceProposal } from './Wall';
+import type { PaceLaps, WallProposal, WallReading } from './Wall';
 import { PROJECTS } from './Development';
 import { anticipatedDepth, radarForecast, rainImminent } from './WeatherForecast';
 import type { RainForecast } from './WeatherForecast';
@@ -178,8 +178,16 @@ export class RaceSimulation {
   private pitLaneStarters: string[] = [];
   /** [R52] Juegos de neumáticos de cada piloto que vienen de sesiones anteriores del fin de semana (o null). */
   private weekendTyres: Record<string, TireSet[]> | null = null;
+  /** [R54] Pilotos del jugador: en sus coches el estratega propone y no ejecuta (salvo que el jugador delegue). */
+  private playerCars: string[] = [];
   /** Separación entre los coches que esperan en el pit lane (m), como en la fila de la bandera roja. */
   static readonly PIT_START_SLOT_M = 8;
+
+  /** [R54] Dice qué pilotos lleva el jugador. Los coches que dejan de ser suyos pierden sus propuestas. */
+  setPlayerCars(driverIds: string[]) {
+    this.playerCars = [...new Set(driverIds)];
+    for (const car of this.cars) if (!this.playerCars.includes(car.driver.id) && car.wallProposals?.length) car.wallProposals = [];
+  }
 
   /** [R49] Fija quién sale desde el pit lane y prepara la carrera: dejan su puesto y la parrilla se cierra. */
   setPitLaneStarters(driverIds: string[]) {
@@ -452,6 +460,8 @@ export class RaceSimulation {
         startingGrid: this.startingGrid, raceTimeLimitSec: this.raceTimeLimitSec, totalTimeLimitSec: this.totalTimeLimitSec,
         // [R49] Ausentes en los guardados anteriores: se leen como «sin setup» y «nadie desde el pit lane».
         carSetups: this.carSetups, pitLaneStarters: this.pitLaneStarters, weekendTyres: this.weekendTyres,
+        // [R54] Ausente en los guardados anteriores: se lee como «ningún coche del jugador» hasta que la aplicación lo diga.
+        playerCars: this.playerCars,
       },
     };
   }
@@ -536,6 +546,7 @@ export class RaceSimulation {
     this.raceTimeLimitSec = setup.raceTimeLimitSec; this.totalTimeLimitSec = setup.totalTimeLimitSec;
     this.carSetups = setup.carSetups ?? {}; this.pitLaneStarters = setup.pitLaneStarters ?? [];
     this.weekendTyres = setup.weekendTyres ?? null;
+    this.playerCars = setup.playerCars ?? [];
 
     // Datos de pintado: se reconstruyen en el siguiente paso.
     this.previousPoses.clear();
@@ -2522,7 +2533,10 @@ export class RaceSimulation {
     const plan = car.pitStop.plannedStops?.[0];
     if (!plan || car.currentLap < plan.lap || car.isInPitLane || car.pitStop.isPitting) return;
     if (orderIsActive(car.pitStop.activeBoxOrder)) return;
+    const delegated = car.wallDelegated === true;
     if (this.issueBoxOrder(car.id, plan.compound, 'player')) car.pitStop.plannedStops!.shift();
+    // [R54] Cumplir el programa del jugador no es una orden nueva: la delegación sigue como estaba.
+    if (delegated) car.wallDelegated = true;
   }
 
   /** [R08] El coche va a entrar en boxes en la próxima entrada (para frenar a tiempo). */
@@ -2751,7 +2765,7 @@ export class RaceSimulation {
       this.redFlagLog('detenida', 'Coches detenidos en el carril rápido; salida de boxes cerrada');
       // Trabajos permitidos: la IA cambia neumáticos solo si su juego está gastado (decisión propia).
       for (const car of holders) {
-        if (car.pitStop.playerControlled || car.tires.health >= RaceSimulation.RED_FLAG_CHANGE_HEALTH || !car.tireInventory) continue;
+        if (car.pitStop.playerControlled || this.wallProposing(car) || car.tires.health >= RaceSimulation.RED_FLAG_CHANGE_HEALTH || !car.tireInventory) continue;
         const compliance = tireCompliance(car.tireInventory, this.circuitId, this.raceFormat !== 'sprint');
         const choice = (['medium', 'hard', 'soft'] as TireCompound[]).find(c => !compliance.slickSpecs.includes(c) && pickSet(car.tireInventory!, c))
           ?? (['medium', 'hard', 'soft'] as TireCompound[]).find(c => pickSet(car.tireInventory!, c));
@@ -3154,12 +3168,23 @@ export class RaceSimulation {
     st.log.push({ time: this.raceTimeSec, lap: car.currentLap, action, detail });
   }
 
-  /** [R25] Estratega de la IA: ritmo por combustible, neumáticos por agua y paradas por desgaste, SC, compañero y tráfico. */
+  /** [R54] Coche del jugador sin delegar: el estratega le propone y no ejecuta. */
+  private wallProposing(car: CarState): boolean {
+    return !car.wallDelegated && this.playerCars.includes(car.driver.id);
+  }
+
+  /**
+   * [R25] Estratega de la IA: ritmo por combustible, neumáticos por agua y paradas por desgaste, SC, compañero y tráfico.
+   * [R54] En un coche del jugador sin delegar decide lo mismo, pero lo deja como propuesta.
+   */
   private runStrategist(car: CarState) {
     const pit = car.pitStop;
-    if (pit.playerControlled || car.status !== 'running' || car.isInPitLane || pit.isPitting || this.raceFlagState === 'red' || car.redFlagHold) return;
+    const proposing = this.wallProposing(car);
+    if ((pit.playerControlled && !proposing) || car.status !== 'running' || car.isInPitLane || pit.isPitting || this.raceFlagState === 'red' || car.redFlagHold) {
+      if (proposing && car.wallProposals?.length) car.wallProposals = [];
+      return;
+    }
     const st = (car.strategy ??= { log: [], postponeStartLap: null, lastLogKey: '' });
-    const L = this.activeTrack.lapLengthMeters;
     // Combustible: consumo de la última vuelta medida (o la estimación por distancia antes de tenerla).
     if (st.lapOfFuelMark !== car.currentLap) {
       if (st.lapOfFuelMark !== undefined && st.fuelAtLapStart !== undefined && car.currentLap === st.lapOfFuelMark + 1) st.lastLapBurnKg = st.fuelAtLapStart - car.fuelKg;
@@ -3171,7 +3196,7 @@ export class RaceSimulation {
       st.healthAtLapStart = car.tires.health; st.setAtLapStart = setId;
       st.lapOfFuelMark = car.currentLap; st.fuelAtLapStart = car.fuelKg;
     }
-    if (!car.paceByPlayer) {
+    if (proposing || !car.paceByPlayer) {
       // Consumo medido de la última vuelta si es representativo (±25 % de la estimación); si no, la estimación.
       const estimate = RejoinModel.lapFuelKg(this.activeTrack, car);
       const measured = st.lastLapBurnKg;
@@ -3179,10 +3204,26 @@ export class RaceSimulation {
       const need = perLap * Math.max(0, this.totalLaps - car.progress) + STRATEGY.FUEL_MARGIN_KG;
       // Solo se ahorra si el déficit es recuperable ahorrando; con un déficit mayor no tiene sentido penalizar el ritmo.
       const recoverable = need <= car.fuelKg * (1 + STRATEGY.FUEL_RECOVERABLE);
-      if (need > car.fuelKg && recoverable && car.paceMode !== 'save') { car.paceMode = 'save'; this.strategyLog(car, 'ahorro', `Combustible: necesita ${need.toFixed(1)} kg, lleva ${car.fuelKg.toFixed(1)} kg`); }
+      // [R54] Mismo criterio que la IA (con su margen para dejar de ahorrar), como dato para la propuesta de ritmo.
+      if (proposing) this.proposePace(car, recoverable && (need > car.fuelKg || (car.paceMode === 'save' && need >= car.fuelKg * 0.9)));
+      else if (need > car.fuelKg && recoverable && car.paceMode !== 'save') { car.paceMode = 'save'; this.strategyLog(car, 'ahorro', `Combustible: necesita ${need.toFixed(1)} kg, lleva ${car.fuelKg.toFixed(1)} kg`); }
       else if (car.paceMode === 'save' && need < car.fuelKg * 0.9) { car.paceMode = 'balanced'; this.strategyLog(car, 'ritmo', 'Combustible suficiente: ritmo normal'); }
     }
-    if (orderIsActive(pit.activeBoxOrder)) return;
+    if (orderIsActive(pit.activeBoxOrder)) {
+      if (proposing) this.proposeStop(car, null);
+      return;
+    }
+    const decision = this.stopDecision(car, st);
+    if (proposing) { this.proposeStop(car, decision); return; }
+    if (decision && this.issueBoxOrder(car.id, decision.compound, 'ai')) {
+      st.postponeStartLap = null;
+      this.strategyLog(car, 'parada', `${decision.reason}: ${COMPOUND_LABEL[decision.compound]}`);
+    }
+  }
+
+  /** [R25] Parada que el estratega quiere ahora (compuesto y motivo), o null si no hay que parar o conviene esperar. */
+  private stopDecision(car: CarState, st: StrategyState): { compound: TireCompound; reason: string; text: string } | null {
+    const L = this.activeTrack.lapLengthMeters;
     const lapsToEnd = this.totalLaps - car.currentLap;
     // [R53] Con la previsión del radar, la IA decide con el agua que habrá en una vuelta, no solo con la de ahora.
     const rainForecast = this.strategyUsesForecast ? this.getRainForecast() : null;
@@ -3193,7 +3234,7 @@ export class RaceSimulation {
     const weatherChoice = chooseCompound(lapsToEnd, car.tireInventory, compliance, depth);
     let reason: string | null = null;
     if (weatherChoice && tyreWaterGrip(weatherChoice, depth) > current + 0.05) reason = depth > 0.3 ? 'lluvia' : 'pista seca';
-    if (lapsToEnd <= 1 && reason === null) return;
+    if (lapsToEnd <= 1 && reason === null) return null;
     // Desgaste por vuelta: el medido; sin medida, el histórico del juego si lleva al menos 3 vueltas o el nominal del compuesto.
     const nominalWear = (100 - STRATEGY.TARGET_HEALTH) / TireModel.getCompoundProperties(car.tires.compound).nominalLaps;
     const historyWear = car.tires.lapsOnTire >= 3 ? (100 - car.tires.health) / car.tires.lapsOnTire : nominalWear;
@@ -3204,13 +3245,13 @@ export class RaceSimulation {
     else if (!reason && lapsLeftOnTyre <= STRATEGY.PIT_LAPS_MARGIN && lapsLeftOnTyre < lapsToEnd
       && (lapsToEnd > STRATEGY.FINAL_LAPS || car.tires.health < STRATEGY.FINAL_LAPS_HEALTH)) reason = 'desgaste';
     else if (!reason && !compliance.satisfied && lapsToEnd <= 3) reason = 'reglamento S30.5m';
-    if (!reason) return;
+    if (!reason) return null;
     const critical = car.tires.health <= STRATEGY.CRITICAL_HEALTH;
     if (!critical && !underSc && reason === 'desgaste') {
       const mate = this.cars.find(c => c.id !== car.id && c.driver.teamId === car.driver.teamId && c.status !== 'out');
       if (mate && (orderIsActive(mate.pitStop.activeBoxOrder) || mate.isInPitLane)) {
         this.strategyLog(car, 'aplaza', 'Compañero en boxes o con parada pedida', `compañero-${car.currentLap}`);
-        return;
+        return null;
       }
       st.postponeStartLap ??= car.currentLap;
       if (car.currentLap - st.postponeStartLap < STRATEGY.MAX_POSTPONE_LAPS) {
@@ -3221,7 +3262,7 @@ export class RaceSimulation {
             ((((c.progress - est.rejoinProgress) % 1) + 1) % 1) * L < window);
           if (blocker) {
             this.strategyLog(car, 'aplaza', `Saldría en tráfico detrás de ${blocker.driver.code}`, `tráfico-${car.currentLap}`);
-            return;
+            return null;
           }
         }
       }
@@ -3233,14 +3274,110 @@ export class RaceSimulation {
       && tyreWaterGrip(compound, 1) < tyreWaterGrip('intermediate', 1) && rainImminent(rainForecast, STRATEGY.RAIN_IMMINENT_SEC)) {
       if (!critical) {
         this.strategyLog(car, 'aplaza', 'Lluvia inminente: espera para no montar seco', `lluvia-${car.currentLap}`);
-        return;
+        return null;
       }
       if (!car.tireInventory || pickSet(car.tireInventory, 'intermediate')) { compound = 'intermediate'; reason = 'lluvia inminente'; }
     }
-    if (compound && this.issueBoxOrder(car.id, compound, 'ai')) {
-      st.postponeStartLap = null;
-      this.strategyLog(car, 'parada', `${reason}: ${COMPOUND_LABEL[compound]}`);
+    if (!compound) return null;
+    const decimal = (value: number) => value.toFixed(1).replace('.', ',');
+    const text = reason === 'lluvia' ? `Lluvia: se esperan ${decimal(depth)} mm de agua en pista`
+      : reason === 'pista seca' ? `Pista seca: quedan ${decimal(depth)} mm de agua`
+      : reason === 'safety car' ? 'Safety car: parada con menos pérdida de tiempo'
+      : reason === 'desgaste' ? `Desgaste: al neumático le quedan ${decimal(Math.max(0, lapsLeftOnTyre))} vueltas`
+      : reason === 'lluvia inminente' ? 'Lluvia inminente: el neumático no aguanta y no conviene montar seco'
+      : 'Reglamento: aún tiene que montar otro compuesto de seco';
+    return { compound, reason, text };
+  }
+
+  private addWallProposal(car: CarState, proposal: Omit<WallProposal, 'id' | 'lap' | 'timeSec'>) {
+    car.wallSeq = (car.wallSeq ?? 0) + 1;
+    (car.wallProposals ??= []).push({ id: `prop_${car.id}_${car.wallSeq}`, ...proposal, lap: car.currentLap, timeSec: this.raceTimeSec });
+  }
+
+  /**
+   * [R54] Deja la parada que quiere el estratega como propuesta: la que ya está pendiente se conserva, la que deja de
+   * tener sentido se retira y la que el jugador descartó no vuelve hasta la vuelta siguiente.
+   */
+  private proposeStop(car: CarState, decision: { compound: TireCompound; text: string } | null) {
+    const pending = car.wallProposals ?? [];
+    const key = decision ? `parada:${decision.compound}` : null;
+    if (pending.some(proposal => proposal.kind === 'parada' && proposal.key !== key)) car.wallProposals = pending.filter(proposal => proposal.kind !== 'parada' || proposal.key === key);
+    if (!decision || !key || car.wallProposals?.some(proposal => proposal.key === key)) return;
+    const discardedLap = car.wallDiscarded?.[key];
+    if (discardedLap !== undefined && car.currentLap <= discardedLap) return;
+    this.addWallProposal(car, { key, kind: 'parada', compound: decision.compound, reason: decision.text });
+  }
+
+  /**
+   * [R54] Ritmo de la vuelta: como mucho una propuesta por vuelta, con lo que se ve ahora (gasolina, batería y huecos).
+   * La de la vuelta anterior caduca y la que deja de tener sentido se retira.
+   */
+  private proposePace(car: CarState, fuelShort: boolean) {
+    const ahead = car.carAheadId !== null ? this.getCarById(car.carAheadId) : undefined;
+    const behind = this.cars.find(other => other.carAheadId === car.id && other.status === 'running');
+    const racing = (other: CarState | undefined): other is CarState => Boolean(other && other.status === 'running' && !other.isInPitLane);
+    const wanted = paceProposal({
+      fuelShort, batteryPercent: car.energy ? car.energy.storedMJ * 25 : car.telemetry.batterySoc,
+      gapAheadSec: racing(ahead) ? car.gapToCarAheadSec : null, aheadCode: racing(ahead) ? ahead.driver.code : null,
+      gapBehindSec: racing(behind) ? behind.gapToCarAheadSec : null, behindCode: racing(behind) ? behind.driver.code : null,
+      current: car.paceMode ?? 'balanced',
+    });
+    const pending = car.wallProposals ?? [];
+    const key = wanted ? `ritmo:${wanted.paceMode}` : null;
+    if (pending.some(proposal => proposal.kind === 'ritmo' && (proposal.key !== key || proposal.lap !== car.currentLap))) {
+      car.wallProposals = pending.filter(proposal => proposal.kind !== 'ritmo' || (proposal.key === key && proposal.lap === car.currentLap));
     }
+    if (!wanted || !key || car.wallPaceLap === car.currentLap) return;
+    car.wallPaceLap = car.currentLap;
+    this.addWallProposal(car, { key, kind: 'ritmo', paceMode: wanted.paceMode, reason: wanted.reason });
+  }
+
+  /** [R54] Propuestas pendientes del estratega para un coche del jugador. */
+  getWallProposals(carId: number): WallProposal[] {
+    return this.getCarById(carId)?.wallProposals ?? [];
+  }
+
+  /** [R54] Aceptar una propuesta la ejecuta como una orden del jugador. */
+  acceptWallProposal(carId: number, proposalId: string): boolean {
+    const car = this.getCarById(carId);
+    const proposal = car?.wallProposals?.find(candidate => candidate.id === proposalId);
+    if (!car || !proposal) return false;
+    const done = proposal.kind === 'parada'
+      ? Boolean(proposal.compound && this.issueBoxOrder(car.id, proposal.compound, 'player'))
+      : Boolean(proposal.paceMode && this.issuePaceOrder(car.id, proposal.paceMode));
+    if (!done) return false;
+    car.wallProposals = (car.wallProposals ?? []).filter(candidate => candidate.id !== proposalId);
+    if (car.strategy) {
+      if (proposal.kind === 'parada') car.strategy.postponeStartLap = null;
+      this.strategyLog(car, proposal.kind === 'parada' ? 'parada' : 'ritmo', `Propuesta aceptada: ${proposal.reason}`);
+    }
+    return true;
+  }
+
+  /** [R54] Descartar una propuesta la quita; la misma no vuelve hasta la vuelta siguiente. */
+  discardWallProposal(carId: number, proposalId: string): boolean {
+    const car = this.getCarById(carId);
+    const proposal = car?.wallProposals?.find(candidate => candidate.id === proposalId);
+    if (!car || !proposal) return false;
+    car.wallProposals = (car.wallProposals ?? []).filter(candidate => candidate.id !== proposalId);
+    (car.wallDiscarded ??= {})[proposal.key] = car.currentLap;
+    return true;
+  }
+
+  /**
+   * [R54] «Delegar en el estratega»: encendido, el estratega vuelve a ejecutar en ese coche como en los de la IA;
+   * apagado (o al dar el jugador una orden), solo propone.
+   */
+  setWallDelegation(carId: number, delegated: boolean): boolean {
+    const car = this.getCarById(carId);
+    if (!car) return false;
+    car.wallDelegated = delegated;
+    if (delegated) {
+      car.wallProposals = [];
+      car.pitStop.playerControlled = false;
+      car.paceByPlayer = false;
+    }
+    return true;
   }
 
   // Órdenes del muro: aceptación no equivale a compromiso de entrada.
@@ -3277,6 +3414,8 @@ export class RaceSimulation {
         !this.getPaceStatus(carId)?.available) return false;
     car.paceMode = paceMode;
     car.paceByPlayer = true;
+    // [R54] Una orden del jugador apaga la delegación de ese coche.
+    if (car.wallDelegated) car.wallDelegated = false;
     return true;
   }
 
@@ -3308,7 +3447,7 @@ export class RaceSimulation {
     };
     car.pitStop.activeBoxOrder = order;
     car.pitStop.targetCompound = compound;
-    if (issuer === 'player') car.pitStop.playerControlled = true;
+    if (issuer === 'player') { car.pitStop.playerControlled = true; if (car.wallDelegated) car.wallDelegated = false; }
     // La orden sustituye la estrategia previa; no deja scheduledLap residual al cancelar.
     car.pitStop.scheduledLap = 0;
     return order;

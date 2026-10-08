@@ -5,6 +5,7 @@ import styles from './BoxControls.module.css';
 import { PaceControls } from './PaceControls';
 import { CompoundBadge } from './CompoundBadge';
 import { COMPOUND_STYLES, TIRE_COMPOUNDS } from '../utils/compounds';
+import { WallProposals } from './WallProposals';
 
 const CROSSOVER_LABEL = { slick: 'neumático de seco', intermediate: 'INTERMEDIO', wet: 'LLUVIA' } as const;
 
@@ -111,6 +112,13 @@ export function BoxControls({ car, simulation, teamCars }: {
                   order.status === 'committed' ? 'CONFIRMADA' : order.status === 'cancelled' ? 'CANCELADA' :
                   order.status === 'rejected' ? 'RECHAZADA' : 'ACEPTADA'}</span>}
               </div>
+              {/* [R54] El estratega propone; nada se ejecuta en este coche sin aceptar (o sin delegar). */}
+              {(p.status === 'running' || p.status === 'pit') && !simulation.isFinished && (
+                <WallProposals proposals={simulation.getWallProposals(p.id)} delegated={Boolean(p.wallDelegated)}
+                  onAccept={id => setFeedbackFor(p.id, simulation.acceptWallProposal(p.id, id) ? '' : 'Propuesta no aplicable ahora')}
+                  onDiscard={id => { simulation.discardWallProposal(p.id, id); setFeedbackFor(p.id, ''); }}
+                  onDelegate={on => { simulation.setWallDelegation(p.id, on); setFeedbackFor(p.id, ''); }} />
+              )}
             </div>
           );
         })}

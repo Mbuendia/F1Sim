@@ -81,6 +81,8 @@ const SAVE_NAME_KEY = 'f1_save_name';
 const SETUPS_KEY = 'f1_setups';
 const newRaceSeed = () => (Math.floor(Math.random() * 0x7fffffff) ^ Date.now()) >>> 0;
 const TYRE_WORDS: Record<string, string> = { soft: 'blandos', medium: 'medios', hard: 'duros', intermediate: 'intermedios', wet: 'de lluvia' };
+/** [R54] Pilotos que lleva el jugador: los dos del equipo del piloto elegido. */
+const playerDriverIds = (driverId: string): string[] => TEAMS[(DRIVERS[driverId] ?? DRIVERS.alonso).teamId]?.drivers ?? [];
 
 const CAMERA_LABELS: Record<string, string> = {
   overview: 'General',
@@ -599,6 +601,10 @@ export const App: React.FC = () => {
       .map(dId => cars.find(c => c.driver.id === dId))
       .filter((c): c is CarState => c !== undefined);
   }, [cars, selectedDriverId, favoriteCar]);
+  // [R54] El motor sabe qué coches lleva el jugador: en ellos el estratega propone y no ejecuta nada sin confirmación.
+  useEffect(() => {
+    simulation.setPlayerCars(playerDriverIds(selectedDriverId));
+  }, [simulation, selectedDriverId]);
   // ── R32: avisos breves (máx. 3 a la vez, caducan solos, sin robar el foco) ──
   const [notices, setNotices] = useState<RaceNotice[]>([]);
   const noticeSeq = useRef(0);
@@ -622,8 +628,9 @@ export const App: React.FC = () => {
   // [R24] Avisos del muro para los coches del jugador: por prioridad, como mucho tres a la vez y sin repetirse
   // mientras dure la causa.
   const wallActive = useRef(new Set<string>());
+  const wallProposed = useRef(new Set<string>());
   useEffect(() => {
-    if (currentView !== 'race') { wallActive.current = new Set(); return; }
+    if (currentView !== 'race') { wallActive.current = new Set(); wallProposed.current = new Set(); return; }
     const timer = window.setInterval(() => {
       if (simulation.lightState !== 'racing' || simulation.isFinished) return;
       const team = (DRIVERS[selectedDriverId] ?? DRIVERS.alonso).teamId;
@@ -632,6 +639,16 @@ export const App: React.FC = () => {
       const next = nextAlerts(wallAlerts(readings), wallActive.current);
       wallActive.current = next.active;
       for (const alert of next.show) pushNotice(alert.tone, 'Muro', alert.text);
+      // [R54] Una propuesta de parada nueva se avisa una vez; las de ritmo, que hay casi cada vuelta, solo se ven en el muro.
+      for (const car of simulation.cars) {
+        if (DRIVERS[car.driver.id]?.teamId !== team) continue;
+        for (const proposal of simulation.getWallProposals(car.id)) {
+          const seen = `${proposal.id}@${proposal.timeSec}`;
+          if (proposal.kind !== 'parada' || wallProposed.current.has(seen)) continue;
+          wallProposed.current.add(seen);
+          pushNotice('info', 'Muro', `${car.driver.code}: el estratega propone parar · ${proposal.reason}`);
+        }
+      }
     }, 1000);
     return () => window.clearInterval(timer);
   }, [currentView, simulation, selectedDriverId, pushNotice]);
@@ -688,6 +705,8 @@ export const App: React.FC = () => {
       localStorage.setItem('f1_d20_variant', selection.luckVariant ? 'on' : 'off');
     } catch (e) { console.error(e); }
     setSelectedDriverId(DRIVERS[selection.driverId] ? selection.driverId : 'alonso');
+    // [R54] Los guardados anteriores no dicen qué coches son del jugador.
+    simulation.setPlayerCars(playerDriverIds(selection.driverId));
     setSelectedCircuitId(save.race?.circuitId ?? (OFFICIAL_CIRCUITS[selection.circuitId] ? selection.circuitId : 'barcelona'));
     setRaceFormat(selection.raceFormat === 'clasificacion' || selection.raceFormat === 'sprint' ? selection.raceFormat : 'directo');
     setWeatherScenarioId(selection.weatherScenarioId);

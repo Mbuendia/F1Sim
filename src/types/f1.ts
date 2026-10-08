@@ -437,6 +437,12 @@ export interface CarState {
   /** [R25] Estado y registro del estratega de la IA; el ritmo lo fijó el jugador. */
   strategy?: import('../simulation/Strategist').StrategyState;
   paceByPlayer?: boolean;
+  /** [R54] Coche del jugador: propuestas pendientes del estratega, delegación, descartes (clave → vuelta) y vuelta de la última propuesta de ritmo. */
+  wallProposals?: import('../simulation/Wall').WallProposal[];
+  wallDelegated?: boolean;
+  wallDiscarded?: Record<string, number>;
+  wallPaceLap?: number;
+  wallSeq?: number;
   redFlagRelease?: boolean;
   /** [R11] Infracciones de pista registradas (las sanciones las aplica R13). */
   infractions?: { type: 'delta-vsc'; value: number; lap: number; time: number }[];

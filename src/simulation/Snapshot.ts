@@ -224,7 +224,7 @@ function migrateV1(v1: Record<string, unknown>): MigrationOutcome {
       weatherModel: { ...DRY_WEATHER_STATE(), displayTick: -1, forecastCache: null },
       rubber: null,
       luck: { variantEnabled: true, log: [] },
-      setup: { driverAttributes: {}, failureFactors: {}, technicalUpgrades: {}, startingGrid: null, raceTimeLimitSec: 7200, totalTimeLimitSec: 10800, carSetups: {}, pitLaneStarters: [] },
+      setup: { driverAttributes: {}, failureFactors: {}, technicalUpgrades: {}, startingGrid: null, raceTimeLimitSec: 7200, totalTimeLimitSec: 10800, carSetups: {}, pitLaneStarters: [], weekendTyres: null, playerCars: [] },
     },
     specials: specialsFromV1(v1.diagnostics),
     diagnostics: Array.isArray(v1.diagnostics) ? v1.diagnostics : [],

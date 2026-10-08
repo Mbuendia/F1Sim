@@ -104,3 +104,51 @@ export function nextAlerts(alerts: WallAlert[], active: Set<string>, limit = WAL
   const shown = new Set(show.map(alert => alert.key));
   return { show, active: new Set(alerts.filter(alert => active.has(alert.key) || shown.has(alert.key)).map(alert => alert.key)) };
 }
+
+// [R54] Muro del jugador: en sus coches el estratega propone (parada o ritmo, con su motivo) y no ejecuta nada hasta
+// que el jugador acepta. Umbrales de batería y hueco: diseño del juego.
+export type WallPace = 'push' | 'balanced' | 'save';
+export interface WallProposal {
+  id: string;
+  /** Qué se propone, sin el motivo: mientras siga pendiente no se añade otra igual. */
+  key: string;
+  kind: 'parada' | 'ritmo';
+  compound?: TireCompound;
+  paceMode?: WallPace;
+  reason: string;
+  lap: number;
+  timeSec: number;
+}
+
+export const WALL_PACE = {
+  /** Un rival a menos de este hueco (s) y al menos esta batería (%): se propone atacar esa vuelta. */
+  ATTACK_GAP_SEC: 1.0,
+  ATTACK_BATTERY: 60,
+  /** Con esta batería (%) o menos se propone una vuelta de recarga. */
+  RECHARGE_BATTERY: 15,
+};
+
+export interface PaceInput {
+  /** La gasolina no llega al final al consumo actual (y ahorrando sí). */
+  fuelShort: boolean;
+  batteryPercent: number;
+  gapAheadSec: number | null;
+  aheadCode: string | null;
+  gapBehindSec: number | null;
+  behindCode: string | null;
+  current: WallPace;
+}
+
+/** Ritmo que conviene esta vuelta con lo que se ve ahora, o null si es el que ya lleva. */
+export function paceProposal(input: PaceInput): { paceMode: WallPace; reason: string } | null {
+  const battery = `Batería al ${Math.round(input.batteryPercent)} %`;
+  const near = (gap: number | null): gap is number => gap !== null && gap < WALL_PACE.ATTACK_GAP_SEC;
+  const charged = input.batteryPercent >= WALL_PACE.ATTACK_BATTERY;
+  let wanted: { paceMode: WallPace; reason: string };
+  if (input.fuelShort) wanted = { paceMode: 'save', reason: 'Combustible justo para llegar: vuelta de ahorro' };
+  else if (input.batteryPercent <= WALL_PACE.RECHARGE_BATTERY) wanted = { paceMode: 'save', reason: `${battery}: vuelta de recarga` };
+  else if (charged && near(input.gapAheadSec)) wanted = { paceMode: 'push', reason: `${battery} y ${input.aheadCode ?? 'rival'} a ${decimal(input.gapAheadSec)} s: ataque esta vuelta` };
+  else if (charged && near(input.gapBehindSec)) wanted = { paceMode: 'push', reason: `${battery} y ${input.behindCode ?? 'rival'} a ${decimal(input.gapBehindSec)} s por detrás: ataque para defender` };
+  else wanted = { paceMode: 'balanced', reason: 'Sin motivo para otro ritmo: vuelta normal' };
+  return wanted.paceMode === input.current ? null : wanted;
+}
