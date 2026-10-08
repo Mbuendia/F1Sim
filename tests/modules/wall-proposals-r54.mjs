@@ -243,6 +243,15 @@ export default async function run({ server, assert, test }) {
         assert(entered, `R54: al aceptarla, entra`);
       }
 
+      // Si ya había una propuesta de parada por otro motivo, la urgente la sustituye: el jugador tiene que ver el pinchazo.
+      const pending = worn();
+      run(pending.sim, 3);
+      const earlier = stops(pending.sim, pending.car)[0];
+      pending.car.hasPuncture = true;
+      run(pending.sim, 1);
+      const replaced = stops(pending.sim, pending.car);
+      assert(/desgaste/i.test(earlier.reason) && replaced.length === 1 && replaced[0].id !== earlier.id && /pinchazo/i.test(replaced[0].reason), 'R54: una propuesta de parada anterior se sustituye por la urgente', JSON.stringify(replaced));
+
       // Bandera roja: a los coches de la IA (y a los delegados) se les cambian los neumáticos gastados; a los del jugador, no.
       const sim = make('barcelona', 4), L = sim.activeTrack.lapLengthMeters;
       sim.cars.forEach((c, i) => {
