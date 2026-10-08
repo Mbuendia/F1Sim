@@ -22,7 +22,7 @@
 
 ## 🧭 2. ROADMAP Y ESTADO GLOBAL DE SPRINTS
 
-**Orden vigente:** Sprint **2.11** · Tarea actual **R54** · Siguiente **—** (R47, R48, R49, R50, R55, R56, R51 y R04 entregadas y en revisión el 07/10/2026 y R52, R24, R23 y R53 el 08/10/2026; R55 y R56 añadidas ese día a petición del usuario; Sprint 2.10 aprobado y fusionado en main el 03/10/2026; Sprint 2.11 planificado el mismo día en la rama sprint/2.11, orden y alcance en 6.11; cada tarea sigue requiriendo contrato de tests y autorización expresa).
+**Orden vigente:** Sprint **2.11** · Tarea actual **R54** · Siguiente **T3.1** (R54 es la última tarea del Sprint 2.11; T3.1 es la primera planificada del Sprint 3, cuyo orden está por decidir; R47, R48, R49, R50, R55, R56, R51 y R04 entregadas y en revisión el 07/10/2026 y R52, R24, R23 y R53 el 08/10/2026; R55 y R56 añadidas ese día a petición del usuario; Sprint 2.10 aprobado y fusionado en main el 03/10/2026; Sprint 2.11 planificado el mismo día en la rama sprint/2.11, orden y alcance en 6.11; cada tarea sigue requiriendo contrato de tests y autorización expresa).
 
 **Prioridad acordada tras la auditoría (30/09/2026, `docs/reviews/auditoria-q12-q19.md`):** Q19 → Q16 → Q13 → Q17 → Q12 → Q18/Q14/Q15. Decisiones del usuario: detecciones DRS desde las notas oficiales FIA; el Safety Car debe salir del pit lane (Q14); tests estructurales sin dependencias nuevas para Q18; tolerancias de calibración Q12 propuestas.
 
