@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import styles from './LandingPage.module.css';
 import { Play } from 'lucide-react';
 import { F1Wheel3D } from './F1Wheel3D';
+import { F1WheelSvg } from './F1WheelSvg';
+import { supportsWebGL } from './CarShowcase';
 
 interface LandingPageProps {
   onEnter: () => void;
@@ -11,6 +13,8 @@ interface LandingPageProps {
 // por delante. Solo el botón y Enter/Espacio entran al paddock (sin navegación por clic en el fondo o la rueda).
 export const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
   const [isTransitioning, setIsTransitioning] = useState(false);
+  // R58: sin WebGL three no puede crear la rueda 3D y su error desmontaba toda la aplicación; se muestra la rueda 2D.
+  const [webgl] = useState(() => supportsWebGL());
 
   const handleEnterSequence = () => {
     if (isTransitioning) return;
@@ -36,9 +40,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
 
   return (
     <div className={`${styles.landingContainer} ${isTransitioning ? styles.landingTransitionOut : ''}`}>
-      {/* Rueda 3D interactiva de fondo: gira y responde al puntero */}
-      <div className={styles.wheelStage}>
-        <F1Wheel3D isTransitioning={isTransitioning} className={styles.wheelBackdrop} />
+      {/* Rueda de fondo: en 3D gira y responde al puntero; sin WebGL, la rueda 2D fija */}
+      <div className={styles.wheelStage} data-landing-wheel={webgl ? '3d' : '2d'} aria-hidden="true">
+        {webgl
+          ? <F1Wheel3D isTransitioning={isTransitioning} className={styles.wheelBackdrop} />
+          : <F1WheelSvg className={styles.wheelBackdrop} />}
       </div>
       <div className={styles.readingShade} aria-hidden="true" />
 
