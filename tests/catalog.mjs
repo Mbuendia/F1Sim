@@ -533,5 +533,6 @@ export const modules = [
   { "id": "physics-signals-r23", "tasks": ["R23"], "sprint": "2.11", "kind": "contract" },
   { "id": "rain-forecast-r53", "tasks": ["R53"], "sprint": "2.11", "kind": "contract" },
   { "id": "wall-proposals-r54", "tasks": ["R54"], "sprint": "2.11", "kind": "contract" },
-  { "id": "runoff-t31", "tasks": ["T3.1"], "sprint": "3", "kind": "contract" }
+  { "id": "runoff-t31", "tasks": ["T3.1"], "sprint": "3", "kind": "contract" },
+  { "id": "weather-fronts-t32", "tasks": ["T3.2"], "sprint": "3", "kind": "contract" }
 ];
