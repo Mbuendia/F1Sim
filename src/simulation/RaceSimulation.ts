@@ -48,6 +48,8 @@ import { sprintLaps } from './Weekend';
 import { classifyMove, emptyMoves, moveTotals } from './Wall';
 import type { PaceLaps, WallReading } from './Wall';
 import { PROJECTS } from './Development';
+import { anticipatedDepth, radarForecast, rainImminent } from './WeatherForecast';
+import type { RainForecast } from './WeatherForecast';
 import { localFlagsFrom, LocalFlag, marshalSectorOf, Permissions, permissionsFor } from './RaceControl';
 import { Decision, PenaltyType, Stewards } from './Stewards';
 import { applyAttributes, fitnessNoiseFactor, overtakeAdvantageNeeded, wetGripFactor } from './DriverDevelopment';
@@ -3020,6 +3022,7 @@ export class RaceSimulation {
   /** [R22] Fija el escenario meteorológico (determinista) y reinicia el estado del agua. */
   setWeatherScenario(scenario: WeatherScenario) {
     this.weatherModel.reset(scenario);
+    this.rainForecastCache = null; this.forecastCache = null;
   }
 
   /** [R44] Cruce de compuestos: la clase que pide el agua media actual frente a la montada. */
@@ -3119,19 +3122,27 @@ export class RaceSimulation {
     if (this.weatherVsc && this.vscActive && v >= 0.4) { this.endVirtualSafetyCar(); this.weatherVsc = false; }
   }
 
-  /** [R22] Previsión con incertidumbre a partir de lo observado (lluvia actual y tendencia), sin acceso al escenario. */
+  /** [R53] La IA decide los neumáticos con la previsión del radar (se puede apagar para comparar en tests). */
+  strategyUsesForecast = true;
+  private rainForecastCache: { key: string; value: RainForecast } | null = null;
+
+  /**
+   * [R53] Previsión del radar: lluvia por tramos de 5 minutos y por sector hasta 20 minutos, con un error que crece
+   * con la distancia. No sabe nada de lo que empieza más allá de ese horizonte. Se renueva cada minuto.
+   */
+  getRainForecast(): RainForecast {
+    const scenario = this.weatherModel.scenario;
+    const key = `${Math.floor(Math.max(0, this.raceTimeSec) / 60)}|${this.seed ?? 0}|${scenario.id}|${scenario.cells.length}`;
+    if (this.rainForecastCache?.key !== key) this.rainForecastCache = { key, value: radarForecast(scenario, this.raceTimeSec, this.seed ?? 0) };
+    return this.rainForecastCache.value;
+  }
+
+  /** [R22] Probabilidad de lluvia a 5 y 15 minutos con su margen. [R53] Sale de la previsión del radar. */
   getForecast(): { rain5: number; rain15: number; uncertainty: number } {
-    const wm = this.weatherModel;
-    const recent = wm.recentRainMmH() > 1e-9 ? wm.recentRainMmH() : 0;
-    const window = Math.floor(this.raceTimeSec / 30);
-    const key = `${window}|${wm.rainNowMmH > 0}|${recent > 0}`;
+    const forecast = this.getRainForecast();
+    const key = `${forecast.issuedAtSec}`;
     if (this.forecastCache?.key === key) return this.forecastCache.value;
-    const noise = mulberry32(streamSeed(this.seed ?? 0, `meteo-${window}`))() - 0.5;
-    const base5 = wm.rainNowMmH > 0 ? 0.85 : recent > 0 ? 0.4 : 0.05;
-    const base15 = wm.rainNowMmH > 0 ? 0.7 : recent > 0 ? 0.35 : 0.08;
-    const uncertainty = 0.1 + (recent > 0 && wm.rainNowMmH === 0 ? 0.15 : 0);
-    const clamp = (x: number) => Math.round(Math.min(1, Math.max(0, x)) * 1000) / 1000;
-    const value = { rain5: clamp(base5 + noise * uncertainty), rain15: clamp(base15 + noise * uncertainty * 1.5), uncertainty };
+    const value = { rain5: forecast.slots[0].probability, rain15: forecast.slots[2].probability, uncertainty: forecast.slots[0].uncertainty };
     this.forecastCache = { key, value };
     return value;
   }
@@ -3173,7 +3184,9 @@ export class RaceSimulation {
     }
     if (orderIsActive(pit.activeBoxOrder)) return;
     const lapsToEnd = this.totalLaps - car.currentLap;
-    const depth = this.weatherModel.meanDepth();
+    // [R53] Con la previsión del radar, la IA decide con el agua que habrá en una vuelta, no solo con la de ahora.
+    const rainForecast = this.strategyUsesForecast ? this.getRainForecast() : null;
+    const depth = rainForecast ? anticipatedDepth(this.weatherModel.meanDepth(), rainForecast, STRATEGY.FORECAST_LOOKAHEAD_SEC) : this.weatherModel.meanDepth();
     const compliance = car.tireInventory ? tireCompliance(car.tireInventory, this.circuitId, this.raceFormat !== 'sprint') : { satisfied: true, slickSpecs: [], usedWetWeather: false, setsUsed: 0, setsRequired: 0, warning: null };
     // Agua actual: compuesto claramente mejor para la pista de ahora.
     const current = tyreWaterGrip(car.tires.compound, depth);
@@ -3213,7 +3226,17 @@ export class RaceSimulation {
         }
       }
     }
-    const compound = reason === 'lluvia' || reason === 'pista seca' ? weatherChoice : chooseCompound(lapsToEnd, car.tireInventory, compliance, depth);
+    let compound = reason === 'lluvia' || reason === 'pista seca' ? weatherChoice : chooseCompound(lapsToEnd, car.tireInventory, compliance, depth);
+    // [R53] Con la lluvia encima no se monta seco: se espera para ir directo a intermedios; si el neumático ya no
+    // aguanta, se montan los intermedios en esta parada.
+    if (rainForecast && compound && (reason === 'desgaste' || reason === 'pista seca')
+      && tyreWaterGrip(compound, 1) < tyreWaterGrip('intermediate', 1) && rainImminent(rainForecast, STRATEGY.RAIN_IMMINENT_SEC)) {
+      if (!critical) {
+        this.strategyLog(car, 'aplaza', 'Lluvia inminente: espera para no montar seco', `lluvia-${car.currentLap}`);
+        return;
+      }
+      if (!car.tireInventory || pickSet(car.tireInventory, 'intermediate')) { compound = 'intermediate'; reason = 'lluvia inminente'; }
+    }
     if (compound && this.issueBoxOrder(car.id, compound, 'ai')) {
       st.postponeStartLap = null;
       this.strategyLog(car, 'parada', `${reason}: ${COMPOUND_LABEL[compound]}`);

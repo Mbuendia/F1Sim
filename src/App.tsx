@@ -1155,6 +1155,7 @@ export const App: React.FC = () => {
               overallBestS3={bestS3}
               weather={weather}
               circuit={activeCircuitSpec}
+              rainForecast={simulation.getRainForecast()}
             />
           </div>
         </aside>

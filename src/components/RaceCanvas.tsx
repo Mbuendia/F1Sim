@@ -133,6 +133,9 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
       CarRenderer.renderCars(ctx, frame.cars, camera, selectedCarId, simulation.activeTrack, trackWidthCarsCapacity, frame.safetyCar,
         { depthAt: t => simulation.weatherModel.depthAt(t), timeSec: simulation.raceTimeSec });
 
+      // [R53] Gotas en pantalla según la lluvia de la zona visible (por encima de pista y coches).
+      if (weatherView) WeatherRenderer.renderDrops(ctx, simulation.activeTrack, camera, simulation.weatherModel.rainBySegment(simulation.raceTimeSec), simulation.raceTimeSec);
+
       // ── MINIMAPA A LA IZQUIERDA DEL TODO (visible al seguir un coche) ──
       if (camera.followingCarId !== null) {
         renderLeftMinimap(ctx, simulation, camera, simulation.getRejoinEstimate(camera.followingCarId), weatherView);
