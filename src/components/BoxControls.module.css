@@ -28,6 +28,13 @@
 .orderRow button:first-of-type:hover:not(:disabled) { background:var(--accion-hover); }
 .orderRow button:disabled,.orderRow select:disabled { opacity:.45; cursor:default; }
 .orderRow button:focus-visible,.orderRow select:focus-visible { outline:3px solid var(--foco); outline-offset:2px; }
+/* R57: la orden de boxes va en dos grupos (selector + insignia, botones). Si la columna no da para los dos, los botones
+   bajan juntos a una segunda línea. Ningún botón mide menos de 84 px (el ancho de «Actualizar»), así que BOX y
+   Actualizar ocupan lo mismo y la fila no salta al aceptar la orden. */
+.pilotCard > .orderRow { flex-wrap:wrap; }
+.orderPick,.orderActions { display:flex; gap:6px; align-items:center; flex:1 1 auto; min-width:0; }
+.orderPick select { flex:1 1 auto; }
+.orderActions button { flex:1 1 0; min-width:84px; }
 .message { grid-column:1 / -1; font-size:14px; color:var(--text-2); min-height:18px; }
 .message span { color:#fbbf24; font-weight:700; }
 @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.6; } }

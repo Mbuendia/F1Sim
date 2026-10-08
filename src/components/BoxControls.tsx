@@ -88,22 +88,27 @@ export function BoxControls({ car, simulation, teamCars }: {
                 </div>
               )}
               <PaceControls car={p} simulation={simulation} />
+              {/* [R57] Dos grupos (selección y botones) para que la fila salte de línea entera cuando la columna es estrecha. */}
               <div className={styles.orderRow}>
-                <select aria-label={`Compuesto para ${p.driver.code}`} value={compound}
-                  disabled={!available || locked}
-                  onChange={e => setCompoundFor(p.id, e.target.value as TireCompound)}>
-                  {TIRE_COMPOUNDS.map(c => (
-                    <option key={c} value={c}>{COMPOUND_STYLES[c].letter} · {COMPOUND_STYLES[c].name}</option>
-                  ))}
-                </select>
-                <CompoundBadge compound={compound} size={18} detail="selección para la orden" />
-                <button disabled={!available || locked} onClick={() => {
-                  const issued = simulation.issueBoxOrder(p.id, compound);
-                  setFeedbackFor(p.id, issued ? '' : 'Rechazada');
-                }}>{order?.status === 'accepted' ? 'Actualizar' : 'BOX'}</button>
-                <button disabled={!available || order?.status !== 'accepted'} onClick={() => {
-                  setFeedbackFor(p.id, simulation.cancelBoxOrder(p.id) ? '' : 'No cancelable');
-                }}>Stay out</button>
+                <span className={styles.orderPick}>
+                  <select aria-label={`Compuesto para ${p.driver.code}`} value={compound}
+                    disabled={!available || locked}
+                    onChange={e => setCompoundFor(p.id, e.target.value as TireCompound)}>
+                    {TIRE_COMPOUNDS.map(c => (
+                      <option key={c} value={c}>{COMPOUND_STYLES[c].letter} · {COMPOUND_STYLES[c].name}</option>
+                    ))}
+                  </select>
+                  <CompoundBadge compound={compound} size={18} detail="selección para la orden" />
+                </span>
+                <span className={styles.orderActions}>
+                  <button disabled={!available || locked} onClick={() => {
+                    const issued = simulation.issueBoxOrder(p.id, compound);
+                    setFeedbackFor(p.id, issued ? '' : 'Rechazada');
+                  }}>{order?.status === 'accepted' ? 'Actualizar' : 'BOX'}</button>
+                  <button disabled={!available || order?.status !== 'accepted'} onClick={() => {
+                    setFeedbackFor(p.id, simulation.cancelBoxOrder(p.id) ? '' : 'No cancelable');
+                  }}>Stay out</button>
+                </span>
               </div>
               <div className={styles.message} role="status" aria-live="polite">
                 {feedback || (p.status === 'out' || p.status === 'finished' ? 'No disponible.' : order?.message) ||
