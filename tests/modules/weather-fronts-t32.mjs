@@ -25,6 +25,7 @@ export default async function run({ server, assert, test }) {
   const { radarForecast } = await server.ssrLoadModule('/src/simulation/WeatherForecast.ts');
   const view = await server.ssrLoadModule('/src/renderer/WeatherRenderer.ts');
   const snap = await server.ssrLoadModule('/src/simulation/Snapshot.ts');
+  const positions = await server.ssrLoadModule('/src/utils/carPosition.ts');
   const model = scenario => { const m = new WeatherModel(); m.reset(scenario); return m; };
   const run = (sim, seconds, step = 1 / 60) => { const end = sim.raceTimeSec + seconds; while (sim.raceTimeSec < end - 1e-9) sim.update(step); };
 
@@ -130,6 +131,17 @@ export default async function run({ server, assert, test }) {
 
   await test('T3.2: la trazada seca se pinta', () => {
     assert(view.dryLineOpacity(0.2, 1.5) > 0 && view.dryLineOpacity(1.5, 1.5) === 0 && view.dryLineOpacity(0, 0) === 0 && view.dryLineOpacity(0, 2) > view.dryLineOpacity(1, 2), 'T3.2: la franja de la trazada se aclara según lo seca que esté frente al resto');
+    // Corrección del 08/10/2026: la franja sigue la trazada ideal curva a curva, por donde pasan los coches.
+    const track = make('barcelona', 1).activeTrack, n = track.points.length;
+    const offLine = track.points.map((p, i) => [Math.abs(p.idealLineOffset || 0), i]).sort((a, b) => b[0] - a[0])[0][1];
+    let worst = 0;
+    for (const i of [offLine, 0, Math.floor(n / 3), Math.floor(n / 2)]) {
+      const car = positions.calculateCarWorldPosition({ progress: i / n, isInPitLane: false, lateralOffset: track.points[i].idealLineOffset || 0 }, track);
+      const point = view.dryLinePoint(track, i);
+      worst = Math.max(worst, Math.hypot(point.x - car.worldX, point.y - car.worldY));
+    }
+    const centre = track.points[offLine];
+    assert(worst < 0.01 && Math.hypot(view.dryLinePoint(track, offLine).x - centre.x, view.dryLinePoint(track, offLine).y - centre.y) > 1, 'T3.2: la franja seca va por la trazada ideal, donde ruedan los coches, y no por el centro', `error ${worst.toFixed(4)} m`);
     const sim = make('barcelona', 1);
     sim.setWeatherScenario({ id: 'prueba', cells: [], initialWaterMm: 1.5 });
     const strokes = () => {

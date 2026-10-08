@@ -213,6 +213,55 @@ export default async function run({ server, assert, test }) {
       assert(!restored.pitStop.activeBoxOrder && target.getWallProposals(restored.id).some(p => p.kind === 'parada'), 'R54: tras cargar, el coche sigue siendo del jugador: se propone, no se ejecuta');
     });
 
+    await test('R54: tampoco con pinchazo, neumático destrozado o bandera roja', () => {
+      // Corrección del 08/10/2026: ni siquiera la entrada «forzada» se hace sin el jugador; se propone con urgencia.
+      const urgent = ({ player, delegated = false, puncture }) => {
+        const sim = make('barcelona', 1), car = sim.cars[0], entry = sim.activeTrack.pitEntryT;
+        const t = ((entry - 0.04) % 1 + 1) % 1;
+        Object.assign(car, { progress: 2 + t, trackT: t, currentLap: 2, currentSpeedKmh: 200 });
+        if (puncture) { car.hasPuncture = true; Object.assign(car.tires, { healthFL: 0 }); }
+        else Object.assign(car.tires, { health: 4, healthFL: 4, healthFR: 4, healthRL: 4, healthRR: 4, lapsOnTire: 30 });
+        if (player) sim.setPlayerCars([car.driver.id]);
+        sim.setSeed(54); sim.setFixedStep(0.02);
+        if (delegated) sim.setWallDelegation(car.id, true);
+        let entered = false;
+        const end = car.progress + 0.12;
+        while (car.progress < end && sim.raceTimeSec < 120) { sim.update(1 / 60); entered ||= car.isInPitLane; }
+        return { sim, car, entered };
+      };
+      for (const puncture of [true, false]) {
+        const what = puncture ? 'un pinchazo' : 'el neumático destrozado';
+        const ai = urgent({ player: false, puncture }), mine = urgent({ player: true, puncture }), handed = urgent({ player: true, delegated: true, puncture });
+        const proposal = stops(mine.sim, mine.car)[0];
+        assert(ai.entered && handed.entered, `R54 (preparación): con ${what}, un coche de la IA o uno delegado entra en boxes por su cuenta`);
+        assert(!mine.entered && mine.car.pitStop.totalPitStops === 0 && !mine.car.pitStop.activeBoxOrder, `R54: con ${what}, el coche del jugador no entra en boxes sin su confirmación`);
+        assert(proposal && (puncture ? /pinchazo/i : /destrozado/i).test(proposal.reason) && proposal.compound, `R54: y recibe la propuesta urgente de parar`, JSON.stringify(proposal ?? null));
+        // Aceptarla lo lleva a boxes en la siguiente entrada.
+        mine.sim.acceptWallProposal(mine.car.id, proposal.id);
+        let entered = false;
+        while (!entered && mine.sim.raceTimeSec < 400) { mine.sim.update(1 / 60); entered = mine.car.isInPitLane; }
+        assert(entered, `R54: al aceptarla, entra`);
+      }
+
+      // Bandera roja: a los coches de la IA (y a los delegados) se les cambian los neumáticos gastados; a los del jugador, no.
+      const sim = make('barcelona', 4), L = sim.activeTrack.lapLengthMeters;
+      sim.cars.forEach((c, i) => {
+        const p = 3.3 - i * 70 / L;
+        Object.assign(c, { progress: p, trackT: p % 1, currentLap: 3, currentSpeedKmh: 220 });
+        Object.assign(c.tires, { health: 50, healthFL: 50, healthFR: 50, healthRL: 50, healthRR: 50, lapsOnTire: 12 });
+      });
+      const [aiCar, mine, handed, otherAi] = sim.cars;
+      sim.setPlayerCars([mine.driver.id, handed.driver.id]);
+      sim.setSeed(54); sim.setFixedStep(0.02);
+      sim.setWallDelegation(handed.id, true);
+      run(sim, 2);
+      sim.startRedFlag('Prueba');
+      while (!['aviso', 'reanudacion'].includes(sim.redFlag.phase) && sim.raceTimeSec < 3000) sim.update(1 / 60);
+      assert(aiCar.tires.health > 90 && otherAi.tires.health > 90 && handed.tires.health > 90, 'R54 (preparación): con bandera roja, la IA y el coche delegado cambian los neumáticos gastados',
+        [aiCar, otherAi, handed].map(c => Math.round(c.tires.health)).join(', '));
+      assert(mine.tires.health <= 50 && mine.tires.health > 40, 'R54: al coche del jugador sin delegar no se le cambian solos', String(Math.round(mine.tires.health)));
+    });
+
     await test('R54: propuestas en el muro del jugador', async () => {
       const { WallProposals } = await server.ssrLoadModule('/src/components/WallProposals.tsx');
       const render = props => renderToStaticMarkup(createElement(WallProposals, { onAccept: () => {}, onDiscard: () => {}, onDelegate: () => {}, delegated: false, ...props }));
