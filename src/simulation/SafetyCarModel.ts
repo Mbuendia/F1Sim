@@ -111,6 +111,8 @@ export class SafetyCarModel {
     sc.targetLaps = trackType === 'street' ? 10 : 2 + Math.floor(random() * 2); // 2-3 vueltas
     sc.triggerReason = reason;
     sc.deployedAtRaceTime = raceTimeSec;
+    // [T3.1] Cada despliegue empieza su propio registro de duración.
+    sc.durationLog = [];
   }
 
   /** Velocidad objetivo en pista según el tramo: mira un poco por delante para frenar antes de la curva. */
