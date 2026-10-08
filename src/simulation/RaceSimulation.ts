@@ -35,6 +35,7 @@ import { commitmentT, nextCrossing, orderIsActive, updateOrderCommitment } from 
 import { SafetyCarModel } from './SafetyCarModel';
 import { getScenario } from '../data/scenarioRegistry';
 import type { RunoffSurface, RunoffZone } from '../data/scenarioTypes';
+import { aquaplaningReason, aquaplaningRiskPerSec } from './Aquaplaning';
 import { asphaltLossSec, crashReason, noMinimumText, RUNOFF, safetyCarLaps, surfaceAt } from './Runoff';
 import { RejoinModel } from './RejoinModel';
 import { IncidentModel } from './IncidentModel';
@@ -1453,7 +1454,9 @@ export class RaceSimulation {
         dt,
         RaceSimulation.BASE_LAP_TIME_SEC,
         // [R06] Sentido de la curva y velocidad: carga y temperatura de cada rueda.
-        { turn: trackPoint.turn ?? 0, speedKmh: car.currentSpeedKmh, heat: car.technical?.tyreHeat, wear: car.technical?.tyreWear }
+        { turn: trackPoint.turn ?? 0, speedKmh: car.currentSpeedKmh, heat: car.technical?.tyreHeat, wear: car.technical?.tyreWear,
+          // [T3.3] El agua de la trazada enfría el neumático; sin ella, intermedios y lluvia se destrozan.
+          waterMm: this.weatherModel.depthAt(normalizedT) }
       );
 
 
@@ -1502,6 +1505,22 @@ export class RaceSimulation {
       const lineDepth = this.weatherModel.depthAt(normalizedT), offDepth = this.weatherModel.depthOffAt(normalizedT);
       const offLine = car.isOvertaking || Boolean(car.defence) || (car.blueFlagLevel ?? 0) > 0 || Boolean(car.offTrack);
       const waterDepth = offLine ? offDepth : lineDepth;
+      // [T3.3] Aquaplaning: con un neumático que no evacua el agua que hay, el coche puede irse. Sigue las reglas de
+      // T3.1: en una escapatoria de asfalto se sale y vuelve; en grava, hierba o muro, abandona. En seco no se sortea nada.
+      const aquaplaning = waterDepth > 0 && !car.offTrack && !car.isInPitLane && !car.pitStop.isPitting
+        ? aquaplaningRiskPerSec(car.tires.compound, waterDepth, car.currentSpeedKmh, car.driver.development?.wet) : 0;
+      if (aquaplaning > 0 && random() < aquaplaning * dt) {
+        if (this.crashOutcome(car) === 'salida') this.runWide(car, '💦 AQUAPLANING: SALIDA DE PISTA');
+        else {
+          car.status = 'out';
+          car.dnfReason = aquaplaningReason(this.runoffSurfaceAt(car.trackT));
+          car.isRetiredVisible = true;
+          car.smokeOpacity = 0.4;
+          car.retireTimer = 15 + random() * 10;
+          this.respondToIncident(car, 'crash', leaderCar ? leaderCar.progress : 0);
+          continue;
+        }
+      }
       // [R45] Los puntos de lluvia del piloto recuperan parte de la pérdida de agarre.
       if (waterDepth > 0) effectivePace *= wetGripFactor(tyreWaterGrip(car.tires.compound, waterDepth) / tyreWaterGrip(car.tires.compound, 0), car.driver.development?.wet);
       // [R42] Ritmo propio del coche (neumáticos, chasis, piloto, motor, agua, temperatura y pinchazo), sin los efectos de
@@ -2632,12 +2651,12 @@ export class RaceSimulation {
   }
 
   /** [T3.1] Salida de pista por una escapatoria de asfalto: amarilla local mientras dura, sin neutralización. */
-  private runWide(car: CarState) {
+  private runWide(car: CarState, reason = '↩️ SALIDA DE PISTA') {
     const lossSec = asphaltLossSec(this.stream('escapatorias') ?? random);
     const point = this.activeTrack.points[Math.floor(car.trackT * this.activeTrack.points.length) % this.activeTrack.points.length];
     car.offTrack = { lossSec, lostSec: car.offTrack?.lostSec ?? 0, side: (car.lateralOffset || point?.idealLineOffset || 1) < 0 ? -1 : 1 };
     const incident = IncidentModel.registerIncident(car, 'spin');
-    incident.reason = '↩️ SALIDA DE PISTA';
+    incident.reason = reason;
     incident.surface = 'asphalt';
     // La amarilla dura lo que el coche tarda en volver.
     incident.clearTimer = (lossSec - RUNOFF.REJOIN_SEC) / (1 - RUNOFF.EXCURSION_SPEED_FACTOR) + 2;
