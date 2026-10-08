@@ -6,6 +6,7 @@ import { getPitRoute, isCarVisible } from '../utils/carPosition';
 // ── RENDERIZADO DEL MINIMAPA A LA IZQUIERDA DEL TODO ──
 import { WeatherRenderer } from './WeatherRenderer';
 import type { WeatherLayers } from './WeatherRenderer';
+import { carFlags } from '../simulation/Wall';
 
 export function renderLeftMinimap(
   ctx: CanvasRenderingContext2D,
@@ -86,10 +87,21 @@ export function renderLeftMinimap(
     const cx = mmOffsetX + (car.worldX - b.minX) * mmScale;
     const cy = mmOffsetY + (car.worldY - b.minY) * mmScale;
 
+    // [R24] La misma marca que la torre y el panel: en boxes, atenuado; con el DRS abierto, aro verde.
+    const flags = carFlags(car), radius = car.id === camera.followingCarId ? 4.5 : 2.5;
+    ctx.globalAlpha = flags.inPit ? 0.45 : 1;
     ctx.fillStyle = car.team.color;
     ctx.beginPath();
-    ctx.arc(cx, cy, car.id === camera.followingCarId ? 4.5 : 2.5, 0, Math.PI * 2);
+    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
     ctx.fill();
+    if (flags.drs === 'abierto') {
+      ctx.strokeStyle = '#22c55e';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius + 1.5, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
   }
 
   // [Q13] Marcador de reincorporación estimada: anillo discontinuo con el color del equipo en el punto de pista

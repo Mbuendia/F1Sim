@@ -51,6 +51,9 @@ import { DRIVERS } from './data/drivers';
 import { TEAMS } from './data/teams';
 import { RaceResultHistory, StartLightState, CarState, RaceFlagState, SafetyCarState, DnfNotification, D20LuckEvent, TrackWeatherState } from './types/f1';
 import { RotateCw, ArrowLeft, Camera as CameraIcon, Maximize2, ListOrdered, PanelRight, ZoomIn, ZoomOut } from 'lucide-react';
+import { WallPanel } from './components/WallPanel';
+import { nextAlerts, wallAlerts } from './simulation/Wall';
+import type { WallReading } from './simulation/Wall';
 
 // R32: estado de carrera siempre visible en la barra.
 const FLAG_CHIPS: Record<RaceFlagState, { label: string; className: string }> = {
@@ -616,6 +619,23 @@ export const App: React.FC = () => {
     lastDnfId.current = null;
   }, []);
 
+  // [R24] Avisos del muro para los coches del jugador: por prioridad, como mucho tres a la vez y sin repetirse
+  // mientras dure la causa.
+  const wallActive = useRef(new Set<string>());
+  useEffect(() => {
+    if (currentView !== 'race') { wallActive.current = new Set(); return; }
+    const timer = window.setInterval(() => {
+      if (simulation.lightState !== 'racing' || simulation.isFinished) return;
+      const team = (DRIVERS[selectedDriverId] ?? DRIVERS.alonso).teamId;
+      const readings = simulation.cars.filter(car => DRIVERS[car.driver.id]?.teamId === team && car.status === 'running')
+        .map(car => simulation.getWallReading(car.id)).filter((reading): reading is WallReading => reading !== null);
+      const next = nextAlerts(wallAlerts(readings), wallActive.current);
+      wallActive.current = next.active;
+      for (const alert of next.show) pushNotice(alert.tone, 'Muro', alert.text);
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [currentView, simulation, selectedDriverId, pushNotice]);
+
   // ── [R48] Partidas: ranuras con nombre, autoguardado y carga ──
   const refreshSlots = useCallback(() => setSlots(saveStore ? saveStore.list() : []), [saveStore]);
 
@@ -1123,6 +1143,8 @@ export const App: React.FC = () => {
             </div>
           )}
           <BottomTelemetryDock car={detailCar} onSelectCar={handleSelectCar} compact />
+          {/* [R24] Lectura del muro del coche en detalle. */}
+          <WallPanel reading={detailCar ? simulation.getWallReading(detailCar.id) : null} />
           <div className={styles.detailStats}>
             <RightStatsPanel
               car={selectedCar}

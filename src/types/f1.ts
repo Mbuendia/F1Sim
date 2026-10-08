@@ -376,6 +376,12 @@ export interface CarState {
   drsStatus?: import('../simulation/DRSModel').DrsStatus;
   drsUses?: number;
   drsChangedAt?: number;
+  /** [R24] Cambios de posición con su causa y sus totales, vueltas en cada ritmo (y tiempo de la vuelta en curso) y sanción pendiente. */
+  positionLog?: import('../simulation/Wall').PositionMove[];
+  moves?: import('../simulation/Wall').MoveTotals;
+  paceLaps?: import('../simulation/Wall').PaceLaps;
+  paceLapSec?: import('../simulation/Wall').PaceLaps;
+  penaltyNote?: string | null;
 
   // ── MODELO TERMODINÁMICO CONTINUO ──
   brakeTempCelsius: number;    // 250°C (frío) → 1050°C (frenada extrema)

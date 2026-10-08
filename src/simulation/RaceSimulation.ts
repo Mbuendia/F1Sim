@@ -45,6 +45,9 @@ import type { CarSetup } from './Setup';
 import { availableSets, COMPOUND_LABEL, createInventory, inventoryFromSets, mountSet, pickSet, TireCompliance, tireCompliance } from './TireInventory';
 import type { TireSet } from './TireInventory';
 import { sprintLaps } from './Weekend';
+import { classifyMove, emptyMoves, moveTotals } from './Wall';
+import type { PaceLaps, WallReading } from './Wall';
+import { PROJECTS } from './Development';
 import { localFlagsFrom, LocalFlag, marshalSectorOf, Permissions, permissionsFor } from './RaceControl';
 import { Decision, PenaltyType, Stewards } from './Stewards';
 import { applyAttributes, fitnessNoiseFactor, overtakeAdvantageNeeded, wetGripFactor } from './DriverDevelopment';
@@ -488,6 +491,11 @@ export class RaceSimulation {
     for (const car of this.cars) {
       car.drsUses ??= 0;
       car.drsStatus ??= drsStatus({ open: car.drsActive, block: null, reading: null, closedByBraking: false, thresholdSec: this.drsPermissions.gapThresholdSec });
+      // [R24] Tampoco traen el registro de posiciones ni las vueltas por ritmo.
+      car.positionLog ??= [];
+      car.moves ??= moveTotals(car.positionLog);
+      car.paceLaps ??= { push: 0, balanced: 0, save: 0 };
+      car.paceLapSec ??= { push: 0, balanced: 0, save: 0 };
     }
     this.timing.restore(state.timing);
     this.rawSectors = new Map(state.rawSectors);
@@ -699,6 +707,7 @@ export class RaceSimulation {
         aggression: 'balanced',
         drsActive: false,
         drsEligible: false,
+        positionLog: [], moves: emptyMoves(), paceLaps: { push: 0, balanced: 0, save: 0 }, paceLapSec: { push: 0, balanced: 0, save: 0 }, penaltyNote: null,
         drsUses: 0,
         drsStatus: drsStatus({ open: false, block: null, reading: null, closedByBraking: false, thresholdSec: this.drsPermissions.gapThresholdSec }),
 
@@ -1303,6 +1312,7 @@ export class RaceSimulation {
           : undefined;
         if (pitLapCrossing) {
           car.currentLap = pitLapCrossing.lap;
+          this.countPaceLap(car);
           car.tires.lapsOnTire += 1;
           if (car.lapStartTime > 0) {
             car.lastLapTime = pitLapCrossing.time - car.lapStartTime;
@@ -1347,6 +1357,13 @@ export class RaceSimulation {
 
       const carAhead = car.carAheadId !== null ? fieldById.get(car.carAheadId) ?? null : null;
       const pace = this.getPaceStatus(car.id)!;
+      // [R24] Tiempo de la vuelta en cada ritmo efectivo: al completarla cuenta para el ritmo en que más se rodó.
+      const paceSec = (car.paceLapSec ??= { push: 0, balanced: 0, save: 0 });
+      if (pace.effective in paceSec) paceSec[pace.effective as keyof PaceLaps] += dt;
+      // Sanción pendiente, para la torre, el minimapa y el panel.
+      const pendingPenalty = this.stewards.pending(car.id)[0];
+      const penaltyNote = pendingPenalty ? RaceSimulation.penaltyText(pendingPenalty) : null;
+      if ((car.penaltyNote ?? null) !== penaltyNote) car.penaltyNote = penaltyNote;
       let effectiveEngineMode = 'standard';
       let effectiveAggression = 'balanced';
       switch (pace.effective) {
@@ -1843,6 +1860,7 @@ export class RaceSimulation {
         const expired = this.stewards.onLineCrossing(car.id, this.isNeutralized());
         if (expired) { car.classification = 'DSQ'; car.classificationReason = `${expired.reason}: ${expired.penalty} sin cumplir en plazo`; }
         car.currentLap = currLap;
+        this.countPaceLap(car);
         car.tires.lapsOnTire += 1;
 
         if (car.lapStartTime > 0) {
@@ -1919,13 +1937,13 @@ export class RaceSimulation {
       car.engineTempCelsius = engineTempStep(car.engineTempCelsius, car.engineMode, finalRpm, car.currentSpeedKmh, wake, dt, technical.cooling);
 
       car.stats = {
-        pushLaps: Math.floor(car.currentLap * 0.35),
-        savingLaps: Math.floor(car.currentLap * 0.65),
+        pushLaps: car.paceLaps?.push ?? 0,
+        savingLaps: car.paceLaps?.save ?? 0,
         drsUses: car.drsUses,
         projectedLapsRemainingOnTire: projectedLapsLeft,
         willMakeToEndWithoutPit: projectedLapsLeft >= lapsToEnd,
         optimalPitLap: car.currentLap + projectedLapsLeft,
-        overtakesMade: Math.max(0, car.gridPosition - car.currentPosition),
+        overtakesMade: car.moves?.pista.gained ?? 0,
         brakeTempCelsius: Math.round(car.brakeTempCelsius),
         engineTempCelsius: Math.round(car.engineTempCelsius)
       };
@@ -2240,6 +2258,19 @@ export class RaceSimulation {
         if (other.id !== car.id && distance > 0 && distance < nearestDistance) { nearest = other; nearestDistance = distance; }
       }
       car.physicalAheadId = nearest ? nearest.id : null;
+    }
+
+    // [R24] Cambios de posición de este paso, cada uno con su causa (en pista, por boxes o por abandono).
+    if (sortedAll.some((car, index) => car.currentPosition !== index + 1)) {
+      const newPosition = new Map(sortedAll.map((car, index) => [car.id, index + 1]));
+      for (const gainer of sortedAll) {
+        const now = newPosition.get(gainer.id)!;
+        if (now >= gainer.currentPosition) continue;
+        for (const loser of sortedAll) {
+          if (loser.id === gainer.id || loser.currentPosition > gainer.currentPosition || newPosition.get(loser.id)! < now) continue;
+          this.recordMove(gainer, loser);
+        }
+      }
     }
 
     sortedAll.forEach((car, index) => {
@@ -2998,6 +3029,67 @@ export class RaceSimulation {
     const recommended = tyreCrossover(depthMm);
     const mounted = tyreClassOf(car?.tires.compound ?? 'medium');
     return { recommended, mounted, depthMm, advise: Boolean(car) && car!.status === 'running' && recommended !== mounted };
+  }
+
+  /** [R24] Anota que `gainer` gana el puesto a `loser`. Un puesto devuelto enseguida (los dos en paralelo) se anula. */
+  private recordMove(gainer: CarState, loser: CarState) {
+    const kind = classifyMove(gainer, loser);
+    const gains = (gainer.positionLog ??= []), losses = (loser.positionLog ??= []);
+    const lastGainer = gains[gains.length - 1], lastLoser = losses[losses.length - 1];
+    const gainerTotals = (gainer.moves ??= emptyMoves()), loserTotals = (loser.moves ??= emptyMoves());
+    if (lastGainer && lastLoser && lastGainer.otherCarId === loser.id && lastGainer.delta === -1 && lastLoser.otherCarId === gainer.id && lastLoser.delta === 1
+      && this.raceTimeSec - lastGainer.timeSec < RaceSimulation.MOVE_REVERSAL_SEC) {
+      gains.pop(); losses.pop();
+      gainerTotals[lastGainer.kind].lost--; loserTotals[lastLoser.kind].gained--;
+      return;
+    }
+    gains.push({ timeSec: this.raceTimeSec, lap: gainer.currentLap, kind, delta: 1, otherCarId: loser.id });
+    losses.push({ timeSec: this.raceTimeSec, lap: loser.currentLap, kind, delta: -1, otherCarId: gainer.id });
+    gainerTotals[kind].gained++; loserTotals[kind].lost++;
+  }
+  /** Un puesto recuperado antes de este tiempo no cuenta como dos cambios (s). */
+  static readonly MOVE_REVERSAL_SEC = 3;
+
+  /** [R24] Vuelta completada: cuenta para el ritmo efectivo en que más tiempo se rodó. */
+  private countPaceLap(car: CarState) {
+    const lap = (car.paceLapSec ??= { push: 0, balanced: 0, save: 0 }), laps = (car.paceLaps ??= { push: 0, balanced: 0, save: 0 });
+    const mode = (['push', 'save'] as const).reduce<keyof PaceLaps>((best, candidate) => (lap[candidate] > lap[best] ? candidate : best), 'balanced');
+    laps[mode]++;
+    car.paceLapSec = { push: 0, balanced: 0, save: 0 };
+  }
+
+  private static penaltyText(decision: Decision): string {
+    const label: Record<PenaltyType, string> = { 'time-5': '5 s', 'time-10': '10 s', 'drive-through': 'Drive-through', 'stop-go': 'Stop-and-go', dsq: 'Descalificación' };
+    return `${label[decision.penalty]}: ${decision.reason.charAt(0).toLowerCase()}${decision.reason.slice(1)}`;
+  }
+
+  /** [R24] Lectura del muro de un coche: cada cifra es la del motor (huecos, DRS, energía, combustible, neumáticos, sanciones y mejoras). */
+  getWallReading(carId: number): WallReading | null {
+    const car = this.getCarById(carId);
+    if (!car) return null;
+    const ahead = car.carAheadId !== null ? this.getCarById(car.carAheadId) : undefined;
+    const behind = this.cars.find(other => other.carAheadId === car.id && other.status !== 'out');
+    const perLap = RejoinModel.lapFuelKg(this.activeTrack, car);
+    const lapsOfFuel = perLap > 0 ? car.fuelKg / perLap : 0, lapsToGo = Math.max(0, this.totalLaps - car.progress);
+    const compliance = this.getTireCompliance(car.id), inventory = car.tireInventory;
+    const sets = (compound: TireCompound) => (inventory ? availableSets(inventory, compound) : 0);
+    const ruleWarning = compliance.satisfied ? null
+      : compliance.slickSpecs.length < 2 && !compliance.usedWetWeather ? 'Aún tiene que usar otro compuesto de seco'
+      : `Aún tiene que usar ${compliance.setsRequired - compliance.setsUsed} juego(s) más`;
+    return {
+      carId: car.id, code: car.driver.code, position: car.currentPosition,
+      gapAheadSec: ahead ? car.gapToCarAheadSec : null, aheadCode: ahead ? ahead.driver.code : null,
+      gapBehindSec: behind ? behind.gapToCarAheadSec : null, behindCode: behind ? behind.driver.code : null,
+      drs: car.drsStatus, drsUses: car.drsUses ?? 0,
+      energy: { storedMJ: car.energy?.storedMJ ?? 0, percent: car.telemetry.batterySoc, recoveredLapMJ: car.energy?.recoveredMJ ?? 0, deployedLapMJ: car.energy?.deployedMJ ?? 0 },
+      fuel: { kg: car.fuelKg, lapsOfFuel, lapsToGo, reserveLaps: lapsOfFuel - lapsToGo },
+      tyres: { compound: car.tires.compound, health: car.tires.health, available: { soft: sets('soft'), medium: sets('medium'), hard: sets('hard') }, ruleWarning },
+      vscDeltaSec: typeof car.vscDeltaSec === 'number' ? car.vscDeltaSec : null,
+      penalties: this.stewards.pending(car.id).map(decision => RaceSimulation.penaltyText(decision)),
+      upgrades: (this.technicalUpgrades[car.driver.id] ?? []).map(key => PROJECTS[key]?.label ?? key),
+      moves: car.moves ?? emptyMoves(), paceLaps: car.paceLaps ?? { push: 0, balanced: 0, save: 0 },
+      pit: car.isInPitLane || car.pitStop.isPitting,
+    };
   }
 
   /** [R04] Por qué no puede usarse el DRS ahora mismo (Dirección de Carrera o primera vuelta), o null si puede. */
