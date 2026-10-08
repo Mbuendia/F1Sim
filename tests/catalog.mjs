@@ -534,5 +534,7 @@ export const modules = [
   { "id": "rain-forecast-r53", "tasks": ["R53"], "sprint": "2.11", "kind": "contract" },
   { "id": "wall-proposals-r54", "tasks": ["R54"], "sprint": "2.11", "kind": "contract" },
   { "id": "runoff-t31", "tasks": ["T3.1"], "sprint": "3", "kind": "contract" },
-  { "id": "weather-fronts-t32", "tasks": ["T3.2"], "sprint": "3", "kind": "contract" }
+  { "id": "weather-fronts-t32", "tasks": ["T3.2"], "sprint": "3", "kind": "contract" },
+  { "id": "tyre-water-t33", "tasks": ["T3.3"], "sprint": "3", "kind": "contract" },
+  { "id": "spray-particles-t34", "tasks": ["T3.4"], "sprint": "3", "kind": "contract" }
 ];

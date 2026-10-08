@@ -17,6 +17,8 @@ export interface TireContext {
   /** [R17] Calentamiento y desgaste del chasis (1 = referencia). */
   heat?: number;
   wear?: number;
+  /** [T3.3] Agua que pisa el neumático (mm): lo enfría, y su falta castiga a intermedios y lluvia. */
+  waterMm?: number;
 }
 
 export class TireModel {
@@ -43,6 +45,20 @@ export class TireModel {
   static tempWearFactor(compound: TireCompound, tempC: number): number {
     const { max } = this.TEMP_WINDOW[compound] ?? this.TEMP_WINDOW.medium;
     return tempC > max ? 1 + (tempC - max) * 0.04 : 1;
+  }
+
+  /** [T3.3] Grados que el agua enfría un neumático: 14 °C por mm, hasta 40 °C (calibración del juego). */
+  static waterCooling(waterMm: number): number {
+    return Math.min(40, 14 * Math.max(0, waterMm));
+  }
+
+  /**
+   * [T3.3] Desgaste añadido de un neumático con dibujo (intermedio o lluvia) sobre asfalto sin agua que lo refrigere:
+   * máximo en seco y nulo a partir de 1 mm. Los slicks no lo sufren. Calibración del juego.
+   */
+  static dryTreadWearFactor(compound: TireCompound, waterMm: number): number {
+    const extra = compound === 'intermediate' ? 3.7 : compound === 'wet' ? 5 : 0;
+    return 1 + extra * Math.max(0, 1 - Math.max(0, waterMm));
   }
 
   /** Reparto de carga por rueda (media 1): en curva a derechas cargan las izquierdas, y al revés. */
@@ -241,14 +257,17 @@ export class TireModel {
       const modeHeat = (engineMode === 'push' ? 6 : engineMode === 'overtake' ? 10 : engineMode === 'low' ? -5 : 0)
         + (aggression === 'maximum' ? 8 : aggression === 'aggressive' ? 5 : aggression === 'conservative' ? -4 : 0);
       const airCooling = Math.min(1, context.speedKmh / 300) * 8;
+      // [T3.3] Sin dato de agua (firma anterior) no hay enfriamiento ni castigo: todo queda como estaba.
+      const waterCooling = context.waterMm === undefined ? 0 : this.waterCooling(context.waterMm);
+      const dryTread = context.waterMm === undefined ? 1 : this.dryTreadWearFactor(tires.compound, context.waterMm);
       let gripSum = 0;
       for (const { wheel, temp: tempKey, health: healthKey } of WHEEL_KEYS) {
         const current = tires[tempKey] ?? tires.tempCelsius;
-        const target = 103 + modeHeat + 30 * cornering * (loads[wheel] - 0.7) - airCooling;
+        const target = 103 + modeHeat + 30 * cornering * (loads[wheel] - 0.7) - airCooling - waterCooling;
         const temp = current + (target - current) * Math.min(1, dt / 12 * (context.heat ?? 1));
         tires[tempKey] = temp;
         // [R47] Las curvas rápidas (que ya no cuentan como «curva lenta») también cargan la rueda exterior.
-        const wheelWear = deltaWear * (isCornering || cornering > 0.1 ? loads[wheel] : 1) * this.tempWearFactor(tires.compound, temp) * (context.wear ?? 1);
+        const wheelWear = deltaWear * (isCornering || cornering > 0.1 ? loads[wheel] : 1) * this.tempWearFactor(tires.compound, temp) * (context.wear ?? 1) * dryTread;
         tires[healthKey] = Math.max(0, (tires[healthKey] as number) - wheelWear);
         gripSum += this.tempGripFactor(tires.compound, temp);
       }

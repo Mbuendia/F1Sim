@@ -7,6 +7,7 @@ import { CarRenderer } from '../renderer/CarRenderer';
 import { renderLeftMinimap } from '../renderer/MinimapRenderer';
 import { RenderInterpolator } from '../renderer/RenderPose';
 import { WeatherRenderer, weatherLayers } from '../renderer/WeatherRenderer';
+import { SpraySystem } from '../renderer/SprayParticles';
 import { OFFICIAL_CIRCUITS } from '../data/circuits';
 import { supportsWebGL } from './CarShowcase';
 import { Compass, RotateCw } from 'lucide-react';
@@ -25,6 +26,8 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
   onSelectCar
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  // [T3.4] Partículas de spray de esta vista.
+  const spray = useRef(new SpraySystem());
   const isDraggingRef = useRef(false);
   const dragButtonRef = useRef<number>(0);
   const dragStartPosRef = useRef({ x: 0, y: 0 });
@@ -119,7 +122,9 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
       // [R44] Pista mojada por tramo, radar de lluvia y spray (antes de los coches y sus etiquetas).
       const weatherView = weatherLayers(simulation.weatherModel, simulation.raceTimeSec);
       WeatherRenderer.render(ctx, simulation.activeTrack, camera, weatherView, simulation.raceTimeSec);
-      if (weatherView) WeatherRenderer.renderSpray(ctx, frame.cars, camera, t => simulation.weatherModel.depthAt(t));
+      // [T3.4] Spray con partículas: se emite con el tiempo de carrera y se pinta antes que los coches.
+      spray.current.update(frame.cars, t => simulation.weatherModel.depthAt(t), simulation.raceTimeSec);
+      spray.current.render(ctx, camera, simulation.raceTimeSec);
 
       if (frame.safetyCar?.isDeployed && !safetyCarImageRequested) {
         safetyCarImageRequested = true;
