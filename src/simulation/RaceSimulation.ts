@@ -655,7 +655,7 @@ export class RaceSimulation {
     this.weatherVsc = false;
     this.weatherDisplayTick = -1;
     this.forecastCache = null;
-    Object.assign(this.weather, { condition: 'dry', conditionLabel: 'SECO / DESPEJADO', waterDepthMm: 0, waterPercentage: 0, gripMultiplier: 1, rainProbabilityPct: 4 });
+    Object.assign(this.weather, { condition: 'dry', conditionLabel: 'SECO / DESPEJADO', waterDepthMm: 0, waterPercentage: 0, gripMultiplier: 1, rainProbabilityPct: 4, cloudCoverPct: 0 });
     this.scEndingLap = null; // [FIX C5] Reset scEndingLap en cada nueva carrera
 
     // [R49] Quien sale desde el pit lane deja su puesto: la parrilla se cierra y esos coches quedan al final.
@@ -1495,7 +1495,11 @@ export class RaceSimulation {
         enginePerf.speedFactor * 
         raceDayVariance;
       // [R22] Agua del tramo: agarre del compuesto montado relativo a su agarre en seco (el seco ya lo da TireModel).
-      const waterDepth = this.weatherModel.depthAt(normalizedT);
+      // [T3.2] En la trazada, el agua que los coches van secando; quien se sale de ella para adelantar, defenderse o
+      // apartarse pisa la del resto del asfalto.
+      const lineDepth = this.weatherModel.depthAt(normalizedT), offDepth = this.weatherModel.depthOffAt(normalizedT);
+      const offLine = car.isOvertaking || Boolean(car.defence) || (car.blueFlagLevel ?? 0) > 0 || Boolean(car.offTrack);
+      const waterDepth = offLine ? offDepth : lineDepth;
       // [R45] Los puntos de lluvia del piloto recuperan parte de la pérdida de agarre.
       if (waterDepth > 0) effectivePace *= wetGripFactor(tyreWaterGrip(car.tires.compound, waterDepth) / tyreWaterGrip(car.tires.compound, 0), car.driver.development?.wet);
       // [R42] Ritmo propio del coche (neumáticos, chasis, piloto, motor, agua, temperatura y pinchazo), sin los efectos de
@@ -1739,7 +1743,10 @@ export class RaceSimulation {
       // (que ya incluye DRS y rebufo), con tope para que dos coches iguales no se pasen solo con las ayudas. Con una
       // diferencia enorme (pinchazo, avería) se pasa en cualquier punto. Umbrales: calibración del juego.
       const OT = RaceSimulation.OVERTAKE;
-      const paceAdvantage = carAhead ? paceIndex / Math.max(1e-6, carAhead.paceIndex) - 1 : 0;
+      // [T3.2] Para pasar hay que salirse de la trazada: quien aún va por ella cuenta con el agarre que tendrá fuera.
+      const offLineGrip = offLine || offDepth === lineDepth ? 1
+        : Math.min(1, tyreWaterGrip(car.tires.compound, offDepth) / tyreWaterGrip(car.tires.compound, lineDepth));
+      const paceAdvantage = carAhead ? paceIndex * offLineGrip / Math.max(1e-6, carAhead.paceIndex) - 1 : 0;
       const closingKmh = carAhead ? car.currentSpeedKmh - carAhead.currentSpeedKmh : 0;
       // [R50] Un coche retenido detrás rueda al 99 % del de delante y nunca «se acerca»: basta con que no pierda terreno.
       const hasOvertakePace = closingKmh > -OT.HELD_TOLERANCE * car.currentSpeedKmh
@@ -3098,14 +3105,20 @@ export class RaceSimulation {
   }
 
   // ── EVOLUCIÓN DINÁMICA DE CONDICIONES DE PISTA & CLIMA ──
+  /** [T3.2] Grados que baja el asfalto y el aire con el cielo cubierto (calibración del juego). */
+  static readonly CLOUD_TRACK_COOLING_C = 6;
+  static readonly CLOUD_AIR_COOLING_C = 2;
+
   updateWeather(dt: number) {
     // Evolución sutil y continua de temperatura de asfalto y viento
     const tempOscillation = Math.sin(this.raceTimeSec * 0.05) * 1.5;
-    this.weather.trackTempCelsius = Math.round((38.5 + tempOscillation) * 10) / 10;
-    this.weather.airTempCelsius = Math.round((24.2 + tempOscillation * 0.4) * 10) / 10;
+    // [T3.2] Las nubes enfrían el asfalto y algo el aire; sin nubes, la temperatura es la de siempre.
+    const wm = this.weatherModel;
+    const cloud = wm.cloudCoverAt(this.raceTimeSec);
+    this.weather.trackTempCelsius = Math.round((38.5 + tempOscillation - RaceSimulation.CLOUD_TRACK_COOLING_C * cloud) * 10) / 10;
+    this.weather.airTempCelsius = Math.round((24.2 + tempOscillation * 0.4 - RaceSimulation.CLOUD_AIR_COOLING_C * cloud) * 10) / 10;
     this.weather.windSpeedKmh = Math.round((14.0 + Math.cos(this.raceTimeSec * 0.08) * 3.5) * 10) / 10;
     // [R22] Agua por tramo, secado y visibilidad; el estado visible sale de la misma fuente.
-    const wm = this.weatherModel;
     wm.step(this.raceTimeSec, dt, this.weather.trackTempCelsius, this.cars.filter(c => c.status === 'running' && !c.isInPitLane).map(c => c.trackT));
     this.applyWeatherSafety();
     // El estado visible (textos y porcentajes) se refresca cada medio segundo simulado; la física usa el modelo directamente.
@@ -3116,7 +3129,8 @@ export class RaceSimulation {
     this.weather.waterDepthMm = Math.round(mean * 100) / 100;
     this.weather.waterPercentage = Math.round(Math.min(100, mean / 2 * 100));
     this.weather.gripMultiplier = Math.round(tyreWaterGrip('medium', mean) * 100) / 100;
-    const [condition, label] = rain <= 0 ? (mean > 0.05 ? ['dry', 'SECÁNDOSE'] : ['dry', 'SECO / DESPEJADO'])
+    this.weather.cloudCoverPct = Math.round(cloud * 100);
+    const [condition, label] = rain <= 0 ? (mean > 0.05 ? ['dry', 'SECÁNDOSE'] : cloud >= 0.7 ? ['dry', 'NUBLADO'] : cloud >= 0.2 ? ['dry', 'NUBES Y CLAROS'] : ['dry', 'SECO / DESPEJADO'])
       : rain < 2.5 ? ['drizzle', 'LLOVIZNA'] : rain < 10 ? ['rain', 'LLUVIA'] : rain < 30 ? ['heavy_rain', 'LLUVIA FUERTE'] : ['storm', 'TORMENTA'];
     this.weather.condition = condition as TrackWeatherState['condition'];
     this.weather.conditionLabel = label;

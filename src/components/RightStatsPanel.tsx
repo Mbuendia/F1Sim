@@ -598,7 +598,7 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
             </div>
 
             {/* [R53] Cuándo y dónde se espera la lluvia. */}
-            <RainForecastPanel forecast={rainForecast} />
+            <RainForecastPanel forecast={rainForecast} cloudCoverPct={weather.cloudCoverPct ?? 0} />
 
             {/* Tactical Tire Suggestion */}
             <div className={styles.strategyRecBox} style={{ borderColor: rainRec.col, background: `${rainRec.col}15` }}>

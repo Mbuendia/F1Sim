@@ -505,6 +505,8 @@ export interface TrackWeatherState {
   forecast5Min: string;
   forecast15Min: string;
   rainProbabilityPct: number;
+  /** [T3.2] Nubosidad (0-100 %). */
+  cloudCoverPct?: number;
 }
 
 // ── EVENTO TÁCTICO DADO D20 (SAFETY CAR & BANDERA ROJA) ──

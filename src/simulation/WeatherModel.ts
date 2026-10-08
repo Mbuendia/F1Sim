@@ -13,6 +13,19 @@ export interface RainCell {
   rateMmH: number;
   /** Desplazamiento del centro (fracción de vuelta por segundo). */
   driftTPerSec?: number;
+  /** [T3.2] Segundos que tarda en llegar a su intensidad y en aflojar hasta cesar (0 o ausente: de golpe). */
+  rampUpSec?: number;
+  rampDownSec?: number;
+  /** [T3.2] Borde de la celda (fracción de vuelta) en el que la lluvia se desvanece; 0 o ausente: borde seco. */
+  edgeT?: number;
+}
+
+/** [T3.2] Banco de nubes: cubre el cielo (0..1) entre dos instantes, llegando y yéndose en `rampSec`. */
+export interface CloudBank {
+  startSec: number;
+  endSec: number;
+  cover: number;
+  rampSec: number;
 }
 
 export interface WeatherScenario {
@@ -20,6 +33,35 @@ export interface WeatherScenario {
   cells: RainCell[];
   /** [R44] Agua en toda la pista al empezar (mm): salida en mojado. */
   initialWaterMm?: number;
+  /** [T3.2] Nubes del escenario (las que traen lluvia y las que pasan sin llover). */
+  clouds?: CloudBank[];
+}
+
+/** [T3.2] Fracción de la intensidad de una celda en `timeSec` (0..1): sube en su rampa inicial y baja en la final. */
+export function rainRamp(startSec: number, endSec: number, rampUpSec: number | undefined, rampDownSec: number | undefined, timeSec: number): number {
+  if (timeSec < startSec || timeSec >= endSec) return 0;
+  const up = rampUpSec && rampUpSec > 0 ? Math.min(1, (timeSec - startSec) / rampUpSec) : 1;
+  const down = rampDownSec && rampDownSec > 0 && Number.isFinite(endSec) ? Math.min(1, (endSec - timeSec) / rampDownSec) : 1;
+  return Math.min(up, down);
+}
+
+/** [T3.2] Fracción de la intensidad de una celda a `distanceT` de su centro (0..1): se desvanece en su borde. */
+export function rainReach(cell: Pick<RainCell, 'widthT' | 'edgeT'>, distanceT: number): number {
+  if (cell.widthT >= 1) return 1;
+  const inside = cell.widthT / 2 - distanceT;
+  if (inside < 0) return 0;
+  return cell.edgeT && cell.edgeT > 0 ? Math.min(1, inside / cell.edgeT) : 1;
+}
+
+/** [T3.2] Nubosidad (0..1) de un escenario en `timeSec`: el banco que más cubre en ese momento. */
+export function cloudCover(clouds: CloudBank[] | undefined, timeSec: number): number {
+  let cover = 0;
+  for (const bank of clouds ?? []) {
+    if (timeSec <= bank.startSec || timeSec >= bank.endSec) continue;
+    const edge = bank.rampSec > 0 ? Math.min(1, (timeSec - bank.startSec) / bank.rampSec, (bank.endSec - timeSec) / bank.rampSec) : 1;
+    cover = Math.max(cover, Math.min(1, Math.max(0, bank.cover)) * edge);
+  }
+  return cover;
 }
 
 export const DRY_SCENARIO: WeatherScenario = { id: 'seco', cells: [] };
@@ -65,6 +107,8 @@ export function tyreCrossover(depthMm: number): TyreClass {
 export interface WeatherModelState {
   scenario: WeatherScenario;
   water: number[];
+  /** [T3.2] Agua fuera de la trazada por tramo; ausente en las partidas anteriores (se lee igual que `water`). */
+  waterOff?: number[];
   visibility: number;
   dry: boolean;
   rainNowMmH: number;
@@ -78,7 +122,10 @@ export const DRY_WEATHER_STATE = (): WeatherModelState => ({
 
 export class WeatherModel {
   scenario: WeatherScenario = DRY_SCENARIO;
+  /** Agua en la trazada por tramo (mm): la que pisan los coches y la que usan la estrategia y Dirección de Carrera. */
   water: number[] = new Array(SEGMENTS).fill(0);
+  /** [T3.2] Agua fuera de la trazada por tramo (mm): llueve igual, pero los coches no la secan. */
+  waterOff: number[] = new Array(SEGMENTS).fill(0);
   visibility = 1;
   /** Pista completamente seca (activa la vía rápida si el escenario no tiene lluvia). */
   private dry = true;
@@ -94,6 +141,7 @@ export class WeatherModel {
     this.scenario = scenario;
     const initial = Math.min(MAX_WATER_MM, Math.max(0, scenario.initialWaterMm ?? 0));
     this.water = new Array(SEGMENTS).fill(initial);
+    this.waterOff = new Array(SEGMENTS).fill(initial);
     this.visibility = 1;
     this.dry = initial === 0;
     this.rainNowMmH = 0;
@@ -102,7 +150,8 @@ export class WeatherModel {
 
   serialize(): WeatherModelState {
     return {
-      scenario: { ...this.scenario, cells: this.scenario.cells.map(c => ({ ...c })) }, water: [...this.water], visibility: this.visibility,
+      scenario: { ...this.scenario, cells: this.scenario.cells.map(c => ({ ...c })), ...(this.scenario.clouds ? { clouds: this.scenario.clouds.map(c => ({ ...c })) } : {}) },
+      water: [...this.water], waterOff: [...this.waterOff], visibility: this.visibility,
       dry: this.dry, rainNowMmH: this.rainNowMmH,
       history: { count: this.historyCount, index: this.historyIndex, sum: this.historySum, values: this.history.some(v => v !== 0) ? Array.from(this.history) : null },
     };
@@ -111,6 +160,7 @@ export class WeatherModel {
   restore(state: WeatherModelState) {
     this.scenario = { ...state.scenario, cells: state.scenario.cells.map(c => ({ ...c })) };
     this.water = [...state.water];
+    this.waterOff = [...(state.waterOff ?? state.water)];
     this.visibility = state.visibility;
     this.dry = state.dry;
     this.rainNowMmH = state.rainNowMmH;
@@ -125,9 +175,14 @@ export class WeatherModel {
       if (timeSec < c.startSec || timeSec >= c.endSec) continue;
       const center = normalize(c.centerT + (c.driftTPerSec ?? 0) * (timeSec - c.startSec));
       const d = Math.abs(normalize(t - center + 0.5) - 0.5);
-      if (c.widthT >= 1 || d <= c.widthT / 2) rate += c.rateMmH;
+      rate += c.rateMmH * rainReach(c, d) * rainRamp(c.startSec, c.endSec, c.rampUpSec, c.rampDownSec, timeSec);
     }
     return rate;
+  }
+
+  /** [T3.2] Nubosidad (0..1) en ese instante de la carrera. */
+  cloudCoverAt(timeSec: number): number {
+    return cloudCover(this.scenario.clouds, timeSec);
   }
 
   /** Avanza `dt` s: lluvia por tramo, secado con temperatura y tráfico, visibilidad. */
@@ -146,12 +201,16 @@ export class WeatherModel {
     for (let i = 0; i < SEGMENTS; i++) {
       const rate = this.rainRateAt((i + 0.5) / SEGMENTS, timeSec);
       rainSum += rate; rainMax = Math.max(rainMax, rate);
-      const drying = DRY_MM_PER_SEC * (1 + Math.max(0, (trackTempC - 20) / 20)) * (1 + 0.5 * Math.min(4, traffic[i]));
+      const baseDrying = DRY_MM_PER_SEC * (1 + Math.max(0, (trackTempC - 20) / 20));
+      const drying = baseDrying * (1 + 0.5 * Math.min(4, traffic[i]));
       const next = this.water[i] + rate / 3600 * dt - (rate > 0 ? 0 : drying * dt);
       this.water[i] = Math.min(MAX_WATER_MM, Math.max(0, next));
+      // [T3.2] Fuera de la trazada llueve igual, pero el paso de los coches no ayuda a secar.
+      const nextOff = this.waterOff[i] + rate / 3600 * dt - (rate > 0 ? 0 : baseDrying * dt);
+      this.waterOff[i] = Math.min(MAX_WATER_MM, Math.max(0, nextOff));
     }
     this.rainNowMmH = rainSum / SEGMENTS;
-    this.dry = this.water.every(w => w === 0);
+    this.dry = this.water.every(w => w === 0) && this.waterOff.every(w => w === 0);
     this.visibility = Math.max(0.05, 1 - rainMax / VISIBILITY_RAIN_MM_H);
     this.historySum += this.rainNowMmH - this.history[this.historyIndex];
     this.history[this.historyIndex] = this.rainNowMmH;
@@ -175,6 +234,15 @@ export class WeatherModel {
 
   depthAt(t: number): number {
     return this.water[Math.floor(normalize(t) * SEGMENTS) % SEGMENTS];
+  }
+
+  /** [T3.2] Agua fuera de la trazada en ese punto (mm). */
+  depthOffAt(t: number): number {
+    return this.waterOff[Math.floor(normalize(t) * SEGMENTS) % SEGMENTS];
+  }
+
+  offLineWaterBySegment(): readonly number[] {
+    return this.waterOff;
   }
 
   meanDepth(): number {
