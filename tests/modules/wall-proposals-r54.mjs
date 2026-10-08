@@ -159,6 +159,13 @@ export default async function run({ server, assert, test }) {
       assert(accept.sim.acceptWallProposal(accept.mine.id, proposal.id) && accept.mine.paceMode === 'push' && accept.mine.paceByPlayer === true && paces(accept.sim, accept.mine).length === 0,
         'R54: aceptar la propuesta de ritmo lo cambia como una orden del jugador');
 
+      // Con la carrera neutralizada no se propone atacar (corrección del 08/10/2026, vista en la revisión de T3.1).
+      const neutral = duel();
+      neutral.sim.deploySafetyCar('Prueba');
+      let attackProposed = false;
+      while (neutral.sim.raceTimeSec < 5) { neutral.sim.update(1 / 60); attackProposed ||= paces(neutral.sim, neutral.mine).some(p => p.paceMode === 'push'); }
+      assert(neutral.sim.raceFlagState === 'sc' && !attackProposed, 'R54: con Safety Car no se propone atacar');
+
       const alone = duel({ gapM: 900 });
       run(alone.sim, 2);
       assert(paces(alone.sim, alone.mine).length === 0, 'R54: sin rivales cerca y con el ritmo normal, no se propone nada');

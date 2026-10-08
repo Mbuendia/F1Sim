@@ -3315,7 +3315,9 @@ export class RaceSimulation {
   private proposePace(car: CarState, fuelShort: boolean) {
     const ahead = car.carAheadId !== null ? this.getCarById(car.carAheadId) : undefined;
     const behind = this.cars.find(other => other.carAheadId === car.id && other.status === 'running');
-    const racing = (other: CarState | undefined): other is CarState => Boolean(other && other.status === 'running' && !other.isInPitLane);
+    // Con la carrera neutralizada (Safety Car, VSC) no hay a quién atacar ni de quién defenderse.
+    const neutralized = this.permissionsForCar(car).neutralized;
+    const racing = (other: CarState | undefined): other is CarState => Boolean(!neutralized && other && other.status === 'running' && !other.isInPitLane);
     const wanted = paceProposal({
       fuelShort, batteryPercent: car.energy ? car.energy.storedMJ * 25 : car.telemetry.batterySoc,
       gapAheadSec: racing(ahead) ? car.gapToCarAheadSec : null, aheadCode: racing(ahead) ? ahead.driver.code : null,
