@@ -3411,9 +3411,11 @@ export class RaceSimulation {
    * [R54] Deja la parada que quiere el estratega como propuesta: la que ya está pendiente se conserva, la que deja de
    * tener sentido se retira y la que el jugador descartó no vuelve hasta la vuelta siguiente.
    */
-  private proposeStop(car: CarState, decision: { compound: TireCompound; text: string } | null) {
+  private proposeStop(car: CarState, decision: { compound: TireCompound; reason: string; text: string } | null) {
     const pending = car.wallProposals ?? [];
-    const key = decision ? `parada:${decision.compound}` : null;
+    // Una parada urgente (pinchazo, neumático destrozado) es otra propuesta: sustituye a la que hubiera y se avisa.
+    const urgent = decision !== null && (decision.reason === 'pinchazo' || decision.reason === 'neumático destrozado');
+    const key = decision ? `parada:${decision.compound}${urgent ? ':urgente' : ''}` : null;
     if (pending.some(proposal => proposal.kind === 'parada' && proposal.key !== key)) car.wallProposals = pending.filter(proposal => proposal.kind !== 'parada' || proposal.key === key);
     if (!decision || !key || car.wallProposals?.some(proposal => proposal.key === key)) return;
     const discardedLap = car.wallDiscarded?.[key];
