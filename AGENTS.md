@@ -45,7 +45,9 @@ Los filtros se intersectan. Una selección desconocida o vacía, una excepción 
 ## Flujo de trabajo (DASHBOARD.md)
 
 - `DASHBOARD.md` es la fuente de verdad del roadmap: sprints, IDs de tarea (Q*, R*, C*/A*/M*/B*, MOB*), casillas de estado y la línea `**Orden vigente:**`. `scripts/sync-task-index.mjs` parsea esos patrones exactos: al cambiar tareas, conserva el formato, actualiza DASHBOARD.md e index.html en el mismo cambio y ejecuta `npm run sync:tasks`.
-- Cada sprint tiene su rama (`sprint/2.8`, `sprint/2.9`…). Trabaja en la rama del sprint en curso. `main` despliega a GitHub Pages (`.github/workflows/deploy.yml`).
+- Cada sprint tiene su rama (`sprint/2.8`, `sprint/2.9`…). Trabaja en la rama del sprint en curso y llévala a `main` con un pull request por sprint cuando el usuario lo pida; al cerrar un sprint su rama se elimina. `main` despliega a GitHub Pages (`.github/workflows/deploy.yml`).
+- La línea `**Orden vigente:**` necesita dos IDs de tarea que existan en el dashboard (actual y siguiente): con un guion u otro texto, `sync:tasks` y `npm run build` fallan.
+- Una tarea entregada queda `[ ] EN REVISIÓN LOCAL — IMPLEMENTADO dd/mm/aaaa CON CONTRATO DE TESTS ACORDADO` con su nota de entrega; solo pasa a `[x] COMPLETADO — …` cuando el usuario dice que la da por revisada.
 - Leyes del dashboard que afectan al código: el usuario es el director de equipo (sin controles de conducción manual); nada de teletransportar coches, porque todo movimiento sale de velocidad/`progress`/`trackT`; no mutar arrays de estado in-place (p. ej. `this.cars.sort`); al escalar banderas SC/VSC/roja hay que limpiar los temporizadores previos.
 
 ## Arquitectura
@@ -54,6 +56,7 @@ Los filtros se intersectan. Una selección desconocida o vacía, una excepción 
 - **Doble bucle**: `App.tsx` crea una única `RaceSimulation` y una `Camera` con `useMemo` y copia su estado a React con `setInterval` (UI a ~15 FPS). `components/RaceCanvas.tsx` ejecuta el bucle `requestAnimationFrame` que avanza la simulación y dibuja en Canvas 2D mediante `src/renderer/` (Track, Car, CarLabels, Minimap, Camera).
 - **Geometría**: `utils/svgTrackParser.ts` convierte los SVG de `public/circuits/` y `data/svgTrackPaths.json` en splines (`utils/spline.ts`). `racingLine.ts`, `pitLaneGeometry.ts`, `carPosition.ts` y `scenarioGeometry.ts` pasan de `trackT` a coordenadas del mundo.
 - **Datos (`src/data/`)**: `circuits.ts`, `drivers.ts` y `teams.ts` son estáticos. Los escenarios visuales por circuito (escapatorias, pianos, barreras; tipos en `scenarioTypes.ts`) se resuelven con `getScenario(id)` en `scenarioRegistry.ts`: Barcelona y Mónaco son explícitos, el resto viene de `scenarioCalendar.ts` y cualquier otro usa `scenarioDefault`.
+- **Módulos añadidos en los sprints 2.11 y 3**: `Wall.ts` (lectura, avisos y propuestas del muro), `Season.ts` y `Weekend.ts` (temporada y fin de semana sprint), `WeatherForecast.ts` (radar), `Runoff.ts` (superficie del punto de un incidente y vueltas de Safety Car), `Aquaplaning.ts`, y en `src/renderer/` `signals.ts`, `carSprites*.ts` y `SprayParticles.ts`. El agua se lleva en la trazada (`water`) y fuera de ella (`waterOff`) en `WeatherModel`.
 - **UI**: componentes React 19 con CSS Modules (`*.module.css`); iconos de `lucide-react`; `animejs` para animaciones y `three` para `F1Wheel3D`. La UI y los textos del juego están en español.
 
 ## Tests
@@ -63,3 +66,24 @@ Los filtros se intersectan. Una selección desconocida o vacía, una excepción 
 - Los módulos nuevos agrupan casos con `test(...)`; los de regresión conservan sus aserciones históricas. Sin `skip`/`todo`. Los tests de React son solo renderizado SSR (sin clics, timers ni StrictMode).
 - Módulo nuevo: añádelo a `tests/catalog.mjs` con sus IDs de tarea. Los resultados se guardan en `tests/results/`. `tests/AUDIT.md` documenta la cobertura y sus límites.
 - Para un cambio localizado, ejecuta el módulo afectado y sus consumidores (p. ej. posición → `world-position`, `geometry-rendering`; boxes → `box-orders`, `double-stack`, `box-ui`).
+
+## Notas prácticas de trabajo
+
+- La mayoría de los archivos están en CRLF y `grep` de Git Bash no lo muestra. En un script de edición, normaliza a LF el archivo y los textos, edita y vuelve a escribir con el final de línea original.
+- La suite completa tarda unos 12 minutos: lánzala en segundo plano. No encadenes commits detrás de un `grep` de la salida de un build o de la suite.
+- Revisión en navegador: `npm run build` y `npx vite preview --port 4174 --strictPort` (el 4173 puede estar ocupado por otra sesión; no mates procesos ajenos). Con el panel del navegador oculto, `requestAnimationFrame` no corre: monta la aplicación en un `iframe srcdoc` con `requestAnimationFrame` sustituido por `setTimeout`, toma `simulation` y `camera` de la fibra de React del canvas y avanza con `sim.update(0.1)` en bucles cortos. Al terminar, vacía la página, limpia `localStorage` y para tu servidor.
+- Otras sesiones pueden dejar commits en la rama local del sprint: antes de `git push`, mira `git log origin/RAMA..RAMA`.
+- Para provocar casos raros en el navegador: `sim.reportCrash(car)`, `sim.reportIncident(car, tipo)`, `sim.startRedFlag(motivo)`, `car.hasPuncture = true`, `sim.setWallDelegation(id, true)`.
+
+## Punto de reanudación (08/10/2026)
+
+- **Estado:** Sprint 2.11 y Sprint 3 están enteros en `main` (pull requests 7 a 13 de `Mbuendia/F1Sim`). La rama `sprint/3` se eliminó tras fusionarla. Última suite completa: 4106 PASS / 0 FAIL en 124 módulos; tipos y build correctos.
+- **Revisión del usuario:** R04, R23, R24, R47-R58, T3.1 y T3.2 constan como revisadas y aprobadas. T3.3 (físicas de agua de los neumáticos) y T3.4 (spray con partículas) están entregadas y fusionadas, pero siguen «en revisión».
+- **Siguiente paso: planificar el Sprint 4. No implementar nada de él sin esa planificación** (indicación del usuario). En `DASHBOARD.md`, sección 7.1, solo hay la épica «F1 Team Principal & Race Manager», sin IDs, desglose ni criterios. Empieza por acordar con el usuario qué quiere (economía, personal, instalaciones, calendario…), definir tareas con ID, alcance, aceptación y tests, crear la rama `sprint/4` desde `main` y actualizar el dashboard y `index.html`.
+- **Cosas vistas y no hechas (decidir con el usuario si entran en la planificación):**
+  - En «Salida en mojado» toda la parrilla sale con slicks; con el aquaplaning de T3.3 eso provoca accidentes en las primeras vueltas. Falta elegir el neumático de salida según el agua.
+  - Las gotas del spray son cuadrados planos; con mucho zoom se ven como bloques.
+  - El tiempo sorteado según la probabilidad de lluvia de cada circuito quedó fuera de T3.2.
+  - Audio, radar avanzado y telemetría adicional del Sprint 3 histórico siguen sin ficha.
+  - `WeatherRenderer.renderSpray` (la estela antigua) y `TelemetryPanel.tsx` ya no se usan en la aplicación.
+  - Con la ventana pequeña, el muro con propuestas ocupa mucha altura y deja poco sitio al circuito.
