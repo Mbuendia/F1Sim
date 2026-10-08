@@ -519,5 +519,18 @@ export const modules = [
   { "id": "car-3d-r46", "tasks": ["R46"], "sprint": "2.10", "kind": "contract" },
   { "id": "qualifying-r20", "tasks": ["R20"], "sprint": "2.10", "kind": "contract" },
   { "id": "components-r19", "tasks": ["R19"], "sprint": "2.10", "kind": "contract" },
-  { "id": "development-r18", "tasks": ["R18"], "sprint": "2.10", "kind": "contract" }
+  { "id": "development-r18", "tasks": ["R18"], "sprint": "2.10", "kind": "contract" },
+  { "id": "lap-times-r47", "tasks": ["R47"], "sprint": "2.11", "kind": "contract" },
+  { "id": "save-load-r48", "tasks": ["R48"], "sprint": "2.11", "kind": "contract" },
+  { "id": "setup-r49", "tasks": ["R49"], "sprint": "2.11", "kind": "contract" },
+  { "id": "overtake-zones-r50", "tasks": ["R50"], "sprint": "2.11", "kind": "contract" },
+  { "id": "models-3d-r55", "tasks": ["R55"], "sprint": "2.11", "kind": "contract" },
+  { "id": "track-sprites-r56", "tasks": ["R56"], "sprint": "2.11", "kind": "contract" },
+  { "id": "season-r51", "tasks": ["R51"], "sprint": "2.11", "kind": "contract" },
+  { "id": "drs-visible-r04", "tasks": ["R04"], "sprint": "2.11", "kind": "contract" },
+  { "id": "sprint-weekend-r52", "tasks": ["R52"], "sprint": "2.11", "kind": "contract" },
+  { "id": "wall-telemetry-r24", "tasks": ["R24"], "sprint": "2.11", "kind": "contract" },
+  { "id": "physics-signals-r23", "tasks": ["R23"], "sprint": "2.11", "kind": "contract" },
+  { "id": "rain-forecast-r53", "tasks": ["R53"], "sprint": "2.11", "kind": "contract" },
+  { "id": "wall-proposals-r54", "tasks": ["R54"], "sprint": "2.11", "kind": "contract" }
 ];

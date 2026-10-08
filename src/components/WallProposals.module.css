@@ -1,0 +1,18 @@
+/* R54: propuestas del estratega en la tarjeta de cada piloto del muro. Una línea de cabecera y una por propuesta, para
+   no quitarle altura al circuito. */
+.proposals { grid-column:1 / -1; display:flex; flex-direction:column; gap:4px; padding-top:6px; border-top:1px solid var(--line); }
+.header { display:flex; align-items:center; gap:10px; flex-wrap:wrap; font-size:14px; color:var(--text-2); }
+.header strong { color:var(--text); letter-spacing:.04em; text-transform:uppercase; font-size:13px; }
+.note { flex:1; min-width:0; }
+.delegate { margin-left:auto; display:flex; align-items:center; gap:6px; font-size:14px; cursor:pointer; white-space:nowrap; }
+.delegate input { width:18px; height:18px; accent-color:var(--accion); cursor:pointer; }
+.delegate input:focus-visible { outline:3px solid var(--foco); outline-offset:2px; }
+.list { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:4px; }
+.item { display:flex; align-items:center; gap:8px; padding:4px 6px 4px 10px; border:1px solid var(--line-strong); border-left:4px solid var(--accion); border-radius:var(--radio-m); background:var(--panel); }
+.text { flex:1; min-width:0; display:flex; flex-wrap:wrap; align-items:baseline; column-gap:8px; font-size:15px; color:var(--text); }
+.reason { font-size:14px; color:var(--text-2); }
+.actions { display:flex; gap:6px; }
+.actions button { font:inherit; font-size:14px; font-weight:700; height:32px; padding:0 12px; color:var(--text); border:1px solid var(--line-strong); background:var(--panel-2); border-radius:var(--radio-m); cursor:pointer; white-space:nowrap; }
+.actions .accept { background:var(--accion); border-color:var(--accion); color:#fff; }
+.actions .accept:hover { background:var(--accion-hover); }
+.actions button:focus-visible { outline:3px solid var(--foco); outline-offset:2px; }

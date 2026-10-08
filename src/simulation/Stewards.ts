@@ -39,6 +39,8 @@ const BASE_SECONDS: Record<PenaltyType, number> = { 'time-5': 5, 'time-10': 10, 
 /** Pasos por meta permitidos antes de cumplir un drive-through o stop-and-go. */
 export const DRIVE_DEADLINE_CROSSINGS = 2;
 
+export interface StewardsState { decisions: Decision[]; processed: string[]; nextId: number }
+
 export class Stewards {
   decisions: Decision[] = [];
   private processed = new Set<string>();
@@ -48,6 +50,17 @@ export class Stewards {
     this.decisions = [];
     this.processed.clear();
     this.nextId = 1;
+  }
+
+  /** [R48] Estado serializable: decisiones, infracciones ya procesadas y siguiente identificador. */
+  serialize(): StewardsState {
+    return { decisions: this.decisions.map(d => ({ ...d })), processed: [...this.processed], nextId: this.nextId };
+  }
+
+  restore(state: StewardsState) {
+    this.decisions = state.decisions.map(d => ({ ...d }));
+    this.processed = new Set(state.processed);
+    this.nextId = state.nextId;
   }
 
   /** Decide una infracción objetiva según la política; idempotente por `key`. */

@@ -103,8 +103,10 @@ export default async function run({ server, assert, test }) {
     };
     const sameUntil = cell({ startSec: 0, endSec: 150, widthT: 1, rateMmH: 6 });
     const a = trace({ id: 'a', cells: [sameUntil] });
-    const b = trace({ id: 'b', cells: [sameUntil, cell({ startSec: 160, endSec: 900, widthT: 1, rateMmH: 40 })] });
-    assert(a === b, 'R22: previsión y decisiones idénticas hasta t aunque el futuro cambie');
+    // [R53] Cambio autorizado por el usuario el 08/10/2026: la previsión es un radar que ve 20 minutos. Lo que no puede
+    // conocer es lo que empieza más allá de ese horizonte (antes, cualquier cosa posterior a t).
+    const b = trace({ id: 'b', cells: [sameUntil, cell({ startSec: 150 + 1200 + 60, endSec: 2400, widthT: 1, rateMmH: 40 })] });
+    assert(a === b, 'R22: previsión y decisiones idénticas hasta t aunque el futuro cambie más allá del horizonte del radar');
   });
 
   await test('R22: previsión con incertidumbre reproducible', () => {

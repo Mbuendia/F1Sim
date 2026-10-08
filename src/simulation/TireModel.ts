@@ -247,7 +247,8 @@ export class TireModel {
         const target = 103 + modeHeat + 30 * cornering * (loads[wheel] - 0.7) - airCooling;
         const temp = current + (target - current) * Math.min(1, dt / 12 * (context.heat ?? 1));
         tires[tempKey] = temp;
-        const wheelWear = deltaWear * (isCornering ? loads[wheel] : 1) * this.tempWearFactor(tires.compound, temp) * (context.wear ?? 1);
+        // [R47] Las curvas rápidas (que ya no cuentan como «curva lenta») también cargan la rueda exterior.
+        const wheelWear = deltaWear * (isCornering || cornering > 0.1 ? loads[wheel] : 1) * this.tempWearFactor(tires.compound, temp) * (context.wear ?? 1);
         tires[healthKey] = Math.max(0, (tires[healthKey] as number) - wheelWear);
         gripSum += this.tempGripFactor(tires.compound, temp);
       }

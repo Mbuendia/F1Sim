@@ -185,7 +185,10 @@ export class SafetyCarModel {
       // Espera al líder: pasa a liderar cuando el líder lo alcanza por detrás.
       if (leader) {
         const gapM = (sc.progress - leader.progress) * lapDistanceMeters;
-        if (gapM >= 0 && gapM <= SafetyCarModel.CATCH_DISTANCE_M) sc.mode = 'leading';
+        // [R47] El líder se queda a 0,005 de vuelta + 5 m del SC (curva de aproximación de Q14): en circuitos largos eso
+        // supera CATCH_DISTANCE_M, así que el alcance se mide con esa misma distancia más 1,5 m (en circuitos cortos no cambia).
+        const catchM = Math.max(SafetyCarModel.CATCH_DISTANCE_M, Math.max(SafetyCarModel.CATCH_DISTANCE_M / 2, 0.005 * lapDistanceMeters + 5) + 1.5);
+        if (gapM >= 0 && gapM <= catchM) sc.mode = 'leading';
       }
       return;
     }

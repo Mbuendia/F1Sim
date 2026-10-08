@@ -40,15 +40,19 @@ export interface CarTechnical {
   cooling: number;
   tyreHeat: number;
   tyreWear: number;
+  /** [R49] Relación de cambio del setup (diseño del juego): empuje y tope de punta; ausentes con la relación larga. */
+  gearDrive?: number;
+  revLimitFactor?: number;
 }
 
 export type PackageId = 'baja' | 'media' | 'alta';
 
-/** Paquetes aerodinámicos: carga y drag se mueven juntos (calibración). */
+/** Paquetes aerodinámicos: carga y drag se mueven juntos (calibración). [R47] Con los circuitos al ritmo real, la carga
+ * pasa de ±1,2 % a ±2 % para que la alta carga siga compensando en los circuitos lentos y la baja en los rápidos. */
 export const PACKAGES: Record<PackageId, { downforce: number; drag: number }> = {
-  baja: { downforce: 0.988, drag: 0.88 },
+  baja: { downforce: 0.98, drag: 0.88 },
   media: { downforce: 1, drag: 1 },
-  alta: { downforce: 1.012, drag: 1.10 },
+  alta: { downforce: 1.02, drag: 1.10 },
 };
 
 const LOW_DOWNFORCE = new Set(['monza', 'spa', 'las-vegas', 'baku', 'jeddah']);

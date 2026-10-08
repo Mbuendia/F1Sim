@@ -7,6 +7,11 @@ import { OFFICIAL_CIRCUITS, CircuitSpec } from '../data/circuits';
 import { buildTrackFromSvg } from '../utils/svgTrackParser';
 import { RaceResultHistory } from '../types/f1';
 import { ChampionshipTable } from './ChampionshipTable';
+import { SaveGamePanel } from './SaveGamePanel';
+import { SetupPanel } from './SetupPanel';
+import type { CarSetup } from '../simulation/Setup';
+import type { SaveGameMessage } from './SaveGamePanel';
+import type { SlotSummary } from '../simulation/SaveGame';
 import { WeatherScenarioSelect } from './WeatherScenarioSelect';
 import { CarShowcase } from './CarShowcase';
 import { RaceFormatSelect } from './RaceFormatSelect';
@@ -16,6 +21,13 @@ import type { DevelopmentProgram } from '../simulation/Development';
 import type { ComponentState, ComponentType } from '../simulation/ComponentPool';
 import type { RaceFormatId } from './RaceFormatSelect';
 import type { ChampionshipState } from '../simulation/Championship';
+import { SeasonCalendar } from './SeasonCalendar';
+import { SeasonHistory } from './SeasonHistory';
+import { DriverAttributesCard } from './DriverAttributesCard';
+import { SEASON_RACES } from '../simulation/Season';
+import type { RoundView, SeasonSummary } from '../simulation/Season';
+import type { DriverAttributes } from '../simulation/DriverDevelopment';
+import type { Driver } from '../types/f1';
 import { FlagIcon } from './FlagIcon';
 import { F1WheelSvg } from './F1WheelSvg';
 import { 
@@ -70,6 +82,20 @@ interface HomeScreenProps {
   /** [R20] GP directo o con clasificación. */
   raceFormat?: RaceFormatId;
   onSelectFormat?: (format: RaceFormatId) => void;
+  /** [R52] El circuito elegido admite el formato sprint ahora mismo. */
+  sprintAvailable?: boolean;
+  /** [R49] Setup de los coches del jugador. */
+  setup?: { setups: Record<string, CarSetup | undefined>; onChange: (driverId: string, setup: CarSetup) => void };
+  /** [R48] Partidas guardadas y sus acciones. */
+  saveGames?: {
+    slots: SlotSummary[]; currentName?: string; message?: SaveGameMessage | null;
+    onSave: (name: string) => void; onLoad: (id: string) => void; onExport: (id: string) => void;
+    onImport: (text: string) => void; onDelete: (id: string) => void;
+  };
+  /** [R51] Temporada: calendario, Gran Premio que toca, salto de ronda e historial de temporadas cerradas. */
+  season?: { rounds: RoundView[]; seasonNumber: number; archive: SeasonSummary[]; onSelectNext: () => void; onSkip: () => void };
+  /** [R51] Atributos actuales de un piloto (R45), para su ficha. */
+  driverAttributes?: (driver: Driver) => DriverAttributes;
 }
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({
@@ -88,8 +114,15 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   components,
   onFitComponent,
   onUndoComponent,
-  development
+  development,
+  saveGames,
+  setup,
+  season,
+  driverAttributes,
+  sprintAvailable
 }) => {
+  const nextRound = season?.rounds.find(round => round.status === 'siguiente');
+  const freeRace = Boolean(nextRound) && nextRound?.circuitId !== selectedCircuitId;
   const [activeTab, setActiveTab] = useState<'drivers' | 'circuits'>('drivers');
   const [driverSubTab, setDriverSubTab] = useState<'specs' | 'strategy' | 'records'>('specs');
   const [circuitSubTab, setCircuitSubTab] = useState<'overview' | 'drs' | 'telemetry'>('overview');
@@ -240,6 +273,34 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         </details>
       )}
 
+      {season && (
+        <details className={styles.historySection} open>
+          <summary className={styles.historyTitle}>
+            <span>Temporada {season.seasonNumber}{nextRound ? ` · ronda ${nextRound.round} de ${SEASON_RACES}` : ''}</span>
+          </summary>
+          <SeasonCalendar rounds={season.rounds} seasonNumber={season.seasonNumber} selectedCircuitId={selectedCircuitId}
+            onSelectNext={season.onSelectNext} onSkip={season.onSkip} />
+        </details>
+      )}
+
+      {season && season.archive.length > 0 && (
+        <details className={styles.historySection}>
+          <summary className={styles.historyTitle}>
+            <span>Historial de temporadas ({season.archive.length})</span>
+          </summary>
+          <SeasonHistory archive={season.archive} />
+        </details>
+      )}
+
+      {saveGames && (
+        <details className={styles.historySection} open={saveGames.slots.some(slot => slot.raceInProgress) || undefined}>
+          <summary className={styles.historyTitle}>
+            <span>Partidas ({saveGames.slots.length})</span>
+          </summary>
+          <SaveGamePanel key={saveGames.currentName ?? ''} {...saveGames} />
+        </details>
+      )}
+
       {championship && championship.races.length > 0 && (
         <details className={styles.historySection}>
           <summary className={styles.historyTitle}>
@@ -268,6 +329,16 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           </summary>
           <ComponentsPanel state={components} drivers={Object.values(DRIVERS).filter(d => d.teamId === (DRIVERS[selectedDriverId] ?? DRIVERS.alonso).teamId)}
             onFitNew={onFitComponent} onUndo={onUndoComponent} />
+        </details>
+      )}
+
+      {setup && (
+        <details className={styles.historySection}>
+          <summary className={styles.historyTitle}>
+            <span>Setup del coche</span>
+          </summary>
+          <SetupPanel drivers={Object.values(DRIVERS).filter(d => d.teamId === (DRIVERS[selectedDriverId] ?? DRIVERS.alonso).teamId)}
+            setups={setup.setups} onChange={setup.onChange} />
         </details>
       )}
 
@@ -432,7 +503,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 <div className={styles.detailContentGrid}>
                   {/* [R46] Monoplaza del piloto en 3D (silueta 2D sin WebGL) */}
                   <div className={styles.detailCardBox} style={{ gridColumn: '1 / -1' }}>
-                    <CarShowcase teamColor={inspectedTeam.color} accentColor={inspectedTeam.accentColor} number={inspectedDriver.number}
+                    <CarShowcase teamId={inspectedTeam.id} teamColor={inspectedTeam.color} accentColor={inspectedTeam.accentColor} number={inspectedDriver.number}
                       compound="medium" label={`Monoplaza de ${inspectedTeam.name} · ${inspectedDriver.code}`} />
                   </div>
                   <div className={styles.detailCardBox}>
@@ -557,6 +628,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                       </div>
                     </div>
                   </div>
+
+                  {/* [R51] Atributos del piloto (R45) con lo que ha mejorado. */}
+                  {driverAttributes && <DriverAttributesCard driver={inspectedDriver} attributes={driverAttributes(inspectedDriver)} />}
                 </div>
               )}
 
@@ -1070,7 +1144,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           </div>
 
           {onSelectFormat && (
-            <RaceFormatSelect className={styles.rulesProfile} value={raceFormat ?? 'directo'} onChange={onSelectFormat} />
+            <RaceFormatSelect className={styles.rulesProfile} value={raceFormat ?? 'directo'} onChange={onSelectFormat} sprintAvailable={sprintAvailable} />
           )}
           {onSelectWeather && (
             <WeatherScenarioSelect className={styles.rulesProfile} value={weatherScenarioId ?? 'seco'} onChange={onSelectWeather} />
@@ -1081,7 +1155,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               <Play size={18} fill="#ffffff" aria-hidden="true" />
               <span>ENTRAR A PISTA</span>
             </div>
-            <span className={styles.launchSub}>Empezar el Gran Premio</span>
+            <span className={styles.launchSub}>{freeRace ? 'Carrera libre: no cuenta para la temporada'
+              : nextRound ? `${raceFormat === 'sprint' ? 'Clasificación sprint y sprint' : nextRound.sprintDone ? 'Clasificación y Gran Premio' : 'Empezar el Gran Premio'} · ronda ${nextRound.round} de ${SEASON_RACES}`
+              : 'Empezar el Gran Premio'}</span>
           </button>
         </div>
       </div>

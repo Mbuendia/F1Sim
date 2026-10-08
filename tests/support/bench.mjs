@@ -15,8 +15,8 @@ export const REFERENCE_SCENARIOS = ['barcelona', 'monaco'].map(id => ({
 }));
 
 /** [R42] Remontadas: parrilla invertida y los coches rápidos (detrás) con blando nuevo frente a duro al 55 % con 20
- * vueltas; 300 s en verde y sin eventos, para medir adelantamientos. */
-export const OVERTAKE_SCENARIOS = ['barcelona', 'monaco'].map(id => ({
+ * vueltas; 300 s en verde y sin eventos, para medir adelantamientos. [R50] Por circuito: se añaden Monza y Bahréin. */
+export const OVERTAKE_SCENARIOS = ['barcelona', 'monaco', 'monza', 'bahrain'].map(id => ({
   id: `${id}-remontada`, circuit: id, cars: 8, seed: 2025, steps: 15000, fps: 60, speed: 1, grid: 'remontada', events: [],
 }));
 export const ALL_SCENARIOS = [...REFERENCE_SCENARIOS, ...OVERTAKE_SCENARIOS];
@@ -58,6 +58,8 @@ export async function createBench(server) {
     const pitLaneSec = [];
     let maxBrake = 0, maxEngine = 0, topSpeedKmh = 0, safetyCarDeployed = false;
     const greenOvertakes = { zona: 0, fuera: 0 };
+    // [R50] Adelantamientos en verde por zona del circuito (id de la zona → número).
+    const overtakesByZone = {};
 
     sim.onFixedStep = () => {
       const step = sim.fixedStepCount;
@@ -96,8 +98,12 @@ export async function createBench(server) {
           const pa = previous.get(a.id), pb = previous.get(b.id);
           if (a.id !== b.id && pa.onTrack && pb.onTrack && pa.progress < pb.progress && a.progress > b.progress) {
             if (neutralized) invariants['adelantamiento bajo neutralización']++;
-            // [R42] Adelantamientos en verde, según ocurran en zona permitida o fuera.
-            else greenOvertakes[sim.isOvertakingAllowedZone(a.trackT) ? 'zona' : 'fuera']++;
+            // [R42] Adelantamientos en verde, según ocurran en zona permitida o fuera; [R50] y en qué zona.
+            else {
+              const zoneId = sim.overtakeZoneOf(a.id);
+              greenOvertakes[zoneId !== null ? 'zona' : 'fuera']++;
+              if (zoneId !== null) overtakesByZone[zoneId] = (overtakesByZone[zoneId] ?? 0) + 1;
+            }
           }
         }
       }
@@ -114,7 +120,7 @@ export async function createBench(server) {
       pitStops: sim.cars.reduce((n, c) => n + c.pitStop.totalPitStops, 0),
       pitLaneSec: [...pitLaneSec],
       safetyCarDeployed,
-      greenOvertakes: { ...greenOvertakes },
+      greenOvertakes: { ...greenOvertakes, porZona: { ...overtakesByZone } },
       energyDeployedMJ: sim.cars.map(c => c.energy?.deployedMJ ?? 0),
       energyRecoveredMJ: sim.cars.map(c => c.energy?.recoveredMJ ?? 0),
       maxBrakeTempC: maxBrake,

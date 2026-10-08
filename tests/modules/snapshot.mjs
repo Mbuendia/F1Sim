@@ -1,5 +1,6 @@
 // R28 (solo esquema) — Snapshot versionado de carrera (contrato aprobado por el usuario el 01/10/2026).
-// Esquema no equivale a cargar/continuar, migraciones ni botones: eso sigue pendiente en R28.
+// Cargar/continuar, migraciones y botones llegan con R48 (tests en save-load-r48); el esquema pasa a la versión 2
+// (comprobación de versión actualizada con autorización del usuario el 07/10/2026).
 //  1. Declara esquema, versión, perfil, circuito, reloj, semilla, estado del azar y todos los coches.
 //  2. JSON puro, sin geometría, canvas ni timers.  3. Tomarlo no altera la carrera.
 //  4. El estado guardado de un flujo reproduce sus números siguientes.  5. Validador con diagnóstico.
@@ -23,7 +24,7 @@ export default async function run({ server, assert, test }) {
     const sim = seededRace();
     runTo(sim, 300);
     const snap = createSnapshot(sim);
-    assert(snap.schema === SNAPSHOT_SCHEMA && snap.version === SNAPSHOT_VERSION && SNAPSHOT_VERSION === 1, 'R28: esquema y versión 1');
+    assert(snap.schema === SNAPSHOT_SCHEMA && snap.version === SNAPSHOT_VERSION && SNAPSHOT_VERSION === 2, 'R28: esquema y versión 2');
     assert(snap.ruleSetId === sim.rules.id && snap.circuitId === 'barcelona', 'R28: referencias al perfil de reglas y al circuito', `${snap.ruleSetId} / ${snap.circuitId}`);
     const c = snap.clock;
     assert(c && c.raceTimeSec === sim.raceTimeSec && c.fixedStepSec === 0.02 && c.fixedStepCount === sim.fixedStepCount

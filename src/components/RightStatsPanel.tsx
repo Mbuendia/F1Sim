@@ -19,6 +19,8 @@ import { CircuitSpec } from '../data/circuits';
 import { RaceHeader } from './RaceHeader';
 import { CompoundBadge } from './CompoundBadge';
 import { COMPOUND_STYLES, compoundStyle } from '../utils/compounds';
+import { RainForecastPanel } from './RainForecastPanel';
+import type { RainForecast } from '../simulation/WeatherForecast';
 
 export interface RightStatsPanelProps {
   car: CarState | null;
@@ -28,6 +30,8 @@ export interface RightStatsPanelProps {
   overallBestS2: number | null;
   overallBestS3: number | null;
   weather?: TrackWeatherState;
+  /** [R53] Previsión del radar por tramos de tiempo y por sector. */
+  rainForecast?: RainForecast | null;
   circuit?: CircuitSpec;
 }
 
@@ -42,6 +46,7 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
   overallBestS3,
   weather,
   circuit,
+  rainForecast,
 }) => {
   const [activeTab, setActiveTab] = useState<RightPanelTab>('car_telemetry');
   const panelRef = useRef<HTMLDivElement>(null);
@@ -591,6 +596,9 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
                 <span className={styles.weatherBoxSub}>15 min: {weather.forecast15Min}</span>
               </div>
             </div>
+
+            {/* [R53] Cuándo y dónde se espera la lluvia. */}
+            <RainForecastPanel forecast={rainForecast} />
 
             {/* Tactical Tire Suggestion */}
             <div className={styles.strategyRecBox} style={{ borderColor: rainRec.col, background: `${rainRec.col}15` }}>

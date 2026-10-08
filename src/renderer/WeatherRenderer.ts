@@ -37,7 +37,52 @@ export function sprayLevel(speedKmh: number, depthMm: number): number {
   return Math.min(1, (speedKmh - 60) / 220) * Math.min(1, depthMm / 2.5);
 }
 
+/** [R53] Gotas en pantalla: cuántas por mm/h de lluvia en la zona visible y el máximo que se pinta. */
+export const DROPS = { PER_MM_H: 6, MAX: 160 };
+
+export function dropCount(rateMmH: number): number {
+  return Math.min(DROPS.MAX, Math.max(0, Math.round(rateMmH * DROPS.PER_MM_H)));
+}
+
+/** [R53] Lluvia media (mm/h) de los tramos del circuito que caen dentro de la pantalla; 0 si no se ve ninguno. */
+export function visibleRainMmH(track: TrackDefinition, camera: Camera, rainBySegment: readonly number[]): number {
+  const points = track.points, n = points.length;
+  let sum = 0, visible = 0;
+  for (let s = 0; s < rainBySegment.length; s++) {
+    const mid = points[Math.floor((s + 0.5) * n / rainBySegment.length) % n];
+    const screen = camera.worldToScreen(mid.x, mid.y);
+    if (screen.x < 0 || screen.x > camera.screenWidth || screen.y < 0 || screen.y > camera.screenHeight) continue;
+    sum += rainBySegment[s];
+    visible++;
+  }
+  return visible ? sum / visible : 0;
+}
+
 export class WeatherRenderer {
+  /**
+   * [R53] Gotas sobre la pantalla según la lluvia de la zona visible: ninguna si no llueve en lo que se ve y más cuanta
+   * más lluvia, hasta un máximo. Un solo trazo para todas (coste acotado).
+   */
+  static renderDrops(ctx: CanvasRenderingContext2D, track: TrackDefinition, camera: Camera, rainBySegment: readonly number[], timeSec: number) {
+    const count = dropCount(visibleRainMmH(track, camera, rainBySegment));
+    if (!count) return;
+    const width = camera.screenWidth, height = camera.screenHeight;
+    ctx.save();
+    ctx.strokeStyle = 'rgba(190, 215, 255, 0.45)';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    for (let i = 0; i < count; i++) {
+      // Posición repetible por gota (sin azar): cae en diagonal y vuelve a entrar por arriba.
+      const column = (i * 0.61803398875) % 1, phase = (i * 0.38196601125) % 1, speed = 0.9 + ((i * 7) % 5) * 0.08;
+      const y = ((phase + timeSec * speed) % 1) * (height + 30) - 30;
+      const x = ((column * (width + 60) - y * 0.18) % (width + 60) + (width + 60)) % (width + 60) - 30;
+      ctx.moveTo(x, y);
+      ctx.lineTo(x - 2.5, y + 14);
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
+
   /** Pista mojada por tramo y radar de lluvia sobre el circuito. */
   static render(ctx: CanvasRenderingContext2D, track: TrackDefinition, camera: Camera, layers: WeatherLayers | null, timeSec: number) {
     if (!layers) return;

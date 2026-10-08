@@ -61,6 +61,21 @@ export function tyreCrossover(depthMm: number): TyreClass {
   return options.reduce((best, option) => tyreWaterGrip(option[1], depthMm) > tyreWaterGrip(best[1], depthMm) ? option : best)[0];
 }
 
+/** [R48] Estado serializable del tiempo físico. La historia de lluvia va como `null` si es toda cero. */
+export interface WeatherModelState {
+  scenario: WeatherScenario;
+  water: number[];
+  visibility: number;
+  dry: boolean;
+  rainNowMmH: number;
+  history: { count: number; index: number; sum: number; values: number[] | null };
+}
+
+export const DRY_WEATHER_STATE = (): WeatherModelState => ({
+  scenario: { id: 'seco', cells: [] }, water: new Array(SEGMENTS).fill(0), visibility: 1, dry: true, rainNowMmH: 0,
+  history: { count: 0, index: 0, sum: 0, values: null },
+});
+
 export class WeatherModel {
   scenario: WeatherScenario = DRY_SCENARIO;
   water: number[] = new Array(SEGMENTS).fill(0);
@@ -83,6 +98,25 @@ export class WeatherModel {
     this.dry = initial === 0;
     this.rainNowMmH = 0;
     this.history.fill(0); this.historyCount = 0; this.historyIndex = 0; this.historySum = 0;
+  }
+
+  serialize(): WeatherModelState {
+    return {
+      scenario: { ...this.scenario, cells: this.scenario.cells.map(c => ({ ...c })) }, water: [...this.water], visibility: this.visibility,
+      dry: this.dry, rainNowMmH: this.rainNowMmH,
+      history: { count: this.historyCount, index: this.historyIndex, sum: this.historySum, values: this.history.some(v => v !== 0) ? Array.from(this.history) : null },
+    };
+  }
+
+  restore(state: WeatherModelState) {
+    this.scenario = { ...state.scenario, cells: state.scenario.cells.map(c => ({ ...c })) };
+    this.water = [...state.water];
+    this.visibility = state.visibility;
+    this.dry = state.dry;
+    this.rainNowMmH = state.rainNowMmH;
+    this.history.fill(0);
+    if (state.history.values) this.history.set(state.history.values.slice(0, this.history.length));
+    this.historyCount = state.history.count; this.historyIndex = state.history.index; this.historySum = state.history.sum;
   }
 
   rainRateAt(t: number, timeSec: number): number {

@@ -28,6 +28,10 @@ export const STRATEGY = {
   FUEL_MARGIN_KG: 0.3,
   /** Déficit máximo que el modo ahorro puede recuperar (fracción del combustible): con más, ahorrar no basta. */
   FUEL_RECOVERABLE: 0.12,
+  /** [R53] La IA decide los neumáticos con el agua prevista para dentro de este tiempo (≈ una vuelta, s). */
+  FORECAST_LOOKAHEAD_SEC: 90,
+  /** [R53] No se monta seco si la previsión da lluvia antes de este tiempo (≈ dos vueltas, s). */
+  RAIN_IMMINENT_SEC: 180,
 };
 
 export interface StrategyState {

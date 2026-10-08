@@ -6,8 +6,10 @@ export class EngineModel {
    */
   // [R05] powerFactor: potencia del motor térmico por modo (calibración del juego para Q12), usada por el modelo
   // longitudinal; speedFactor sigue escalando el paso por curva.
-  static readonly POWER_FACTOR = { low: 1.015, standard: 1.0, push: 1.07, overtake: 1.08 };
-  static readonly SPEED_FACTOR = { low: 0.9998, standard: 1.0, push: 1.0025, overtake: 1.050 };
+  // [R47] Recalibrado con los circuitos al ritmo real: en los circuitos de potencia (Monza) la diferencia entre modos
+  // dependía demasiado de la potencia; ahora pesa más el paso por curva.
+  static readonly POWER_FACTOR = { low: 1.0, standard: 1.0, push: 1.02, overtake: 1.08 };
+  static readonly SPEED_FACTOR = { low: 1.0003, standard: 1.0, push: 1.0055, overtake: 1.050 };
 
   static getEnginePerformance(mode: EngineMode): { speedFactor: number; ersDeployRate: number; powerFactor: number } {
     const powerFactor = EngineModel.POWER_FACTOR[mode];

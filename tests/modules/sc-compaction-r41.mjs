@@ -34,4 +34,19 @@ export default async function run({ server, assert, test }) {
     assert(!passed, 'R41: no adelanta al coche de delante');
     assert(gapM() > 0.002 * L && gapM() < 0.006 * L, 'R41: acaba en fila a la distancia habitual', `${gapM().toFixed(1)} m`);
   });
+
+  // Hallazgo de R47 (07/10/2026): en circuitos de más de 5 km el líder se detenía a más distancia del SC que la exigida
+  // para considerar que lo había alcanzado, y el SC no llegaba nunca a liderar ni a retirarse.
+  await test('R47: el Safety Car llega a liderar y se retira en circuitos largos', () => {
+    for (const circuit of ['monza', 'spa']) {
+      const sim = make(circuit, 3);
+      sim.cars.forEach(c => { c.pitStop.playerControlled = true; });
+      sim.setSeed(41); sim.setFixedStep(0.02);
+      sim.deploySafetyCar('Prueba');
+      while (sim.safetyCar.mode !== 'leading' && sim.raceTimeSec < 600) sim.update(1 / 60);
+      assert(sim.safetyCar.mode === 'leading', `R47: en ${circuit} el líder alcanza al Safety Car`, sim.safetyCar.mode);
+      while (sim.raceFlagState !== 'green' && sim.raceTimeSec < 3000) sim.update(1 / 60);
+      assert(sim.raceFlagState === 'green', `R47: en ${circuit} el Safety Car se retira y vuelve la verde`, `${sim.raceFlagState} · ${sim.safetyCar.mode}`);
+    }
+  });
 }

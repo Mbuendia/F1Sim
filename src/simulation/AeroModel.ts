@@ -58,6 +58,12 @@ export interface LongitudinalInput {
   slipstream: number;
   /** [R17] Multiplicador del drag del coche (paquete aerodinámico y refrigeración). */
   dragFactor?: number;
+  /**
+   * [R49] Relación de cambio (diseño del juego): multiplicador del empuje limitado por potencia y tope de punta
+   * relativo a la velocidad de equilibrio propia sin DRS ni rebufo. Sin ellos el modelo es el de siempre.
+   */
+  gearDrive?: number;
+  revLimitFactor?: number;
 }
 
 /** Aceleración longitudinal a fondo (m/s²); negativa por encima de la velocidad de equilibrio. */
@@ -66,7 +72,7 @@ export function longitudinalAccel(input: LongitudinalInput, params: AeroParams =
   const cdA = params.cdA * (input.dragFactor ?? 1)
     * (1 - (input.drsOpen ? params.drsDragReduction : 0))
     * (1 - params.slipstreamMaxReduction * Math.min(1, Math.max(0, input.slipstream)));
-  const drive = Math.min(input.powerKw * 1000 * params.drivetrainEfficiency / v, input.massKg * params.tractionLimit);
+  const drive = Math.min(input.powerKw * 1000 * params.drivetrainEfficiency / v * (input.gearDrive ?? 1), input.massKg * params.tractionLimit);
   const drag = 0.5 * params.rho * cdA * v * v;
   const rolling = params.rollingCoeff * input.massKg * 9.81;
   return (drive - drag - rolling) / input.massKg;
@@ -93,6 +99,14 @@ export function holdThrottle(input: LongitudinalInput, params: AeroParams = AERO
 
 /** Velocidad punta de equilibrio (km/h) en recta ilimitada. */
 export function topSpeedKmh(input: Omit<LongitudinalInput, 'speedKmh'>, params: AeroParams = AERO): number {
+  const equilibrium = equilibriumKmh(input, params);
+  // [R49] Relación de cambio corta: el corte de vueltas limita la punta respecto a la de equilibrio sin DRS ni rebufo.
+  if (input.revLimitFactor === undefined) return equilibrium;
+  const reference = input.drsOpen || input.slipstream > 0 ? equilibriumKmh({ ...input, drsOpen: false, slipstream: 0 }, params) : equilibrium;
+  return Math.min(equilibrium, reference * input.revLimitFactor);
+}
+
+function equilibriumKmh(input: Omit<LongitudinalInput, 'speedKmh'>, params: AeroParams): number {
   // En la punta la tracción no limita: P·η = (½ρ·CdA·v² + Crr·m·g)·v. Newton sobre esa cúbica (converge en pocas
   // iteraciones; se usa en cada paso del motor).
   const k = 0.5 * params.rho * params.cdA * (input.dragFactor ?? 1)

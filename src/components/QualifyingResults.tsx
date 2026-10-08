@@ -3,23 +3,31 @@ import styles from './QualifyingResults.module.css';
 import { formatLapTime } from '../simulation/Qualifying';
 import type { QualifyingResult } from '../simulation/Qualifying';
 import type { GridChange } from '../simulation/ComponentPool';
+import type { PitLaneStart } from '../simulation/Setup';
 
 interface QualifyingResultsProps {
   result: QualifyingResult;
   onContinue?: () => void;
   /** [R19] Cambios de parrilla por sanciones de componentes. */
   gridChanges?: GridChange[];
+  /** [R49] Coches que salen desde el pit lane, con su motivo. */
+  pitLaneStarts?: PitLaneStart[];
+  /** [R49] Contenido adicional bajo la tabla (el setup en parc fermé). */
+  children?: React.ReactNode;
 }
 
 /** [R20] Resultado de la clasificación: parrilla, tiempos y zona de eliminación. */
-export const QualifyingResults: React.FC<QualifyingResultsProps> = ({ result, onContinue, gridChanges = [] }) => {
+export const QualifyingResults: React.FC<QualifyingResultsProps> = ({ result, onContinue, gridChanges = [], pitLaneStarts = [], children }) => {
   const pole = result.grid[0];
+  // [R52] Clasificación sprint: mismas eliminaciones con otro nombre (SQ1, SQ2 y SQ3) y los neumáticos de S30.5.
+  const sprint = result.format === 'sprint', prefix = sprint ? 'S' : '';
   const note = (slot: QualifyingResult['grid'][number]) =>
-    slot.noTime ? 'Sin tiempo' : slot.outside107 ? 'Fuera del 107 %' : slot.eliminatedIn ? `Eliminado en ${slot.eliminatedIn}` : slot.position === 1 ? 'Pole' : 'Q3';
+    slot.noTime ? 'Sin tiempo' : slot.outside107 ? 'Fuera del 107 %' : slot.eliminatedIn ? `Eliminado en ${prefix}${slot.eliminatedIn}` : slot.position === 1 ? 'Pole' : `${prefix}Q3`;
   return (
-    <section className={styles.panel} aria-label="Resultado de la clasificación">
-      <h2 className={styles.title}>Clasificación</h2>
+    <section className={styles.panel} aria-label={sprint ? 'Resultado de la clasificación sprint' : 'Resultado de la clasificación'}>
+      <h2 className={styles.title}>{sprint ? 'Clasificación sprint' : 'Clasificación'}</h2>
       <p className={styles.pole}>Pole: <strong>{pole.name}</strong> ({pole.teamName}) · {formatLapTime(pole.bestSec)}</p>
+      {sprint && <p className={styles.pole}>SQ1 y SQ2 con neumático medio nuevo; SQ3 con blando nuevo. Esta parrilla es la del sprint.</p>}
       <div className={styles.scroll}>
         <table className={styles.table}>
           <thead><tr><th>Pos.</th><th>Piloto</th><th>Equipo</th><th>Tiempo</th><th>Sesión</th></tr></thead>
@@ -35,13 +43,17 @@ export const QualifyingResults: React.FC<QualifyingResultsProps> = ({ result, on
                   {gridChanges.filter(change => change.driverId === slot.driverId).map(change => (
                     <span key={change.driverId} className={styles.penalty}> · +{change.places} puestos{change.backOfGrid ? ' (fondo de parrilla)' : ''}: sale P{change.to}</span>
                   ))}
+                  {pitLaneStarts.filter(start => start.driverId === slot.driverId).map(start => (
+                    <span key={start.driverId} className={styles.penalty}> · sale desde el pit lane: {start.reason}</span>
+                  ))}
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-      {onContinue && <button type="button" className={styles.continue} onClick={onContinue}>A la parrilla</button>}
+      {children && <div className={styles.extra}>{children}</div>}
+      {onContinue && <button type="button" className={styles.continue} onClick={onContinue}>{sprint ? 'A la parrilla del sprint' : 'A la parrilla'}</button>}
     </section>
   );
 };

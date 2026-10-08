@@ -28,13 +28,20 @@ export default async function run({ server, assert, test }) {
   // R42 (contrato aprobado por el usuario el 02/10/2026): con coches de ritmo distinto hay adelantamientos en verde. Las
   // carreras de referencia salen ordenadas por ritmo y acaban bajo Safety Car, así que se mide en escenarios de remontada
   // (decisión del usuario del 02/10/2026).
-  await test('R42: adelantamientos en verde en las remontadas', () => {
+  // R50 (contrato aprobado por el usuario el 07/10/2026): la métrica pasa a ser por circuito y por zona. Con autorización
+  // del usuario, la comprobación de R42 «la remontada de Mónaco tiene adelantamientos en zona» se sustituye por
+  // «Mónaco, 2 como mucho»; Monza y Bahréin, al menos 6 cada uno; ninguno fuera de zona.
+  await test('R42/R50: adelantamientos en verde por circuito en las remontadas', () => {
+    const limits = { 'barcelona-remontada': [1, Infinity], 'monaco-remontada': [0, 2], 'monza-remontada': [6, Infinity], 'bahrain-remontada': [6, Infinity] };
     for (const scenario of OVERTAKE_SCENARIOS) {
       const { invariants, result } = reference[scenario.id];
       const broken = Object.entries(invariants).filter(([, n]) => n > 0).map(([k, n]) => `${k}=${n}`);
       assert(broken.length === 0, `R42: ${scenario.id} sin invariantes rotas`, broken.join(', '));
-      const { zona, fuera } = result.greenOvertakes;
-      assert(zona > 0, `R42: ${scenario.id} tiene adelantamientos en verde en zona permitida`, `${zona} en zona · ${fuera} fuera`);
+      const { zona, fuera, porZona } = result.greenOvertakes;
+      const [min, max] = limits[scenario.id];
+      assert(zona >= min && zona <= max, `R50: ${scenario.id} con ${max === Infinity ? `al menos ${min}` : `${max} como mucho`} adelantamientos en verde`, `${zona} en zona · ${fuera} fuera`);
+      assert(fuera === 0, `R50: ${scenario.id} sin adelantamientos fuera de zona`, String(fuera));
+      assert(Object.values(porZona).reduce((sum, n) => sum + n, 0) === zona, `R50: ${scenario.id} cuenta los adelantamientos por zona`, JSON.stringify(porZona));
     }
   });
 

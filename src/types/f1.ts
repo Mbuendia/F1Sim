@@ -166,7 +166,8 @@ export interface SectorTimes {
 export interface DriverStatsSummary {
   pushLaps: number;
   savingLaps: number;
-  drsZonesTraversed: number;
+  /** [R04] Veces que el coche ha abierto el DRS en la carrera (recuento real). */
+  drsUses: number;
   projectedLapsRemainingOnTire: number;
   willMakeToEndWithoutPit: boolean;
   optimalPitLap: number;
@@ -371,6 +372,16 @@ export interface CarState {
   aggression: AggressionLevel;
   drsActive: boolean;
   drsEligible: boolean;
+  /** [R04] Lo que se ve del DRS (estado, motivo y hueco medido), sus usos reales y cuándo cambió el flap (s de carrera). */
+  drsStatus?: import('../simulation/DRSModel').DrsStatus;
+  drsUses?: number;
+  drsChangedAt?: number;
+  /** [R24] Cambios de posición con su causa y sus totales, vueltas en cada ritmo (y tiempo de la vuelta en curso) y sanción pendiente. */
+  positionLog?: import('../simulation/Wall').PositionMove[];
+  moves?: import('../simulation/Wall').MoveTotals;
+  paceLaps?: import('../simulation/Wall').PaceLaps;
+  paceLapSec?: import('../simulation/Wall').PaceLaps;
+  penaltyNote?: string | null;
 
   // ── MODELO TERMODINÁMICO CONTINUO ──
   brakeTempCelsius: number;    // 250°C (frío) → 1050°C (frenada extrema)
@@ -393,6 +404,8 @@ export interface CarState {
   dirtyAirLevel?: number;
   /** [R42] Ritmo propio del coche en su último paso (lo comparan los demás para decidir un adelantamiento). */
   paceIndex?: number;
+  /** [R50] Ritmo en recta (potencia) en su último paso. */
+  powerIndex?: number;
   /** [R14] Masa actual (seca + combustible, kg), combustible quemado acumulado (kg) y tiempo en lift-and-coast (s). */
   massKg?: number;
   fuelBurnedKg?: number;
@@ -410,6 +423,13 @@ export interface CarState {
   redFlagHold?: boolean;
   /** [R13] Hora a la que cruzó la meta al terminar la carrera. */
   finishTimeSec?: number;
+  /** [R50] Zona en la que se lanzó la maniobra de adelantamiento en curso (null: fuera de zona, por diferencia enorme). */
+  attackZoneId?: number | null;
+  /** [R50] Defensa en curso: zona en la que el coche ha cubierto el interior y lado elegido (un movimiento por zona). */
+  defence?: { zoneId: number; side: -1 | 1 };
+  /** [R49] Salida desde el pit lane: espera con el semáforo en rojo / sale hacia la pista; y si empezó la carrera así. */
+  pitLaneStart?: 'espera' | 'saliendo';
+  startedFromPitLane?: boolean;
   /** [R19] Multiplicador del riesgo de avería por el desgaste de los componentes montados (1 = sin efecto). */
   failureFactor?: number;
   /** [R21] Hora de paso por meta al empezar cada vuelta (índice: `currentLap` tras el paso). */
@@ -417,6 +437,12 @@ export interface CarState {
   /** [R25] Estado y registro del estratega de la IA; el ritmo lo fijó el jugador. */
   strategy?: import('../simulation/Strategist').StrategyState;
   paceByPlayer?: boolean;
+  /** [R54] Coche del jugador: propuestas pendientes del estratega, delegación, descartes (clave → vuelta) y vuelta de la última propuesta de ritmo. */
+  wallProposals?: import('../simulation/Wall').WallProposal[];
+  wallDelegated?: boolean;
+  wallDiscarded?: Record<string, number>;
+  wallPaceLap?: number;
+  wallSeq?: number;
   redFlagRelease?: boolean;
   /** [R11] Infracciones de pista registradas (las sanciones las aplica R13). */
   infractions?: { type: 'delta-vsc'; value: number; lap: number; time: number }[];

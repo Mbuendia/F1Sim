@@ -5,6 +5,7 @@ import svgPathsJson from '../data/svgTrackPaths.json';
 import { setIdealRacingLine } from './racingLine';
 import { sampleSvgPath } from './svgPathSampler';
 import pitLaneRoutes from '../data/pitLaneRoutes.json';
+import { BRAKE_LOOKAHEAD_M, DEFAULT_CURVATURE_GAIN, LAP_REFERENCES } from '../data/lapReferences';
 
 const svgPathsMap: Record<string, string> = svgPathsJson as any;
 
@@ -149,10 +150,12 @@ export function buildTrackFromSvg(circuit: CircuitSpec, sampleCount: number = 75
   const rightHandSign = (targetClockwise ? 1 : -1) * (Math.sign(netSignedCurvature) || 1);
 
   // Velocidades locales en función de la curvatura
+  // [R47] Ganancia calibrada por circuito para que la vuelta del motor se acerque a la de referencia.
+  const curvatureGain = LAP_REFERENCES[circuit.id]?.curvatureGain ?? DEFAULT_CURVATURE_GAIN;
   const rawSpeedLimits: number[] = [];
   for (let i = 0; i < total; i++) {
     const curv = smoothedCurvatures[i];
-    const tightness = Math.min(1.0, curv * 55);
+    const tightness = Math.min(1.0, curv * curvatureGain);
     const speed = Math.max(0.24, 1.0 - tightness * 0.76);
     rawSpeedLimits.push(speed);
   }
@@ -161,7 +164,8 @@ export function buildTrackFromSvg(circuit: CircuitSpec, sampleCount: number = 75
   const finalSpeedLimits: number[] = [...rawSpeedLimits];
   const isBrakingZones: boolean[] = new Array(total).fill(false);
 
-  const lookaheadSteps = Math.floor(total * 0.045);
+  // [R47] La rampa de frenada mide metros reales, no una fracción fija de la vuelta.
+  const lookaheadSteps = Math.max(2, Math.round(BRAKE_LOOKAHEAD_M / (circuit.lapLengthMeters / total)));
   for (let i = 0; i < total; i++) {
     const apexSpeed = rawSpeedLimits[i];
     if (apexSpeed < 0.55) {

@@ -57,6 +57,27 @@
   cursor: pointer;
 }
 
+.saveForm {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.saveInput {
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radio-s);
+  background: var(--panel);
+  color: var(--text);
+  font-size: 16px;
+}
+
+.saveForm .item {
+  border: 1px solid var(--line-strong);
+  color: var(--text);
+}
+
 .itemSc {
   border: 1px dashed #6b5710;
   color: #ffe070;

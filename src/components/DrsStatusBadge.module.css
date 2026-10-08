@@ -1,0 +1,55 @@
+.drs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  font-family: var(--font-ui);
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  font-size: 14px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.abierto {
+  background: rgba(34, 197, 94, 0.25);
+  border-color: #22c55e;
+  color: #22c55e;
+}
+
+.permiso {
+  background: rgba(56, 189, 248, 0.18);
+  border-color: #38bdf8;
+  color: #7dd3fc;
+}
+
+.sin-permiso {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-2);
+}
+
+.bloqueado {
+  background: rgba(245, 158, 11, 0.16);
+  border-color: #f59e0b;
+  color: #fbbf24;
+}
+
+.uses {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-2);
+}
+
+.reason {
+  flex-basis: 100%;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-2);
+}

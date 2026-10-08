@@ -6,6 +6,7 @@ import { animate, stagger } from 'animejs';
 import { detectPositionChanges } from './positionChanges';
 import { FlagIcon } from './FlagIcon';
 import { CompoundBadge } from './CompoundBadge';
+import { carFlags } from '../simulation/Wall';
 
 interface LeaderboardProps {
   cars: CarState[];
@@ -139,12 +140,16 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
           const isOut = car.status === 'out';
           const delta = isOut ? 0 : positionDelta(car);
           const pitStatus = isOut ? null : car.pitStop.waitingForBox ? 'queue' : (car.pitStop.isPitting || car.isInPitLane) ? 'pitting' : null;
+          // [R24] La misma marca que el panel y el minimapa: DRS, boxes y sanción pendiente.
+          const flags = carFlags(car);
 
           return (
             <React.Fragment key={car.id}>
             <div
               className={`${styles.row} ${isSelected ? styles.selected : ''} ${isLeader ? styles.leaderRow : ''} ${isOut ? styles.outRow : ''}`}
               onClick={() => onSelectCar(isSelected ? null : car.id)}
+              data-flag-drs={!isOut && flags.drs ? flags.drs : undefined} data-flag-pit={!isOut && flags.inPit ? 'true' : undefined}
+              data-flag-penalty={!isOut && flags.penalty ? flags.penalty : undefined}
               style={{ borderLeftColor: isOut ? '#64748b' : car.team.color, opacity: isOut ? 0.6 : 1 }}
               title={isOut ? `ABANDONO: ${car.dnfReason || 'Fallo mecánico'}` : isSelected ? `Clic para deseleccionar y volver a vista general (Overview)` : `Clic para seguir a ${car.driver.firstName} ${car.driver.lastName}`}
             >
@@ -193,6 +198,8 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
                     {car.pitStop.totalPitStops > 0 && (
                       <span className={styles.pitCountBadge}>{car.pitStop.totalPitStops}P</span>
                     )}
+                    {flags.drs === 'abierto' && <span className={styles.pitCountBadge} style={{ color: '#22c55e' }} title="DRS abierto">DRS</span>}
+                    {flags.penalty && <span className={styles.pitCountBadge} style={{ color: '#fbbf24' }} title={`Sanción pendiente: ${flags.penalty}`}>SAN</span>}
                   </>
                 )}
               </div>

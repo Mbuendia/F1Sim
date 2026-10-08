@@ -1,3 +1,5 @@
+import { drsMarkers } from './drsMarkers';
+import { SIGNALS } from './signals';
 import { TrackDefinition } from '../data/barcelonaTrack';
 import { Camera } from './Camera';
 import { TrackWeatherState } from '../types/f1';
@@ -435,6 +437,65 @@ export class TrackRenderer {
     ctx.lineWidth = 1.5 * zoom;
     ctx.stroke();
 
+    ctx.restore();
+  }
+
+  /**
+   * [R04] Marcas del DRS sobre la pista: el tramo de activación de cada zona (borde verde con su rótulo) y la línea
+   * de cada punto de detección, que es donde se mide el hueco con el coche de delante.
+   */
+  static renderDrsMarkers(ctx: CanvasRenderingContext2D, track: TrackDefinition, camera: Camera) {
+    const { zones, detections } = drsMarkers(track);
+    if (!zones.length && !detections.length) return;
+    const zoom = camera.zoom;
+    const half = ((track.trackWidthMeters || 26) * 1.75) / 2;
+    const fontSize = Math.max(8.5, Math.min(12, 10 * zoom));
+    // Lado contrario al de los rótulos de las curvas.
+    const side = (p: { x: number; y: number; angle: number }, distance: number) =>
+      camera.worldToScreen(p.x + Math.cos(p.angle + Math.PI / 2) * distance, p.y + Math.sin(p.angle + Math.PI / 2) * distance);
+    const label = (text: string, x: number, y: number, color: string) => {
+      ctx.font = `800 ${fontSize}px 'Rajdhani', sans-serif`;
+      const width = ctx.measureText(text).width;
+      ctx.fillStyle = 'rgba(10, 15, 25, 0.88)';
+      ctx.beginPath();
+      ctx.roundRect(x - width / 2 - 4, y - fontSize / 2 - 2, width + 8, fontSize + 4, 3);
+      ctx.fill();
+      ctx.fillStyle = color;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, x, y);
+    };
+
+    ctx.save();
+    ctx.lineCap = 'round';
+    for (const zone of zones) {
+      // [R23] Zona: línea continua. Detección: discontinua y de otro color. Las dos, con rótulo.
+      ctx.strokeStyle = SIGNALS.drsZone.color;
+      ctx.globalAlpha = 0.85;
+      ctx.lineWidth = Math.max(2, Math.min(5, 2.2 * zoom));
+      ctx.beginPath();
+      zone.points.forEach((point, index) => {
+        const edge = side(point, half + 2);
+        if (index === 0) ctx.moveTo(edge.x, edge.y); else ctx.lineTo(edge.x, edge.y);
+      });
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      const at = side(zone.points[0], half + 16);
+      label(`${SIGNALS.drsZone.label} ${zone.id}`, at.x, at.y, '#4ade80');
+    }
+    for (const detection of detections) {
+      const from = side(detection, -half), to = side(detection, half);
+      ctx.strokeStyle = SIGNALS.drsDetection.color;
+      ctx.lineWidth = Math.max(1.5, Math.min(4, 1.6 * zoom));
+      ctx.setLineDash([4, 3]);
+      ctx.beginPath();
+      ctx.moveTo(from.x, from.y);
+      ctx.lineTo(to.x, to.y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      const at = side(detection, half + 16);
+      label(`${SIGNALS.drsDetection.label} ${detection.zoneIds.join('+')}`, at.x, at.y, '#7dd3fc');
+    }
     ctx.restore();
   }
 

@@ -27,7 +27,10 @@ const REJOIN_FUEL_KG = 50;
 type Aero = Omit<LongitudinalInput, 'speedKmh'> & { topKmh: number; fastGrip: number; slowGrip: number };
 const aeroOf = (car: CarLike, pace: number): Aero => {
   const tech = technicalOf(car);
-  const input = { massKg: CAR_DRY_MASS_KG + REJOIN_FUEL_KG, powerKw: tech.iceKw * pace ** 3 + 120 * 0.5, drsOpen: false, slipstream: 0, dragFactor: tech.dragFactor };
+  const input = {
+    massKg: CAR_DRY_MASS_KG + REJOIN_FUEL_KG, powerKw: tech.iceKw * pace ** 3 + 120 * 0.5, drsOpen: false, slipstream: 0, dragFactor: tech.dragFactor,
+    gearDrive: tech.gearDrive, revLimitFactor: tech.revLimitFactor,
+  };
   return { ...input, topKmh: topSpeedKmh(input), fastGrip: tech.fastCornerGrip, slowGrip: tech.slowCornerGrip };
 };
 
@@ -60,7 +63,7 @@ const cacheFor = <T>(cache: WeakMap<TrackDefinition, Map<string, T>>, track: Tra
 
 const carKey = (car: CarLike, capKmh: number | null) => {
   const t = technicalOf(car);
-  return `${car.team.id}|${car.driver.id}|${capKmh ?? '-'}|${t.package}|${t.fastCornerGrip}|${t.slowCornerGrip}|${t.dragFactor}|${t.iceKw}`;
+  return `${car.team.id}|${car.driver.id}|${capKmh ?? '-'}|${t.package}|${t.fastCornerGrip}|${t.slowCornerGrip}|${t.dragFactor}|${t.iceKw}|${t.gearDrive ?? 1}|${t.revLimitFactor ?? '-'}`;
 };
 
 export class RejoinModel {

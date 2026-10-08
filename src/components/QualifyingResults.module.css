@@ -39,6 +39,8 @@
 }
 
 .scroll {
+  flex: 1 1 auto;
+  min-height: 120px;
   overflow-y: auto;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 10px;
@@ -55,6 +57,11 @@
   padding: 5px 10px;
   text-align: left;
   white-space: nowrap;
+}
+
+/* [R49] La columna de sesión lleva sanciones y la salida desde el pit lane: puede partirse. */
+.table td:last-child {
+  white-space: normal;
 }
 
 .table th {
@@ -81,6 +88,22 @@
 .outQ1 td {
   background: rgba(239, 68, 68, 0.09);
   color: #94a3b8;
+}
+
+/* [R49] Setup en parc fermé bajo la tabla. */
+.extra {
+  flex: 0 1 auto;
+  margin-top: 12px;
+  max-height: 46vh;
+  overflow-y: auto;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+}
+
+.extraTitle {
+  padding: 8px 14px;
+  font-weight: 700;
+  cursor: pointer;
 }
 
 .continue {

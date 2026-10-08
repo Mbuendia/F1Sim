@@ -1,0 +1,142 @@
+.calendar {
+  padding: 10px 14px 14px;
+  color: #e2e8f0;
+  font-size: 13px;
+}
+
+.next {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  margin-bottom: 10px;
+}
+
+.nextTitle {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.nextSub {
+  display: block;
+  color: #94a3b8;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.button {
+  padding: 6px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #e2e8f0;
+  font: inherit;
+  cursor: pointer;
+}
+
+.button:hover,
+.button:focus-visible {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.primary {
+  border-color: #38bdf8;
+  color: #7dd3fc;
+}
+
+.danger {
+  border-color: #f87171;
+  color: #fca5a5;
+}
+
+.free {
+  margin: 0 0 10px;
+  padding: 8px 10px;
+  border-left: 3px solid #f59e0b;
+  background: rgba(245, 158, 11, 0.1);
+  color: #fcd34d;
+}
+
+.confirm {
+  margin: 0 0 10px;
+  color: #fca5a5;
+}
+
+.rounds {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 4px 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.round {
+  display: grid;
+  grid-template-columns: 26px 1fr auto;
+  align-items: baseline;
+  gap: 6px;
+  padding: 4px 8px;
+  border-left: 3px solid transparent;
+  border-radius: 4px;
+  font-variant-numeric: tabular-nums;
+}
+
+.round[data-status='siguiente'] {
+  border-left-color: #38bdf8;
+  background: rgba(56, 189, 248, 0.12);
+  font-weight: 700;
+}
+
+.round[data-status='disputada'] { color: #cbd5e1; }
+.round[data-status='saltada'] { color: #64748b; }
+.round[data-status='pendiente'] { color: #94a3b8; }
+
+.number { color: #64748b; text-align: right; }
+.note { color: #94a3b8; font-size: 11px; font-weight: 400; }
+.state { font-size: 12px; white-space: nowrap; }
+
+.history {
+  padding: 10px 14px 14px;
+  color: #e2e8f0;
+  font-size: 13px;
+}
+
+.champions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin: 0 0 14px;
+}
+
+.champion {
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 215, 0, 0.3);
+  border-radius: 10px;
+  background: rgba(255, 215, 0, 0.07);
+}
+
+.championLabel {
+  display: block;
+  color: #94a3b8;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.championName {
+  display: block;
+  color: #ffd700;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.gain { color: #4ade80; font-weight: 700; }

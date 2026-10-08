@@ -17,6 +17,10 @@ export interface QualiEntrant {
 export interface QualiLap { timeSec: number; deleted: boolean; setOrder: number }
 export interface QualiSessionRow { driverId: string; laps: QualiLap[]; bestSec: number | null; bestOrder: number }
 export type QualiSessionId = 'Q1' | 'Q2' | 'Q3';
+/** [R52] Clasificación del Gran Premio o clasificación sprint (SQ1, SQ2 y SQ3). */
+export type QualiFormat = 'gp' | 'sprint';
+export type QualiCompound = 'soft' | 'medium';
+export type QualiCompounds = { q1: QualiCompound; q2: QualiCompound; q3: QualiCompound };
 
 export interface GridSlot {
   position: number;
@@ -36,11 +40,22 @@ export interface QualifyingResult {
   seed: number;
   sessions: { q1: QualiSessionRow[]; q2: QualiSessionRow[]; q3: QualiSessionRow[] };
   grid: GridSlot[];
+  /** [R52] Formato, compuesto de cada sesión y juegos nuevos que gasta cada piloto (uno por sesión disputada). */
+  format: QualiFormat;
+  compounds: QualiCompounds;
+  tyreUse: Record<string, { medium: number; soft: number }>;
 }
 
 export const QUALIFYING = {
   /** Mejora respecto al ritmo de carrera por blando nuevo y poca gasolina. */
   GAIN: 0.035,
+  /** [R52] La misma mejora según el compuesto: con medio nuevo se gana menos (diseño del juego). */
+  COMPOUND_GAIN: { soft: 0.035, medium: 0.029 } as Record<QualiCompound, number>,
+  /** [R52] Compuesto de cada sesión: blando en la clasificación del Gran Premio; S30.5 en la sprint (medio, medio y blando). */
+  COMPOUNDS: {
+    gp: { q1: 'soft', q2: 'soft', q3: 'soft' },
+    sprint: { q1: 'medium', q2: 'medium', q3: 'soft' },
+  } as Record<QualiFormat, QualiCompounds>,
   /** Evolución de pista por sesión (fracción del tiempo). */
   EVOLUTION: { Q1: 0, Q2: 0.002, Q3: 0.004 } as Record<QualiSessionId, number>,
   ATTEMPTS: 2,
@@ -70,11 +85,17 @@ export function rankSession(rows: QualiSessionRow[]): QualiSessionRow[] {
 export interface QualifyingOptions {
   /** Probabilidad de vuelta borrada por piloto (por defecto, la general). */
   deleteProbability?: Record<string, number>;
+  /** [R52] Clasificación sprint: mismas eliminaciones, con los neumáticos de S30.5. */
+  format?: QualiFormat;
 }
 
 export function runQualifying(entrants: QualiEntrant[], seed: number, options: QualifyingOptions = {}): QualifyingResult {
   const byId = new Map(entrants.map(e => [e.driverId, e]));
+  const format = options.format ?? 'gp', compounds = QUALIFYING.COMPOUNDS[format];
+  const tyreUse: QualifyingResult['tyreUse'] = Object.fromEntries(entrants.map(e => [e.driverId, { medium: 0, soft: 0 }]));
   const session = (id: QualiSessionId, drivers: QualiEntrant[]): QualiSessionRow[] => {
+    const compound = compounds[id.toLowerCase() as keyof QualiCompounds], gain = QUALIFYING.COMPOUND_GAIN[compound];
+    for (const d of drivers) tyreUse[d.driverId][compound]++;
     let order = 0;
     const laps = new Map<string, QualiLap[]>(drivers.map(d => [d.driverId, []]));
     for (let attempt = 0; attempt < QUALIFYING.ATTEMPTS; attempt++) {
@@ -86,7 +107,7 @@ export function runQualifying(entrants: QualiEntrant[], seed: number, options: Q
         // Variación aproximadamente normal (suma de tres uniformes), siempre perdiendo respecto a la vuelta ideal.
         const spread = QUALIFYING.NOISE_BASE_SEC + QUALIFYING.NOISE_INCONSISTENCY_SEC * Math.max(0, 1 - d.consistency);
         const noise = Math.abs(rng() + rng() + rng() - 1.5) / 1.5 * spread;
-        const ideal = d.referenceLapSec * (1 - QUALIFYING.GAIN) * (1 - QUALIFYING.EVOLUTION[id]) * (1 - 0.001 * attempt);
+        const ideal = d.referenceLapSec * (1 - gain) * (1 - QUALIFYING.EVOLUTION[id]) * (1 - 0.001 * attempt);
         const deleted = rng() < (options.deleteProbability?.[d.driverId] ?? QUALIFYING.DELETE_PROBABILITY);
         laps.get(d.driverId)!.push({ timeSec: Math.round((ideal + noise) * 1000) / 1000, deleted, setOrder: ++order });
       }
@@ -119,7 +140,7 @@ export function runQualifying(entrants: QualiEntrant[], seed: number, options: Q
     ...q2.slice(QUALIFYING.ADVANCE.Q2).map(r => slot(r, 'Q2')),
     ...q1Ordered.map(r => slot(r, 'Q1')),
   ].map((s, i) => ({ ...s, position: i + 1 }));
-  return { seed, sessions: { q1, q2, q3 }, grid };
+  return { seed, sessions: { q1, q2, q3 }, grid, format, compounds, tyreUse };
 }
 
 /** Tiempo de vuelta como m:ss.mmm. */
