@@ -16,7 +16,8 @@ export default async function run({ server, assert, test }) {
     const ids = WEATHER_SCENARIOS.map(s => s.id);
     assert(['seco', 'chubasco', 'mojado-inicial', 'tormenta'].every(id => ids.includes(id)) && WEATHER_SCENARIOS.every(s => s.label && s.description), 'R44: seco, chubasco, salida en mojado y tormenta, con nombre y descripción', ids.join());
     assert(buildWeatherScenario('seco', 5000).cells.length === 0, 'R44: el escenario seco no tiene lluvia');
-    for (const id of ids.filter(i => i !== 'seco')) {
+    // [T3.2] «Nubes y claros» no llueve por diseño (autorizado por el usuario el 08/10/2026): queda fuera de esta comprobación.
+    for (const id of ids.filter(i => i !== 'seco' && i !== 'nubes')) {
       const s = buildWeatherScenario(id, 5000);
       const wet = s.cells.length > 0 || (s.initialWaterMm ?? 0) > 0;
       assert(wet && s.cells.every(c => c.startSec >= 0 && c.endSec <= 5000 && c.endSec > c.startSec && c.rateMmH > 0), `R44: ${id} cabe en la duración de la carrera`);

@@ -3,13 +3,15 @@ import type { RainForecast } from '../simulation/WeatherForecast';
 
 interface RainForecastPanelProps {
   forecast: RainForecast | null | undefined;
+  /** [T3.2] Nubosidad actual (0-100 %). */
+  cloudCoverPct?: number;
 }
 
 const minutes = (seconds: number) => Math.max(1, Math.round(seconds / 60));
 const cell: React.CSSProperties = { padding: '2px 6px', textAlign: 'center', fontVariantNumeric: 'tabular-nums' };
 
 /** [R53] Previsión del radar: cuándo se espera la lluvia (con su margen) y probabilidad por tramos de tiempo y por sector. */
-export const RainForecastPanel: React.FC<RainForecastPanelProps> = ({ forecast }) => {
+export const RainForecastPanel: React.FC<RainForecastPanelProps> = ({ forecast, cloudCoverPct }) => {
   if (!forecast) return null;
   const headline = forecast.rainingNow
     ? (forecast.dryInSec === null ? 'Llueve y sigue más de 20 min' : `Llueve: para en unos ${minutes(forecast.dryInSec)} min (±${minutes(forecast.dryMarginSec ?? 0)})`)
@@ -18,6 +20,7 @@ export const RainForecastPanel: React.FC<RainForecastPanelProps> = ({ forecast }
   return (
     <section aria-label="Previsión de lluvia" style={{ margin: '8px 0', padding: '8px 10px', border: '1px solid rgba(56, 189, 248, 0.3)', borderRadius: 8, fontSize: 12, color: '#e2e8f0' }}>
       <strong>Previsión del radar · {headline}</strong>
+      {cloudCoverPct !== undefined && <div style={{ marginTop: 4, color: '#cbd5e1' }}>{cloudCoverPct >= 70 ? '☁️' : cloudCoverPct >= 20 ? '⛅' : '☀️'} Nubosidad: {cloudCoverPct} %</div>}
       <table style={{ width: '100%', marginTop: 6, borderCollapse: 'collapse' }}>
         <thead>
           <tr>

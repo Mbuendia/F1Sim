@@ -9,16 +9,27 @@ import { isCarVisible } from '../utils/carPosition';
 export interface WeatherLayers {
   /** Lluvia actual por tramo (mm/h). */
   rain: number[];
-  /** Agua en pista por tramo (mm). */
+  /** Agua en pista por tramo (mm): en la trazada y, [T3.2], fuera de ella. */
   water: number[];
+  waterOff: number[];
 }
 
 /** Capas a pintar, o null si no llueve y la pista está seca. */
 export function weatherLayers(model: WeatherModel, timeSec: number): WeatherLayers | null {
-  const water = model.waterBySegment();
+  const water = model.waterBySegment(), waterOff = model.offLineWaterBySegment();
   const rain = model.rainBySegment(timeSec);
-  if (!rain.some(r => r > 0) && !water.some(w => w > 0)) return null;
-  return { rain, water: [...water] };
+  if (!rain.some(r => r > 0) && !water.some(w => w > 0) && !waterOff.some(w => w > 0)) return null;
+  return { rain, water: [...water], waterOff: [...waterOff] };
+}
+
+/** [T3.2] Cuánto se aclara la franja de la trazada (0..0,6) cuando está más seca que el resto del asfalto. */
+export function dryLineOpacity(lineMm: number, offMm: number): number {
+  return Math.max(0, wetOpacity(offMm) - wetOpacity(lineMm));
+}
+
+/** [T3.2] Penumbra de la escena con el cielo cubierto (0..0,16). */
+export function cloudShade(cover: number): number {
+  return Math.min(1, Math.max(0, cover)) * 0.16;
 }
 
 /** Oscurecimiento de la pista (0..0,6) según el agua del tramo. */
@@ -94,7 +105,8 @@ export class WeatherRenderer {
     ctx.save();
     ctx.lineCap = 'butt';
     for (let s = 0; s < SEGMENTS; s++) {
-      const opacity = wetOpacity(layers.water[s]);
+      // [T3.2] El asfalto se oscurece con el agua de fuera de la trazada; la trazada, más seca, se aclara encima.
+      const opacity = wetOpacity(layers.waterOff[s]);
       if (opacity <= 0) continue;
       const from = Math.floor(s * perSegment), to = Math.floor((s + 1) * perSegment);
       ctx.beginPath();
@@ -110,6 +122,12 @@ export class WeatherRenderer {
       ctx.strokeStyle = `rgba(125, 190, 255, ${opacity * 0.35})`;
       ctx.lineWidth = Math.max(1, trackWidth * 0.12);
       ctx.stroke();
+      const line = dryLineOpacity(layers.water[s], layers.waterOff[s]);
+      if (line > 0.01) {
+        ctx.strokeStyle = `rgba(96, 100, 108, ${Math.min(0.75, line * 1.6)})`;
+        ctx.lineWidth = Math.max(2, trackWidth * 0.32);
+        ctx.stroke();
+      }
     }
     // Radar: mancha azul sobre los tramos donde llueve ahora.
     for (let s = 0; s < SEGMENTS; s++) {
@@ -130,6 +148,16 @@ export class WeatherRenderer {
       ctx.arc(screen.x, screen.y, radius, 0, Math.PI * 2);
       ctx.fill();
     }
+    ctx.restore();
+  }
+
+  /** [T3.2] Cielo cubierto: una penumbra suave sobre toda la escena (un solo rectángulo). */
+  static renderClouds(ctx: CanvasRenderingContext2D, camera: Camera, cover: number) {
+    const shade = cloudShade(cover);
+    if (shade <= 0.005) return;
+    ctx.save();
+    ctx.fillStyle = `rgba(10, 14, 24, ${shade})`;
+    ctx.fillRect(0, 0, camera.screenWidth, camera.screenHeight);
     ctx.restore();
   }
 

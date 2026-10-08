@@ -134,6 +134,7 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
         { depthAt: t => simulation.weatherModel.depthAt(t), timeSec: simulation.raceTimeSec });
 
       // [R53] Gotas en pantalla según la lluvia de la zona visible (por encima de pista y coches).
+      WeatherRenderer.renderClouds(ctx, camera, simulation.weatherModel.cloudCoverAt(simulation.raceTimeSec));
       if (weatherView) WeatherRenderer.renderDrops(ctx, simulation.activeTrack, camera, simulation.weatherModel.rainBySegment(simulation.raceTimeSec), simulation.raceTimeSec);
 
       // ── MINIMAPA A LA IZQUIERDA DEL TODO (visible al seguir un coche) ──

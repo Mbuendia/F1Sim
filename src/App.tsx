@@ -864,6 +864,17 @@ export const App: React.FC = () => {
     }
   }, [teamCars, currentView, pushNotice]);
 
+  // [T3.1] Un coche del jugador se sale por una escapatoria de asfalto: pierde unos segundos y sigue.
+  const lastOffTrack = useRef(new Map<number, boolean>());
+  useEffect(() => {
+    if (currentView !== 'race') { lastOffTrack.current.clear(); return; }
+    for (const car of teamCars) {
+      const now = Boolean(car.offTrack), was = lastOffTrack.current.get(car.id) ?? false;
+      lastOffTrack.current.set(car.id, now);
+      if (now && !was) pushNotice('warning', 'Pista', `${car.driver.code} se sale por la escapatoria: pierde unos ${Math.round(car.offTrack?.lossSec ?? 0)} s`);
+    }
+  }, [teamCars, currentView, pushNotice]);
+
   useEffect(() => {
     if (!activeDnf || activeDnf.id === lastDnfId.current) return;
     lastDnfId.current = activeDnf.id;

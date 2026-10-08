@@ -33,6 +33,9 @@ import { depositRubber } from '../utils/racingLine';
 import { PitStopModel } from './PitStopModel';
 import { commitmentT, nextCrossing, orderIsActive, updateOrderCommitment } from './BoxOrders';
 import { SafetyCarModel } from './SafetyCarModel';
+import { getScenario } from '../data/scenarioRegistry';
+import type { RunoffSurface, RunoffZone } from '../data/scenarioTypes';
+import { asphaltLossSec, crashReason, noMinimumText, RUNOFF, safetyCarLaps, surfaceAt } from './Runoff';
 import { RejoinModel } from './RejoinModel';
 import { IncidentModel } from './IncidentModel';
 import { calculateCarWorldPosition, lapsToPitEntry, limitLateralChange } from '../utils/carPosition';
@@ -360,8 +363,30 @@ export class RaceSimulation {
     this.weekendTyres = sets;
   }
 
+  /** [T3.1] Tramos de escapatoria puestos a mano (null: los del circuito). */
+  private runoffZones: RunoffZone[] | null = null;
+
+  /** [T3.1] Sustituye los tramos de escapatoria del circuito, para pruebas; null vuelve a los del circuito. */
+  setRunoffZones(zones: RunoffZone[] | null) {
+    this.runoffZones = zones ? zones.map(zone => ({ ...zone })) : null;
+  }
+
+  /**
+   * [T3.1] Superficie que hay fuera de la pista en ese punto: la del tramo del circuito que lo contiene o la general
+   * del circuito. Un urbano sin datos propios es todo muro.
+   */
+  runoffSurfaceAt(trackT: number): RunoffSurface {
+    const scenario = getScenario(this.circuitId);
+    const street = (OFFICIAL_CIRCUITS[this.circuitId] || OFFICIAL_CIRCUITS.barcelona).trackType === 'street';
+    return surfaceAt({
+      defaultRunoffSurface: street && scenario.trackType !== 'street' ? 'wall' : scenario.defaultRunoffSurface,
+      runoffZones: this.runoffZones ?? (street && scenario.trackType !== 'street' ? [] : scenario.runoffZones),
+    }, trackT);
+  }
+
   setCircuit(circuitId: string) {
     this.circuitId = circuitId;
+    this.runoffZones = null;
     const spec = OFFICIAL_CIRCUITS[circuitId] || OFFICIAL_CIRCUITS['barcelona'];
     this.totalLaps = this.lapsFor(spec);
     this.activeTrack = buildTrackFromSvg(spec);
@@ -630,7 +655,7 @@ export class RaceSimulation {
     this.weatherVsc = false;
     this.weatherDisplayTick = -1;
     this.forecastCache = null;
-    Object.assign(this.weather, { condition: 'dry', conditionLabel: 'SECO / DESPEJADO', waterDepthMm: 0, waterPercentage: 0, gripMultiplier: 1, rainProbabilityPct: 4 });
+    Object.assign(this.weather, { condition: 'dry', conditionLabel: 'SECO / DESPEJADO', waterDepthMm: 0, waterPercentage: 0, gripMultiplier: 1, rainProbabilityPct: 4, cloudCoverPct: 0 });
     this.scEndingLap = null; // [FIX C5] Reset scEndingLap en cada nueva carrera
 
     // [R49] Quien sale desde el pit lane deja su puesto: la parrilla se cierra y esos coches quedan al final.
@@ -1244,30 +1269,33 @@ export class RaceSimulation {
       // [R16] Riesgo ligado al estado: fiabilidad, suerte y estrés térmico del motor.
       const dnfStepChance = this.failureHazardPerSec(car) * dt;
 
+      if (car.offTrack && (car.isInPitLane || car.pitStop.isPitting)) delete car.offTrack;
       if (car.currentLap > 3 && random() < dnfStepChance) {
-        car.status = 'out';
-        
         let incidentType: 'dnf' | 'crash' | 'major_crash' = 'dnf';
         const crashRoll = random();
-        
-        if (crashRoll < 0.05) {
-          incidentType = 'major_crash';
-          car.dnfReason = '💥 ACCIDENTE GRAVE';
-        } else if (crashRoll < 0.20) {
-          incidentType = 'crash';
-          car.dnfReason = '💥 ACCIDENTE CONTRA MURO';
-        } else {
-          const failureTypes = ['🔥 FALLO MOTOR V6', '⚙️ CAJA DE CAMBIOS', '🔌 FALLO MGU-K', '💧 PRESIÓN HIDRÁULICA'];
-          car.dnfReason = failureTypes[Math.floor(random() * failureTypes.length)];
-        }
+        // [T3.1] Un accidente normal en una escapatoria de asfalto es una salida de pista: el coche pierde tiempo y sigue.
+        if (crashRoll >= 0.05 && crashRoll < 0.20 && this.crashOutcome(car) === 'salida') this.runWide(car);
+        else {
+          car.status = 'out';
+          if (crashRoll < 0.05) {
+            incidentType = 'major_crash';
+            car.dnfReason = '💥 ACCIDENTE GRAVE';
+          } else if (crashRoll < 0.20) {
+            incidentType = 'crash';
+            car.dnfReason = crashReason(this.runoffSurfaceAt(car.trackT));
+          } else {
+            const failureTypes = ['🔥 FALLO MOTOR V6', '⚙️ CAJA DE CAMBIOS', '🔌 FALLO MGU-K', '💧 PRESIÓN HIDRÁULICA'];
+            car.dnfReason = failureTypes[Math.floor(random() * failureTypes.length)];
+          }
 
-        // ── Activar efectos visuales de retirada ──
-        car.isRetiredVisible = true;
-        car.smokeOpacity = incidentType === 'dnf' ? 1.0 : 0.4; // Menos humo en choques puros
-        car.retireTimer = 15 + random() * 10; // 15-25s hasta que la grúa se lo lleve
-        // ── Registrar incidente y evaluar respuesta ──
-        this.respondToIncident(car, incidentType, leaderCar ? leaderCar.progress : 0);
-        continue;
+          // ── Activar efectos visuales de retirada ──
+          car.isRetiredVisible = true;
+          car.smokeOpacity = incidentType === 'dnf' ? 1.0 : 0.4; // Menos humo en choques puros
+          car.retireTimer = 15 + random() * 10; // 15-25s hasta que la grúa se lo lleve
+          // ── Registrar incidente y evaluar respuesta ──
+          this.respondToIncident(car, incidentType, leaderCar ? leaderCar.progress : 0);
+          continue;
+        }
       }
       const punctureChance = 0.000006 * unluckFactor * dt;
       if (car.currentLap > 2 && !car.hasPuncture && !car.pitStop.isPitting && random() < punctureChance) {
@@ -1467,13 +1495,17 @@ export class RaceSimulation {
         enginePerf.speedFactor * 
         raceDayVariance;
       // [R22] Agua del tramo: agarre del compuesto montado relativo a su agarre en seco (el seco ya lo da TireModel).
-      const waterDepth = this.weatherModel.depthAt(normalizedT);
+      // [T3.2] En la trazada, el agua que los coches van secando; quien se sale de ella para adelantar, defenderse o
+      // apartarse pisa la del resto del asfalto.
+      const lineDepth = this.weatherModel.depthAt(normalizedT), offDepth = this.weatherModel.depthOffAt(normalizedT);
+      const offLine = car.isOvertaking || Boolean(car.defence) || (car.blueFlagLevel ?? 0) > 0 || Boolean(car.offTrack);
+      const waterDepth = offLine ? offDepth : lineDepth;
       // [R45] Los puntos de lluvia del piloto recuperan parte de la pérdida de agarre.
       if (waterDepth > 0) effectivePace *= wetGripFactor(tyreWaterGrip(car.tires.compound, waterDepth) / tyreWaterGrip(car.tires.compound, 0), car.driver.development?.wet);
       // [R42] Ritmo propio del coche (neumáticos, chasis, piloto, motor, agua, temperatura y pinchazo), sin los efectos de
       // trazada: es lo que los demás comparan para decidir un adelantamiento.
       const paceIndex = effectivePace * (car.engineTempCelsius > 115 ? Math.max(0.92, 1 - (car.engineTempCelsius - 115) / 20 * 0.08) : 1)
-        * (car.hasPuncture ? 0.35 : 1);
+        * (car.hasPuncture ? 0.35 : 1) * (car.offTrack ? RUNOFF.EXCURSION_PACE : 1);
       car.paceIndex = paceIndex;
       // [R05] DRS, rebufo, masa y ERS ya no multiplican el ritmo: actúan una sola vez en el modelo longitudinal.
       // [R05] Ritmo de potencia: coche, piloto y motor (incluida la temperatura), sin neumáticos ni pista, que actúan
@@ -1629,6 +1661,14 @@ export class RaceSimulation {
       // [R09] Bandera amarilla local: velocidad reducida solo en el sector de comisarios afectado.
       targetKmh *= perms.speedFactor;
 
+      // [T3.1] Fuera de pista en una escapatoria de asfalto: rueda despacio hasta haber perdido su tiempo y vuelve.
+      if (car.offTrack) {
+        car.offTrack.lostSec += dt * Math.max(0, 1 - car.currentSpeedKmh / Math.max(1, targetKmh));
+        // Con la carrera neutralizada vuelve a la fila sin más: ahí no hay tiempo que perder.
+        if (perms.neutralized || car.offTrack.lostSec >= car.offTrack.lossSec - RUNOFF.REJOIN_SEC) delete car.offTrack;
+        else targetKmh *= RUNOFF.EXCURSION_SPEED_FACTOR;
+      }
+
       // El líder (y el resto) no pueden acelerar a velocidad de carrera completa hasta pasar la meta en la resalida
       const isWaitingForScRestartLine = this.scEndingLap !== null && car.currentLap <= this.scEndingLap;
       if (isWaitingForScRestartLine) {
@@ -1703,7 +1743,10 @@ export class RaceSimulation {
       // (que ya incluye DRS y rebufo), con tope para que dos coches iguales no se pasen solo con las ayudas. Con una
       // diferencia enorme (pinchazo, avería) se pasa en cualquier punto. Umbrales: calibración del juego.
       const OT = RaceSimulation.OVERTAKE;
-      const paceAdvantage = carAhead ? paceIndex / Math.max(1e-6, carAhead.paceIndex) - 1 : 0;
+      // [T3.2] Para pasar hay que salirse de la trazada: quien aún va por ella cuenta con el agarre que tendrá fuera.
+      const offLineGrip = offLine || offDepth === lineDepth ? 1
+        : Math.min(1, tyreWaterGrip(car.tires.compound, offDepth) / tyreWaterGrip(car.tires.compound, lineDepth));
+      const paceAdvantage = carAhead ? paceIndex * offLineGrip / Math.max(1e-6, carAhead.paceIndex) - 1 : 0;
       const closingKmh = carAhead ? car.currentSpeedKmh - carAhead.currentSpeedKmh : 0;
       // [R50] Un coche retenido detrás rueda al 99 % del de delante y nunca «se acerca»: basta con que no pierda terreno.
       const hasOvertakePace = closingKmh > -OT.HELD_TOLERANCE * car.currentSpeedKmh
@@ -1744,11 +1787,14 @@ export class RaceSimulation {
           const isCatchingPackUnderSc = isCatchingPack && this.safetyCar.isDeployed;
           const wantsToOvertake = (canOvertakeHere && zoneAllows) || committed || overtakeAnywhere || isCatchingPackUnderSc;
 
-          if (wantsToOvertake && !car.isBlueFlagged && !isWaitingForScRestartLine && perms.overtake) {
+          // [T3.1] A un coche que se ha salido de la pista se le pasa también con amarilla en ese tramo.
+          if (wantsToOvertake && !car.isBlueFlagged && !isWaitingForScRestartLine && (perms.overtake || carAhead.offTrack)) {
             car.isOvertaking = true;
             car.attackZoneId = zone ? zone.id : committed ? car.attackZoneId : null;
             // [R50] En zona, por el interior si está libre y por fuera si el de delante lo ha cubierto.
             car.targetLateralOffset = zone ? (defended ? -zone.insideSign : zone.insideSign) * 0.55 : (car.id % 2 === 0 ? 0.55 : -0.55);
+            // [T3.1] Al que se ha salido se le pasa por el lado contrario.
+            if (carAhead.offTrack) car.targetLateralOffset = carAhead.lateralOffset > 0 ? -0.55 : 0.55;
           } else {
             car.isOvertaking = false;
             // Con bandera azul el lado lo decide la cesión (más abajo).
@@ -1804,6 +1850,8 @@ export class RaceSimulation {
         car.isOvertaking = false;
         car.targetLateralOffset = 0;
       }
+      // [T3.1] El coche que se ha salido va por el borde de la pista hasta que vuelve.
+      if (car.offTrack) car.targetLateralOffset = car.offTrack.side * 0.9;
       // Q20: sin deslizamientos laterales más rápidos que el avance (evita saltos a baja velocidad).
       car.lateralOffset += limitLateralChange((car.targetLateralOffset - car.lateralOffset) * Math.min(1.0, dt * 4.0),
         this.activeTrack, dt * car.currentSpeedKmh / 3.6, trackPoint);
@@ -1824,7 +1872,8 @@ export class RaceSimulation {
         const wall = Math.max(0, distanceLaps - 1 / lapDistanceMeters) / Math.max(dt, 1e-9);
         return Math.min(Math.max(Math.min(car.speed, wanted), Math.min(car.speed, brakeFloor)), wall);
       };
-      if ((!perms.overtake || isWaitingForScRestartLine) && carAhead && carAhead.status === 'running' && !car.scUnlapping &&
+      // [T3.1] El coche que se ha salido de la pista no hace de tapón: la amarilla no obliga a quedarse detrás de él.
+      if (((!perms.overtake && !carAhead?.offTrack) || isWaitingForScRestartLine) && carAhead && carAhead.status === 'running' && !car.scUnlapping &&
           !carAhead.isInPitLane && carAhead.progress > car.progress) {
         car.speed = queueCap(carAhead.progress - car.progress);
       }
@@ -2560,15 +2609,58 @@ export class RaceSimulation {
   /** [R10] Registra un incidente (coche retirado) y aplica la respuesta de Dirección de Carrera. */
   reportIncident(car: CarState, type: 'dnf' | 'crash' | 'major_crash') {
     car.status = 'out';
-    car.dnfReason ??= type === 'dnf' ? 'AVERÍA' : '💥 ACCIDENTE CONTRA MURO';
+    delete car.offTrack;
+    car.dnfReason ??= type === 'dnf' ? 'AVERÍA' : type === 'crash' ? crashReason(this.runoffSurfaceAt(car.trackT)) : '💥 ACCIDENTE GRAVE';
     car.isRetiredVisible = true;
     car.retireTimer = 20;
     const leader = [...this.cars].filter(c => c.status !== 'out').sort(RaceSimulation.aheadFirst)[0];
     this.respondToIncident(car, type, leader ? leader.progress : 0);
   }
 
+  /** [T3.1] Qué le pasa a un coche que tiene un accidente normal aquí: en una escapatoria de asfalto se sale y sigue. */
+  private crashOutcome(car: CarState): 'salida' | 'abandono' {
+    return this.runoffSurfaceAt(car.trackT) === 'asphalt' && car.status === 'running' && !car.isInPitLane && !car.pitStop.isPitting ? 'salida' : 'abandono';
+  }
+
+  /** [T3.1] Accidente normal de un coche: en una escapatoria de asfalto pierde tiempo y sigue; en el resto, abandona. */
+  reportCrash(car: CarState): 'salida' | 'abandono' {
+    if (this.crashOutcome(car) === 'salida') { this.runWide(car); return 'salida'; }
+    this.reportIncident(car, 'crash');
+    return 'abandono';
+  }
+
+  /** [T3.1] Salida de pista por una escapatoria de asfalto: amarilla local mientras dura, sin neutralización. */
+  private runWide(car: CarState) {
+    const lossSec = asphaltLossSec(this.stream('escapatorias') ?? random);
+    const point = this.activeTrack.points[Math.floor(car.trackT * this.activeTrack.points.length) % this.activeTrack.points.length];
+    car.offTrack = { lossSec, lostSec: car.offTrack?.lostSec ?? 0, side: (car.lateralOffset || point?.idealLineOffset || 1) < 0 ? -1 : 1 };
+    const incident = IncidentModel.registerIncident(car, 'spin');
+    incident.reason = '↩️ SALIDA DE PISTA';
+    incident.surface = 'asphalt';
+    // La amarilla dura lo que el coche tarda en volver.
+    incident.clearTimer = (lossSec - RUNOFF.REJOIN_SEC) / (1 - RUNOFF.EXCURSION_SPEED_FACTOR) + 2;
+    this.incidents.push(incident);
+  }
+
+  /**
+   * [T3.1] Vueltas mínimas de Safety Car que pide un incidente según dónde quedó el coche (perfil personalizado), con
+   * su registro. Cuentan desde que ocurre; un incidente posterior que pide menos no acorta lo ya fijado. El perfil FIA
+   * no tiene mínimo: el Safety Car se retira por condiciones seguras.
+   */
+  private applySafetyCarMinimum(incident: TrackIncident, extend: boolean): string {
+    const sc = this.safetyCar, surface = incident.surface ?? this.runoffSurfaceAt(incident.trackT);
+    const street = (OFFICIAL_CIRCUITS[this.circuitId] || OFFICIAL_CIRCUITS.barcelona).trackType === 'street';
+    const fia = this.rules.id === 'fia-2025';
+    const need = safetyCarLaps(surface, street, this.stream('safety-car') ?? random);
+    const text = fia ? noMinimumText(surface) : need.text;
+    sc.targetLaps = fia ? 0 : Math.max(extend ? sc.targetLaps : 0, sc.lapCount + need.laps);
+    (sc.durationLog ??= []).push({ time: this.raceTimeSec, incidentId: incident.id, surface, laps: fia ? 0 : need.laps, targetLaps: sc.targetLaps, text });
+    return text;
+  }
+
   private respondToIncident(car: CarState, incidentType: 'dnf' | 'crash' | 'major_crash', leaderProgress: number) {
     const incident = IncidentModel.registerIncident(car, incidentType);
+    incident.surface = this.runoffSurfaceAt(car.trackT);
     this.incidents.push(incident);
     this.latestDnf = {
       id: `dnf_${car.id}_${Date.now()}`,
@@ -2586,7 +2678,8 @@ export class RaceSimulation {
     const sc = this.safetyCar;
     // [R10] Con el SC retirándose pero aún en pista, un nuevo incidente lo mantiene fuera (sin segundo despliegue).
     const retiring = sc.isDeployed && sc.mode === 'returning' && !sc.isInPitLane;
-    const activeIncidents = IncidentModel.getActiveIncidents(this.incidents);
+    // [T3.1] Una salida de pista no es un coche parado: no cuenta para Safety Car ni para bandera roja.
+    const activeIncidents = IncidentModel.getActiveIncidents(this.incidents).filter(active => active.type !== 'spin');
     const response = SafetyCarModel.evaluateResponse(incident, activeIncidents, car.currentLap, this.totalLaps, sc.isDeployed && !retiring);
     if (response === 'red') {
       this.raceFlagState = 'red';
@@ -2597,15 +2690,22 @@ export class RaceSimulation {
       sc.mode = 'leading';
       this.raceFlagState = 'sc';
       this.setSafetyCarPhase('recogida', `Safety Car permanece en pista: incidente de ${car.driver.code}`, true);
+      this.applySafetyCarMinimum(incident, true);
     } else if (response === 'sc' && this.raceFlagState !== 'red') {
       SafetyCarModel.deploy(sc, `Abandono de ${car.driver.code}`, leaderProgress, this.raceTimeSec, (OFFICIAL_CIRCUITS[this.circuitId] || OFFICIAL_CIRCUITS.barcelona).trackType, this.activeTrack);
-      this.afterSafetyCarDeploy(`Abandono de ${car.driver.code}`);
+      // [T3.1] La duración sale de la superficie del punto del incidente y se dice por qué.
+      const reason = `Abandono de ${car.driver.code} · ${this.applySafetyCarMinimum(incident, false)}`;
+      sc.triggerReason = reason;
+      this.afterSafetyCarDeploy(reason);
       this.raceFlagState = 'sc';
       this.clearVirtualSafetyCar('Sustituido por Safety Car o bandera roja');
       this.triggerD20LuckRoll('sc');
     } else if (response === 'vsc' && this.raceFlagState !== 'red') {
       this.startVirtualSafetyCar(incident.clearTimer + 5, true);
       this.triggerD20LuckRoll('vsc');
+    } else if (response === 'none' && sc.isDeployed) {
+      // [T3.1] Con el Safety Car ya en pista, el nuevo incidente puede alargarlo, nunca acortarlo.
+      this.applySafetyCarMinimum(incident, true);
     }
   }
 
@@ -3005,14 +3105,20 @@ export class RaceSimulation {
   }
 
   // ── EVOLUCIÓN DINÁMICA DE CONDICIONES DE PISTA & CLIMA ──
+  /** [T3.2] Grados que baja el asfalto y el aire con el cielo cubierto (calibración del juego). */
+  static readonly CLOUD_TRACK_COOLING_C = 6;
+  static readonly CLOUD_AIR_COOLING_C = 2;
+
   updateWeather(dt: number) {
     // Evolución sutil y continua de temperatura de asfalto y viento
     const tempOscillation = Math.sin(this.raceTimeSec * 0.05) * 1.5;
-    this.weather.trackTempCelsius = Math.round((38.5 + tempOscillation) * 10) / 10;
-    this.weather.airTempCelsius = Math.round((24.2 + tempOscillation * 0.4) * 10) / 10;
+    // [T3.2] Las nubes enfrían el asfalto y algo el aire; sin nubes, la temperatura es la de siempre.
+    const wm = this.weatherModel;
+    const cloud = wm.cloudCoverAt(this.raceTimeSec);
+    this.weather.trackTempCelsius = Math.round((38.5 + tempOscillation - RaceSimulation.CLOUD_TRACK_COOLING_C * cloud) * 10) / 10;
+    this.weather.airTempCelsius = Math.round((24.2 + tempOscillation * 0.4 - RaceSimulation.CLOUD_AIR_COOLING_C * cloud) * 10) / 10;
     this.weather.windSpeedKmh = Math.round((14.0 + Math.cos(this.raceTimeSec * 0.08) * 3.5) * 10) / 10;
     // [R22] Agua por tramo, secado y visibilidad; el estado visible sale de la misma fuente.
-    const wm = this.weatherModel;
     wm.step(this.raceTimeSec, dt, this.weather.trackTempCelsius, this.cars.filter(c => c.status === 'running' && !c.isInPitLane).map(c => c.trackT));
     this.applyWeatherSafety();
     // El estado visible (textos y porcentajes) se refresca cada medio segundo simulado; la física usa el modelo directamente.
@@ -3023,7 +3129,8 @@ export class RaceSimulation {
     this.weather.waterDepthMm = Math.round(mean * 100) / 100;
     this.weather.waterPercentage = Math.round(Math.min(100, mean / 2 * 100));
     this.weather.gripMultiplier = Math.round(tyreWaterGrip('medium', mean) * 100) / 100;
-    const [condition, label] = rain <= 0 ? (mean > 0.05 ? ['dry', 'SECÁNDOSE'] : ['dry', 'SECO / DESPEJADO'])
+    this.weather.cloudCoverPct = Math.round(cloud * 100);
+    const [condition, label] = rain <= 0 ? (mean > 0.05 ? ['dry', 'SECÁNDOSE'] : cloud >= 0.7 ? ['dry', 'NUBLADO'] : cloud >= 0.2 ? ['dry', 'NUBES Y CLAROS'] : ['dry', 'SECO / DESPEJADO'])
       : rain < 2.5 ? ['drizzle', 'LLOVIZNA'] : rain < 10 ? ['rain', 'LLUVIA'] : rain < 30 ? ['heavy_rain', 'LLUVIA FUERTE'] : ['storm', 'TORMENTA'];
     this.weather.condition = condition as TrackWeatherState['condition'];
     this.weather.conditionLabel = label;
@@ -3478,6 +3585,8 @@ const OT_FOLLOW = { MIN_M: 7, GAP_SEC: 0.17 };
 export interface FieldCar {
   id: number;
   progress: number;
+  /** [T3.1] Se ha salido de la pista y está volviendo. */
+  offTrack: boolean;
   currentSpeedKmh: number;
   status: CarState['status'];
   isInPitLane: boolean;
@@ -3499,6 +3608,7 @@ export interface FieldCar {
 function fieldCar(car: CarState): FieldCar {
   return {
     id: car.id, progress: car.progress, currentSpeedKmh: car.currentSpeedKmh, status: car.status,
+    offTrack: Boolean(car.offTrack),
     isInPitLane: car.isInPitLane, isPitting: car.pitStop.isPitting, tireHealth: car.tires.health,
     lateralOffset: car.lateralOffset, paceIndex: car.paceIndex ?? 1,
     attackingId: car.isOvertaking ? car.carAheadId : null,

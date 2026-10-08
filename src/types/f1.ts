@@ -38,6 +38,8 @@ export interface SafetyCarState {
   phase?: SafetyCarPhase;
   phaseLog?: { phase: SafetyCarPhase; time: number; message: string }[];
   unlapEligible?: number[] | null;
+  /** [T3.1] Por qué dura lo que dura: vueltas que pidió cada incidente según la superficie donde quedó el coche. */
+  durationLog?: { time: number; incidentId: number; surface: import('../data/scenarioTypes').RunoffSurface; laps: number; targetLaps: number; text: string }[];
 }
 
 export type SafetyCarPhase = 'despliegue' | 'recogida' | 'fila' | 'desdoblamiento' | 'retirada' | 'relanzamiento' | 'verde';
@@ -56,6 +58,8 @@ export interface TrackIncident {
   marshalSector?: number;
   cause?: 'mecanica' | 'accidente' | 'trompo';
   responsibility?: 'ninguna' | 'propio' | 'sin-determinar';
+  /** [T3.1] Qué hay fuera de la pista en ese punto (muro, grava, hierba o asfalto). */
+  surface?: import('../data/scenarioTypes').RunoffSurface;
 }
 
 export interface DnfNotification {
@@ -437,6 +441,8 @@ export interface CarState {
   /** [R25] Estado y registro del estratega de la IA; el ritmo lo fijó el jugador. */
   strategy?: import('../simulation/Strategist').StrategyState;
   paceByPlayer?: boolean;
+  /** [T3.1] Fuera de pista en una escapatoria de asfalto: tiempo que va a perder, el que lleva perdido y hacia qué lado. */
+  offTrack?: { lossSec: number; lostSec: number; side: 1 | -1 };
   /** [R54] Coche del jugador: propuestas pendientes del estratega, delegación, descartes (clave → vuelta) y vuelta de la última propuesta de ritmo. */
   wallProposals?: import('../simulation/Wall').WallProposal[];
   wallDelegated?: boolean;
@@ -499,6 +505,8 @@ export interface TrackWeatherState {
   forecast5Min: string;
   forecast15Min: string;
   rainProbabilityPct: number;
+  /** [T3.2] Nubosidad (0-100 %). */
+  cloudCoverPct?: number;
 }
 
 // ── EVENTO TÁCTICO DADO D20 (SAFETY CAR & BANDERA ROJA) ──

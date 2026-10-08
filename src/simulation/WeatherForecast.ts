@@ -3,7 +3,7 @@
 // nada. Horizonte, errores y probabilidades son diseño del juego (decisión del usuario del 08/10/2026: «radar con
 // incertidumbre», que sustituye a la previsión de R22 basada solo en lo observado).
 import { mulberry32, streamSeed } from './Random';
-import { DRY_MM_PER_SEC, MAX_WATER_MM } from './WeatherModel';
+import { DRY_MM_PER_SEC, MAX_WATER_MM, rainRamp, rainReach } from './WeatherModel';
 import type { RainCell, WeatherScenario } from './WeatherModel';
 
 export const FORECAST = {
@@ -79,7 +79,8 @@ function seenRate(cells: SeenCell[], t: number, timeSec: number): number {
     if (timeSec < seen.startSec || timeSec >= seen.endSec) continue;
     const center = normalize(seen.cell.centerT + (seen.cell.driftTPerSec ?? 0) * (timeSec - seen.cell.startSec));
     const distance = Math.abs(normalize(t - center + 0.5) - 0.5);
-    if (seen.cell.widthT >= 1 || distance <= seen.cell.widthT / 2) rate += seen.rateMmH;
+    // [T3.2] El radar ve también cómo sube y afloja la celda, sobre las horas que él le atribuye.
+    rate += seen.rateMmH * rainReach(seen.cell, distance) * rainRamp(seen.startSec, seen.endSec, seen.cell.rampUpSec, seen.cell.rampDownSec, timeSec);
   }
   return rate;
 }
