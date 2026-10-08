@@ -217,6 +217,8 @@ export interface PitStopState {
   penaltyPlannedSec?: number;
   servingDecisionIds?: string[];
   mustServePenalty?: boolean;
+  /** [R54] Coche del jugador sin delegar: ni un pinchazo ni un neumático destrozado lo meten en boxes sin su orden. */
+  noForcedEntry?: boolean;
   /** [R08] Infracciones registradas en boxes (las sanciones las aplica R13). */
   infractions?: PitInfraction[];
   /** [R08] Registro de cada parada con tiempos separados. */

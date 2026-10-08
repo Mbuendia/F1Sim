@@ -1095,6 +1095,8 @@ export class RaceSimulation {
         const wasInPitLane = car.isInPitLane;
         // [R13] Drive-through / stop-and-go pendiente: entrar en boxes (no se cumple bajo neutralización).
         car.pitStop.mustServePenalty = Boolean(this.stewards.pendingDrive(car.id)) && !this.isNeutralized();
+        // [R54] En los coches del jugador sin delegar no hay entrada forzada: el estratega la propone con urgencia.
+        car.pitStop.noForcedEntry = this.wallProposing(car);
         PitStopModel.processCrossings(car, previous[index], this.activeTrack,
           dt, this.raceFlagState, this.safetyCar.mode, this.pitEntryClosed);
         // [R13] Al entrar: decidir qué se cumple en este paso por boxes; al salir, marcar lo cumplido.
@@ -1845,7 +1847,7 @@ export class RaceSimulation {
 
       // Q20: con la parada decidida, llegar a la entrada por el eje (la ruta de boxes sale de la línea central).
       const pitPlan = car.pitStop;
-      const pitDecided = pitPlan.isPitting || car.hasPuncture || car.tires.health <= 5 || pitPlan.activeBoxOrder?.status === 'committed';
+      const pitDecided = pitPlan.isPitting || (!pitPlan.noForcedEntry && (car.hasPuncture || car.tires.health <= 5)) || pitPlan.activeBoxOrder?.status === 'committed';
       if (pitDecided && !car.isInPitLane && lapsToPitEntry(this.activeTrack, car.progress) * lapDistanceMeters < PIT_APPROACH_METERS) {
         car.isOvertaking = false;
         car.targetLateralOffset = 0;
@@ -2591,7 +2593,7 @@ export class RaceSimulation {
   /** [R08] El coche va a entrar en boxes en la próxima entrada (para frenar a tiempo). */
   private pitIntent(car: CarState): boolean {
     const pit = car.pitStop;
-    if (car.hasPuncture || car.tires.health <= 5 || pit.isPitting) return true;
+    if ((!pit.noForcedEntry && (car.hasPuncture || car.tires.health <= 5)) || pit.isPitting) return true;
     if (pit.activeBoxOrder?.status === 'committed' || car.redFlagHold || pit.mustServePenalty) return true;
     return !pit.playerControlled && pit.scheduledLap > 0 && car.currentLap >= pit.scheduledLap;
   }
@@ -3320,7 +3322,7 @@ export class RaceSimulation {
       if (proposing) this.proposeStop(car, null);
       return;
     }
-    const decision = this.stopDecision(car, st);
+    const decision = this.stopDecision(car, st, proposing);
     if (proposing) { this.proposeStop(car, decision); return; }
     if (decision && this.issueBoxOrder(car.id, decision.compound, 'ai')) {
       st.postponeStartLap = null;
@@ -3329,7 +3331,7 @@ export class RaceSimulation {
   }
 
   /** [R25] Parada que el estratega quiere ahora (compuesto y motivo), o null si no hay que parar o conviene esperar. */
-  private stopDecision(car: CarState, st: StrategyState): { compound: TireCompound; reason: string; text: string } | null {
+  private stopDecision(car: CarState, st: StrategyState, urgentToo = false): { compound: TireCompound; reason: string; text: string } | null {
     const L = this.activeTrack.lapLengthMeters;
     const lapsToEnd = this.totalLaps - car.currentLap;
     // [R53] Con la previsión del radar, la IA decide con el agua que habrá en una vuelta, no solo con la de ahora.
@@ -3341,6 +3343,8 @@ export class RaceSimulation {
     const weatherChoice = chooseCompound(lapsToEnd, car.tireInventory, compliance, depth);
     let reason: string | null = null;
     if (weatherChoice && tyreWaterGrip(weatherChoice, depth) > current + 0.05) reason = depth > 0.3 ? 'lluvia' : 'pista seca';
+    // [R54] Lo que en un coche de la IA es una entrada forzada, en uno del jugador es una propuesta urgente.
+    if (urgentToo && (car.hasPuncture || car.tires.health <= 5)) reason = car.hasPuncture ? 'pinchazo' : 'neumático destrozado';
     if (lapsToEnd <= 1 && reason === null) return null;
     // Desgaste por vuelta: el medido; sin medida, el histórico del juego si lleva al menos 3 vueltas o el nominal del compuesto.
     const nominalWear = (100 - STRATEGY.TARGET_HEALTH) / TireModel.getCompoundProperties(car.tires.compound).nominalLaps;
@@ -3392,6 +3396,8 @@ export class RaceSimulation {
       : reason === 'safety car' ? 'Safety car: parada con menos pérdida de tiempo'
       : reason === 'desgaste' ? `Desgaste: al neumático le quedan ${decimal(Math.max(0, lapsLeftOnTyre))} vueltas`
       : reason === 'lluvia inminente' ? 'Lluvia inminente: el neumático no aguanta y no conviene montar seco'
+      : reason === 'pinchazo' ? 'Pinchazo: hay que entrar ya a cambiar la rueda'
+      : reason === 'neumático destrozado' ? 'Neumático destrozado: hay que entrar ya'
       : 'Reglamento: aún tiene que montar otro compuesto de seco';
     return { compound, reason, text };
   }

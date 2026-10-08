@@ -61,9 +61,12 @@ export class PitStopModel {
   }
 
   static shouldEnterPit(car: CarState, dt: number, raceFlagState?: string, scMode?: string): boolean {
-    if (car.hasPuncture) return true;
-    if (car.tires.health <= 5.0 && !car.pitStop.isPitting) {
-      return true;
+    // [R54] En un coche del jugador sin delegar, la entrada por pinchazo o neumático destrozado también la decide él.
+    if (!car.pitStop.noForcedEntry) {
+      if (car.hasPuncture) return true;
+      if (car.tires.health <= 5.0 && !car.pitStop.isPitting) {
+        return true;
+      }
     }
     if (car.pitStop.playerControlled) return car.pitStop.activeBoxOrder?.status === 'committed';
     // [FIX M10] Parada estratégica programada al alcanzar scheduledLap
@@ -392,7 +395,7 @@ export class PitStopModel {
     if (entry > car.progress + 1e-10) return;
     const order = pit.activeBoxOrder;
     const ordered = order?.status === 'committed' && order.entryProgress <= entry + 1e-10;
-    const emergency = car.hasPuncture || car.tires.health <= 5 || pit.isPitting;
+    const emergency = (!pit.noForcedEntry && (car.hasPuncture || car.tires.health <= 5)) || pit.isPitting;
     const automatic = !pit.playerControlled && this.shouldEnterPit(car, dt, flag, scMode);
     const penalty = pit.mustServePenalty === true;
     if (!ordered && !emergency && !automatic && !penalty) return;

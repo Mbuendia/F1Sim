@@ -4,7 +4,7 @@ import type { TrackDefinition } from '../data/barcelonaTrack';
 import type { CarState } from '../types/f1';
 import type { Camera } from './Camera';
 import { MAX_WATER_MM, SEGMENTS, WeatherModel } from '../simulation/WeatherModel';
-import { isCarVisible } from '../utils/carPosition';
+import { getLateralDisplacement, isCarVisible } from '../utils/carPosition';
 
 export interface WeatherLayers {
   /** Lluvia actual por tramo (mm/h). */
@@ -25,6 +25,13 @@ export function weatherLayers(model: WeatherModel, timeSec: number): WeatherLaye
 /** [T3.2] Cuánto se aclara la franja de la trazada (0..0,6) cuando está más seca que el resto del asfalto. */
 export function dryLineOpacity(lineMm: number, offMm: number): number {
   return Math.max(0, wetOpacity(offMm) - wetOpacity(lineMm));
+}
+
+/** [T3.2] Punto de la trazada ideal en ese punto del circuito: el mismo sitio por el que rueda un coche que la sigue. */
+export function dryLinePoint(track: TrackDefinition, index: number): { x: number; y: number } {
+  const points = track.points, p = points[((index % points.length) + points.length) % points.length];
+  const lateral = getLateralDisplacement(p.idealLineOffset || 0, p.trackWidthMeters ?? track.trackWidthMeters ?? 24, p.trackWidthCars ?? 3);
+  return { x: p.x + Math.cos(p.angle + Math.PI / 2) * lateral, y: p.y + Math.sin(p.angle + Math.PI / 2) * lateral };
 }
 
 /** [T3.2] Penumbra de la escena con el cielo cubierto (0..0,16). */
@@ -124,8 +131,15 @@ export class WeatherRenderer {
       ctx.stroke();
       const line = dryLineOpacity(layers.water[s], layers.waterOff[s]);
       if (line > 0.01) {
+        // La franja sigue la trazada ideal curva a curva, no el centro de la pista.
+        ctx.beginPath();
+        for (let i = from; i <= to; i++) {
+          const ideal = dryLinePoint(track, i);
+          const screen = camera.worldToScreen(ideal.x, ideal.y);
+          if (i === from) ctx.moveTo(screen.x, screen.y); else ctx.lineTo(screen.x, screen.y);
+        }
         ctx.strokeStyle = `rgba(96, 100, 108, ${Math.min(0.75, line * 1.6)})`;
-        ctx.lineWidth = Math.max(2, trackWidth * 0.32);
+        ctx.lineWidth = Math.max(2, trackWidth * 0.3);
         ctx.stroke();
       }
     }
