@@ -529,5 +529,6 @@ export const modules = [
   { "id": "season-r51", "tasks": ["R51"], "sprint": "2.11", "kind": "contract" },
   { "id": "drs-visible-r04", "tasks": ["R04"], "sprint": "2.11", "kind": "contract" },
   { "id": "sprint-weekend-r52", "tasks": ["R52"], "sprint": "2.11", "kind": "contract" },
-  { "id": "wall-telemetry-r24", "tasks": ["R24"], "sprint": "2.11", "kind": "contract" }
+  { "id": "wall-telemetry-r24", "tasks": ["R24"], "sprint": "2.11", "kind": "contract" },
+  { "id": "physics-signals-r23", "tasks": ["R23"], "sprint": "2.11", "kind": "contract" }
 ];
