@@ -1,4 +1,5 @@
 import { drsMarkers } from './drsMarkers';
+import { SIGNALS } from './signals';
 import { TrackDefinition } from '../data/barcelonaTrack';
 import { Camera } from './Camera';
 import { TrackWeatherState } from '../types/f1';
@@ -468,7 +469,9 @@ export class TrackRenderer {
     ctx.save();
     ctx.lineCap = 'round';
     for (const zone of zones) {
-      ctx.strokeStyle = 'rgba(0, 255, 102, 0.85)';
+      // [R23] Zona: línea continua. Detección: discontinua y de otro color. Las dos, con rótulo.
+      ctx.strokeStyle = SIGNALS.drsZone.color;
+      ctx.globalAlpha = 0.85;
       ctx.lineWidth = Math.max(2, Math.min(5, 2.2 * zoom));
       ctx.beginPath();
       zone.points.forEach((point, index) => {
@@ -476,12 +479,13 @@ export class TrackRenderer {
         if (index === 0) ctx.moveTo(edge.x, edge.y); else ctx.lineTo(edge.x, edge.y);
       });
       ctx.stroke();
+      ctx.globalAlpha = 1;
       const at = side(zone.points[0], half + 16);
-      label(`DRS ${zone.id}`, at.x, at.y, '#4ade80');
+      label(`${SIGNALS.drsZone.label} ${zone.id}`, at.x, at.y, '#4ade80');
     }
     for (const detection of detections) {
       const from = side(detection, -half), to = side(detection, half);
-      ctx.strokeStyle = 'rgba(56, 189, 248, 0.95)';
+      ctx.strokeStyle = SIGNALS.drsDetection.color;
       ctx.lineWidth = Math.max(1.5, Math.min(4, 1.6 * zoom));
       ctx.setLineDash([4, 3]);
       ctx.beginPath();
@@ -490,7 +494,7 @@ export class TrackRenderer {
       ctx.stroke();
       ctx.setLineDash([]);
       const at = side(detection, half + 16);
-      label(`DETECCIÓN DRS ${detection.zoneIds.join('+')}`, at.x, at.y, '#7dd3fc');
+      label(`${SIGNALS.drsDetection.label} ${detection.zoneIds.join('+')}`, at.x, at.y, '#7dd3fc');
     }
     ctx.restore();
   }

@@ -3,6 +3,7 @@ import { TrackDefinition } from '../data/barcelonaTrack';
 import { Camera } from './Camera';
 import { rearLight, safetyCarLightOn, wheelMarkPhase } from './carDetail';
 import { flapOpenness } from '../simulation/DRSModel';
+import { DRS_SLOT_COLOR, SIGNALS } from './signals';
 import { TopSprite, carPixelsPerMeter, carSpriteKey, carSpriteSize, getCarSprite, getSafetyCarSprite, spriteLevel } from './carSprites';
 import { compoundStyle } from '../utils/compounds';
 import { getTrackHalfWidth, getLateralDisplacement, isCarVisible, calculateCarWorldPosition } from '../utils/carPosition';
@@ -209,8 +210,8 @@ export class CarRenderer {
       ctx.drawImage(spriteLevel(sprite, length * CarRenderer.pixelRatio()) as CanvasImageSource, -length / 2, -width / 2, length, width);
       if (sprite.lightbar) {
         const perMeter = length / sprite.lengthM, barLength = Math.max(2, sprite.lightbar.lengthM * perMeter);
-        ctx.fillStyle = flash ? '#f59e0b' : '#ef4444';
-        ctx.shadowColor = '#f59e0b';
+        ctx.fillStyle = flash ? SIGNALS.safetyCarLights.color : SIGNALS.safetyCarLights.alternate;
+        ctx.shadowColor = SIGNALS.safetyCarLights.color;
         ctx.shadowBlur = 10;
         ctx.fillRect(sprite.lightbar.x * perMeter - barLength / 2, -sprite.lightbar.halfWidth * perMeter, barLength, 2 * sprite.lightbar.halfWidth * perMeter);
         ctx.shadowBlur = 0;
@@ -230,8 +231,8 @@ export class CarRenderer {
       ctx.fillRect(-carLen * 0.15, -carWid * 0.35, carLen * 0.35, carWid * 0.7);
 
       // Barra de luces estroboscópicas en el techo (Amber / Orange LEDs)
-      ctx.fillStyle = flash ? '#f59e0b' : '#ef4444';
-      ctx.shadowColor = '#f59e0b';
+      ctx.fillStyle = flash ? SIGNALS.safetyCarLights.color : SIGNALS.safetyCarLights.alternate;
+      ctx.shadowColor = SIGNALS.safetyCarLights.color;
       ctx.shadowBlur = 10;
       ctx.fillRect(-carLen * 0.05, -carWid * 0.38, 3.5 * scale, carWid * 0.76);
       ctx.shadowBlur = 0;
@@ -382,8 +383,11 @@ export class CarRenderer {
       const flap = flapOpenness(car.drsActive, car.drsChangedAt, detail.timeSec);
       if (flap > 0) {
         ctx.globalAlpha = opacity * flap;
-        ctx.fillStyle = '#00ff66';
+        ctx.fillStyle = SIGNALS.drsOpen.color;
         drawRearWing();
+        // [R23] Además del color, la forma: la ranura que se abre entre los dos planos del alerón.
+        ctx.fillStyle = DRS_SLOT_COLOR;
+        ctx.fillRect(-cl * 0.85 + cl * 0.08, -cw * 0.8, cl * 0.04, cw * 1.6);
         ctx.globalAlpha = opacity;
       }
 
@@ -407,8 +411,8 @@ export class CarRenderer {
       // [R46] Luz trasera: parpadea con pista mojada y queda fija al recargar en frenada.
       const light = rearLight({ wetMm: detail.wetMm, braking: car.status === 'running' && car.telemetry.brake > 20, timeSec: detail.timeSec });
       if (light.lit) {
-        ctx.fillStyle = '#ff2d2d';
-        ctx.shadowColor = '#ff2d2d';
+        ctx.fillStyle = SIGNALS.rearLight.color;
+        ctx.shadowColor = SIGNALS.rearLight.color;
         ctx.shadowBlur = 6 * scale;
         ctx.fillRect(-cl * 0.93, -cw * 0.12, cl * 0.06, cw * 0.24);
         ctx.shadowBlur = 0;
@@ -464,18 +468,21 @@ export class CarRenderer {
     // DRS: el plano del alerón trasero en verde, que aparece y se va con la transición del flap (R04).
     const flap = flapOpenness(car.drsActive, car.drsChangedAt, detail.timeSec);
     if (flap > 0 && sprite.rearWing) {
+      const chord = (sprite.rearWing.x1 - sprite.rearWing.x0) * perMeter, span = 2 * sprite.rearWing.halfWidth * perMeter;
       ctx.globalAlpha = opacity * flap;
-      ctx.fillStyle = '#00ff66';
-      ctx.fillRect(sprite.rearWing.x0 * perMeter, -sprite.rearWing.halfWidth * perMeter,
-        (sprite.rearWing.x1 - sprite.rearWing.x0) * perMeter, 2 * sprite.rearWing.halfWidth * perMeter);
+      ctx.fillStyle = SIGNALS.drsOpen.color;
+      ctx.fillRect(sprite.rearWing.x0 * perMeter, -span / 2, chord, span);
+      // [R23] Además del color, la forma: la ranura que se abre entre los dos planos del alerón.
+      ctx.fillStyle = DRS_SLOT_COLOR;
+      ctx.fillRect(sprite.rearWing.x0 * perMeter + chord * 0.4, -span / 2, chord * 0.2, span);
       ctx.globalAlpha = opacity;
     }
 
     // Luz trasera: parpadea con pista mojada y queda fija al recargar en frenada.
     const light = rearLight({ wetMm: detail.wetMm, braking: car.status === 'running' && car.telemetry.brake > 20, timeSec: detail.timeSec });
     if (light.lit) {
-      ctx.fillStyle = '#ff2d2d';
-      ctx.shadowColor = '#ff2d2d';
+      ctx.fillStyle = SIGNALS.rearLight.color;
+      ctx.shadowColor = SIGNALS.rearLight.color;
       ctx.shadowBlur = 6 * scale;
       ctx.fillRect(-size.length / 2, -0.6 * scale, 1 * scale, 1.2 * scale);
       ctx.shadowBlur = 0;
