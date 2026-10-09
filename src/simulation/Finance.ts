@@ -31,13 +31,13 @@ export const FINANCE = {
  * de constructores, operación e intereses. El resto los anotan las tareas que cuestan o ingresan dinero.
  */
 export type LedgerKind = 'inicial' | 'arrastre' | 'ronda' | 'puntos' | 'premio' | 'operacion' | 'intereses'
-  | 'proyecto' | 'componente' | 'danos' | 'obra' | 'mantenimiento' | 'sueldos' | 'fichaje' | 'patrocinio' | 'prima' | 'junta';
+  | 'proyecto' | 'componente' | 'danos' | 'obra' | 'mantenimiento' | 'sueldos' | 'cantera' | 'fichaje' | 'patrocinio' | 'prima' | 'junta';
 
 /** Nombre de cada concepto al agrupar ingresos y gastos. */
 export const LEDGER_KIND_LABEL: Record<LedgerKind, string> = {
   inicial: 'Saldo inicial', arrastre: 'Saldo anterior', ronda: 'Ingreso de las rondas', puntos: 'Puntos', premio: 'Premio de constructores',
   operacion: 'Operación', intereses: 'Intereses', proyecto: 'Desarrollo', componente: 'Componentes', danos: 'Daños', obra: 'Obras',
-  mantenimiento: 'Instalaciones', sueldos: 'Sueldos', fichaje: 'Fichajes', patrocinio: 'Patrocinio', prima: 'Primas', junta: 'Junta',
+  mantenimiento: 'Instalaciones', sueldos: 'Sueldos', cantera: 'Cantera', fichaje: 'Fichajes', patrocinio: 'Patrocinio', prima: 'Primas', junta: 'Junta',
 };
 
 /** Movimiento del libro: positivo es ingreso y negativo gasto, en miles. La ronda 0 es el arranque de la temporada. */
@@ -110,7 +110,9 @@ function append(state: FinanceState, teamId: string, movement: Movement, amount:
 export function formatMoney(amount: number, sign = false): string {
   const millions = Math.abs(amount) / 1000;
   const prefix = amount < 0 ? '−' : sign && amount > 0 ? '+' : '';
-  return `${prefix}${millions.toFixed(1).replace('.', ',')} M`;
+  // Un importe que con un decimal se quedaría en «0,0 M» (el sueldo de un reserva) se enseña con dos.
+  const decimals = amount !== 0 && millions < 0.05 ? 2 : 1;
+  return `${prefix}${millions.toFixed(decimals).replace('.', ',')} M`;
 }
 
 /**

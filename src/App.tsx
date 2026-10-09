@@ -74,6 +74,7 @@ import { normalizeSetup, parcFermeCheck, pitLaneReason, withPitLaneStarts } from
 import type { CarSetup } from './simulation/Setup';
 import { DRIVERS } from './data/drivers';
 import { lineupOf, offerContract, pairOf, rosterOf } from './simulation/Contracts';
+import { agreePromotion, setStandIn, signReserve, standInDrivers } from './simulation/Academy';
 import type { Driver } from './types/f1';
 import { TEAMS } from './data/teams';
 import { RaceResultHistory, StartLightState, CarState, RaceFlagState, SafetyCarState, DnfNotification, D20LuckEvent, TrackWeatherState } from './types/f1';
@@ -196,8 +197,10 @@ export const App: React.FC = () => {
     try { localStorage.setItem(MANAGEMENT_STORAGE_KEY, JSON.stringify(next)); } catch (e) { console.error(e); }
   }, []);
   // [T4.7] Plantilla de la temporada: cada piloto con el equipo de su contrato. La carrera libre usa la de partida.
-  const roster = useMemo(() => (mode === 'career' ? rosterOf(management.contracts) : DRIVERS), [mode, management.contracts]);
+  // [T4.8] Si un reserva sustituye a un titular en la próxima ronda, ese asiento lleva su nombre, su código y su nivel.
+  const roster = useMemo(() => (mode === 'career' ? { ...rosterOf(management.contracts), ...standInDrivers(management.academy) } : DRIVERS), [mode, management.contracts, management.academy]);
   const [contractMessage, setContractMessage] = useState<string | null>(null);
+  const [reserveMessage, setReserveMessage] = useState<string | null>(null);
   // [T4.19] En la carrera profesional el jugador lleva a los pilotos de su equipo: el piloto seguido es uno de ellos.
   useEffect(() => {
     if (mode === 'career') setSelectedDriverId(driverId => careerDriver(management.playerTeamId, driverId, pairOf(management.contracts, management.playerTeamId)));
@@ -215,12 +218,12 @@ export const App: React.FC = () => {
     try { localStorage.setItem(DEVELOPMENT_STORAGE_KEY, JSON.stringify(next)); } catch (e) { console.error(e); }
   }, []);
   /** Mejora que dará la carrera terminada con el resultado actual (se guarda al volver al inicio). */
-  const developmentAfter = useCallback((result: RaceResult) => developAfterRace(development, Object.values(roster), driver => {
+  const developmentAfter = useCallback((result: RaceResult) => developAfterRace(development, Object.values(mode === 'career' ? rosterOf(management.contracts) : DRIVERS).filter(driver => roster[driver.id]?.code === driver.code), driver => {
     const row = result.rows.find(r => r.driverCode === driver.code);
     return row ? { position: row.position, status: row.status, points: row.points } : undefined;
   }, simulation.totalLaps,
   // [T4.4] El simulador de cada equipo puede dar a sus pilotos un punto de mejora extra.
-  driver => simulatorBonus(gainOf(management.facilities, driver.teamId, 'simulador'), simulation.totalLaps + development.races, driver.id)), [development, simulation, management, roster]);
+  driver => simulatorBonus(gainOf(management.facilities, driver.teamId, 'simulador'), simulation.totalLaps + development.races, driver.id)), [development, simulation, management, roster, mode]);
 
   // [R19] Componentes de la unidad de potencia de todos los pilotos, guardados en el navegador
   const [components, setComponents] = useState<ComponentState>(() => {
@@ -232,6 +235,11 @@ export const App: React.FC = () => {
     setComponents(next);
     try { localStorage.setItem(COMPONENTS_STORAGE_KEY, JSON.stringify(next)); } catch (e) { console.error(e); }
   }, []);
+  // [T4.8] Un piloto nuevo en la parrilla estrena los componentes de su coche.
+  useEffect(() => {
+    const next = Object.keys(roster).reduce((s, id) => ensureDriver(s, id), components);
+    if (next !== components) saveComponents(next);
+  }, [roster, components, saveComponents]);
   const [gridChanges, setGridChanges] = useState<GridChange[]>([]);
 
   // [R18] Programa de desarrollo y temporadas archivadas, guardados en el navegador
@@ -277,8 +285,10 @@ export const App: React.FC = () => {
   const [raceLive, setRaceLive] = useState(false);
   // [T4.7] El motor forma la parrilla con la alineación de la temporada (nunca con una carrera a medias).
   useEffect(() => {
-    if (!raceLive && currentView !== 'race') simulation.setLineup(mode === 'career' ? lineupOf(management.contracts) : {});
-  }, [simulation, raceLive, currentView, mode, management.contracts]);
+    if (raceLive || currentView === 'race') return;
+    if (mode === 'career') simulation.setLineup(lineupOf(management.contracts), management.contracts.extra ?? {}, standInDrivers(management.academy));
+    else simulation.setLineup({});
+  }, [simulation, raceLive, currentView, mode, management.contracts, management.academy]);
   // [T4.19] «Guardado hace X»: la partida se guarda sola con cada cambio; aquí queda cuándo fue el último.
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const [clock, setClock] = useState(() => Date.now());
@@ -1177,6 +1187,24 @@ export const App: React.FC = () => {
           carOf: teamId => carSponsors(management.sponsors, teamId),
         }}
         roster={roster}
+        reserve={{
+          academy: management.academy, message: reserveMessage,
+          onStandIn: seatId => {
+            const answer = setStandIn(management.academy, management.contracts, management.playerTeamId, seatId);
+            if (answer.ok) saveManagement({ ...management, academy: answer.state });
+            setReserveMessage(answer.reason);
+          },
+          onSignReserve: juniorId => {
+            const answer = signReserve(management.academy, management.playerTeamId, juniorId);
+            if (answer.ok) saveManagement({ ...management, academy: answer.state });
+            setReserveMessage(answer.reason);
+          },
+          onPromote: () => {
+            const answer = agreePromotion(management.academy, management.contracts, { season: management.finance.season, round: hubRound?.round ?? SEASON_RACES, teamId: management.playerTeamId });
+            if (answer.ok) saveManagement({ ...management, contracts: answer.contracts });
+            setReserveMessage(answer.reason);
+          },
+        }}
         contracts={{
           state: management.contracts, teamId: management.playerTeamId, season: management.finance.season, round: hubRound?.round ?? SEASON_RACES, message: contractMessage,
           onOffer: (driverId, salary, seasons) => {

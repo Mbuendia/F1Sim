@@ -139,24 +139,54 @@ export class RaceSimulation {
     this.driverAttributes = { ...attributes };
     for (const car of this.cars) {
       const base = this.baseDriver(car.driver.id);
-      if (base) car.driver = applyAttributes(base, this.driverAttributes[base.id]);
+      if (base) car.driver = applyAttributes(base, this.attributesFor(base.id));
     }
   }
 
-  /** [T4.7] Equipo de cada piloto en esta temporada (por id). Sin él, cada piloto corre con su equipo de partida. */
-  private lineup: Record<string, string> = {};
+  /**
+   * [T4.7] Parrilla de la temporada: equipo de cada piloto (vacío: la alineación de partida), [T4.8] ficha de los
+   * pilotos que no están en `drivers.ts` y reservas que ocupan el asiento de un titular en esta ronda.
+   */
+  private grid: { lineup: Record<string, string>; extra: Record<string, Driver>; standIns: Record<string, Driver> } = { lineup: {}, extra: {}, standIns: {} };
 
-  /** [T4.7] Fija la alineación y vuelve a formar la parrilla: librea, coche y equipo de boxes siguen al piloto. */
-  setLineup(lineup: Record<string, string>) {
-    const next = Object.fromEntries(Object.entries(lineup).filter(([id, teamId]) => DRIVERS[id] && TEAMS[teamId] && DRIVERS[id].teamId !== teamId));
-    if (JSON.stringify(next) === JSON.stringify(this.lineup)) return;
-    this.lineup = next;
+  /**
+   * [T4.7] Fija la alineación y vuelve a formar la parrilla: librea, coche y equipo de boxes siguen al piloto.
+   * [T4.8] `extra` trae a los pilotos nuevos y `standIns` (por asiento) al reserva que corre en lugar de un titular: lleva
+   * su nombre, su código, su dorsal y su nivel en el coche de ese asiento.
+   */
+  setLineup(lineup: Record<string, string>, extra: Record<string, Driver> = {}, standIns: Record<string, Driver> = {}) {
+    const entries = Object.entries(lineup).filter(([id, teamId]) => (DRIVERS[id] ?? extra[id]) && TEAMS[teamId]);
+    const initial = entries.length !== STARTING_GRID_ORDER.length || (entries.every(([id, teamId]) => DRIVERS[id]?.teamId === teamId));
+    const clean = initial ? {} : Object.fromEntries(entries);
+    const active = (id: string) => (initial ? Boolean(DRIVERS[id]) : Boolean(clean[id]));
+    const next = {
+      lineup: clean, extra: Object.fromEntries(Object.entries(extra).filter(([id]) => clean[id] && !DRIVERS[id])),
+      standIns: Object.fromEntries(Object.entries(standIns).filter(([id]) => active(id))),
+    };
+    if (JSON.stringify(next) === JSON.stringify(this.grid)) return;
+    this.grid = next;
+    this.startingGrid = null;
+    this.pitLaneStarters = [];
     this.initRace();
   }
 
+  /** Pilotos de la parrilla de esta temporada, en el orden de salida de referencia; los nuevos, al final. */
+  private gridIds(): string[] {
+    const ids = Object.keys(this.grid.lineup);
+    return ids.length ? [...STARTING_GRID_ORDER.filter(id => this.grid.lineup[id]), ...ids.filter(id => !STARTING_GRID_ORDER.includes(id))] : STARTING_GRID_ORDER;
+  }
+
   private baseDriver(driverId: string): Driver {
-    const base = DRIVERS[driverId], teamId = this.lineup[driverId];
-    return base && teamId ? { ...base, teamId } : base;
+    const base = DRIVERS[driverId] ?? this.grid.extra[driverId];
+    const teamId = this.grid.lineup[driverId] ?? base?.teamId;
+    const standIn = this.grid.standIns[driverId];
+    if (standIn) return { ...standIn, id: driverId, teamId };
+    return base && teamId !== base.teamId ? { ...base, teamId } : base;
+  }
+
+  /** [R45] Atributos que se aplican en un asiento: los del titular no valen para el reserva que lo sustituye. */
+  private attributesFor(driverId: string): DriverAttributes | undefined {
+    return this.grid.standIns[driverId] ? undefined : this.driverAttributes[driverId];
   }
 
   /** [R45] Ventaja que necesita `attackerId` para atacar a `defenderId`. */
@@ -226,7 +256,7 @@ export class RaceSimulation {
 
   /** [R49] Fija quién sale desde el pit lane y prepara la carrera: dejan su puesto y la parrilla se cierra. */
   setPitLaneStarters(driverIds: string[]) {
-    this.pitLaneStarters = [...new Set(driverIds.filter(id => STARTING_GRID_ORDER.includes(id)))];
+    this.pitLaneStarters = [...new Set(driverIds.filter(id => this.gridIds().includes(id)))];
     this.initRace();
   }
 
@@ -310,7 +340,8 @@ export class RaceSimulation {
 
   /** [R20] Fija la parrilla (ids de piloto en orden) y prepara la carrera; `null` vuelve a la prefijada. */
   setStartingGrid(driverIds: string[] | null): boolean {
-    if (driverIds && (new Set(driverIds).size !== STARTING_GRID_ORDER.length || !driverIds.every(id => STARTING_GRID_ORDER.includes(id)))) return false;
+    const active = this.gridIds();
+    if (driverIds && (new Set(driverIds).size !== active.length || !driverIds.every(id => active.includes(id)))) return false;
     this.startingGrid = driverIds ? [...driverIds] : null;
     this.initRace();
     return true;
@@ -522,7 +553,7 @@ export class RaceSimulation {
         // [T4.6] Ausente en los guardados anteriores: paradas con el reparto de siempre.
         pitCrews: this.pitCrews,
         // [T4.7] Ausente en los guardados anteriores: cada piloto en su equipo de partida.
-        lineup: this.lineup,
+        grid: this.grid,
       },
     };
   }
@@ -609,7 +640,7 @@ export class RaceSimulation {
     this.weekendTyres = setup.weekendTyres ?? null;
     this.playerCars = setup.playerCars ?? [];
     this.pitCrews = setup.pitCrews ?? {};
-    this.lineup = setup.lineup ?? {};
+    this.grid = setup.grid ?? { lineup: {}, extra: {}, standIns: {} };
 
     // Datos de pintado: se reconstruyen en el siguiente paso.
     this.previousPoses.clear();
@@ -697,12 +728,12 @@ export class RaceSimulation {
     this.scEndingLap = null; // [FIX C5] Reset scEndingLap en cada nueva carrera
 
     // [R49] Quien sale desde el pit lane deja su puesto: la parrilla se cierra y esos coches quedan al final.
-    const baseGrid = this.startingGrid ?? STARTING_GRID_ORDER;
+    const baseGrid = this.startingGrid ?? this.gridIds();
     const fromPitLane = baseGrid.filter(id => this.pitLaneStarters.includes(id));
     const gridOrder = fromPitLane.length ? [...baseGrid.filter(id => !fromPitLane.includes(id)), ...fromPitLane] : baseGrid;
     this.cars = gridOrder.map((driverId, idx) => {
       // [R45] Piloto con sus atributos actuales (idéntico al de siempre si no hay mejoras).
-      const driver = applyAttributes(this.baseDriver(driverId), this.driverAttributes[driverId]);
+      const driver = applyAttributes(this.baseDriver(driverId), this.attributesFor(driverId));
       const team = TEAMS[driver.teamId];
 
       const gridSpacing = 0.0035;

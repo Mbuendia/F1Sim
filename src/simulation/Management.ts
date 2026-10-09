@@ -1,5 +1,5 @@
 // [Sprint 4] Gestión del equipo entre carreras: lo que el director decide fuera de la pista. Reúne en un solo estado,
-// que va con la carrera profesional y se guarda con ella, las piezas de cada tarea (T4.1: dinero; T4.4: instalaciones; T4.6: equipo de boxes; T4.9: patrocinio; T4.10: junta; T4.7: contratos de pilotos).
+// que va con la carrera profesional y se guarda con ella, las piezas de cada tarea (T4.1: dinero; T4.4: instalaciones; T4.6: equipo de boxes; T4.9: patrocinio; T4.10: junta; T4.7: contratos de pilotos; T4.8: reserva y cantera).
 // Todo son funciones puras: la temporada (Season.ts) las llama al anotar una carrera, un salto de ronda o el cierre.
 import { TEAMS } from '../data/teams';
 import { atDebtLimit, charge, closeFinanceSeason, credit, isFinance, settleRound, startFinance } from './Finance';
@@ -14,6 +14,8 @@ import { isSponsors, renewSponsors, roundSponsorship, startSponsors } from './Sp
 import type { ResultLine, SponsorsState } from './Sponsors';
 import { isContracts, resolveMarket, roundSalaries, startContracts } from './Contracts';
 import type { ContractsState } from './Contracts';
+import { advanceAcademy, entrantsOf, isAcademy, reserveSalary, startAcademy, winterAcademy } from './Academy';
+import type { AcademyState } from './Academy';
 
 export interface ManagementState {
   version: 1;
@@ -32,6 +34,8 @@ export interface ManagementState {
   board: BoardState;
   /** [T4.7] Contratos de los pilotos de toda la parrilla: de ellos sale la alineación de cada temporada. */
   contracts: ContractsState;
+  /** [T4.8] Cantera: jóvenes, reserva de cada equipo y sustituciones decididas para la próxima ronda. */
+  academy: AcademyState;
 }
 
 export const MANAGEMENT_STORAGE_KEY = 'f1_management';
@@ -42,7 +46,7 @@ export function startManagement(playerTeamId: string, season = 1, seed = 0): Man
   return {
     version: 1, playerTeamId: teamId, seed,
     finance: startFinance(Object.keys(TEAMS), season), facilities: startFacilities(), pitCrews: startPitCrews(), sponsors: startSponsors(season, seed),
-    board: startBoard(teamId), contracts: startContracts(season, seed),
+    board: startBoard(teamId), contracts: startContracts(season, seed), academy: startAcademy(seed),
   };
 }
 
@@ -57,7 +61,7 @@ export function isManagement(data: unknown): boolean {
     && (state.seed === undefined || Number.isInteger(state.seed))
     && (state.facilities === undefined || isFacilities(state.facilities)) && (state.pitCrews === undefined || isPitCrews(state.pitCrews))
     && (state.sponsors === undefined || isSponsors(state.sponsors)) && (state.board === undefined || isBoard(state.board))
-    && (state.contracts === undefined || isContracts(state.contracts));
+    && (state.contracts === undefined || isContracts(state.contracts)) && (state.academy === undefined || isAcademy(state.academy));
 }
 
 /** La gestión de un objeto guardado, con sus piezas ausentes en su estado inicial; null si no es legible. */
@@ -68,7 +72,7 @@ export function readManagement(data: unknown): ManagementState | null {
   return {
     ...state, seed, facilities: state.facilities ?? startFacilities(), pitCrews: state.pitCrews ?? startPitCrews(),
     sponsors: state.sponsors ?? startSponsors(state.finance.season, seed), board: state.board ?? startBoard(state.playerTeamId),
-    contracts: state.contracts ?? startContracts(state.finance.season, seed),
+    contracts: state.contracts ?? startContracts(state.finance.season, seed), academy: state.academy ?? startAcademy(seed),
   };
 }
 
@@ -119,9 +123,13 @@ export function settleManagementRound(state: ManagementState, round: RoundSettle
   // [T4.7] Y los sueldos de los dos pilotos de cada equipo.
   for (const teamId of Object.keys(state.facilities.teams)) {
     finance = charge(finance, teamId, { round: round.round, kind: 'sueldos', label: 'Sueldos de los pilotos', amount: roundSalaries(state.contracts, teamId) });
+    // [T4.8] Y el del reserva.
+    finance = charge(finance, teamId, { round: round.round, kind: 'cantera', label: 'Sueldo del piloto reserva', amount: reserveSalary(state.academy, teamId) });
   }
   // [T4.6] Pasa la semana del equipo de boxes (fatiga y entrenamiento) y se anotan sus paradas.
-  return { ...state, finance, board, facilities: advanceFacilities(state.facilities), pitCrews: advancePitCrews(state.pitCrews, round.stops) };
+  // [T4.8] Tras un Gran Premio los reservas mejoran y las sustituciones se acaban; una ronda saltada no cuenta.
+  const academy = round.format === 'gp' ? advanceAcademy(state.academy) : state.academy;
+  return { ...state, finance, board, academy, facilities: advanceFacilities(state.facilities), pitCrews: advancePitCrews(state.pitCrews, round.stops) };
 }
 
 /** Cierra la temporada con la clasificación final de constructores (del primero al último). */
@@ -130,6 +138,10 @@ export function closeManagementSeason(state: ManagementState, constructorsOrder:
   const place = constructorsOrder.indexOf(state.playerTeamId);
   const verdict = closeBoard(state.board, state.playerTeamId, place >= 0 ? place + 1 : 10, state.finance.season);
   let finance = closeFinanceSeason(state.finance, constructorsOrder);
+  // [T4.7] Mercado de invierno: los equipos en el límite de deuda solo pueden pagar sueldos bajos. [T4.8] Entran los
+  // jóvenes que han firmado un asiento y los reservas rivales que ya están listos; después se repone la cantera.
+  const poor = Object.keys(TEAMS).filter(teamId => atDebtLimit(state.finance, teamId));
+  const contracts = resolveMarket(state.contracts, state.finance.season, state.seed, poor, entrantsOf(state.academy, state.contracts, state.playerTeamId));
   const movement = { round: 0, kind: 'junta' as const, amount: Math.abs(verdict.money) };
   if (verdict.money > 0) finance = credit(finance, state.playerTeamId, { ...movement, label: 'Prima de la junta: objetivo cumplido' });
   if (verdict.money < 0) finance = charge(finance, state.playerTeamId, { ...movement, label: 'Recorte de la junta: objetivo no cumplido' });
@@ -137,7 +149,6 @@ export function closeManagementSeason(state: ManagementState, constructorsOrder:
     ...state, playerTeamId: verdict.teamId, board: verdict.board, finance, pitCrews: resetCrewSeason(state.pitCrews),
     // [T4.9] Vencen los contratos de patrocinio que llegaban hasta esta temporada y llegan ofertas nuevas.
     sponsors: renewSponsors(state.sponsors, state.finance.season, state.seed),
-    // [T4.7] Mercado de invierno: los equipos en el límite de deuda solo pueden pagar sueldos bajos.
-    contracts: resolveMarket(state.contracts, state.finance.season, state.seed, Object.keys(TEAMS).filter(teamId => atDebtLimit(state.finance, teamId))),
+    contracts, academy: winterAcademy(state.academy, contracts, state.finance.season, state.seed),
   };
 }

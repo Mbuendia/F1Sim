@@ -3,6 +3,8 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import styles from './HomeScreen.module.css';
 import { DRIVERS } from '../data/drivers';
 import { DriverContractsPanel } from './DriverContractsPanel';
+import { ReservePanel } from './ReservePanel';
+import type { AcademyState } from '../simulation/Academy';
 import type { ContractsState } from '../simulation/Contracts';
 import { TEAMS, STARTING_GRID_ORDER } from '../data/teams';
 import { OFFICIAL_CIRCUITS, CircuitSpec } from '../data/circuits';
@@ -141,6 +143,8 @@ interface HomeScreenProps {
   /** [T4.7] Plantilla de la temporada (cada piloto con el equipo de su contrato); sin ella, la de partida. */
   roster?: Record<string, Driver>;
   /** [T4.7] Contratos de los pilotos del equipo del jugador y negociación de la temporada siguiente. */
+  /** [T4.8] Reserva del equipo del jugador y cantera. */
+  reserve?: { academy: AcademyState; message: string | null; onStandIn: (seatId: string | null) => void; onSignReserve: (juniorId: string) => void; onPromote: () => void };
   contracts?: { state: ContractsState; teamId: string; season: number; round: number; message: string | null; onOffer: (driverId: string, salary: number, seasons: number) => void };
   /** [T4.9] Patrocinio del equipo del jugador y rótulos del coche de cada equipo. */
   sponsors?: { team: TeamSponsors; onSign: (offerId: string) => void; carOf: (teamId: string) => string[] };
@@ -177,6 +181,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   pitCrew,
   roster = DRIVERS,
   contracts,
+  reserve,
   sponsors,
   board
 }) => {
@@ -408,6 +413,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             <span>Pilotos</span>
           </h2>
           <DriverContractsPanel contracts={contracts.state} teamId={contracts.teamId} season={contracts.season} round={contracts.round} onOffer={contracts.onOffer} message={contracts.message} />
+          {reserve && (
+            <ReservePanel academy={reserve.academy} contracts={contracts.state} teamId={contracts.teamId} season={contracts.season} round={contracts.round}
+              onStandIn={reserve.onStandIn} onSignReserve={reserve.onSignReserve} onPromote={reserve.onPromote} message={reserve.message} />
+          )}
         </section>
       )}
 
