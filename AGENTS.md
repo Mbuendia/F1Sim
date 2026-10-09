@@ -75,12 +75,12 @@ Los filtros se intersectan. Una selección desconocida o vacía, una excepción 
 - Otras sesiones pueden dejar commits en la rama local del sprint: antes de `git push`, mira `git log origin/RAMA..RAMA`.
 - Para provocar casos raros en el navegador: `sim.reportCrash(car)`, `sim.reportIncident(car, tipo)`, `sim.startRedFlag(motivo)`, `car.hasPuncture = true`, `sim.setWallDelegation(id, true)`.
 
-## Punto de reanudación (08/10/2026)
+## Punto de reanudación (09/10/2026)
 
 - **Estado:** Sprint 2.11 y Sprint 3 están enteros en `main` (pull requests 7 a 13 de `Mbuendia/F1Sim`). La rama `sprint/3` se eliminó tras fusionarla. Última suite completa: 4106 PASS / 0 FAIL en 124 módulos; tipos y build correctos.
 - **Revisión del usuario:** R04, R23, R24, R47-R58, T3.1 y T3.2 constan como revisadas y aprobadas. T3.3 (físicas de agua de los neumáticos) y T3.4 (spray con partículas) están entregadas y fusionadas, pero siguen «en revisión».
-- **Siguiente paso: planificar el Sprint 4. No implementar nada de él sin esa planificación** (indicación del usuario). En `DASHBOARD.md`, sección 7.1, solo hay la épica «F1 Team Principal & Race Manager», sin IDs, desglose ni criterios. Empieza por acordar con el usuario qué quiere (economía, personal, instalaciones, calendario…), definir tareas con ID, alcance, aceptación y tests, crear la rama `sprint/4` desde `main` y actualizar el dashboard y `index.html`.
-- **Cosas vistas y no hechas (decidir con el usuario si entran en la planificación):**
+- **Sprint 4 planificado el 09/10/2026** en `DASHBOARD.md`, sección 7.2: 20 tareas (T4.1 a T4.20) en la rama `sprint/4`. Refinado ese día en una entrevista con el usuario: sus decisiones están en cada ficha (entra el dinero, con préstamo; rivales sin red; todo en un solo sprint; pocas decisiones con peso). Nada implementado. **Siguiente paso:** acordar el contrato de tests de T4.12 (tiempo por circuito y neumático de salida), que va la primera; después T4.18, la maqueta navegable de las páginas nuevas, que el usuario revisa antes de implementar ninguna. El diseño visual acordado (menú de partidas tras la portada, centro de gestión por pestañas, informe de la ronda, invierno por pasos) está en `docs/design/grill-sprint4-visual.md`.
+- **Cosas vistas y no hechas, ya recogidas en el Sprint 4** (T4.12: salida en mojado y tiempo por circuito; T4.15 y T4.16: telemetría y audio; T4.17: gotas, código sin uso y altura del muro):
   - En «Salida en mojado» toda la parrilla sale con slicks; con el aquaplaning de T3.3 eso provoca accidentes en las primeras vueltas. Falta elegir el neumático de salida según el agua.
   - Las gotas del spray son cuadrados planos; con mucho zoom se ven como bloques.
   - El tiempo sorteado según la probabilidad de lluvia de cada circuito quedó fuera de T3.2.

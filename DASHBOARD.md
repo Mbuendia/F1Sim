@@ -22,7 +22,7 @@
 
 ## 🧭 2. ROADMAP Y ESTADO GLOBAL DE SPRINTS
 
-**Orden vigente:** Sprint **3** · Tarea actual **T3.4** · Siguiente **T3.4** (T3.3 y T3.4, las dos últimas del Sprint 3, se entregan el 08/10/2026 con su contrato de tests y quedan en revisión; no hay más tareas con ficha. **Por indicación del usuario del 08/10/2026 no se continúa con el Sprint 4: hace falta planificarlo antes** (sección 7.1); todo el Sprint 3 está en main y su rama se ha eliminado; el punto de reanudación para una conversación nueva está al final de `AGENTS.md`; antes: el 08/10/2026, por indicación del usuario, se fusionan en main como sprints separados el Sprint 2.11 entero y lo entregado del Sprint 3, T3.1 y T3.2; T3.3 tiene el contrato de tests aprobado ese día —el agua enfría los neumáticos, intermedios y lluvia se destrozan en seco, aquaplaning según T3.1— y está sin implementar; en T3.4 el usuario pidió mejorar el spray con partículas y falta acordar su contrato; el usuario da por revisadas y aprobadas ese mismo día todas las tareas fusionadas, incluida R58, la portada sin WebGL; R47, R48, R49, R50, R55, R56, R51 y R04 entregadas y en revisión el 07/10/2026 y R52, R24, R23, R53, R54 y R57 el 08/10/2026; R55 y R56 añadidas el 07/10/2026 a petición del usuario; R57 es la corrección de maquetación del muro vista en la revisión en navegador del 08/10/2026 y añadida ese día con el visto bueno del usuario; Sprint 2.10 aprobado y fusionado en main el 03/10/2026; Sprint 2.11 planificado el mismo día en la rama sprint/2.11, orden y alcance en 6.11; cada tarea sigue requiriendo contrato de tests y autorización expresa).
+**Orden vigente:** Sprint **4** · Tarea actual **T4.12** · Siguiente **T4.18** (Sprint 4 planificado el 09/10/2026 a petición del usuario, «cubre todo lo posible»: 20 tareas, T4.1 a T4.20, con orden y alcance en 7.2, refinado ese día en dos entrevistas de cinco rondas, una funcional y otra de diseño visual (`docs/design/grill-sprint4-visual.md`), cuyas decisiones constan en cada ficha; T4.12, la salida en mojado, va primero por decisión del usuario y después la maqueta navegable, T4.18; ninguna está implementada ni tiene todavía contrato de tests; antes, Sprint 3 con T3.4 como tarea actual: T3.3 y T3.4, las dos últimas del Sprint 3, se entregan el 08/10/2026 con su contrato de tests y quedan en revisión; no hay más tareas con ficha. **Por indicación del usuario del 08/10/2026 no se continúa con el Sprint 4: hace falta planificarlo antes** (sección 7.1); todo el Sprint 3 está en main y su rama se ha eliminado; el punto de reanudación para una conversación nueva está al final de `AGENTS.md`; antes: el 08/10/2026, por indicación del usuario, se fusionan en main como sprints separados el Sprint 2.11 entero y lo entregado del Sprint 3, T3.1 y T3.2; T3.3 tiene el contrato de tests aprobado ese día —el agua enfría los neumáticos, intermedios y lluvia se destrozan en seco, aquaplaning según T3.1— y está sin implementar; en T3.4 el usuario pidió mejorar el spray con partículas y falta acordar su contrato; el usuario da por revisadas y aprobadas ese mismo día todas las tareas fusionadas, incluida R58, la portada sin WebGL; R47, R48, R49, R50, R55, R56, R51 y R04 entregadas y en revisión el 07/10/2026 y R52, R24, R23, R53, R54 y R57 el 08/10/2026; R55 y R56 añadidas el 07/10/2026 a petición del usuario; R57 es la corrección de maquetación del muro vista en la revisión en navegador del 08/10/2026 y añadida ese día con el visto bueno del usuario; Sprint 2.10 aprobado y fusionado en main el 03/10/2026; Sprint 2.11 planificado el mismo día en la rama sprint/2.11, orden y alcance en 6.11; cada tarea sigue requiriendo contrato de tests y autorización expresa).
 
 **Prioridad acordada tras la auditoría (30/09/2026, `docs/reviews/auditoria-q12-q19.md`):** Q19 → Q16 → Q13 → Q17 → Q12 → Q18/Q14/Q15. Decisiones del usuario: detecciones DRS desde las notas oficiales FIA; el Safety Car debe salir del pit lane (Q14); tests estructurales sin dependencias nuevas para Q18; tolerancias de calibración Q12 propuestas.
 
@@ -54,7 +54,7 @@ Leyenda de Estado:
 | **Sprint 2.10** | **Experiencia de carrera y progresión: fluidez, lluvia visible y radar, atributos y mejora de pilotos, coche en 3D (R43-R46) y primeras entregas de R18-R20** | ✅ **COMPLETADO — aprobado por el usuario y fusionado en main el 03/10/2026 (PR #6); R04, R23, R24 y las partes pendientes pasan al Sprint 2.11** |
 | **Sprint 2.11** | **Ritmo real, partidas guardadas y fin de semana completo: tiempos de vuelta, cargar y continuar, setup y parc fermé con salida desde boxes, zonas de adelantamiento por circuito, temporada visible y sprint (R47-R54) más R04, R23 y R24** | ✅ **COMPLETADO — revisado y aprobado por el usuario y fusionado en main (08/10/2026), como sprint propio; incluye R57 (fila de boxes) y R58 (portada sin WebGL)** |
 | **Sprint 3** | **Audio, Telemetría Avanzada, Radar GPS & Clima (4 tareas definidas; desglose histórico de 16 incompleto)** | 🔄 **EN CURSO — T3.1 y T3.2 completadas: revisadas y aprobadas por el usuario y fusionadas en main el 08/10/2026, como sprint propio y separado del 2.11; T3.3 y T3.4 entregadas el 08/10/2026 con su contrato de tests y fusionadas en main, en revisión: el sprint queda completo a falta de esa revisión. Rama sprint/3 eliminada tras fusionarla** |
-| **Sprint 4** | **Épica: F1 Team Principal & Race Manager (estimación histórica de 12 tareas sin desglose)** | ⏳ **BACKLOG — requiere definición antes de implementar** |
+| **Sprint 4** | **Director de equipo: economía, fábrica, personal, pilotos, patrocinio, junta y cambio de temporada, más tiempo por circuito, entrenamientos libres, órdenes de equipo, telemetría de decisión, audio y pulido, con menú de partidas, centro de gestión por pestañas, informe de la ronda e invierno por pasos (T4.1-T4.20)** | 🟡 **PLANIFICADO Y REFINADO CON EL USUARIO el 09/10/2026 (sección 7.2) — empieza por T4.12; ninguna tarea implementada; cada una requiere contrato de tests y autorización** |
 
 ---
 
@@ -1212,11 +1212,245 @@ Origen: petición del usuario tras ver el tráiler de Motorsport Manager 2 (carr
 
 ### 7.1 Sprint 4 y objetivos todavía sin ficha
 
-**Estado real:** solo existe en el roadmap la épica «F1 Team Principal & Race Manager» y una estimación histórica de 12 tareas; no hay IDs, desglose ni aceptación suficientes para implementar ese sprint. Esta revisión no inventa doce requisitos ni autoriza desarrollarlos.
+**Estado real (actualizado el 09/10/2026):** el Sprint 4 ya tiene desglose en la sección 7.2 (T4.1 a T4.17). Lo que sigue en esta sección es el criterio con el que se hizo y se conserva como referencia.
+
+**Estado anterior (17/09/2026):** solo existía en el roadmap la épica «F1 Team Principal & Race Manager» y una estimación histórica de 12 tareas, sin IDs, desglose ni aceptación suficientes para implementar ese sprint.
 
 Al retomarlo, partir de lo que entreguen Q9-Q13 (muro dual), R17-R21 (perfiles, mejoras, piezas, sesiones y campeonato), R25 (estrategia) y R28 (guardado). Definir con el usuario qué profundidad adicional quiere: economía, personal, instalaciones, calendario u otras decisiones. Son opciones a concretar, no alcance comprometido. Cada ficha futura debe indicar decisión del director, recursos persistentes, calendario de efecto, feedback/UX, interacción con reglamento y prueba observable; no añadir conducción manual. Distinguir costes/plazos de diseño de cualquier norma financiera, que no está cubierta por los dos PDF aportados.
 
 Para el audio aún sin ficha de Sprint 3, el punto de integración será el estado/eventos del motor y ciclo de vida React, con activación tras interacción del usuario, volumen/silencio y limpieza al salir. Para radar/telemetría avanzada, revisar `RightStatsPanel`, `TelemetryPanel` y R22/R24 antes de duplicar widgets; se debe decidir qué información nueva permite una decisión del muro. Todo desglose futuro debe actualizar este inventario y `index.html` mediante el sincronizador.
+
+### 7.2 Sprint 4 — Director de equipo: gestión entre carreras (planificado el 09/10/2026)
+
+**Punto de partida:** `main` contiene los sprints 2.11 y 3 (PR #7 a #13). Se trabaja en la rama `sprint/4`, que existía desde el 17/09/2026 sin commits propios y se adelanta a `main`. Suite de referencia: 4106 PASS / 0 FAIL en 124 módulos.
+
+**Objetivo:** que entre carrera y carrera el jugador dirija el equipo, no solo el muro: dinero, fábrica, personas, pilotos, patrocinadores y junta, con decisiones que tardan rondas en notarse y que se arrastran de una temporada a la siguiente. Se añaden lo que faltaba del fin de semana y los pendientes vistos al cerrar el Sprint 3.
+
+**Alcance pedido por el usuario (09/10/2026):** «cubre todo lo posible». Entran las cuatro áreas que 7.1 dejaba como opciones (economía, personal, instalaciones y calendario), pilotos, patrocinio y junta, y los seis pendientes anotados en `AGENTS.md`. Son 20 tareas (17 de la planificación y 3 de estructura y diseño visual añadidas tras la entrevista de diseño), más que la estimación histórica de 12, y por decisión del usuario van todas en el Sprint 4, sin repartir. La planificación no autoriza implementar: cada tarea necesita su contrato de tests acordado y la autorización expresa.
+
+**Entrevista de refinamiento (09/10/2026):** cinco rondas de preguntas con recomendación; las respuestas del usuario están en la línea «Decisiones del usuario» de cada ficha. Criterio general acordado: **pocas decisiones con peso** (tres o cuatro por ronda, cada una con un efecto que se nota en pista y se explica en una línea), no un manager de muchas palancas.
+
+**Reglas comunes a todas las fichas:**
+- Importes, plazos, niveles y efectos son **diseño del juego**. Los dos PDF del reglamento no cubren la norma financiera: nada de lo económico se presenta como norma de la FIA.
+- El estado nuevo va en la carrera profesional (`CareerData` de `SaveGame.ts`) como campos opcionales: una partida anterior se lee con los valores iniciales y la continuación idéntica de R48 no cambia.
+- Los nueve equipos rivales siguen las mismas reglas, **sin red** (decisión del usuario), con una política sencilla y con semilla; ningún sorteo sin semilla. Un rival sin dinero sigue corriendo con sus dos coches: la parrilla tiene siempre 20.
+- El equipo del jugador pasa a ser estado de la carrera profesional (puede cambiar tras una destitución, T4.10); hoy se deduce del piloto elegido en el paddock.
+- Una carrera libre (R51) no mueve dinero, contratos, personal ni obras. Con la gestión en sus valores iniciales el motor de carrera da el mismo resultado que hoy.
+- Siguen las leyes del dashboard: sin conducción manual, sin teletransportes y sin mutar arrays de estado.
+- Cada tarea trae su panel con test de renderizado SSR y revisión en navegador, con la composición acordada en `docs/design/grill-sprint4-visual.md` y revisada en la maqueta de T4.18; T4.3 pone el armazón y cada tarea rellena su pestaña.
+
+#### Bloque A — Dinero y fábrica
+
+* **T4.1 — Economía del equipo:** `[ ] PENDIENTE — PLANIFICADA 09/10/2026; REQUIERE CONTRATO DE TESTS Y AUTORIZACIÓN`
+  * *Prioridad/dependencias:* P0; R18, R19, R21, R48, R51, R52. Base de T4.2 a T4.11.
+  * *Decisión del director:* cuánto gastar y en qué, con un saldo que no da para todo.
+  * *Recursos persistentes:* saldo de cada equipo y libro de movimientos por ronda (concepto, importe, ronda).
+  * *Calendario de efecto:* ingresos y gastos se liquidan al cerrar cada Gran Premio; el premio de constructores, al cerrar la temporada.
+  * *Alcance:* módulo `Finance.ts`. Saldo inicial por equipo según su nivel; ingreso fijo por ronda, ingreso por puntos (carrera y sprint) y premio final por puesto en constructores; gasto fijo de operación por ronda. Con saldo negativo el equipo entra en préstamo: paga intereses cada ronda sobre la deuda y puede seguir gastando hasta un límite de deuda; alcanzado el límite, no se pueden empezar gastos nuevos (proyectos, obras, fichajes) y la junta lo castiga (T4.10). Una ronda saltada paga los gastos fijos y no ingresa nada. Sin tope de gasto por temporada. Panel «Finanzas» con saldo o deuda, intereses, previsión de la ronda siguiente y libro.
+  * *Aceptación:* el saldo es siempre la suma exacta del libro, intereses incluidos; una carrera libre no mueve dinero; una ronda saltada solo anota gastos fijos; en el límite de deuda ningún gasto nuevo se acepta, tampoco a un rival; el sprint solo ingresa sus puntos; una partida anterior empieza con el saldo inicial; los rivales tienen su libro.
+  * *Tests antes de implementación:* liquidación y libro, préstamo, intereses y límite, ronda saltada, carrera libre y sprint, guardado y partida anterior, y un test de interfaz.
+  * *Decisiones del usuario (09/10/2026):* entra el dinero, con saldo y libro, y se revierte el «sin dinero, solo plazos» de R18; sin tope de gasto; saldo negativo = préstamo con intereses hasta un límite, y en el límite bloqueo de gastos nuevos y castigo de la junta (la destitución llega por la junta, no por el dinero); la ronda saltada paga gastos fijos y no ingresa; los rivales siguen las mismas reglas sin red y, arruinados, siguen corriendo sin invertir. *Queda para el contrato de tests:* importes, tipo de interés y límite de deuda.
+  * *Diseño visual (09/10/2026, `docs/design/grill-sprint4-visual.md`):* pestaña «Finanzas» con saldo o deuda y su límite, previsión de la ronda siguiente, gráfica del saldo ronda a ronda, ingresos y gastos por concepto y el libro debajo; patrocinio (T4.9) y junta (T4.10) van en la misma pestaña.
+
+* **T4.2 — Coste de desarrollo, componentes y daños:** `[ ] PENDIENTE — PLANIFICADA 09/10/2026; REQUIERE CONTRATO DE TESTS Y AUTORIZACIÓN`
+  * *Prioridad/dependencias:* P0; T4.1, R18 (`Development.ts`), R19 (`ComponentPool.ts`), T3.1 (`Runoff.ts`).
+  * *Decisión del director:* qué proyecto se paga, si compensa montar un componente fuera de cupo y cuánto riesgo se pide a los pilotos.
+  * *Recursos persistentes:* los de T4.1; el coste queda anotado en cada proyecto y en cada unidad.
+  * *Calendario de efecto:* el proyecto se paga al empezarlo; el componente, al montarlo; los daños, al cerrar la carrera.
+  * *Alcance:* coste por proyecto del catálogo; coste de cada unidad de componente (mayor fuera de cupo, además de la sanción de parrilla que ya existe); factura de daños por incidente según la superficie del punto del accidente (muro, grava o asfalto). Sin saldo no se empieza el proyecto y el panel dice cuánto falta.
+  * *Aceptación:* cada gasto aparece una sola vez en el libro; cancelar antes de la carrera lo devuelve (`undoFit`); plazos y efectos de R18 no cambian; un abandono contra el muro cuesta más que una salida al asfalto.
+  * *Tests antes de implementación:* coste y bloqueo de proyectos, coste de componentes y devolución, factura de daños por superficie, y un test de interfaz.
+  * *Decisiones del usuario (09/10/2026):* un rival sin dinero deja de empezar proyectos y de montar componentes fuera de cupo; no hay mínimo garantizado.
+
+* **T4.3 — Centro de gestión:** `[ ] PENDIENTE — PLANIFICADA 09/10/2026; REQUIERE CONTRATO DE TESTS Y AUTORIZACIÓN`
+  * *Prioridad/dependencias:* P1; T4.18 (maqueta), T4.19, T4.1, R31 (rediseño de escritorio), R51. Va pronto para que los paneles de las tareas siguientes nazcan en su sitio.
+  * *Decisión del director:* ninguna propia; ordena dónde se toman las demás.
+  * *Recursos persistentes:* solo la sección abierta (preferencia de interfaz).
+  * *Alcance:* el paddock, hoy una página larga, pasa a un centro de gestión con cabecera (equipo, temporada y ronda, saldo, confianza de la junta, guardado y menú «Partida») y seis pestañas: «Inicio» (la ronda que toca con su botón rojo, pendientes y cuatro tarjetas de estado que llevan a su pestaña), «Carrera» (el fin de semana como una fila de sesiones, con el paso actual abierto: setup de los dos coches, neumáticos y previsión, y un solo botón rojo para la sesión siguiente), «Equipo», «Fábrica», «Finanzas» y «Temporada» (franja de 24 rondas con el detalle de la elegida, las dos clasificaciones y el historial en una subpestaña). El color del equipo es el acento de la cabecera y de la pestaña activa. Esta tarea trae el armazón, Inicio, Carrera y Temporada, y recoloca los paneles que ya existen (desarrollo, componentes, setup); las pestañas Equipo, Fábrica y Finanzas se completan con sus tareas. Secciones como pestañas bajo la cabecera, a todo el ancho. Una lista de «pendiente de tu decisión» (contrato que vence, proyecto listo para montar, obra terminada) antes de entrar a pista, que avisa y no bloquea.
+  * *Aceptación:* todo lo que hoy se hace en el paddock se sigue pudiendo hacer, aquí o en la carrera libre de T4.19; de Inicio a la pista hay como mucho dos pulsaciones en GP directo; sin desplazamiento horizontal ni controles recortados a 1280×720, 1366×768 y 1920×1080.
+  * *Tests antes de implementación:* renderizado de cada sección y de la lista de pendientes; los módulos de interfaz del paddock siguen en verde sin tocarlos.
+  * *Decisiones del usuario (09/10/2026):* pestañas arriba; la lista de pendientes avisa y nunca bloquea la entrada a pista.
+  * *Diseño visual (09/10/2026, `docs/design/grill-sprint4-visual.md`):* pestaña «Inicio» delante de las otras cinco; sesiones como pasos en «Carrera»; franja de 24 rondas en «Temporada»; acento de equipo y acción en rojo; movimiento sobrio.
+
+* **T4.4 — Instalaciones de la fábrica:** `[ ] PENDIENTE — PLANIFICADA 09/10/2026; REQUIERE CONTRATO DE TESTS Y AUTORIZACIÓN`
+  * *Prioridad/dependencias:* P1; T4.1, T4.2, R18, R19, R45, R49.
+  * *Decisión del director:* en qué instalación invertir, sabiendo que la obra tarda y cuesta mantenerla.
+  * *Recursos persistentes:* nivel de cada instalación y obra en curso (ronda de inicio y de fin).
+  * *Calendario de efecto:* la obra dura varias rondas y su efecto empieza en la ronda siguiente a terminarla; el mantenimiento se paga cada ronda.
+  * *Alcance:* cuatro instalaciones con cinco niveles; cada equipo empieza según su nivel real (los grandes, con mejores instalaciones y más mantenimiento): túnel de viento (acorta la investigación, sumado al reparto ATR), simulador (mejora de los pilotos de R45 y setup recomendado), producción (acorta la fabricación y, al nivel máximo, permite un tercer proyecto a la vez) y banco de fiabilidad (menos desgaste de componentes). Una obra a la vez.
+  * *Aceptación:* con las instalaciones en su nivel inicial la investigación, la fabricación y el desgaste de cada equipo son los de hoy (el nivel inicial es la referencia de ese equipo); el efecto no se aplica antes de acabar la obra; el mantenimiento sale en el libro.
+  * *Tests antes de implementación:* plazos de obra, efecto de cada instalación por nivel, coste y mantenimiento, y un test de interfaz.
+  * *Decisiones del usuario (09/10/2026):* cinco niveles por instalación; nivel inicial según el equipo.
+  * *Diseño visual (09/10/2026, `docs/design/grill-sprint4-visual.md`):* pestaña «Fábrica» con el coche 3D en el centro y las mejoras montadas marcadas, los proyectos como línea de tiempo en rondas a la izquierda, las cuatro instalaciones con su nivel y su obra a la derecha y los componentes de los dos coches debajo.
+
+#### Bloque B — Personas
+
+* **T4.5 — Personal técnico:** `[ ] PENDIENTE — PLANIFICADA 09/10/2026; REQUIERE CONTRATO DE TESTS Y AUTORIZACIÓN`
+  * *Prioridad/dependencias:* P1; T4.1, R18, R54 (propuestas del estratega).
+  * *Decisión del director:* a quién fichar y cuánto pagarle.
+  * *Recursos persistentes:* plantilla del equipo (puesto, persona, nivel, sueldo, fin de contrato) y mercado de candidatos de la temporada.
+  * *Calendario de efecto:* un fichaje se incorpora varias rondas después de firmarse; los sueldos se pagan cada ronda; los contratos vencen al cambiar de temporada.
+  * *Alcance:* puestos de director técnico (plazo de investigación), jefe de aerodinámica (reduce la contrapartida de cada mejora), jefe de estrategia (precisión de las estimaciones que usan las propuestas del muro) y un ingeniero de carrera por piloto (ritmo de mejora del piloto). Personas inventadas, generadas con semilla, con perfiles inspirados en figuras reales pero sin sus nombres.
+  * *Aceptación:* con la plantilla inicial, investigación y propuestas son idénticas a hoy; quien no se ha incorporado no tiene efecto; nadie trabaja en dos equipos.
+  * *Tests antes de implementación:* mercado sembrado, incorporación diferida, efecto de cada puesto, y un test de interfaz.
+  * *Decisiones del usuario (09/10/2026):* personal inventado con inspiración en personas reales (ningún nombre real). *Decisión a confirmar en el contrato:* si el jefe de estrategia puede empeorar las propuestas (estimaciones con error) o solo mejorarlas.
+  * *Diseño visual (09/10/2026, `docs/design/grill-sprint4-visual.md`):* el personal en una fila de la pestaña «Equipo», cada persona con una insignia de su puesto y sus iniciales; sin fotos ni parecidos.
+
+* **T4.6 — Equipo de boxes:** `[ ] PENDIENTE — PLANIFICADA 09/10/2026; REQUIERE CONTRATO DE TESTS Y AUTORIZACIÓN`
+  * *Prioridad/dependencias:* P1; T4.1, `PitStopModel.ts` (Q20, R08), Q11 (doble parada).
+  * *Decisión del director:* a qué dedica el equipo de boxes la semana: velocidad, seguridad o descanso.
+  * *Recursos persistentes:* nivel, plan de entrenamiento y fatiga del equipo de boxes.
+  * *Calendario de efecto:* el plan se elige antes de cada ronda y se nota en esa carrera; la fatiga se acumula en rondas seguidas con entrenamiento intenso.
+  * *Alcance:* el nivel mueve el tiempo medio de parada y la probabilidad de parada lenta; el plan desplaza uno a costa del otro; la fatiga sube los errores. Estadística de paradas de la temporada en el panel.
+  * *Aceptación:* con el plan neutro las paradas tienen la distribución de hoy (banco R27 sin regenerar); sin teletransportes ni cambios en el recorrido del pit lane.
+  * *Tests antes de implementación:* distribución de tiempos por nivel y plan con semilla fija, fatiga, y un test de interfaz.
+  * *Diseño visual (09/10/2026, `docs/design/grill-sprint4-visual.md`):* fila propia en la pestaña «Equipo» con nivel, fatiga y el plan de la semana como tres opciones.
+
+* **T4.7 — Contratos y mercado de pilotos:** `[ ] PENDIENTE — PLANIFICADA 09/10/2026; REQUIERE CONTRATO DE TESTS Y AUTORIZACIÓN`
+  * *Prioridad/dependencias:* P1; T4.1, R45, R51, R55 (librea y dorsal).
+  * *Decisión del director:* renovar, fichar o dejar marchar a cada piloto.
+  * *Recursos persistentes:* contrato de cada piloto (equipo, sueldo, última temporada) y alineación de cada temporada. La alineación deja de leerse solo de `drivers.ts` (`teamId`), que queda como alineación inicial.
+  * *Calendario de efecto:* se negocia desde la mitad de la temporada; los cambios valen desde la primera ronda de la siguiente.
+  * *Alcance:* sueldo y duración por piloto; oferta que el piloto acepta o rechaza según sueldo y nivel del equipo; mercado completo: al acabar la temporada vencen contratos en toda la parrilla y los rivales fichan entre sí y de la cantera, con semilla; un rival arruinado solo puede pagar sueldos bajos. Durante la temporada no hay fichajes entre equipos. Los atributos y la mejora de R45 viajan con el piloto.
+  * *Aceptación:* siempre hay 20 pilotos, dos por equipo y ninguno en dos equipos; el historial conserva con qué equipo corrió cada uno; librea, dorsal y muro siguen al piloto.
+  * *Tests antes de implementación:* invariantes de la parrilla tras el mercado, negociación, guardado, y un test de interfaz.
+  * *Decisiones del usuario (09/10/2026):* mercado completo con semilla en invierno (la parrilla cambia cada año); a mitad de temporada el único cambio posible es subir al reserva (T4.8).
+  * *Diseño visual (09/10/2026, `docs/design/grill-sprint4-visual.md`):* dos tarjetas grandes en la pestaña «Equipo» (casco en SVG con colores y dorsal, edad, contrato, sueldo, atributos e ingeniero); el mercado se resuelve en el paso 3 del invierno.
+
+* **T4.8 — Piloto reserva y cantera:** `[ ] PENDIENTE — PLANIFICADA 09/10/2026; REQUIERE CONTRATO DE TESTS Y AUTORIZACIÓN`
+  * *Prioridad/dependencias:* P2; T4.7, R45.
+  * *Decisión del director:* a qué joven apoyar y cuándo darle el asiento.
+  * *Recursos persistentes:* jóvenes disponibles (atributos y potencial), reserva del equipo y su experiencia.
+  * *Calendario de efecto:* la sustitución se decide antes de la ronda; el ascenso a titular, en el cambio de temporada.
+  * *Alcance:* grupo de jóvenes inventados, generado con semilla, con perfiles inspirados en pilotos reales pero sin sus nombres; un reserva por equipo con sueldo; puede sustituir a un titular ronda a ronda (es el único cambio de piloto permitido durante la temporada) y gana experiencia con ello; cubre las retiradas de T4.11; entra en el mercado de T4.7.
+  * *Aceptación:* una sustitución no rompe campeonato, componentes ni guardado; el reserva puntúa a su nombre.
+  * *Tests antes de implementación:* sustitución de una ronda, experiencia y ascenso, y un test de interfaz.
+  * *Decisiones del usuario (09/10/2026):* jóvenes inventados con inspiración en pilotos reales; la sustitución por el reserva se decide ronda a ronda.
+  * *Diseño visual (09/10/2026, `docs/design/grill-sprint4-visual.md`):* tarjeta estrecha del reserva junto a los titulares, con su botón de sustitución; los jóvenes llevan casco como los demás pilotos.
+
+#### Bloque C — Entorno del equipo
+
+* **T4.9 — Patrocinadores:** `[ ] PENDIENTE — PLANIFICADA 09/10/2026; REQUIERE CONTRATO DE TESTS Y AUTORIZACIÓN`
+  * *Prioridad/dependencias:* P2; T4.1, R55 (`liveries.ts`, patrocinadores inventados y sus superficies en el coche).
+  * *Decisión del director:* qué oferta firmar: pago seguro o prima por objetivo.
+  * *Recursos persistentes:* contratos de patrocinio (pago por ronda, objetivo, prima, duración) y ofertas de la temporada.
+  * *Calendario de efecto:* el pago fijo llega cada ronda y la prima al cumplirse el objetivo; las ofertas se renuevan por temporada.
+  * *Alcance:* tres huecos por equipo (las superficies del coche); objetivos comprobables con el resultado (los dos coches en los puntos, un podio, acabar por delante de un equipo); el patrocinador firmado se ve en el coche del paddock.
+  * *Aceptación:* ninguna marca real; el objetivo se evalúa solo con el resultado oficial tras sanciones; cada ingreso sale en el libro.
+  * *Tests antes de implementación:* evaluación de objetivos, pagos, lista de marcas (la de R55), y un test de interfaz.
+
+* **T4.10 — Junta y objetivos de temporada:** `[ ] PENDIENTE — PLANIFICADA 09/10/2026; REQUIERE CONTRATO DE TESTS Y AUTORIZACIÓN`
+  * *Prioridad/dependencias:* P2; T4.1, R21, R51.
+  * *Decisión del director:* ninguna directa: es la medida de todas las demás.
+  * *Recursos persistentes:* objetivo de la temporada y confianza de la junta (0 a 100) con su historial.
+  * *Calendario de efecto:* la confianza se mueve al cerrar cada ronda; el balance, al cerrar la temporada.
+  * *Alcance:* objetivo de puesto en constructores según el nivel del coche; la confianza sube o baja según el resultado frente a lo esperado; baja también cada ronda que el equipo pasa en el límite de deuda (T4.1); premio o recorte de presupuesto al cierre; aviso cuando la confianza es baja. Con la confianza a cero, el jugador es destituido al acabar la temporada y recibe la oferta de un equipo de menor nivel: la carrera profesional sigue con su historial y el equipo anterior pasa a la IA.
+  * *Aceptación:* el objetivo es alcanzable con el coche que se tiene; cada movimiento de confianza dice su motivo; tras una destitución el jugador dirige el equipo nuevo con el dinero, la plantilla y las instalaciones de ese equipo, y nada del anterior viaja con él.
+  * *Tests antes de implementación:* cálculo del objetivo, evolución de la confianza con resultados fijos, destitución y cambio de equipo con su guardado, y un test de interfaz.
+  * *Decisiones del usuario (09/10/2026):* confianza a cero = destitución al acabar la temporada y oferta de un equipo de menor nivel; la partida no termina. *Queda para el contrato:* qué equipo ofrece el puesto si el jugador ya dirige el último.
+
+* **T4.11 — Cambio de temporada:** `[ ] PENDIENTE — PLANIFICADA 09/10/2026; REQUIERE CONTRATO DE TESTS Y AUTORIZACIÓN`
+  * *Prioridad/dependencias:* P1; T4.1 a T4.10, R51 (cierre de temporada).
+  * *Decisión del director:* cerrar el invierno: renovaciones, obra y primer proyecto del coche nuevo.
+  * *Recursos persistentes:* todo lo anterior, que pasa a la temporada siguiente.
+  * *Calendario de efecto:* una sola vez, entre la ronda 24 y la ronda 1.
+  * *Alcance:* la pantalla de cierre de R51 pasa a ser un invierno por pasos: premios cobrados, contratos que vencen (pilotos, personal, patrocinio), mercado resuelto, objetivo nuevo de la junta y coche nuevo, que conserva la mitad del efecto y de la contrapartida de cada mejora montada. Los pilotos tienen edad (dato nuevo en `drivers.ts`): cumplen un año, sus atributos suben hasta una edad y bajan después, y los veteranos se retiran y dejan su asiento al mercado y a la cantera.
+  * *Aceptación:* tras el invierno la parrilla es válida, el libro cuadra y el resumen archivado de R51 sigue leyéndose; diez temporadas seguidas sin intervención, con retiradas y con algún rival arruinado, no dejan a ningún equipo sin sus dos pilotos ni en un estado imposible.
+  * *Tests antes de implementación:* invierno completo con semilla, diez temporadas automáticas con sus invariantes, y un test de interfaz.
+  * *Decisiones del usuario (09/10/2026):* se conserva la mitad de cada mejora; los pilotos envejecen y se retiran. *Observación:* las edades se anotarían de memoria, como calibración del juego, y conviene que el usuario las revise. *Queda para el contrato:* curva de edad y edad de retirada.
+  * *Diseño visual (09/10/2026, `docs/design/grill-sprint4-visual.md`):* cinco páginas a pantalla completa con barra de progreso (cierre y premios, junta, mercado, parrilla, coche nuevo y objetivo), con vuelta atrás hasta confirmar; animación solo en campeones, destitución y presentación del coche.
+
+#### Bloque D — Fin de semana y carrera
+
+* **T4.12 — Tiempo por circuito y neumático de salida:** `[ ] PENDIENTE — PLANIFICADA 09/10/2026; REQUIERE CONTRATO DE TESTS Y AUTORIZACIÓN`
+  * *Prioridad/dependencias:* P0, **primera tarea del sprint** por decisión del usuario; T3.2, T3.3, R22, R53, R54. Recoge dos pendientes del Sprint 3; la segunda parte corrige un defecto visible hoy.
+  * *Decisión del director:* con qué neumático sale cada uno de sus coches.
+  * *Recursos persistentes:* ninguno nuevo (la semilla de la carrera ya se guarda).
+  * *Alcance:* (a) en una carrera de temporada el escenario de tiempo se sortea con semilla según la probabilidad de lluvia del circuito y el paddock enseña la previsión, no el resultado, y el jugador no puede cambiarlo; en carrera libre se sigue eligiendo a mano. (b) El neumático de salida depende del agua en pista: la IA y los coches delegados lo eligen con el estratega; a los coches del jugador se les propone en la parrilla.
+  * *Aceptación:* en mil sorteos la frecuencia de lluvia de cada circuito queda cerca de su probabilidad; en «Salida en mojado» ningún coche de la IA sale con slicks y las primeras vueltas no acaban en accidentes en cadena por aquaplaning.
+  * *Tests antes de implementación:* frecuencia del sorteo, neumático de salida según el agua, y primeras vueltas en mojado sin abandonos por aquaplaning.
+  * *Decisiones del usuario (09/10/2026):* va la primera, antes de la gestión; en carrera de temporada el tiempo se sortea y no se puede forzar.
+
+* **T4.13 — Entrenamientos libres:** `[ ] PENDIENTE — PLANIFICADA 09/10/2026; REQUIERE CONTRATO DE TESTS Y AUTORIZACIÓN`
+  * *Prioridad/dependencias:* P2; R20, R49, R52, T4.4 (simulador).
+  * *Decisión del director:* qué programa hace cada piloto: buscar el setup, tanda larga o simulación de clasificación.
+  * *Recursos persistentes:* lo aprendido en el fin de semana (dentro del estado de fin de semana de `Season.ts`).
+  * *Calendario de efecto:* vale para la clasificación y la carrera de ese fin de semana.
+  * *Alcance:* una sesión resuelta sin pista, como la clasificación. Buscar el setup acota el setup recomendado; la tanda larga afina la vida de neumático que usan las propuestas del muro; la simulación de clasificación da una referencia de ritmo frente a los rivales. Suma kilómetros a los componentes y gasta juegos de neumáticos, que llegan usados a la carrera (para todos); en fin de semana sprint hay una sola sesión. Los rivales también hacen los libres y afinan su setup: deja de valer la decisión de R49 de que corren con el setup neutro.
+  * *Aceptación:* en GP directo, sin entrenamientos, el fin de semana es idéntico a hoy; lo aprendido nunca es exacto ni usa el futuro; el inventario de neumáticos cuadra con lo gastado.
+  * *Tests antes de implementación:* efecto de cada programa, kilómetros de componentes, juegos gastados, setup de los rivales, y un test de interfaz; regenerar la baseline del banco R27 con autorización si se mueve.
+  * *Decisiones del usuario (09/10/2026):* los rivales también hacen los libres y los libres gastan juegos de neumáticos. *Queda para el contrato:* si la clasificación del Gran Premio pasa a gastar juegos también (hoy no lo hace).
+  * *Diseño visual (09/10/2026, `docs/design/grill-sprint4-visual.md`):* los libres son el primer paso de la fila de sesiones de la pestaña «Carrera».
+
+* **T4.14 — Órdenes de equipo:** `[ ] PENDIENTE — PLANIFICADA 09/10/2026; REQUIERE CONTRATO DE TESTS Y AUTORIZACIÓN`
+  * *Prioridad/dependencias:* P2; R50 (zonas y defensa), R54 (muro con los dos pilotos), Q9.
+  * *Decisión del director:* mantener posiciones, dejar pasar al compañero o lucha libre.
+  * *Recursos persistentes:* la orden vigente, dentro de la carrera guardada.
+  * *Alcance:* orden entre los dos coches del jugador desde el muro. «Dejar pasar»: el de delante levanta en la siguiente zona de adelantamiento y el de detrás completa la maniobra por el camino normal de R50; «mantener»: el de detrás no ataca; «lucha libre»: como hoy. Aviso de cumplimiento. Los equipos rivales también las usan, con una regla sencilla y observable (el de detrás claramente más rápido y sin amenaza por detrás del de delante).
+  * *Aceptación:* el cambio de posición sale de la velocidad, nunca de reposicionar coches; una orden solo afecta a los dos coches de su equipo; entre dos coches en lucha libre el motor es idéntico a hoy.
+  * *Tests antes de implementación:* intercambio en zona, mantenimiento de posiciones, órdenes de los rivales, guardado, y un test de interfaz; las carreras de hoy cambian de resultado, así que hace falta autorización para regenerar la baseline del banco R27.
+  * *Decisiones del usuario (09/10/2026):* los rivales también usan órdenes de equipo.
+  * *Diseño visual (09/10/2026, `docs/design/grill-sprint4-visual.md`):* franja estrecha entre las dos tarjetas del muro, sin aumentar su altura.
+
+* **T4.15 — Radar y telemetría de decisión:** `[ ] PENDIENTE — PLANIFICADA 09/10/2026; REQUIERE CONTRATO DE TESTS Y AUTORIZACIÓN`
+  * *Prioridad/dependencias:* P2; R24, R53, `RightStatsPanel`. Pendiente histórico del Sprint 3.
+  * *Decisión del director:* cuándo parar y a quién cubrir, con datos y no a ojo.
+  * *Alcance:* solo información que permite una decisión del muro: (1) ventana de parada: en qué puesto y con qué hueco saldría el coche si parase ahora; (2) comparación de neumáticos con el coche de delante y el de detrás (compuesto, vueltas y vida estimada); (3) aviso de riesgo de undercut. Todo con información observable.
+  * *Aceptación:* la predicción de salida de boxes acierta el puesto con un margen acordado en carrera en verde; nada usa el futuro.
+  * *Tests antes de implementación:* predicción frente a la parada real con semilla fija, y un test de interfaz.
+  * *Diseño visual (09/10/2026, `docs/design/grill-sprint4-visual.md`):* la ventana de parada es una línea en la tarjeta de cada piloto («si paras: P9, a 2,1 s de HUL»); el resto, en el panel de estadísticas.
+
+#### Bloque E — Presentación
+
+* **T4.16 — Audio:** `[ ] PENDIENTE — PLANIFICADA 09/10/2026; REQUIERE CONTRATO DE TESTS Y AUTORIZACIÓN`
+  * *Prioridad/dependencias:* P2; R24 (eventos del motor). Pendiente histórico del Sprint 3.
+  * *Decisión del director:* ninguna; refuerza los avisos que ya recibe.
+  * *Recursos persistentes:* volumen y silencio (preferencia de interfaz).
+  * *Alcance:* sonidos por evento del motor: semáforo y salida, radio al llegar un mensaje o una propuesta del muro, Safety Car y banderas, pistola de boxes, lluvia y ambiente de motores según la cámara. Grabaciones con licencia libre en `public/audio/`, con su atribución en el repositorio y visible en el juego (como los modelos de R55), cargadas bajo demanda. Se activa tras la primera interacción, con volumen y silencio, se calla con la página oculta o la carrera en pausa y se limpia al salir de la carrera.
+  * *Aceptación:* sin interacción previa no suena nada; ningún sonido sigue tras salir de la carrera; con el audio apagado no se crea el contexto de audio ni se descarga ningún archivo; cada archivo tiene autor, licencia y origen anotados.
+  * *Tests antes de implementación:* mapa de evento a sonido, ciclo de vida con un contexto de audio simulado, carga bajo demanda y atribución de cada archivo; la escucha real es revisión del usuario.
+  * *Decisiones del usuario (09/10/2026):* grabaciones con licencia libre, no sonidos sintetizados. *Observación:* hay que encontrar las grabaciones y descargarlas con permiso del usuario; una licencia no comercial (como la del Safety Car de R55) limita el uso del juego.
+
+* **T4.17 — Pulido y limpieza:** `[ ] PENDIENTE — PLANIFICADA 09/10/2026; REQUIERE CONTRATO DE TESTS Y AUTORIZACIÓN`
+  * *Prioridad/dependencias:* P3; T3.4, R54, R57, T4.15.
+  * *Alcance:* gotas del spray redondeadas para que no se vean como bloques con mucho zoom; quitar `WeatherRenderer.renderSpray` (la estela antigua) y `TelemetryPanel.tsx` si T4.15 no lo reutiliza; con la ventana pequeña, propuestas del muro plegables para dejar sitio al circuito.
+  * *Aceptación:* los módulos de spray, muro y clima siguen en verde sin tocarlos; no queda código sin uso de los dos archivos; a 1280×720 el circuito conserva una altura mínima acordada.
+  * *Tests antes de implementación:* cambios visuales pequeños: una comprobación por pieza como mucho y revisión en navegador.
+
+#### Bloque F — Estructura y diseño visual (añadido el 09/10/2026 tras la entrevista de diseño)
+
+Decisiones y esquemas de cada página en `docs/design/grill-sprint4-visual.md`. Recorrido acordado: portada → menú de partidas → centro de gestión (Inicio, Carrera, Equipo, Fábrica, Finanzas, Temporada) → fin de semana → podio → informe de la ronda → Inicio; tras la ronda 24, invierno en cinco pasos. Identidad del rediseño de escritorio (grafito, marfil, rojo para la acción principal) con el color del equipo como acento; movimiento sobrio; escritorio de 1280 a 1920 px.
+
+* **T4.18 — Maqueta navegable y sistema visual de la gestión:** `[ ] PENDIENTE — PLANIFICADA 09/10/2026; REQUIERE CONTRATO DE TESTS Y AUTORIZACIÓN`
+  * *Prioridad/dependencias:* P0, segunda tarea del sprint; R30 y R31 (identidad del rediseño), `docs/design/grill-sprint4-visual.md`.
+  * *Alcance:* una maqueta HTML en `docs/design/`, fuera de la aplicación y de su build, con todas las páginas nuevas y datos de ejemplo: menú de partidas, cargar partida, elegir equipo, carrera libre, las seis pestañas del centro de gestión, informe de la ronda, los cinco pasos del invierno y el muro con órdenes de equipo y ventana de parada. Fija el sistema visual que usarán las tareas siguientes: cabecera, pestañas, tarjetas, casco de piloto e insignia de personal, acento por equipo (los diez, con el caso de los equipos rojos), gráfica de saldo y franja de calendario.
+  * *Aceptación:* se navega de la portada al invierno sin callejones; ninguna página tiene desplazamiento horizontal ni controles recortados a 1280×720, 1366×768 y 1920×1080; texto operativo de al menos 14 px; el usuario la revisa y da por buena cada página, o anota sus cambios, antes de que se implemente.
+  * *Tests antes de implementación:* ninguno ejecutable (no es código de la aplicación); revisión del usuario en el navegador a los tres tamaños.
+  * *Queda por decidir en la maqueta:* si los diez coches de «Elegir equipo» y el de Fábrica son visores 3D o imágenes fijas del modelo, como los coches de pista de R56.
+
+* **T4.19 — Menú de partidas, partida nueva y carrera libre:** `[ ] PENDIENTE — PLANIFICADA 09/10/2026; REQUIERE CONTRATO DE TESTS Y AUTORIZACIÓN`
+  * *Prioridad/dependencias:* P0; T4.18, R48 (`SaveGame.ts`, `SaveStore`), R51, R30 (portada).
+  * *Decisión del director:* con qué equipo empieza y qué partida continúa.
+  * *Recursos persistentes:* el equipo del jugador pasa a guardarse en la partida; el resumen de cada ranura gana equipo, puesto en constructores y saldo.
+  * *Alcance:* (a) **menú de partidas** tras la portada: «Continuar» con el estado de la última partida, «Nueva carrera profesional», «Cargar partida» y «Carrera libre»; (b) **cargar partida**: una tarjeta por partida con el color del equipo, temporada y ronda, puesto, saldo, fecha y carrera en curso, con cargar, exportar, borrar e importar; (c) **partida nueva**: una página con los diez equipos (coche, pilotos, saldo inicial, objetivo y dificultad) y el nombre de la partida; se elige equipo, no piloto; (d) **carrera libre** como modo aparte, que es el paddock de hoy (piloto, circuito, formato y tiempo) y no toca ninguna partida; (e) **menú «Partida»** en la cabecera de la gestión y de la carrera (Guardar, Guardar como, Exportar, Salir al menú) y el aviso «Guardado hace X». Sustituye al panel «Partidas» del paddock; las acciones de R48 no cambian.
+  * *Aceptación:* sin partidas, el menú no ofrece continuar ni cargar; una partida anterior se abre con el equipo del piloto que tenía elegido; la carrera libre no modifica ninguna partida ni el autoguardado; cargar en mitad de una carrera sigue dando la misma continuación (R48); salir al menú nunca pierde lo no guardado sin avisar.
+  * *Tests antes de implementación:* menú con y sin partidas, resumen de ranura, partida nueva por equipo, aislamiento de la carrera libre, partida anterior, y renderizado de cada página.
+  * *Decisiones del usuario (09/10/2026):* menú de partidas como página propia; partida nueva eligiendo entre los diez equipos en una página; carrera libre como modo aparte; partidas en tarjetas; autoguardado visible y menú «Partida».
+  * *Aviso:* dentro de una carrera profesional desaparece la carrera libre de R51 («elegir otro circuito no cuenta»); sus comprobaciones habrá que revisarlas con autorización. Saldo, objetivo y dificultad de cada tarjeta aparecen según lleguen T4.1 y T4.10.
+
+* **T4.20 — Informe de la ronda:** `[ ] PENDIENTE — PLANIFICADA 09/10/2026; REQUIERE CONTRATO DE TESTS Y AUTORIZACIÓN`
+  * *Prioridad/dependencias:* P1; T4.1, T4.2, T4.3, R21, R45; lo amplían T4.9 (patrocinio) y T4.10 (junta).
+  * *Decisión del director:* ninguna; es donde ve la consecuencia de las que tomó.
+  * *Alcance:* página entre el podio y la pestaña Inicio que cierra la ronda: resultado de los dos coches, puntos y puesto en los campeonatos, dinero ingresado y gastado concepto a concepto con su total, mejora de los pilotos y, cuando existan, movimiento de la junta con su motivo y objetivos de patrocinio. Tras el sprint, un informe reducido. Las cifras se animan una vez (momento señalado) y respetan el movimiento reducido.
+  * *Aceptación:* cada cifra del informe coincide con el libro y con el campeonato; no aparece tras una carrera libre; cerrar y volver a abrir la partida antes de pulsar «Continuar» lo enseña de nuevo, sin liquidar la ronda dos veces.
+  * *Tests antes de implementación:* contenido del informe frente al libro y al campeonato, informe tras el sprint, liquidación única al recargar, y un test de interfaz.
+  * *Decisiones del usuario (09/10/2026):* informe de la ronda como página propia tras el podio.
+
+**Orden acordado:** T4.12 → T4.18 → T4.19 → T4.1 → T4.2 → T4.3 → T4.20 → T4.4 → T4.5 → T4.6 → T4.7 → T4.8 → T4.9 → T4.10 → T4.11 → T4.13 → T4.14 → T4.15 → T4.16 → T4.17. Los números no se cambian. T4.12 va primero porque corrige un defecto visible y no depende de la gestión; después la maqueta y la estructura de páginas (T4.18 y T4.19), para que todo lo demás se construya sobre un diseño ya revisado; después la economía, porque casi todo lo demás cuesta dinero; el centro de gestión, pronto, para que los paneles siguientes nazcan en su sitio; el cambio de temporada cierra la gestión porque arrastra todo lo anterior.
+
+**Avisos que salen de las decisiones:** (1) T4.13 y T4.14 cambian el comportamiento de los rivales y con él los resultados de las carreras de hoy: la baseline del banco R27 habrá que regenerarla con autorización; (2) T4.13 sustituye la decisión de R49 de que los rivales corren con el setup neutro; (3) con rivales sin red, el equilibrio de la parrilla a varias temporadas depende de la calibración de ingresos: el test de diez temporadas de T4.11 es el que lo vigila.
+
+**Para empezar:** en la rama `sprint/4`, proponer al usuario el contrato de tests de T4.12 (frecuencia del sorteo por circuito, neumático de salida según el agua y primeras vueltas en mojado sin abandonos por aquaplaning). Después, la maqueta de T4.18.
 
 ---
 
