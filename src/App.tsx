@@ -18,6 +18,11 @@ import { SavesScreen } from './components/SavesScreen';
 import { NewCareerScreen } from './components/NewCareerScreen';
 import { GameMenu } from './components/GameMenu';
 import { HubHome } from './components/HubHome';
+import { RoundReportScreen } from './components/RoundReportScreen';
+import { ROUND_REPORT_KEY, buildRoundReport, parseRoundReport } from './simulation/RoundReport';
+import type { RoundReport } from './simulation/RoundReport';
+import { ATTRIBUTE_LABEL } from './simulation/DriverDevelopment';
+import type { AttributeKey } from './simulation/DriverDevelopment';
 import { RaceWeekendPanel } from './components/RaceWeekendPanel';
 import { RaceFormatSelect } from './components/RaceFormatSelect';
 import managementStyles from './components/Management.module.css';
@@ -41,7 +46,7 @@ import { carryTyres, isSprintVenue, podiumHomeLabel, sprintWeekendTyres } from '
 import type { SeasonState, SeasonSummary, SettledCareer } from './simulation/Season';
 import { SeasonEndScreen } from './components/SeasonEndScreen';
 import { GridPenaltyNotice } from './components/GridPenaltyNotice';
-import { constructorsChampionship } from './simulation/Championship';
+import { addRace, constructorsChampionship } from './simulation/Championship';
 import { applyGridPenalties, emptyComponents, ensureDriver, gridPenaltyLines, hazardFactor, markRaceStart, parseComponents, raceStartGate, COMPONENTS_STORAGE_KEY } from './simulation/ComponentPool';
 import type { ComponentState, GridChange, PenaltyLine } from './simulation/ComponentPool';
 import type { QualifyingResult } from './simulation/Qualifying';
@@ -100,7 +105,7 @@ const AUTOSAVE_MS = 30000;
 const SAVE_NAME_KEY = 'f1_save_name';
 /** [T4.19] En la carrera libre el paddock no enseña nada de la partida: solo piloto, circuito, formato y tiempo. */
 const FREE_RACE_PADDOCK: Partial<React.ComponentProps<typeof HomeScreen>> = {
-  season: undefined, finance: undefined, facilities: undefined, sponsors: undefined, pitCrew: undefined, development: undefined,
+  season: undefined, finance: undefined, facilities: undefined, sponsors: undefined, board: undefined, pitCrew: undefined, development: undefined,
   components: undefined, setup: undefined, saveGames: undefined, championship: undefined, raceHistory: [],
 };
 const SETUPS_KEY = 'f1_setups';
@@ -135,7 +140,13 @@ export const App: React.FC = () => {
 
   // Vista actual: 'landing', 'home' o 'race'
   // [T4.19] Tras la portada va el menú de partidas; de él salen la carrera profesional y la carrera libre.
-  const [currentView, setCurrentView] = useState<'landing' | 'menu' | 'saves' | 'new' | 'home' | 'race'>('landing');
+  const [currentView, setCurrentView] = useState<'landing' | 'menu' | 'saves' | 'new' | 'home' | 'race' | 'report'>('landing');
+  // [T4.20] Informe de la última ronda: se guarda hasta que se pulsa «Continuar», así que al reabrir se ve de nuevo.
+  const [roundReport, setRoundReport] = useState<RoundReport | null>(() => { try { return parseRoundReport(localStorage.getItem(ROUND_REPORT_KEY)); } catch { return null; } });
+  const showRoundReport = useCallback((report: RoundReport | null) => {
+    setRoundReport(report);
+    try { if (report) localStorage.setItem(ROUND_REPORT_KEY, JSON.stringify(report)); else localStorage.removeItem(ROUND_REPORT_KEY); } catch (e) { console.error(e); }
+  }, []);
   /** Carrera profesional o carrera libre (que no toca ninguna partida). */
   const [mode, setMode] = useState<'career' | 'free'>('career');
   /** Hay una partida en curso en el navegador (también una anterior al menú de partidas). */
@@ -583,6 +594,7 @@ export const App: React.FC = () => {
   };
 
   const handleGoHome = useCallback(() => {
+    let report: RoundReport | null = null;
     // [T4.19] El resultado de una carrera libre no se anota en ninguna parte.
     if (mode === 'career' && simulation.podiumCars.length >= 3) {
       const winner = simulation.podiumCars[0];
@@ -615,8 +627,9 @@ export const App: React.FC = () => {
       // carrera libre no cambia nada de eso.
       const finalResult = simulation.confirmResult();
       if (finalResult) {
-        if (raceCounts && simulation.raceFormat !== 'sprint') saveDevelopment(developmentAfter(finalResult));
-        applyCareer(settleRace({ championship, components, program, season, archive: seasonArchive, management }, {
+        const developed = raceCounts && simulation.raceFormat !== 'sprint' ? developmentAfter(finalResult) : null;
+        if (developed) saveDevelopment(developed);
+        const settled = settleRace({ championship, components, program, season, archive: seasonArchive, management }, {
           counts: raceCounts, id: newHistoryItem.id, circuitId: selectedCircuitId, result: finalResult, format: simulation.raceFormat,
           raceKm: simulation.leaderLap * simulation.activeTrack.lapLengthMeters / 1000, playerCodes,
           tyres: simulation.raceFormat === 'sprint' ? carryTyres(simulation.cars) : undefined,
@@ -624,7 +637,19 @@ export const App: React.FC = () => {
           damages: raceDamages(simulation.incidents, simulation.cars),
           // [T4.6] Y sus paradas cuentan para la estadística del equipo de boxes.
           stops: simulation.cars.flatMap(car => (car.pitStop.stopLog ?? []).filter(stop => stop.totalSec > 0).map(stop => ({ teamId: car.driver.teamId, serviceSec: stop.serviceSec }))),
-        }));
+        });
+        applyCareer(settled);
+        // [T4.20] Informe de la ronda con la gestión de antes y de después de liquidarla.
+        if (raceCounts && settled.management) {
+          report = buildRoundReport({
+            before: management, after: settled.management, championship: settled.closed ? addRace(championship, newHistoryItem.id, selectedCircuitId, finalResult, simulation.raceFormat) : settled.championship,
+            round: nextRound(championship, season)?.round ?? SEASON_RACES, circuitName: circuit.name, format: simulation.raceFormat, rows: finalResult.rows,
+            gains: developed ? Object.values(DRIVERS).filter(driver => driver.teamId === management.playerTeamId).flatMap(driver => {
+              const keys = Object.keys(developed.lastGains[driver.id] ?? {}) as AttributeKey[];
+              return keys.length ? [{ code: driver.code, text: keys.map(key => `+1 ${ATTRIBUTE_LABEL[key].toLowerCase()}`).join(', ') }] : [];
+            }) : [],
+          });
+        }
       }
 
       // [R48] Resultado anotado: ya no hay carrera en curso que continuar.
@@ -640,8 +665,9 @@ export const App: React.FC = () => {
       }
     }
 
-    setCurrentView('home');
-  }, [simulation, selectedDriverId, selectedCircuitId, raceHistory, championship, saveDevelopment, developmentAfter, components, program, seasonArchive, saveStore, season, management, raceCounts, applyCareer, playerCodes, mode]);
+    if (report) showRoundReport(report);
+    setCurrentView(report ? 'report' : 'home');
+  }, [showRoundReport, simulation, selectedDriverId, selectedCircuitId, raceHistory, championship, saveDevelopment, developmentAfter, components, program, seasonArchive, saveStore, season, management, raceCounts, applyCareer, playerCodes, mode]);
 
   const handleCycleCameraMode = useCallback(() => {
     camera.cycleMode();
@@ -1006,7 +1032,8 @@ export const App: React.FC = () => {
     // Si la partida se dejó en mitad de una carrera, se retoma ahí (en pausa).
     if (!raceLive && autoSlot?.raceInProgress && !autoSlot.raceInProgress.finished) { handleLoadGame(AUTOSAVE_ID); return; }
     if (!raceLive) { const next = nextRound(championship, season); if (next) setSelectedCircuitId(next.circuitId); }
-    setCurrentView(raceLive ? 'race' : 'home');
+    // [T4.20] Si quedó un informe sin cerrar, se enseña antes de volver al centro de gestión.
+    setCurrentView(raceLive ? 'race' : roundReport ? 'report' : 'home');
   };
   const handleLoadCareer = (id: string) => {
     keepCurrentCareer();
@@ -1018,6 +1045,7 @@ export const App: React.FC = () => {
     keepCurrentCareer();
     const fresh = newCareer(teamId, name, newRaceSeed());
     if (saveStore) { saveStore.remove(AUTOSAVE_ID); refreshSlots(); }
+    showRoundReport(null);
     if (applySave(createSave({ name: fresh.name, savedAt: new Date().toISOString(), career: fresh.career, selection: fresh.selection, race: null })) === null) markCareer(fresh.name);
   };
   const gameMenu = (
@@ -1046,14 +1074,14 @@ export const App: React.FC = () => {
   const teamDrivers = (hubTeam?.drivers ?? []).map(id => DRIVERS[id]).filter(Boolean);
   const hub = mode === 'career' && hubTeam ? {
     teamName: hubTeam.shortName, accent: teamAccent(hubTeam.id), seasonNumber: seasonArchive.length + 1, round: hubRound?.round ?? null,
-    kpis: [{ label: hubBalance < 0 ? 'deuda' : 'saldo', value: formatMoney(Math.abs(hubBalance)) }, { label: 'constructores', value: teamStanding >= 0 ? `P${teamStanding + 1}` : '—' }],
+    kpis: [{ label: hubBalance < 0 ? 'deuda' : 'saldo', value: formatMoney(Math.abs(hubBalance)) }, { label: 'constructores', value: teamStanding >= 0 ? `P${teamStanding + 1}` : '—' }, { label: 'junta', value: String(Math.round(management.board.confidence)) }],
     badges: hubBadges,
     inicio: (go: (section: HubSection) => void) => (
       <HubHome next={hubNext} pending={hubPending} onGo={go} status={[
         { label: 'Campeonato', value: teamStanding >= 0 ? `P${teamStanding + 1} · ${teamPoints} pts` : 'Sin carreras', detail: `${grandsPrixRun(championship)} Grandes Premios disputados`, section: 'temporada' },
         { label: 'Finanzas', value: formatMoney(hubBalance), detail: `Próxima ronda: ${formatMoney(roundForecast(management.finance, management.playerTeamId).net, true)} sin contar puntos`, section: 'finanzas' },
         { label: 'Fábrica', value: `${activeProjects(program, management.playerTeamId).length} proyectos`, detail: hubWork ? `Obra en curso: quedan ${hubWork.remaining} rondas` : 'Sin obras en curso', section: 'fabrica' },
-        { label: 'Equipo', value: `Boxes nivel ${hubCrew?.level ?? 1}`, detail: `Fatiga ${Math.round(hubCrew?.fatigue ?? 0)} %`, section: 'equipo' },
+        { label: 'Junta', value: `${Math.round(management.board.confidence)} · objetivo ${management.board.objective}.º`, detail: `Equipo de boxes: nivel ${hubCrew?.level ?? 1}, fatiga ${Math.round(hubCrew?.fatigue ?? 0)} %`, section: 'finanzas' },
       ]} />
     ),
     correr: hubNext ? (
@@ -1087,6 +1115,9 @@ export const App: React.FC = () => {
       <SavesScreen slots={namedSlots} message={saveMessage} onBack={() => setCurrentView('menu')}
         onLoad={handleLoadCareer} onExport={handleExportGame} onImport={handleImportGame} onDelete={handleDeleteGame} />
     );
+  }
+  if (currentView === 'report' && roundReport) {
+    return <RoundReportScreen report={roundReport} onContinue={() => { showRoundReport(null); setCurrentView('home'); }} />;
   }
   if (currentView === 'new') {
     return <NewCareerScreen onBack={() => setCurrentView('menu')} onStart={handleNewCareer} />;
@@ -1127,6 +1158,7 @@ export const App: React.FC = () => {
         }}
         driverAttributes={driver => attributesOf(development, driver)}
         finance={{ state: management.finance, teamId: management.playerTeamId }}
+        board={management.board}
         sponsors={{
           team: management.sponsors.teams[management.playerTeamId],
           onSign: offerId => {

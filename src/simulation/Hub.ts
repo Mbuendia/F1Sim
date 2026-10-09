@@ -8,6 +8,7 @@ import { PROJECTS, activeProjects, statusAt } from './Development';
 import type { DevelopmentProgram } from './Development';
 import { maxProjects } from './Facilities';
 import { atDebtLimit } from './Finance';
+import { BOARD } from './Board';
 import type { ManagementState } from './Management';
 import { SPONSOR_SLOTS } from './Sponsors';
 
@@ -29,6 +30,9 @@ export function pendingDecisions(input: { teamId: string; management: Management
   const items: PendingItem[] = [];
   if (atDebtLimit(management.finance, teamId)) {
     items.push({ id: 'deuda-limite', title: 'El equipo está en el límite de deuda', detail: 'No se pueden empezar gastos nuevos hasta bajar la deuda', section: 'finanzas' });
+  }
+  if (management.board.confidence < BOARD.WARNING) {
+    items.push({ id: 'junta-baja', title: 'La junta está perdiendo la confianza', detail: `Confianza al ${Math.round(management.board.confidence)}: a cero, destitución al acabar la temporada`, section: 'finanzas' });
   }
   const running = activeProjects(program, teamId);
   for (const project of running) {

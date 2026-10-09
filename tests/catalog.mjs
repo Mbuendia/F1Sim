@@ -544,5 +544,7 @@ export const modules = [
   { "id": "pit-crew-t46", "tasks": ["T4.6"], "sprint": "4", "kind": "contract" },
   { "id": "sponsors-t49", "tasks": ["T4.9"], "sprint": "4", "kind": "contract" },
   { "id": "career-menu-t419", "tasks": ["T4.19"], "sprint": "4", "kind": "contract" },
-  { "id": "hub-t43", "tasks": ["T4.3"], "sprint": "4", "kind": "contract" }
+  { "id": "hub-t43", "tasks": ["T4.3"], "sprint": "4", "kind": "contract" },
+  { "id": "board-t410", "tasks": ["T4.10"], "sprint": "4", "kind": "contract" },
+  { "id": "round-report-t420", "tasks": ["T4.20"], "sprint": "4", "kind": "contract" }
 ];

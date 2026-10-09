@@ -1,8 +1,10 @@
 // [Sprint 4] Gestión del equipo entre carreras: lo que el director decide fuera de la pista. Reúne en un solo estado,
-// que va con la carrera profesional y se guarda con ella, las piezas de cada tarea (T4.1: dinero; T4.4: instalaciones; T4.6: equipo de boxes; T4.9: patrocinio).
+// que va con la carrera profesional y se guarda con ella, las piezas de cada tarea (T4.1: dinero; T4.4: instalaciones; T4.6: equipo de boxes; T4.9: patrocinio; T4.10: junta).
 // Todo son funciones puras: la temporada (Season.ts) las llama al anotar una carrera, un salto de ronda o el cierre.
 import { TEAMS } from '../data/teams';
-import { charge, closeFinanceSeason, credit, isFinance, settleRound, startFinance } from './Finance';
+import { atDebtLimit, charge, closeFinanceSeason, credit, isFinance, settleRound, startFinance } from './Finance';
+import { closeBoard, isBoard, settleBoard, startBoard } from './Board';
+import type { BoardState } from './Board';
 import type { FinanceState, RoundFormat } from './Finance';
 import { advanceFacilities, isFacilities, maintenanceOf, startFacilities } from './Facilities';
 import type { FacilitiesState } from './Facilities';
@@ -24,15 +26,19 @@ export interface ManagementState {
   pitCrews: PitCrewState;
   /** [T4.9] Contratos y ofertas de patrocinio de cada equipo. */
   sponsors: SponsorsState;
+  /** [T4.10] Junta del equipo del jugador: objetivo de la temporada y confianza. */
+  board: BoardState;
 }
 
 export const MANAGEMENT_STORAGE_KEY = 'f1_management';
 
 /** Gestión de una partida nueva (o de una partida anterior que no la tenía): saldos iniciales. */
 export function startManagement(playerTeamId: string, season = 1, seed = 0): ManagementState {
+  const teamId = TEAMS[playerTeamId] ? playerTeamId : Object.keys(TEAMS)[0];
   return {
-    version: 1, playerTeamId: TEAMS[playerTeamId] ? playerTeamId : Object.keys(TEAMS)[0], seed,
+    version: 1, playerTeamId: teamId, seed,
     finance: startFinance(Object.keys(TEAMS), season), facilities: startFacilities(), pitCrews: startPitCrews(), sponsors: startSponsors(season, seed),
+    board: startBoard(teamId),
   };
 }
 
@@ -46,7 +52,7 @@ export function isManagement(data: unknown): boolean {
   return state.version === 1 && typeof state.playerTeamId === 'string' && Boolean(TEAMS[state.playerTeamId]) && isFinance(state.finance)
     && (state.seed === undefined || Number.isInteger(state.seed))
     && (state.facilities === undefined || isFacilities(state.facilities)) && (state.pitCrews === undefined || isPitCrews(state.pitCrews))
-    && (state.sponsors === undefined || isSponsors(state.sponsors));
+    && (state.sponsors === undefined || isSponsors(state.sponsors)) && (state.board === undefined || isBoard(state.board));
 }
 
 /** La gestión de un objeto guardado, con sus piezas ausentes en su estado inicial; null si no es legible. */
@@ -56,7 +62,7 @@ export function readManagement(data: unknown): ManagementState | null {
   const seed = state.seed ?? 0;
   return {
     ...state, seed, facilities: state.facilities ?? startFacilities(), pitCrews: state.pitCrews ?? startPitCrews(),
-    sponsors: state.sponsors ?? startSponsors(state.finance.season, seed),
+    sponsors: state.sponsors ?? startSponsors(state.finance.season, seed), board: state.board ?? startBoard(state.playerTeamId),
   };
 }
 
@@ -97,19 +103,28 @@ export function settleManagementRound(state: ManagementState, round: RoundSettle
       for (const bonus of income.bonuses) finance = credit(finance, teamId, { round: round.round, kind: 'prima', label: bonus.label, amount: bonus.amount });
     }
   }
+  // [T4.10] La junta juzga la ronda del equipo del jugador (con la deuda que tenía al empezarla).
+  const board = settleBoard(state.board, { round: round.round, format: round.format, teamId: state.playerTeamId, rows: round.result, atDebtLimit: atDebtLimit(state.finance, state.playerTeamId) });
   // [T4.4] En un Gran Premio o una ronda saltada se paga el mantenimiento de las instalaciones y avanza la obra.
-  if (round.format === 'sprint') return { ...state, finance };
+  if (round.format === 'sprint') return { ...state, finance, board };
   for (const teamId of Object.keys(state.facilities.teams)) {
     finance = charge(finance, teamId, { round: round.round, kind: 'mantenimiento', label: 'Mantenimiento de las instalaciones', amount: maintenanceOf(state.facilities, teamId) });
   }
   // [T4.6] Pasa la semana del equipo de boxes (fatiga y entrenamiento) y se anotan sus paradas.
-  return { ...state, finance, facilities: advanceFacilities(state.facilities), pitCrews: advancePitCrews(state.pitCrews, round.stops) };
+  return { ...state, finance, board, facilities: advanceFacilities(state.facilities), pitCrews: advancePitCrews(state.pitCrews, round.stops) };
 }
 
 /** Cierra la temporada con la clasificación final de constructores (del primero al último). */
 export function closeManagementSeason(state: ManagementState, constructorsOrder: string[]): ManagementState {
+  // [T4.10] Balance de la junta: prima o recorte y, con la confianza a cero, destitución y paso a otro equipo.
+  const place = constructorsOrder.indexOf(state.playerTeamId);
+  const verdict = closeBoard(state.board, state.playerTeamId, place >= 0 ? place + 1 : 10, state.finance.season);
+  let finance = closeFinanceSeason(state.finance, constructorsOrder);
+  const movement = { round: 0, kind: 'junta' as const, amount: Math.abs(verdict.money) };
+  if (verdict.money > 0) finance = credit(finance, state.playerTeamId, { ...movement, label: 'Prima de la junta: objetivo cumplido' });
+  if (verdict.money < 0) finance = charge(finance, state.playerTeamId, { ...movement, label: 'Recorte de la junta: objetivo no cumplido' });
   return {
-    ...state, finance: closeFinanceSeason(state.finance, constructorsOrder), pitCrews: resetCrewSeason(state.pitCrews),
+    ...state, playerTeamId: verdict.teamId, board: verdict.board, finance, pitCrews: resetCrewSeason(state.pitCrews),
     // [T4.9] Vencen los contratos de patrocinio que llegaban hasta esta temporada y llegan ofertas nuevas.
     sponsors: renewSponsors(state.sponsors, state.finance.season, state.seed),
   };

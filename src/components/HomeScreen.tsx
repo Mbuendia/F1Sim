@@ -19,6 +19,8 @@ import { FacilitiesPanel } from './FacilitiesPanel';
 import { PitCrewPanel } from './PitCrewPanel';
 import { SponsorsPanel } from './SponsorsPanel';
 import { HubHeader } from './HubHeader';
+import { BoardPanel } from './BoardPanel';
+import type { BoardState } from '../simulation/Board';
 import { SeasonStrip } from './SeasonStrip';
 import type { HubSection } from '../simulation/Hub';
 import type { TeamSponsors } from '../simulation/Sponsors';
@@ -130,6 +132,8 @@ interface HomeScreenProps {
   finance?: { state: FinanceState; teamId: string };
   /** [T4.4] Instalaciones de la fábrica del equipo del jugador. */
   facilities?: { state: FacilitiesState; teamId: string; canAfford: (cost: number) => boolean; onUpgrade: (facility: FacilityId) => void };
+  /** [T4.10] Junta del equipo del jugador. */
+  board?: BoardState;
   /** [T4.6] Equipo de boxes del equipo del jugador. */
   pitCrew?: { crew: PitCrew; onPlan: (plan: CrewPlan) => void };
   /** [T4.9] Patrocinio del equipo del jugador y rótulos del coche de cada equipo. */
@@ -165,7 +169,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   finance,
   facilities,
   pitCrew,
-  sponsors
+  sponsors,
+  board
 }) => {
   const nextRound = season?.rounds.find(round => round.status === 'siguiente');
   const freeRace = Boolean(nextRound) && nextRound?.circuitId !== selectedCircuitId;
@@ -377,6 +382,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           <FacilitiesPanel facilities={facilities.state} teamId={facilities.teamId} canAfford={facilities.canAfford} onUpgrade={facilities.onUpgrade} />
         </section>
       )}
+
+      {section === 'finanzas' && board && <BoardPanel board={board} />}
 
       {section === 'finanzas' && sponsors && (
         <section className={styles.sectionBlock}>
