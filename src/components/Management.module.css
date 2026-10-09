@@ -107,3 +107,60 @@
   .finance { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .span3 { grid-column: span 2; }
 }
+
+/* [T4.3] Centro de gestión: cabecera con el acento del equipo, pestañas y páginas de Inicio, Correr y Temporada */
+.hubHeader { flex: none; background: var(--panel); border-bottom: 1px solid var(--line); box-shadow: inset 0 3px 0 var(--equipo); border-radius: var(--radio-m); color: var(--text); font-family: var(--font-ui); }
+.hubBar { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; padding: 10px 18px 6px; }
+.hubTeam { font-family: var(--font-marca); font-weight: 700; font-size: 17px; letter-spacing: 0.06em; text-transform: uppercase; }
+.hubSpacer { flex: 1; }
+.kpi { display: flex; flex-direction: column; line-height: 1.1; }
+.kpi b { font-family: var(--font-marca); font-size: 16px; }
+.kpi span { font-size: 14px; color: var(--text-3); }
+.hubTabs { display: flex; gap: 2px; flex-wrap: wrap; padding: 0 10px; }
+.hubTabs button { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 16px; background: none; border: 0; border-bottom: 3px solid transparent; color: var(--text-3); cursor: pointer; font-family: var(--font-ui); font-size: 16px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.hubTabs button:hover { color: var(--text); }
+.hubTabs button[aria-selected="true"] { color: #fff; border-bottom-color: var(--equipo); }
+.hubTabs .hubTabRace { margin-left: auto; margin-bottom: 4px; min-height: 36px; background: var(--accion); color: #fff; border-radius: var(--radio-s); border-bottom-color: transparent; }
+.hubTabs .hubTabRace:hover { background: var(--accion-hover); color: #fff; }
+.hubTabs .hubTabRace[aria-selected="true"] { border-bottom-color: #fff; }
+.badge { min-width: 18px; height: 18px; padding: 0 5px; border-radius: 99px; background: var(--aviso); color: #111; font-size: 14px; line-height: 18px; text-align: center; font-weight: 700; }
+
+.primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 8px 22px; border-radius: var(--radio-s); border: 1px solid var(--accion); background: var(--accion); color: #fff; cursor: pointer; font-family: var(--font-ui); font-size: 16px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; }
+.primary:hover { background: var(--accion-hover); }
+.title { font-family: var(--font-marca); font-weight: 700; font-size: 24px; letter-spacing: 0.03em; }
+
+.hubHome { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 14px; flex-shrink: 0; }
+.nextRace { display: flex; flex-direction: column; gap: 10px; min-height: 220px; border-left: 4px solid var(--equipo); }
+.pending { list-style: none; margin: 0; padding: 0; }
+.pending li { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.pending li:last-child { border-bottom: 0; }
+.statusRow { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.statusCard { display: flex; flex-direction: column; gap: 6px; text-align: left; cursor: pointer; }
+.statusCard:hover { border-color: var(--equipo); }
+.statusValue { font-family: var(--font-marca); font-weight: 700; font-size: 22px; }
+
+.weekend { display: flex; flex-direction: column; gap: 14px; flex-shrink: 0; }
+/* El botón rojo se queda a la vista aunque la página se desplace. */
+.weekendFoot { position: sticky; bottom: 0; z-index: 2; padding: 10px 0 2px; background: var(--bg); }
+.steps { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; list-style: none; margin: 0; padding: 0; }
+.steps li { display: inline-flex; align-items: center; gap: 8px; color: var(--text-3); font-weight: 700; font-size: 16px; letter-spacing: 0.05em; text-transform: uppercase; }
+.stepMark { width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--line-strong); display: grid; place-items: center; font-family: var(--font-marca); font-size: 14px; }
+.steps li[data-state="hecha"] .stepMark { color: var(--positivo); border-color: var(--positivo); }
+.steps li[data-state="ahora"] { color: #fff; }
+.steps li[data-state="ahora"] .stepMark { border-color: var(--equipo); background: var(--equipo); color: #0d1117; }
+
+.strip { display: grid; grid-template-columns: repeat(24, minmax(0, 1fr)); gap: 4px; list-style: none; margin: 0; padding: 0; }
+.strip li { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0; padding: 6px 2px; background: var(--panel-2); border: 1px solid var(--line); border-radius: var(--radio-s); font-size: 14px; }
+.strip li[data-status="pendiente"] { background: transparent; }
+.strip li[data-status="saltada"] { opacity: 0.55; }
+.strip li[data-status="siguiente"] { border-color: var(--equipo); box-shadow: inset 0 3px 0 var(--equipo); }
+.stripNumber { font-family: var(--font-marca); font-size: 14px; color: var(--text-3); }
+.stripFlag { font-size: 16px; line-height: 1; }
+.stripResult { font-family: var(--font-marca); font-size: 14px; font-weight: 700; }
+.stripSprint { height: 16px; font-size: 14px; color: var(--aviso); font-weight: 700; }
+
+@media (max-width: 1100px) {
+  .hubHome { grid-template-columns: 1fr; }
+  .statusRow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .strip { grid-template-columns: repeat(12, minmax(0, 1fr)); }
+}

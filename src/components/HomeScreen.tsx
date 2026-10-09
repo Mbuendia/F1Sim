@@ -18,6 +18,9 @@ import { FinancePanel } from './FinancePanel';
 import { FacilitiesPanel } from './FacilitiesPanel';
 import { PitCrewPanel } from './PitCrewPanel';
 import { SponsorsPanel } from './SponsorsPanel';
+import { HubHeader } from './HubHeader';
+import { SeasonStrip } from './SeasonStrip';
+import type { HubSection } from '../simulation/Hub';
 import type { TeamSponsors } from '../simulation/Sponsors';
 import type { CrewPlan, PitCrew } from '../simulation/PitCrew';
 import type { FacilitiesState, FacilityId } from '../simulation/Facilities';
@@ -67,17 +70,20 @@ import {
 } from 'lucide-react';
 import { animate } from 'animejs';
 
-/** Secciones del paddock, en el orden del menú. «Correr» es la última. */
-const PADDOCK_SECTIONS = [
-  ['temporada', 'Temporada'], ['partidas', 'Partidas'], ['finanzas', 'Finanzas'], ['fabrica', 'Fábrica'], ['equipo', 'Equipo'], ['setup', 'Setup'], ['correr', 'Correr'],
-] as const;
-type PaddockSection = typeof PADDOCK_SECTIONS[number][0];
 
 interface HomeScreenProps {
   /** [T4.19] Carrera profesional (con su menú de secciones) o carrera libre (solo piloto, circuito, formato y tiempo). */
   mode?: 'career' | 'free';
   /** [T4.19] Lo que va a la derecha de la cabecera: el menú «Partida» o la vuelta al menú de partidas. */
   headerExtra?: React.ReactNode;
+  /**
+   * [T4.3] Centro de gestión de la carrera profesional: cabecera con el equipo y sus cifras, pendientes por pestaña, la
+   * página de Inicio (recibe cómo cambiar de pestaña) y la de Correr. Sin esto (carrera libre), el paddock de siempre.
+   */
+  hub?: {
+    teamName: string; accent: string; seasonNumber: number; round: number | null; kpis: { label: string; value: string }[];
+    badges: Partial<Record<HubSection, number>>; inicio: (go: (section: HubSection) => void) => React.ReactNode; correr: React.ReactNode;
+  };
   selectedDriverId: string;
   selectedCircuitId: string;
   onSelectDriver: (driverId: string) => void;
@@ -133,6 +139,7 @@ interface HomeScreenProps {
 export const HomeScreen: React.FC<HomeScreenProps> = ({
   mode = 'career',
   headerExtra,
+  hub,
   selectedDriverId,
   selectedCircuitId,
   onSelectDriver,
@@ -164,7 +171,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   const freeRace = Boolean(nextRound) && nextRound?.circuitId !== selectedCircuitId;
   const [activeTab, setActiveTab] = useState<'drivers' | 'circuits'>('drivers');
   // Menú del paddock: una pestaña por sección y «Correr», la última, con la selección de carrera y la entrada a pista.
-  const [section, setSection] = useState<PaddockSection>('correr');
+  const [section, setSection] = useState<HubSection>(hub ? 'inicio' : 'correr');
   const [driverSubTab, setDriverSubTab] = useState<'specs' | 'strategy' | 'records'>('specs');
   const [circuitSubTab, setCircuitSubTab] = useState<'overview' | 'drs' | 'telemetry'>('overview');
   const [inspectedDriverId, setInspectedDriverId] = useState<string>(selectedDriverId);
@@ -276,7 +283,15 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   }, [inspectedDriverId, inspectedCircuitId, activeTab]);
 
   return (
-    <div className={styles.homeContainer}>
+    <div className={styles.homeContainer} style={hub ? { ['--equipo' as string]: hub.accent } : undefined}>
+      {hub && (
+        <HubHeader teamName={hub.teamName} seasonNumber={hub.seasonNumber} round={hub.round} kpis={hub.kpis} badges={hub.badges} section={section} onSection={setSection}>
+          {headerExtra}
+        </HubHeader>
+      )}
+      {hub && section === 'inicio' && hub.inicio(setSection)}
+      {hub && section === 'correr' && hub.correr}
+      {!hub && (
       <header className={styles.header}>
         <div className={styles.brandGroup}>
           <div className={styles.f1Logo}>F1</div>
@@ -286,15 +301,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             <p>{mode === 'free' ? 'Carrera libre · no cuenta para ninguna partida' : 'Paddock · gestiona tu equipo y entra a pista desde «Correr»'}</p>
           </div>
         </div>
-        {mode === 'career' && (
-          <nav className={styles.sectionNav} aria-label="Secciones del paddock">
-            {PADDOCK_SECTIONS.map(([id, label]) => (
-              <button key={id} type="button" className={id === 'correr' ? styles.sectionNavRace : undefined} aria-pressed={section === id} onClick={() => setSection(id)}>{label}</button>
-            ))}
-          </nav>
-        )}
         {headerExtra}
       </header>
+      )}
 
       {section === 'temporada' && raceHistory.length > 0 && (
         <section className={styles.sectionBlock}>
@@ -324,6 +333,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
       {section === 'temporada' && season && (
         <section className={styles.sectionBlock}>
+          <SeasonStrip rounds={season.rounds} />
           <h2 className={styles.sectionHeading}>
             <span>Temporada {season.seasonNumber}{nextRound ? ` · ronda ${nextRound.round} de ${SEASON_RACES}` : ''}</span>
           </h2>
@@ -338,15 +348,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             <span>Historial de temporadas ({season.archive.length})</span>
           </h2>
           <SeasonHistory archive={season.archive} />
-        </section>
-      )}
-
-      {section === 'partidas' && saveGames && (
-        <section className={styles.sectionBlock}>
-          <h2 className={styles.sectionHeading}>
-            <span>Partidas ({saveGames.slots.length})</span>
-          </h2>
-          <SaveGamePanel key={saveGames.currentName ?? ''} {...saveGames} />
         </section>
       )}
 
@@ -417,17 +418,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         </section>
       )}
 
-      {section === 'setup' && setup && (
-        <section className={styles.sectionBlock}>
-          <h2 className={styles.sectionHeading}>
-            <span>Setup del coche</span>
-          </h2>
-          <SetupPanel drivers={Object.values(DRIVERS).filter(d => d.teamId === (DRIVERS[selectedDriverId] ?? DRIVERS.alonso).teamId)}
-            setups={setup.setups} onChange={setup.onChange} />
-        </section>
-      )}
-
-      <div className={styles.mainLayout3Col} style={section === 'correr' ? undefined : { display: 'none' }}>
+      <div className={styles.mainLayout3Col} style={hub ? { display: 'none' } : undefined}>
         <div className={styles.leftColumn}>
           <div className={styles.tabButtonsRow}>
             <button 

@@ -17,6 +17,13 @@ import { GameMenuScreen } from './components/GameMenuScreen';
 import { SavesScreen } from './components/SavesScreen';
 import { NewCareerScreen } from './components/NewCareerScreen';
 import { GameMenu } from './components/GameMenu';
+import { HubHome } from './components/HubHome';
+import { RaceWeekendPanel } from './components/RaceWeekendPanel';
+import { RaceFormatSelect } from './components/RaceFormatSelect';
+import managementStyles from './components/Management.module.css';
+import { pendingDecisions, weekendSessions } from './simulation/Hub';
+import type { HubSection } from './simulation/Hub';
+import { DEFAULT_ACCENT, teamAccent } from './data/teamAccents';
 import { CAREER_NAME_KEY, DEFAULT_CAREER_NAME, careerDriver, hasStoredCareer, newCareer } from './simulation/Career';
 import RaceFlagsHUD from './components/RaceFlagsHUD';
 import { DnfNotificationModal } from './components/DnfNotificationModal';
@@ -26,7 +33,7 @@ import { RaceNotices, RaceNotice, RaceNoticeTone } from './components/RaceNotice
 import { OFFICIAL_CIRCUITS } from './data/circuits';
 import { buildWeatherScenario } from './data/weatherScenarios';
 import { runQualifying } from './simulation/Qualifying';
-import { emptyProgram, installFirst, parseProgram, upgradesFor, PROGRAM_STORAGE_KEY } from './simulation/Development';
+import { activeProjects, emptyProgram, installFirst, parseProgram, upgradesFor, PROGRAM_STORAGE_KEY } from './simulation/Development';
 import type { DevelopmentProgram } from './simulation/Development';
 import { calendarView, emptySeason, grandsPrixRun, isSeasonRace, nextRound, parseArchive, parseSeason, roundWeather, settleRace, settleSkip, sprintPending, withWeatherSeed, SEASONS_STORAGE_KEY, SEASON_RACES, SEASON_STATE_KEY } from './simulation/Season';
 import { COMPOUND_LABEL } from './simulation/TireInventory';
@@ -52,7 +59,7 @@ import { MANAGEMENT_STORAGE_KEY, parseManagement, startManagement } from './simu
 import type { ManagementState } from './simulation/Management';
 import { aiDevelopPaying, aiReplaceComponents, buyComponent, buyProject, componentCost, projectCost, projectLeadTime, projectShortfall, raceDamages, refundComponent } from './simulation/Costs';
 import { aiInvestFacilities, benchHazard, gainOf, maxProjects, simulatorBonus, startWork } from './simulation/Facilities';
-import { canSpend } from './simulation/Finance';
+import { balanceOf, canSpend, formatMoney, roundForecast } from './simulation/Finance';
 import { aiCrewPlans, crewEffect, setCrewPlan } from './simulation/PitCrew';
 import { aiSignSponsors, carSponsors, signSponsor } from './simulation/Sponsors';
 import type { SaveGame, SlotSummary } from './simulation/SaveGame';
@@ -174,6 +181,10 @@ export const App: React.FC = () => {
   // [T4.19] En la carrera profesional el jugador lleva a los pilotos de su equipo: el piloto seguido es uno de ellos.
   useEffect(() => {
     if (mode === 'career') setSelectedDriverId(driverId => careerDriver(management.playerTeamId, driverId));
+  }, [mode, management.playerTeamId]);
+  // [T4.3] El acento del equipo vale en toda la aplicación (también en carrera); en la carrera libre, el neutro.
+  useEffect(() => {
+    document.documentElement.style.setProperty('--equipo', mode === 'career' ? teamAccent(management.playerTeamId) : DEFAULT_ACCENT);
   }, [mode, management.playerTeamId]);
   // [R45] Atributos y enfoque de los pilotos, guardados en el navegador
   const [development, setDevelopment] = useState<DevelopmentState>(() => {
@@ -1016,6 +1027,49 @@ export const App: React.FC = () => {
       onExit={() => { autosaveRef.current(); setCurrentView('menu'); }} />
   );
 
+  // ── [T4.3] Centro de gestión de la carrera profesional ──
+  const hubTeam = TEAMS[management.playerTeamId];
+  const hubRound = nextRound(championship, season);
+  const hubCircuit = hubRound ? OFFICIAL_CIRCUITS[hubRound.circuitId] : undefined;
+  const hubNext = hubRound && hubCircuit
+    ? { round: hubRound.round, circuitName: hubCircuit.name, laps: hubCircuit.totalLaps, rainPercent: hubCircuit.rainProbabilityPercent, sprint: Boolean(hubRound.sprint) }
+    : null;
+  const hubPending = pendingDecisions({ teamId: management.playerTeamId, management, program, components, raceIndex: grandsPrixRun(championship) });
+  const hubBadges: Partial<Record<HubSection, number>> = {};
+  for (const item of hubPending) hubBadges[item.section] = (hubBadges[item.section] ?? 0) + 1;
+  const teamStanding = constructorsChampionship(championship).findIndex(team => team.teamId === management.playerTeamId);
+  const teamPoints = teamStanding >= 0 ? constructorsChampionship(championship)[teamStanding].points : 0;
+  const hubBalance = balanceOf(management.finance, management.playerTeamId);
+  const hubCrew = management.pitCrews.teams[management.playerTeamId];
+  const hubWork = management.facilities.teams[management.playerTeamId]?.work;
+  const sprintDone = Boolean(hubRound && season.weekend?.round === hubRound.round);
+  const teamDrivers = (hubTeam?.drivers ?? []).map(id => DRIVERS[id]).filter(Boolean);
+  const hub = mode === 'career' && hubTeam ? {
+    teamName: hubTeam.shortName, accent: teamAccent(hubTeam.id), seasonNumber: seasonArchive.length + 1, round: hubRound?.round ?? null,
+    kpis: [{ label: hubBalance < 0 ? 'deuda' : 'saldo', value: formatMoney(Math.abs(hubBalance)) }, { label: 'constructores', value: teamStanding >= 0 ? `P${teamStanding + 1}` : '—' }],
+    badges: hubBadges,
+    inicio: (go: (section: HubSection) => void) => (
+      <HubHome next={hubNext} pending={hubPending} onGo={go} status={[
+        { label: 'Campeonato', value: teamStanding >= 0 ? `P${teamStanding + 1} · ${teamPoints} pts` : 'Sin carreras', detail: `${grandsPrixRun(championship)} Grandes Premios disputados`, section: 'temporada' },
+        { label: 'Finanzas', value: formatMoney(hubBalance), detail: `Próxima ronda: ${formatMoney(roundForecast(management.finance, management.playerTeamId).net, true)} sin contar puntos`, section: 'finanzas' },
+        { label: 'Fábrica', value: `${activeProjects(program, management.playerTeamId).length} proyectos`, detail: hubWork ? `Obra en curso: quedan ${hubWork.remaining} rondas` : 'Sin obras en curso', section: 'fabrica' },
+        { label: 'Equipo', value: `Boxes nivel ${hubCrew?.level ?? 1}`, detail: `Fatiga ${Math.round(hubCrew?.fatigue ?? 0)} %`, section: 'equipo' },
+      ]} />
+    ),
+    correr: hubNext ? (
+      <RaceWeekendPanel round={hubNext} sessions={weekendSessions(effectiveFormat, sprintDone)}
+        drivers={teamDrivers.map(driver => ({ id: driver.id, code: driver.code, name: driver.lastName, number: driver.number }))}
+        followedId={selectedDriverId} onFollow={setSelectedDriverId}
+        launchLabel={effectiveFormat === 'sprint' ? 'Clasificación sprint y sprint' : effectiveFormat === 'clasificacion' ? 'Clasificación y Gran Premio' : 'Entrar a pista'}
+        onStart={handleStartRaceFromHome}>
+        <section className={managementStyles.card}>
+          <RaceFormatSelect value={effectiveFormat} onChange={setRaceFormat} sprintAvailable={sprintAvailable} />
+        </section>
+        <SetupPanel drivers={teamDrivers} setups={setups} onChange={handleSetupChange} />
+      </RaceWeekendPanel>
+    ) : <p>La temporada está completa: no quedan rondas por correr.</p>,
+  } : undefined;
+
   if (currentView === 'landing') {
     return <LandingPage onEnter={() => setCurrentView('menu')} />;
   }
@@ -1042,6 +1096,8 @@ export const App: React.FC = () => {
     return (
       <>
       <HomeScreen
+        key={mode}
+        hub={hub}
         mode={mode}
         headerExtra={mode === 'career' ? gameMenu : <button type="button" className={styles.barBtn} onClick={() => { setMode('career'); setCurrentView('menu'); }}>← Menú</button>}
         selectedDriverId={selectedDriverId}
