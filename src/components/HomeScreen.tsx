@@ -67,6 +67,12 @@ import {
 } from 'lucide-react';
 import { animate } from 'animejs';
 
+/** Secciones del paddock, en el orden del menú. «Correr» es la última. */
+const PADDOCK_SECTIONS = [
+  ['temporada', 'Temporada'], ['partidas', 'Partidas'], ['finanzas', 'Finanzas'], ['fabrica', 'Fábrica'], ['equipo', 'Equipo'], ['setup', 'Setup'], ['correr', 'Correr'],
+] as const;
+type PaddockSection = typeof PADDOCK_SECTIONS[number][0];
+
 interface HomeScreenProps {
   selectedDriverId: string;
   selectedCircuitId: string;
@@ -151,6 +157,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   const nextRound = season?.rounds.find(round => round.status === 'siguiente');
   const freeRace = Boolean(nextRound) && nextRound?.circuitId !== selectedCircuitId;
   const [activeTab, setActiveTab] = useState<'drivers' | 'circuits'>('drivers');
+  // Menú del paddock: una pestaña por sección y «Correr», la última, con la selección de carrera y la entrada a pista.
+  const [section, setSection] = useState<PaddockSection>('correr');
   const [driverSubTab, setDriverSubTab] = useState<'specs' | 'strategy' | 'records'>('specs');
   const [circuitSubTab, setCircuitSubTab] = useState<'overview' | 'drs' | 'telemetry'>('overview');
   const [inspectedDriverId, setInspectedDriverId] = useState<string>(selectedDriverId);
@@ -269,17 +277,22 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           <F1WheelSvg style={{ width: '28px', height: '28px', flexShrink: 0 }} />
           <div className={styles.headerTitles}>
             <h1>F1 RACE MANAGER</h1>
-            <p>Paddock · elige piloto y circuito y entra a pista</p>
+            <p>Paddock · gestiona tu equipo y entra a pista desde «Correr»</p>
           </div>
         </div>
+        <nav className={styles.sectionNav} aria-label="Secciones del paddock">
+          {PADDOCK_SECTIONS.map(([id, label]) => (
+            <button key={id} type="button" className={id === 'correr' ? styles.sectionNavRace : undefined} aria-pressed={section === id} onClick={() => setSection(id)}>{label}</button>
+          ))}
+        </nav>
       </header>
 
-      {raceHistory.length > 0 && (
-        <details className={styles.historySection}>
-          <summary className={styles.historyTitle}>
+      {section === 'temporada' && raceHistory.length > 0 && (
+        <section className={styles.sectionBlock}>
+          <h2 className={styles.sectionHeading}>
             <History size={14} aria-hidden="true" />
             <span>Historial de carreras disputadas ({raceHistory.length})</span>
-          </summary>
+          </h2>
 
           <div className={styles.historyCardsList}>
             {raceHistory.map((race) => (
@@ -297,115 +310,115 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               </div>
             ))}
           </div>
-        </details>
+        </section>
       )}
 
-      {season && (
-        <details className={styles.historySection} open>
-          <summary className={styles.historyTitle}>
+      {section === 'temporada' && season && (
+        <section className={styles.sectionBlock}>
+          <h2 className={styles.sectionHeading}>
             <span>Temporada {season.seasonNumber}{nextRound ? ` · ronda ${nextRound.round} de ${SEASON_RACES}` : ''}</span>
-          </summary>
+          </h2>
           <SeasonCalendar rounds={season.rounds} seasonNumber={season.seasonNumber} selectedCircuitId={selectedCircuitId}
             onSelectNext={season.onSelectNext} onSkip={season.onSkip} />
-        </details>
+        </section>
       )}
 
-      {season && season.archive.length > 0 && (
-        <details className={styles.historySection}>
-          <summary className={styles.historyTitle}>
+      {section === 'temporada' && season && season.archive.length > 0 && (
+        <section className={styles.sectionBlock}>
+          <h2 className={styles.sectionHeading}>
             <span>Historial de temporadas ({season.archive.length})</span>
-          </summary>
+          </h2>
           <SeasonHistory archive={season.archive} />
-        </details>
+        </section>
       )}
 
-      {saveGames && (
-        <details className={styles.historySection} open={saveGames.slots.some(slot => slot.raceInProgress) || undefined}>
-          <summary className={styles.historyTitle}>
+      {section === 'partidas' && saveGames && (
+        <section className={styles.sectionBlock}>
+          <h2 className={styles.sectionHeading}>
             <span>Partidas ({saveGames.slots.length})</span>
-          </summary>
+          </h2>
           <SaveGamePanel key={saveGames.currentName ?? ''} {...saveGames} />
-        </details>
+        </section>
       )}
 
-      {championship && championship.races.length > 0 && (
-        <details className={styles.historySection}>
-          <summary className={styles.historyTitle}>
+      {section === 'temporada' && championship && championship.races.length > 0 && (
+        <section className={styles.sectionBlock}>
+          <h2 className={styles.sectionHeading}>
             <span>Campeonato ({championship.races.length})</span>
-          </summary>
+          </h2>
           <ChampionshipTable championship={championship} onReset={onResetChampionship} />
-        </details>
+        </section>
       )}
 
-      {finance && (
-        <details className={styles.historySection}>
-          <summary className={styles.historyTitle}>
+      {section === 'finanzas' && finance && (
+        <section className={styles.sectionBlock}>
+          <h2 className={styles.sectionHeading}>
             <span>Finanzas · saldo {formatMoney(balanceOf(finance.state, finance.teamId))}</span>
-          </summary>
+          </h2>
           <FinancePanel finance={finance.state} teamId={finance.teamId} />
-        </details>
+        </section>
       )}
 
-      {facilities && (
-        <details className={styles.historySection}>
-          <summary className={styles.historyTitle}>
+      {section === 'fabrica' && facilities && (
+        <section className={styles.sectionBlock}>
+          <h2 className={styles.sectionHeading}>
             <span>Instalaciones de la fábrica</span>
-          </summary>
+          </h2>
           <FacilitiesPanel facilities={facilities.state} teamId={facilities.teamId} canAfford={facilities.canAfford} onUpgrade={facilities.onUpgrade} />
-        </details>
+        </section>
       )}
 
-      {sponsors && (
-        <details className={styles.historySection}>
-          <summary className={styles.historyTitle}>
+      {section === 'finanzas' && sponsors && (
+        <section className={styles.sectionBlock}>
+          <h2 className={styles.sectionHeading}>
             <span>Patrocinio ({sponsors.team.deals.length} de 3)</span>
-          </summary>
+          </h2>
           <SponsorsPanel sponsors={sponsors.team} onSign={sponsors.onSign} />
-        </details>
+        </section>
       )}
 
-      {pitCrew && (
-        <details className={styles.historySection}>
-          <summary className={styles.historyTitle}>
+      {section === 'equipo' && pitCrew && (
+        <section className={styles.sectionBlock}>
+          <h2 className={styles.sectionHeading}>
             <span>Equipo de boxes</span>
-          </summary>
+          </h2>
           <PitCrewPanel crew={pitCrew.crew} onPlan={pitCrew.onPlan} />
-        </details>
+        </section>
       )}
 
-      {development && (
-        <details className={styles.historySection}>
-          <summary className={styles.historyTitle}>
+      {section === 'fabrica' && development && (
+        <section className={styles.sectionBlock}>
+          <h2 className={styles.sectionHeading}>
             <span>Desarrollo del coche</span>
-          </summary>
+          </h2>
           <DevelopmentPanel program={development.program} teamId={(DRIVERS[selectedDriverId] ?? DRIVERS.alonso).teamId}
             drivers={Object.values(DRIVERS).filter(d => d.teamId === (DRIVERS[selectedDriverId] ?? DRIVERS.alonso).teamId)}
             raceIndex={development.raceIndex} constructorsPosition={development.constructorsPosition}
             onStart={development.onStart} onInstall={development.onInstall} costs={development.costs} />
-        </details>
+        </section>
       )}
 
-      {components && (
-        <details className={styles.historySection}>
-          <summary className={styles.historyTitle}>
+      {section === 'fabrica' && components && (
+        <section className={styles.sectionBlock}>
+          <h2 className={styles.sectionHeading}>
             <span>Componentes de la unidad de potencia</span>
-          </summary>
+          </h2>
           <ComponentsPanel state={components} drivers={Object.values(DRIVERS).filter(d => d.teamId === (DRIVERS[selectedDriverId] ?? DRIVERS.alonso).teamId)}
             onFitNew={onFitComponent} onUndo={onUndoComponent} costOf={componentCostOf} />
-        </details>
+        </section>
       )}
 
-      {setup && (
-        <details className={styles.historySection}>
-          <summary className={styles.historyTitle}>
+      {section === 'setup' && setup && (
+        <section className={styles.sectionBlock}>
+          <h2 className={styles.sectionHeading}>
             <span>Setup del coche</span>
-          </summary>
+          </h2>
           <SetupPanel drivers={Object.values(DRIVERS).filter(d => d.teamId === (DRIVERS[selectedDriverId] ?? DRIVERS.alonso).teamId)}
             setups={setup.setups} onChange={setup.onChange} />
-        </details>
+        </section>
       )}
 
-      <div className={styles.mainLayout3Col}>
+      <div className={styles.mainLayout3Col} style={section === 'correr' ? undefined : { display: 'none' }}>
         <div className={styles.leftColumn}>
           <div className={styles.tabButtonsRow}>
             <button 

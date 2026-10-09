@@ -737,3 +737,24 @@
 /* R01: perfil de reglas activo */
 .rulesProfile { margin-top: auto; margin-bottom: 12px; padding: 10px 12px; border-radius: var(--radio-m); background: var(--panel-2); font-size: 15px; color: var(--text-2); }
 .rulesProfile strong { color: var(--text); font-weight: 700; }
+
+/* Sprint 4: menú del paddock. Una pestaña por sección y «Correr» la última; la sección elegida ocupa la página, que
+   se desplaza si no cabe. Antes las secciones se apilaban plegadas encima de la selección de carrera, sin
+   desplazamiento, y con muchas el botón «Entrar a pista» quedaba fuera de la pantalla. */
+.homeContainer { overflow-x: hidden; overflow-y: auto; }
+.header { flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.sectionNav { display: flex; gap: 4px; flex-wrap: wrap; }
+.sectionNav button { min-height: 38px; padding: 6px 16px; background: transparent; border: 1px solid transparent; border-bottom: 3px solid transparent; border-radius: var(--radio-s);
+  color: var(--text-2); font-family: var(--font-ui); font-size: 16px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; cursor: pointer; }
+.sectionNav button:hover { color: var(--text); background: var(--panel-2); }
+.sectionNav button[aria-pressed="true"] { color: #fff; border-bottom-color: var(--equipo); background: var(--panel-2); }
+.sectionNav .sectionNavRace { background: var(--accion); border-color: var(--accion); color: #fff; margin-left: 8px; }
+.sectionNav .sectionNavRace:hover { background: var(--accion-hover); }
+.sectionNav .sectionNavRace[aria-pressed="true"] { background: var(--accion); border-bottom-color: #fff; }
+.sectionBlock { flex-shrink: 0; display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radio-l); }
+.sectionHeading { display: flex; align-items: center; gap: 8px; font-family: var(--font-ui); font-size: 17px; font-weight: 700; color: var(--text); }
+/* En «Correr» el botón de entrar a pista queda siempre a la vista: el panel derecho se desplaza por dentro y el botón se
+   queda fijo al pie. */
+.mainLayout3Col { overflow: hidden; }
+.rightSidePanel { overflow-y: auto; min-height: 0; }
+.launchBigButton { position: sticky; bottom: 0; flex-shrink: 0; z-index: 1; }
