@@ -78,13 +78,13 @@ export function activeProjects(program: DevelopmentProgram, teamId: string): Pro
   return teamOf(program, teamId).projects.filter(p => !p.installed);
 }
 
-export function startProject(program: DevelopmentProgram, teamId: string, key: string, raceIndex: number, constructorsPosition: number):
+export function startProject(program: DevelopmentProgram, teamId: string, key: string, raceIndex: number, constructorsPosition: number, maxActive = MAX_ACTIVE):
   { ok: boolean; program: DevelopmentProgram; reason?: string } {
   const spec = PROJECTS[key];
   const team = teamOf(program, teamId);
   const active = team.projects.filter(p => !p.installed);
   if (!spec) return { ok: false, program, reason: 'Proyecto desconocido' };
-  if (active.length >= MAX_ACTIVE) return { ok: false, program, reason: `Como máximo ${MAX_ACTIVE} proyectos a la vez` };
+  if (active.length >= maxActive) return { ok: false, program, reason: `Como máximo ${maxActive} proyectos a la vez` };
   if (active.some(p => p.key === key)) return { ok: false, program, reason: 'Ese proyecto ya está en marcha' };
   const researchEndRace = raceIndex + researchRaces(key, constructorsPosition);
   const project: Project = {

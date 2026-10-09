@@ -10,7 +10,7 @@ import { emptySeason, parseSeason, seasonRaceNumber } from './Season';
 import { migrateSnapshot, validateSnapshot } from './Snapshot';
 import type { RaceSnapshot } from './Snapshot';
 import { DRIVERS } from '../data/drivers';
-import { isManagement, startManagement } from './Management';
+import { isManagement, readManagement, startManagement } from './Management';
 import type { ManagementState } from './Management';
 
 export const SAVE_SCHEMA = 'f1sim-partida';
@@ -154,7 +154,7 @@ export function savedSeason(save: SaveGame): SeasonState {
 /** [T4.1] Gestión que guarda la partida; las anteriores empiezan con los saldos iniciales y el equipo de su piloto. */
 export function savedManagement(save: SaveGame): ManagementState {
   const teamId = DRIVERS[save.selection.driverId]?.teamId ?? '';
-  return save.career.management && isManagement(save.career.management) ? save.career.management : startManagement(teamId, save.career.archive.length + 1);
+  return readManagement(save.career.management) ?? startManagement(teamId, save.career.archive.length + 1);
 }
 
 /** [R51] Si la carrera guardada cuenta para la temporada (antes de R51 todas contaban). */

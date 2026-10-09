@@ -45,6 +45,10 @@ export default async function run({ server, assert, test }) {
   const exact = state => TEAM_IDS.every(id => finance.balanceOf(state, id) === sum(state, id) && finance.ledgerOf(state, id).every(entry => Number.isInteger(entry.amount) && entry.label));
   const of = (state, id, round, kind) => finance.ledgerOf(state, id).filter(entry => entry.round === round && entry.kind === kind && entry.season === state.season);
   const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+  // Revisión del 09/10/2026 (al implementar T4.4): al liquidar una ronda con la temporada, otras tareas añaden sus
+  // conceptos (mantenimiento, sueldos…). Las comprobaciones de esa liquidación miden solo los conceptos de T4.1.
+  const OWN = ['inicial', 'ronda', 'puntos', 'operacion', 'intereses', 'premio'];
+  const own = (state, id) => finance.ledgerOf(state, id).filter(entry => OWN.includes(entry.kind)).reduce((total, entry) => total + entry.amount, 0);
   const points = { mclaren: 43, ferrari: 27, redbull: 18, mercedes: 12, williams: 1 };
   const start = finance.startFinance();
 
@@ -198,7 +202,7 @@ export default async function run({ server, assert, test }) {
     const race = { counts: true, id: 'gp-1', circuitId: circuitOf(1), result: gp, format: 'gp', raceKm: 300 };
     const settled = season.settleRace(base, race);
     const money = settled.management.finance, scored = teamPoints(gp);
-    assert(TEAM_IDS.every(id => finance.balanceOf(money, id) === finance.startBalance(id) + F.ROUND_INCOME + (scored[id] ?? 0) * F.POINT_VALUE - F.OPERATION_COST) && exact(money) && Object.values(scored).reduce((a, b) => a + b, 0) === 101,
+    assert(TEAM_IDS.every(id => own(money, id) === finance.startBalance(id) + F.ROUND_INCOME + (scored[id] ?? 0) * F.POINT_VALUE - F.OPERATION_COST) && exact(money) && Object.values(scored).reduce((a, b) => a + b, 0) === 101,
       'T4.1: al anotar un Gran Premio cada equipo cobra la ronda y sus puntos y paga la operación');
     assert(season.settleRace(base, { ...race, counts: false }).management === base.management, 'T4.1: una carrera libre no mueve dinero');
     assert(season.settleRace(base, { ...race, result: finalResult('provisional') }).management === base.management, 'T4.1: un resultado provisional no mueve dinero');
@@ -211,11 +215,14 @@ export default async function run({ server, assert, test }) {
     const afterSprint = season.settleRace(settled, { counts: true, id: 'sprint-2', circuitId: circuitOf(2), result: sprintResult, format: 'sprint', raceKm: 100, tyres: {} });
     assert(TEAM_IDS.every(id => finance.balanceOf(afterSprint.management.finance, id) === finance.balanceOf(money, id) + (sprintScored[id] ?? 0) * F.POINT_VALUE), 'T4.1: al anotar el sprint solo se cobran sus puntos');
     const afterRound2 = season.settleRace(afterSprint, { ...race, id: 'gp-2', circuitId: circuitOf(2) });
-    assert(TEAM_IDS.every(id => finance.balanceOf(afterRound2.management.finance, id) === finance.balanceOf(afterSprint.management.finance, id) + F.ROUND_INCOME + (scored[id] ?? 0) * F.POINT_VALUE - F.OPERATION_COST),
+    const round2 = afterRound2.management.finance;
+    assert(TEAM_IDS.every(id => of(round2, id, 2, 'ronda').length === 1 && of(round2, id, 2, 'ronda')[0].amount === F.ROUND_INCOME && of(round2, id, 2, 'operacion').length === 1 && of(round2, id, 2, 'operacion')[0].amount === -F.OPERATION_COST
+      && of(round2, id, 2, 'puntos').reduce((total, entry) => total + entry.amount, 0) === ((sprintScored[id] ?? 0) + (scored[id] ?? 0)) * F.POINT_VALUE) && exact(round2),
       'T4.1: el Gran Premio de esa ronda se liquida después con normalidad');
 
     const skipped = season.settleSkip(base);
-    assert(TEAM_IDS.every(id => finance.balanceOf(skipped.management.finance, id) === finance.startBalance(id) - F.OPERATION_COST), 'T4.1: saltar una ronda cobra los gastos fijos y no ingresa nada');
+    assert(TEAM_IDS.every(id => own(skipped.management.finance, id) === finance.startBalance(id) - F.OPERATION_COST && of(skipped.management.finance, id, 1, 'ronda').length === 0 && of(skipped.management.finance, id, 1, 'puntos').length === 0),
+      'T4.1: saltar una ronda cobra los gastos fijos y no ingresa nada');
 
     // Última ronda: tras liquidarla se cierra la temporada y se cobra el premio de constructores.
     let championship = champ.emptyChampionship();
@@ -223,7 +230,7 @@ export default async function run({ server, assert, test }) {
     const closing = season.settleRace({ ...base, championship }, { ...race, id: 'gp-24', circuitId: circuitOf(24) });
     const order = champ.constructorsChampionship(champ.addRace(championship, 'gp-24', circuitOf(24), gp)).map(team => team.teamId);
     assert(closing.closed !== null && closing.management.finance.season === 2 && order.length === 10
-      && order.every((id, i) => finance.balanceOf(closing.management.finance, id) === finance.startBalance(id) + F.ROUND_INCOME + (scored[id] ?? 0) * F.POINT_VALUE - F.OPERATION_COST + F.CONSTRUCTORS_PRIZE[i]),
+      && order.every((id, i) => finance.ledgerOf(closing.management.finance, id).filter(entry => entry.kind === 'premio').length === 1 && finance.ledgerOf(closing.management.finance, id).find(entry => entry.kind === 'premio').amount === F.CONSTRUCTORS_PRIZE[i]) && exact(closing.management.finance),
       'T4.1: al cerrar la temporada cada equipo cobra el premio de su puesto', order.slice(0, 3).join());
     const legacy = season.settleRace({ championship: base.championship, components: base.components, program: base.program, season: base.season, archive: [] }, race);
     assert(legacy.management === undefined && legacy.championship.races.length === 1, 'T4.1: sin gestión (partidas y pruebas anteriores) la temporada funciona como antes');

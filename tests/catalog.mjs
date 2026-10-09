@@ -539,5 +539,6 @@ export const modules = [
   { "id": "spray-particles-t34", "tasks": ["T3.4"], "sprint": "3", "kind": "contract" },
   { "id": "start-weather-t412", "tasks": ["T4.12"], "sprint": "4", "kind": "contract" },
   { "id": "finance-t41", "tasks": ["T4.1"], "sprint": "4", "kind": "contract" },
-  { "id": "costs-t42", "tasks": ["T4.2"], "sprint": "4", "kind": "contract" }
+  { "id": "costs-t42", "tasks": ["T4.2"], "sprint": "4", "kind": "contract" },
+  { "id": "facilities-t44", "tasks": ["T4.4"], "sprint": "4", "kind": "contract" }
 ];

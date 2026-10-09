@@ -9,7 +9,8 @@ import type { RunoffSurface } from '../data/scenarioTypes';
 import { DRIVERS } from '../data/drivers';
 import { ALLOCATION, COMPONENT_LABEL, COMPONENT_TYPES, NOMINAL_RACES, fitNew, fittedUnit, undoFit } from './ComponentPool';
 import type { ComponentState, ComponentType } from './ComponentPool';
-import { MAX_ACTIVE, PROJECTS, activeProjects, installFirst, startProject } from './Development';
+import { PROJECTS, activeProjects, installFirst, researchRaces, startProject } from './Development';
+import { fabricationRacesWith, gainOf, maxProjects, researchRacesWith } from './Facilities';
 import type { DevelopmentProgram } from './Development';
 import { FINANCE, balanceOf, charge, credit, formatMoney, spend } from './Finance';
 import type { ManagementState } from './Management';
@@ -47,13 +48,34 @@ export function projectShortfall(management: ManagementState, teamId: string, ke
  */
 export function buyProject(management: ManagementState, program: DevelopmentProgram, teamId: string, key: string, raceIndex: number,
   constructorsPosition: number, round: number): Outcome<{ program: DevelopmentProgram }> {
-  const started = startProject(program, teamId, key, raceIndex, constructorsPosition);
+  const started = startProject(program, teamId, key, raceIndex, constructorsPosition, maxProjects(management.facilities, teamId));
   if (!started.ok) return { ok: false, management, program, reason: started.reason ?? 'El proyecto no puede empezar' };
   const missing = projectShortfall(management, teamId, key);
   if (missing > 0) return { ok: false, management, program, reason: `Faltan ${formatMoney(missing)} para empezar «${PROJECTS[key].label}» (cuesta ${formatMoney(projectCost(key))})` };
   const paid = spend(management.finance, teamId, { round, kind: 'proyecto', label: `Proyecto: ${PROJECTS[key].label}`, amount: projectCost(key) });
   if (!paid.ok) return { ok: false, management, program, reason: paid.reason };
-  return { ok: true, management: { ...management, finance: paid.state }, program: started.program, reason: null };
+  return { ok: true, management: { ...management, finance: paid.state }, program: withFacilityTimes(started.program, management, teamId, key, constructorsPosition), reason: null };
+}
+
+/**
+ * [T4.4] Plazos del proyecto recién empezado con las instalaciones del equipo: el túnel de viento quita carreras de
+ * investigación y producción quita carreras de fabricación. Sin niveles ganados, los plazos de R18.
+ */
+function withFacilityTimes(program: DevelopmentProgram, management: ManagementState, teamId: string, key: string, constructorsPosition: number): DevelopmentProgram {
+  const tunnel = gainOf(management.facilities, teamId, 'tunel'), production = gainOf(management.facilities, teamId, 'produccion');
+  const team = program.teams[teamId];
+  const project = team?.projects[team.projects.length - 1];
+  if (!team || !project || (tunnel === 0 && production === 0)) return program;
+  const researchEndRace = project.startedRace + researchRacesWith(researchRaces(key, constructorsPosition), tunnel);
+  const readyRace = researchEndRace + fabricationRacesWith(PROJECTS[key].productionRaces, production);
+  return { ...program, teams: { ...program.teams, [teamId]: { ...team, projects: [...team.projects.slice(0, -1), { ...project, researchEndRace, readyRace }] } } };
+}
+
+/** [T4.4] Carreras hasta tener listo un proyecto que el equipo empezase ahora, con sus instalaciones. */
+export function projectLeadTime(management: ManagementState, teamId: string, key: string, constructorsPosition: number): number {
+  if (!PROJECTS[key]) return 0;
+  return researchRacesWith(researchRaces(key, constructorsPosition), gainOf(management.facilities, teamId, 'tunel'))
+    + fabricationRacesWith(PROJECTS[key].productionRaces, gainOf(management.facilities, teamId, 'produccion'));
 }
 
 const unitsOf = (state: ComponentState, driverId: string, type: ComponentType) => state.units.filter(unit => unit.driverId === driverId && unit.type === type);
@@ -128,7 +150,7 @@ export function aiDevelopPaying(management: ManagementState, program: Developmen
       if (raceIndex >= project.readyRace) next = installFirst(next, project.id, firstDriverOf(teamId), raceIndex).program;
     }
     const rng = mulberry32(streamSeed(seed, `desarrollo-${teamId}-${raceIndex}`));
-    while (activeProjects(next, teamId).length < MAX_ACTIVE) {
+    while (activeProjects(next, teamId).length < maxProjects(state.facilities, teamId)) {
       const running = activeProjects(next, teamId);
       const options = Object.keys(PROJECTS).filter(key => !running.some(project => project.key === key) && projectCost(key) <= balanceOf(state.finance, teamId));
       if (!options.length) break;

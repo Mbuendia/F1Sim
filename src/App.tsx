@@ -45,7 +45,9 @@ import { createSnapshot, restoreSnapshot } from './simulation/Snapshot';
 import { AUTOSAVE_ID, AUTOSAVE_LABEL, SaveStore, createSave, exportSave, importSave, savedManagement, savedRaceCounts, savedSeason } from './simulation/SaveGame';
 import { MANAGEMENT_STORAGE_KEY, parseManagement, startManagement } from './simulation/Management';
 import type { ManagementState } from './simulation/Management';
-import { aiDevelopPaying, aiReplaceComponents, buyComponent, buyProject, componentCost, projectCost, projectShortfall, raceDamages, refundComponent } from './simulation/Costs';
+import { aiDevelopPaying, aiReplaceComponents, buyComponent, buyProject, componentCost, projectCost, projectLeadTime, projectShortfall, raceDamages, refundComponent } from './simulation/Costs';
+import { aiInvestFacilities, benchHazard, gainOf, maxProjects, simulatorBonus, startWork } from './simulation/Facilities';
+import { canSpend } from './simulation/Finance';
 import type { SaveGame, SlotSummary } from './simulation/SaveGame';
 import type { SaveGameMessage } from './components/SaveGamePanel';
 import { SetupPanel } from './components/SetupPanel';
@@ -141,6 +143,22 @@ export const App: React.FC = () => {
     try { localStorage.setItem(CHAMPIONSHIP_STORAGE_KEY, JSON.stringify(next)); } catch (e) { console.error(e); }
   }, []);
 
+  // [T4.1] Gestión del equipo (dinero), guardada en el navegador con la carrera profesional.
+  const [management, setManagement] = useState<ManagementState>(() => {
+    const teamId = (DRIVERS[selectedDriverId] ?? DRIVERS.alonso).teamId;
+    try {
+      return parseManagement(localStorage.getItem(MANAGEMENT_STORAGE_KEY), teamId, parseArchive(localStorage.getItem(SEASONS_STORAGE_KEY)).length + 1);
+    } catch { return startManagement(teamId); }
+  });
+  const saveManagement = useCallback((next: ManagementState) => {
+    setManagement(next);
+    try { localStorage.setItem(MANAGEMENT_STORAGE_KEY, JSON.stringify(next)); } catch (e) { console.error(e); }
+  }, []);
+  // El equipo del jugador es el de su piloto elegido en el paddock.
+  useEffect(() => {
+    const teamId = (DRIVERS[selectedDriverId] ?? DRIVERS.alonso).teamId;
+    if (management.playerTeamId !== teamId) saveManagement({ ...management, playerTeamId: teamId });
+  }, [selectedDriverId, management, saveManagement]);
   // [R45] Atributos y enfoque de los pilotos, guardados en el navegador
   const [development, setDevelopment] = useState<DevelopmentState>(() => {
     try { return parseDevelopment(localStorage.getItem(DEVELOPMENT_STORAGE_KEY)); } catch { return emptyDevelopment(); }
@@ -153,7 +171,9 @@ export const App: React.FC = () => {
   const developmentAfter = useCallback((result: RaceResult) => developAfterRace(development, Object.values(DRIVERS), driver => {
     const row = result.rows.find(r => r.driverCode === driver.code);
     return row ? { position: row.position, status: row.status, points: row.points } : undefined;
-  }, simulation.totalLaps), [development, simulation]);
+  }, simulation.totalLaps,
+  // [T4.4] El simulador de cada equipo puede dar a sus pilotos un punto de mejora extra.
+  driver => simulatorBonus(gainOf(management.facilities, driver.teamId, 'simulador'), simulation.totalLaps + development.races, driver.id)), [development, simulation, management]);
 
   // [R19] Componentes de la unidad de potencia de todos los pilotos, guardados en el navegador
   const [components, setComponents] = useState<ComponentState>(() => {
@@ -187,22 +207,6 @@ export const App: React.FC = () => {
     setSeason(next);
     try { localStorage.setItem(SEASON_STATE_KEY, JSON.stringify(next)); } catch (e) { console.error(e); }
   }, []);
-  // [T4.1] Gestión del equipo (dinero), guardada en el navegador con la carrera profesional.
-  const [management, setManagement] = useState<ManagementState>(() => {
-    const teamId = (DRIVERS[selectedDriverId] ?? DRIVERS.alonso).teamId;
-    try {
-      return parseManagement(localStorage.getItem(MANAGEMENT_STORAGE_KEY), teamId, parseArchive(localStorage.getItem(SEASONS_STORAGE_KEY)).length + 1);
-    } catch { return startManagement(teamId); }
-  });
-  const saveManagement = useCallback((next: ManagementState) => {
-    setManagement(next);
-    try { localStorage.setItem(MANAGEMENT_STORAGE_KEY, JSON.stringify(next)); } catch (e) { console.error(e); }
-  }, []);
-  // El equipo del jugador es el de su piloto elegido en el paddock.
-  useEffect(() => {
-    const teamId = (DRIVERS[selectedDriverId] ?? DRIVERS.alonso).teamId;
-    if (management.playerTeamId !== teamId) saveManagement({ ...management, playerTeamId: teamId });
-  }, [selectedDriverId, management, saveManagement]);
   const [raceCounts, setRaceCounts] = useState(true);
   const [seasonEnd, setSeasonEnd] = useState<SeasonSummary | null>(null);
   const [penaltyNotice, setPenaltyNotice] = useState<PenaltyLine[]>([]);
@@ -445,14 +449,16 @@ export const App: React.FC = () => {
     const prepared = replaced.components;
     const started = careerRace ? markRaceStart(prepared) : { state: components, penalties: [] };
     if (careerRace) saveComponents(started.state);
-    simulation.setFailureFactors(Object.fromEntries(Object.keys(DRIVERS).map(id => [id, hazardFactor(started.state, id)])));
+    // [T4.4] El banco de fiabilidad de cada equipo reduce el riesgo de avería por desgaste de sus componentes.
+    simulation.setFailureFactors(Object.fromEntries(Object.keys(DRIVERS).map(id => [id, benchHazard(hazardFactor(started.state, id), gainOf(management.facilities, DRIVERS[id].teamId, 'banco'))])));
     // [R18] La IA desarrolla y monta sus mejoras; cada coche corre con las suyas.
     const raceIndex = grandsPrixRun(championship);
     const aiTeams = [...new Set(Object.values(DRIVERS).map(d => d.teamId))].filter(t => t !== playerTeam);
     const paying = careerRace ? aiDevelopPaying(replaced.management, program, aiTeams, raceIndex, Object.fromEntries(aiTeams.map(t => [t, constructorsPosition(t)])), raceIndex + 1,
       teamId => Object.values(DRIVERS).find(d => d.teamId === teamId)?.id ?? teamId, ledgerRound) : { management: replaced.management, program };
     const developed = paying.program;
-    if (careerRace) { saveProgram(developed); saveManagement(paying.management); }
+    // [T4.4] Y amplían sus instalaciones si les queda reserva.
+    if (careerRace) { saveProgram(developed); saveManagement(aiInvestFacilities(paying.management, aiTeams, ledgerRound)); }
     simulation.setTechnicalUpgrades(Object.fromEntries(Object.values(DRIVERS).map(d => [d.id, upgradesFor(developed, d.teamId, d.id, raceIndex)])));
     const baseGrid = quali ? quali.grid.map(slot => slot.driverId) : simulation.cars.map(c => c.driver.id);
     const penalized = applyGridPenalties(baseGrid, started.penalties);
@@ -962,6 +968,14 @@ export const App: React.FC = () => {
         }}
         driverAttributes={driver => attributesOf(development, driver)}
         finance={{ state: management.finance, teamId: management.playerTeamId }}
+        facilities={{
+          state: management.facilities, teamId: management.playerTeamId,
+          canAfford: cost => canSpend(management.finance, management.playerTeamId, cost),
+          onUpgrade: facility => {
+            const started = startWork(management, management.playerTeamId, facility, nextRound(championship, season)?.round ?? SEASON_RACES);
+            if (started.ok) saveManagement(started.management);
+          },
+        }}
         components={components}
         development={{
           program, raceIndex: grandsPrixRun(championship),
@@ -971,7 +985,11 @@ export const App: React.FC = () => {
             const bought = buyProject(management, program, management.playerTeamId, key, grandsPrixRun(championship), constructorsPosition(management.playerTeamId), nextRound(championship, season)?.round ?? SEASON_RACES);
             if (bought.ok) { saveProgram(bought.program); saveManagement(bought.management); }
           },
-          costs: { costOf: projectCost, shortfallOf: key => projectShortfall(management, management.playerTeamId, key) },
+          costs: {
+            costOf: projectCost, shortfallOf: key => projectShortfall(management, management.playerTeamId, key),
+            leadTimeOf: key => projectLeadTime(management, management.playerTeamId, key, constructorsPosition(management.playerTeamId)),
+            maxActive: maxProjects(management.facilities, management.playerTeamId),
+          },
           onInstall: (projectId, driverId) => saveProgram(installFirst(program, projectId, driverId, grandsPrixRun(championship)).program),
         }}
         onFitComponent={(driverId, type) => {

@@ -78,6 +78,17 @@
 .button:hover:not(:disabled) { border-color: var(--text-3); }
 .button:disabled { opacity: 0.5; cursor: not-allowed; }
 
+/* Niveles de 1 a 5 */
+.pips { display: inline-flex; gap: 3px; }
+.pips i { width: 14px; height: 8px; border-radius: 2px; background: var(--panel-2); border: 1px solid var(--line-strong); }
+.pips i.pipOn { background: var(--equipo); border-color: var(--equipo); }
+.pips i.pipWork { background: repeating-linear-gradient(45deg, var(--aviso) 0 3px, transparent 3px 6px); border-color: var(--aviso); }
+
+/* Instalaciones: nombre y nivel, efecto y acción */
+.facility { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.facility:last-child { border-bottom: 0; }
+.facility > .muted { font-size: 15px; }
+
 /* Finanzas: saldo y gráfica arriba, conceptos en medio y el libro debajo */
 .finance { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
 .span2 { grid-column: span 2; }

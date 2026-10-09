@@ -15,6 +15,8 @@ import type { SlotSummary } from '../simulation/SaveGame';
 import { WeatherScenarioSelect } from './WeatherScenarioSelect';
 import { WeatherOutlook } from './WeatherOutlook';
 import { FinancePanel } from './FinancePanel';
+import { FacilitiesPanel } from './FacilitiesPanel';
+import type { FacilitiesState, FacilityId } from '../simulation/Facilities';
 import type { FinanceState } from '../simulation/Finance';
 import { balanceOf, formatMoney } from '../simulation/Finance';
 import { CarShowcase } from './CarShowcase';
@@ -79,7 +81,7 @@ interface HomeScreenProps {
     program: DevelopmentProgram; raceIndex: number; constructorsPosition: number;
     onStart: (key: string) => void; onInstall: (projectId: string, driverId: string) => void;
     /** [T4.2] Coste de cada proyecto y lo que falta para pagarlo. */
-    costs?: { costOf: (key: string) => number; shortfallOf: (key: string) => number };
+    costs?: { costOf: (key: string) => number; shortfallOf: (key: string) => number; leadTimeOf?: (key: string) => number; maxActive?: number };
   };
   /** [R19] Componentes de la unidad de potencia y montaje de unidades nuevas. */
   components?: ComponentState;
@@ -106,6 +108,8 @@ interface HomeScreenProps {
   driverAttributes?: (driver: Driver) => DriverAttributes;
   /** [T4.1] Dinero del equipo del jugador. */
   finance?: { state: FinanceState; teamId: string };
+  /** [T4.4] Instalaciones de la fábrica del equipo del jugador. */
+  facilities?: { state: FacilitiesState; teamId: string; canAfford: (cost: number) => boolean; onUpgrade: (facility: FacilityId) => void };
 }
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({
@@ -131,7 +135,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   season,
   driverAttributes,
   sprintAvailable,
-  finance
+  finance,
+  facilities
 }) => {
   const nextRound = season?.rounds.find(round => round.status === 'siguiente');
   const freeRace = Boolean(nextRound) && nextRound?.circuitId !== selectedCircuitId;
@@ -328,6 +333,15 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             <span>Finanzas · saldo {formatMoney(balanceOf(finance.state, finance.teamId))}</span>
           </summary>
           <FinancePanel finance={finance.state} teamId={finance.teamId} />
+        </details>
+      )}
+
+      {facilities && (
+        <details className={styles.historySection}>
+          <summary className={styles.historyTitle}>
+            <span>Instalaciones de la fábrica</span>
+          </summary>
+          <FacilitiesPanel facilities={facilities.state} teamId={facilities.teamId} canAfford={facilities.canAfford} onUpgrade={facilities.onUpgrade} />
         </details>
       )}
 
