@@ -73,6 +73,8 @@ import { SetupPanel } from './components/SetupPanel';
 import { normalizeSetup, parcFermeCheck, pitLaneReason, withPitLaneStarts } from './simulation/Setup';
 import type { CarSetup } from './simulation/Setup';
 import { DRIVERS } from './data/drivers';
+import { lineupOf, offerContract, pairOf, rosterOf } from './simulation/Contracts';
+import type { Driver } from './types/f1';
 import { TEAMS } from './data/teams';
 import { RaceResultHistory, StartLightState, CarState, RaceFlagState, SafetyCarState, DnfNotification, D20LuckEvent, TrackWeatherState } from './types/f1';
 import { RotateCw, ArrowLeft, Camera as CameraIcon, Maximize2, ListOrdered, PanelRight, ZoomIn, ZoomOut } from 'lucide-react';
@@ -112,7 +114,11 @@ const SETUPS_KEY = 'f1_setups';
 const newRaceSeed = () => (Math.floor(Math.random() * 0x7fffffff) ^ Date.now()) >>> 0;
 const TYRE_WORDS: Record<string, string> = { soft: 'blandos', medium: 'medios', hard: 'duros', intermediate: 'intermedios', wet: 'de lluvia' };
 /** [R54] Pilotos que lleva el jugador: los dos del equipo del piloto elegido. */
-const playerDriverIds = (driverId: string): string[] => TEAMS[(DRIVERS[driverId] ?? DRIVERS.alonso).teamId]?.drivers ?? [];
+/** [T4.7] Los dos pilotos del equipo de ese piloto, según la plantilla de la temporada. */
+const playerDriverIds = (roster: Record<string, Driver>, driverId: string): string[] => {
+  const teamId = (roster[driverId] ?? roster.alonso).teamId;
+  return Object.keys(roster).filter(id => roster[id].teamId === teamId);
+};
 
 const CAMERA_LABELS: Record<string, string> = {
   overview: 'General',
@@ -189,10 +195,13 @@ export const App: React.FC = () => {
     setManagement(next);
     try { localStorage.setItem(MANAGEMENT_STORAGE_KEY, JSON.stringify(next)); } catch (e) { console.error(e); }
   }, []);
+  // [T4.7] Plantilla de la temporada: cada piloto con el equipo de su contrato. La carrera libre usa la de partida.
+  const roster = useMemo(() => (mode === 'career' ? rosterOf(management.contracts) : DRIVERS), [mode, management.contracts]);
+  const [contractMessage, setContractMessage] = useState<string | null>(null);
   // [T4.19] En la carrera profesional el jugador lleva a los pilotos de su equipo: el piloto seguido es uno de ellos.
   useEffect(() => {
-    if (mode === 'career') setSelectedDriverId(driverId => careerDriver(management.playerTeamId, driverId));
-  }, [mode, management.playerTeamId]);
+    if (mode === 'career') setSelectedDriverId(driverId => careerDriver(management.playerTeamId, driverId, pairOf(management.contracts, management.playerTeamId)));
+  }, [mode, management.playerTeamId, management.contracts]);
   // [T4.3] El acento del equipo vale en toda la aplicación (también en carrera); en la carrera libre, el neutro.
   useEffect(() => {
     document.documentElement.style.setProperty('--equipo', mode === 'career' ? teamAccent(management.playerTeamId) : DEFAULT_ACCENT);
@@ -206,12 +215,12 @@ export const App: React.FC = () => {
     try { localStorage.setItem(DEVELOPMENT_STORAGE_KEY, JSON.stringify(next)); } catch (e) { console.error(e); }
   }, []);
   /** Mejora que dará la carrera terminada con el resultado actual (se guarda al volver al inicio). */
-  const developmentAfter = useCallback((result: RaceResult) => developAfterRace(development, Object.values(DRIVERS), driver => {
+  const developmentAfter = useCallback((result: RaceResult) => developAfterRace(development, Object.values(roster), driver => {
     const row = result.rows.find(r => r.driverCode === driver.code);
     return row ? { position: row.position, status: row.status, points: row.points } : undefined;
   }, simulation.totalLaps,
   // [T4.4] El simulador de cada equipo puede dar a sus pilotos un punto de mejora extra.
-  driver => simulatorBonus(gainOf(management.facilities, driver.teamId, 'simulador'), simulation.totalLaps + development.races, driver.id)), [development, simulation, management]);
+  driver => simulatorBonus(gainOf(management.facilities, driver.teamId, 'simulador'), simulation.totalLaps + development.races, driver.id)), [development, simulation, management, roster]);
 
   // [R19] Componentes de la unidad de potencia de todos los pilotos, guardados en el navegador
   const [components, setComponents] = useState<ComponentState>(() => {
@@ -266,6 +275,10 @@ export const App: React.FC = () => {
   });
   const [saveMessage, setSaveMessage] = useState<SaveGameMessage | null>(null);
   const [raceLive, setRaceLive] = useState(false);
+  // [T4.7] El motor forma la parrilla con la alineación de la temporada (nunca con una carrera a medias).
+  useEffect(() => {
+    if (!raceLive && currentView !== 'race') simulation.setLineup(mode === 'career' ? lineupOf(management.contracts) : {});
+  }, [simulation, raceLive, currentView, mode, management.contracts]);
   // [T4.19] «Guardado hace X»: la partida se guarda sola con cada cambio; aquí queda cuándo fue el último.
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const [clock, setClock] = useState(() => Date.now());
@@ -294,9 +307,8 @@ export const App: React.FC = () => {
   const [qualifyingSetups, setQualifyingSetups] = useState<Record<string, CarSetup> | null>(null);
   /** Setups de los pilotos del equipo del jugador (los rivales corren con el de referencia). */
   const playerSetups = useMemo(() => {
-    const team = TEAMS[(DRIVERS[selectedDriverId] ?? DRIVERS.alonso).teamId];
-    return Object.fromEntries((team?.drivers ?? []).map(id => [id, normalizeSetup(setups[id])]));
-  }, [setups, selectedDriverId]);
+    return Object.fromEntries(playerDriverIds(roster, selectedDriverId).map(id => [id, normalizeSetup(setups[id])]));
+  }, [setups, selectedDriverId, roster]);
 
   // [R20] Formato del Gran Premio y resultado de la clasificación pendiente de mostrar
   // [R52] En una ronda sprint con el sprint por correr, el paddock propone el fin de semana sprint.
@@ -492,21 +504,21 @@ export const App: React.FC = () => {
     setRaceCounts(counts);
     // Componentes, sanciones y desarrollo son cosa del Gran Premio: el sprint no los mueve.
     const careerRace = counts && !sprintRace;
-    const playerTeam = (DRIVERS[selectedDriverId] ?? DRIVERS.alonso).teamId;
+    const playerTeam = (roster[selectedDriverId] ?? roster.alonso).teamId;
     // [T4.2] Los rivales pagan sus componentes y sus proyectos: sin dinero dejan de montar fuera de cupo y de desarrollar.
     const ledgerRound = nextRound(championship, season)?.round ?? SEASON_RACES;
-    const rivals = Object.values(DRIVERS).filter(d => d.teamId !== playerTeam).map(d => ({ id: d.id, teamId: d.teamId }));
+    const rivals = Object.values(roster).filter(d => d.teamId !== playerTeam).map(d => ({ id: d.id, teamId: d.teamId }));
     const replaced = careerRace ? aiReplaceComponents(management, components, rivals, ledgerRound) : { management, components };
     const prepared = replaced.components;
     const started = careerRace ? markRaceStart(prepared) : { state: components, penalties: [] };
     if (careerRace) saveComponents(started.state);
     // [T4.4] El banco de fiabilidad de cada equipo reduce el riesgo de avería por desgaste de sus componentes.
-    simulation.setFailureFactors(Object.fromEntries(Object.keys(DRIVERS).map(id => [id, benchHazard(hazardFactor(started.state, id), gainOf(management.facilities, DRIVERS[id].teamId, 'banco'))])));
+    simulation.setFailureFactors(Object.fromEntries(Object.keys(roster).map(id => [id, benchHazard(hazardFactor(started.state, id), gainOf(management.facilities, roster[id].teamId, 'banco'))])));
     // [R18] La IA desarrolla y monta sus mejoras; cada coche corre con las suyas.
     const raceIndex = grandsPrixRun(championship);
-    const aiTeams = [...new Set(Object.values(DRIVERS).map(d => d.teamId))].filter(t => t !== playerTeam);
+    const aiTeams = [...new Set(Object.values(roster).map(d => d.teamId))].filter(t => t !== playerTeam);
     const paying = careerRace ? aiDevelopPaying(replaced.management, program, aiTeams, raceIndex, Object.fromEntries(aiTeams.map(t => [t, constructorsPosition(t)])), raceIndex + 1,
-      teamId => Object.values(DRIVERS).find(d => d.teamId === teamId)?.id ?? teamId, ledgerRound) : { management: replaced.management, program };
+      teamId => Object.values(roster).find(d => d.teamId === teamId)?.id ?? teamId, ledgerRound) : { management: replaced.management, program };
     const developed = paying.program;
     // [T4.4] Y amplían sus instalaciones si les queda reserva. [T4.6] Sus equipos de boxes eligen el plan de la semana.
     const invested = careerRace ? aiInvestFacilities(paying.management, aiTeams, ledgerRound) : paying.management;
@@ -516,7 +528,7 @@ export const App: React.FC = () => {
     // [T4.6] En una carrera de temporada (Gran Premio o sprint) cada coche para con el equipo de boxes de su equipo; en
     // una libre, como siempre.
     simulation.setPitCrews(counts ? Object.fromEntries(Object.entries(managed.pitCrews.teams).map(([teamId, crew]) => [teamId, crewEffect(crew)])) : {});
-    simulation.setTechnicalUpgrades(Object.fromEntries(Object.values(DRIVERS).map(d => [d.id, upgradesFor(developed, d.teamId, d.id, raceIndex)])));
+    simulation.setTechnicalUpgrades(Object.fromEntries(Object.values(roster).map(d => [d.id, upgradesFor(developed, d.teamId, d.id, raceIndex)])));
     const baseGrid = quali ? quali.grid.map(slot => slot.driverId) : simulation.cars.map(c => c.driver.id);
     const penalized = applyGridPenalties(baseGrid, started.penalties);
     if (quali || penalized.moved.length) simulation.setStartingGrid(penalized.order);
@@ -542,7 +554,7 @@ export const App: React.FC = () => {
     setIsFinished(false);
     setCurrentView('race');
     if (gate === 'directo') simulation.startRaceSequence();
-  }, [simulation, camera, selectedCircuitId, weatherScenarioId, development, raceFormat, components, saveComponents, selectedDriverId, program, saveProgram, championship, constructorsPosition, saveStore, playerSetups, season, saveSeason, effectiveFormat, management, saveManagement, mode]);
+  }, [simulation, camera, selectedCircuitId, weatherScenarioId, development, raceFormat, components, saveComponents, selectedDriverId, program, saveProgram, championship, constructorsPosition, saveStore, playerSetups, season, saveSeason, effectiveFormat, management, saveManagement, mode, roster]);
 
   /** [R51] Visto el aviso de sanciones, empieza la carrera. */
   const handleContinueFromPenalties = useCallback(() => {
@@ -569,9 +581,9 @@ export const App: React.FC = () => {
   }, [saveChampionship, saveComponents, saveProgram, saveSeason, saveManagement]);
 
   const playerCodes = useMemo(() => {
-    const team = (DRIVERS[selectedDriverId] ?? DRIVERS.alonso).teamId;
-    return Object.values(DRIVERS).filter(d => d.teamId === team).map(d => d.code);
-  }, [selectedDriverId]);
+    const team = (roster[selectedDriverId] ?? roster.alonso).teamId;
+    return Object.values(roster).filter(d => d.teamId === team).map(d => d.code);
+  }, [selectedDriverId, roster]);
 
   /** [R51] Salta el Gran Premio que toca: no se disputa y nadie puntúa. */
   const handleSkipRound = useCallback(() => {
@@ -644,7 +656,7 @@ export const App: React.FC = () => {
           report = buildRoundReport({
             before: management, after: settled.management, championship: settled.closed ? addRace(championship, newHistoryItem.id, selectedCircuitId, finalResult, simulation.raceFormat) : settled.championship,
             round: nextRound(championship, season)?.round ?? SEASON_RACES, circuitName: circuit.name, format: simulation.raceFormat, rows: finalResult.rows,
-            gains: developed ? Object.values(DRIVERS).filter(driver => driver.teamId === management.playerTeamId).flatMap(driver => {
+            gains: developed ? Object.values(roster).filter(driver => driver.teamId === management.playerTeamId).flatMap(driver => {
               const keys = Object.keys(developed.lastGains[driver.id] ?? {}) as AttributeKey[];
               return keys.length ? [{ code: driver.code, text: keys.map(key => `+1 ${ATTRIBUTE_LABEL[key].toLowerCase()}`).join(', ') }] : [];
             }) : [],
@@ -667,7 +679,7 @@ export const App: React.FC = () => {
 
     if (report) showRoundReport(report);
     setCurrentView(report ? 'report' : 'home');
-  }, [showRoundReport, simulation, selectedDriverId, selectedCircuitId, raceHistory, championship, saveDevelopment, developmentAfter, components, program, seasonArchive, saveStore, season, management, raceCounts, applyCareer, playerCodes, mode]);
+  }, [showRoundReport, simulation, selectedDriverId, selectedCircuitId, raceHistory, championship, saveDevelopment, developmentAfter, components, program, seasonArchive, saveStore, season, management, raceCounts, applyCareer, playerCodes, mode, roster]);
 
   const handleCycleCameraMode = useCallback(() => {
     camera.cycleMode();
@@ -709,18 +721,15 @@ export const App: React.FC = () => {
   const favoriteCar = simulation.cars.find(c => c.driver.id === selectedDriverId) || simulation.cars[0];
   // [Q11] Resolve both team pilots for dual-panel BoxControls
   const teamCars = useMemo(() => {
-    const driver = DRIVERS[selectedDriverId];
-    if (!driver) return [favoriteCar];
-    const team = TEAMS[driver.teamId];
-    if (!team) return [favoriteCar];
-    return team.drivers
+    if (!roster[selectedDriverId]) return [favoriteCar];
+    return playerDriverIds(roster, selectedDriverId)
       .map(dId => cars.find(c => c.driver.id === dId))
       .filter((c): c is CarState => c !== undefined);
-  }, [cars, selectedDriverId, favoriteCar]);
+  }, [cars, selectedDriverId, favoriteCar, roster]);
   // [R54] El motor sabe qué coches lleva el jugador: en ellos el estratega propone y no ejecuta nada sin confirmación.
   useEffect(() => {
-    simulation.setPlayerCars(playerDriverIds(selectedDriverId));
-  }, [simulation, selectedDriverId]);
+    simulation.setPlayerCars(playerDriverIds(roster, selectedDriverId));
+  }, [simulation, selectedDriverId, roster]);
   // ── R32: avisos breves (máx. 3 a la vez, caducan solos, sin robar el foco) ──
   const [notices, setNotices] = useState<RaceNotice[]>([]);
   const noticeSeq = useRef(0);
@@ -749,10 +758,10 @@ export const App: React.FC = () => {
     if (currentView !== 'race') { wallActive.current = new Set(); wallProposed.current = new Set(); return; }
     const timer = window.setInterval(() => {
       if (simulation.isFinished) return;
-      const team = (DRIVERS[selectedDriverId] ?? DRIVERS.alonso).teamId;
+      const team = (roster[selectedDriverId] ?? roster.alonso).teamId;
       const racing = simulation.lightState === 'racing';
       if (racing) {
-        const readings = simulation.cars.filter(car => DRIVERS[car.driver.id]?.teamId === team && car.status === 'running')
+        const readings = simulation.cars.filter(car => roster[car.driver.id]?.teamId === team && car.status === 'running')
           .map(car => simulation.getWallReading(car.id)).filter((reading): reading is WallReading => reading !== null);
         const next = nextAlerts(wallAlerts(readings), wallActive.current);
         wallActive.current = next.active;
@@ -760,7 +769,7 @@ export const App: React.FC = () => {
       }
       // [R54] Una propuesta de parada nueva se avisa una vez; las de ritmo, que hay casi cada vuelta, solo se ven en el muro.
       for (const car of simulation.cars) {
-        if (DRIVERS[car.driver.id]?.teamId !== team) continue;
+        if (roster[car.driver.id]?.teamId !== team) continue;
         for (const proposal of simulation.getWallProposals(car.id)) {
           const seen = `${proposal.id}@${proposal.timeSec}`;
           // [T4.12] La de salida llega en la parrilla, antes del semáforo; las de parada, en carrera.
@@ -773,7 +782,7 @@ export const App: React.FC = () => {
       }
     }, 1000);
     return () => window.clearInterval(timer);
-  }, [currentView, simulation, selectedDriverId, pushNotice]);
+  }, [currentView, simulation, selectedDriverId, pushNotice, roster]);
 
   // ── [R48] Partidas: ranuras con nombre, autoguardado y carga ──
   const refreshSlots = useCallback(() => setSlots(saveStore ? saveStore.list() : []), [saveStore]);
@@ -829,7 +838,7 @@ export const App: React.FC = () => {
     } catch (e) { console.error(e); }
     setSelectedDriverId(DRIVERS[selection.driverId] ? selection.driverId : 'alonso');
     // [R54] Los guardados anteriores no dicen qué coches son del jugador.
-    simulation.setPlayerCars(playerDriverIds(selection.driverId));
+    simulation.setPlayerCars(playerDriverIds(rosterOf(savedManagement(save).contracts), selection.driverId));
     setSelectedCircuitId(save.race?.circuitId ?? (OFFICIAL_CIRCUITS[selection.circuitId] ? selection.circuitId : 'barcelona'));
     setRaceFormat(selection.raceFormat === 'clasificacion' || selection.raceFormat === 'sprint' ? selection.raceFormat : 'directo');
     setWeatherScenarioId(selection.weatherScenarioId);
@@ -1062,7 +1071,7 @@ export const App: React.FC = () => {
   const hubNext = hubRound && hubCircuit
     ? { round: hubRound.round, circuitName: hubCircuit.name, laps: hubCircuit.totalLaps, rainPercent: hubCircuit.rainProbabilityPercent, sprint: Boolean(hubRound.sprint) }
     : null;
-  const hubPending = pendingDecisions({ teamId: management.playerTeamId, management, program, components, raceIndex: grandsPrixRun(championship) });
+  const hubPending = pendingDecisions({ teamId: management.playerTeamId, management, program, components, raceIndex: grandsPrixRun(championship), round: hubRound?.round });
   const hubBadges: Partial<Record<HubSection, number>> = {};
   for (const item of hubPending) hubBadges[item.section] = (hubBadges[item.section] ?? 0) + 1;
   const teamStanding = constructorsChampionship(championship).findIndex(team => team.teamId === management.playerTeamId);
@@ -1071,7 +1080,7 @@ export const App: React.FC = () => {
   const hubCrew = management.pitCrews.teams[management.playerTeamId];
   const hubWork = management.facilities.teams[management.playerTeamId]?.work;
   const sprintDone = Boolean(hubRound && season.weekend?.round === hubRound.round);
-  const teamDrivers = (hubTeam?.drivers ?? []).map(id => DRIVERS[id]).filter(Boolean);
+  const teamDrivers = pairOf(management.contracts, management.playerTeamId).map(id => roster[id]).filter(Boolean);
   const hub = mode === 'career' && hubTeam ? {
     teamName: hubTeam.shortName, accent: teamAccent(hubTeam.id), seasonNumber: seasonArchive.length + 1, round: hubRound?.round ?? null,
     kpis: [{ label: hubBalance < 0 ? 'deuda' : 'saldo', value: formatMoney(Math.abs(hubBalance)) }, { label: 'constructores', value: teamStanding >= 0 ? `P${teamStanding + 1}` : '—' }, { label: 'junta', value: String(Math.round(management.board.confidence)) }],
@@ -1134,7 +1143,7 @@ export const App: React.FC = () => {
         selectedDriverId={selectedDriverId}
         selectedCircuitId={selectedCircuitId}
         // En la carrera profesional solo se sigue a un piloto del equipo y se corre la ronda que toca.
-        onSelectDriver={driverId => { if (mode === 'free' || TEAMS[management.playerTeamId]?.drivers.includes(driverId)) setSelectedDriverId(driverId); }}
+        onSelectDriver={driverId => { if (mode === 'free' || roster[driverId]?.teamId === management.playerTeamId) setSelectedDriverId(driverId); }}
         onSelectCircuit={circuitId => { if (mode === 'free') setSelectedCircuitId(circuitId); }}
         onStartRace={handleStartRaceFromHome}
         raceHistory={raceHistory}
@@ -1167,6 +1176,15 @@ export const App: React.FC = () => {
           },
           carOf: teamId => carSponsors(management.sponsors, teamId),
         }}
+        roster={roster}
+        contracts={{
+          state: management.contracts, teamId: management.playerTeamId, season: management.finance.season, round: hubRound?.round ?? SEASON_RACES, message: contractMessage,
+          onOffer: (driverId, salary, seasons) => {
+            const answer = offerContract(management.contracts, { season: management.finance.season, round: hubRound?.round ?? SEASON_RACES, teamId: management.playerTeamId, driverId, salary, seasons });
+            if (answer.state !== management.contracts) saveManagement({ ...management, contracts: answer.state });
+            setContractMessage(`${DRIVERS[driverId]?.lastName ?? driverId}: ${answer.reason}`);
+          },
+        }}
         pitCrew={{
           crew: management.pitCrews.teams[management.playerTeamId],
           onPlan: plan => saveManagement({ ...management, pitCrews: setCrewPlan(management.pitCrews, management.playerTeamId, plan) }),
@@ -1182,7 +1200,7 @@ export const App: React.FC = () => {
         components={components}
         development={{
           program, raceIndex: grandsPrixRun(championship),
-          constructorsPosition: constructorsPosition((DRIVERS[selectedDriverId] ?? DRIVERS.alonso).teamId),
+          constructorsPosition: constructorsPosition((roster[selectedDriverId] ?? roster.alonso).teamId),
           // [T4.2] El proyecto se paga al empezarlo; sin dinero no empieza.
           onStart: key => {
             const bought = buyProject(management, program, management.playerTeamId, key, grandsPrixRun(championship), constructorsPosition(management.playerTeamId), nextRound(championship, season)?.round ?? SEASON_RACES);
@@ -1400,7 +1418,7 @@ export const App: React.FC = () => {
                 homeLabel={podiumHomeLabel(simulation.raceFormat, raceCounts)}
                 progress={!raceCounts || simulation.raceFormat === 'sprint' ? [] : (() => {
                   const after = developmentAfter(simulation.getRaceResult());
-                  return teamCars.map(c => DRIVERS[c.driver.id]).filter(Boolean).map(driver => ({
+                  return teamCars.map(c => roster[c.driver.id]).filter(Boolean).map(driver => ({
                     driver, attributes: attributesOf(after, driver), gains: after.lastGains[driver.id] ?? {}, focus: development.focus[driver.id] ?? 'equilibrado',
                   }));
                 })()}

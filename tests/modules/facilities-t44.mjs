@@ -103,7 +103,8 @@ export default async function run({ server, assert, test }) {
       'T4.4: el mantenimiento es la suma de los cuatro niveles y los equipos grandes pagan más');
     const gp = settle(fresh, 1);
     assert(TEAM_IDS.every(team => of(gp, team, 'mantenimiento').length === 1 && of(gp, team, 'mantenimiento')[0].amount === -expected(team))
-      && balance(gp) === balance(fresh) + F.ROUND_INCOME - F.OPERATION_COST - expected(PLAYER), 'T4.4: cada Gran Premio se paga el mantenimiento, una vez');
+      // [T4.7] Desde los contratos de pilotos, la ronda paga también los sueldos: se suman aquí para que el saldo cuadre.
+      && balance(gp) === balance(fresh) + F.ROUND_INCOME - F.OPERATION_COST - expected(PLAYER) + of(gp, PLAYER, 'sueldos').reduce((sum, entry) => sum + entry.amount, 0), 'T4.4: cada Gran Premio se paga el mantenimiento, una vez');
     assert(settle(gp, 1) === gp, 'T4.4: repetir la liquidación de la ronda no lo cobra otra vez');
     const skipped = settle(fresh, 1, 'saltada'), sprint = settle(fresh, 2, 'sprint');
     assert(of(skipped, PLAYER, 'mantenimiento')[0]?.amount === -expected(PLAYER) && of(sprint, PLAYER, 'mantenimiento').length === 0, 'T4.4: una ronda saltada también lo paga y el sprint no');

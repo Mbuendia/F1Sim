@@ -18,6 +18,7 @@ import {
   D20BenefitKind,
   D20BenefitCategory,
 } from '../types/f1';
+import type { Driver } from '../types/f1';
 import { DRIVERS } from '../data/drivers';
 import { TEAMS, STARTING_GRID_ORDER } from '../data/teams';
 import { OFFICIAL_CIRCUITS, CircuitSpec } from '../data/circuits';
@@ -137,9 +138,25 @@ export class RaceSimulation {
   setDriverAttributes(attributes: Record<string, DriverAttributes>) {
     this.driverAttributes = { ...attributes };
     for (const car of this.cars) {
-      const base = DRIVERS[car.driver.id];
+      const base = this.baseDriver(car.driver.id);
       if (base) car.driver = applyAttributes(base, this.driverAttributes[base.id]);
     }
+  }
+
+  /** [T4.7] Equipo de cada piloto en esta temporada (por id). Sin él, cada piloto corre con su equipo de partida. */
+  private lineup: Record<string, string> = {};
+
+  /** [T4.7] Fija la alineación y vuelve a formar la parrilla: librea, coche y equipo de boxes siguen al piloto. */
+  setLineup(lineup: Record<string, string>) {
+    const next = Object.fromEntries(Object.entries(lineup).filter(([id, teamId]) => DRIVERS[id] && TEAMS[teamId] && DRIVERS[id].teamId !== teamId));
+    if (JSON.stringify(next) === JSON.stringify(this.lineup)) return;
+    this.lineup = next;
+    this.initRace();
+  }
+
+  private baseDriver(driverId: string): Driver {
+    const base = DRIVERS[driverId], teamId = this.lineup[driverId];
+    return base && teamId ? { ...base, teamId } : base;
   }
 
   /** [R45] Ventaja que necesita `attackerId` para atacar a `defenderId`. */
@@ -504,6 +521,8 @@ export class RaceSimulation {
         playerCars: this.playerCars,
         // [T4.6] Ausente en los guardados anteriores: paradas con el reparto de siempre.
         pitCrews: this.pitCrews,
+        // [T4.7] Ausente en los guardados anteriores: cada piloto en su equipo de partida.
+        lineup: this.lineup,
       },
     };
   }
@@ -590,6 +609,7 @@ export class RaceSimulation {
     this.weekendTyres = setup.weekendTyres ?? null;
     this.playerCars = setup.playerCars ?? [];
     this.pitCrews = setup.pitCrews ?? {};
+    this.lineup = setup.lineup ?? {};
 
     // Datos de pintado: se reconstruyen en el siguiente paso.
     this.previousPoses.clear();
@@ -682,7 +702,7 @@ export class RaceSimulation {
     const gridOrder = fromPitLane.length ? [...baseGrid.filter(id => !fromPitLane.includes(id)), ...fromPitLane] : baseGrid;
     this.cars = gridOrder.map((driverId, idx) => {
       // [R45] Piloto con sus atributos actuales (idéntico al de siempre si no hay mejoras).
-      const driver = applyAttributes(DRIVERS[driverId], this.driverAttributes[driverId]);
+      const driver = applyAttributes(this.baseDriver(driverId), this.driverAttributes[driverId]);
       const team = TEAMS[driver.teamId];
 
       const gridSpacing = 0.0035;

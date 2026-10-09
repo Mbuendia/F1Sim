@@ -2,6 +2,8 @@ import { getRuleSet, DEFAULT_RULE_SET_ID } from '../rules/ruleSets';
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import styles from './HomeScreen.module.css';
 import { DRIVERS } from '../data/drivers';
+import { DriverContractsPanel } from './DriverContractsPanel';
+import type { ContractsState } from '../simulation/Contracts';
 import { TEAMS, STARTING_GRID_ORDER } from '../data/teams';
 import { OFFICIAL_CIRCUITS, CircuitSpec } from '../data/circuits';
 import { buildTrackFromSvg } from '../utils/svgTrackParser';
@@ -136,6 +138,10 @@ interface HomeScreenProps {
   board?: BoardState;
   /** [T4.6] Equipo de boxes del equipo del jugador. */
   pitCrew?: { crew: PitCrew; onPlan: (plan: CrewPlan) => void };
+  /** [T4.7] Plantilla de la temporada (cada piloto con el equipo de su contrato); sin ella, la de partida. */
+  roster?: Record<string, Driver>;
+  /** [T4.7] Contratos de los pilotos del equipo del jugador y negociación de la temporada siguiente. */
+  contracts?: { state: ContractsState; teamId: string; season: number; round: number; message: string | null; onOffer: (driverId: string, salary: number, seasons: number) => void };
   /** [T4.9] Patrocinio del equipo del jugador y rótulos del coche de cada equipo. */
   sponsors?: { team: TeamSponsors; onSign: (offerId: string) => void; carOf: (teamId: string) => string[] };
 }
@@ -169,6 +175,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   finance,
   facilities,
   pitCrew,
+  roster = DRIVERS,
+  contracts,
   sponsors,
   board
 }) => {
@@ -196,11 +204,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     setInspectedCircuitId(selectedCircuitId);
   }, [selectedCircuitId]);
 
-  const inspectedDriver = DRIVERS[inspectedDriverId] || DRIVERS[selectedDriverId] || DRIVERS['alonso'];
+  const inspectedDriver = roster[inspectedDriverId] || roster[selectedDriverId] || roster['alonso'];
   const inspectedTeam = TEAMS[inspectedDriver.teamId];
   const inspectedCircuit = OFFICIAL_CIRCUITS[inspectedCircuitId] || OFFICIAL_CIRCUITS[selectedCircuitId] || OFFICIAL_CIRCUITS['barcelona'];
 
-  const selectedDriver = DRIVERS[selectedDriverId] || DRIVERS['alonso'];
+  const selectedDriver = roster[selectedDriverId] || roster['alonso'];
   const selectedTeam = TEAMS[selectedDriver.teamId];
   const selectedCircuit = OFFICIAL_CIRCUITS[selectedCircuitId] || OFFICIAL_CIRCUITS['barcelona'];
 
@@ -394,6 +402,15 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         </section>
       )}
 
+      {section === 'equipo' && contracts && (
+        <section className={styles.sectionBlock}>
+          <h2 className={styles.sectionHeading}>
+            <span>Pilotos</span>
+          </h2>
+          <DriverContractsPanel contracts={contracts.state} teamId={contracts.teamId} season={contracts.season} round={contracts.round} onOffer={contracts.onOffer} message={contracts.message} />
+        </section>
+      )}
+
       {section === 'equipo' && pitCrew && (
         <section className={styles.sectionBlock}>
           <h2 className={styles.sectionHeading}>
@@ -408,8 +425,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           <h2 className={styles.sectionHeading}>
             <span>Desarrollo del coche</span>
           </h2>
-          <DevelopmentPanel program={development.program} teamId={(DRIVERS[selectedDriverId] ?? DRIVERS.alonso).teamId}
-            drivers={Object.values(DRIVERS).filter(d => d.teamId === (DRIVERS[selectedDriverId] ?? DRIVERS.alonso).teamId)}
+          <DevelopmentPanel program={development.program} teamId={selectedDriver.teamId}
+            drivers={Object.values(roster).filter(d => d.teamId === selectedDriver.teamId)}
             raceIndex={development.raceIndex} constructorsPosition={development.constructorsPosition}
             onStart={development.onStart} onInstall={development.onInstall} costs={development.costs} />
         </section>
@@ -420,7 +437,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           <h2 className={styles.sectionHeading}>
             <span>Componentes de la unidad de potencia</span>
           </h2>
-          <ComponentsPanel state={components} drivers={Object.values(DRIVERS).filter(d => d.teamId === (DRIVERS[selectedDriverId] ?? DRIVERS.alonso).teamId)}
+          <ComponentsPanel state={components} drivers={Object.values(roster).filter(d => d.teamId === selectedDriver.teamId)}
             onFitNew={onFitComponent} onUndo={onUndoComponent} costOf={componentCostOf} />
         </section>
       )}

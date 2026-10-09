@@ -1,6 +1,7 @@
 // [T4.3] Centro de gestión: lo que está pendiente de una decisión del director y las sesiones del fin de semana.
 // La lista de pendientes avisa y nunca bloquea la entrada a pista (decisión del usuario).
 import { DRIVERS } from '../data/drivers';
+import { negotiationOpen, pairOf, seatsTaken } from './Contracts';
 import { TEAMS } from '../data/teams';
 import { COMPONENT_LABEL, COMPONENT_TYPES, fittedUnit, wearFactor } from './ComponentPool';
 import type { ComponentState } from './ComponentPool';
@@ -25,7 +26,7 @@ export interface PendingItem { id: string; title: string; detail: string; sectio
 export const FATIGUE_WARNING = 70;
 
 /** Pendientes del equipo del jugador, del más urgente al menos. Lista vacía si no hay nada que decidir. */
-export function pendingDecisions(input: { teamId: string; management: ManagementState; program: DevelopmentProgram; components: ComponentState; raceIndex: number }): PendingItem[] {
+export function pendingDecisions(input: { teamId: string; management: ManagementState; program: DevelopmentProgram; components: ComponentState; raceIndex: number; round?: number }): PendingItem[] {
   const { teamId, management, program, components, raceIndex } = input;
   const items: PendingItem[] = [];
   if (atDebtLimit(management.finance, teamId)) {
@@ -39,7 +40,15 @@ export function pendingDecisions(input: { teamId: string; management: Management
     if (statusAt(project, raceIndex) !== 'listo') continue;
     items.push({ id: `mejora-${project.id}`, title: 'Mejora lista para montar', detail: `${PROJECTS[project.key]?.label ?? project.key}: elige en qué coche va primero`, section: 'fabrica' });
   }
-  for (const driverId of TEAMS[teamId]?.drivers ?? []) {
+  // [T4.7] Desde la mitad de la temporada, cada piloto del equipo que acaba contrato y no ha renovado.
+  const pair = pairOf(management.contracts, teamId);
+  if (input.round !== undefined && negotiationOpen(input.round) && seatsTaken(management.contracts, management.finance.season, teamId) < 2) {
+    for (const driverId of pair) {
+      if (management.contracts.contracts[driverId].until > management.finance.season || management.contracts.agreed[driverId]) continue;
+      items.push({ id: `contrato-${driverId}`, title: 'Contrato que vence', detail: `${DRIVERS[driverId]?.lastName ?? driverId} acaba contrato esta temporada: renueva o ficha a otro piloto`, section: 'equipo' });
+    }
+  }
+  for (const driverId of pair) {
     for (const type of COMPONENT_TYPES) {
       const unit = fittedUnit(components, driverId, type);
       if (!unit || wearFactor(unit) <= 1) continue;

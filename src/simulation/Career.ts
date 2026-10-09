@@ -40,9 +40,11 @@ export function teamDifficulty(teamId: string): 'Baja' | 'Media' | 'Alta' {
   return level >= 0.66 ? 'Baja' : level >= 0.33 ? 'Media' : 'Alta';
 }
 
-/** Piloto que sigue el jugador en la carrera profesional: uno de su equipo (el pedido si lo es; si no, el primero). */
-export function careerDriver(teamId: string, driverId: string): string {
-  const pair = TEAMS[teamId]?.drivers ?? [];
+/**
+ * Piloto que sigue el jugador en la carrera profesional: uno de su equipo (el pedido si lo es; si no, el primero).
+ * [T4.7] `pair` es la pareja de la temporada según los contratos; sin ella vale la de partida.
+ */
+export function careerDriver(teamId: string, driverId: string, pair: string[] = TEAMS[teamId]?.drivers ?? []): string {
   return pair.includes(driverId) ? driverId : pair[0] ?? Object.keys(DRIVERS)[0];
 }
 
