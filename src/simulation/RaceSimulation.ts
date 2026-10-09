@@ -61,6 +61,8 @@ import { applyAttributes, fitnessNoiseFactor, overtakeAdvantageNeeded, wetGripFa
 import type { DriverAttributes } from './DriverDevelopment';
 import type { QualiEntrant } from './Qualifying';
 import { technicalWith } from './Development';
+import { pitWindow, tyreInfo, undercutRisk } from './PitWindow';
+import type { PitWindow } from './PitWindow';
 import { classify, constructorStandings, pointsTable, resultDifferences } from './RaceResult';
 import type { EndReason, RaceResult, ResultEntry } from './RaceResult';
 import { tyreCrossover, tyreClassOf, tyreWaterGrip, WeatherModel, WeatherScenario } from './WeatherModel';
@@ -1014,6 +1016,19 @@ export class RaceSimulation {
     const { timeLossSec, profile } = this.rejoinContext(car);
     const rejoinProgress = RejoinModel.progressBefore(profile, car.progress, timeLossSec);
     return { timeLossSec, projectedPos: this.rejoinPositionAt(car, rejoinProgress) };
+  }
+
+  /**
+   * [T4.15] Ventana de parada: puesto y huecos con los que saldría el coche si parase ahora. Usa el mismo predictor que
+   * la reincorporación (lo que se pierde en boxes con la carrera como está) y la posición actual de cada coche.
+   */
+  getPitWindow(carId: number): PitWindow | null {
+    const car = this.getCarById(carId);
+    if (!car || !this.activeTrack || car.status !== 'running' || this.isFinished || this.lightState !== 'racing' || this.raceFlagState === 'red' || car.isInPitLane || car.pitStop.isPitting) return null;
+    const { timeLossSec, profile } = this.rejoinContext(car);
+    const rejoinProgress = RejoinModel.progressBefore(profile, car.progress, timeLossSec);
+    const onTrack = this.cars.map(other => ({ id: other.id, code: other.driver.code, progress: other.progress, running: other.status !== 'out' }));
+    return pitWindow(onTrack, carId, rejoinProgress, (from, to) => RejoinModel.timeBetween(profile, from, to), timeLossSec);
   }
 
   /** Segundos en régimen estable (perfil de la pista con la neutralización actual) para ir de un progreso a otro. */
@@ -3339,6 +3354,9 @@ export class RaceSimulation {
     const ruleWarning = compliance.satisfied ? null
       : compliance.slickSpecs.length < 2 && !compliance.usedWetWeather ? 'Aún tiene que usar otro compuesto de seco'
       : `Aún tiene que usar ${compliance.setsRequired - compliance.setsUsed} juego(s) más`;
+    // [T4.15] De cada coche se usa lo que se ve: compuesto y vueltas del juego.
+    const tyresOf = (other: CarState) => tyreInfo({ code: other.driver.code, compound: other.tires.compound, laps: other.tires.lapsOnTire });
+    const rivalTyres = { own: tyresOf(car), ahead: ahead ? tyresOf(ahead) : null, behind: behind ? tyresOf(behind) : null };
     return {
       carId: car.id, code: car.driver.code, position: car.currentPosition,
       gapAheadSec: ahead ? car.gapToCarAheadSec : null, aheadCode: ahead ? ahead.driver.code : null,
@@ -3349,9 +3367,15 @@ export class RaceSimulation {
       tyres: { compound: car.tires.compound, health: car.tires.health, available: { soft: sets('soft'), medium: sets('medium'), hard: sets('hard') }, ruleWarning },
       vscDeltaSec: typeof car.vscDeltaSec === 'number' ? car.vscDeltaSec : null,
       penalties: this.stewards.pending(car.id).map(decision => RaceSimulation.penaltyText(decision)),
-      upgrades: (this.technicalUpgrades[car.driver.id] ?? []).map(key => PROJECTS[key]?.label ?? key),
+      // [T4.11] «proyecto@parte» es una mejora heredada del coche anterior.
+      upgrades: (this.technicalUpgrades[car.driver.id] ?? []).map(entry => {
+        const [key, share] = entry.split('@');
+        return share === undefined ? PROJECTS[key]?.label ?? key : `${PROJECTS[key]?.label ?? key} (heredada, ${Math.round(Number(share) * 100)} %)`;
+      }),
       moves: car.moves ?? emptyMoves(), paceLaps: car.paceLaps ?? { push: 0, balanced: 0, save: 0 },
       pit: car.isInPitLane || car.pitStop.isPitting,
+      pitWindow: this.getPitWindow(car.id), rivalTyres,
+      undercut: undercutRisk({ gapBehindSec: behind ? behind.gapToCarAheadSec : null, own: rivalTyres.own, behind: rivalTyres.behind, behindInPit: Boolean(behind && (behind.isInPitLane || behind.pitStop.isPitting)) }),
     };
   }
 
