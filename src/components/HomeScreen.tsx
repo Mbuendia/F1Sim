@@ -16,6 +16,8 @@ import { WeatherScenarioSelect } from './WeatherScenarioSelect';
 import { WeatherOutlook } from './WeatherOutlook';
 import { FinancePanel } from './FinancePanel';
 import { FacilitiesPanel } from './FacilitiesPanel';
+import { PitCrewPanel } from './PitCrewPanel';
+import type { CrewPlan, PitCrew } from '../simulation/PitCrew';
 import type { FacilitiesState, FacilityId } from '../simulation/Facilities';
 import type { FinanceState } from '../simulation/Finance';
 import { balanceOf, formatMoney } from '../simulation/Finance';
@@ -110,6 +112,8 @@ interface HomeScreenProps {
   finance?: { state: FinanceState; teamId: string };
   /** [T4.4] Instalaciones de la fábrica del equipo del jugador. */
   facilities?: { state: FacilitiesState; teamId: string; canAfford: (cost: number) => boolean; onUpgrade: (facility: FacilityId) => void };
+  /** [T4.6] Equipo de boxes del equipo del jugador. */
+  pitCrew?: { crew: PitCrew; onPlan: (plan: CrewPlan) => void };
 }
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({
@@ -136,7 +140,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   driverAttributes,
   sprintAvailable,
   finance,
-  facilities
+  facilities,
+  pitCrew
 }) => {
   const nextRound = season?.rounds.find(round => round.status === 'siguiente');
   const freeRace = Boolean(nextRound) && nextRound?.circuitId !== selectedCircuitId;
@@ -342,6 +347,15 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             <span>Instalaciones de la fábrica</span>
           </summary>
           <FacilitiesPanel facilities={facilities.state} teamId={facilities.teamId} canAfford={facilities.canAfford} onUpgrade={facilities.onUpgrade} />
+        </details>
+      )}
+
+      {pitCrew && (
+        <details className={styles.historySection}>
+          <summary className={styles.historyTitle}>
+            <span>Equipo de boxes</span>
+          </summary>
+          <PitCrewPanel crew={pitCrew.crew} onPlan={pitCrew.onPlan} />
         </details>
       )}
 

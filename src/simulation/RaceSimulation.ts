@@ -156,6 +156,20 @@ export class RaceSimulation {
     for (const car of this.cars) car.failureFactor = this.failureFactors[car.driver.id];
   }
 
+  /** [T4.6] Efecto del equipo de boxes de cada equipo en sus paradas; se aplica a los coches actuales y a las carreras siguientes. */
+  private pitCrews: Record<string, { timeFactor: number; errorFactor: number }> = {};
+
+  setPitCrews(crews: Record<string, { timeFactor: number; errorFactor: number }>) {
+    this.pitCrews = { ...crews };
+    for (const car of this.cars) this.applyPitCrew(car);
+  }
+
+  private applyPitCrew(car: CarState) {
+    const crew = this.pitCrews[car.driver.teamId];
+    if (crew) car.pitStop.crew = { ...crew };
+    else delete car.pitStop.crew;
+  }
+
   /** [R18] Mejoras de desarrollo montadas por piloto; se aplican al perfil técnico ahora y en las carreras siguientes. */
   private technicalUpgrades: Record<string, string[]> = {};
 
@@ -488,6 +502,8 @@ export class RaceSimulation {
         carSetups: this.carSetups, pitLaneStarters: this.pitLaneStarters, weekendTyres: this.weekendTyres,
         // [R54] Ausente en los guardados anteriores: se lee como «ningún coche del jugador» hasta que la aplicación lo diga.
         playerCars: this.playerCars,
+        // [T4.6] Ausente en los guardados anteriores: paradas con el reparto de siempre.
+        pitCrews: this.pitCrews,
       },
     };
   }
@@ -573,6 +589,7 @@ export class RaceSimulation {
     this.carSetups = setup.carSetups ?? {}; this.pitLaneStarters = setup.pitLaneStarters ?? [];
     this.weekendTyres = setup.weekendTyres ?? null;
     this.playerCars = setup.playerCars ?? [];
+    this.pitCrews = setup.pitCrews ?? {};
 
     // Datos de pintado: se reconstruyen en el siguiente paso.
     this.previousPoses.clear();
@@ -811,6 +828,7 @@ export class RaceSimulation {
     for (const car of this.cars) {
       // [R17] Perfil técnico resuelto una vez por coche y evento (chasis, PU y paquete del circuito).
       car.technical = this.technicalFor(car);
+      this.applyPitCrew(car);
       // [R07] Inventario de juegos: mismo stock y reglas para todos; sale con un medio.
       const weekendSets = this.weekendTyres?.[car.driver.id];
       if (weekendSets?.length) {

@@ -48,6 +48,7 @@ import type { ManagementState } from './simulation/Management';
 import { aiDevelopPaying, aiReplaceComponents, buyComponent, buyProject, componentCost, projectCost, projectLeadTime, projectShortfall, raceDamages, refundComponent } from './simulation/Costs';
 import { aiInvestFacilities, benchHazard, gainOf, maxProjects, simulatorBonus, startWork } from './simulation/Facilities';
 import { canSpend } from './simulation/Finance';
+import { aiCrewPlans, crewEffect, setCrewPlan } from './simulation/PitCrew';
 import type { SaveGame, SlotSummary } from './simulation/SaveGame';
 import type { SaveGameMessage } from './components/SaveGamePanel';
 import { SetupPanel } from './components/SetupPanel';
@@ -457,8 +458,13 @@ export const App: React.FC = () => {
     const paying = careerRace ? aiDevelopPaying(replaced.management, program, aiTeams, raceIndex, Object.fromEntries(aiTeams.map(t => [t, constructorsPosition(t)])), raceIndex + 1,
       teamId => Object.values(DRIVERS).find(d => d.teamId === teamId)?.id ?? teamId, ledgerRound) : { management: replaced.management, program };
     const developed = paying.program;
-    // [T4.4] Y amplían sus instalaciones si les queda reserva.
-    if (careerRace) { saveProgram(developed); saveManagement(aiInvestFacilities(paying.management, aiTeams, ledgerRound)); }
+    // [T4.4] Y amplían sus instalaciones si les queda reserva. [T4.6] Sus equipos de boxes eligen el plan de la semana.
+    const invested = careerRace ? aiInvestFacilities(paying.management, aiTeams, ledgerRound) : paying.management;
+    const managed = careerRace ? { ...invested, pitCrews: aiCrewPlans(invested.pitCrews, aiTeams) } : invested;
+    if (careerRace) { saveProgram(developed); saveManagement(managed); }
+    // [T4.6] En una carrera de temporada (Gran Premio o sprint) cada coche para con el equipo de boxes de su equipo; en
+    // una libre, como siempre.
+    simulation.setPitCrews(counts ? Object.fromEntries(Object.entries(managed.pitCrews.teams).map(([teamId, crew]) => [teamId, crewEffect(crew)])) : {});
     simulation.setTechnicalUpgrades(Object.fromEntries(Object.values(DRIVERS).map(d => [d.id, upgradesFor(developed, d.teamId, d.id, raceIndex)])));
     const baseGrid = quali ? quali.grid.map(slot => slot.driverId) : simulation.cars.map(c => c.driver.id);
     const penalized = applyGridPenalties(baseGrid, started.penalties);
@@ -575,6 +581,8 @@ export const App: React.FC = () => {
           tyres: simulation.raceFormat === 'sprint' ? carryTyres(simulation.cars) : undefined,
           // [T4.2] Los accidentes y salidas de pista de la carrera se facturan a su equipo.
           damages: raceDamages(simulation.incidents, simulation.cars),
+          // [T4.6] Y sus paradas cuentan para la estadística del equipo de boxes.
+          stops: simulation.cars.flatMap(car => (car.pitStop.stopLog ?? []).filter(stop => stop.totalSec > 0).map(stop => ({ teamId: car.driver.teamId, serviceSec: stop.serviceSec }))),
         }));
       }
 
@@ -968,6 +976,10 @@ export const App: React.FC = () => {
         }}
         driverAttributes={driver => attributesOf(development, driver)}
         finance={{ state: management.finance, teamId: management.playerTeamId }}
+        pitCrew={{
+          crew: management.pitCrews.teams[management.playerTeamId],
+          onPlan: plan => saveManagement({ ...management, pitCrews: setCrewPlan(management.pitCrews, management.playerTeamId, plan) }),
+        }}
         facilities={{
           state: management.facilities, teamId: management.playerTeamId,
           canAfford: cost => canSpend(management.finance, management.playerTeamId, cost),

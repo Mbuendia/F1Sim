@@ -78,6 +78,12 @@
 .button:hover:not(:disabled) { border-color: var(--text-3); }
 .button:disabled { opacity: 0.5; cursor: not-allowed; }
 
+/* Opciones excluyentes en una fila (plan de la semana, vistas) */
+.segmented { display: inline-flex; border: 1px solid var(--line-strong); border-radius: var(--radio-s); overflow: hidden; }
+.segmented button { background: transparent; border: 0; border-right: 1px solid var(--line-strong); padding: 5px 12px; min-height: 32px; cursor: pointer; font-weight: 600; font-size: 15px; color: var(--text-2); font-family: var(--font-ui); }
+.segmented button:last-child { border-right: 0; }
+.segmented button[aria-pressed="true"] { background: var(--panel-2); color: #fff; box-shadow: inset 0 -2px 0 var(--equipo); }
+
 /* Niveles de 1 a 5 */
 .pips { display: inline-flex; gap: 3px; }
 .pips i { width: 14px; height: 8px; border-radius: 2px; background: var(--panel-2); border: 1px solid var(--line-strong); }

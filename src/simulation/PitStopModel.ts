@@ -379,6 +379,20 @@ export class PitStopModel {
     return index >= 0 ? 0.3 + 0.4 / teams.length * (index + 0.5) : 0.45;
   }
 
+  /**
+   * Tiempo de servicio de una parada (s). `roll` decide el tipo: rápida (1,8-2,2 s), normal (2,2-3,0 s), lenta (3-4 s)
+   * o fallida (4-8 s); `spread` la sitúa dentro de su tramo. Sin equipo de boxes es el reparto de siempre (20 %, 55 %,
+   * 15 % y 10 %). [T4.6] Con él, `errorFactor` escala la parte de paradas lentas y fallidas (las limpias conservan su
+   * reparto entre rápidas y normales) y `timeFactor` el tiempo de una parada limpia.
+   */
+  static serviceTime(roll: number, spread: number, crew?: { timeFactor: number; errorFactor: number }): number {
+    const error = Math.min(2.4, Math.max(0, crew?.errorFactor ?? 1)), time = crew?.timeFactor ?? 1;
+    const normalEnd = error === 1 ? .75 : 1 - .25 * error, slowEnd = error === 1 ? .9 : 1 - .1 * error;
+    const fastEnd = error === 1 ? .2 : normalEnd * (.2 / .75);
+    const seconds = roll < fastEnd ? (1.8 + spread * .4) * time : roll < normalEnd ? (2.2 + spread * .8) * time : roll < slowEnd ? 3 + spread : 4 + spread * 4;
+    return Number(seconds.toFixed(2));
+  }
+
   static processCrossings(car: CarState, previousProgress: number, track: TrackDefinition,
     dt: number, flag?: string, scMode?: string, pitClosed = false): void {
     const pit = car.pitStop;
@@ -416,8 +430,7 @@ export class PitStopModel {
     pit.boxWaitTimer = 0;
     pit.laneTimer = 0; pit.releaseHoldSec = 0; pit.limitStartChecked = false; pit.limitEndFlagged = false; pit.pendingLog = null;
     const roll = random();
-    pit.stopDuration = Number((roll < .2 ? 1.8 + random() * .4 :
-      roll < .75 ? 2.2 + random() * .8 : roll < .9 ? 3 + random() : 4 + random() * 4).toFixed(2));
+    pit.stopDuration = PitStopModel.serviceTime(roll, random(), pit.crew);
     // [Q17] Beneficio D20 de preparación del box: acota solo el servicio de esta parada si sigue vigente.
     const benefit = pit.crewBenefit;
     if (benefit && car.currentLap > benefit.expiresLap) pit.crewBenefit = null;
