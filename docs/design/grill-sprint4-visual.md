@@ -274,7 +274,7 @@ Portada
 El usuario da por buena la maqueta (`maqueta-sprint4.html`) con dos cambios para la implementación:
 
 1. **Iconos:** faltan. Se usan los de `lucide-react`, que ya usa el juego, en las pestañas, los títulos de tarjeta y las acciones.
-2. **Coches en 3D:** con el modelo de R55, no como dibujo ni como imagen fija. Queda por concretar cómo se pintan los diez coches de «Elegir equipo» a la vez.
+2. **Coches en 3D:** con el modelo de R55, no como dibujo ni como imagen fija. En «Elegir equipo», los diez coches se pintan con el modelo 3D y la librea de cada equipo, quietos; pueden ir de lateral (decisión del usuario: «quietos o incluso de lateral, pero 3D»).
 
 El paddock ya tiene, desde ese día, un menú de secciones con «Correr» la última (arreglo pedido por el usuario); el orden definitivo de las pestañas del centro de gestión se decide al implementar T4.3.
 
