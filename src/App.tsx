@@ -21,16 +21,16 @@ import { RaceNotices, RaceNotice, RaceNoticeTone } from './components/RaceNotice
 import { OFFICIAL_CIRCUITS } from './data/circuits';
 import { buildWeatherScenario } from './data/weatherScenarios';
 import { runQualifying } from './simulation/Qualifying';
-import { aiDevelop, emptyProgram, installFirst, parseProgram, startProject, upgradesFor, PROGRAM_STORAGE_KEY } from './simulation/Development';
+import { emptyProgram, installFirst, parseProgram, upgradesFor, PROGRAM_STORAGE_KEY } from './simulation/Development';
 import type { DevelopmentProgram } from './simulation/Development';
-import { calendarView, emptySeason, grandsPrixRun, isSeasonRace, nextRound, parseArchive, parseSeason, roundWeather, settleRace, settleSkip, sprintPending, withWeatherSeed, SEASONS_STORAGE_KEY, SEASON_STATE_KEY } from './simulation/Season';
+import { calendarView, emptySeason, grandsPrixRun, isSeasonRace, nextRound, parseArchive, parseSeason, roundWeather, settleRace, settleSkip, sprintPending, withWeatherSeed, SEASONS_STORAGE_KEY, SEASON_RACES, SEASON_STATE_KEY } from './simulation/Season';
 import { COMPOUND_LABEL } from './simulation/TireInventory';
 import { carryTyres, isSprintVenue, podiumHomeLabel, sprintWeekendTyres } from './simulation/Weekend';
 import type { SeasonState, SeasonSummary, SettledCareer } from './simulation/Season';
 import { SeasonEndScreen } from './components/SeasonEndScreen';
 import { GridPenaltyNotice } from './components/GridPenaltyNotice';
 import { constructorsChampionship } from './simulation/Championship';
-import { aiReplace, applyGridPenalties, emptyComponents, ensureDriver, fitNew, gridPenaltyLines, hazardFactor, markRaceStart, parseComponents, raceStartGate, undoFit, COMPONENTS_STORAGE_KEY } from './simulation/ComponentPool';
+import { applyGridPenalties, emptyComponents, ensureDriver, gridPenaltyLines, hazardFactor, markRaceStart, parseComponents, raceStartGate, COMPONENTS_STORAGE_KEY } from './simulation/ComponentPool';
 import type { ComponentState, GridChange, PenaltyLine } from './simulation/ComponentPool';
 import type { QualifyingResult } from './simulation/Qualifying';
 import { QualifyingResults } from './components/QualifyingResults';
@@ -45,6 +45,7 @@ import { createSnapshot, restoreSnapshot } from './simulation/Snapshot';
 import { AUTOSAVE_ID, AUTOSAVE_LABEL, SaveStore, createSave, exportSave, importSave, savedManagement, savedRaceCounts, savedSeason } from './simulation/SaveGame';
 import { MANAGEMENT_STORAGE_KEY, parseManagement, startManagement } from './simulation/Management';
 import type { ManagementState } from './simulation/Management';
+import { aiDevelopPaying, aiReplaceComponents, buyComponent, buyProject, componentCost, projectCost, projectShortfall, raceDamages, refundComponent } from './simulation/Costs';
 import type { SaveGame, SlotSummary } from './simulation/SaveGame';
 import type { SaveGameMessage } from './components/SaveGamePanel';
 import { SetupPanel } from './components/SetupPanel';
@@ -437,16 +438,21 @@ export const App: React.FC = () => {
     // Componentes, sanciones y desarrollo son cosa del Gran Premio: el sprint no los mueve.
     const careerRace = counts && !sprintRace;
     const playerTeam = (DRIVERS[selectedDriverId] ?? DRIVERS.alonso).teamId;
-    const prepared = careerRace ? aiReplace(components, Object.values(DRIVERS).filter(d => d.teamId !== playerTeam).map(d => d.id)) : components;
+    // [T4.2] Los rivales pagan sus componentes y sus proyectos: sin dinero dejan de montar fuera de cupo y de desarrollar.
+    const ledgerRound = nextRound(championship, season)?.round ?? SEASON_RACES;
+    const rivals = Object.values(DRIVERS).filter(d => d.teamId !== playerTeam).map(d => ({ id: d.id, teamId: d.teamId }));
+    const replaced = careerRace ? aiReplaceComponents(management, components, rivals, ledgerRound) : { management, components };
+    const prepared = replaced.components;
     const started = careerRace ? markRaceStart(prepared) : { state: components, penalties: [] };
     if (careerRace) saveComponents(started.state);
     simulation.setFailureFactors(Object.fromEntries(Object.keys(DRIVERS).map(id => [id, hazardFactor(started.state, id)])));
     // [R18] La IA desarrolla y monta sus mejoras; cada coche corre con las suyas.
     const raceIndex = grandsPrixRun(championship);
     const aiTeams = [...new Set(Object.values(DRIVERS).map(d => d.teamId))].filter(t => t !== playerTeam);
-    const developed = careerRace ? aiDevelop(program, aiTeams, raceIndex, Object.fromEntries(aiTeams.map(t => [t, constructorsPosition(t)])), raceIndex + 1,
-      teamId => Object.values(DRIVERS).find(d => d.teamId === teamId)?.id ?? teamId) : program;
-    if (careerRace) saveProgram(developed);
+    const paying = careerRace ? aiDevelopPaying(replaced.management, program, aiTeams, raceIndex, Object.fromEntries(aiTeams.map(t => [t, constructorsPosition(t)])), raceIndex + 1,
+      teamId => Object.values(DRIVERS).find(d => d.teamId === teamId)?.id ?? teamId, ledgerRound) : { management: replaced.management, program };
+    const developed = paying.program;
+    if (careerRace) { saveProgram(developed); saveManagement(paying.management); }
     simulation.setTechnicalUpgrades(Object.fromEntries(Object.values(DRIVERS).map(d => [d.id, upgradesFor(developed, d.teamId, d.id, raceIndex)])));
     const baseGrid = quali ? quali.grid.map(slot => slot.driverId) : simulation.cars.map(c => c.driver.id);
     const penalized = applyGridPenalties(baseGrid, started.penalties);
@@ -473,7 +479,7 @@ export const App: React.FC = () => {
     setIsFinished(false);
     setCurrentView('race');
     if (gate === 'directo') simulation.startRaceSequence();
-  }, [simulation, camera, selectedCircuitId, weatherScenarioId, development, raceFormat, components, saveComponents, selectedDriverId, program, saveProgram, championship, constructorsPosition, saveStore, playerSetups, season, saveSeason, effectiveFormat]);
+  }, [simulation, camera, selectedCircuitId, weatherScenarioId, development, raceFormat, components, saveComponents, selectedDriverId, program, saveProgram, championship, constructorsPosition, saveStore, playerSetups, season, saveSeason, effectiveFormat, management, saveManagement]);
 
   /** [R51] Visto el aviso de sanciones, empieza la carrera. */
   const handleContinueFromPenalties = useCallback(() => {
@@ -561,6 +567,8 @@ export const App: React.FC = () => {
           counts: raceCounts, id: newHistoryItem.id, circuitId: selectedCircuitId, result: finalResult, format: simulation.raceFormat,
           raceKm: simulation.leaderLap * simulation.activeTrack.lapLengthMeters / 1000, playerCodes,
           tyres: simulation.raceFormat === 'sprint' ? carryTyres(simulation.cars) : undefined,
+          // [T4.2] Los accidentes y salidas de pista de la carrera se facturan a su equipo.
+          damages: raceDamages(simulation.incidents, simulation.cars),
         }));
       }
 
@@ -958,12 +966,24 @@ export const App: React.FC = () => {
         development={{
           program, raceIndex: grandsPrixRun(championship),
           constructorsPosition: constructorsPosition((DRIVERS[selectedDriverId] ?? DRIVERS.alonso).teamId),
-          onStart: key => saveProgram(startProject(program, (DRIVERS[selectedDriverId] ?? DRIVERS.alonso).teamId, key, grandsPrixRun(championship),
-            constructorsPosition((DRIVERS[selectedDriverId] ?? DRIVERS.alonso).teamId)).program),
+          // [T4.2] El proyecto se paga al empezarlo; sin dinero no empieza.
+          onStart: key => {
+            const bought = buyProject(management, program, management.playerTeamId, key, grandsPrixRun(championship), constructorsPosition(management.playerTeamId), nextRound(championship, season)?.round ?? SEASON_RACES);
+            if (bought.ok) { saveProgram(bought.program); saveManagement(bought.management); }
+          },
+          costs: { costOf: projectCost, shortfallOf: key => projectShortfall(management, management.playerTeamId, key) },
           onInstall: (projectId, driverId) => saveProgram(installFirst(program, projectId, driverId, grandsPrixRun(championship)).program),
         }}
-        onFitComponent={(driverId, type) => saveComponents(fitNew(components, driverId, type))}
-        onUndoComponent={(driverId, type) => saveComponents(undoFit(components, driverId, type))}
+        onFitComponent={(driverId, type) => {
+          // [T4.2] La unidad se paga al montarla; deshacerla sin estrenar devuelve su importe.
+          const bought = buyComponent(management, components, management.playerTeamId, driverId, type, nextRound(championship, season)?.round ?? SEASON_RACES);
+          if (bought.ok) { saveComponents(bought.components); saveManagement(bought.management); }
+        }}
+        onUndoComponent={(driverId, type) => {
+          const undone = refundComponent(management, components, management.playerTeamId, driverId, type, nextRound(championship, season)?.round ?? SEASON_RACES);
+          if (undone.ok) { saveComponents(undone.components); saveManagement(undone.management); }
+        }}
+        componentCostOf={(driverId, type) => componentCost(components, driverId, type)}
         raceFormat={effectiveFormat}
         sprintAvailable={sprintAvailable}
         onSelectFormat={setRaceFormat}

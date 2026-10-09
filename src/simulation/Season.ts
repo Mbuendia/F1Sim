@@ -17,7 +17,7 @@ import { drawWeatherScenario } from '../data/weatherScenarios';
 import type { WeatherScenarioId } from '../data/weatherScenarios';
 import { streamSeed } from './Random';
 import { closeManagementSeason, settleManagementRound } from './Management';
-import type { ManagementState } from './Management';
+import type { ManagementState, RoundSettlement } from './Management';
 
 export const SEASON_RACES = 24;
 export const SEASONS_STORAGE_KEY = 'f1_seasons';
@@ -215,9 +215,10 @@ function teamPoints(result: RaceResult): Record<string, number> {
 }
 
 /** [T4.1] La gestión tras liquidar esa ronda; si la carrera profesional no lleva gestión, nada. */
-function settledManagement(career: CareerProgress, round: number | undefined, format: 'gp' | 'sprint' | 'saltada', points: Record<string, number>): { management?: ManagementState } {
+function settledManagement(career: CareerProgress, round: number | undefined, format: 'gp' | 'sprint' | 'saltada', points: Record<string, number>,
+  damages?: RoundSettlement['damages']): { management?: ManagementState } {
   if (!career.management || round === undefined) return {};
-  return { management: settleManagementRound(career.management, { round, format, points }) };
+  return { management: settleManagementRound(career.management, { round, format, points, damages }) };
 }
 
 function closeIfComplete(career: CareerProgress, playerCodes: string[]): SettledCareer {
@@ -238,12 +239,14 @@ export function settleRace(career: CareerProgress, race: {
   counts: boolean; id: string; circuitId: string; result: RaceResult; format: 'gp' | 'sprint'; raceKm: number; playerCodes?: string[];
   /** Juegos de neumáticos de cada piloto al acabar (solo tras un sprint). */
   tyres?: Record<string, TireSet[]>;
+  /** [T4.2] Daños de los coches en esta carrera: se cobran a su equipo al liquidar la ronda. */
+  damages?: RoundSettlement['damages'];
 }): SettledCareer {
   if (!race.counts || race.result.status !== 'final') return { ...career, closed: null };
   const championship = addRace(career.championship, race.id, race.circuitId, race.result, race.format);
   const round = nextRound(career.championship, career.season)?.round;
   // [T4.1] El dinero de la ronda se liquida con el resultado: una sola vez por ronda y formato.
-  const management = settledManagement(career, round, race.format, teamPoints(race.result));
+  const management = settledManagement(career, round, race.format, teamPoints(race.result), race.damages);
   if (race.format === 'sprint') {
     if (round === undefined) return { ...career, closed: null };
     return {

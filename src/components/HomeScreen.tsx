@@ -78,11 +78,15 @@ interface HomeScreenProps {
   development?: {
     program: DevelopmentProgram; raceIndex: number; constructorsPosition: number;
     onStart: (key: string) => void; onInstall: (projectId: string, driverId: string) => void;
+    /** [T4.2] Coste de cada proyecto y lo que falta para pagarlo. */
+    costs?: { costOf: (key: string) => number; shortfallOf: (key: string) => number };
   };
   /** [R19] Componentes de la unidad de potencia y montaje de unidades nuevas. */
   components?: ComponentState;
   onFitComponent?: (driverId: string, type: ComponentType) => void;
   onUndoComponent?: (driverId: string, type: ComponentType) => void;
+  /** [T4.2] Coste de montar otra unidad nueva de un componente. */
+  componentCostOf?: (driverId: string, type: ComponentType) => number;
   /** [R20] GP directo o con clasificación. */
   raceFormat?: RaceFormatId;
   onSelectFormat?: (format: RaceFormatId) => void;
@@ -120,6 +124,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   components,
   onFitComponent,
   onUndoComponent,
+  componentCostOf,
   development,
   saveGames,
   setup,
@@ -334,7 +339,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           <DevelopmentPanel program={development.program} teamId={(DRIVERS[selectedDriverId] ?? DRIVERS.alonso).teamId}
             drivers={Object.values(DRIVERS).filter(d => d.teamId === (DRIVERS[selectedDriverId] ?? DRIVERS.alonso).teamId)}
             raceIndex={development.raceIndex} constructorsPosition={development.constructorsPosition}
-            onStart={development.onStart} onInstall={development.onInstall} />
+            onStart={development.onStart} onInstall={development.onInstall} costs={development.costs} />
         </details>
       )}
 
@@ -344,7 +349,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             <span>Componentes de la unidad de potencia</span>
           </summary>
           <ComponentsPanel state={components} drivers={Object.values(DRIVERS).filter(d => d.teamId === (DRIVERS[selectedDriverId] ?? DRIVERS.alonso).teamId)}
-            onFitNew={onFitComponent} onUndo={onUndoComponent} />
+            onFitNew={onFitComponent} onUndo={onUndoComponent} costOf={componentCostOf} />
         </details>
       )}
 

@@ -2,7 +2,7 @@
 // que va con la carrera profesional y se guarda con ella, las piezas de cada tarea (T4.1: dinero).
 // Todo son funciones puras: la temporada (Season.ts) las llama al anotar una carrera, un salto de ronda o el cierre.
 import { TEAMS } from '../data/teams';
-import { closeFinanceSeason, isFinance, settleRound, startFinance } from './Finance';
+import { charge, closeFinanceSeason, isFinance, settleRound, startFinance } from './Finance';
 import type { FinanceState, RoundFormat } from './Finance';
 
 export interface ManagementState {
@@ -35,10 +35,23 @@ export function parseManagement(text: string | null, fallbackTeamId: string, sea
   return startManagement(fallbackTeamId, season);
 }
 
-/** Liquida una ronda (Gran Premio, sprint o ronda saltada) con los puntos que ha sumado cada equipo. */
-export function settleManagementRound(state: ManagementState, round: { round: number; format: RoundFormat; points: Record<string, number> }): ManagementState {
-  const finance = settleRound(state.finance, { ...round, detailed: [state.playerTeamId] });
-  return finance === state.finance ? state : { ...state, finance };
+/** Lo que se liquida en una ronda: los puntos de cada equipo y, [T4.2], los daños de sus coches. */
+export interface RoundSettlement {
+  round: number;
+  format: RoundFormat;
+  points: Record<string, number>;
+  damages?: { teamId: string; amount: number; label: string }[];
+}
+
+/**
+ * Liquida una ronda (Gran Premio, sprint o ronda saltada): una sola vez por ronda y formato. Si ya estaba liquidada no
+ * cambia nada, tampoco los daños.
+ */
+export function settleManagementRound(state: ManagementState, round: RoundSettlement): ManagementState {
+  let finance = settleRound(state.finance, { round: round.round, format: round.format, points: round.points, detailed: [state.playerTeamId] });
+  if (finance === state.finance) return state;
+  for (const damage of round.damages ?? []) finance = charge(finance, damage.teamId, { round: round.round, kind: 'danos', label: damage.label, amount: damage.amount });
+  return { ...state, finance };
 }
 
 /** Cierra la temporada con la clasificación final de constructores (del primero al último). */

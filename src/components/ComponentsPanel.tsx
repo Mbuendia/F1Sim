@@ -3,16 +3,19 @@ import styles from './ComponentsPanel.module.css';
 import type { Driver } from '../types/f1';
 import { ALLOCATION, COMPONENT_LABEL, COMPONENT_TYPES, NOMINAL_RACES, fittedUnit, penaltyForNext, unitsUsed, wearFactor } from '../simulation/ComponentPool';
 import type { ComponentState, ComponentType } from '../simulation/ComponentPool';
+import { formatMoney } from '../simulation/Finance';
 
 interface ComponentsPanelProps {
   state: ComponentState;
   drivers: Driver[];
   onFitNew?: (driverId: string, type: ComponentType) => void;
   onUndo?: (driverId: string, type: ComponentType) => void;
+  /** [T4.2] Coste de montar ahora otra unidad nueva. Sin esto, el panel de R19. */
+  costOf?: (driverId: string, type: ComponentType) => number;
 }
 
 /** [R19] Componentes de la unidad de potencia de los pilotos del jugador: cupo, uso y montaje de unidades nuevas. */
-export const ComponentsPanel: React.FC<ComponentsPanelProps> = ({ state, drivers, onFitNew, onUndo }) => (
+export const ComponentsPanel: React.FC<ComponentsPanelProps> = ({ state, drivers, onFitNew, onUndo, costOf }) => (
   <section className={styles.panel} aria-label="Componentes de la unidad de potencia">
     {drivers.map(driver => (
       <table key={driver.id} className={styles.table}>
@@ -33,11 +36,11 @@ export const ComponentsPanel: React.FC<ComponentsPanelProps> = ({ state, drivers
                 </td>
                 <td>
                   {unused
-                    ? <button type="button" className={styles.action} onClick={() => onUndo?.(driver.id, type)}>Deshacer (sin estrenar)</button>
+                    ? <button type="button" className={styles.action} onClick={() => onUndo?.(driver.id, type)}>Deshacer (sin estrenar){costOf ? ': devuelve su importe' : ''}</button>
                     : (
                       <button type="button" className={styles.action} onClick={() => onFitNew?.(driver.id, type)}
                         title={penalty > 0 ? `Supera el cupo: +${penalty} puestos de sanción en la próxima parrilla` : 'Dentro del cupo: sin sanción'}>
-                        Montar{penalty > 0 ? ` (+${penalty} puestos)` : ''}
+                        Montar{costOf ? ` · ${formatMoney(costOf(driver.id, type))}` : ''}{penalty > 0 ? ` (+${penalty} puestos)` : ''}
                       </button>
                     )}
                 </td>
