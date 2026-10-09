@@ -13,6 +13,11 @@ import { RightStatsPanel } from './components/RightStatsPanel';
 import { PodiumModal } from './components/PodiumModal';
 import { HomeScreen } from './components/HomeScreen';
 import { LandingPage } from './components/LandingPage';
+import { GameMenuScreen } from './components/GameMenuScreen';
+import { SavesScreen } from './components/SavesScreen';
+import { NewCareerScreen } from './components/NewCareerScreen';
+import { GameMenu } from './components/GameMenu';
+import { CAREER_NAME_KEY, DEFAULT_CAREER_NAME, careerDriver, hasStoredCareer, newCareer } from './simulation/Career';
 import RaceFlagsHUD from './components/RaceFlagsHUD';
 import { DnfNotificationModal } from './components/DnfNotificationModal';
 import { D20LuckModal } from './components/D20LuckModal';
@@ -42,7 +47,7 @@ import type { RaceResult } from './simulation/RaceResult';
 import { emptyChampionship, parseChampionship, CHAMPIONSHIP_STORAGE_KEY } from './simulation/Championship';
 import type { ChampionshipState } from './simulation/Championship';
 import { createSnapshot, restoreSnapshot } from './simulation/Snapshot';
-import { AUTOSAVE_ID, AUTOSAVE_LABEL, SaveStore, createSave, exportSave, importSave, savedManagement, savedRaceCounts, savedSeason } from './simulation/SaveGame';
+import { AUTOSAVE_ID, AUTOSAVE_LABEL, SaveStore, createSave, exportSave, importSave, savedManagement, savedRaceCounts, savedSeason, summarize } from './simulation/SaveGame';
 import { MANAGEMENT_STORAGE_KEY, parseManagement, startManagement } from './simulation/Management';
 import type { ManagementState } from './simulation/Management';
 import { aiDevelopPaying, aiReplaceComponents, buyComponent, buyProject, componentCost, projectCost, projectLeadTime, projectShortfall, raceDamages, refundComponent } from './simulation/Costs';
@@ -86,6 +91,11 @@ const NOTICE_MS = 8000;
 // [R48] Autoguardado de la carrera en curso (ms reales) y semilla propia de cada carrera.
 const AUTOSAVE_MS = 30000;
 const SAVE_NAME_KEY = 'f1_save_name';
+/** [T4.19] En la carrera libre el paddock no enseña nada de la partida: solo piloto, circuito, formato y tiempo. */
+const FREE_RACE_PADDOCK: Partial<React.ComponentProps<typeof HomeScreen>> = {
+  season: undefined, finance: undefined, facilities: undefined, sponsors: undefined, pitCrew: undefined, development: undefined,
+  components: undefined, setup: undefined, saveGames: undefined, championship: undefined, raceHistory: [],
+};
 const SETUPS_KEY = 'f1_setups';
 const newRaceSeed = () => (Math.floor(Math.random() * 0x7fffffff) ^ Date.now()) >>> 0;
 const TYRE_WORDS: Record<string, string> = { soft: 'blandos', medium: 'medios', hard: 'duros', intermediate: 'intermedios', wet: 'de lluvia' };
@@ -117,7 +127,12 @@ export const App: React.FC = () => {
   const camera = useMemo(() => new Camera(), []);
 
   // Vista actual: 'landing', 'home' o 'race'
-  const [currentView, setCurrentView] = useState<'landing' | 'home' | 'race'>('landing');
+  // [T4.19] Tras la portada va el menú de partidas; de él salen la carrera profesional y la carrera libre.
+  const [currentView, setCurrentView] = useState<'landing' | 'menu' | 'saves' | 'new' | 'home' | 'race'>('landing');
+  /** Carrera profesional o carrera libre (que no toca ninguna partida). */
+  const [mode, setMode] = useState<'career' | 'free'>('career');
+  /** Hay una partida en curso en el navegador (también una anterior al menú de partidas). */
+  const [careerActive, setCareerActive] = useState(() => { try { return hasStoredCareer(localStorage); } catch { return false; } });
 
   // Coche seleccionado expresamente en pista
   const [selectedCarId, setSelectedCarId] = useState<number | null>(null);
@@ -156,11 +171,10 @@ export const App: React.FC = () => {
     setManagement(next);
     try { localStorage.setItem(MANAGEMENT_STORAGE_KEY, JSON.stringify(next)); } catch (e) { console.error(e); }
   }, []);
-  // El equipo del jugador es el de su piloto elegido en el paddock.
+  // [T4.19] En la carrera profesional el jugador lleva a los pilotos de su equipo: el piloto seguido es uno de ellos.
   useEffect(() => {
-    const teamId = (DRIVERS[selectedDriverId] ?? DRIVERS.alonso).teamId;
-    if (management.playerTeamId !== teamId) saveManagement({ ...management, playerTeamId: teamId });
-  }, [selectedDriverId, management, saveManagement]);
+    if (mode === 'career') setSelectedDriverId(driverId => careerDriver(management.playerTeamId, driverId));
+  }, [mode, management.playerTeamId]);
   // [R45] Atributos y enfoque de los pilotos, guardados en el navegador
   const [development, setDevelopment] = useState<DevelopmentState>(() => {
     try { return parseDevelopment(localStorage.getItem(DEVELOPMENT_STORAGE_KEY)); } catch { return emptyDevelopment(); }
@@ -230,6 +244,18 @@ export const App: React.FC = () => {
   });
   const [saveMessage, setSaveMessage] = useState<SaveGameMessage | null>(null);
   const [raceLive, setRaceLive] = useState(false);
+  // [T4.19] «Guardado hace X»: la partida se guarda sola con cada cambio; aquí queda cuándo fue el último.
+  const [savedAt, setSavedAt] = useState<number | null>(null);
+  const [clock, setClock] = useState(() => Date.now());
+  const firstSave = useRef(true);
+  useEffect(() => {
+    if (firstSave.current) { firstSave.current = false; return; }
+    setSavedAt(Date.now()); setClock(Date.now());
+  }, [championship, development, components, program, season, management]);
+  useEffect(() => {
+    const timer = window.setInterval(() => setClock(Date.now()), 5000);
+    return () => window.clearInterval(timer);
+  }, []);
   const autosaveWarned = useRef(false);
 
   // [R49] Setup de los coches del jugador (por piloto) y el que llevaban en la clasificación (parc fermé).
@@ -408,16 +434,17 @@ export const App: React.FC = () => {
 
   // [R52] El sprint solo se ofrece donde lo hay: en una carrera libre de un circuito sprint o en la ronda sprint de la
   // temporada mientras su sprint no se haya corrido.
-  const sprintAvailable = isSprintVenue(selectedCircuitId) && (!isSeasonRace(selectedCircuitId, championship, season) || sprintPending(championship, season));
+  const sprintAvailable = isSprintVenue(selectedCircuitId) && (mode === 'free' || !isSeasonRace(selectedCircuitId, championship, season) || sprintPending(championship, season));
   const effectiveFormat: RaceFormatId = raceFormat === 'sprint' && !sprintAvailable ? 'clasificacion' : raceFormat;
 
   const handleStartRaceFromHome = useCallback(() => {
     // [R48] Cada carrera lleva su semilla (se guarda con ella): cargarla da siempre la misma continuación.
     simulation.setSeed(newRaceSeed());
-    setRaceLive(true);
+    // [T4.19] Una carrera libre no es de ninguna partida: ni se autoguarda ni borra el autoguardado.
+    setRaceLive(mode === 'career');
     setSaveMessage(null);
     autosaveWarned.current = false;
-    if (saveStore) { saveStore.remove(AUTOSAVE_ID); setSlots(saveStore.list()); }
+    if (saveStore && mode === 'career') { saveStore.remove(AUTOSAVE_ID); setSlots(saveStore.list()); }
     simulation.setDriverAttributes(development.attributes);
     // [R49] Setup del jugador antes de clasificar; nadie sale desde el pit lane hasta que lo decida el parc fermé.
     simulation.setCarSetups(playerSetups);
@@ -425,7 +452,7 @@ export const App: React.FC = () => {
     // [R52] Fin de semana sprint: primero la clasificación sprint y el sprint (100 km, sin paradas obligatorias);
     // el Gran Premio de esa ronda se corre después con los neumáticos que queden.
     const format = effectiveFormat, sprintRace = format === 'sprint';
-    const seasonRace = isSeasonRace(selectedCircuitId, championship, season);
+    const seasonRace = mode === 'career' && isSeasonRace(selectedCircuitId, championship, season);
     simulation.setRaceFormat(sprintRace ? 'sprint' : 'gp');
     const weekendNow = season.weekend;
     simulation.setWeekendTyres(!sprintRace && seasonRace && weekendNow && weekendNow.round === nextRound(championship, season)?.round ? weekendNow.tyres : null);
@@ -493,7 +520,7 @@ export const App: React.FC = () => {
     setIsFinished(false);
     setCurrentView('race');
     if (gate === 'directo') simulation.startRaceSequence();
-  }, [simulation, camera, selectedCircuitId, weatherScenarioId, development, raceFormat, components, saveComponents, selectedDriverId, program, saveProgram, championship, constructorsPosition, saveStore, playerSetups, season, saveSeason, effectiveFormat, management, saveManagement]);
+  }, [simulation, camera, selectedCircuitId, weatherScenarioId, development, raceFormat, components, saveComponents, selectedDriverId, program, saveProgram, championship, constructorsPosition, saveStore, playerSetups, season, saveSeason, effectiveFormat, management, saveManagement, mode]);
 
   /** [R51] Visto el aviso de sanciones, empieza la carrera. */
   const handleContinueFromPenalties = useCallback(() => {
@@ -545,7 +572,8 @@ export const App: React.FC = () => {
   };
 
   const handleGoHome = useCallback(() => {
-    if (simulation.podiumCars.length >= 3) {
+    // [T4.19] El resultado de una carrera libre no se anota en ninguna parte.
+    if (mode === 'career' && simulation.podiumCars.length >= 3) {
       const winner = simulation.podiumCars[0];
       const p2 = simulation.podiumCars[1];
       const p3 = simulation.podiumCars[2];
@@ -602,7 +630,7 @@ export const App: React.FC = () => {
     }
 
     setCurrentView('home');
-  }, [simulation, selectedDriverId, selectedCircuitId, raceHistory, championship, saveDevelopment, developmentAfter, components, program, seasonArchive, saveStore, season, management, raceCounts, applyCareer, playerCodes]);
+  }, [simulation, selectedDriverId, selectedCircuitId, raceHistory, championship, saveDevelopment, developmentAfter, components, program, seasonArchive, saveStore, season, management, raceCounts, applyCareer, playerCodes, mode]);
 
   const handleCycleCameraMode = useCallback(() => {
     camera.cycleMode();
@@ -944,18 +972,83 @@ export const App: React.FC = () => {
   const rejoinEstimate = simulation.getRejoinEstimate((selectedCar || favoriteCar).id);
   const activeCircuitSpec = OFFICIAL_CIRCUITS[selectedCircuitId] || OFFICIAL_CIRCUITS['barcelona'];
 
+  // ── [T4.19] Partida en curso, menú de partidas y menú «Partida» ──
+  const namedSlots = slots.filter(slot => !slot.auto);
+  const autoSlot = slots.find(slot => slot.auto);
+  const careerName = saveName || DEFAULT_CAREER_NAME;
+  const currentSummary = careerActive
+    ? { ...summarize(buildSave(careerName), 'actual', false, 0), ...(raceLive ? {} : { raceInProgress: autoSlot?.raceInProgress ?? null }) }
+    : null;
+  /** Marca que hay una partida en curso con ese nombre. */
+  const markCareer = (name: string) => {
+    setCareerActive(true);
+    setMode('career');
+    setSaveName(name);
+    try { localStorage.setItem(CAREER_NAME_KEY, name); localStorage.setItem(SAVE_NAME_KEY, name); } catch (e) { console.error(e); }
+  };
+  /** Antes de cambiar de partida, la que está en curso se guarda en su ranura: no se pierde nada sin avisar. */
+  const keepCurrentCareer = () => {
+    if (careerActive && saveStore) { saveStore.save(buildSave(careerName)); refreshSlots(); }
+  };
+  const handleContinueCareer = () => {
+    setMode('career');
+    // Si la partida se dejó en mitad de una carrera, se retoma ahí (en pausa).
+    if (!raceLive && autoSlot?.raceInProgress && !autoSlot.raceInProgress.finished) { handleLoadGame(AUTOSAVE_ID); return; }
+    if (!raceLive) { const next = nextRound(championship, season); if (next) setSelectedCircuitId(next.circuitId); }
+    setCurrentView(raceLive ? 'race' : 'home');
+  };
+  const handleLoadCareer = (id: string) => {
+    keepCurrentCareer();
+    const loaded = saveStore?.load(id);
+    handleLoadGame(id);
+    if (loaded?.save) markCareer(loaded.save.name);
+  };
+  const handleNewCareer = (teamId: string, name: string) => {
+    keepCurrentCareer();
+    const fresh = newCareer(teamId, name, newRaceSeed());
+    if (saveStore) { saveStore.remove(AUTOSAVE_ID); refreshSlots(); }
+    if (applySave(createSave({ name: fresh.name, savedAt: new Date().toISOString(), career: fresh.career, selection: fresh.selection, race: null })) === null) markCareer(fresh.name);
+  };
+  const gameMenu = (
+    <GameMenu savedAt={savedAt} now={clock} name={careerName}
+      onSave={() => handleSaveGame(careerName)} onSaveAs={handleSaveGame}
+      onExport={() => { handleSaveGame(careerName); handleExportGame(SaveStore.slotId(careerName)); }}
+      onExit={() => { autosaveRef.current(); setCurrentView('menu'); }} />
+  );
+
   if (currentView === 'landing') {
-    return <LandingPage onEnter={() => setCurrentView('home')} />;
+    return <LandingPage onEnter={() => setCurrentView('menu')} />;
+  }
+
+  // ── [T4.19] Menú de partidas, partidas guardadas y partida nueva ──
+  if (currentView === 'menu') {
+    return (
+      <GameMenuScreen current={currentSummary} slots={namedSlots}
+        onContinue={handleContinueCareer} onNew={() => setCurrentView('new')} onLoad={() => { setSaveMessage(null); setCurrentView('saves'); }}
+        onFree={() => { setMode('free'); setCurrentView('home'); }} />
+    );
+  }
+  if (currentView === 'saves') {
+    return (
+      <SavesScreen slots={namedSlots} message={saveMessage} onBack={() => setCurrentView('menu')}
+        onLoad={handleLoadCareer} onExport={handleExportGame} onImport={handleImportGame} onDelete={handleDeleteGame} />
+    );
+  }
+  if (currentView === 'new') {
+    return <NewCareerScreen onBack={() => setCurrentView('menu')} onStart={handleNewCareer} />;
   }
 
   if (currentView === 'home') {
     return (
       <>
       <HomeScreen
+        mode={mode}
+        headerExtra={mode === 'career' ? gameMenu : <button type="button" className={styles.barBtn} onClick={() => { setMode('career'); setCurrentView('menu'); }}>← Menú</button>}
         selectedDriverId={selectedDriverId}
         selectedCircuitId={selectedCircuitId}
-        onSelectDriver={setSelectedDriverId}
-        onSelectCircuit={setSelectedCircuitId}
+        // En la carrera profesional solo se sigue a un piloto del equipo y se corre la ronda que toca.
+        onSelectDriver={driverId => { if (mode === 'free' || TEAMS[management.playerTeamId]?.drivers.includes(driverId)) setSelectedDriverId(driverId); }}
+        onSelectCircuit={circuitId => { if (mode === 'free') setSelectedCircuitId(circuitId); }}
         onStartRace={handleStartRaceFromHome}
         raceHistory={raceHistory}
         championship={championship}
@@ -1034,6 +1127,7 @@ export const App: React.FC = () => {
           slots, currentName: saveName, message: saveMessage,
           onSave: handleSaveGame, onLoad: handleLoadGame, onExport: handleExportGame, onImport: handleImportGame, onDelete: handleDeleteGame,
         } : undefined}
+        {...(mode === 'free' ? FREE_RACE_PADDOCK : {})}
       />
       {/* [R51] Cierre de temporada: se ve antes de empezar la siguiente (el resumen ya está archivado). */}
       {seasonEnd && (
@@ -1127,6 +1221,7 @@ export const App: React.FC = () => {
             <PanelRight size={16} aria-hidden="true" />
             <span className={styles.barLabel}>Detalle</span>
           </button>
+          {mode === 'career' && gameMenu}
           <RaceMenu
             safetyCarDeployed={simulation.safetyCar.isDeployed}
             onToggleSafetyCarTest={handleSafetyCarTest}

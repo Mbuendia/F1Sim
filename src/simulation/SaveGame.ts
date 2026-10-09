@@ -10,6 +10,9 @@ import { emptySeason, parseSeason, seasonRaceNumber } from './Season';
 import { migrateSnapshot, validateSnapshot } from './Snapshot';
 import type { RaceSnapshot } from './Snapshot';
 import { DRIVERS } from '../data/drivers';
+import { TEAMS } from '../data/teams';
+import { constructorsChampionship } from './Championship';
+import { balanceOf } from './Finance';
 import { isManagement, readManagement, startManagement } from './Management';
 import type { ManagementState } from './Management';
 
@@ -67,6 +70,11 @@ export interface SlotSummary {
   raceNumber: number;
   raceInProgress: { circuitId: string; lap: number; totalLaps: number; finished: boolean } | null;
   sizeChars: number;
+  /** [T4.19] Equipo del jugador, temporada, puesto en constructores (null sin carreras) y saldo. Ausentes en los resúmenes anteriores. */
+  team?: { id: string; name: string };
+  season?: number;
+  position?: number | null;
+  balance?: number;
 }
 
 export function createSave(input: { name: string; savedAt: string; career: CareerData; selection: SaveSelection; race: RaceSnapshot | null }): SaveGame {
@@ -162,6 +170,17 @@ export function savedRaceCounts(save: SaveGame): boolean {
   return save.selection.counts !== false;
 }
 
+/** [T4.19] Estado de la carrera profesional para el resumen: equipo, temporada, puesto en constructores y saldo. */
+function careerStatus(save: SaveGame): Pick<SlotSummary, 'team' | 'season' | 'position' | 'balance'> {
+  const management = savedManagement(save);
+  const teamId = management.playerTeamId;
+  const place = constructorsChampionship(save.career.championship).findIndex(team => team.teamId === teamId);
+  return {
+    team: { id: teamId, name: TEAMS[teamId]?.shortName ?? teamId }, season: save.career.archive.length + 1,
+    position: place >= 0 ? place + 1 : null, balance: balanceOf(management.finance, teamId),
+  };
+}
+
 export function summarize(save: SaveGame, id: string, auto: boolean, sizeChars: number): SlotSummary {
   const race = save.race;
   return {
@@ -169,6 +188,7 @@ export function summarize(save: SaveGame, id: string, auto: boolean, sizeChars: 
     raceNumber: seasonRaceNumber(save.career.championship, savedSeason(save)),
     raceInProgress: race ? { circuitId: race.circuitId, lap: race.state.flags.leaderLap, totalLaps: race.state.flags.totalLaps, finished: race.state.flags.isFinished } : null,
     sizeChars,
+    ...careerStatus(save),
   };
 }
 

@@ -542,5 +542,6 @@ export const modules = [
   { "id": "costs-t42", "tasks": ["T4.2"], "sprint": "4", "kind": "contract" },
   { "id": "facilities-t44", "tasks": ["T4.4"], "sprint": "4", "kind": "contract" },
   { "id": "pit-crew-t46", "tasks": ["T4.6"], "sprint": "4", "kind": "contract" },
-  { "id": "sponsors-t49", "tasks": ["T4.9"], "sprint": "4", "kind": "contract" }
+  { "id": "sponsors-t49", "tasks": ["T4.9"], "sprint": "4", "kind": "contract" },
+  { "id": "career-menu-t419", "tasks": ["T4.19"], "sprint": "4", "kind": "contract" }
 ];

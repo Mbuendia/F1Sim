@@ -74,6 +74,10 @@ const PADDOCK_SECTIONS = [
 type PaddockSection = typeof PADDOCK_SECTIONS[number][0];
 
 interface HomeScreenProps {
+  /** [T4.19] Carrera profesional (con su menú de secciones) o carrera libre (solo piloto, circuito, formato y tiempo). */
+  mode?: 'career' | 'free';
+  /** [T4.19] Lo que va a la derecha de la cabecera: el menú «Partida» o la vuelta al menú de partidas. */
+  headerExtra?: React.ReactNode;
   selectedDriverId: string;
   selectedCircuitId: string;
   onSelectDriver: (driverId: string) => void;
@@ -127,6 +131,8 @@ interface HomeScreenProps {
 }
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({
+  mode = 'career',
+  headerExtra,
   selectedDriverId,
   selectedCircuitId,
   onSelectDriver,
@@ -277,14 +283,17 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           <F1WheelSvg style={{ width: '28px', height: '28px', flexShrink: 0 }} />
           <div className={styles.headerTitles}>
             <h1>F1 RACE MANAGER</h1>
-            <p>Paddock · gestiona tu equipo y entra a pista desde «Correr»</p>
+            <p>{mode === 'free' ? 'Carrera libre · no cuenta para ninguna partida' : 'Paddock · gestiona tu equipo y entra a pista desde «Correr»'}</p>
           </div>
         </div>
-        <nav className={styles.sectionNav} aria-label="Secciones del paddock">
-          {PADDOCK_SECTIONS.map(([id, label]) => (
-            <button key={id} type="button" className={id === 'correr' ? styles.sectionNavRace : undefined} aria-pressed={section === id} onClick={() => setSection(id)}>{label}</button>
-          ))}
-        </nav>
+        {mode === 'career' && (
+          <nav className={styles.sectionNav} aria-label="Secciones del paddock">
+            {PADDOCK_SECTIONS.map(([id, label]) => (
+              <button key={id} type="button" className={id === 'correr' ? styles.sectionNavRace : undefined} aria-pressed={section === id} onClick={() => setSection(id)}>{label}</button>
+            ))}
+          </nav>
+        )}
+        {headerExtra}
       </header>
 
       {section === 'temporada' && raceHistory.length > 0 && (
@@ -1234,7 +1243,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               <Play size={18} fill="#ffffff" aria-hidden="true" />
               <span>ENTRAR A PISTA</span>
             </div>
-            <span className={styles.launchSub}>{freeRace ? 'Carrera libre: no cuenta para la temporada'
+            <span className={styles.launchSub}>{mode === 'free' ? 'Carrera libre: no cuenta para ninguna partida' : freeRace ? 'Carrera libre: no cuenta para la temporada'
               : nextRound ? `${raceFormat === 'sprint' ? 'Clasificación sprint y sprint' : nextRound.sprintDone ? 'Clasificación y Gran Premio' : 'Empezar el Gran Premio'} · ronda ${nextRound.round} de ${SEASON_RACES}`
               : 'Empezar el Gran Premio'}</span>
           </button>
