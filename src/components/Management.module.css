@@ -1,0 +1,92 @@
+/* [Sprint 4] Piezas comunes de las páginas de gestión (docs/design/maqueta-sprint4.html): tarjetas, etiquetas, cifras,
+   listas de importes, tablas, fichas y niveles. Colores y tipografías, los de src/index.css. */
+.card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radio-l);
+  padding: 14px 16px;
+  min-width: 0;
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.3;
+}
+.stack { display: flex; flex-direction: column; gap: 8px; }
+.row { display: flex; align-items: center; gap: 10px; }
+.between { justify-content: space-between; }
+.wrap { flex-wrap: wrap; }
+
+.label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  font-weight: 600;
+}
+.big { font-family: var(--font-marca); font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.num { font-family: var(--font-marca); font-variant-numeric: tabular-nums; }
+.muted { color: var(--text-2); }
+.dim { color: var(--text-3); font-size: 14px; }
+.pos { color: var(--positivo); }
+.neg { color: var(--negativo); }
+.warn { color: var(--aviso); }
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 9px;
+  border-radius: 99px;
+  border: 1px solid var(--line-strong);
+  font-size: 14px;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+.chipWarn { border-color: var(--aviso); color: var(--aviso); }
+
+/* Listas «concepto … importe» */
+.lines > div { display: flex; justify-content: space-between; gap: 12px; padding: 3px 0; font-size: 15px; border-bottom: 1px solid var(--line); }
+.lines > div:last-child { border-bottom: 0; font-weight: 700; }
+
+.table { width: 100%; border-collapse: collapse; font-size: 15px; }
+.table th { text-align: left; font-size: 14px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-3); font-weight: 600; }
+.table th, .table td { padding: 5px 8px; border-bottom: 1px solid var(--line); }
+.right { text-align: right; }
+
+.bar { height: 8px; border-radius: 99px; background: var(--panel-2); overflow: hidden; }
+.bar > i { display: block; height: 100%; background: var(--equipo); border-radius: 99px; }
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 5px 12px;
+  border-radius: var(--radio-s);
+  border: 1px solid var(--line-strong);
+  background: var(--panel-2);
+  color: var(--text);
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 15px;
+  white-space: nowrap;
+}
+.button:hover:not(:disabled) { border-color: var(--text-3); }
+.button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Finanzas: saldo y gráfica arriba, conceptos en medio y el libro debajo */
+.finance { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.span2 { grid-column: span 2; }
+.span3 { grid-column: span 3; }
+.full { grid-column: 1 / -1; }
+.chart { width: 100%; height: 96px; display: block; }
+.ledger { max-height: 320px; overflow: auto; }
+
+@media (max-width: 1100px) {
+  .finance { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .span3 { grid-column: span 2; }
+}

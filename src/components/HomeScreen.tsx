@@ -14,6 +14,9 @@ import type { SaveGameMessage } from './SaveGamePanel';
 import type { SlotSummary } from '../simulation/SaveGame';
 import { WeatherScenarioSelect } from './WeatherScenarioSelect';
 import { WeatherOutlook } from './WeatherOutlook';
+import { FinancePanel } from './FinancePanel';
+import type { FinanceState } from '../simulation/Finance';
+import { balanceOf, formatMoney } from '../simulation/Finance';
 import { CarShowcase } from './CarShowcase';
 import { RaceFormatSelect } from './RaceFormatSelect';
 import { ComponentsPanel } from './ComponentsPanel';
@@ -97,6 +100,8 @@ interface HomeScreenProps {
   season?: { rounds: RoundView[]; seasonNumber: number; archive: SeasonSummary[]; onSelectNext: () => void; onSkip: () => void };
   /** [R51] Atributos actuales de un piloto (R45), para su ficha. */
   driverAttributes?: (driver: Driver) => DriverAttributes;
+  /** [T4.1] Dinero del equipo del jugador. */
+  finance?: { state: FinanceState; teamId: string };
 }
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({
@@ -120,7 +125,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   setup,
   season,
   driverAttributes,
-  sprintAvailable
+  sprintAvailable,
+  finance
 }) => {
   const nextRound = season?.rounds.find(round => round.status === 'siguiente');
   const freeRace = Boolean(nextRound) && nextRound?.circuitId !== selectedCircuitId;
@@ -308,6 +314,15 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             <span>Campeonato ({championship.races.length})</span>
           </summary>
           <ChampionshipTable championship={championship} onReset={onResetChampionship} />
+        </details>
+      )}
+
+      {finance && (
+        <details className={styles.historySection}>
+          <summary className={styles.historyTitle}>
+            <span>Finanzas · saldo {formatMoney(balanceOf(finance.state, finance.teamId))}</span>
+          </summary>
+          <FinancePanel finance={finance.state} teamId={finance.teamId} />
         </details>
       )}
 

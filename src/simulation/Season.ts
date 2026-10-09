@@ -16,6 +16,8 @@ import { OFFICIAL_CIRCUITS } from '../data/circuits';
 import { drawWeatherScenario } from '../data/weatherScenarios';
 import type { WeatherScenarioId } from '../data/weatherScenarios';
 import { streamSeed } from './Random';
+import { closeManagementSeason, settleManagementRound } from './Management';
+import type { ManagementState } from './Management';
 
 export const SEASON_RACES = 24;
 export const SEASONS_STORAGE_KEY = 'f1_seasons';
@@ -200,13 +202,30 @@ export interface CareerProgress {
   program: DevelopmentProgram;
   season: SeasonState;
   archive: SeasonSummary[];
+  /** [T4.1] Gestión del equipo (dinero…). Ausente en las partidas y pruebas anteriores: entonces no se toca. */
+  management?: ManagementState;
 }
 export type SettledCareer = CareerProgress & { /** Resumen de la temporada, si esta carrera o este salto la ha cerrado. */ closed: SeasonSummary | null };
+
+/** [T4.1] Puntos que suma cada equipo en un resultado. */
+function teamPoints(result: RaceResult): Record<string, number> {
+  const points: Record<string, number> = {};
+  for (const row of result.rows) points[row.teamId] = (points[row.teamId] ?? 0) + row.points;
+  return points;
+}
+
+/** [T4.1] La gestión tras liquidar esa ronda; si la carrera profesional no lleva gestión, nada. */
+function settledManagement(career: CareerProgress, round: number | undefined, format: 'gp' | 'sprint' | 'saltada', points: Record<string, number>): { management?: ManagementState } {
+  if (!career.management || round === undefined) return {};
+  return { management: settleManagementRound(career.management, { round, format, points }) };
+}
 
 function closeIfComplete(career: CareerProgress, playerCodes: string[]): SettledCareer {
   if (!seasonComplete(career.championship, career.season)) return { ...career, closed: null };
   const { summary, ...next } = closeSeason({ ...career, playerCodes });
-  return { ...next, closed: summary };
+  // [T4.1] El premio de constructores se reparte con la clasificación de la temporada que se cierra.
+  const order = constructorsChampionship(career.championship).map(team => team.teamId);
+  return { ...next, ...(career.management ? { management: closeManagementSeason(career.management, order) } : {}), closed: summary };
 }
 
 /**
@@ -222,21 +241,25 @@ export function settleRace(career: CareerProgress, race: {
 }): SettledCareer {
   if (!race.counts || race.result.status !== 'final') return { ...career, closed: null };
   const championship = addRace(career.championship, race.id, race.circuitId, race.result, race.format);
+  const round = nextRound(career.championship, career.season)?.round;
+  // [T4.1] El dinero de la ronda se liquida con el resultado: una sola vez por ronda y formato.
+  const management = settledManagement(career, round, race.format, teamPoints(race.result));
   if (race.format === 'sprint') {
-    const round = nextRound(career.championship, career.season)?.round;
     if (round === undefined) return { ...career, closed: null };
     return {
-      ...career, championship, components: addDistance(career.components, race.raceKm),
+      ...career, ...management, championship, components: addDistance(career.components, race.raceKm),
       season: { version: 1, skipped: career.season.skipped, weekend: { round, tyres: race.tyres ?? {} }, ...keepSeed(career.season) }, closed: null,
     };
   }
   return closeIfComplete({
-    ...career, championship, components: completeRace(career.components, race.raceKm),
+    ...career, ...management, championship, components: completeRace(career.components, race.raceKm),
     season: { version: 1, skipped: career.season.skipped, ...keepSeed(career.season) },
   }, race.playerCodes ?? []);
 }
 
 /** Salta el Gran Premio que toca; si era el último, cierra la temporada. */
 export function settleSkip(career: CareerProgress, playerCodes: string[] = []): SettledCareer {
-  return closeIfComplete({ ...career, season: skipRound(career.championship, career.season) }, playerCodes);
+  // [T4.1] La ronda saltada paga los gastos fijos y no ingresa nada.
+  const management = settledManagement(career, nextRound(career.championship, career.season)?.round, 'saltada', {});
+  return closeIfComplete({ ...career, ...management, season: skipRound(career.championship, career.season) }, playerCodes);
 }

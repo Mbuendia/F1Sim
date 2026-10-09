@@ -537,5 +537,6 @@ export const modules = [
   { "id": "weather-fronts-t32", "tasks": ["T3.2"], "sprint": "3", "kind": "contract" },
   { "id": "tyre-water-t33", "tasks": ["T3.3"], "sprint": "3", "kind": "contract" },
   { "id": "spray-particles-t34", "tasks": ["T3.4"], "sprint": "3", "kind": "contract" },
-  { "id": "start-weather-t412", "tasks": ["T4.12"], "sprint": "4", "kind": "contract" }
+  { "id": "start-weather-t412", "tasks": ["T4.12"], "sprint": "4", "kind": "contract" },
+  { "id": "finance-t41", "tasks": ["T4.1"], "sprint": "4", "kind": "contract" }
 ];

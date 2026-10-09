@@ -18,6 +18,12 @@
   --accion: #e10600;
   --accion-hover: #ff1a0f;
   --foco: #5aa9ff;
+  /* Sprint 4 (gestión): importes positivos y negativos (el rojo queda para la acción principal), avisos y acento del
+     equipo del jugador, que la aplicación sustituye por el de su equipo. */
+  --positivo: #57d9a3;
+  --negativo: #ff9b8a;
+  --aviso: #f5c451;
+  --equipo: #5aa9ff;
 
   --font-marca: 'Orbitron', sans-serif;
   --font-ui: 'Rajdhani', system-ui, sans-serif;
