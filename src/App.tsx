@@ -49,6 +49,7 @@ import { aiDevelopPaying, aiReplaceComponents, buyComponent, buyProject, compone
 import { aiInvestFacilities, benchHazard, gainOf, maxProjects, simulatorBonus, startWork } from './simulation/Facilities';
 import { canSpend } from './simulation/Finance';
 import { aiCrewPlans, crewEffect, setCrewPlan } from './simulation/PitCrew';
+import { aiSignSponsors, carSponsors, signSponsor } from './simulation/Sponsors';
 import type { SaveGame, SlotSummary } from './simulation/SaveGame';
 import type { SaveGameMessage } from './components/SaveGamePanel';
 import { SetupPanel } from './components/SetupPanel';
@@ -148,8 +149,8 @@ export const App: React.FC = () => {
   const [management, setManagement] = useState<ManagementState>(() => {
     const teamId = (DRIVERS[selectedDriverId] ?? DRIVERS.alonso).teamId;
     try {
-      return parseManagement(localStorage.getItem(MANAGEMENT_STORAGE_KEY), teamId, parseArchive(localStorage.getItem(SEASONS_STORAGE_KEY)).length + 1);
-    } catch { return startManagement(teamId); }
+      return parseManagement(localStorage.getItem(MANAGEMENT_STORAGE_KEY), teamId, parseArchive(localStorage.getItem(SEASONS_STORAGE_KEY)).length + 1, newRaceSeed());
+    } catch { return startManagement(teamId, 1, newRaceSeed()); }
   });
   const saveManagement = useCallback((next: ManagementState) => {
     setManagement(next);
@@ -460,7 +461,8 @@ export const App: React.FC = () => {
     const developed = paying.program;
     // [T4.4] Y amplían sus instalaciones si les queda reserva. [T4.6] Sus equipos de boxes eligen el plan de la semana.
     const invested = careerRace ? aiInvestFacilities(paying.management, aiTeams, ledgerRound) : paying.management;
-    const managed = careerRace ? { ...invested, pitCrews: aiCrewPlans(invested.pitCrews, aiTeams) } : invested;
+    // [T4.9] Y firman la mejor oferta de patrocinio si tienen un hueco.
+    const managed = careerRace ? { ...invested, pitCrews: aiCrewPlans(invested.pitCrews, aiTeams), sponsors: aiSignSponsors(invested.sponsors, aiTeams) } : invested;
     if (careerRace) { saveProgram(developed); saveManagement(managed); }
     // [T4.6] En una carrera de temporada (Gran Premio o sprint) cada coche para con el equipo de boxes de su equipo; en
     // una libre, como siempre.
@@ -962,7 +964,7 @@ export const App: React.FC = () => {
           saveComponents(Object.keys(DRIVERS).reduce((s, id) => ensureDriver(s, id), emptyComponents()));
           saveProgram(emptyProgram());
           saveSeason(emptySeason());
-          saveManagement(startManagement(management.playerTeamId, seasonArchive.length + 1));
+          saveManagement(startManagement(management.playerTeamId, seasonArchive.length + 1, newRaceSeed()));
         }}
         season={{
           rounds: calendarView(championship, season), seasonNumber: seasonArchive.length + 1, archive: seasonArchive,
@@ -976,6 +978,14 @@ export const App: React.FC = () => {
         }}
         driverAttributes={driver => attributesOf(development, driver)}
         finance={{ state: management.finance, teamId: management.playerTeamId }}
+        sponsors={{
+          team: management.sponsors.teams[management.playerTeamId],
+          onSign: offerId => {
+            const signed = signSponsor(management.sponsors, management.playerTeamId, offerId);
+            if (signed.ok) saveManagement({ ...management, sponsors: signed.state });
+          },
+          carOf: teamId => carSponsors(management.sponsors, teamId),
+        }}
         pitCrew={{
           crew: management.pitCrews.teams[management.playerTeamId],
           onPlan: plan => saveManagement({ ...management, pitCrews: setCrewPlan(management.pitCrews, management.playerTeamId, plan) }),

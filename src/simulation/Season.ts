@@ -216,7 +216,7 @@ function teamPoints(result: RaceResult): Record<string, number> {
 
 /** [T4.1] La gestión tras liquidar esa ronda; si la carrera profesional no lleva gestión, nada. */
 function settledManagement(career: CareerProgress, round: number | undefined, format: 'gp' | 'sprint' | 'saltada', points: Record<string, number>,
-  extra: Pick<RoundSettlement, 'damages' | 'stops'> = {}): { management?: ManagementState } {
+  extra: Pick<RoundSettlement, 'damages' | 'stops' | 'result'> = {}): { management?: ManagementState } {
   if (!career.management || round === undefined) return {};
   return { management: settleManagementRound(career.management, { round, format, points, ...extra }) };
 }
@@ -248,7 +248,11 @@ export function settleRace(career: CareerProgress, race: {
   const championship = addRace(career.championship, race.id, race.circuitId, race.result, race.format);
   const round = nextRound(career.championship, career.season)?.round;
   // [T4.1] El dinero de la ronda se liquida con el resultado: una sola vez por ronda y formato.
-  const management = settledManagement(career, round, race.format, teamPoints(race.result), { damages: race.damages, stops: race.stops });
+  const management = settledManagement(career, round, race.format, teamPoints(race.result), {
+    damages: race.damages, stops: race.stops,
+    // [T4.9] Los objetivos de patrocinio se evalúan con el resultado oficial (ya con sanciones).
+    result: race.result.rows.map(row => ({ teamId: row.teamId, position: row.position, points: row.points })),
+  });
   if (race.format === 'sprint') {
     if (round === undefined) return { ...career, closed: null };
     return {

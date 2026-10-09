@@ -17,6 +17,8 @@ import { WeatherOutlook } from './WeatherOutlook';
 import { FinancePanel } from './FinancePanel';
 import { FacilitiesPanel } from './FacilitiesPanel';
 import { PitCrewPanel } from './PitCrewPanel';
+import { SponsorsPanel } from './SponsorsPanel';
+import type { TeamSponsors } from '../simulation/Sponsors';
 import type { CrewPlan, PitCrew } from '../simulation/PitCrew';
 import type { FacilitiesState, FacilityId } from '../simulation/Facilities';
 import type { FinanceState } from '../simulation/Finance';
@@ -114,6 +116,8 @@ interface HomeScreenProps {
   facilities?: { state: FacilitiesState; teamId: string; canAfford: (cost: number) => boolean; onUpgrade: (facility: FacilityId) => void };
   /** [T4.6] Equipo de boxes del equipo del jugador. */
   pitCrew?: { crew: PitCrew; onPlan: (plan: CrewPlan) => void };
+  /** [T4.9] Patrocinio del equipo del jugador y rótulos del coche de cada equipo. */
+  sponsors?: { team: TeamSponsors; onSign: (offerId: string) => void; carOf: (teamId: string) => string[] };
 }
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({
@@ -141,7 +145,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   sprintAvailable,
   finance,
   facilities,
-  pitCrew
+  pitCrew,
+  sponsors
 }) => {
   const nextRound = season?.rounds.find(round => round.status === 'siguiente');
   const freeRace = Boolean(nextRound) && nextRound?.circuitId !== selectedCircuitId;
@@ -350,6 +355,15 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         </details>
       )}
 
+      {sponsors && (
+        <details className={styles.historySection}>
+          <summary className={styles.historyTitle}>
+            <span>Patrocinio ({sponsors.team.deals.length} de 3)</span>
+          </summary>
+          <SponsorsPanel sponsors={sponsors.team} onSign={sponsors.onSign} />
+        </details>
+      )}
+
       {pitCrew && (
         <details className={styles.historySection}>
           <summary className={styles.historyTitle}>
@@ -552,7 +566,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 <div className={styles.detailContentGrid}>
                   {/* [R46] Monoplaza del piloto en 3D (silueta 2D sin WebGL) */}
                   <div className={styles.detailCardBox} style={{ gridColumn: '1 / -1' }}>
-                    <CarShowcase teamId={inspectedTeam.id} teamColor={inspectedTeam.color} accentColor={inspectedTeam.accentColor} number={inspectedDriver.number}
+                    <CarShowcase teamId={inspectedTeam.id} sponsors={sponsors?.carOf(inspectedTeam.id)} teamColor={inspectedTeam.color} accentColor={inspectedTeam.accentColor} number={inspectedDriver.number}
                       compound="medium" label={`Monoplaza de ${inspectedTeam.name} · ${inspectedDriver.code}`} />
                   </div>
                   <div className={styles.detailCardBox}>

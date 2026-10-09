@@ -13,6 +13,8 @@ interface Car3DViewerProps {
   label?: string;
   /** [R55] Equipo: decide los patrocinadores (ficticios) del modelo. */
   teamId?: string;
+  /** [T4.9] Patrocinadores firmados en la partida (uno por superficie; vacío = sin rótulo). Sin esto, los de la librea. */
+  sponsors?: string[];
 }
 
 /**
@@ -20,7 +22,7 @@ interface Car3DViewerProps {
  * geometría propia y, en cuanto carga, lo sustituye el modelo 3D con la librea del equipo y las ruedas girando; si el
  * modelo falta o falla, se queda el de geometría propia.
  */
-const Car3DViewer: React.FC<Car3DViewerProps> = ({ teamColor, accentColor, number, compound, label = 'Monoplaza en 3D', teamId }) => {
+const Car3DViewer: React.FC<Car3DViewerProps> = ({ teamColor, accentColor, number, compound, label = 'Monoplaza en 3D', teamId, sponsors }) => {
   const hostRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -99,7 +101,8 @@ const Car3DViewer: React.FC<Car3DViewerProps> = ({ teamColor, accentColor, numbe
     import('../renderer/modelScene').then(async ({ loadModel, dressCar, disposeModel }) => {
       const gltf = await loadModel(modelUrl(import.meta.env.BASE_URL, CAR_MODEL.file));
       if (cancelled) { disposeModel(gltf.scene); return; }
-      const livery = teamId ? liveryFor(teamId) : { primary: teamColor, secondary: accentColor, sponsors: [] as string[] };
+      const base = teamId ? liveryFor(teamId) : { primary: teamColor, secondary: accentColor, sponsors: [] as string[] };
+      const livery = sponsors ? { ...base, sponsors } : base;
       dressCar(gltf.scene, livery, number, compoundStyle(compound).color);
       const clip = gltf.animations.find(animation => animation.name === CAR_MODEL.animation);
       if (clip) { mixer = new THREE.AnimationMixer(gltf.scene); mixer.clipAction(clip).play(); }
@@ -144,7 +147,8 @@ const Car3DViewer: React.FC<Car3DViewerProps> = ({ teamColor, accentColor, numbe
       renderer.dispose();
       renderer.domElement.remove();
     };
-  }, [teamColor, accentColor, number, compound, teamId]);
+    // Los patrocinadores llegan como lista nueva en cada pintado: se comparan por su contenido.
+  }, [teamColor, accentColor, number, compound, teamId, sponsors?.join('|')]);
 
   return <div ref={hostRef} role="img" aria-label={label} style={{ width: '100%', height: 190 }} />;
 };
