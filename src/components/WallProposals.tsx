@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { WallPace, WallProposal } from '../simulation/Wall';
 import { COMPOUND_LABEL } from '../simulation/TireInventory';
 import { CompoundBadge } from './CompoundBadge';
@@ -13,26 +14,36 @@ const title = (proposal: WallProposal) => proposal.kind === 'ritmo'
 /**
  * [R54] Propuestas del estratega para un coche del jugador: cada una con lo que propone, su motivo y los botones de
  * aceptar y descartar. Nada se ejecuta sin aceptar, salvo que el jugador encienda «Delegar en el estratega».
+ * [T4.17] Con la ventana baja (o con `startCollapsed`) la lista empieza plegada y deja a la vista cuántas hay, para no
+ * quitarle altura al circuito.
  */
-export function WallProposals({ proposals, delegated, onAccept, onDiscard, onDelegate }: {
+export function WallProposals({ proposals, delegated, onAccept, onDiscard, onDelegate, startCollapsed }: {
   proposals: WallProposal[];
   delegated: boolean;
   onAccept: (id: string) => void;
   onDiscard: (id: string) => void;
   onDelegate: (delegated: boolean) => void;
+  startCollapsed?: boolean;
 }) {
+  const [open, setOpen] = useState(() => !(startCollapsed ?? (typeof window !== 'undefined' && Boolean(window.matchMedia?.('(max-height: 780px)').matches))));
+  const foldable = !delegated && proposals.length > 0;
   const note = delegated ? 'El estratega decide paradas y ritmo en este coche.' : proposals.length === 0 ? 'Sin propuestas ahora mismo.' : null;
   return (
     <section className={styles.proposals} aria-label="Propuestas del muro">
       <div className={styles.header}>
         <strong>Propuestas del muro</strong>
         {note && <span className={styles.note} role="status">{note}</span>}
+        {foldable && (
+          <button type="button" className={styles.fold} aria-expanded={open} onClick={() => setOpen(!open)}>
+            {open ? 'Plegar' : `${proposals.length} ${proposals.length === 1 ? 'propuesta' : 'propuestas'} · ver`}
+          </button>
+        )}
         <label className={styles.delegate} title="Encendido, el estratega decide paradas y ritmo en este coche; una orden tuya lo apaga">
           <input type="checkbox" checked={delegated} onChange={event => onDelegate(event.target.checked)} />
           Delegar en el estratega
         </label>
       </div>
-      {!delegated && proposals.length > 0 && (
+      {foldable && open && (
         <ul className={styles.list}>
           {proposals.map(proposal => (
             <li key={proposal.id} className={styles.item} data-proposal={proposal.kind}>
