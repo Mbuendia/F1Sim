@@ -6,7 +6,9 @@ import { addRace, constructorsChampionship, driverStandings, emptyChampionship }
 import type { ChampionshipState } from './Championship';
 import { addDistance, completeRace, emptyComponents, ensureDriver } from './ComponentPool';
 import type { ComponentState } from './ComponentPool';
-import { emptyProgram } from './Development';
+import { carryOver } from './Development';
+import { buildWinter } from './Winter';
+import type { WinterReport } from './Winter';
 import type { DevelopmentProgram } from './Development';
 import type { RaceResult } from './RaceResult';
 import type { TireSet } from './TireInventory';
@@ -188,7 +190,8 @@ export function closeSeason({ championship, components, program, archive, season
   return {
     championship: emptyChampionship(),
     components: driverIds.reduce((s, id) => ensureDriver(s, id), emptyComponents()),
-    program: emptyProgram(),
+    // [T4.11] El coche nuevo conserva la mitad de cada mejora montada.
+    program: carryOver(program),
     archive: [...archive, summary],
     season: emptySeason(),
     summary,
@@ -205,7 +208,12 @@ export interface CareerProgress {
   /** [T4.1] Gestión del equipo (dinero…). Ausente en las partidas y pruebas anteriores: entonces no se toca. */
   management?: ManagementState;
 }
-export type SettledCareer = CareerProgress & { /** Resumen de la temporada, si esta carrera o este salto la ha cerrado. */ closed: SeasonSummary | null };
+export type SettledCareer = CareerProgress & {
+  /** Resumen de la temporada, si esta carrera o este salto la ha cerrado. */
+  closed: SeasonSummary | null;
+  /** [T4.11] Informe del invierno, si la temporada se ha cerrado y la carrera profesional lleva gestión. */
+  winter?: WinterReport;
+};
 
 /** [T4.1] Puntos que suma cada equipo en un resultado. */
 function teamPoints(result: RaceResult): Record<string, number> {
@@ -226,7 +234,10 @@ function closeIfComplete(career: CareerProgress, playerCodes: string[]): Settled
   const { summary, ...next } = closeSeason({ ...career, playerCodes });
   // [T4.1] El premio de constructores se reparte con la clasificación de la temporada que se cierra.
   const order = constructorsChampionship(career.championship).map(team => team.teamId);
-  return { ...next, ...(career.management ? { management: closeManagementSeason(career.management, order) } : {}), closed: summary };
+  if (!career.management) return { ...next, closed: summary };
+  // [T4.11] Con la gestión de antes y de después del cierre se cuenta el invierno.
+  const management = closeManagementSeason(career.management, order);
+  return { ...next, management, closed: summary, winter: buildWinter({ before: career.management, after: management, summary, program: next.program }) };
 }
 
 /**

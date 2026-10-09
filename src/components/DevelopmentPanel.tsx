@@ -1,6 +1,6 @@
 import React from 'react';
 import styles from './ComponentsPanel.module.css';
-import { ATR_PERCENT, MAX_ACTIVE, PROJECTS, activeProjects, researchRaces, statusAt } from '../simulation/Development';
+import { ATR_PERCENT, MAX_ACTIVE, PROJECTS, activeProjects, legacyOf, researchRaces, statusAt } from '../simulation/Development';
 import type { DevelopmentProgram } from '../simulation/Development';
 import { SEASON_RACES } from '../simulation/Season';
 import { formatMoney } from '../simulation/Finance';
@@ -73,6 +73,10 @@ export const DevelopmentPanel: React.FC<DevelopmentPanelProps> = ({ program, tea
       </table>
       {installed.length > 0 && (
         <p>Montadas: {installed.map(i => `${PROJECTS[i.key]?.label ?? i.key} (desde la carrera ${i.fromRace % SEASON_RACES + 1})`).join(' · ')}</p>
+      )}
+      {/* [T4.11] Lo que el coche de esta temporada conserva del anterior. */}
+      {legacyOf(program, teamId).length > 0 && (
+        <p>Heredado del coche anterior: {legacyOf(program, teamId).map(item => `${PROJECTS[item.key]?.label ?? item.key} (${Math.round(item.share * 100)} % de su efecto)`).join(' · ')}</p>
       )}
     </section>
   );

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { DRIVERS } from '../data/drivers';
 import { TEAMS } from '../data/teams';
 import { teamAccent } from '../data/teamAccents';
-import { CONTRACTS, candidates, demandFor, driverValue, negotiationOpen, pairOf, seasonSalary, seatsTaken } from '../simulation/Contracts';
+import { CONTRACTS, candidates, demandFor, driverValue, negotiationOpen, pairOf, rosterOf, seasonSalary, seatsTaken } from '../simulation/Contracts';
 import type { ContractsState } from '../simulation/Contracts';
 import { formatMoney } from '../simulation/Finance';
 import m from './Management.module.css';
@@ -30,6 +30,8 @@ interface Props {
   onOffer: (driverId: string, salary: number, seasons: number) => void;
   /** Respuesta a la última oferta. */
   message?: string | null;
+  /** [T4.11] Edad de cada piloto en esta temporada. */
+  ages?: Record<string, number>;
 }
 
 /**
@@ -37,17 +39,19 @@ interface Props {
  * desde la mitad de la temporada, la negociación de la siguiente: renovar a quien acaba contrato u ofrecer el asiento
  * a un piloto de otro equipo. Lo firmado vale desde la primera ronda de la temporada que viene.
  */
-export function DriverContractsPanel({ contracts, teamId, season, round, onOffer, message }: Props) {
+export function DriverContractsPanel({ contracts, teamId, season, round, onOffer, message, ages }: Props) {
   const [seasons, setSeasons] = useState(2);
   const open = negotiationOpen(round);
   const full = seatsTaken(contracts, season, teamId) >= 2;
   const arriving = Object.keys(contracts.agreed).filter(id => contracts.agreed[id].teamId === teamId && contracts.contracts[id].teamId !== teamId);
-  const market = candidates(contracts, season, teamId).sort((a, b) => driverValue(b) - driverValue(a));
+  // [T4.8] La ficha sale de la plantilla: en la parrilla puede haber pilotos que no están en drivers.ts.
+  const roster = rosterOf(contracts);
+  const market = candidates(contracts, season, teamId).sort((a, b) => driverValue(b, contracts) - driverValue(a, contracts));
   return (
     <section className={m.stack} aria-label="Pilotos y contratos">
       <div className={m.reportCars}>
         {pairOf(contracts, teamId).map(id => {
-          const driver = DRIVERS[id], contract = contracts.contracts[id], renewed = contracts.agreed[id];
+          const driver = roster[id], contract = contracts.contracts[id], renewed = contracts.agreed[id];
           const ends = contract.until <= season;
           const demand = demandFor(contracts, id, teamId);
           return (
@@ -56,7 +60,7 @@ export function DriverContractsPanel({ contracts, teamId, season, round, onOffer
                 <Helmet teamId={teamId} number={driver.number} />
                 <div className={m.stack} style={{ gap: 2 }}>
                   <span className={m.title}>{driver.firstName} {driver.lastName}</span>
-                  <span className={m.muted}>{perSeason(contract.salary)}</span>
+                  <span className={m.muted}>{ages?.[id] ? `${ages[id]} años · ` : ''}{perSeason(contract.salary)}</span>
                   <span className={renewed ? m.pos : ends ? m.warn : m.muted}>
                     {renewed ? (renewed.teamId === teamId ? `Renovado hasta la temporada ${renewed.until}` : `Se va a ${TEAMS[renewed.teamId]?.shortName ?? renewed.teamId}`)
                       : ends ? 'Vence esta temporada' : `Hasta la temporada ${contract.until}`}
@@ -72,7 +76,7 @@ export function DriverContractsPanel({ contracts, teamId, season, round, onOffer
       </div>
       {arriving.map(id => (
         <span key={id} className={m.pos}>
-          Fichado para la temporada que viene: {DRIVERS[id].firstName} {DRIVERS[id].lastName}, {perSeason(contracts.agreed[id].salary)}, hasta la temporada {contracts.agreed[id].until}.
+          Fichado para la temporada que viene: {(roster[id] ?? DRIVERS[id])?.firstName} {(roster[id] ?? DRIVERS[id])?.lastName}, {perSeason(contracts.agreed[id].salary)}, hasta la temporada {contracts.agreed[id].until}.
         </span>
       ))}
       {message && <span className={m.muted} role="status">{message}</span>}
@@ -90,13 +94,13 @@ export function DriverContractsPanel({ contracts, teamId, season, round, onOffer
           </div>
           <div className={m.ledger}>
             {market.map(id => {
-              const driver = DRIVERS[id], demand = demandFor(contracts, id, teamId);
+              const driver = roster[id], demand = demandFor(contracts, id, teamId);
               return (
                 <div key={id} className={m.facility}>
                   <div className={m.row}>
                     <Helmet teamId={contracts.contracts[id].teamId} number={driver.number} size={28} />
                     <b>{driver.firstName} {driver.lastName}</b>
-                    <span className={m.muted}>{TEAMS[contracts.contracts[id].teamId]?.shortName}</span>
+                    <span className={m.muted}>{TEAMS[contracts.contracts[id].teamId]?.shortName}{ages?.[id] ? ` · ${ages[id]} años` : ''}</span>
                   </div>
                   {demand !== null
                     ? <button type="button" className={m.button} onClick={() => onOffer(id, demand, seasons)}>Ofrecer</button>

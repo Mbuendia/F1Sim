@@ -145,7 +145,7 @@ interface HomeScreenProps {
   /** [T4.7] Contratos de los pilotos del equipo del jugador y negociación de la temporada siguiente. */
   /** [T4.8] Reserva del equipo del jugador y cantera. */
   reserve?: { academy: AcademyState; message: string | null; onStandIn: (seatId: string | null) => void; onSignReserve: (juniorId: string) => void; onPromote: () => void };
-  contracts?: { state: ContractsState; teamId: string; season: number; round: number; message: string | null; onOffer: (driverId: string, salary: number, seasons: number) => void };
+  contracts?: { state: ContractsState; teamId: string; season: number; round: number; ages?: Record<string, number>; message: string | null; onOffer: (driverId: string, salary: number, seasons: number) => void };
   /** [T4.9] Patrocinio del equipo del jugador y rótulos del coche de cada equipo. */
   sponsors?: { team: TeamSponsors; onSign: (offerId: string) => void; carOf: (teamId: string) => string[] };
 }
@@ -209,11 +209,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     setInspectedCircuitId(selectedCircuitId);
   }, [selectedCircuitId]);
 
-  const inspectedDriver = roster[inspectedDriverId] || roster[selectedDriverId] || roster['alonso'];
+  const inspectedDriver = roster[inspectedDriverId] || roster[selectedDriverId] || Object.values(roster)[0];
   const inspectedTeam = TEAMS[inspectedDriver.teamId];
   const inspectedCircuit = OFFICIAL_CIRCUITS[inspectedCircuitId] || OFFICIAL_CIRCUITS[selectedCircuitId] || OFFICIAL_CIRCUITS['barcelona'];
 
-  const selectedDriver = roster[selectedDriverId] || roster['alonso'];
+  const selectedDriver = roster[selectedDriverId] || Object.values(roster)[0];
   const selectedTeam = TEAMS[selectedDriver.teamId];
   const selectedCircuit = OFFICIAL_CIRCUITS[selectedCircuitId] || OFFICIAL_CIRCUITS['barcelona'];
 
@@ -412,7 +412,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           <h2 className={styles.sectionHeading}>
             <span>Pilotos</span>
           </h2>
-          <DriverContractsPanel contracts={contracts.state} teamId={contracts.teamId} season={contracts.season} round={contracts.round} onOffer={contracts.onOffer} message={contracts.message} />
+          <DriverContractsPanel contracts={contracts.state} teamId={contracts.teamId} season={contracts.season} round={contracts.round} onOffer={contracts.onOffer} message={contracts.message} ages={contracts.ages} />
           {reserve && (
             <ReservePanel academy={reserve.academy} contracts={contracts.state} teamId={contracts.teamId} season={contracts.season} round={contracts.round}
               onStandIn={reserve.onStandIn} onSignReserve={reserve.onSignReserve} onPromote={reserve.onPromote} message={reserve.message} />

@@ -200,12 +200,15 @@ export function offerContract(state: ContractsState, offer: ContractOffer): { st
  * pilotos, dos por equipo. [T4.8] `entrants` son los jóvenes de la cantera que entran en el mercado: si hay más
  * pilotos que asientos, los menos valorados se quedan sin sitio y salen de la parrilla.
  */
-export function resolveMarket(state: ContractsState, season: number, seed: number, poorTeams: string[] = [], entrants: Driver[] = []): ContractsState {
+export function resolveMarket(state: ContractsState, season: number, seed: number, poorTeams: string[] = [], entrants: Driver[] = [],
+  /** [T4.11] `retiring`: pilotos que se retiran y dejan su asiento; `fillers`: jóvenes que cubren los asientos que nadie ocupe. */
+  options: { retiring?: string[]; fillers?: Driver[] } = {}): ContractsState {
   const rng = mulberry32(streamSeed(seed, `mercado-${season}`));
   const next = season + 1;
   const arriving = entrants.filter(driver => !state.contracts[driver.id] && !DRIVERS[driver.id]);
   const extra: Record<string, Driver> = { ...state.extra, ...Object.fromEntries(arriving.map(driver => [driver.id, driver])) };
-  const current = idsOf(state);
+  const retiring = options.retiring ?? [];
+  const current = idsOf(state).filter(id => !retiring.includes(id));
   const ids = [...current, ...arriving.map(driver => driver.id)];
   const teams = Object.keys(TEAMS).sort((a, b) => TEAMS[b].carPerformance - TEAMS[a].carPerformance);
   const signed: Record<string, Contract> = {};
@@ -240,6 +243,15 @@ export function resolveMarket(state: ContractsState, season: number, seed: numbe
   // Quien queda sin equipo acepta el asiento que quede, por el sueldo que ese equipo pueda pagar.
   for (const teamId of teams) {
     while (seats(teamId) < 2 && free.length) take(free[0], teamId, askingSalary(free[0], clean));
+  }
+  // [T4.11] Si aún quedan asientos (más retiradas que pilotos libres), los cubren los jóvenes de la cantera.
+  for (const filler of options.fillers ?? []) {
+    if (signed[filler.id] || state.contracts[filler.id] || DRIVERS[filler.id]) continue;
+    const teamId = teams.find(candidate => seats(candidate) < 2);
+    if (!teamId) break;
+    extra[filler.id] = filler;
+    ids.push(filler.id);
+    signed[filler.id] = { teamId, salary: Math.max(CONTRACTS.MIN_SALARY, cap(teamId, askingSalary(filler.id, { extra }))), until: term() };
   }
   // Quien sigue libre no tiene asiento: sale de la parrilla (un joven vuelve a la cantera) y su historial se conserva.
   const seated = ids.filter(id => signed[id]);

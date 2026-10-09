@@ -20,6 +20,10 @@ import { GameMenu } from './components/GameMenu';
 import { HubHome } from './components/HubHome';
 import { RoundReportScreen } from './components/RoundReportScreen';
 import { ROUND_REPORT_KEY, buildRoundReport, parseRoundReport } from './simulation/RoundReport';
+import { WinterScreen } from './components/WinterScreen';
+import { WINTER_KEY, parseWinter } from './simulation/Winter';
+import type { WinterReport } from './simulation/Winter';
+import { ageAttributes } from './simulation/Aging';
 import type { RoundReport } from './simulation/RoundReport';
 import { ATTRIBUTE_LABEL } from './simulation/DriverDevelopment';
 import type { AttributeKey } from './simulation/DriverDevelopment';
@@ -117,7 +121,7 @@ const TYRE_WORDS: Record<string, string> = { soft: 'blandos', medium: 'medios', 
 /** [R54] Pilotos que lleva el jugador: los dos del equipo del piloto elegido. */
 /** [T4.7] Los dos pilotos del equipo de ese piloto, según la plantilla de la temporada. */
 const playerDriverIds = (roster: Record<string, Driver>, driverId: string): string[] => {
-  const teamId = (roster[driverId] ?? roster.alonso).teamId;
+  const teamId = (roster[driverId] ?? Object.values(roster)[0]).teamId;
   return Object.keys(roster).filter(id => roster[id].teamId === teamId);
 };
 
@@ -153,6 +157,12 @@ export const App: React.FC = () => {
   const showRoundReport = useCallback((report: RoundReport | null) => {
     setRoundReport(report);
     try { if (report) localStorage.setItem(ROUND_REPORT_KEY, JSON.stringify(report)); else localStorage.removeItem(ROUND_REPORT_KEY); } catch (e) { console.error(e); }
+  }, []);
+  // [T4.11] Informe del invierno: se guarda hasta que se confirma, así que al reabrir el juego se vuelve a ver.
+  const [winter, setWinter] = useState<WinterReport | null>(() => { try { return parseWinter(localStorage.getItem(WINTER_KEY)); } catch { return null; } });
+  const showWinter = useCallback((report: WinterReport | null) => {
+    setWinter(report);
+    try { if (report) localStorage.setItem(WINTER_KEY, JSON.stringify(report)); else localStorage.removeItem(WINTER_KEY); } catch (e) { console.error(e); }
   }, []);
   /** Carrera profesional o carrera libre (que no toca ninguna partida). */
   const [mode, setMode] = useState<'career' | 'free'>('career');
@@ -514,7 +524,7 @@ export const App: React.FC = () => {
     setRaceCounts(counts);
     // Componentes, sanciones y desarrollo son cosa del Gran Premio: el sprint no los mueve.
     const careerRace = counts && !sprintRace;
-    const playerTeam = (roster[selectedDriverId] ?? roster.alonso).teamId;
+    const playerTeam = (roster[selectedDriverId] ?? Object.values(roster)[0]).teamId;
     // [T4.2] Los rivales pagan sus componentes y sus proyectos: sin dinero dejan de montar fuera de cupo y de desarrollar.
     const ledgerRound = nextRound(championship, season)?.round ?? SEASON_RACES;
     const rivals = Object.values(roster).filter(d => d.teamId !== playerTeam).map(d => ({ id: d.id, teamId: d.teamId }));
@@ -581,24 +591,29 @@ export const App: React.FC = () => {
     if (settled.management) saveManagement(settled.management);
     setSeasonArchive(settled.archive);
     try { localStorage.setItem(SEASONS_STORAGE_KEY, JSON.stringify(settled.archive)); } catch (e) { console.error(e); }
-    if (settled.closed) setSeasonEnd(settled.closed);
+    // [T4.11] Con gestión, el cierre se cuenta en el invierno por pasos; sin ella, la pantalla de cierre de siempre.
+    if (settled.winter) showWinter(settled.winter);
+    else if (settled.closed) setSeasonEnd(settled.closed);
     // La temporada elige el Gran Premio siguiente.
     const next = nextRound(settled.championship, settled.season);
     if (next) setSelectedCircuitId(next.circuitId);
     // [R52] En una ronda sprint se propone el sprint; corrido el sprint, la clasificación del Gran Premio.
     const proposeSprint = sprintPending(settled.championship, settled.season);
     setRaceFormat(current => (proposeSprint ? 'sprint' : current === 'sprint' ? 'clasificacion' : current));
-  }, [saveChampionship, saveComponents, saveProgram, saveSeason, saveManagement]);
+  }, [saveChampionship, saveComponents, saveProgram, saveSeason, saveManagement, showWinter]);
 
   const playerCodes = useMemo(() => {
-    const team = (roster[selectedDriverId] ?? roster.alonso).teamId;
+    const team = (roster[selectedDriverId] ?? Object.values(roster)[0]).teamId;
     return Object.values(roster).filter(d => d.teamId === team).map(d => d.code);
   }, [selectedDriverId, roster]);
 
   /** [R51] Salta el Gran Premio que toca: no se disputa y nadie puntúa. */
   const handleSkipRound = useCallback(() => {
-    applyCareer(settleSkip({ championship, components, program, season, archive: seasonArchive, management }, playerCodes));
-  }, [applyCareer, championship, components, program, season, seasonArchive, management, playerCodes]);
+    const settled = settleSkip({ championship, components, program, season, archive: seasonArchive, management }, playerCodes);
+    // [T4.11] En el invierno los pilotos cumplen un año y sus atributos siguen la curva de edad.
+    if (settled.winter && settled.management) saveDevelopment(ageAttributes(development, Object.values(rosterOf(settled.management.contracts)), settled.management.ages));
+    applyCareer(settled);
+  }, [applyCareer, championship, components, program, season, seasonArchive, management, playerCodes, development, saveDevelopment]);
 
   const handleStartFormationLap = useCallback(() => {
     if (simulation.lightState === 'grid-ready') {
@@ -660,6 +675,8 @@ export const App: React.FC = () => {
           // [T4.6] Y sus paradas cuentan para la estadística del equipo de boxes.
           stops: simulation.cars.flatMap(car => (car.pitStop.stopLog ?? []).filter(stop => stop.totalSec > 0).map(stop => ({ teamId: car.driver.teamId, serviceSec: stop.serviceSec }))),
         });
+        // [T4.11] En el invierno los pilotos cumplen un año y sus atributos siguen la curva de edad.
+        if (settled.winter && settled.management) saveDevelopment(ageAttributes(developed ?? development, Object.values(rosterOf(settled.management.contracts)), settled.management.ages));
         applyCareer(settled);
         // [T4.20] Informe de la ronda con la gestión de antes y de después de liquidarla.
         if (raceCounts && settled.management) {
@@ -689,7 +706,7 @@ export const App: React.FC = () => {
 
     if (report) showRoundReport(report);
     setCurrentView(report ? 'report' : 'home');
-  }, [showRoundReport, simulation, selectedDriverId, selectedCircuitId, raceHistory, championship, saveDevelopment, developmentAfter, components, program, seasonArchive, saveStore, season, management, raceCounts, applyCareer, playerCodes, mode, roster]);
+  }, [development, showRoundReport, simulation, selectedDriverId, selectedCircuitId, raceHistory, championship, saveDevelopment, developmentAfter, components, program, seasonArchive, saveStore, season, management, raceCounts, applyCareer, playerCodes, mode, roster]);
 
   const handleCycleCameraMode = useCallback(() => {
     camera.cycleMode();
@@ -768,7 +785,7 @@ export const App: React.FC = () => {
     if (currentView !== 'race') { wallActive.current = new Set(); wallProposed.current = new Set(); return; }
     const timer = window.setInterval(() => {
       if (simulation.isFinished) return;
-      const team = (roster[selectedDriverId] ?? roster.alonso).teamId;
+      const team = (roster[selectedDriverId] ?? Object.values(roster)[0]).teamId;
       const racing = simulation.lightState === 'racing';
       if (racing) {
         const readings = simulation.cars.filter(car => roster[car.driver.id]?.teamId === team && car.status === 'running')
@@ -1065,6 +1082,7 @@ export const App: React.FC = () => {
     const fresh = newCareer(teamId, name, newRaceSeed());
     if (saveStore) { saveStore.remove(AUTOSAVE_ID); refreshSlots(); }
     showRoundReport(null);
+    showWinter(null);
     if (applySave(createSave({ name: fresh.name, savedAt: new Date().toISOString(), career: fresh.career, selection: fresh.selection, race: null })) === null) markCareer(fresh.name);
   };
   const gameMenu = (
@@ -1134,6 +1152,10 @@ export const App: React.FC = () => {
       <SavesScreen slots={namedSlots} message={saveMessage} onBack={() => setCurrentView('menu')}
         onLoad={handleLoadCareer} onExport={handleExportGame} onImport={handleImportGame} onDelete={handleDeleteGame} />
     );
+  }
+  // [T4.11] Tras la última ronda (y su informe), el invierno: cinco pasos antes de volver al centro de gestión.
+  if (currentView === 'home' && mode === 'career' && winter) {
+    return <WinterScreen report={winter} onConfirm={() => showWinter(null)} />;
   }
   if (currentView === 'report' && roundReport) {
     return <RoundReportScreen report={roundReport} onContinue={() => { showRoundReport(null); setCurrentView('home'); }} />;
@@ -1206,7 +1228,7 @@ export const App: React.FC = () => {
           },
         }}
         contracts={{
-          state: management.contracts, teamId: management.playerTeamId, season: management.finance.season, round: hubRound?.round ?? SEASON_RACES, message: contractMessage,
+          state: management.contracts, teamId: management.playerTeamId, season: management.finance.season, round: hubRound?.round ?? SEASON_RACES, message: contractMessage, ages: management.ages,
           onOffer: (driverId, salary, seasons) => {
             const answer = offerContract(management.contracts, { season: management.finance.season, round: hubRound?.round ?? SEASON_RACES, teamId: management.playerTeamId, driverId, salary, seasons });
             if (answer.state !== management.contracts) saveManagement({ ...management, contracts: answer.state });
@@ -1228,7 +1250,7 @@ export const App: React.FC = () => {
         components={components}
         development={{
           program, raceIndex: grandsPrixRun(championship),
-          constructorsPosition: constructorsPosition((roster[selectedDriverId] ?? roster.alonso).teamId),
+          constructorsPosition: constructorsPosition((roster[selectedDriverId] ?? Object.values(roster)[0]).teamId),
           // [T4.2] El proyecto se paga al empezarlo; sin dinero no empieza.
           onStart: key => {
             const bought = buyProject(management, program, management.playerTeamId, key, grandsPrixRun(championship), constructorsPosition(management.playerTeamId), nextRound(championship, season)?.round ?? SEASON_RACES);
@@ -1425,7 +1447,7 @@ export const App: React.FC = () => {
                   {qualifyingSetups && (
                     <details open={parcFermeStarts.length > 0 || undefined}>
                       <summary className={qualifyingStyles.extraTitle}>Setup en parc fermé</summary>
-                      <SetupPanel drivers={Object.keys(qualifyingSetups).map(id => DRIVERS[id]).filter(Boolean)} setups={setups} parcFerme={qualifyingSetups} onChange={handleSetupChange} />
+                      <SetupPanel drivers={Object.keys(qualifyingSetups).map(id => roster[id]).filter(Boolean)} setups={setups} parcFerme={qualifyingSetups} onChange={handleSetupChange} />
                     </details>
                   )}
                 </QualifyingResults>

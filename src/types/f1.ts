@@ -82,6 +82,8 @@ export interface Driver {
   firstName: string;
   lastName: string;
   number: number;
+  /** [T4.11] Edad al empezar la partida (anotada de memoria; la gestión la hace avanzar cada invierno). */
+  age?: number;
   country: string;
   countryFlag: string;
   teamId: string;

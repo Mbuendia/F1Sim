@@ -1,5 +1,5 @@
 // [Sprint 4] Gestión del equipo entre carreras: lo que el director decide fuera de la pista. Reúne en un solo estado,
-// que va con la carrera profesional y se guarda con ella, las piezas de cada tarea (T4.1: dinero; T4.4: instalaciones; T4.6: equipo de boxes; T4.9: patrocinio; T4.10: junta; T4.7: contratos de pilotos; T4.8: reserva y cantera).
+// que va con la carrera profesional y se guarda con ella, las piezas de cada tarea (T4.1: dinero; T4.4: instalaciones; T4.6: equipo de boxes; T4.9: patrocinio; T4.10: junta; T4.7: contratos de pilotos; T4.8: reserva y cantera; T4.11: edades).
 // Todo son funciones puras: la temporada (Season.ts) las llama al anotar una carrera, un salto de ronda o el cierre.
 import { TEAMS } from '../data/teams';
 import { atDebtLimit, charge, closeFinanceSeason, credit, isFinance, settleRound, startFinance } from './Finance';
@@ -16,6 +16,8 @@ import { isContracts, resolveMarket, roundSalaries, startContracts } from './Con
 import type { ContractsState } from './Contracts';
 import { advanceAcademy, entrantsOf, isAcademy, reserveSalary, startAcademy, winterAcademy } from './Academy';
 import type { AcademyState } from './Academy';
+import { advanceAges, agesFor, isAges, retirementsOf, startAges } from './Aging';
+import type { Ages } from './Aging';
 
 export interface ManagementState {
   version: 1;
@@ -36,6 +38,8 @@ export interface ManagementState {
   contracts: ContractsState;
   /** [T4.8] Cantera: jóvenes, reserva de cada equipo y sustituciones decididas para la próxima ronda. */
   academy: AcademyState;
+  /** [T4.11] Edad de cada piloto de la parrilla en la temporada en curso. */
+  ages: Ages;
 }
 
 export const MANAGEMENT_STORAGE_KEY = 'f1_management';
@@ -46,7 +50,7 @@ export function startManagement(playerTeamId: string, season = 1, seed = 0): Man
   return {
     version: 1, playerTeamId: teamId, seed,
     finance: startFinance(Object.keys(TEAMS), season), facilities: startFacilities(), pitCrews: startPitCrews(), sponsors: startSponsors(season, seed),
-    board: startBoard(teamId), contracts: startContracts(season, seed), academy: startAcademy(seed),
+    board: startBoard(teamId), contracts: startContracts(season, seed), academy: startAcademy(seed), ages: startAges(),
   };
 }
 
@@ -61,7 +65,8 @@ export function isManagement(data: unknown): boolean {
     && (state.seed === undefined || Number.isInteger(state.seed))
     && (state.facilities === undefined || isFacilities(state.facilities)) && (state.pitCrews === undefined || isPitCrews(state.pitCrews))
     && (state.sponsors === undefined || isSponsors(state.sponsors)) && (state.board === undefined || isBoard(state.board))
-    && (state.contracts === undefined || isContracts(state.contracts)) && (state.academy === undefined || isAcademy(state.academy));
+    && (state.contracts === undefined || isContracts(state.contracts)) && (state.academy === undefined || isAcademy(state.academy))
+    && (state.ages === undefined || isAges(state.ages));
 }
 
 /** La gestión de un objeto guardado, con sus piezas ausentes en su estado inicial; null si no es legible. */
@@ -69,10 +74,11 @@ export function readManagement(data: unknown): ManagementState | null {
   if (!isManagement(data)) return null;
   const state = data as Partial<ManagementState> & Pick<ManagementState, 'version' | 'playerTeamId' | 'finance'>;
   const seed = state.seed ?? 0;
+  const contracts = state.contracts ?? startContracts(state.finance.season, seed);
   return {
     ...state, seed, facilities: state.facilities ?? startFacilities(), pitCrews: state.pitCrews ?? startPitCrews(),
     sponsors: state.sponsors ?? startSponsors(state.finance.season, seed), board: state.board ?? startBoard(state.playerTeamId),
-    contracts: state.contracts ?? startContracts(state.finance.season, seed), academy: state.academy ?? startAcademy(seed),
+    contracts, academy: state.academy ?? startAcademy(seed), ages: state.ages ?? agesFor(contracts),
   };
 }
 
@@ -141,7 +147,11 @@ export function closeManagementSeason(state: ManagementState, constructorsOrder:
   // [T4.7] Mercado de invierno: los equipos en el límite de deuda solo pueden pagar sueldos bajos. [T4.8] Entran los
   // jóvenes que han firmado un asiento y los reservas rivales que ya están listos; después se repone la cantera.
   const poor = Object.keys(TEAMS).filter(teamId => atDebtLimit(state.finance, teamId));
-  const contracts = resolveMarket(state.contracts, state.finance.season, state.seed, poor, entrantsOf(state.academy, state.contracts, state.playerTeamId));
+  // [T4.11] Los veteranos que se retiran dejan su asiento; si faltan pilotos, sube quien más nivel tenga en la cantera.
+  const entrants = entrantsOf(state.academy, state.contracts, state.playerTeamId);
+  const fillers = Object.values(state.academy.juniors).map(junior => ({ ...junior.driver, teamId: '' })).sort((a, b) => b.talentRating - a.talentRating || a.id.localeCompare(b.id));
+  const contracts = resolveMarket(state.contracts, state.finance.season, state.seed, poor, entrants,
+    { retiring: retirementsOf(state.ages, state.contracts, state.finance.season, state.seed), fillers });
   const movement = { round: 0, kind: 'junta' as const, amount: Math.abs(verdict.money) };
   if (verdict.money > 0) finance = credit(finance, state.playerTeamId, { ...movement, label: 'Prima de la junta: objetivo cumplido' });
   if (verdict.money < 0) finance = charge(finance, state.playerTeamId, { ...movement, label: 'Recorte de la junta: objetivo no cumplido' });
@@ -149,6 +159,6 @@ export function closeManagementSeason(state: ManagementState, constructorsOrder:
     ...state, playerTeamId: verdict.teamId, board: verdict.board, finance, pitCrews: resetCrewSeason(state.pitCrews),
     // [T4.9] Vencen los contratos de patrocinio que llegaban hasta esta temporada y llegan ofertas nuevas.
     sponsors: renewSponsors(state.sponsors, state.finance.season, state.seed),
-    contracts, academy: winterAcademy(state.academy, contracts, state.finance.season, state.seed),
+    contracts, academy: winterAcademy(state.academy, contracts, state.finance.season, state.seed), ages: advanceAges(state.ages, contracts, state.academy),
   };
 }

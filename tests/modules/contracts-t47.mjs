@@ -147,7 +147,9 @@ export default async function run({ server, assert, test }) {
     const read = management.readManagement(old);
     assert(read && c.isContracts(read.contracts) && JSON.stringify(read.contracts) === JSON.stringify(start.contracts), 'T4.7: una partida guardada sin contratos los recibe al leerla');
     assert(management.readManagement({ ...old, contracts: { version: 1 } }) === null && management.readManagement(JSON.parse(JSON.stringify(start))) !== null, 'T4.7: unos contratos ilegibles invalidan la gestión guardada');
-    const closed = management.closeManagementSeason(start, byLevel);
+    // [T4.11] Desde las retiradas por edad, el cierre puede sacar a un veterano de la parrilla antes del mercado: aquí
+    // se cierra con todos los pilotos en una edad sin retirada, que es el caso que esta comprobación describe.
+    const closed = management.closeManagementSeason({ ...start, ages: Object.fromEntries(ids.map(id => [id, 25])) }, byLevel);
     assert(JSON.stringify(closed.contracts) === JSON.stringify(c.resolveMarket(start.contracts, 1, 7, [])) && closed.contracts.history.alonso.length === 2, 'T4.7: al cerrar la temporada se resuelve el mercado');
   });
 
