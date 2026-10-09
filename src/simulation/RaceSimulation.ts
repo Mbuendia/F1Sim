@@ -46,7 +46,7 @@ import { chassisGripAt, resolveTechnical } from '../data/teamProfiles';
 import type { CarTechnical } from '../data/teamProfiles';
 import { applySetup, isNeutralSetup, normalizeSetup } from './Setup';
 import type { CarSetup } from './Setup';
-import { availableSets, COMPOUND_LABEL, createInventory, inventoryFromSets, mountSet, pickSet, TireCompliance, tireCompliance } from './TireInventory';
+import { availableSets, COMPOUND_LABEL, createInventory, inventoryFromSets, mountSet, pickSet, swapStartSet, TireCompliance, tireCompliance } from './TireInventory';
 import type { TireSet } from './TireInventory';
 import { sprintLaps } from './Weekend';
 import { classifyMove, emptyMoves, moveTotals, paceProposal } from './Wall';
@@ -831,6 +831,7 @@ export class RaceSimulation {
 
   startRaceSequence() {
     if (this.lightState === 'idle') {
+      if (this.autoStartTyres) this.chooseStartTyres();
       this.lightState = 'formation-lap';
       this.lightsTimer = 0;
       this.cars.forEach((car, idx) => {
@@ -2276,8 +2277,56 @@ export class RaceSimulation {
 
   confirmRaceStart() {
     if (this.lightState === 'grid-ready') {
+      // [T4.12] Con el semáforo en marcha ya no se cambia el neumático de salida.
+      for (const car of this.cars) {
+        if (car.wallProposals?.some(proposal => proposal.kind === 'salida')) car.wallProposals = car.wallProposals.filter(proposal => proposal.kind !== 'salida');
+      }
       this.lightState = 'lights-1';
       this.lightsTimer = 0;
+    }
+  }
+
+  /** [T4.12] Con esto encendido, al empezar la secuencia de salida cada coche elige su neumático según el agua. */
+  autoStartTyres = false;
+  /** [T4.12] Agua (mm) a partir de la cual el estratega deja de salir con neumático de seco (la misma de sus paradas). */
+  static readonly WET_START_DEPTH_MM = 0.3;
+
+  /** [T4.12] Los coches aún no han salido: están formando o parados en la parrilla. */
+  private beforeLights(): boolean {
+    return this.lightState === 'idle' || this.lightState === 'formation-lap' || this.lightState === 'grid-parking' || this.lightState === 'grid-ready';
+  }
+
+  /** [T4.12] Monta ese compuesto como juego de salida; el que se quita no ha rodado y no cuenta como usado. */
+  private mountStartTyre(car: CarState, compound: TireCompound): boolean {
+    const tires = car.tireInventory ? swapStartSet(car.tireInventory, compound) : TireModel.createFreshTire(compound);
+    if (!tires) return false;
+    car.tires = tires;
+    const [first, ...rest] = car.pitStop.stints;
+    if (first) car.pitStop.stints = [{ ...first, compound }, ...rest];
+    return true;
+  }
+
+  /**
+   * [T4.12] Neumático de salida según el agua. El estratega decide como en sus paradas (con el agua que habrá en una
+   * vuelta si usa el radar): la IA y los coches delegados lo montan; en los coches del jugador queda como propuesta,
+   * que vale hasta que empieza el semáforo y no vuelve si se descarta. En seco no cambia nada.
+   */
+  chooseStartTyres() {
+    if (!this.beforeLights()) return;
+    const standing = this.weatherModel.meanDepth();
+    const depth = this.strategyUsesForecast ? anticipatedDepth(standing, this.getRainForecast(), STRATEGY.FORECAST_LOOKAHEAD_SEC) : standing;
+    if (depth <= RaceSimulation.WET_START_DEPTH_MM) return;
+    const decimal = (value: number) => value.toFixed(1).replace('.', ',');
+    const reason = standing > RaceSimulation.WET_START_DEPTH_MM ? `Pista mojada: ${decimal(standing)} mm de agua en la salida`
+      : `Lluvia inminente: se esperan ${decimal(depth)} mm de agua en la primera vuelta`;
+    for (const car of this.cars) {
+      const compound = chooseCompound(this.totalLaps, car.tireInventory, this.getTireCompliance(car.id), depth);
+      if (!compound || compound === car.tires.compound || tyreWaterGrip(compound, depth) <= tyreWaterGrip(car.tires.compound, depth) + 0.05) continue;
+      if (!this.wallProposing(car)) { this.mountStartTyre(car, compound); continue; }
+      const key = `salida:${compound}`;
+      if (car.wallDiscarded?.[key] !== undefined || car.wallProposals?.some(proposal => proposal.key === key)) continue;
+      if (car.wallProposals?.some(proposal => proposal.kind === 'salida')) car.wallProposals = car.wallProposals.filter(proposal => proposal.kind !== 'salida');
+      this.addWallProposal(car, { key, kind: 'salida', compound, reason });
     }
   }
 
@@ -3478,12 +3527,15 @@ export class RaceSimulation {
     const car = this.getCarById(carId);
     const proposal = car?.wallProposals?.find(candidate => candidate.id === proposalId);
     if (!car || !proposal) return false;
-    const done = proposal.kind === 'parada'
+    // [T4.12] La de salida monta el neumático en la parrilla; no es una orden de boxes.
+    const done = proposal.kind === 'salida'
+      ? Boolean(proposal.compound && this.beforeLights() && this.mountStartTyre(car, proposal.compound))
+      : proposal.kind === 'parada'
       ? Boolean(proposal.compound && this.issueBoxOrder(car.id, proposal.compound, 'player'))
       : Boolean(proposal.paceMode && this.issuePaceOrder(car.id, proposal.paceMode));
     if (!done) return false;
     car.wallProposals = (car.wallProposals ?? []).filter(candidate => candidate.id !== proposalId);
-    if (car.strategy) {
+    if (car.strategy && proposal.kind !== 'salida') {
       if (proposal.kind === 'parada') car.strategy.postponeStartLap = null;
       this.strategyLog(car, proposal.kind === 'parada' ? 'parada' : 'ritmo', `Propuesta aceptada: ${proposal.reason}`);
     }

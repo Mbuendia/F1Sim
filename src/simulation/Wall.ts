@@ -107,12 +107,13 @@ export function nextAlerts(alerts: WallAlert[], active: Set<string>, limit = WAL
 
 // [R54] Muro del jugador: en sus coches el estratega propone (parada o ritmo, con su motivo) y no ejecuta nada hasta
 // que el jugador acepta. Umbrales de batería y hueco: diseño del juego.
+// [T4.12] «salida»: el neumático con el que salir según el agua; vale mientras los coches están en la parrilla.
 export type WallPace = 'push' | 'balanced' | 'save';
 export interface WallProposal {
   id: string;
   /** Qué se propone, sin el motivo: mientras siga pendiente no se añade otra igual. */
   key: string;
-  kind: 'parada' | 'ritmo';
+  kind: 'parada' | 'ritmo' | 'salida';
   compound?: TireCompound;
   paceMode?: WallPace;
   reason: string;

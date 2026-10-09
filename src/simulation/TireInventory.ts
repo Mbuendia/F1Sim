@@ -89,6 +89,22 @@ export function createInventory(circuitId: string, startCompound: TireCompound =
   return { sets, mountedId: start.id, usedIds: [start.id] };
 }
 
+/**
+ * [T4.12] Cambia el juego de salida antes de empezar la carrera. El que se quita no ha rodado: vuelve a estar como
+ * estaba (nuevo, o usado si venía de otra sesión del fin de semana) y no cuenta como juego usado en la carrera.
+ * Devuelve el estado físico del que se monta, o null si no queda ninguno de ese compuesto.
+ */
+export function swapStartSet(inventory: TireInventory, compound: TireCompound): TireState | null {
+  const set = pickSet(inventory, compound);
+  if (!set) return null;
+  const old = inventory.sets.find(s => s.id === inventory.mountedId);
+  if (old) old.state = old.tires || old.laps > 0 ? 'usado' : 'nuevo';
+  set.state = 'montado';
+  inventory.mountedId = set.id;
+  inventory.usedIds = [set.id];
+  return remounted(set);
+}
+
 /** Juegos de un compuesto disponibles para montar (no montados). */
 export function availableSets(inventory: TireInventory, compound: TireCompound): number {
   return inventory.sets.filter(s => s.compound === compound && s.state !== 'montado').length;

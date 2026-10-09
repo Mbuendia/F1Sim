@@ -23,7 +23,8 @@ import { buildWeatherScenario } from './data/weatherScenarios';
 import { runQualifying } from './simulation/Qualifying';
 import { aiDevelop, emptyProgram, installFirst, parseProgram, startProject, upgradesFor, PROGRAM_STORAGE_KEY } from './simulation/Development';
 import type { DevelopmentProgram } from './simulation/Development';
-import { calendarView, emptySeason, grandsPrixRun, isSeasonRace, nextRound, parseArchive, parseSeason, settleRace, settleSkip, sprintPending, SEASONS_STORAGE_KEY, SEASON_STATE_KEY } from './simulation/Season';
+import { calendarView, emptySeason, grandsPrixRun, isSeasonRace, nextRound, parseArchive, parseSeason, roundWeather, settleRace, settleSkip, sprintPending, withWeatherSeed, SEASONS_STORAGE_KEY, SEASON_STATE_KEY } from './simulation/Season';
+import { COMPOUND_LABEL } from './simulation/TireInventory';
 import { carryTyres, isSprintVenue, podiumHomeLabel, sprintWeekendTyres } from './simulation/Weekend';
 import type { SeasonState, SeasonSummary, SettledCareer } from './simulation/Season';
 import { SeasonEndScreen } from './components/SeasonEndScreen';
@@ -104,7 +105,8 @@ export const App: React.FC = () => {
   });
 
   // [R02] Paso fijo de 20 ms simulados: mismo resultado sea cual sea el FPS o la velocidad.
-  const simulation = useMemo(() => { const sim = new RaceSimulation(selectedCircuitId); sim.setFixedStep(0.02); return sim; }, []);
+  // [T4.12] Con agua en la salida, cada coche elige su neumático (los del jugador reciben la propuesta en la parrilla).
+  const simulation = useMemo(() => { const sim = new RaceSimulation(selectedCircuitId); sim.setFixedStep(0.02); sim.autoStartTyres = true; return sim; }, []);
   const camera = useMemo(() => new Camera(), []);
 
   // Vista actual: 'landing', 'home' o 'race'
@@ -438,8 +440,14 @@ export const App: React.FC = () => {
       ? gridPenaltyLines(penalized.moved, started.penalties, id => DRIVERS[id] && { name: `${DRIVERS[id].firstName} ${DRIVERS[id].lastName}`, code: DRIVERS[id].code })
       : []);
     setQualifying(quali);
-    // [R44] Meteorología elegida en el paddock, ajustada a la duración prevista de la carrera.
-    simulation.setWeatherScenario(buildWeatherScenario(weatherScenarioId, simulation.totalLaps * 90));
+    // [R44] Meteorología ajustada a la duración prevista de la carrera. [T4.12] En una carrera de temporada se sortea
+    // con la probabilidad de lluvia del circuito y la semilla de la temporada (la misma ronda da siempre el mismo
+    // tiempo); en carrera libre es la elegida en el paddock.
+    const weatherRound = seasonRace ? nextRound(championship, season) : null;
+    const seededSeason = weatherRound ? withWeatherSeed(season, newRaceSeed()) : season;
+    if (seededSeason !== season) saveSeason(seededSeason);
+    const scenarioId = weatherRound ? roundWeather(seededSeason, weatherRound, sprintRace ? 'sprint' : 'gp') : weatherScenarioId;
+    simulation.setWeatherScenario(buildWeatherScenario(scenarioId, simulation.totalLaps * 90));
     camera.resetToFullTrack();
     setSelectedCarId(null);
     setDetailOpen(false);
@@ -447,7 +455,7 @@ export const App: React.FC = () => {
     setIsFinished(false);
     setCurrentView('race');
     if (gate === 'directo') simulation.startRaceSequence();
-  }, [simulation, camera, selectedCircuitId, weatherScenarioId, development, raceFormat, components, saveComponents, selectedDriverId, program, saveProgram, championship, constructorsPosition, saveStore, playerSetups, season, effectiveFormat]);
+  }, [simulation, camera, selectedCircuitId, weatherScenarioId, development, raceFormat, components, saveComponents, selectedDriverId, program, saveProgram, championship, constructorsPosition, saveStore, playerSetups, season, saveSeason, effectiveFormat]);
 
   /** [R51] Visto el aviso de sanciones, empieza la carrera. */
   const handleContinueFromPenalties = useCallback(() => {
@@ -632,21 +640,27 @@ export const App: React.FC = () => {
   useEffect(() => {
     if (currentView !== 'race') { wallActive.current = new Set(); wallProposed.current = new Set(); return; }
     const timer = window.setInterval(() => {
-      if (simulation.lightState !== 'racing' || simulation.isFinished) return;
+      if (simulation.isFinished) return;
       const team = (DRIVERS[selectedDriverId] ?? DRIVERS.alonso).teamId;
-      const readings = simulation.cars.filter(car => DRIVERS[car.driver.id]?.teamId === team && car.status === 'running')
-        .map(car => simulation.getWallReading(car.id)).filter((reading): reading is WallReading => reading !== null);
-      const next = nextAlerts(wallAlerts(readings), wallActive.current);
-      wallActive.current = next.active;
-      for (const alert of next.show) pushNotice(alert.tone, 'Muro', alert.text);
+      const racing = simulation.lightState === 'racing';
+      if (racing) {
+        const readings = simulation.cars.filter(car => DRIVERS[car.driver.id]?.teamId === team && car.status === 'running')
+          .map(car => simulation.getWallReading(car.id)).filter((reading): reading is WallReading => reading !== null);
+        const next = nextAlerts(wallAlerts(readings), wallActive.current);
+        wallActive.current = next.active;
+        for (const alert of next.show) pushNotice(alert.tone, 'Muro', alert.text);
+      }
       // [R54] Una propuesta de parada nueva se avisa una vez; las de ritmo, que hay casi cada vuelta, solo se ven en el muro.
       for (const car of simulation.cars) {
         if (DRIVERS[car.driver.id]?.teamId !== team) continue;
         for (const proposal of simulation.getWallProposals(car.id)) {
           const seen = `${proposal.id}@${proposal.timeSec}`;
-          if (proposal.kind !== 'parada' || wallProposed.current.has(seen)) continue;
+          // [T4.12] La de salida llega en la parrilla, antes del semáforo; las de parada, en carrera.
+          if (proposal.kind === 'ritmo' || (proposal.kind === 'parada' && !racing) || wallProposed.current.has(seen)) continue;
           wallProposed.current.add(seen);
-          pushNotice('info', 'Muro', `${car.driver.code}: el estratega propone parar · ${proposal.reason}`);
+          pushNotice('info', 'Muro', proposal.kind === 'salida'
+            ? `${car.driver.code}: el estratega propone salir con ${proposal.compound ? COMPOUND_LABEL[proposal.compound] : 'otro neumático'} · ${proposal.reason}`
+            : `${car.driver.code}: el estratega propone parar · ${proposal.reason}`);
         }
       }
     }, 1000);

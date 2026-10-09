@@ -13,6 +13,7 @@ import type { CarSetup } from '../simulation/Setup';
 import type { SaveGameMessage } from './SaveGamePanel';
 import type { SlotSummary } from '../simulation/SaveGame';
 import { WeatherScenarioSelect } from './WeatherScenarioSelect';
+import { WeatherOutlook } from './WeatherOutlook';
 import { CarShowcase } from './CarShowcase';
 import { RaceFormatSelect } from './RaceFormatSelect';
 import { ComponentsPanel } from './ComponentsPanel';
@@ -1146,7 +1147,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           {onSelectFormat && (
             <RaceFormatSelect className={styles.rulesProfile} value={raceFormat ?? 'directo'} onChange={onSelectFormat} sprintAvailable={sprintAvailable} />
           )}
-          {onSelectWeather && (
+          {/* [T4.12] En la carrera de temporada el tiempo se sortea: se enseña la previsión. En carrera libre se elige. */}
+          {nextRound && !freeRace ? (
+            <WeatherOutlook className={styles.rulesProfile} rainProbabilityPercent={selectedCircuit.rainProbabilityPercent} />
+          ) : onSelectWeather && (
             <WeatherScenarioSelect className={styles.rulesProfile} value={weatherScenarioId ?? 'seco'} onChange={onSelectWeather} />
           )}
 

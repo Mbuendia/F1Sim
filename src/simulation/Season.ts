@@ -12,6 +12,10 @@ import type { RaceResult } from './RaceResult';
 import type { TireSet } from './TireInventory';
 import { SEASON_CALENDAR } from '../data/calendar';
 import type { CalendarRound } from '../data/calendar';
+import { OFFICIAL_CIRCUITS } from '../data/circuits';
+import { drawWeatherScenario } from '../data/weatherScenarios';
+import type { WeatherScenarioId } from '../data/weatherScenarios';
+import { streamSeed } from './Random';
 
 export const SEASON_RACES = 24;
 export const SEASONS_STORAGE_KEY = 'f1_seasons';
@@ -38,8 +42,29 @@ export interface SeasonSummary {
 /** [R52] Fin de semana sprint a medias: el sprint de esa ronda ya se corrió y estos son los juegos que quedan. */
 export interface WeekendState { round: number; tyres: Record<string, TireSet[]> }
 
-/** Lo que la temporada recuerda además del campeonato: las rondas del calendario que se saltaron. */
-export interface SeasonState { version: 1; skipped: number[]; weekend?: WeekendState }
+/**
+ * Lo que la temporada recuerda además del campeonato: las rondas del calendario que se saltaron. [T4.12] Y la semilla
+ * de su tiempo: con ella cada ronda tiene un tiempo fijo (ausente en las partidas anteriores y al empezar la temporada).
+ */
+export interface SeasonState { version: 1; skipped: number[]; weekend?: WeekendState; weatherSeed?: number }
+
+/** [T4.12] La semilla del tiempo pasa de un estado de la temporada al siguiente. */
+const keepSeed = (season: SeasonState): { weatherSeed?: number } => (season.weatherSeed === undefined ? {} : { weatherSeed: season.weatherSeed });
+
+/** [T4.12] Da a la temporada su semilla del tiempo; si ya la tiene, la conserva. */
+export function withWeatherSeed(season: SeasonState, seed: number): SeasonState {
+  return season.weatherSeed === undefined ? { ...season, weatherSeed: Math.floor(seed) >>> 0 } : season;
+}
+
+/**
+ * [T4.12] Tiempo de una ronda de la temporada: se sortea con la probabilidad de lluvia de su circuito y la semilla de
+ * la temporada, así que la misma ronda da siempre el mismo (reiniciar la carrera no lo cambia). El sprint y el Gran
+ * Premio se sortean por separado.
+ */
+export function roundWeather(season: SeasonState, round: CalendarRound, session: 'gp' | 'sprint' = 'gp'): WeatherScenarioId {
+  const chance = OFFICIAL_CIRCUITS[round.circuitId]?.rainProbabilityPercent ?? 0;
+  return drawWeatherScenario(chance, streamSeed(season.weatherSeed ?? 0, `ronda-${round.round}-${session}`));
+}
 
 export function emptySeason(): SeasonState {
   return { version: 1, skipped: [] };
@@ -56,7 +81,8 @@ export function parseSeason(text: string | null): SeasonState {
       const weekend = data.weekend;
       const valid = weekend && typeof weekend === 'object' && Number.isInteger(weekend.round) && weekend.round >= 1 && weekend.round <= SEASON_RACES
         && weekend.tyres && typeof weekend.tyres === 'object' && !Array.isArray(weekend.tyres);
-      return valid ? { version: 1, skipped: validRounds(data.skipped), weekend: { round: weekend.round, tyres: weekend.tyres } } : { version: 1, skipped: validRounds(data.skipped) };
+      const seed = Number.isInteger(data.weatherSeed) ? { weatherSeed: data.weatherSeed as number } : {};
+      return valid ? { version: 1, skipped: validRounds(data.skipped), weekend: { round: weekend.round, tyres: weekend.tyres }, ...seed } : { version: 1, skipped: validRounds(data.skipped), ...seed };
     }
   } catch { /* guardado ilegible */ }
   return emptySeason();
@@ -128,7 +154,7 @@ export function sprintPending(championship: ChampionshipState, season: SeasonSta
 /** Salta la ronda que toca: no se disputa y nadie puntúa. Sin rondas por disputar no cambia nada. */
 export function skipRound(championship: ChampionshipState, season: SeasonState = emptySeason()): SeasonState {
   const next = nextRound(championship, season);
-  return next ? { version: 1, skipped: validRounds([...season.skipped, next.round]) } : season;
+  return next ? { version: 1, skipped: validRounds([...season.skipped, next.round]), ...keepSeed(season) } : season;
 }
 
 export function parseArchive(text: string | null): SeasonSummary[] {
@@ -201,12 +227,12 @@ export function settleRace(career: CareerProgress, race: {
     if (round === undefined) return { ...career, closed: null };
     return {
       ...career, championship, components: addDistance(career.components, race.raceKm),
-      season: { version: 1, skipped: career.season.skipped, weekend: { round, tyres: race.tyres ?? {} } }, closed: null,
+      season: { version: 1, skipped: career.season.skipped, weekend: { round, tyres: race.tyres ?? {} }, ...keepSeed(career.season) }, closed: null,
     };
   }
   return closeIfComplete({
     ...career, championship, components: completeRace(career.components, race.raceKm),
-    season: { version: 1, skipped: career.season.skipped },
+    season: { version: 1, skipped: career.season.skipped, ...keepSeed(career.season) },
   }, race.playerCodes ?? []);
 }
 

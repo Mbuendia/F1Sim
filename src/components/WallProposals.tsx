@@ -5,10 +5,10 @@ import styles from './WallProposals.module.css';
 
 const PACE_LABEL: Record<WallPace, string> = { push: 'Ataque', balanced: 'Ritmo normal', save: 'Ahorro' };
 
-/** Lo que se propone, sin el motivo: «Parar: DURO» o «Ritmo: Ataque». */
-const title = (proposal: WallProposal) => proposal.kind === 'parada'
-  ? `Parar: ${proposal.compound ? COMPOUND_LABEL[proposal.compound] : '—'}`
-  : `Ritmo: ${proposal.paceMode ? PACE_LABEL[proposal.paceMode] : '—'}`;
+/** Lo que se propone, sin el motivo: «Parar: DURO», «Ritmo: Ataque» o, en la parrilla, «Salida: INTERMEDIO». */
+const title = (proposal: WallProposal) => proposal.kind === 'ritmo'
+  ? `Ritmo: ${proposal.paceMode ? PACE_LABEL[proposal.paceMode] : '—'}`
+  : `${proposal.kind === 'salida' ? 'Salida' : 'Parar'}: ${proposal.compound ? COMPOUND_LABEL[proposal.compound] : '—'}`;
 
 /**
  * [R54] Propuestas del estratega para un coche del jugador: cada una con lo que propone, su motivo y los botones de
@@ -36,7 +36,7 @@ export function WallProposals({ proposals, delegated, onAccept, onDiscard, onDel
         <ul className={styles.list}>
           {proposals.map(proposal => (
             <li key={proposal.id} className={styles.item} data-proposal={proposal.kind}>
-              {proposal.kind === 'parada' && proposal.compound && <CompoundBadge compound={proposal.compound} size={16} detail="propuesto" />}
+              {proposal.kind !== 'ritmo' && proposal.compound && <CompoundBadge compound={proposal.compound} size={16} detail="propuesto" />}
               <span className={styles.text}>
                 <strong>{title(proposal)}</strong>
                 <span className={styles.reason}>{proposal.reason}</span>
