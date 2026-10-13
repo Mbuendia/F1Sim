@@ -34,7 +34,8 @@
 @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.6; } }
 /* [T4.14] Órdenes de equipo: columna estrecha entre las dos tarjetas (no añade altura al muro). */
 .pilotsGrid[data-orders] { grid-template-columns:minmax(0, 1fr) auto minmax(0, 1fr); }
-.pilotsGrid[data-orders] > .pilotCard:first-of-type { order:-1; }
+.pilotsGrid[data-orders] > .teamOrders { order:1; }
+.pilotsGrid[data-orders] > .pilotCard:last-child { order:2; }
 .teamOrders { display:flex; min-width:0; }
 .teamOrders > fieldset { flex-direction:column; align-self:center; }
 .teamOrders > fieldset > label { flex:0 0 auto; justify-content:flex-start; padding:0 10px; font-size:14px; }
@@ -52,6 +53,11 @@
 }
 /* Muro estrecho: los medidores bajan a su propia fila. */
 @container (max-width:1000px) {
+  /* Sin sitio para la columna de órdenes entre las tarjetas: pasa a una fila encima de ellas. */
+  .pilotsGrid[data-orders] { grid-template-columns:repeat(2, minmax(0, 1fr)); }
+  .pilotsGrid[data-orders] > .teamOrders { order:-2; grid-column:1 / -1; }
+  .teamOrders > fieldset { flex-direction:row; flex:1; }
+  .teamOrders > fieldset > label { flex:1 1 0; justify-content:center; padding:0 4px; }
   .pilotCard { grid-template-columns:minmax(0, 1fr); grid-template-rows:30px 24px 46px 46px 28px 52px; }
   .pilotIdentity,.gauges { grid-column:1; justify-self:start; }
 }
@@ -62,7 +68,7 @@
   .pilotsGrid,.pilotsGrid[data-orders] { grid-template-columns:minmax(0, 1fr); }
   .pilotCard:not([data-shown]) { display:none; }
   /* Con un piloto a la vista, las órdenes van en una fila encima de su tarjeta. */
-  .teamOrders { order:-2; }
+  .pilotsGrid[data-orders] > .teamOrders { order:-2; }
   .teamOrders > fieldset { flex-direction:row; flex:1; }
   .teamOrders > fieldset > label { flex:1 1 0; justify-content:center; padding:0 4px; }
 }
