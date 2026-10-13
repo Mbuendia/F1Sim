@@ -46,6 +46,7 @@ import { brakeDecelFactor, brakeTempStep, engineTempStep, gearFor, rpmFor } from
 import { chassisGripAt, resolveTechnical } from '../data/teamProfiles';
 import type { CarTechnical } from '../data/teamProfiles';
 import { applySetup, isNeutralSetup, normalizeSetup } from './Setup';
+import { withTradeoff } from './Staff';
 import type { CarSetup } from './Setup';
 import { availableSets, COMPOUND_LABEL, createInventory, inventoryFromSets, mountSet, pickSet, swapStartSet, TireCompliance, tireCompliance } from './TireInventory';
 import type { TireSet } from './TireInventory';
@@ -247,13 +248,26 @@ export class RaceSimulation {
   setupLapTable(driverId: string, setups: CarSetup[]): { setup: CarSetup; lapSec: number }[] {
     const car = this.cars.find(candidate => candidate.driver.id === driverId);
     if (!car) return [];
-    const base = technicalWith(resolveTechnical(car.team.id, this.circuitId), this.technicalUpgrades[car.driver.id] ?? []);
+    const base = this.upgradedTechnical(car);
     return setups.map(setup => ({ setup, lapSec: RejoinModel.lapProfile(this.activeTrack, { team: car.team, driver: car.driver, technical: applySetup(base, setup) }, null).lapTime }));
   }
 
   /** Perfil técnico del coche en este evento: equipo y circuito (R17), mejoras montadas (R18) y setup (R49). */
   private technicalFor(car: Pick<CarState, 'team' | 'driver'>): CarTechnical {
-    return applySetup(technicalWith(resolveTechnical(car.team.id, this.circuitId), this.technicalUpgrades[car.driver.id] ?? []), this.carSetups[car.driver.id]);
+    return applySetup(this.upgradedTechnical(car), this.carSetups[car.driver.id]);
+  }
+
+  /** Perfil con las mejoras montadas y, si su equipo tiene un jefe de aerodinámica distinto del de la casa, su contrapartida escalada (T4.5). */
+  private upgradedTechnical(car: Pick<CarState, 'team' | 'driver'>): CarTechnical {
+    const keys = this.technicalUpgrades[car.driver.id] ?? [];
+    return withTradeoff(technicalWith(resolveTechnical(car.team.id, this.circuitId), keys), keys, this.upgradeTradeoffs[car.driver.teamId] ?? 1);
+  }
+
+  /** [T4.5] Factor de la contrapartida de las mejoras por equipo (1 o ausente: la de siempre). */
+  private upgradeTradeoffs: Record<string, number> = {};
+  setUpgradeTradeoffs(factors: Record<string, number>) {
+    this.upgradeTradeoffs = { ...factors };
+    for (const car of this.cars) car.technical = this.technicalFor(car);
   }
 
   /** [R49] Pilotos que salen desde el pit lane (p. ej. por un cambio en parc fermé). */

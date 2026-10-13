@@ -2,6 +2,8 @@
 // que va con la carrera profesional y se guarda con ella, las piezas de cada tarea (T4.1: dinero; T4.4: instalaciones; T4.6: equipo de boxes; T4.9: patrocinio; T4.10: junta; T4.7: contratos de pilotos; T4.8: reserva y cantera; T4.11: edades).
 // Todo son funciones puras: la temporada (Season.ts) las llama al anotar una carrera, un salto de ronda o el cierre.
 import { TEAMS } from '../data/teams';
+import { advanceStaff, closeStaffSeason, isStaff, roundStaffSalaries, startStaff } from './Staff';
+import type { StaffState } from './Staff';
 import { atDebtLimit, charge, closeFinanceSeason, credit, isFinance, settleRound, startFinance } from './Finance';
 import { closeBoard, isBoard, settleBoard, startBoard } from './Board';
 import type { BoardState } from './Board';
@@ -40,6 +42,8 @@ export interface ManagementState {
   academy: AcademyState;
   /** [T4.11] Edad de cada piloto de la parrilla en la temporada en curso. */
   ages: Ages;
+  /** [T4.5] Personal técnico fichado y mercado de la temporada (ausente en las partidas anteriores). */
+  staff?: StaffState;
 }
 
 export const MANAGEMENT_STORAGE_KEY = 'f1_management';
@@ -51,6 +55,7 @@ export function startManagement(playerTeamId: string, season = 1, seed = 0): Man
     version: 1, playerTeamId: teamId, seed,
     finance: startFinance(Object.keys(TEAMS), season), facilities: startFacilities(), pitCrews: startPitCrews(), sponsors: startSponsors(season, seed),
     board: startBoard(teamId), contracts: startContracts(season, seed), academy: startAcademy(seed), ages: startAges(),
+    staff: startStaff(season, seed),
   };
 }
 
@@ -79,6 +84,7 @@ export function readManagement(data: unknown): ManagementState | null {
     ...state, seed, facilities: state.facilities ?? startFacilities(), pitCrews: state.pitCrews ?? startPitCrews(),
     sponsors: state.sponsors ?? startSponsors(state.finance.season, seed), board: state.board ?? startBoard(state.playerTeamId),
     contracts, academy: state.academy ?? startAcademy(seed), ages: state.ages ?? agesFor(contracts),
+    staff: isStaff(state.staff) ? state.staff : startStaff(state.finance.season, seed),
   };
 }
 
@@ -131,11 +137,17 @@ export function settleManagementRound(state: ManagementState, round: RoundSettle
     finance = charge(finance, teamId, { round: round.round, kind: 'sueldos', label: 'Sueldos de los pilotos', amount: roundSalaries(state.contracts, teamId) });
     // [T4.8] Y el del reserva.
     finance = charge(finance, teamId, { round: round.round, kind: 'cantera', label: 'Sueldo del piloto reserva', amount: reserveSalary(state.academy, teamId) });
+    // [T4.5] Y el del personal técnico fichado (el de la casa va en la operación).
+    finance = charge(finance, teamId, { round: round.round, kind: 'sueldos', label: 'Sueldos del personal técnico', amount: roundStaffSalaries(state.staff, teamId) });
   }
   // [T4.6] Pasa la semana del equipo de boxes (fatiga y entrenamiento) y se anotan sus paradas.
   // [T4.8] Tras un Gran Premio los reservas mejoran y las sustituciones se acaban; una ronda saltada no cuenta.
   const academy = round.format === 'gp' ? advanceAcademy(state.academy) : state.academy;
-  return { ...state, finance, board, academy, facilities: advanceFacilities(state.facilities), pitCrews: advancePitCrews(state.pitCrews, round.stops) };
+  return {
+    ...state, finance, board, academy, facilities: advanceFacilities(state.facilities), pitCrews: advancePitCrews(state.pitCrews, round.stops),
+    // [T4.5] Se incorporan los fichajes cuya fecha ha llegado.
+    ...(state.staff ? { staff: advanceStaff(state.staff, round.round) } : {}),
+  };
 }
 
 /** Cierra la temporada con la clasificación final de constructores (del primero al último). */
@@ -157,6 +169,8 @@ export function closeManagementSeason(state: ManagementState, constructorsOrder:
   if (verdict.money < 0) finance = charge(finance, state.playerTeamId, { ...movement, label: 'Recorte de la junta: objetivo no cumplido' });
   return {
     ...state, playerTeamId: verdict.teamId, board: verdict.board, finance, pitCrews: resetCrewSeason(state.pitCrews),
+    // [T4.5] Vencen los contratos del personal y llega el mercado de la temporada nueva.
+    ...(state.staff ? { staff: closeStaffSeason(state.staff, state.seed) } : {}),
     // [T4.9] Vencen los contratos de patrocinio que llegaban hasta esta temporada y llegan ofertas nuevas.
     sponsors: renewSponsors(state.sponsors, state.finance.season, state.seed),
     contracts, academy: winterAcademy(state.academy, contracts, state.finance.season, state.seed), ages: advanceAges(state.ages, contracts, state.academy),

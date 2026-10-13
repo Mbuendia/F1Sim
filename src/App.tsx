@@ -5,6 +5,7 @@ import { StintTimeline } from './components/StintTimeline';
 import { QualifyingLive } from './components/QualifyingLive';
 import { PracticePanel } from './components/PracticePanel';
 import { SpyPanel } from './components/SpyPanel';
+import { engineerPoint, hireStaff, staffEffects } from './simulation/Staff';
 import { canSpy, runSpy, settleSpy } from './simulation/Spy';
 import type { SpyLevel } from './simulation/Spy';
 import { allSetups, practiceTyres, runPractice } from './simulation/Practice';
@@ -253,7 +254,10 @@ export const App: React.FC = () => {
     return row ? { position: row.position, status: row.status, points: row.points } : undefined;
   }, simulation.totalLaps,
   // [T4.4] El simulador de cada equipo puede dar a sus pilotos un punto de mejora extra.
-  driver => simulatorBonus(gainOf(management.facilities, driver.teamId, 'simulador'), simulation.totalLaps + development.races, driver.id)), [development, simulation, management, roster, mode]);
+  // [T4.5] Y su ingeniero de carrera, otro (si es mejor que el de la casa).
+  driver => simulatorBonus(gainOf(management.facilities, driver.teamId, 'simulador'), simulation.totalLaps + development.races, driver.id)
+    + engineerPoint(staffEffects(management.staff, driver.teamId).engineerBonus[Math.max(0, pairOf(management.contracts, driver.teamId).indexOf(driver.id)) % 2], simulation.totalLaps + development.races, driver.id)),
+  [development, simulation, management, roster, mode]);
 
   // [R19] Componentes de la unidad de potencia de todos los pilotos, guardados en el navegador
   const [components, setComponents] = useState<ComponentState>(() => {
@@ -583,6 +587,7 @@ export const App: React.FC = () => {
     // [T4.6] En una carrera de temporada (Gran Premio o sprint) cada coche para con el equipo de boxes de su equipo; en
     // una libre, como siempre.
     simulation.setPitCrews(counts ? Object.fromEntries(Object.entries(managed.pitCrews.teams).map(([teamId, crew]) => [teamId, crewEffect(crew)])) : {});
+    simulation.setUpgradeTradeoffs(counts ? Object.fromEntries([...new Set(Object.values(roster).map(d => d.teamId))].map(teamId => [teamId, staffEffects(managed.staff, teamId).tradeoffFactor])) : {});
     simulation.setTechnicalUpgrades(Object.fromEntries(Object.values(roster).map(d => [d.id, upgradesFor(developed, d.teamId, d.id, raceIndex)])));
     const baseGrid = quali ? quali.grid.map(slot => slot.driverId) : simulation.cars.map(c => c.driver.id);
     const penalized = applyGridPenalties(baseGrid, started.penalties);
@@ -630,6 +635,7 @@ export const App: React.FC = () => {
       drivers: simulation.cars.map(car => ({
         driverId: car.driver.id, code: car.driver.code, teamId: car.driver.teamId, simulatorLevel: levelOf(management.facilities, car.driver.teamId, 'simulador'),
         lapTable: simulation.setupLapTable(car.driver.id, setups), tyreWear: car.technical?.tyreWear ?? 1,
+        strategyBonus: staffEffects(management.staff, car.driver.teamId).practiceMargin,
       })),
     });
     saveSeason(withPractice(season, result));
@@ -1360,6 +1366,14 @@ export const App: React.FC = () => {
             setContractMessage(`${DRIVERS[driverId]?.lastName ?? driverId}: ${answer.reason}`);
           },
         }}
+        staff={management.staff ? {
+          state: management.staff, teamId: management.playerTeamId, round: nextRound(championship, season)?.round ?? SEASON_RACES,
+          drivers: pairOf(management.contracts, management.playerTeamId).map(id => roster[id]?.code ?? id),
+          onHire: memberId => {
+            const hired = hireStaff(management.staff!, management.playerTeamId, memberId, nextRound(championship, season)?.round ?? SEASON_RACES);
+            if (hired.ok) saveManagement({ ...management, staff: hired.state });
+          },
+        } : undefined}
         pitCrew={{
           crew: management.pitCrews.teams[management.playerTeamId],
           onPlan: plan => saveManagement({ ...management, pitCrews: setCrewPlan(management.pitCrews, management.playerTeamId, plan) }),

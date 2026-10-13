@@ -552,6 +552,7 @@ export const modules = [
   { "id": "winter-t411", "tasks": ["T4.11"], "sprint": "4", "kind": "contract" },
   { "id": "pit-window-t415", "tasks": ["T4.15"], "sprint": "4", "kind": "contract" },
   { "id": "polish-t417", "tasks": ["T4.17"], "sprint": "4", "kind": "contract" },
+  { "id": "staff-t45", "tasks": ["T4.5"], "sprint": "4", "kind": "contract" },
   { "id": "practice-t413", "tasks": ["T4.13"], "sprint": "4", "kind": "contract" },
   { "id": "team-orders-t414", "tasks": ["T4.14"], "sprint": "4", "kind": "contract" },
   { "id": "circuit-quality", "tasks": ["G1"], "sprint": "4.5", "kind": "contract" },

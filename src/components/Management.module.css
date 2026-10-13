@@ -199,3 +199,10 @@
 .practiceRow { display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: 10px; align-items: center; padding: 6px 0; border-top: 1px solid var(--line); }
 .practiceLearned { display: flex; flex-direction: column; gap: 4px; min-width: 0; font-size: 15px; }
 .practiceSetups { margin: 0; padding-left: 18px; color: var(--text-2); font-size: 15px; }
+
+/* [T4.5] Personal técnico */
+.staffGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+.staffCard { display: flex; gap: 10px; align-items: flex-start; padding: 10px; border: 1px solid var(--line); border-radius: var(--radio-m); background: var(--panel-2); min-width: 0; }
+.staffBadge { flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 50%; background: var(--panel); border: 2px solid var(--equipo); color: var(--text); font-weight: 700; font-size: 15px; }
+.staffBody { display: flex; flex-direction: column; gap: 4px; min-width: 0; font-size: 15px; }
+.staffBody .button { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; }

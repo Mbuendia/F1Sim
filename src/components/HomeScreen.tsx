@@ -21,6 +21,8 @@ import { WeatherOutlook } from './WeatherOutlook';
 import { FinancePanel } from './FinancePanel';
 import { FacilitiesPanel } from './FacilitiesPanel';
 import { PitCrewPanel } from './PitCrewPanel';
+import { StaffPanel } from './StaffPanel';
+import type { StaffState } from '../simulation/Staff';
 import { SponsorsPanel } from './SponsorsPanel';
 import { HubHeader } from './HubHeader';
 import { BoardPanel } from './BoardPanel';
@@ -116,6 +118,8 @@ interface HomeScreenProps {
   board?: BoardState;
   /** [T4.6] Equipo de boxes del equipo del jugador. */
   pitCrew?: { crew: PitCrew; onPlan: (plan: CrewPlan) => void };
+  /** [T4.5] Personal técnico del equipo y mercado de la temporada. */
+  staff?: { state: StaffState; teamId: string; round: number; drivers: string[]; onHire: (memberId: string) => void };
   /** [T4.7] Plantilla de la temporada (cada piloto con el equipo de su contrato); sin ella, la de partida. */
   roster?: Record<string, Driver>;
   /** [T4.7] Contratos de los pilotos del equipo del jugador y negociación de la temporada siguiente. */
@@ -155,6 +159,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   finance,
   facilities,
   pitCrew,
+  staff,
   roster = DRIVERS,
   contracts,
   reserve,
@@ -393,6 +398,15 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             <ReservePanel academy={reserve.academy} contracts={contracts.state} teamId={contracts.teamId} season={contracts.season} round={contracts.round}
               onStandIn={reserve.onStandIn} onSignReserve={reserve.onSignReserve} onPromote={reserve.onPromote} message={reserve.message} />
           )}
+        </section>
+      )}
+
+      {section === 'equipo' && staff && (
+        <section className={styles.sectionBlock}>
+          <h2 className={styles.sectionHeading}>
+            <span>Personal técnico</span>
+          </h2>
+          <StaffPanel state={staff.state} teamId={staff.teamId} round={staff.round} drivers={staff.drivers} onHire={staff.onHire} />
         </section>
       )}
 

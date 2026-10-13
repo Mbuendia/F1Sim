@@ -57,6 +57,8 @@ export interface PracticeDriver {
   lapTable: SetupLap[];
   /** Desgaste propio del coche respecto a la referencia (1 = el de referencia). */
   tyreWear: number;
+  /** [T4.5] Vueltas o puestos de margen que quita su jefe de estrategia (negativo: los añade). */
+  strategyBonus?: number;
 }
 
 export interface PracticeLearning {
@@ -142,7 +144,7 @@ export function runPractice(input: PracticeInput): PracticeResult {
     if (program === 'setup') {
       entry.setupCandidates = setupCandidates(driver, sessions);
     } else if (program === 'tanda-larga') {
-      const margin = PRACTICE.LIFE_MARGIN_LAPS[sessions] ?? PRACTICE.LIFE_MARGIN_LAPS[1];
+      const margin = Math.max(1, (PRACTICE.LIFE_MARGIN_LAPS[sessions] ?? PRACTICE.LIFE_MARGIN_LAPS[1]) - (driver.strategyBonus ?? 0));
       entry.tyreLifeMargin = margin;
       // La estimación se desvía de la vida real del coche, siempre dentro del margen que se anuncia.
       entry.tyreLife = Object.fromEntries(SLICKS.map(compound => {
@@ -150,7 +152,7 @@ export function runPractice(input: PracticeInput): PracticeResult {
         return [compound, Math.max(1, Math.round(real + (rng() * 2 - 1) * margin))];
       })) as Record<SlickCompound, number>;
     } else {
-      const margin = PRACTICE.RANK_MARGIN[sessions] ?? PRACTICE.RANK_MARGIN[1];
+      const margin = Math.max(1, (PRACTICE.RANK_MARGIN[sessions] ?? PRACTICE.RANK_MARGIN[1]) - (driver.strategyBonus ?? 0));
       const real = order.findIndex(other => other.driverId === driver.driverId) + 1;
       entry.paceRankMargin = margin;
       entry.paceRank = Math.max(1, Math.min(input.drivers.length, real + Math.round((rng() * 2 - 1) * margin)));

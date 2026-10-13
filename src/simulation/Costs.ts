@@ -5,6 +5,7 @@
 // de desarrollar y de montar fuera de cupo (decisión del usuario del 09/10/2026: sin mínimo garantizado).
 // Todos los importes son diseño del juego, en miles.
 import type { TrackIncident } from '../types/f1';
+import { staffEffects, staffResearchRaces } from './Staff';
 import type { RunoffSurface } from '../data/scenarioTypes';
 import { DRIVERS } from '../data/drivers';
 import { ALLOCATION, COMPONENT_LABEL, COMPONENT_TYPES, NOMINAL_RACES, fitNew, fittedUnit, undoFit } from './ComponentPool';
@@ -65,8 +66,10 @@ function withFacilityTimes(program: DevelopmentProgram, management: ManagementSt
   const tunnel = gainOf(management.facilities, teamId, 'tunel'), production = gainOf(management.facilities, teamId, 'produccion');
   const team = program.teams[teamId];
   const project = team?.projects[team.projects.length - 1];
-  if (!team || !project || (tunnel === 0 && production === 0)) return program;
-  const researchEndRace = project.startedRace + researchRacesWith(researchRaces(key, constructorsPosition), tunnel);
+  // [T4.5] El director técnico del equipo acorta o alarga la investigación (con el de la casa, factor 1).
+  const researchFactor = staffEffects(management.staff, teamId).researchFactor;
+  if (!team || !project || (tunnel === 0 && production === 0 && researchFactor === 1)) return program;
+  const researchEndRace = project.startedRace + staffResearchRaces(researchRacesWith(researchRaces(key, constructorsPosition), tunnel), researchFactor);
   const readyRace = researchEndRace + fabricationRacesWith(PROJECTS[key].productionRaces, production);
   return { ...program, teams: { ...program.teams, [teamId]: { ...team, projects: [...team.projects.slice(0, -1), { ...project, researchEndRace, readyRace }] } } };
 }
@@ -74,7 +77,7 @@ function withFacilityTimes(program: DevelopmentProgram, management: ManagementSt
 /** [T4.4] Carreras hasta tener listo un proyecto que el equipo empezase ahora, con sus instalaciones. */
 export function projectLeadTime(management: ManagementState, teamId: string, key: string, constructorsPosition: number): number {
   if (!PROJECTS[key]) return 0;
-  return researchRacesWith(researchRaces(key, constructorsPosition), gainOf(management.facilities, teamId, 'tunel'))
+  return staffResearchRaces(researchRacesWith(researchRaces(key, constructorsPosition), gainOf(management.facilities, teamId, 'tunel')), staffEffects(management.staff, teamId).researchFactor)
     + fabricationRacesWith(PROJECTS[key].productionRaces, gainOf(management.facilities, teamId, 'produccion'));
 }
 
