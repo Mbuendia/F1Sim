@@ -37,3 +37,5 @@
 
 .bad { color: #fca5a5; }
 .warn { color: #fcd34d; }
+/* [T4.15] Ventana de parada en la tarjeta del piloto */
+.pitWindow { display: block; font-size: 14px; color: var(--text-2, #cbd5e1); }

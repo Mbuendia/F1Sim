@@ -10,6 +10,10 @@ import { WeatherRenderer, weatherLayers } from '../renderer/WeatherRenderer';
 import { SpraySystem } from '../renderer/SprayParticles';
 import { OFFICIAL_CIRCUITS } from '../data/circuits';
 import { supportsWebGL } from './CarShowcase';
+import type { TrackLayerGL } from '../renderer/TrackLayerGL';
+import { frameCost, recordStage } from '../renderer/frameCost';
+
+if (import.meta.env.DEV && typeof window !== 'undefined') (window as unknown as { __frameCost: typeof frameCost }).__frameCost = frameCost;
 import { Compass, RotateCw } from 'lucide-react';
 
 interface RaceCanvasProps {
@@ -26,6 +30,8 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
   onSelectCar
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const trackLayerRef = useRef<TrackLayerGL | null>(null);
+  const [canvasFallback, setCanvasFallback] = useState(false);
   // [T3.4] Partículas de spray de esta vista.
   const spray = useRef(new SpraySystem());
   const isDraggingRef = useRef(false);
@@ -53,6 +59,23 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
       .catch(() => { /* sin imágenes: dibujo vectorial */ });
     return () => { cancelled = true; };
   }, [simulation]);
+
+  // [G8] Pista en WebGL: se carga al entrar en carrera. Sin WebGL (o si falla) la pinta el Canvas, con un aviso.
+  useEffect(() => {
+    // Con `?canvas` en la dirección se fuerza el respaldo, para probarlo en un navegador que sí tiene WebGL.
+    if (!supportsWebGL() || new URLSearchParams(window.location.search).has('canvas')) { setCanvasFallback(true); return; }
+    let cancelled = false;
+    let layer: TrackLayerGL | null = null;
+    import('../renderer/TrackLayerGL')
+      .then(module => module.TrackLayerGL.create())
+      .then(created => {
+        if (cancelled) { created?.destroy(); return; }
+        if (!created) { setCanvasFallback(true); return; }
+        layer = created; trackLayerRef.current = created; setCanvasFallback(false);
+      })
+      .catch(() => { if (!cancelled) setCanvasFallback(true); });
+    return () => { cancelled = true; trackLayerRef.current = null; layer?.destroy(); };
+  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -102,7 +125,9 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
       const dtRaw = Math.min((currentTime - lastTime) / 1000, 0.1);
       lastTime = currentTime;
 
+      const frameStart = performance.now();
       simulation.update(dtRaw);
+      const simulated = performance.now();
       // [R43] Coches y Safety Car con la pose interpolada de este fotograma (pintado y cámara).
       const frame = interpolator.frame(simulation, dtRaw);
       camera.update(frame.cars, dtRaw, simulation.activeTrack);
@@ -115,9 +140,23 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
       ctx.fillStyle = '#14181f';
       ctx.fillRect(0, 0, camera.screenWidth, camera.screenHeight);
 
-      TrackRenderer.renderTrack(ctx, simulation.activeTrack, camera, dpr, simulation.weather, simulation.circuitId);
+      // [G8] Pista fija desde la GPU; si el contexto WebGL se pierde, se vuelve al Canvas.
+      let gpu = false;
+      const trackLayer = trackLayerRef.current;
+      if (trackLayer) {
+        try {
+          const view = trackLayer.render(simulation.activeTrack, simulation.circuitId, camera, dpr, (simulation.weather?.waterPercentage || 0) > 10);
+          ctx.drawImage(view, 0, 0, camera.screenWidth, camera.screenHeight);
+          gpu = true;
+        } catch {
+          trackLayerRef.current = null;
+          setCanvasFallback(true);
+        }
+      }
+      TrackRenderer.renderTrack(ctx, simulation.activeTrack, camera, dpr, simulation.weather, simulation.circuitId, gpu);
       // [R04] Puntos de detección y tramos de activación del DRS.
       TrackRenderer.renderDrsMarkers(ctx, simulation.activeTrack, camera);
+      const trackDone = performance.now();
 
       // [R44] Pista mojada por tramo, radar de lluvia y spray (antes de los coches y sus etiquetas).
       const weatherView = weatherLayers(simulation.weatherModel, simulation.raceTimeSec);
@@ -125,6 +164,7 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
       // [T3.4] Spray con partículas: se emite con el tiempo de carrera y se pinta antes que los coches.
       spray.current.update(frame.cars, t => simulation.weatherModel.depthAt(t), simulation.raceTimeSec);
       spray.current.render(ctx, camera, simulation.raceTimeSec);
+      const weatherDone = performance.now();
 
       if (frame.safetyCar?.isDeployed && !safetyCarImageRequested) {
         safetyCarImageRequested = true;
@@ -137,6 +177,7 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
       const trackWidthCarsCapacity = circuitSpec?.trackWidthCars ?? 3;
       CarRenderer.renderCars(ctx, frame.cars, camera, selectedCarId, simulation.activeTrack, trackWidthCarsCapacity, frame.safetyCar,
         { depthAt: t => simulation.weatherModel.depthAt(t), timeSec: simulation.raceTimeSec });
+      const carsDone = performance.now();
 
       // [R53] Gotas en pantalla según la lluvia de la zona visible (por encima de pista y coches).
       WeatherRenderer.renderClouds(ctx, camera, simulation.weatherModel.cloudCoverAt(simulation.raceTimeSec));
@@ -148,6 +189,12 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
       }
 
       ctx.restore();
+      // [G8][G9] Coste de cada fase del fotograma.
+      const frameEnd = performance.now();
+      frameCost.gpu = gpu;
+      recordStage('simulacion', simulated - frameStart); recordStage('pista', trackDone - simulated); recordStage('clima', weatherDone - trackDone);
+      recordStage('coches', carsDone - weatherDone); recordStage('resto', frameEnd - carsDone); recordStage('total', frameEnd - frameStart);
+      frameCost.frames++;
       animationFrameId = requestAnimationFrame(loop);
     };
 
@@ -232,6 +279,13 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
         onDoubleClick={handleDoubleClick}
         onContextMenu={(e) => e.preventDefault()}
       />
+
+      {canvasFallback && (
+        <div role="status" style={{ position: 'absolute', left: 12, bottom: 12, maxWidth: 420, padding: '6px 10px', borderRadius: 6,
+          background: 'rgba(20, 24, 31, 0.9)', border: '1px solid rgba(234, 179, 8, 0.6)', color: '#eab308', font: "600 13px 'Rajdhani', sans-serif", pointerEvents: 'none' }}>
+          Pista en modo de respaldo (Canvas). Para verla con toda su calidad, activa la aceleración por hardware (WebGL) del navegador.
+        </div>
+      )}
 
       {/* ── BRÚJULA & INDICADOR DE ROTACIÓN 360° ── */}
       <div className={styles.orbitBadge} onClick={handleDoubleClick} title="Haz doble click para resetear vista">

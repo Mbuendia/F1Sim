@@ -98,9 +98,14 @@ export class SpraySystem {
     return list;
   }
 
-  /** Pinta las partículas vivas que caen en pantalla, en tres trazos según lo desvanecidas que están. */
+  /**
+   * Pinta las partículas vivas que caen en pantalla, agrupadas por lo desvanecidas que están y por tamaño. [T4.17] Cada
+   * gota es un punto redondo: un rectángulo mínimo trazado con unión redonda y el grosor de la gota, para que con mucho
+   * zoom no se vea como un bloque.
+   */
   render(ctx: CanvasRenderingContext2D, camera: Camera, timeSec: number) {
-    const buckets: number[][] = [[], [], []];
+    const DOT = 0.02;
+    const groups = new Map<number, number[]>();
     for (let i = 0; i < SPRAY.MAX; i++) {
       const age = timeSec - this.born[i];
       if (age < 0 || age >= SPRAY.LIFE_SEC) continue;
@@ -109,18 +114,22 @@ export class SpraySystem {
       const life = age / SPRAY.LIFE_SEC;
       // La gota crece un poco mientras se desvanece.
       const side = Math.max(1.5, this.size[i] * (1 + life) * camera.zoom);
-      buckets[Math.min(2, Math.floor(life * 3))].push(screen.x - side / 2, screen.y - side / 2, side);
+      // Grupo: desvanecimiento (0 a 2) y diámetro en píxeles enteros (de 2 a 40).
+      const key = Math.min(2, Math.floor(life * 3)) * 100 + Math.min(40, Math.max(2, Math.round(side)));
+      let group = groups.get(key);
+      if (!group) { group = []; groups.set(key, group); }
+      group.push(screen.x - DOT / 2, screen.y - DOT / 2);
     }
-    if (!buckets.some(bucket => bucket.length)) return;
+    if (!groups.size) return;
     ctx.save();
+    ctx.lineJoin = 'round';
     const alphas = [0.42, 0.26, 0.12];
-    for (let b = 0; b < 3; b++) {
-      const bucket = buckets[b];
-      if (!bucket.length) continue;
-      ctx.fillStyle = `rgba(210, 230, 255, ${alphas[b]})`;
+    for (const [key, group] of groups) {
+      ctx.strokeStyle = `rgba(210, 230, 255, ${alphas[Math.floor(key / 100)]})`;
+      ctx.lineWidth = key % 100;
       ctx.beginPath();
-      for (let k = 0; k < bucket.length; k += 3) ctx.rect(bucket[k], bucket[k + 1], bucket[k + 2], bucket[k + 2]);
-      ctx.fill();
+      for (let k = 0; k < group.length; k += 2) ctx.rect(group[k], group[k + 1], DOT, DOT);
+      ctx.stroke();
     }
     ctx.restore();
   }

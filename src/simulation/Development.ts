@@ -29,6 +29,10 @@ export const PROJECTS: Record<string, ProjectSpec> = {
 /** Túnel de viento disponible (%) por posición en constructores. */
 export const ATR_PERCENT: Record<number, number> = { 1: 70, 2: 75, 3: 80, 4: 85, 5: 90, 6: 95, 7: 100, 8: 105, 9: 110, 10: 115 };
 export const MAX_ACTIVE = 2;
+/** [T4.11] Parte del efecto y de la contrapartida de cada mejora montada que conserva el coche de la temporada siguiente. */
+export const CARRY_OVER = 0.5;
+/** Por debajo de esta parte, lo heredado ya no cuenta. */
+const LEGACY_MIN = 0.1;
 
 export function researchRaces(key: string, constructorsPosition: number): number {
   const atr = ATR_PERCENT[Math.min(10, Math.max(1, Math.round(constructorsPosition)))] ?? 100;
@@ -50,7 +54,11 @@ export interface DevelopmentProgram {
   version: 1;
   catalog: string;
   teams: Record<string, { projects: Project[]; installed: Installed[] }>;
+  /** [T4.11] Lo que el coche de cada equipo hereda del anterior. Va aparte: los proyectos de la temporada empiezan de cero. */
+  legacy?: Record<string, Legacy[]>;
 }
+/** [T4.11] Mejora heredada del coche anterior: qué proyecto y qué parte de su efecto queda. */
+export interface Legacy { key: string; share: number }
 
 export const PROGRAM_STORAGE_KEY = 'f1_development_program';
 
@@ -66,7 +74,7 @@ export function parseProgram(text: string | null): DevelopmentProgram {
   return emptyProgram();
 }
 
-const teamOf = (program: DevelopmentProgram, teamId: string) => program.teams[teamId] ?? { projects: [], installed: [] };
+const teamOf = (program: DevelopmentProgram, teamId: string): DevelopmentProgram['teams'][string] => program.teams[teamId] ?? { projects: [], installed: [] };
 
 export function statusAt(project: Project, raceIndex: number): 'investigacion' | 'produccion' | 'listo' | 'instalado' {
   if (project.installed) return 'instalado';
@@ -78,13 +86,13 @@ export function activeProjects(program: DevelopmentProgram, teamId: string): Pro
   return teamOf(program, teamId).projects.filter(p => !p.installed);
 }
 
-export function startProject(program: DevelopmentProgram, teamId: string, key: string, raceIndex: number, constructorsPosition: number):
+export function startProject(program: DevelopmentProgram, teamId: string, key: string, raceIndex: number, constructorsPosition: number, maxActive = MAX_ACTIVE):
   { ok: boolean; program: DevelopmentProgram; reason?: string } {
   const spec = PROJECTS[key];
   const team = teamOf(program, teamId);
   const active = team.projects.filter(p => !p.installed);
   if (!spec) return { ok: false, program, reason: 'Proyecto desconocido' };
-  if (active.length >= MAX_ACTIVE) return { ok: false, program, reason: `Como máximo ${MAX_ACTIVE} proyectos a la vez` };
+  if (active.length >= maxActive) return { ok: false, program, reason: `Como máximo ${maxActive} proyectos a la vez` };
   if (active.some(p => p.key === key)) return { ok: false, program, reason: 'Ese proyecto ya está en marcha' };
   const researchEndRace = raceIndex + researchRaces(key, constructorsPosition);
   const project: Project = {
@@ -111,17 +119,41 @@ export function installFirst(program: DevelopmentProgram, projectId: string, dri
 
 /** Mejoras montadas en el coche de un piloto en una carrera. */
 export function upgradesFor(program: DevelopmentProgram, teamId: string, driverId: string, raceIndex: number): string[] {
-  return teamOf(program, teamId).installed
-    .filter(i => (i.firstDriverId === driverId ? raceIndex >= i.fromRace : raceIndex >= i.fromRace + 1))
-    .map(i => i.key);
+  // [T4.11] Lo heredado del coche anterior va en los dos coches desde la primera carrera, como «proyecto@parte».
+  return [
+    ...legacyOf(program, teamId).map(item => `${item.key}@${item.share}`),
+    ...teamOf(program, teamId).installed.filter(i => (i.firstDriverId === driverId ? raceIndex >= i.fromRace : raceIndex >= i.fromRace + 1)).map(i => i.key),
+  ];
+}
+
+/** [T4.11] Lo que el coche de un equipo hereda del anterior. */
+export function legacyOf(program: DevelopmentProgram, teamId: string): Legacy[] {
+  return program.legacy?.[teamId] ?? [];
+}
+
+/**
+ * [T4.11] Programa del coche nuevo: de cada mejora montada (y de lo que ya se heredaba) queda la mitad del efecto y de
+ * la contrapartida; los proyectos a medias se pierden. Un equipo sin nada que heredar empieza de cero.
+ */
+export function carryOver(program: DevelopmentProgram): DevelopmentProgram {
+  const legacy: Record<string, Legacy[]> = {};
+  for (const teamId of new Set([...Object.keys(program.teams), ...Object.keys(program.legacy ?? {})])) {
+    const kept = [...legacyOf(program, teamId), ...teamOf(program, teamId).installed.map(item => ({ key: item.key, share: 1 }))]
+      .map(item => ({ key: item.key, share: item.share * CARRY_OVER })).filter(item => item.share >= LEGACY_MIN && PROJECTS[item.key]);
+    if (kept.length) legacy[teamId] = kept;
+  }
+  return { version: 1, catalog: program.catalog, teams: {}, ...(Object.keys(legacy).length ? { legacy } : {}) };
 }
 
 /** Perfil técnico con las mejoras aplicadas y su versión; la potencia del motor no cambia. */
 export function technicalWith(base: CarTechnical, keys: string[]): CarTechnical {
   if (!keys.length) return base;
   const next = { ...base };
-  for (const key of keys) {
-    for (const [field, change] of Object.entries(PROJECTS[key]?.effect ?? {}) as [EffectField, number][]) next[field] = next[field] * (1 + change);
+  for (const entry of keys) {
+    // [T4.11] «proyecto@parte»: mejora heredada del coche anterior, con esa parte de su efecto.
+    const [key, share] = entry.split('@');
+    const factor = share === undefined ? 1 : Number(share) || 0;
+    for (const [field, change] of Object.entries(PROJECTS[key]?.effect ?? {}) as [EffectField, number][]) next[field] = next[field] * (1 + change * factor);
   }
   next.version = `${base.version}+${keys.join('+')}`;
   return next;

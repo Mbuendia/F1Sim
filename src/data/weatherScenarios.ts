@@ -1,6 +1,7 @@
 // [R44] Escenarios meteorológicos elegibles al preparar la carrera. Deterministas y proporcionales a la duración de la
 // carrera. Intensidades y horarios son diseño del juego.
 import type { CloudBank, RainCell, WeatherScenario } from '../simulation/WeatherModel';
+import { mulberry32, streamSeed } from '../simulation/Random';
 
 export const WEATHER_SCENARIOS = [
   { id: 'seco', label: 'Seco', description: 'Sin lluvia durante toda la carrera.' },
@@ -11,6 +12,28 @@ export const WEATHER_SCENARIOS = [
 ] as const;
 
 export type WeatherScenarioId = typeof WEATHER_SCENARIOS[number]['id'];
+
+// [T4.12] Sorteo del tiempo de una carrera de temporada: primero si llueve (probabilidad de lluvia del circuito) y
+// después cuál de los escenarios de ese grupo. El reparto dentro de cada grupo es diseño del juego.
+const RAIN_DRAW: [WeatherScenarioId, number][] = [['chubasco', 0.5], ['mojado-inicial', 0.25], ['tormenta', 0.25]];
+const DRY_DRAW: [WeatherScenarioId, number][] = [['seco', 0.6], ['nubes', 0.4]];
+
+/** [T4.12] Un escenario cuenta como lluvia si llueve en algún momento o la carrera empieza con agua en pista. */
+export function isRainScenario(id: string): boolean {
+  return RAIN_DRAW.some(([scenario]) => scenario === id);
+}
+
+/** [T4.12] Escenario sorteado para un circuito con esa probabilidad de lluvia (%). Misma semilla, mismo escenario. */
+export function drawWeatherScenario(rainProbabilityPercent: number, seed: number): WeatherScenarioId {
+  const rng = mulberry32(streamSeed(seed, 'tiempo'));
+  const group = rng() * 100 < rainProbabilityPercent ? RAIN_DRAW : DRY_DRAW;
+  let pick = rng();
+  for (const [id, weight] of group) {
+    if (pick < weight) return id;
+    pick -= weight;
+  }
+  return group[group.length - 1][0];
+}
 
 /** [T3.2] La lluvia tarda en llegar a su intensidad y en aflojar esta parte de lo que dura la celda. */
 const RAMP_FRACTION = 0.25;

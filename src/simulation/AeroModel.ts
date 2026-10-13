@@ -45,6 +45,9 @@ export const AERO: AeroParams = {
   wakeWidth: 0.6,
 };
 
+/** [Sprint 4.5] Tracción según el agarre: límites del factor y cuánto pesa la diferencia de agarre (calibración del juego). */
+export const TRACTION_GRIP = { MIN: 0.6, MAX: 1.1, EXPONENT: 1 };
+
 /** Masa del coche sin combustible (kg): mínimo reglamentario aproximado con piloto, calibración del juego. */
 export const CAR_DRY_MASS_KG = 800;
 
@@ -64,6 +67,11 @@ export interface LongitudinalInput {
    */
   gearDrive?: number;
   revLimitFactor?: number;
+  /**
+   * [Sprint 4.5] Agarre de los neumáticos frente al de referencia (1): escala la tracción disponible a la salida de las
+   * curvas. Con goma gastada el coche acelera peor hasta que le limita la potencia, y lo arrastra toda la recta.
+   */
+  tractionFactor?: number;
 }
 
 /** Aceleración longitudinal a fondo (m/s²); negativa por encima de la velocidad de equilibrio. */
@@ -72,7 +80,7 @@ export function longitudinalAccel(input: LongitudinalInput, params: AeroParams =
   const cdA = params.cdA * (input.dragFactor ?? 1)
     * (1 - (input.drsOpen ? params.drsDragReduction : 0))
     * (1 - params.slipstreamMaxReduction * Math.min(1, Math.max(0, input.slipstream)));
-  const drive = Math.min(input.powerKw * 1000 * params.drivetrainEfficiency / v * (input.gearDrive ?? 1), input.massKg * params.tractionLimit);
+  const drive = Math.min(input.powerKw * 1000 * params.drivetrainEfficiency / v * (input.gearDrive ?? 1), input.massKg * params.tractionLimit * (input.tractionFactor ?? 1));
   const drag = 0.5 * params.rho * cdA * v * v;
   const rolling = params.rollingCoeff * input.massKg * 9.81;
   return (drive - drag - rolling) / input.massKg;
@@ -82,8 +90,10 @@ export function longitudinalAccel(input: LongitudinalInput, params: AeroParams =
 export const REFERENCE_MASS_KG = CAR_DRY_MASS_KG + 50;
 
 /** [R14] Factor de velocidad de paso por curva por masa: con el mismo apoyo, más masa da menos aceleración lateral. */
+/** [R14] Sensibilidad de la velocidad de paso por curva a la masa; recalibrada en el Sprint 4.5 con el eje a escala real. */
+export const CORNER_MASS_EXPONENT = 0.24;
 export function cornerMassFactor(massKg: number): number {
-  return Math.pow(REFERENCE_MASS_KG / Math.max(1, massKg), 0.15);
+  return Math.pow(REFERENCE_MASS_KG / Math.max(1, massKg), CORNER_MASS_EXPONENT);
 }
 
 /** [R14] Fracción de la potencia necesaria para mantener la velocidad (drag + rodadura frente a empuje disponible). */

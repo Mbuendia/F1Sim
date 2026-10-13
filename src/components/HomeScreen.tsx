@@ -2,6 +2,10 @@ import { getRuleSet, DEFAULT_RULE_SET_ID } from '../rules/ruleSets';
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import styles from './HomeScreen.module.css';
 import { DRIVERS } from '../data/drivers';
+import { DriverContractsPanel } from './DriverContractsPanel';
+import { ReservePanel } from './ReservePanel';
+import type { AcademyState } from '../simulation/Academy';
+import type { ContractsState } from '../simulation/Contracts';
 import { TEAMS, STARTING_GRID_ORDER } from '../data/teams';
 import { OFFICIAL_CIRCUITS, CircuitSpec } from '../data/circuits';
 import { buildTrackFromSvg } from '../utils/svgTrackParser';
@@ -13,6 +17,21 @@ import type { CarSetup } from '../simulation/Setup';
 import type { SaveGameMessage } from './SaveGamePanel';
 import type { SlotSummary } from '../simulation/SaveGame';
 import { WeatherScenarioSelect } from './WeatherScenarioSelect';
+import { WeatherOutlook } from './WeatherOutlook';
+import { FinancePanel } from './FinancePanel';
+import { FacilitiesPanel } from './FacilitiesPanel';
+import { PitCrewPanel } from './PitCrewPanel';
+import { SponsorsPanel } from './SponsorsPanel';
+import { HubHeader } from './HubHeader';
+import { BoardPanel } from './BoardPanel';
+import type { BoardState } from '../simulation/Board';
+import { SeasonStrip } from './SeasonStrip';
+import type { HubSection } from '../simulation/Hub';
+import type { TeamSponsors } from '../simulation/Sponsors';
+import type { CrewPlan, PitCrew } from '../simulation/PitCrew';
+import type { FacilitiesState, FacilityId } from '../simulation/Facilities';
+import type { FinanceState } from '../simulation/Finance';
+import { balanceOf, formatMoney } from '../simulation/Finance';
 import { CarShowcase } from './CarShowcase';
 import { RaceFormatSelect } from './RaceFormatSelect';
 import { ComponentsPanel } from './ComponentsPanel';
@@ -57,7 +76,20 @@ import {
 } from 'lucide-react';
 import { animate } from 'animejs';
 
+
 interface HomeScreenProps {
+  /** [T4.19] Carrera profesional (con su menú de secciones) o carrera libre (solo piloto, circuito, formato y tiempo). */
+  mode?: 'career' | 'free';
+  /** [T4.19] Lo que va a la derecha de la cabecera: el menú «Partida» o la vuelta al menú de partidas. */
+  headerExtra?: React.ReactNode;
+  /**
+   * [T4.3] Centro de gestión de la carrera profesional: cabecera con el equipo y sus cifras, pendientes por pestaña, la
+   * página de Inicio (recibe cómo cambiar de pestaña) y la de Correr. Sin esto (carrera libre), el paddock de siempre.
+   */
+  hub?: {
+    teamName: string; accent: string; seasonNumber: number; round: number | null; kpis: { label: string; value: string }[];
+    badges: Partial<Record<HubSection, number>>; inicio: (go: (section: HubSection) => void) => React.ReactNode; correr: React.ReactNode;
+  };
   selectedDriverId: string;
   selectedCircuitId: string;
   onSelectDriver: (driverId: string) => void;
@@ -74,11 +106,15 @@ interface HomeScreenProps {
   development?: {
     program: DevelopmentProgram; raceIndex: number; constructorsPosition: number;
     onStart: (key: string) => void; onInstall: (projectId: string, driverId: string) => void;
+    /** [T4.2] Coste de cada proyecto y lo que falta para pagarlo. */
+    costs?: { costOf: (key: string) => number; shortfallOf: (key: string) => number; leadTimeOf?: (key: string) => number; maxActive?: number };
   };
   /** [R19] Componentes de la unidad de potencia y montaje de unidades nuevas. */
   components?: ComponentState;
   onFitComponent?: (driverId: string, type: ComponentType) => void;
   onUndoComponent?: (driverId: string, type: ComponentType) => void;
+  /** [T4.2] Coste de montar otra unidad nueva de un componente. */
+  componentCostOf?: (driverId: string, type: ComponentType) => number;
   /** [R20] GP directo o con clasificación. */
   raceFormat?: RaceFormatId;
   onSelectFormat?: (format: RaceFormatId) => void;
@@ -96,9 +132,28 @@ interface HomeScreenProps {
   season?: { rounds: RoundView[]; seasonNumber: number; archive: SeasonSummary[]; onSelectNext: () => void; onSkip: () => void };
   /** [R51] Atributos actuales de un piloto (R45), para su ficha. */
   driverAttributes?: (driver: Driver) => DriverAttributes;
+  /** [T4.1] Dinero del equipo del jugador. */
+  finance?: { state: FinanceState; teamId: string };
+  /** [T4.4] Instalaciones de la fábrica del equipo del jugador. */
+  facilities?: { state: FacilitiesState; teamId: string; canAfford: (cost: number) => boolean; onUpgrade: (facility: FacilityId) => void };
+  /** [T4.10] Junta del equipo del jugador. */
+  board?: BoardState;
+  /** [T4.6] Equipo de boxes del equipo del jugador. */
+  pitCrew?: { crew: PitCrew; onPlan: (plan: CrewPlan) => void };
+  /** [T4.7] Plantilla de la temporada (cada piloto con el equipo de su contrato); sin ella, la de partida. */
+  roster?: Record<string, Driver>;
+  /** [T4.7] Contratos de los pilotos del equipo del jugador y negociación de la temporada siguiente. */
+  /** [T4.8] Reserva del equipo del jugador y cantera. */
+  reserve?: { academy: AcademyState; message: string | null; onStandIn: (seatId: string | null) => void; onSignReserve: (juniorId: string) => void; onPromote: () => void };
+  contracts?: { state: ContractsState; teamId: string; season: number; round: number; ages?: Record<string, number>; message: string | null; onOffer: (driverId: string, salary: number, seasons: number) => void };
+  /** [T4.9] Patrocinio del equipo del jugador y rótulos del coche de cada equipo. */
+  sponsors?: { team: TeamSponsors; onSign: (offerId: string) => void; carOf: (teamId: string) => string[] };
 }
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({
+  mode = 'career',
+  headerExtra,
+  hub,
   selectedDriverId,
   selectedCircuitId,
   onSelectDriver,
@@ -114,16 +169,27 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   components,
   onFitComponent,
   onUndoComponent,
+  componentCostOf,
   development,
   saveGames,
   setup,
   season,
   driverAttributes,
-  sprintAvailable
+  sprintAvailable,
+  finance,
+  facilities,
+  pitCrew,
+  roster = DRIVERS,
+  contracts,
+  reserve,
+  sponsors,
+  board
 }) => {
   const nextRound = season?.rounds.find(round => round.status === 'siguiente');
   const freeRace = Boolean(nextRound) && nextRound?.circuitId !== selectedCircuitId;
   const [activeTab, setActiveTab] = useState<'drivers' | 'circuits'>('drivers');
+  // Menú del paddock: una pestaña por sección y «Correr», la última, con la selección de carrera y la entrada a pista.
+  const [section, setSection] = useState<HubSection>(hub ? 'inicio' : 'correr');
   const [driverSubTab, setDriverSubTab] = useState<'specs' | 'strategy' | 'records'>('specs');
   const [circuitSubTab, setCircuitSubTab] = useState<'overview' | 'drs' | 'telemetry'>('overview');
   const [inspectedDriverId, setInspectedDriverId] = useState<string>(selectedDriverId);
@@ -143,11 +209,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     setInspectedCircuitId(selectedCircuitId);
   }, [selectedCircuitId]);
 
-  const inspectedDriver = DRIVERS[inspectedDriverId] || DRIVERS[selectedDriverId] || DRIVERS['alonso'];
+  const inspectedDriver = roster[inspectedDriverId] || roster[selectedDriverId] || Object.values(roster)[0];
   const inspectedTeam = TEAMS[inspectedDriver.teamId];
   const inspectedCircuit = OFFICIAL_CIRCUITS[inspectedCircuitId] || OFFICIAL_CIRCUITS[selectedCircuitId] || OFFICIAL_CIRCUITS['barcelona'];
 
-  const selectedDriver = DRIVERS[selectedDriverId] || DRIVERS['alonso'];
+  const selectedDriver = roster[selectedDriverId] || Object.values(roster)[0];
   const selectedTeam = TEAMS[selectedDriver.teamId];
   const selectedCircuit = OFFICIAL_CIRCUITS[selectedCircuitId] || OFFICIAL_CIRCUITS['barcelona'];
 
@@ -235,24 +301,34 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   }, [inspectedDriverId, inspectedCircuitId, activeTab]);
 
   return (
-    <div className={styles.homeContainer}>
+    <div className={styles.homeContainer} style={hub ? { ['--equipo' as string]: hub.accent } : undefined}>
+      {hub && (
+        <HubHeader teamName={hub.teamName} seasonNumber={hub.seasonNumber} round={hub.round} kpis={hub.kpis} badges={hub.badges} section={section} onSection={setSection}>
+          {headerExtra}
+        </HubHeader>
+      )}
+      {hub && section === 'inicio' && hub.inicio(setSection)}
+      {hub && section === 'correr' && hub.correr}
+      {!hub && (
       <header className={styles.header}>
         <div className={styles.brandGroup}>
           <div className={styles.f1Logo}>F1</div>
           <F1WheelSvg style={{ width: '28px', height: '28px', flexShrink: 0 }} />
           <div className={styles.headerTitles}>
             <h1>F1 RACE MANAGER</h1>
-            <p>Paddock · elige piloto y circuito y entra a pista</p>
+            <p>{mode === 'free' ? 'Carrera libre · no cuenta para ninguna partida' : 'Paddock · gestiona tu equipo y entra a pista desde «Correr»'}</p>
           </div>
         </div>
+        {headerExtra}
       </header>
+      )}
 
-      {raceHistory.length > 0 && (
-        <details className={styles.historySection}>
-          <summary className={styles.historyTitle}>
+      {section === 'temporada' && raceHistory.length > 0 && (
+        <section className={styles.sectionBlock}>
+          <h2 className={styles.sectionHeading}>
             <History size={14} aria-hidden="true" />
             <span>Historial de carreras disputadas ({raceHistory.length})</span>
-          </summary>
+          </h2>
 
           <div className={styles.historyCardsList}>
             {raceHistory.map((race) => (
@@ -270,79 +346,112 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               </div>
             ))}
           </div>
-        </details>
+        </section>
       )}
 
-      {season && (
-        <details className={styles.historySection} open>
-          <summary className={styles.historyTitle}>
+      {section === 'temporada' && season && (
+        <section className={styles.sectionBlock}>
+          <SeasonStrip rounds={season.rounds} />
+          <h2 className={styles.sectionHeading}>
             <span>Temporada {season.seasonNumber}{nextRound ? ` · ronda ${nextRound.round} de ${SEASON_RACES}` : ''}</span>
-          </summary>
+          </h2>
           <SeasonCalendar rounds={season.rounds} seasonNumber={season.seasonNumber} selectedCircuitId={selectedCircuitId}
             onSelectNext={season.onSelectNext} onSkip={season.onSkip} />
-        </details>
+        </section>
       )}
 
-      {season && season.archive.length > 0 && (
-        <details className={styles.historySection}>
-          <summary className={styles.historyTitle}>
+      {section === 'temporada' && season && season.archive.length > 0 && (
+        <section className={styles.sectionBlock}>
+          <h2 className={styles.sectionHeading}>
             <span>Historial de temporadas ({season.archive.length})</span>
-          </summary>
+          </h2>
           <SeasonHistory archive={season.archive} />
-        </details>
+        </section>
       )}
 
-      {saveGames && (
-        <details className={styles.historySection} open={saveGames.slots.some(slot => slot.raceInProgress) || undefined}>
-          <summary className={styles.historyTitle}>
-            <span>Partidas ({saveGames.slots.length})</span>
-          </summary>
-          <SaveGamePanel key={saveGames.currentName ?? ''} {...saveGames} />
-        </details>
-      )}
-
-      {championship && championship.races.length > 0 && (
-        <details className={styles.historySection}>
-          <summary className={styles.historyTitle}>
+      {section === 'temporada' && championship && championship.races.length > 0 && (
+        <section className={styles.sectionBlock}>
+          <h2 className={styles.sectionHeading}>
             <span>Campeonato ({championship.races.length})</span>
-          </summary>
+          </h2>
           <ChampionshipTable championship={championship} onReset={onResetChampionship} />
-        </details>
+        </section>
       )}
 
-      {development && (
-        <details className={styles.historySection}>
-          <summary className={styles.historyTitle}>
+      {section === 'finanzas' && finance && (
+        <section className={styles.sectionBlock}>
+          <h2 className={styles.sectionHeading}>
+            <span>Finanzas · saldo {formatMoney(balanceOf(finance.state, finance.teamId))}</span>
+          </h2>
+          <FinancePanel finance={finance.state} teamId={finance.teamId} />
+        </section>
+      )}
+
+      {section === 'fabrica' && facilities && (
+        <section className={styles.sectionBlock}>
+          <h2 className={styles.sectionHeading}>
+            <span>Instalaciones de la fábrica</span>
+          </h2>
+          <FacilitiesPanel facilities={facilities.state} teamId={facilities.teamId} canAfford={facilities.canAfford} onUpgrade={facilities.onUpgrade} />
+        </section>
+      )}
+
+      {section === 'finanzas' && board && <BoardPanel board={board} />}
+
+      {section === 'finanzas' && sponsors && (
+        <section className={styles.sectionBlock}>
+          <h2 className={styles.sectionHeading}>
+            <span>Patrocinio ({sponsors.team.deals.length} de 3)</span>
+          </h2>
+          <SponsorsPanel sponsors={sponsors.team} onSign={sponsors.onSign} />
+        </section>
+      )}
+
+      {section === 'equipo' && contracts && (
+        <section className={styles.sectionBlock}>
+          <h2 className={styles.sectionHeading}>
+            <span>Pilotos</span>
+          </h2>
+          <DriverContractsPanel contracts={contracts.state} teamId={contracts.teamId} season={contracts.season} round={contracts.round} onOffer={contracts.onOffer} message={contracts.message} ages={contracts.ages} />
+          {reserve && (
+            <ReservePanel academy={reserve.academy} contracts={contracts.state} teamId={contracts.teamId} season={contracts.season} round={contracts.round}
+              onStandIn={reserve.onStandIn} onSignReserve={reserve.onSignReserve} onPromote={reserve.onPromote} message={reserve.message} />
+          )}
+        </section>
+      )}
+
+      {section === 'equipo' && pitCrew && (
+        <section className={styles.sectionBlock}>
+          <h2 className={styles.sectionHeading}>
+            <span>Equipo de boxes</span>
+          </h2>
+          <PitCrewPanel crew={pitCrew.crew} onPlan={pitCrew.onPlan} />
+        </section>
+      )}
+
+      {section === 'fabrica' && development && (
+        <section className={styles.sectionBlock}>
+          <h2 className={styles.sectionHeading}>
             <span>Desarrollo del coche</span>
-          </summary>
-          <DevelopmentPanel program={development.program} teamId={(DRIVERS[selectedDriverId] ?? DRIVERS.alonso).teamId}
-            drivers={Object.values(DRIVERS).filter(d => d.teamId === (DRIVERS[selectedDriverId] ?? DRIVERS.alonso).teamId)}
+          </h2>
+          <DevelopmentPanel program={development.program} teamId={selectedDriver.teamId}
+            drivers={Object.values(roster).filter(d => d.teamId === selectedDriver.teamId)}
             raceIndex={development.raceIndex} constructorsPosition={development.constructorsPosition}
-            onStart={development.onStart} onInstall={development.onInstall} />
-        </details>
+            onStart={development.onStart} onInstall={development.onInstall} costs={development.costs} />
+        </section>
       )}
 
-      {components && (
-        <details className={styles.historySection}>
-          <summary className={styles.historyTitle}>
+      {section === 'fabrica' && components && (
+        <section className={styles.sectionBlock}>
+          <h2 className={styles.sectionHeading}>
             <span>Componentes de la unidad de potencia</span>
-          </summary>
-          <ComponentsPanel state={components} drivers={Object.values(DRIVERS).filter(d => d.teamId === (DRIVERS[selectedDriverId] ?? DRIVERS.alonso).teamId)}
-            onFitNew={onFitComponent} onUndo={onUndoComponent} />
-        </details>
+          </h2>
+          <ComponentsPanel state={components} drivers={Object.values(roster).filter(d => d.teamId === selectedDriver.teamId)}
+            onFitNew={onFitComponent} onUndo={onUndoComponent} costOf={componentCostOf} />
+        </section>
       )}
 
-      {setup && (
-        <details className={styles.historySection}>
-          <summary className={styles.historyTitle}>
-            <span>Setup del coche</span>
-          </summary>
-          <SetupPanel drivers={Object.values(DRIVERS).filter(d => d.teamId === (DRIVERS[selectedDriverId] ?? DRIVERS.alonso).teamId)}
-            setups={setup.setups} onChange={setup.onChange} />
-        </details>
-      )}
-
-      <div className={styles.mainLayout3Col}>
+      <div className={styles.mainLayout3Col} style={hub ? { display: 'none' } : undefined}>
         <div className={styles.leftColumn}>
           <div className={styles.tabButtonsRow}>
             <button 
@@ -503,7 +612,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 <div className={styles.detailContentGrid}>
                   {/* [R46] Monoplaza del piloto en 3D (silueta 2D sin WebGL) */}
                   <div className={styles.detailCardBox} style={{ gridColumn: '1 / -1' }}>
-                    <CarShowcase teamId={inspectedTeam.id} teamColor={inspectedTeam.color} accentColor={inspectedTeam.accentColor} number={inspectedDriver.number}
+                    <CarShowcase teamId={inspectedTeam.id} sponsors={sponsors?.carOf(inspectedTeam.id)} teamColor={inspectedTeam.color} accentColor={inspectedTeam.accentColor} number={inspectedDriver.number}
                       compound="medium" label={`Monoplaza de ${inspectedTeam.name} · ${inspectedDriver.code}`} />
                   </div>
                   <div className={styles.detailCardBox}>
@@ -1146,7 +1255,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           {onSelectFormat && (
             <RaceFormatSelect className={styles.rulesProfile} value={raceFormat ?? 'directo'} onChange={onSelectFormat} sprintAvailable={sprintAvailable} />
           )}
-          {onSelectWeather && (
+          {/* [T4.12] En la carrera de temporada el tiempo se sortea: se enseña la previsión. En carrera libre se elige. */}
+          {nextRound && !freeRace ? (
+            <WeatherOutlook className={styles.rulesProfile} rainProbabilityPercent={selectedCircuit.rainProbabilityPercent} />
+          ) : onSelectWeather && (
             <WeatherScenarioSelect className={styles.rulesProfile} value={weatherScenarioId ?? 'seco'} onChange={onSelectWeather} />
           )}
 
@@ -1155,7 +1267,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               <Play size={18} fill="#ffffff" aria-hidden="true" />
               <span>ENTRAR A PISTA</span>
             </div>
-            <span className={styles.launchSub}>{freeRace ? 'Carrera libre: no cuenta para la temporada'
+            <span className={styles.launchSub}>{mode === 'free' ? 'Carrera libre: no cuenta para ninguna partida' : freeRace ? 'Carrera libre: no cuenta para la temporada'
               : nextRound ? `${raceFormat === 'sprint' ? 'Clasificación sprint y sprint' : nextRound.sprintDone ? 'Clasificación y Gran Premio' : 'Empezar el Gran Premio'} · ronda ${nextRound.round} de ${SEASON_RACES}`
               : 'Empezar el Gran Premio'}</span>
           </button>

@@ -1,23 +1,24 @@
 import type { SplinePoint } from './spline';
+import { getLateralDisplacement } from './carPosition';
+import { minimumCurvatureOffsets } from './circuitGeometry';
 
-/** Calibración geométrica: exterior en curvatura baja, interior en el ápice.
- * La normal izquierda y el signo del giro usan el mismo sistema de coordenadas.
- * No constituye una optimización dinámica de tiempos por vuelta.
+/** Parte del ancho útil que usa la trazada ideal (el resto es margen con el borde). */
+export const RACING_LINE_USE = 0.9;
+/** Desplazamiento lateral máximo de la trazada por metro de avance, por debajo de lo que el coche puede moverse (`MAX_LATERAL_SLOPE`). */
+export const RACING_LINE_SLOPE = 0.24;
+
+/**
+ * [G5] Trazada ideal de mínima curvatura dentro de los bordes: exterior, ápice, exterior, continua en posición y
+ * rumbo. Es geométrica: no optimiza el tiempo de vuelta con la dinámica del coche.
  */
 export function setIdealRacingLine(points: SplinePoint[]): void {
-  if (points.length < 3) return;
-  const signed = points.map((p, i) => {
-    const prev = points[(i - 1 + points.length) % points.length];
-    let angle = p.angle - prev.angle;
-    angle = Math.atan2(Math.sin(angle), Math.cos(angle));
-    return angle / Math.max(.001, Math.hypot(p.x - prev.x, p.y - prev.y));
-  });
-  const magnitudes = signed.map(Math.abs);
-  const low = Math.min(...magnitudes), high = Math.max(...magnitudes);
-  points.forEach((p, i) => {
-    const intensity = high - low > 1e-9 ? (magnitudes[i] - low) / (high - low) : .5;
-    p.idealLineOffset = Math.sign(signed[i]) * .7 * (2 * intensity - 1);
-  });
+  const n = points.length;
+  if (n < 8) return;
+  let perimeter = 0;
+  for (let i = 0; i < n; i++) perimeter += Math.hypot(points[(i + 1) % n].x - points[i].x, points[(i + 1) % n].y - points[i].y);
+  const reach = points.map(p => getLateralDisplacement(1, p.trackWidthMeters));
+  const offsets = minimumCurvatureOffsets(points, points.map(p => p.normal), reach.map(r => r * RACING_LINE_USE), perimeter / n, RACING_LINE_SLOPE);
+  points.forEach((p, i) => { p.idealLineOffset = offsets[i] / reach[i]; });
 }
 
 /** Deposit only over traversed distance, splitting exactly at sample boundaries. */

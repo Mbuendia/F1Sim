@@ -1,0 +1,616 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>F1 Race Manager — maqueta del Sprint 4</title>
+<!--
+  T4.18 · Maqueta navegable de las páginas del Sprint 4 (docs/design/grill-sprint4-visual.md).
+  No forma parte de la aplicación ni de su build: datos de ejemplo, sin motor. Sirve para revisar composición,
+  recorrido y sistema visual antes de implementar. Se abre directamente en el navegador.
+  Recorrido: portada → menú de partidas → centro de gestión → fin de semana → pista → informe → inicio; invierno.
+  El botón «Maqueta» (arriba, en el centro; tecla M) lista todas las páginas y cambia el equipo para ver su acento.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  /* Sistema visual del rediseño de escritorio (src/index.css) más lo que añade la gestión. */
+  :root {
+    --bg: #0d1117; --panel: #171d26; --panel-2: #222a35; --line: #2e3746; --line-strong: #3a4556;
+    --text: #f2f4f7; --text-2: #b4becc; --text-3: #8a95a6;
+    --accion: #e10600; --accion-hover: #ff1a0f; --foco: #5aa9ff;
+    --positivo: #57d9a3; --negativo: #ff9b8a; --aviso: #f5c451;
+    --equipo: #2fb487;                      /* acento del equipo del jugador: cabecera, pestaña activa, sus pilotos */
+    --font-marca: 'Orbitron', sans-serif; --font-ui: 'Rajdhani', system-ui, sans-serif;
+    --radio-s: 6px; --radio-m: 8px; --radio-l: 10px;
+  }
+  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--font-ui); font-size: 16px; font-weight: 500; line-height: 1.3; overflow: hidden; }
+  button, select, input { font: inherit; color: inherit; }
+  :focus-visible { outline: 3px solid var(--foco); outline-offset: 2px; }
+  #app, .screen { height: 100%; }
+  .screen { display: flex; flex-direction: column; animation: entra .18s ease-out; }
+  @keyframes entra { from { opacity: 0; } to { opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+
+  /* Piezas comunes */
+  .label { font-size: 14px; letter-spacing: .08em; text-transform: uppercase; color: var(--text-3); font-weight: 600; }
+  .num { font-family: var(--font-marca); font-variant-numeric: tabular-nums; letter-spacing: .01em; }
+  .muted { color: var(--text-2); } .dim { color: var(--text-3); }
+  .pos { color: var(--positivo); } .neg { color: var(--negativo); } .warn { color: var(--aviso); }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radio-l); padding: 14px 16px; min-width: 0; }
+  .card > .label { display: block; margin-bottom: 8px; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 36px; padding: 6px 14px; border-radius: var(--radio-s);
+    border: 1px solid var(--line-strong); background: var(--panel-2); cursor: pointer; font-weight: 600; font-size: 15px; white-space: nowrap; }
+  .btn:hover { border-color: var(--text-3); }
+  .btn.primary { background: var(--accion); border-color: var(--accion); color: #fff; letter-spacing: .06em; text-transform: uppercase; font-weight: 700; min-height: 44px; padding: 8px 22px; }
+  .btn.primary:hover { background: var(--accion-hover); }
+  .btn.ghost { background: transparent; }
+  .btn.small { min-height: 30px; padding: 3px 10px; font-size: 14px; }
+  .btn[aria-pressed="true"] { border-color: var(--equipo); box-shadow: inset 0 -2px 0 var(--equipo); color: #fff; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; padding: 2px 9px; border-radius: 99px; border: 1px solid var(--line-strong); font-size: 14px; color: var(--text-2); white-space: nowrap; }
+  .chip.equipo { border-color: var(--equipo); color: var(--text); }
+  .chip.aviso { border-color: var(--aviso); color: var(--aviso); }
+  .row { display: flex; align-items: center; gap: 10px; } .row.between { justify-content: space-between; } .row.wrap { flex-wrap: wrap; }
+  .stack { display: flex; flex-direction: column; gap: 8px; }
+  .grid { display: grid; gap: 14px; }
+  .big { font-family: var(--font-marca); font-size: 26px; font-weight: 700; }
+  .title { font-family: var(--font-marca); font-weight: 700; letter-spacing: .04em; }
+  .bar { height: 8px; border-radius: 99px; background: var(--panel-2); overflow: hidden; }
+  .bar > i { display: block; height: 100%; background: var(--equipo); border-radius: 99px; }
+  .pips { display: inline-flex; gap: 3px; } .pips i { width: 14px; height: 8px; border-radius: 2px; background: var(--panel-2); border: 1px solid var(--line-strong); }
+  .pips i.on { background: var(--equipo); border-color: var(--equipo); } .pips i.obra { background: repeating-linear-gradient(45deg, var(--aviso) 0 3px, transparent 3px 6px); border-color: var(--aviso); }
+  table { width: 100%; border-collapse: collapse; font-size: 15px; } th { text-align: left; font-size: 14px; letter-spacing: .06em; text-transform: uppercase; color: var(--text-3); font-weight: 600; }
+  th, td { padding: 5px 8px; border-bottom: 1px solid var(--line); } td.r, th.r { text-align: right; } tr.mio td { color: #fff; background: rgba(255,255,255,.04); } tr.mio td:first-child { box-shadow: inset 3px 0 0 var(--equipo); }
+  .seg { display: inline-flex; border: 1px solid var(--line-strong); border-radius: var(--radio-s); overflow: hidden; }
+  .seg button { background: transparent; border: 0; border-right: 1px solid var(--line-strong); padding: 5px 12px; min-height: 32px; cursor: pointer; font-weight: 600; font-size: 15px; color: var(--text-2); }
+  .seg button:last-child { border-right: 0; } .seg button[aria-pressed="true"] { background: var(--panel-2); color: #fff; box-shadow: inset 0 -2px 0 var(--equipo); }
+  a { color: inherit; }
+  .link { background: none; border: 0; color: var(--text-2); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; font-size: 15px; }
+  .link:hover { color: #fff; }
+
+  /* Cabecera y pestañas del centro de gestión */
+  .hub-head { height: 56px; flex: none; display: flex; align-items: center; gap: 16px; padding: 0 20px; background: var(--panel); border-bottom: 1px solid var(--line); box-shadow: inset 0 3px 0 var(--equipo); position: relative; z-index: 5; }
+  .hub-head .team { font-family: var(--font-marca); font-weight: 700; letter-spacing: .06em; font-size: 17px; text-transform: uppercase; }
+  .hub-head .spacer { flex: 1; }
+  .kpi { display: flex; flex-direction: column; line-height: 1.1; } .kpi b { font-family: var(--font-marca); font-size: 16px; } .kpi span { font-size: 14px; color: var(--text-3); }
+  .saved { font-size: 14px; color: var(--text-3); white-space: nowrap; }
+  .menu { position: relative; } .menu-list { position: absolute; right: 0; top: 42px; min-width: 190px; background: var(--panel-2); border: 1px solid var(--line-strong); border-radius: var(--radio-m); padding: 6px; display: none; box-shadow: 0 12px 30px rgba(0,0,0,.5); }
+  .menu.open .menu-list { display: block; } .menu-list button { display: block; width: 100%; text-align: left; background: none; border: 0; padding: 8px 10px; border-radius: var(--radio-s); cursor: pointer; font-size: 15px; font-weight: 600; }
+  .menu-list button:hover { background: var(--panel); } .menu-list hr { border: 0; border-top: 1px solid var(--line-strong); margin: 4px 0; }
+  .tabs { height: 44px; flex: none; display: flex; align-items: stretch; gap: 2px; padding: 0 12px; background: var(--bg); border-bottom: 1px solid var(--line); }
+  .tabs button { background: none; border: 0; padding: 0 16px; cursor: pointer; font-weight: 700; font-size: 16px; letter-spacing: .06em; text-transform: uppercase; color: var(--text-3); display: flex; align-items: center; gap: 8px; border-bottom: 3px solid transparent; }
+  .tabs button:hover { color: var(--text); } .tabs button[aria-selected="true"] { color: #fff; border-bottom-color: var(--equipo); }
+  .tabs .dot { min-width: 18px; height: 18px; padding: 0 5px; border-radius: 99px; background: var(--aviso); color: #111; font-size: 14px; line-height: 18px; text-align: center; font-weight: 700; }
+  .content { flex: 1; min-height: 0; overflow: auto; padding: 16px 20px 20px; }
+  .content > .inner { max-width: 1680px; margin: 0 auto; height: 100%; min-height: 0; }
+
+  /* Fondo de las páginas de entrada: la rueda grande, desplazada y oscurecida */
+  .entrada { position: relative; flex: 1; display: flex; overflow: hidden; }
+  .rueda { position: absolute; right: -14vh; top: 50%; width: 92vh; height: 92vh; transform: translateY(-50%); border-radius: 50%; opacity: .5;
+    background: radial-gradient(circle, #0d1117 0 21%, #2a313c 21% 23%, #151a22 23% 44%, #3a4250 44% 45%, #10141a 45% 64%, #e9e3d2 64% 65.5%, #0b0e13 65.5% 100%); box-shadow: 0 0 0 2px #1d2430; }
+  .entrada::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, var(--bg) 30%, rgba(13,17,23,.75) 55%, rgba(13,17,23,.15)); pointer-events: none; }
+  .entrada > .front { position: relative; z-index: 1; padding: 6vh 7vw; display: flex; flex-direction: column; justify-content: center; gap: 18px; width: min(760px, 62vw); }
+  .marca { font-family: var(--font-marca); font-weight: 900; font-size: clamp(34px, 5vw, 64px); line-height: 1; letter-spacing: .02em; } .marca em { font-style: normal; color: var(--accion); }
+  .continuar { display: grid; grid-template-columns: auto 1fr; gap: 6px 18px; align-items: center; padding: 16px 18px; border-left: 4px solid var(--equipo); }
+  .menu-op { display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 12px 16px; background: rgba(23,29,38,.85); border: 1px solid var(--line); border-radius: var(--radio-m); cursor: pointer; font-size: 18px; font-weight: 600; text-align: left; }
+  .menu-op:hover { border-color: var(--text-3); } .menu-op small { font-size: 15px; color: var(--text-3); font-weight: 500; }
+  .page-head { flex: none; display: flex; align-items: center; gap: 16px; padding: 14px 24px; border-bottom: 1px solid var(--line); background: var(--panel); }
+  .page-head h1 { font-family: var(--font-marca); font-size: 20px; letter-spacing: .06em; text-transform: uppercase; }
+
+  /* Tarjetas de partida y de equipo */
+  .saves { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+  .save { border-top: 4px solid var(--c); display: flex; flex-direction: column; gap: 6px; }
+  .teams { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
+  .team-card { text-align: left; cursor: pointer; background: var(--panel); border: 1px solid var(--line); border-top: 4px solid var(--c); border-radius: var(--radio-l); padding: 10px 12px; display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+  .team-card:hover { border-color: var(--text-3); border-top-color: var(--c); } .team-card[aria-pressed="true"] { outline: 2px solid var(--a); outline-offset: 1px; background: var(--panel-2); }
+  .team-card .kv { display: flex; justify-content: space-between; font-size: 15px; color: var(--text-2); } .team-card .kv b { color: var(--text); }
+  .foot { flex: none; display: flex; align-items: center; gap: 14px; padding: 12px 24px; border-top: 1px solid var(--line); background: var(--panel); }
+  .field { height: 40px; padding: 0 12px; background: var(--bg); border: 1px solid var(--line-strong); border-radius: var(--radio-s); min-width: 260px; font-size: 16px; }
+  .list { display: flex; flex-direction: column; gap: 4px; overflow: auto; min-height: 0; }
+  .list button { display: flex; justify-content: space-between; gap: 10px; align-items: center; background: none; border: 1px solid transparent; border-radius: var(--radio-s); padding: 6px 10px; cursor: pointer; text-align: left; font-size: 16px; }
+  .list button:hover { background: var(--panel-2); } .list button[aria-pressed="true"] { background: var(--panel-2); border-color: var(--line-strong); box-shadow: inset 3px 0 0 var(--c, var(--equipo)); }
+
+  /* Inicio */
+  .inicio { grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; height: 100%; }
+  .next { display: grid; grid-template-columns: minmax(0, 1fr) 240px; gap: 16px; border-left: 4px solid var(--equipo); }
+  .trazado { border: 1px dashed var(--line-strong); border-radius: var(--radio-m); display: grid; place-items: center; color: var(--text-3); font-size: 14px; }
+  .pend li { list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+  .pend li:last-child { border-bottom: 0; }
+  .estado { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+  .estado .card { cursor: pointer; text-align: left; display: flex; flex-direction: column; gap: 6px; padding: 16px 18px; } .estado .card:hover { border-color: var(--equipo); }
+
+  /* Carrera: sesiones como pasos */
+  .steps { display: flex; align-items: center; gap: 0; } .steps button { display: flex; align-items: center; gap: 10px; background: none; border: 0; cursor: pointer; padding: 6px 4px; color: var(--text-3); font-weight: 700; font-size: 16px; letter-spacing: .05em; text-transform: uppercase; }
+  .steps .n { width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--line-strong); display: grid; place-items: center; font-family: var(--font-marca); font-size: 14px; }
+  .steps .done .n { background: var(--panel-2); color: var(--positivo); border-color: var(--positivo); } .steps .now { color: #fff; } .steps .now .n { border-color: var(--equipo); background: var(--equipo); color: #0d1117; }
+  .steps .sep { width: 56px; height: 2px; background: var(--line-strong); margin: 0 8px; }
+  .weekend { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 14px; height: 100%; }
+  .setup-row { display: grid; grid-template-columns: 110px 1fr 60px; align-items: center; gap: 4px 10px; padding: 8px 0 0; }
+  .notch { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; } .notch i { height: 18px; border-radius: 3px; background: var(--panel-2); border: 1px solid var(--line-strong); position: relative; }
+  .notch i.sel { background: var(--equipo); border-color: var(--equipo); } .notch i.rec::after { content: ''; position: absolute; left: 50%; bottom: -8px; transform: translateX(-50%); border: 4px solid transparent; border-bottom-color: var(--aviso); }
+  .tyres { display: flex; gap: 8px; flex-wrap: wrap; } .ty { display: inline-flex; align-items: center; gap: 6px; font-size: 15px; }
+  .ty i { width: 18px; height: 18px; border-radius: 50%; border: 4px solid var(--k); background: #0b0e13; }
+
+  /* Equipo */
+  .equipo { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, .72fr); }
+  .piloto { display: grid; grid-template-columns: 56px 1fr; gap: 10px 14px; border-top: 3px solid var(--equipo); }
+  .attrs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; grid-column: 1 / -1; } .attr { background: var(--panel-2); border-radius: var(--radio-s); padding: 4px 8px; display: flex; justify-content: space-between; font-size: 15px; } .attr b { font-family: var(--font-marca); font-size: 14px; }
+  .staff { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; } .person { display: grid; grid-template-columns: 44px 1fr; gap: 10px; align-items: center; background: var(--panel-2); border-radius: var(--radio-m); padding: 8px 10px; }
+  .role { width: 44px; height: 44px; display: grid; place-items: center; font-family: var(--font-marca); font-size: 14px; font-weight: 700; color: var(--equipo); border: 2px solid var(--equipo); clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%); background: rgba(255,255,255,.04); }
+
+  /* Fábrica */
+  .fabrica { grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; height: 100%; }
+  .project { padding: 8px 0; border-bottom: 1px solid var(--line); } .project:last-of-type { border-bottom: 0; }
+  .car-stage { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; background: radial-gradient(ellipse at 50% 70%, #202836, var(--panel) 70%); }
+  .car-stage svg { width: 96%; max-width: 640px; height: auto; }
+  .facility { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; padding: 8px 0; border-bottom: 1px solid var(--line); } .facility:last-child { border-bottom: 0; }
+  .comps { grid-column: 1 / -1; } .comp { display: inline-flex; gap: 6px; align-items: baseline; margin-right: 18px; font-size: 15px; }
+
+  /* Finanzas */
+  .finanzas { grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-rows: auto auto minmax(0, 1fr); height: 100%; }
+  .saldo { grid-column: span 1; } .chart { grid-column: span 3; display: flex; flex-direction: column; } .chart svg { width: 100%; height: 92px; display: block; }
+  .ledger { grid-column: 1 / -1; overflow: auto; min-height: 120px; }
+  .lines div { display: flex; justify-content: space-between; padding: 3px 0; font-size: 15px; border-bottom: 1px solid var(--line); } .lines div:last-child { border-bottom: 0; font-weight: 700; }
+
+  /* Temporada */
+  .temporada { grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); grid-template-rows: auto auto minmax(0, 1fr); height: 100%; }
+  .strip { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(24, minmax(0, 1fr)); gap: 4px; }
+  .rd { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radio-s); padding: 6px 2px; display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer; min-width: 0; font-size: 14px; }
+  .rd .n { font-family: var(--font-marca); font-size: 14px; color: var(--text-3); } .rd .cc { font-weight: 700; } .rd .res { font-family: var(--font-marca); font-size: 14px; } .rd .sp { font-size: 14px; color: var(--aviso); height: 16px; }
+  .rd.done { background: var(--panel-2); } .rd.skip { opacity: .55; } .rd.now { border-color: var(--equipo); box-shadow: inset 0 3px 0 var(--equipo); } .rd[aria-pressed="true"] { outline: 2px solid var(--foco); }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; min-height: 0; } .scroll { overflow: auto; min-height: 0; }
+
+  /* Pista: muro con órdenes de equipo y ventana de parada */
+  .race-bar { height: 52px; flex: none; display: flex; align-items: center; gap: 18px; padding: 0 16px; background: var(--panel); border-bottom: 1px solid var(--line); }
+  .race { flex: 1; min-height: 0; display: grid; grid-template-columns: 248px minmax(0, 1fr); }
+  .tower { border-right: 1px solid var(--line); overflow: auto; background: var(--panel); } .tower div { display: grid; grid-template-columns: 26px 44px 1fr auto; gap: 6px; padding: 3px 10px; font-size: 14px; border-bottom: 1px solid var(--line); align-items: center; }
+  .tower .mio { box-shadow: inset 3px 0 0 var(--equipo); background: var(--panel-2); }
+  .stage { display: grid; grid-template-rows: minmax(0, 1fr) auto; min-height: 0; }
+  .track { display: grid; place-items: center; color: var(--text-3); background: radial-gradient(ellipse at center, #141b25, var(--bg)); font-size: 15px; }
+  .wall { display: grid; grid-template-columns: minmax(0, 1fr) 150px minmax(0, 1fr); gap: 10px; padding: 10px 14px; border-top: 1px solid var(--line); background: var(--panel); }
+  .wcard { background: var(--panel-2); border-radius: var(--radio-m); padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; border-top: 3px solid var(--equipo); }
+  .window { font-size: 15px; background: rgba(255,255,255,.04); border-radius: var(--radio-s); padding: 4px 8px; }
+  .orders { display: flex; flex-direction: column; align-items: stretch; justify-content: center; gap: 6px; text-align: center; } .orders button { background: var(--panel-2); border: 1px solid var(--line-strong); border-radius: var(--radio-s); padding: 5px 4px; cursor: pointer; font-size: 14px; font-weight: 600; color: var(--text-2); }
+  .orders button[aria-pressed="true"] { color: #fff; border-color: var(--equipo); box-shadow: inset 0 -2px 0 var(--equipo); }
+
+  /* Informe e invierno: pantalla completa */
+  .full { flex: 1; min-height: 0; overflow: auto; padding: 22px 28px; } .full > .inner { max-width: 1180px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; min-height: 100%; }
+  .informe { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 14px; }
+  .result { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; } .result .card { display: grid; grid-template-columns: 56px 1fr auto; gap: 12px; align-items: center; border-left: 4px solid var(--equipo); }
+  .count { animation: cuenta .7s ease-out both; } @keyframes cuenta { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  .winter-steps { display: flex; gap: 6px; } .winter-steps button { flex: 1; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radio-s); padding: 8px 10px; cursor: pointer; text-align: left; font-weight: 700; font-size: 15px; letter-spacing: .04em; text-transform: uppercase; color: var(--text-3); }
+  .winter-steps .done { color: var(--text-2); box-shadow: inset 0 -3px 0 var(--positivo); } .winter-steps .now { color: #fff; border-color: var(--equipo); box-shadow: inset 0 -3px 0 var(--equipo); }
+  .offer { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); } .offer:last-child { border-bottom: 0; }
+  .hero { text-align: center; padding: 18px; } .hero .big { font-size: 34px; }
+
+  /* Control de la maqueta: no es parte del diseño */
+  .mock { position: fixed; left: 50%; top: 4px; transform: translateX(-50%); z-index: 50; font-family: ui-monospace, Consolas, monospace; font-size: 14px; }
+  .mock > button { background: #0b0e13; color: #9fb0c6; border: 1px dashed #5a6a80; border-radius: 6px; padding: 2px 10px; cursor: pointer; opacity: .75; }
+  .mock > button:hover, .mock.open > button { opacity: 1; }
+  .mock .panel { display: none; position: absolute; left: 50%; top: 32px; transform: translateX(-50%); width: 300px; max-height: 70vh; overflow: auto; background: #0b0e13; border: 1px dashed #5a6a80; border-radius: 8px; padding: 10px; }
+  .mock.open .panel { display: block; } .mock .panel a { display: block; padding: 3px 4px; color: #c9d5e6; text-decoration: none; } .mock .panel a:hover { background: #1a2230; }
+  .mock .panel p { color: #7f8ea3; margin: 8px 0 4px; } .mock select { width: 100%; background: #111722; border: 1px solid #5a6a80; border-radius: 4px; padding: 4px; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<aside class="mock" id="mock" aria-label="Control de la maqueta (no es parte del diseño)">
+  <button type="button" id="mock-toggle" title="Páginas de la maqueta y acento de equipo (tecla M)">Maqueta ▾</button>
+  <div class="panel" id="mock-panel"></div>
+</aside>
+
+<script>
+// ── Datos de ejemplo (inventados para la maqueta; ninguna cifra sale del motor) ──
+// c: color del coche y del casco · a: acento de interfaz, elegido para leerse sobre grafito. Los equipos rojos usan
+// su color secundario (el rojo es de la acción principal) y los muy oscuros, su color aclarado.
+const TEAMS = {
+  mclaren:     { n: 'McLaren',      c: '#FF8000', a: '#FF8000', d: [['NOR', 'Norris', 4, 26], ['PIA', 'Piastri', 81, 25]], saldo: 42, obj: 1, dif: 'Baja', inst: 5 },
+  ferrari:     { n: 'Ferrari',      c: '#E8002D', a: '#F2C200', d: [['LEC', 'Leclerc', 16, 28], ['HAM', 'Hamilton', 44, 41]], saldo: 40, obj: 2, dif: 'Baja', inst: 5 },
+  redbull:     { n: 'Red Bull',     c: '#12306B', a: '#5B8DEF', d: [['VER', 'Verstappen', 1, 28], ['LAW', 'Lawson', 30, 24]], saldo: 38, obj: 3, dif: 'Baja', inst: 5 },
+  mercedes:    { n: 'Mercedes',     c: '#27F4D2', a: '#27F4D2', d: [['RUS', 'Russell', 63, 28], ['ANT', 'Antonelli', 12, 19]], saldo: 37, obj: 3, dif: 'Media', inst: 4 },
+  astonmartin: { n: 'Aston Martin', c: '#229971', a: '#2FB487', d: [['ALO', 'Alonso', 14, 44], ['STR', 'Stroll', 18, 27]], saldo: 24, obj: 5, dif: 'Media', inst: 4 },
+  williams:    { n: 'Williams',     c: '#005AFF', a: '#5C97FF', d: [['SAI', 'Sainz', 55, 31], ['ALB', 'Albon', 23, 30]], saldo: 20, obj: 6, dif: 'Media', inst: 3 },
+  alpine:      { n: 'Alpine',       c: '#FF87BC', a: '#FF87BC', d: [['GAS', 'Gasly', 10, 30], ['DOO', 'Doohan', 7, 23]], saldo: 18, obj: 7, dif: 'Alta', inst: 3 },
+  racingbulls: { n: 'Racing Bulls', c: '#1634CC', a: '#8098FF', d: [['TSU', 'Tsunoda', 22, 25], ['HAD', 'Hadjar', 6, 21]], saldo: 16, obj: 8, dif: 'Alta', inst: 2 },
+  haas:        { n: 'Haas',         c: '#F2F2F2', a: '#E6E8EB', d: [['OCO', 'Ocon', 31, 29], ['BEA', 'Bearman', 87, 20]], saldo: 14, obj: 9, dif: 'Alta', inst: 2 },
+  sauber:      { n: 'Kick Sauber',  c: '#52E252', a: '#52E252', d: [['HUL', 'Hülkenberg', 27, 38], ['BOR', 'Bortoleto', 5, 21]], saldo: 12, obj: 10, dif: 'Alta', inst: 2 },
+};
+const ROUNDS = [['AU', 'Melbourne'], ['CN', 'Shanghái', 1], ['JP', 'Suzuka'], ['BH', 'Baréin'], ['SA', 'Yeda'], ['US', 'Miami', 1], ['MC', 'Mónaco'], ['CA', 'Montreal', 1], ['ES', 'Barcelona'], ['AT', 'Spielberg'],
+  ['GB', 'Silverstone', 1], ['BE', 'Spa'], ['HU', 'Hungaroring'], ['NL', 'Zandvoort', 1], ['IT', 'Monza'], ['ES', 'Barcelona (Madrid)'], ['AZ', 'Bakú'], ['SG', 'Singapur', 1], ['US', 'Austin'], ['MX', 'México'],
+  ['BR', 'Interlagos'], ['US', 'Las Vegas'], ['QA', 'Lusail'], ['AE', 'Yas Marina']];
+const RESULTS = ['P4', 'P6', '—', 'P9', 'P5', 'P3'];          // rondas ya disputadas (la 3 se saltó)
+const RAIN = [20, 28, 40, 1, 0, 35, 15, 35, 12, 25, 45, 60, 18, 30, 8, 12, 5, 40, 15, 20, 55, 2, 0, 0];
+const COMPOUNDS = { D: '#f2f4f7', M: '#f5c451', B: '#ff5a4d', I: '#43c463', L: '#4d8dff' };
+
+const state = { team: 'astonmartin', pick: 'astonmartin', step: 2, round: 7, orders: 'libre', plan: 'velocidad', junta: 'balance', menu: false, libreDriver: 'ALO', libreCircuit: 'Barcelona', history: false };
+const team = () => TEAMS[state.team];
+const money = (v, sign = false) => `${sign && v > 0 ? '+' : ''}${v.toFixed(1).replace('.', ',').replace('-', '−')} M`;
+
+// ── Dibujos ──
+/** Casco del piloto: colores del equipo y dorsal. Sin fotos ni parecidos. */
+const helmet = (t, number, size = 52) => `<svg viewBox="0 0 48 48" width="${size}" height="${size}" role="img" aria-label="Casco con el dorsal ${number}">
+  <path d="M5 30C5 17 14 8 26 8s18 8 18 19v7c0 3-2 5-5 5H13c-5 0-8-4-8-9z" fill="${t.c}" stroke="rgba(255,255,255,.3)"/>
+  <path d="M5 30C7 18 15 10 27 8 18 12 13 19 12 30z" fill="${t.a}" opacity=".9"/>
+  <path d="M25 21h19v8H29c-3 0-4-2-4-4z" fill="#0b0e13" stroke="rgba(255,255,255,.4)"/>
+  <text x="17" y="38" font-size="9" font-family="Orbitron, sans-serif" font-weight="700" text-anchor="middle" fill="#fff" stroke="#000" stroke-width=".4" paint-order="stroke">${number}</text></svg>`;
+/** Coche de perfil con los colores del equipo. En la aplicación: imagen fija del modelo 3D (por decidir, ver notas). */
+const car = t => `<svg viewBox="0 0 220 64" role="img" aria-label="Monoplaza de ${t.n}">
+  <rect x="6" y="38" width="24" height="5" rx="1" fill="${t.a}"/>
+  <path d="M22 44 62 39 84 28 118 23 156 28 182 37 204 37 204 46 22 46z" fill="${t.c}" stroke="rgba(255,255,255,.28)"/>
+  <path d="M104 23l9-9h12l7 10z" fill="#0b0e13" stroke="rgba(255,255,255,.3)"/>
+  <path d="M62 39 156 30 150 36 70 43z" fill="${t.a}" opacity=".85"/>
+  <rect x="186" y="12" width="26" height="6" rx="1" fill="${t.c}" stroke="rgba(255,255,255,.28)"/><rect x="204" y="12" width="4" height="30" fill="${t.c}"/>
+  <circle cx="56" cy="48" r="12" fill="#0b0e13" stroke="#4a5568" stroke-width="3"/><circle cx="170" cy="48" r="13" fill="#0b0e13" stroke="#4a5568" stroke-width="3"/></svg>`;
+const pips = (level, building = 0) => `<span class="pips" aria-label="Nivel ${level} de 5">${[1, 2, 3, 4, 5].map(i => `<i class="${i <= level ? 'on' : i <= level + building ? 'obra' : ''}"></i>`).join('')}</span>`;
+const tyre = (k, n) => `<span class="ty"><i style="--k:${COMPOUNDS[k]}"></i>${n}${k}</span>`;
+const go = (hash, text, cls = '') => `<button type="button" class="${cls}" data-go="${hash}">${text}</button>`;
+
+// ── Páginas de entrada ──
+function pagePortada() {
+  return `<div class="screen"><div class="entrada"><div class="rueda"></div><div class="front">
+    <span class="label">Temporada 2026 · escritorio</span>
+    <div class="marca">F1<br><em>RACE</em> MANAGER</div>
+    <p class="muted" style="font-size:18px;max-width:520px">Dirige tu equipo entre carrera y carrera y la estrategia de tus dos pilotos desde el muro.</p>
+    <div class="row">${go('#/menu', 'Entrar', 'btn primary')}<span class="dim">o pulsa Enter</span></div>
+    <span class="dim">La portada no cambia: aquí solo se ve adónde lleva «Entrar».</span>
+  </div></div></div>`;
+}
+function pageMenu() {
+  const t = team();
+  return `<div class="screen"><div class="entrada"><div class="rueda"></div><div class="front">
+    <div class="marca" style="font-size:clamp(26px,3.2vw,40px)">F1 <em>RACE</em> MANAGER</div>
+    <div class="card continuar">
+      ${go('#/inicio', 'Continuar', 'btn primary')}
+      <div><div class="title" style="font-size:18px">${t.n} · Temporada 2</div>
+        <div class="muted">Ronda 7 de 24 · Mónaco · P5 en constructores · saldo ${money(12.4)}</div>
+        <div class="dim" style="font-size:14px">«Mi carrera» · guardado hace 2 min</div></div>
+    </div>
+    <div class="stack">
+      <button type="button" class="menu-op" data-go="#/nueva">Nueva carrera profesional <small>eliges equipo</small></button>
+      <button type="button" class="menu-op" data-go="#/partidas">Cargar partida <small>3 guardadas</small></button>
+      <button type="button" class="menu-op" data-go="#/libre">Carrera libre <small>no cuenta para ninguna partida</small></button>
+    </div>
+    <span class="dim" style="font-size:14px">Sin partidas guardadas, «Continuar» y «Cargar partida» no aparecen.</span>
+  </div></div></div>`;
+}
+function pagePartidas() {
+  const saves = [
+    ['astonmartin', 'Mi carrera', 'Temporada 2 · ronda 7 de 24', 'P5 en constructores · 12,4 M', 'hoy, 18:42', 'En carrera: vuelta 16 de 78 · Mónaco'],
+    ['williams', 'Prueba lluvia', 'Temporada 1 · ronda 3 de 24', 'P8 en constructores · 4,1 M', 'hace 3 días', ''],
+    ['sauber', 'Desde abajo', 'Temporada 4 · invierno', 'P7 en constructores · −2,3 M (préstamo)', '28 sep', ''],
+    ['astonmartin', 'Autoguardado', 'Temporada 2 · ronda 7 de 24', 'P5 en constructores · 12,4 M', 'hace 2 min', 'En carrera: vuelta 16 de 78 · Mónaco'],
+  ];
+  return `<div class="screen"><header class="page-head">${go('#/menu', '← Menú', 'btn ghost')}<h1>Partidas</h1><span style="flex:1"></span><button type="button" class="btn">Importar archivo…</button></header>
+    <div class="full"><div class="inner"><div class="saves">${saves.map(([id, name, when, where, date, live]) => `
+      <article class="card save" style="--c:${TEAMS[id].c}">
+        <div class="row between"><span class="label">${TEAMS[id].n}</span><span class="dim" style="font-size:14px">${date}</span></div>
+        <div class="title" style="font-size:18px">${name}</div>
+        <div class="muted">${when}</div><div class="muted">${where}</div>
+        <div style="min-height:24px">${live ? `<span class="chip aviso">${live}</span>` : ''}</div>
+        <div class="row" style="margin-top:4px">${go('#/inicio', 'Cargar', 'btn')}<button type="button" class="btn ghost small">Exportar</button><button type="button" class="btn ghost small">Borrar…</button></div>
+      </article>`).join('')}</div>
+      <p class="dim">Cargar una partida con carrera en curso la retoma en pausa, en el mismo punto. Borrar pide confirmación.</p>
+    </div></div></div>`;
+}
+function pageNueva() {
+  const cards = Object.entries(TEAMS).map(([id, t]) => `<button type="button" class="team-card" style="--c:${t.c};--a:${t.a}" data-pick="${id}" aria-pressed="${state.pick === id}">
+      <div class="title" style="font-size:16px">${t.n}</div>${car(t)}
+      <div class="row" style="gap:6px">${t.d.map(d => `${helmet(t, d[2], 26)}<b>${d[0]}</b>`).join('<span style="width:6px"></span>')}</div>
+      <div class="kv"><span>Saldo inicial</span><b>${money(t.saldo)}</b></div>
+      <div class="kv"><span>Objetivo de la junta</span><b>${t.obj}.º</b></div>
+      <div class="kv"><span>Instalaciones</span>${pips(t.inst)}</div>
+      <div class="kv"><span>Dificultad</span><b class="${t.dif === 'Alta' ? 'warn' : ''}">${t.dif}</b></div>
+    </button>`).join('');
+  return `<div class="screen"><header class="page-head">${go('#/menu', '← Menú', 'btn ghost')}<h1>Nueva carrera profesional · elige tu equipo</h1></header>
+    <div class="full" style="padding:16px 24px"><div class="inner" style="max-width:1680px"><div class="teams">${cards}</div></div></div>
+    <footer class="foot"><span class="muted">Diriges a los dos pilotos de <b style="color:#fff">${TEAMS[state.pick].n}</b>. El objetivo lo fija la junta según el coche.</span><span style="flex:1"></span>
+      <label class="row"><span class="label">Nombre de la partida</span><input class="field" value="Mi carrera"></label>${go('#/inicio', 'Empezar', 'btn primary" data-start="1')}</footer></div>`;
+}
+function pageLibre() {
+  const drivers = Object.values(TEAMS).flatMap(t => t.d.map(d => [d[0], d[1], t]));
+  const circuits = [...new Set(ROUNDS.map(r => r[1]).filter(n => !n.includes('(')))];
+  return `<div class="screen"><header class="page-head">${go('#/menu', '← Menú', 'btn ghost')}<h1>Carrera libre</h1><span class="chip">No cuenta para ninguna partida</span></header>
+    <div class="content"><div class="inner grid" style="grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,.9fr)">
+      <section class="card stack" style="min-height:0"><span class="label">Piloto (llevas a su equipo)</span><div class="list">${drivers.map(([code, name, t]) =>
+        `<button type="button" style="--c:${t.c}" data-libre-driver="${code}" aria-pressed="${state.libreDriver === code}"><span><b>${code}</b> ${name}</span><span class="dim">${t.n}</span></button>`).join('')}</div></section>
+      <section class="card stack" style="min-height:0"><span class="label">Circuito</span><div class="list">${circuits.map((name, i) =>
+        `<button type="button" data-libre-circuit="${name}" aria-pressed="${state.libreCircuit === name}"><span>${name}</span><span class="dim">lluvia ${RAIN[i]} %</span></button>`).join('')}</div></section>
+      <section class="card stack"><span class="label">Opciones</span>
+        <label class="stack"><span class="muted">Formato</span><select class="field"><option>GP directo (parrilla prefijada)</option><option>Con clasificación (Q1, Q2 y Q3)</option><option>Fin de semana sprint</option></select></label>
+        <label class="stack"><span class="muted">Tiempo (aquí se elige a mano)</span><select class="field"><option>Seco</option><option>Nubes y claros</option><option>Chubasco pasajero</option><option>Salida en mojado</option><option>Tormenta</option></select></label>
+        <p class="dim">Es el paddock de hoy: piloto, circuito, formato y tiempo. Fichas y estadísticas quedan como consulta.</p>
+        <span style="flex:1"></span>${go('#/pista', 'Entrar a pista', 'btn primary')}</section>
+    </div></div></div>`;
+}
+
+// ── Centro de gestión ──
+const TABS = [['inicio', 'Inicio'], ['carrera', 'Carrera'], ['equipo', 'Equipo', 1], ['fabrica', 'Fábrica', 1], ['finanzas', 'Finanzas'], ['temporada', 'Temporada']];
+function hub(tab, body) {
+  const t = team();
+  return `<div class="screen"><header class="hub-head">
+      <span class="team">${t.n}</span><span class="chip">Temporada 2 · ronda 7 de 24</span><span class="spacer"></span>
+      <div class="kpi"><b>${money(12.4)}</b><span>saldo</span></div><div class="kpi"><b>64</b><span>junta</span></div><div class="kpi"><b>P5</b><span>constructores</span></div>
+      <span class="saved">Guardado hace 12 s</span>
+      <div class="menu ${state.menu ? 'open' : ''}"><button type="button" class="btn" data-menu aria-haspopup="true" aria-expanded="${state.menu}">Partida ▾</button>
+        <div class="menu-list" role="menu"><button role="menuitem">Guardar</button><button role="menuitem">Guardar como…</button><button role="menuitem">Exportar</button><hr>${go('#/menu', 'Salir al menú', '" role="menuitem')}</div></div>
+    </header>
+    <nav class="tabs" role="tablist" aria-label="Secciones">${TABS.map(([id, name, n]) => `<button type="button" role="tab" aria-selected="${id === tab}" data-go="#/${id}">${name}${n ? `<span class="dot" title="${n} pendiente">${n}</span>` : ''}</button>`).join('')}</nav>
+    <main class="content"><div class="inner">${body}</div></main></div>`;
+}
+function tabInicio() {
+  const t = team();
+  return hub('inicio', `<div class="grid inicio">
+    <section class="card next"><div class="stack" style="justify-content:space-between">
+        <div><span class="label">Siguiente · ronda 7 de 24</span><div class="title" style="font-size:26px">Gran Premio de Mónaco</div>
+          <div class="row wrap" style="margin-top:8px"><span class="chip">78 vueltas</span><span class="chip">Previsión: lluvia 15 %</span><span class="chip">Sin sprint</span><span class="chip">Urbano · adelantar es difícil</span></div></div>
+        <div class="muted">El año pasado: ${t.d[0][0]} P7 · ${t.d[1][0]} P12. Objetivo de la junta para la ronda: los dos coches en los puntos.</div>
+        <div class="row">${go('#/carrera', 'Preparar carrera', 'btn primary')}<span class="dim">Libres → clasificación → carrera</span></div>
+      </div><div class="trazado">trazado del circuito</div></section>
+    <section class="card"><span class="label">Pendiente de tu decisión (2)</span><ul class="pend">
+        <li><span><b>Mejora lista para montar</b><br><span class="muted">Suelo y difusor: elige en qué coche va primero</span></span>${go('#/fabrica', 'Fábrica', 'btn small')}</li>
+        <li><span><b>Contrato de ${t.d[1][1]}</b><br><span class="muted">Vence al acabar la temporada · pide 4,0 M/año</span></span>${go('#/equipo', 'Equipo', 'btn small')}</li>
+      </ul><p class="dim" style="font-size:14px;margin-top:6px">Avisa; nunca impide entrar a pista.</p></section>
+    <div class="estado">
+      <button type="button" class="card" data-go="#/temporada"><span class="label">Campeonato</span><span class="big">P5 <span class="muted" style="font-size:16px">· 88 pts</span></span><span class="muted">${t.d[0][0]} 7.º · 52 pts &nbsp; ${t.d[1][0]} 11.º · 36 pts</span></button>
+      <button type="button" class="card" data-go="#/finanzas"><span class="label">Finanzas</span><span class="big">${money(12.4)}</span><span class="muted">Próxima ronda: <span class="pos">${money(1.2, true)}</span> · sin deuda</span></button>
+      <button type="button" class="card" data-go="#/finanzas"><span class="label">Junta</span><span class="big">64 <span class="muted" style="font-size:16px">· estable</span></span><span class="muted">Objetivo: 5.º en constructores (vas 5.º)</span></button>
+      <button type="button" class="card" data-go="#/fabrica"><span class="label">Fábrica</span><span class="big" style="font-size:20px">Suelo: lista</span><span class="muted">Alerones: 4 rondas · obra del simulador: 3 rondas</span></button>
+    </div></div>`);
+}
+function tabCarrera() {
+  const t = team(), step = state.step;
+  const names = ['Libres', 'Clasificación', 'Carrera'];
+  const steps = names.map((name, i) => `<button type="button" class="${i + 1 < step ? 'done' : i + 1 === step ? 'now' : ''}" data-step="${i + 1}"><span class="n">${i + 1 < step ? '✓' : i + 1}</span>${name}</button>`).join('<span class="sep"></span>');
+  const setup = (d, values, rec) => `<section class="card"><div class="row between"><div class="row">${helmet(t, d[2], 40)}<div><div class="title">${d[0]} · ${d[1]}</div><span class="dim" style="font-size:14px">Ingeniero: ${d[0] === t.d[0][0] ? 'R. Vidal' : 'A. Sato'}</span></div></div>
+      <div class="tyres">${tyre('D', 2)}${tyre('M', 3)}${tyre('B', d[0] === t.d[0][0] ? 5 : 4)}${tyre('I', 5)}${tyre('L', 3)}</div></div>
+    ${[['Carga', 0], ['Rigidez', 1], ['Cambio', 2]].map(([name, i]) => `<div class="setup-row"><span>${name}</span>
+      <div class="notch">${[0, 1, 2, 3, 4].map(n => `<i class="${n === values[i] ? 'sel' : ''} ${step > 1 && n === rec[i] ? 'rec' : ''}"></i>`).join('')}</div><span class="num muted" style="text-align:right">${['−2', '−1', '0', '+1', '+2'][values[i]]}</span>
+      <span class="dim" style="grid-column:2/-1;font-size:14px;margin-bottom:6px">${['más carga: mejor curva rápida, más resistencia en recta', 'más rígido: mejor curva rápida, peor la lenta y más desgaste', 'más corto: más empuje, menos velocidad punta'][i]}</span></div>`).join('')}
+    <p class="dim" style="font-size:14px;margin-top:10px">${step > 1 ? '▲ Recomendado tras los libres (margen de ±1). En parc fermé solo se puede mover un punto la carga.' : 'Sin libres no hay recomendación: el programa «buscar el setup» la acota.'}</p></section>`;
+  const body = step === 1
+    ? t.d.map(d => `<section class="card stack"><div class="row">${helmet(t, d[2], 40)}<div class="title">${d[0]} · programa de libres</div></div>
+        <div class="seg" role="group" aria-label="Programa de ${d[0]}"><button aria-pressed="${d === t.d[0]}">Buscar el setup</button><button aria-pressed="${d !== t.d[0]}">Tanda larga</button><button aria-pressed="false">Simulación de clasificación</button></div>
+        <p class="muted">${d === t.d[0] ? 'Acota el setup recomendado para este circuito.' : 'Afina la vida de neumático que usan las propuestas del muro.'}</p>
+        <p class="dim" style="font-size:14px">Gasta un juego de neumáticos y suma kilómetros a los componentes.</p></section>`).join('')
+    : step === 2 ? setup(t.d[0], [3, 1, 2], [3, 2, 2]) + setup(t.d[1], [2, 2, 2], [3, 1, 2])
+    : t.d.map((d, i) => `<section class="card stack"><div class="row">${helmet(t, d[2], 40)}<div><div class="title">${d[0]} · sale P${i ? 11 : 6}</div><span class="muted">Clasificación: ${i ? 'eliminado en Q2' : 'Q3 · a 0,412 s de la pole'}</span></div></div>
+        <div class="row"><span class="label">Neumático de salida</span><div class="tyres">${tyre('M', 1)}</div><span class="dim">nuevo</span></div>
+        <p class="muted">Setup: carga ${i ? '0' : '+1'} · rigidez ${i ? '0' : '−1'} · cambio largo. ${i ? '' : 'Parc fermé: sin cambios.'}</p>
+        <p class="dim" style="font-size:14px">Si la pista está mojada, el estratega te propone el neumático de salida en la parrilla.</p></section>`).join('');
+  const action = step === 1 ? ['Empezar los libres', 2] : step === 2 ? ['Ir a clasificación', 3] : ['Entrar a pista', 0];
+  return hub('carrera', `<div class="weekend">
+    <div class="card row between"><div><span class="label">Ronda 7 · Gran Premio de Mónaco</span><div class="steps" style="margin-top:4px">${steps}</div></div>
+      <div class="row wrap"><span class="chip">Previsión: lluvia 15 %</span><span class="chip">78 vueltas</span><span class="chip">Componentes: sin sanción</span></div></div>
+    <div class="grid" style="grid-template-columns:1fr 1fr;min-height:0">${body}</div>
+    <div class="row between"><span class="dim">Un solo paso cada vez: el botón rojo es siempre la sesión siguiente.</span>
+      ${action[1] ? `<button type="button" class="btn primary" data-step="${action[1]}">${action[0]}</button>` : go('#/pista', action[0], 'btn primary')}</div>
+  </div>`);
+}
+function tabEquipo() {
+  const t = team();
+  const pilot = (d, contract, salary, attrs, engineer, expiring) => `<section class="card piloto">${helmet(t, d[2], 56)}
+      <div><div class="row between"><div class="title" style="font-size:18px">${d[1]}</div><span class="num dim">#${d[2]}</span></div>
+        <div class="muted">${d[3]} años · contrato hasta la temporada ${contract} ${expiring ? '<span class="chip aviso">vence</span>' : ''}</div>
+        <div class="muted">Sueldo ${money(salary)}/año · ingeniero: ${engineer}</div></div>
+      <div class="attrs">${attrs.map(([k, v]) => `<div class="attr"><span>${k}</span><b>${v}</b></div>`).join('')}</div>
+      <div class="row" style="grid-column:1/-1"><button type="button" class="btn small">${expiring ? 'Negociar renovación' : 'Ver contrato'}</button><button type="button" class="link">Ficha completa</button></div></section>`;
+  const plans = [['velocidad', 'Velocidad', 'paradas más rápidas, más errores'], ['seguridad', 'Seguridad', 'menos errores, algo más lentas'], ['descanso', 'Descanso', 'baja la fatiga']];
+  return hub('equipo', `<div class="grid equipo">
+    ${pilot(t.d[0], 3, 6.0, [['Ritmo', 92], ['Lluvia', 95], ['Adelant.', 90], ['Defensa', 94], ['Neumát.', 91], ['Consist.', 93], ['Físico', 84], ['Salida', 88]], 'R. Vidal', false)}
+    ${pilot(t.d[1], 2, 3.2, [['Ritmo', 80], ['Lluvia', 78], ['Adelant.', 76], ['Defensa', 79], ['Neumát.', 82], ['Consist.', 77], ['Físico', 88], ['Salida', 81]], 'A. Sato', true)}
+    <section class="card stack" style="border-top:3px dashed var(--line-strong)"><div class="row">${helmet(t, 35, 44)}<div><span class="label">Reserva</span><div class="title">L. Ferrer</div></div></div>
+      <div class="muted">19 años · nivel 74 · potencial 90</div><div class="muted">Sueldo ${money(0.4)}/año · 2 carreras disputadas</div>
+      <span style="flex:1"></span><button type="button" class="btn small">Subir por ${t.d[1][0]} esta ronda</button><span class="dim" style="font-size:14px">Único cambio de piloto posible durante la temporada.</span></section>
+    <section class="card" style="grid-column:1/-1"><div class="row between" style="margin-bottom:8px"><span class="label">Personal técnico</span><button type="button" class="link">Mercado de personal (3 candidatos)</button></div>
+      <div class="staff">${[['DT', 'M. Okafor', 'Director técnico', 4, 'acorta la investigación'], ['AE', 'H. Brandt', 'Jefe de aerodinámica', 3, 'reduce la contrapartida de cada mejora'], ['ES', 'C. Arrieta', 'Jefa de estrategia', 3, 'afina las estimaciones del muro'], ['IC', 'R. Vidal · A. Sato', 'Ingenieros de carrera', 4, 'mejora de cada piloto']]
+        .map(([code, name, role, level, effect]) => `<div class="person"><span class="role">${code}</span><div><b>${name}</b><div class="muted" style="font-size:15px">${role}</div><div>${pips(level)}</div><div class="dim" style="font-size:14px">${effect}</div></div></div>`).join('')}</div></section>
+    <section class="card" style="grid-column:1/-1"><div class="row between wrap"><div><span class="label">Equipo de boxes</span><div class="row" style="margin-top:4px"><span>Nivel ${pips(3)}</span><span class="muted">Fatiga 20 %</span><span class="muted">Media de la temporada: 2,6 s · 1 parada lenta de 11</span></div></div>
+      <div class="stack" style="align-items:flex-end"><div class="seg" role="group" aria-label="Plan de la semana">${plans.map(([id, name]) => `<button data-plan="${id}" aria-pressed="${state.plan === id}">${name}</button>`).join('')}</div>
+        <span class="dim" style="font-size:14px">Plan de esta ronda: ${plans.find(p => p[0] === state.plan)[2]}</span></div></div></section>
+  </div>`);
+}
+function tabFabrica() {
+  const t = team();
+  const project = (name, pct, text, extra = '') => `<div class="project"><div class="row between"><b>${name}</b><span class="muted">${text}</span></div><div class="bar" style="margin:6px 0"><i style="width:${pct}%"></i></div>${extra}</div>`;
+  const facility = (name, level, effect, building = 0, note = '') => `<div class="facility"><b>${name}</b>${pips(level, building)}<span class="muted" style="font-size:15px">${effect}</span><span class="dim" style="font-size:14px;text-align:right">${note}</span></div>`;
+  return hub('fabrica', `<div class="grid fabrica">
+    <section class="card"><span class="label">Desarrollo · 2 proyectos a la vez</span>
+      ${project('Suelo y difusor', 100, 'lista para montar', `<div class="row"><span class="chip aviso">Elige el primer coche</span><button class="btn small">${t.d[0][0]}</button><button class="btn small">${t.d[1][0]}</button></div>`)}
+      ${project('Alerones de más carga', 30, 'investigación · 4 rondas', '<span class="dim" style="font-size:14px">+0,6 % curva rápida · +1,2 % resistencia</span>')}
+      <div class="project"><div class="row between"><b class="muted">Hueco libre tras montar el suelo</b><button type="button" class="btn small">Nuevo proyecto…</button></div><span class="dim" style="font-size:14px">Refrigeración 2,0 M · Eficiencia 3,0 M · Neumáticos 3,0 M</span></div></section>
+    <section class="card car-stage"><span class="label">${t.n} · coche de la temporada 2</span>${car(t)}
+      <div class="row wrap" style="justify-content:center"><span class="chip equipo">Refrigeración (montada)</span><span class="chip">Suelo: por montar</span></div>
+      <span class="dim" style="font-size:14px">Las mejoras montadas se marcan sobre el coche.</span></section>
+    <section class="card"><span class="label">Instalaciones · una obra a la vez</span>
+      ${facility('Túnel de viento', 4, 'investigación −15 %', 0, 'mantenimiento 0,3 M/ronda')}
+      ${facility('Simulador', 3, 'mejora de pilotos y setup recomendado', 1, 'obra: 3 rondas')}
+      ${facility('Producción', 2, 'fabricación en 1 ronda', 0, 'ampliar: 5,0 M · 4 rondas')}
+      ${facility('Banco de fiabilidad', 3, 'desgaste de componentes −6 %', 0, 'ampliar: 4,0 M · 3 rondas')}</section>
+    <section class="card comps"><span class="label">Componentes de la unidad de potencia</span>
+      <div class="row wrap"><b style="width:44px">${t.d[0][0]}</b><span class="comp">Motor <b>2/4</b></span><span class="comp">Turbo <b>2/4</b></span><span class="comp">Caja <b>1/4</b></span><span class="comp">Batería <b>1/2</b></span><span class="comp">Electrónica <b>1/2</b></span><button class="btn small ghost">Montar unidad…</button></div>
+      <div class="row wrap" style="margin-top:4px"><b style="width:44px">${t.d[1][0]}</b><span class="comp">Motor <b class="warn">4/4</b></span><span class="comp">Turbo <b>3/4</b></span><span class="comp">Caja <b>2/4</b></span><span class="comp">Batería <b>1/2</b></span><span class="comp">Electrónica <b>2/2</b></span><span class="chip aviso">El quinto motor cuesta 10 puestos y 1,8 M</span></div></section>
+  </div>`);
+}
+function tabFinanzas() {
+  const series = [24, 22.1, 21.4, 19.8, 16.9, 14.2, 11.2, 12.4];
+  const max = 26, w = 700, h = 120, x = i => 20 + i * (w - 40) / 23, y = v => h - 14 - (v / max) * (h - 28);
+  const path = series.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join(' ');
+  const ledger = [[7, 'Ingreso de la ronda', 2.4], [7, 'Patrocinio · Volt Energy', 0.4], [6, 'Puntos (Miami: P3 y P8)', 1.9], [6, 'Sueldos', -1.1], [6, 'Mantenimiento de instalaciones', -0.9], [6, 'Daños · STR (grava)', -0.6], [6, 'Obra del simulador (1 de 3)', -1.5], [5, 'Proyecto: suelo y difusor', -3.0], [5, 'Ingreso de la ronda', 2.4]];
+  return hub('finanzas', `<div class="grid finanzas">
+    <section class="card saldo stack"><span class="label">Saldo</span><span class="big" style="font-size:32px">${money(12.4)}</span>
+      <span class="muted">Próxima ronda: <b class="pos">${money(1.2, true)}</b></span><span class="muted">Deuda: 0 · límite de préstamo 20,0 M</span><span class="dim" style="font-size:14px">En negativo se pagan intereses cada ronda; en el límite no se pueden empezar gastos nuevos.</span></section>
+    <section class="card chart"><span class="label">Saldo ronda a ronda</span>
+      <svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" role="img" aria-label="Evolución del saldo en la temporada">
+        <line x1="20" x2="${w - 20}" y1="${y(0)}" y2="${y(0)}" stroke="#3a4556"/><path d="${path}" fill="none" stroke="var(--equipo)" stroke-width="2.5" vector-effect="non-scaling-stroke"/>
+        ${series.map((v, i) => `<circle cx="${x(i)}" cy="${y(v)}" r="3" fill="var(--equipo)"/>`).join('')}
+        <line x1="${x(7)}" x2="${x(23)}" y1="${y(12.4)}" y2="${y(18)}" stroke="var(--text-3)" stroke-dasharray="4 5" vector-effect="non-scaling-stroke"/></svg>
+      <div class="row between dim" style="font-size:14px"><span>Ronda 1</span><span>hoy · ronda 7</span><span>previsión</span><span>ronda 24</span></div></section>
+    <section class="card"><span class="label">Ingresos por ronda</span><div class="lines"><div><span>Ingreso fijo</span><span class="pos">+2,4</span></div><div><span>Puntos (media)</span><span class="pos">+0,9</span></div><div><span>Patrocinio</span><span class="pos">+0,9</span></div><div><span>Total</span><span class="pos">+4,2 M</span></div></div></section>
+    <section class="card"><span class="label">Gastos por ronda</span><div class="lines"><div><span>Sueldos</span><span class="neg">−1,1</span></div><div><span>Operación</span><span class="neg">−1,0</span></div><div><span>Instalaciones</span><span class="neg">−0,9</span></div><div><span>Total</span><span class="neg">−3,0 M</span></div></div></section>
+    <section class="card"><div class="row between"><span class="label">Patrocinio · 2 de 3 huecos</span><button class="link">1 oferta</button></div>
+      <div class="lines"><div><span>Volt Energy · 0,4 M/ronda</span><span class="muted">T3</span></div><div><span>Norte Seguros · 0,5 M/ronda</span><span class="muted">T2</span></div><div><span>Prima: los dos en los puntos</span><span class="pos">+0,6</span></div></div></section>
+    <section class="card stack"><span class="label">Junta</span><div class="row between"><span class="big">64</span><span class="chip">estable</span></div><div class="bar"><i style="width:64%"></i></div>
+      <span class="muted">Objetivo: 5.º en constructores</span><span class="dim" style="font-size:14px">Mónaco +3 «por encima de lo esperado» · Miami −2 «daños evitables»</span></section>
+    <section class="card ledger"><span class="label">Libro</span><table><thead><tr><th>Ronda</th><th>Concepto</th><th class="r">Importe</th></tr></thead><tbody>
+      ${ledger.map(([r, text, v]) => `<tr><td class="num">${r}</td><td>${text}</td><td class="r num ${v > 0 ? 'pos' : 'neg'}">${money(v, true)}</td></tr>`).join('')}</tbody></table></section>
+  </div>`);
+}
+function tabTemporada() {
+  const t = team();
+  const strip = ROUNDS.map(([cc, name, sprint], i) => {
+    const n = i + 1, done = n < 7, cls = n === 7 ? 'now' : done ? (RESULTS[i] === '—' ? 'skip' : 'done') : '';
+    return `<button type="button" class="rd ${cls}" data-round="${n}" aria-pressed="${state.round === n}" title="${name}"><span class="n">${n}</span><span class="cc">${cc}</span><span class="res">${done ? RESULTS[i] : n === 7 ? '▶' : '·'}</span><span class="sp">${sprint ? 'S' : ''}</span></button>`;
+  }).join('');
+  const r = state.round, [cc, name, sprint] = ROUNDS[r - 1];
+  const detail = r < 7 ? (RESULTS[r - 1] === '—' ? 'Ronda saltada: no se disputó y nadie puntuó. Se pagaron los gastos fijos.' : `Disputada · mejor resultado del equipo: ${RESULTS[r - 1]} · ganó NOR`) : r === 7 ? 'Es la ronda que toca.' : 'Por disputar.';
+  const drivers = [['NOR', 'McLaren', 142], ['VER', 'Red Bull', 128], ['LEC', 'Ferrari', 117], ['PIA', 'McLaren', 109], ['RUS', 'Mercedes', 96], ['HAM', 'Ferrari', 81], [t.d[0][0], t.n, 52, 1], ['ANT', 'Mercedes', 44], ['SAI', 'Williams', 40], ['ALB', 'Williams', 37], [t.d[1][0], t.n, 36, 1]];
+  const teams = [['McLaren', 251], ['Ferrari', 198], ['Red Bull', 150], ['Mercedes', 140], [t.n, 88, 1], ['Williams', 77], ['Alpine', 31], ['Racing Bulls', 24], ['Haas', 15], ['Kick Sauber', 9]];
+  const history = `<section class="card" style="grid-column:1/-1"><span class="label">Temporadas cerradas</span><table><thead><tr><th>Temporada</th><th>Campeón</th><th>Constructores</th><th>Tu equipo</th><th>Junta</th></tr></thead>
+    <tbody><tr><td class="num">1</td><td>Norris · 402 pts</td><td>McLaren · 731 pts</td><td>${t.n} · 6.º (objetivo 6.º)</td><td class="pos">objetivo cumplido</td></tr></tbody></table></section>`;
+  return hub('temporada', `<div class="grid temporada">
+    <div class="row between" style="grid-column:1/-1"><div class="title" style="font-size:20px">Temporada 2</div>
+      <div class="seg" role="group" aria-label="Vista"><button data-history="0" aria-pressed="${!state.history}">Calendario</button><button data-history="1" aria-pressed="${state.history}">Historial</button></div></div>
+    ${state.history ? history : `<div class="strip" style="grid-row:2">${strip}</div>`}
+    ${state.history ? '' : `<section class="card stack" style="grid-row:3"><span class="label">Ronda ${r} de 24 · ${cc}</span><div class="title" style="font-size:22px">${name}</div>
+        <div class="row wrap"><span class="chip">Lluvia ${RAIN[r - 1]} %</span>${sprint ? '<span class="chip aviso">Fin de semana sprint</span>' : '<span class="chip">Sin sprint</span>'}</div>
+        <p class="muted">${detail}</p><span style="flex:1"></span>
+        ${r === 7 ? `<div class="row">${go('#/carrera', 'Preparar carrera', 'btn primary')}<button type="button" class="btn ghost">Saltar esta ronda…</button></div><span class="dim" style="font-size:14px">Saltarla paga los gastos fijos y no ingresa nada.</span>` : ''}</section>
+      <div class="two" style="grid-row:3"><section class="card scroll"><span class="label">Pilotos</span><table><tbody>${drivers.map(([code, tn, pts, mine], i) => `<tr class="${mine ? 'mio' : ''}"><td class="num">${i + 1}</td><td><b>${code}</b> <span class="dim">${tn}</span></td><td class="r num">${pts}</td></tr>`).join('')}</tbody></table></section>
+        <section class="card scroll"><span class="label">Constructores</span><table><tbody>${teams.map(([tn, pts, mine], i) => `<tr class="${mine ? 'mio' : ''}"><td class="num">${i + 1}</td><td>${tn}</td><td class="r num">${pts}</td></tr>`).join('')}</tbody></table></section></div>`}
+  </div>`);
+}
+
+// ── Pista: lo nuevo del muro ──
+function pagePista() {
+  const t = team();
+  const order = [['NOR', 'M', '—'], ['VER', 'M', '+1,8'], ['LEC', 'D', '+4,2'], ['PIA', 'M', '+6,0'], ['RUS', 'M', '+9,4'], [t.d[0][0], 'M', '+12,1', 1], [t.d[1][0], 'M', '+12,9', 1], ['HAM', 'D', '+15,0'], ['HUL', 'D', '+17,7'], ['SAI', 'M', '+19,3'], ['ANT', 'M', '+22,5'], ['ALB', 'D', '+24,0']];
+  const orders = [['libre', 'Lucha libre'], ['mantener', 'Mantener posiciones'], ['cambiar', `Dejar pasar a ${t.d[1][0]}`]];
+  const card = (d, pos, window, extra) => `<div class="wcard"><div class="row between"><div class="row">${helmet(t, d[2], 30)}<b>${d[0]} #${d[2]}</b><span class="num">P${pos}</span></div><span class="ty"><i style="--k:${COMPOUNDS.M}"></i>M · 14 v · 62 %</span></div>
+      <div class="window"><b>Si paras ahora:</b> ${window}</div>
+      <div class="row between wrap"><div class="row"><select class="field" style="height:34px;min-width:120px" aria-label="Compuesto para ${d[0]}"><option>D · Duro</option><option>M · Medio</option><option>B · Blando</option></select><button class="btn small">BOX</button><button class="btn small ghost">Stay out</button></div>
+        <div class="seg" role="group" aria-label="Ritmo de ${d[0]}"><button aria-pressed="false">Ahorro</button><button aria-pressed="true">Normal</button><button aria-pressed="false">Ataque</button></div></div>
+      <div class="dim" style="font-size:14px">${extra}</div></div>`;
+  return `<div class="screen"><header class="race-bar"><b class="title">VUELTA 16 / 78</b><span class="chip" style="border-color:var(--positivo);color:var(--positivo)">Bandera verde</span><span class="chip">Mónaco · seco</span><span style="flex:1"></span>
+      <span class="saved">Guardado hace 8 s</span><button class="btn small">Partida ▾</button>${go('#/informe', 'Fin de carrera (maqueta) →', 'btn small ghost')}</header>
+    <div class="race"><aside class="tower">${order.map(([code, k, gap, mine], i) => `<div class="${mine ? 'mio' : ''}"><span class="num">${i + 1}</span><b>${code}</b><span class="ty"><i style="--k:${COMPOUNDS[k]};width:14px;height:14px;border-width:3px"></i></span><span class="num dim">${gap}</span></div>`).join('')}</aside>
+      <div class="stage"><div class="track">circuito (sin cambios): aquí solo se revisa el muro</div>
+        <section class="wall" aria-label="Muro del equipo">
+          ${card(t.d[0], 6, 'saldrías <b>P9</b>, a 2,1 s de HUL', 'Neumáticos frente a rivales: RUS (delante) M 14 v · STR (detrás) M 14 v')}
+          <div class="orders"><span class="label">Órdenes de equipo</span>${orders.map(([id, name]) => `<button data-orders="${id}" aria-pressed="${state.orders === id}">${name}</button>`).join('')}
+            <span class="dim" style="font-size:14px">${state.orders === 'cambiar' ? `${t.d[0][0]} levanta en la próxima zona` : state.orders === 'mantener' ? `${t.d[1][0]} no ataca` : 'como hasta ahora'}</span></div>
+          ${card(t.d[1], 7, 'saldrías <b>P12</b>, <span class="warn">en tráfico</span> detrás de ALB', 'Riesgo de undercut: HAM (detrás, a 2,1 s) con duro de 3 vueltas')}
+        </section></div></div></div>`;
+}
+
+// ── Informe de la ronda ──
+function pageInforme() {
+  const t = team();
+  const lines = [['Ingreso de la ronda', 2.4], ['Puntos (P6: 8 pts)', 0.8], ['Patrocinio fijo', 0.9], ['Sueldos', -1.1], ['Operación e instalaciones', -1.9], [`Daños · ${t.d[1][0]} (muro, vuelta 41)`, -0.6]];
+  return `<div class="screen"><header class="page-head" style="box-shadow:inset 0 3px 0 var(--equipo)"><h1>Informe · ronda 7 · Gran Premio de Mónaco</h1><span style="flex:1"></span><span class="chip">${t.n}</span></header>
+    <div class="full"><div class="inner">
+      <div class="result">${[[t.d[0], 6, '+8 pts', 'Salía P6 · 1 parada (M → D)'], [t.d[1], 11, 'sin puntos', 'Salía P11 · toque con el muro en la vuelta 41']].map(([d, pos, pts, note]) =>
+        `<section class="card">${helmet(t, d[2], 52)}<div><div class="title" style="font-size:18px">${d[1]}</div><div class="muted">${note}</div></div><div style="text-align:right"><div class="big count">P${pos}</div><div class="${pts.startsWith('+') ? 'pos' : 'dim'}">${pts}</div></div></section>`).join('')}</div>
+      <div class="informe">
+        <section class="card"><span class="label">Dinero de la ronda</span><div class="lines">${lines.map(([text, v]) => `<div><span>${text}</span><span class="num ${v > 0 ? 'pos' : 'neg'}">${money(v, true)}</span></div>`).join('')}
+          <div><span>Resultado de la ronda</span><span class="num pos count">${money(0.5, true)}</span></div></div><p class="muted" style="margin-top:8px">Saldo: 12,4 M → <b style="color:#fff">12,9 M</b></p></section>
+        <div class="stack" style="gap:14px">
+          <section class="card"><span class="label">Junta</span><div class="row between"><span class="big count">64 → 67</span><span class="chip" style="border-color:var(--positivo);color:var(--positivo)">+3</span></div><p class="muted">«Por encima de lo esperado en un circuito difícil para el coche.»</p></section>
+          <section class="card"><span class="label">Campeonato</span><p>Constructores: <b>5.º · 96 pts</b> <span class="dim">(+8, a 44 de Mercedes)</span></p><p class="muted">${t.d[0][0]} 7.º · 60 pts &nbsp; ${t.d[1][0]} 11.º · 36 pts</p></section>
+          <section class="card"><span class="label">Patrocinio y pilotos</span><p>Objetivos de patrocinio: <b>1 de 2</b> <span class="dim">(los dos en los puntos: no)</span></p><p class="muted">${t.d[0][0]}: +1 en defensa · ${t.d[1][0]}: sin mejora</p></section>
+        </div>
+      </div>
+      <div class="row between"><span class="dim">Cada cifra sale del libro y del campeonato. Tras un sprint, un informe reducido.</span>${go('#/inicio', 'Continuar', 'btn primary')}</div>
+    </div></div></div>`;
+}
+
+// ── Invierno: cinco pasos ──
+const WINTER = ['Cierre', 'Junta', 'Mercado', 'Parrilla', 'Coche nuevo'];
+function pageInvierno(step) {
+  const t = team();
+  const bodies = {
+    1: `<section class="card hero"><span class="label">Campeón del mundo · temporada 2</span><div class="big count">Lando Norris</div><div class="muted">421 puntos · McLaren, campeón de constructores con 764</div></section>
+        <div class="grid" style="grid-template-columns:1fr 1fr"><section class="card"><span class="label">Tu temporada</span><p class="big" style="font-size:22px">${t.n}: 5.º · 214 pts</p><p class="muted">${t.d[0][0]} 7.º · 131 pts &nbsp; ${t.d[1][0]} 12.º · 83 pts · 2 rondas saltadas</p></section>
+        <section class="card"><span class="label">Premio de constructores</span><div class="lines"><div><span>5.º puesto</span><span class="num pos">+14,0 M</span></div><div><span>Saldo antes</span><span class="num">9,8 M</span></div><div><span>Saldo tras el premio</span><span class="num count">23,8 M</span></div></div></section></div>`,
+    2: state.junta === 'balance'
+      ? `<section class="card hero"><span class="label">Balance de la junta</span><div class="big count">Objetivo cumplido: 5.º</div><div class="muted">Confianza al cierre: 71 · «Una temporada sólida con un coche de media tabla.»</div></section>
+         <div class="grid" style="grid-template-columns:1fr 1fr"><section class="card"><span class="label">Consecuencia</span><p>Prima de la junta: <b class="pos">+3,0 M</b></p><p class="muted">Objetivo de la temporada 3: <b style="color:#fff">4.º en constructores</b></p></section>
+         <section class="card"><span class="label">Así fue la confianza</span><div class="bar" style="margin:10px 0"><i style="width:71%"></i></div><p class="muted">Mejor momento: Mónaco (+3). Peor: tres rondas en préstamo (−6).</p></section></div>`
+      : `<section class="card hero" style="border-color:var(--negativo)"><span class="label">Balance de la junta</span><div class="big count neg">Destituido</div><div class="muted">Confianza a cero: 8.º con objetivo 5.º y seis rondas en el límite de deuda.</div></section>
+         <section class="card"><span class="label">Una oferta sobre la mesa</span><div class="offer"><div><b>Kick Sauber</b> <span class="muted">· objetivo 9.º · saldo 11,0 M · instalaciones ${pips(2)}</span></div><span class="dim">Tu carrera profesional sigue con su historial</span><button class="btn">Aceptar la oferta</button></div>
+         <p class="dim" style="font-size:14px">${t.n} pasa a la IA. Nada del equipo anterior viaja contigo.</p></section>`,
+    3: `<div class="grid" style="grid-template-columns:1.1fr 1fr"><section class="card"><span class="label">Contratos que vencen</span>
+          <div class="offer"><div class="row">${helmet(t, t.d[1][2], 34)}<div><b>${t.d[1][1]}</b><div class="muted">pide 4,0 M/año · 2 temporadas</div></div></div><button class="btn small">Renovar</button><button class="btn small ghost">Dejar libre</button></div>
+          <div class="offer"><div class="row"><span class="role">AE</span><div><b>H. Brandt</b><div class="muted">Jefe de aerodinámica · pide 1,2 M/año</div></div></div><button class="btn small">Renovar</button><button class="btn small ghost">Dejar libre</button></div>
+          <div class="offer"><div><b>Norte Seguros</b><div class="muted">Patrocinio · ofrece 0,6 M/ronda con prima por podio</div></div><button class="btn small">Renovar</button><button class="btn small ghost">Dejar libre</button></div></section>
+        <section class="card"><span class="label">Libres en el mercado</span>
+          ${[['Piastri', 91, '7,5 M', 'mclaren', 81], ['Sainz', 88, '5,0 M', 'williams', 55]].map(([n, lvl, pay, id, num]) => `<div class="offer"><div class="row">${helmet(TEAMS[id], num, 34)}<div><b>${n}</b><div class="muted">nivel ${lvl} · pide ${pay}/año</div></div></div><span></span><button class="btn small">Ofrecer</button></div>`).join('')}
+          <div class="offer"><div class="row">${helmet(t, 35, 34)}<div><b>L. Ferrer</b> <span class="chip">cantera</span><div class="muted">nivel 74 · potencial 90 · 0,6 M/año</div></div></div><span></span><button class="btn small">Ascender</button></div>
+          <p class="dim" style="font-size:14px">El piloto acepta o rechaza según sueldo y nivel del equipo. Los rivales también fichan.</p></section></div>`,
+    4: `<div class="grid" style="grid-template-columns:1fr 1.3fr"><section class="card"><span class="label">Retiradas</span>
+          <div class="offer"><div class="row">${helmet(TEAMS.sauber, 27, 34)}<div><b>Hülkenberg</b><div class="muted">39 años · 251 grandes premios</div></div></div><span></span><span class="dim">se retira</span></div>
+          <span class="label" style="display:block;margin-top:12px">Llegan de la cantera</span>
+          <div class="offer"><div class="row">${helmet(TEAMS.sauber, 41, 34)}<div><b>T. Moreau</b><div class="muted">20 años · nivel 72 · potencial 88</div></div></div><span></span><span class="dim">a Kick Sauber</span></div></section>
+        <section class="card scroll"><span class="label">Parrilla de la temporada 3</span><table><tbody>${Object.entries(TEAMS).map(([id, x]) => `<tr class="${id === state.team ? 'mio' : ''}"><td>${x.n}</td><td><b>${x.d[0][1]}</b></td><td>${id === 'sauber' ? '<b>T. Moreau</b> <span class="chip">nuevo</span>' : id === 'mclaren' ? '<b>Sainz</b> <span class="chip">fichaje</span>' : `<b>${x.d[1][1]}</b>`}</td></tr>`).join('')}</tbody></table></section></div>`,
+    5: `<section class="card car-stage" style="padding:22px"><span class="label">${t.n} · coche de la temporada 3</span>${car(t)}<div class="row wrap" style="justify-content:center"><span class="chip equipo">Conserva la mitad de cada mejora</span><span class="chip">Refrigeración +1,5 %</span><span class="chip">Suelo +0,3 %</span></div></section>
+        <div class="grid" style="grid-template-columns:1fr 1fr 1fr"><section class="card"><span class="label">Objetivo de la junta</span><p class="big" style="font-size:22px">4.º</p><p class="muted">en constructores</p></section>
+          <section class="card"><span class="label">Saldo inicial</span><p class="big" style="font-size:22px">${money(21.3)}</p><p class="muted">tras premios, prima y renovaciones</p></section>
+          <section class="card"><span class="label">Primera ronda</span><p class="big" style="font-size:22px">Melbourne</p><p class="muted">previsión: lluvia 20 %</p></section></div>`,
+  };
+  return `<div class="screen"><header class="page-head"><h1>Invierno · temporada 2 → 3</h1><span style="flex:1"></span><span class="chip">${t.n}</span></header>
+    <div class="full"><div class="inner">
+      <nav class="winter-steps" aria-label="Pasos del invierno">${WINTER.map((name, i) => `<button type="button" class="${i + 1 < step ? 'done' : i + 1 === step ? 'now' : ''}" data-go="#/invierno/${i + 1}"><span class="num">${i + 1}</span> ${name}</button>`).join('')}</nav>
+      ${step === 2 ? `<div class="row"><span class="dim">Dos finales posibles:</span><div class="seg"><button data-junta="balance" aria-pressed="${state.junta === 'balance'}">Objetivo cumplido</button><button data-junta="destitucion" aria-pressed="${state.junta === 'destitucion'}">Destitución y oferta</button></div></div>` : ''}
+      ${bodies[step]}
+      <span style="flex:1"></span>
+      <div class="row between">${step > 1 ? go(`#/invierno/${step - 1}`, '← Atrás', 'btn ghost') : '<span class="dim">Se puede volver atrás hasta empezar la temporada.</span>'}
+        ${step < 5 ? go(`#/invierno/${step + 1}`, 'Siguiente', 'btn primary') : go('#/inicio', 'Empezar la temporada 3', 'btn primary')}</div>
+    </div></div></div>`;
+}
+
+// ── Rutas e interacción ──
+const ROUTES = { portada: pagePortada, menu: pageMenu, partidas: pagePartidas, nueva: pageNueva, libre: pageLibre, inicio: tabInicio, carrera: tabCarrera, equipo: tabEquipo, fabrica: tabFabrica, finanzas: tabFinanzas, temporada: tabTemporada, pista: pagePista, informe: pageInforme };
+const INDEX = [['portada', 'Portada (sin cambios)'], ['menu', 'Menú de partidas'], ['partidas', 'Cargar partida'], ['nueva', 'Nueva carrera: elegir equipo'], ['libre', 'Carrera libre'], ['inicio', 'Gestión · Inicio'], ['carrera', 'Gestión · Carrera (fin de semana)'],
+  ['equipo', 'Gestión · Equipo'], ['fabrica', 'Gestión · Fábrica'], ['finanzas', 'Gestión · Finanzas'], ['temporada', 'Gestión · Temporada'], ['pista', 'Pista · muro con órdenes y ventana'], ['informe', 'Informe de la ronda'],
+  ['invierno/1', 'Invierno 1 · Cierre'], ['invierno/2', 'Invierno 2 · Junta'], ['invierno/3', 'Invierno 3 · Mercado'], ['invierno/4', 'Invierno 4 · Parrilla'], ['invierno/5', 'Invierno 5 · Coche nuevo']];
+const app = document.getElementById('app');
+function render() {
+  const [, name = 'portada', arg] = location.hash.split('/');
+  document.documentElement.style.setProperty('--equipo', team().a);
+  app.innerHTML = name === 'invierno' ? pageInvierno(Math.min(5, Math.max(1, Number(arg) || 1))) : (ROUTES[name] ?? pagePortada)();
+  document.getElementById('mock-panel').innerHTML = `<p>Páginas</p>${INDEX.map(([hash, label]) => `<a href="#/${hash}">${label}</a>`).join('')}
+    <p>Equipo del jugador (acento)</p><select id="mock-team">${Object.entries(TEAMS).map(([id, t]) => `<option value="${id}" ${id === state.team ? 'selected' : ''}>${t.n}</option>`).join('')}</select>
+    <p>Revisar a 1280×720, 1366×768 y 1920×1080.</p>`;
+}
+document.addEventListener('click', event => {
+  const el = event.target.closest('button, a');
+  if (!el) { if (state.menu) { state.menu = false; render(); } return; }
+  const d = el.dataset;
+  if (el.id === 'mock-toggle') { document.getElementById('mock').classList.toggle('open'); return; }
+  if ('menu' in d) { state.menu = !state.menu; render(); return; }
+  state.menu = false;
+  if (d.start) state.team = state.pick;
+  if (d.pick) state.pick = d.pick;
+  else if (d.step) state.step = Number(d.step);
+  else if (d.round) state.round = Number(d.round);
+  else if (d.orders) state.orders = d.orders;
+  else if (d.plan) state.plan = d.plan;
+  else if (d.junta) state.junta = d.junta;
+  else if (d.history) state.history = d.history === '1';
+  else if (d.libreDriver) state.libreDriver = d.libreDriver;
+  else if (d.libreCircuit) state.libreCircuit = d.libreCircuit;
+  if (d.go && location.hash !== d.go) { location.hash = d.go; return; }
+  if (el.tagName === 'BUTTON' && !el.closest('.mock')) render();
+});
+document.addEventListener('change', event => { if (event.target.id === 'mock-team') { state.team = state.pick = event.target.value; render(); } });
+document.addEventListener('keydown', event => {
+  if (event.target.matches('input, select, textarea')) return;
+  if (event.key.toLowerCase() === 'm') document.getElementById('mock').classList.toggle('open');
+  if (event.key === 'Enter' && (location.hash === '' || location.hash === '#/portada')) location.hash = '#/menu';
+});
+window.addEventListener('hashchange', render);
+render();
+</script>
+</body>
+</html>

@@ -6,7 +6,7 @@ export default async function run({assert, server}) {
   const { RaceSimulation } = await server.ssrLoadModule('/src/simulation/RaceSimulation.ts');
   const { CarRenderer } = await server.ssrLoadModule('/src/renderer/CarRenderer.ts');
   const { generatePitLanePoints } = await server.ssrLoadModule('/src/utils/svgTrackParser.ts');
-  const { calculateCarWorldPosition } = await server.ssrLoadModule('/src/utils/carPosition.ts');
+  const { calculateCarWorldPosition, EDGE_MARGIN_M } = await server.ssrLoadModule('/src/utils/carPosition.ts');
   const { Camera } = await server.ssrLoadModule('/src/renderer/Camera.ts');
   const { renderLeftMinimap } = await server.ssrLoadModule('/src/renderer/MinimapRenderer.ts');
     console.log('\n--- TEST GROUP 11: Q4 — posición única y consumidores ---');
@@ -46,7 +46,7 @@ export default async function run({assert, server}) {
       const straight = { points: [{ x: 0, y: 0, angle: 0 }, { x: 1000, y: 0, angle: 0 }],
         pitLanePoints: [], trackWidthMeters: 16, pitEntryT: 0.9, pitExitT: 0.1 };
       const lane = calculateCarWorldPosition({ progress: 0.125, lateralOffset: 0.65, isInPitLane: false }, straight, 2);
-      assert(lane.worldX === 250 && Math.abs(lane.worldY - 0.65 * 14 * 0.72) < 1e-9,
+      assert(lane.worldX === 250 && Math.abs(lane.worldY - 0.65 * (16 / 2 - EDGE_MARGIN_M)) < 1e-9,   // [G2, Sprint 4.5] contrato revisado el 13/10/2026: la pista se pinta a su ancho real en metros; ±1 deja el coche pegado al borde
         'Q4: Interpolación y desplazamiento lateral conservan el ancho/capacidad Q1');
 
       // Los consumidores deben respetar la coordenada almacenada aunque progress apunte a otro sitio.

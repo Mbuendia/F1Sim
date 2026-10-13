@@ -8,6 +8,11 @@ import { getScenario } from '../data/scenarioRegistry';
 import { buildScenarioGeometry, ScenarioGeometry } from '../utils/scenarioGeometry';
 import type { Point2D } from '../utils/spline';
 import { calculateCarWorldPosition } from '../utils/carPosition';
+import { KERB_WIDTH } from '../utils/scenarioGeometry';
+import { ASPHALT_DRY, ASPHALT_WET, FINISH_LINE_M, gridBrackets } from './trackLayers';
+
+export { FINISH_LINE_M };
+const racingLines = new WeakMap<TrackDefinition, { x: number; y: number }[]>();
 
 export class TrackRenderer {
   private static scenarioCache = new WeakMap<TrackDefinition, ScenarioGeometry>();
@@ -33,13 +38,13 @@ export class TrackRenderer {
     return scenarioGeo;
   }
 
-  private static path(ctx: CanvasRenderingContext2D, points: Point2D[], camera: Camera, closed = false) {
+  private static path(ctx: CanvasRenderingContext2D, points: Point2D[], camera: Camera, closed = false, stride = 1) {
     ctx.beginPath();
-    points.forEach((point, index) => {
-      const screen = camera.worldToScreen(point.x, point.y);
+    for (let index = 0; index < points.length; index += stride) {
+      const screen = camera.worldToScreen(points[index].x, points[index].y);
       if (index === 0) ctx.moveTo(screen.x, screen.y);
       else ctx.lineTo(screen.x, screen.y);
-    });
+    }
     if (closed) ctx.closePath();
   }
 
@@ -55,19 +60,23 @@ export class TrackRenderer {
     camera: Camera,
     _dpr: number,
     weather?: TrackWeatherState,
-    circuitId: string = 'barcelona'
+    circuitId: string = 'barcelona',
+    /** [G8] La pista fija ya está pintada en WebGL (`TrackLayerGL`): aquí solo van la goma y los rótulos. */
+    gpu: boolean = false
   ) {
     const points = track.points;
     const n = points.length;
     const zoom = camera.zoom;
-    const trackWidth = (track.trackWidthMeters || 26) * 1.75 * zoom;
+    const trackWidth = (track.trackWidthMeters || 12) * zoom;
     const isWet = (weather?.waterPercentage || 0) > 10;
 
+    // [G4] Con la cámara lejos basta una muestra cada pocos metros: menos trabajo por fotograma y el mismo dibujo.
+    const stride = TrackRenderer.strideFor(zoom, n, track.lapLengthMeters);
     const buildPath = () => {
       ctx.beginPath();
       const first = camera.worldToScreen(points[0].x, points[0].y);
       ctx.moveTo(first.x, first.y);
-      for (let i = 1; i < n; i++) {
+      for (let i = stride; i < n; i += stride) {
         const p = camera.worldToScreen(points[i].x, points[i].y);
         ctx.lineTo(p.x, p.y);
       }
@@ -82,7 +91,9 @@ export class TrackRenderer {
                   && scenarioGeo.kerbSegments.length === 0
                   && scenarioGeo.barrierLines.length === 0;
 
-    if (isLegacy) {
+    if (gpu) {
+      // Nada: terreno, escapatorias y pianos están en la GPU.
+    } else if (isLegacy) {
       // ── RENDERIZADO LEGACY (fallback para circuitos sin escenario) ──
       // Reproduce exactamente el comportamiento original: bandas uniformes
       this.renderLegacyLayers(ctx, buildPath, trackWidth, zoom);
@@ -95,76 +106,59 @@ export class TrackRenderer {
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
 
-    // Q7: Dynamic track width rendering
-    for (let i = 0; i < n; i++) {
-      const p1 = points[i];
-      const p2 = points[(i + 1) % n];
-      const sp1 = camera.worldToScreen(p1.x, p1.y);
-      const sp2 = camera.worldToScreen(p2.x, p2.y);
-      const segTrackWidthMeters = p1.trackWidthMeters || track.trackWidthMeters || 26;
-      const segWidthPx = segTrackWidthMeters * 1.75 * zoom;
-      
-      ctx.beginPath();
-      ctx.moveTo(sp1.x, sp1.y);
-      ctx.lineTo(sp2.x, sp2.y);
-      ctx.strokeStyle = isWet ? '#161922' : '#272b35';
-      ctx.lineWidth = segWidthPx;
+    // [G4] Asfalto al ancho real del circuito, en un solo trazo.
+    if (!gpu) {
+      buildPath();
+      ctx.strokeStyle = isWet ? ASPHALT_WET : ASPHALT_DRY;
+      ctx.lineWidth = trackWidth;
       ctx.stroke();
     }
 
     // ── TRAZADA ENGOMADA (RACING LINE) Q8 ──
-    // Q8: Ideal racing line with rubber grip accumulation
-    for (let i = 0; i < n; i++) {
-      const p1 = points[i];
-      const p2 = points[(i + 1) % n];
-      const line1 = calculateCarWorldPosition({ progress: i / n, lateralOffset: p1.idealLineOffset || 0, isInPitLane: false }, track);
-      const line2 = calculateCarWorldPosition({ progress: (i + 1) / n, lateralOffset: p2.idealLineOffset || 0, isInPitLane: false }, track);
-      const wx1 = line1.worldX, wy1 = line1.worldY;
-      const wx2 = line2.worldX, wy2 = line2.worldY;
-      
-      const sp1 = camera.worldToScreen(wx1, wy1);
-      const sp2 = camera.worldToScreen(wx2, wy2);
-      
-      ctx.beginPath();
-      ctx.moveTo(sp1.x, sp1.y);
-      ctx.lineTo(sp2.x, sp2.y);
-      
-      // Calculate opacity based on rubber grip (starts barely visible, gets darker)
-      const grip = p1.rubberGrip || 0;
-      const opacity = Math.min(1.0, 0.15 + grip * 0.7);
-      
-      if (isWet) {
-        ctx.strokeStyle = `rgba(13, 16, 23, ${opacity})`;
-      } else {
-        ctx.strokeStyle = `rgba(20, 22, 28, ${opacity})`;
+    // [G5] La goma se pinta sobre la trazada ideal; los tramos con la misma opacidad van en un solo trazo.
+    const line = this.racingLineFor(track);
+    ctx.lineWidth = Math.max(1, 2.2 * zoom);
+    let bucket = -1;
+    for (let i = 0; i < n; i += stride) {
+      const level = Math.round(Math.min(1.0, 0.15 + (points[i].rubberGrip || 0) * 0.7) * 20);
+      if (level !== bucket) {
+        if (bucket >= 0) ctx.stroke();
+        bucket = level;
+        const from = camera.worldToScreen(line[i].x, line[i].y);
+        ctx.beginPath();
+        ctx.strokeStyle = isWet ? `rgba(13, 16, 23, ${level / 20})` : `rgba(20, 22, 28, ${level / 20})`;
+        ctx.moveTo(from.x, from.y);
       }
-      
-      ctx.lineWidth = trackWidth * 0.54; // Keep uniform width for racing line
-      ctx.stroke();
+      const to = camera.worldToScreen(line[(i + stride) % n].x, line[(i + stride) % n].y);
+      ctx.lineTo(to.x, to.y);
     }
+    if (bucket >= 0) ctx.stroke();
 
     // [R44] El agua por tramo y el radar de lluvia los pinta WeatherRenderer con los datos del modelo.
 
     // ── BARRERAS (solo escenario Q6, se pintan encima del asfalto) ──
-    if (!isLegacy) {
+    if (!isLegacy && !gpu) {
       this.renderBarriers(ctx, scenarioGeo, camera, zoom);
     }
 
     // ── LÍNEAS DE LÍMITES DE PISTA BLANCAS ──
+    // [G8] Con la pista en la GPU, boxes y meta solo ponen sus rótulos: sus formas no se pintan dos veces.
+    const labels = gpu ? TrackRenderer.labelsOnly(ctx) : ctx;
     ctx.save();
     ctx.strokeStyle = isWet ? 'rgba(255, 255, 255, 0.55)' : 'rgba(255, 255, 255, 0.75)';
-    ctx.lineWidth = 0.8 * zoom;
-    for (const edge of this.geometryFor(track).trackEdges) {
-      this.path(ctx, edge, camera, true);
+    ctx.lineWidth = Math.max(1, 0.25 * zoom);
+    for (const edge of gpu ? [] : this.geometryFor(track).trackEdges) {
+      this.path(ctx, edge, camera, true, stride);
       ctx.stroke();
     }
     ctx.restore();
 
     // ── PIT LANE COMPLETO & MURO DE BOXES ──
-    this.renderPitLane(ctx, track, camera);
+    this.renderPitLane(labels, track, camera);
 
     // ── LÍNEA DE META OFICIAL AJEDREZADA & PÓRTICO FIA ──
-    this.renderStartFinishLine(ctx, track, camera);
+    this.renderStartFinishLine(labels, track, camera);
+    if (zoom >= 1.5 && !gpu) this.renderGrid(ctx, track, camera);
 
     // ── ETIQUETAS DE CURVAS OFICIALES ──
     if (zoom >= 0.70) {
@@ -197,14 +191,14 @@ export class TrackRenderer {
     // 3. Pianos rojos
     buildPath();
     ctx.strokeStyle = '#d90429';
-    ctx.lineWidth = trackWidth + 8 * zoom;
+    ctx.lineWidth = trackWidth + 2 * KERB_WIDTH * zoom;
     ctx.stroke();
 
     // 4. Pianos blancos ajedrezados
     ctx.save();
-    ctx.setLineDash([12 * zoom, 12 * zoom]);
+    ctx.setLineDash([3 * zoom, 3 * zoom]);
     ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = trackWidth + 8 * zoom;
+    ctx.lineWidth = trackWidth + 2 * KERB_WIDTH * zoom;
     buildPath();
     ctx.stroke();
     ctx.restore();
@@ -251,7 +245,7 @@ export class TrackRenderer {
     ctx.save();
     ctx.lineCap = 'butt';
     ctx.lineJoin = 'round';
-    const kerbWidth = 8 * zoom;
+    const kerbWidth = KERB_WIDTH * zoom;
 
     for (const kerb of scenarioGeo.kerbSegments) {
       if (kerb.points.length < 2) continue;
@@ -264,7 +258,7 @@ export class TrackRenderer {
 
       // Patrón ajedrezado blanco encima
       ctx.save();
-      ctx.setLineDash([12 * zoom, 12 * zoom]);
+      ctx.setLineDash([3 * zoom, 3 * zoom]);
       this.path(ctx, kerb.points, camera);
       ctx.strokeStyle = '#ffffff';
       ctx.lineWidth = kerbWidth;
@@ -331,7 +325,7 @@ export class TrackRenderer {
     ctx.stroke();
 
     ctx.strokeStyle = '#d9dde5';
-    ctx.lineWidth = 0.45 * zoom;
+    ctx.lineWidth = Math.max(0.6, 0.2 * zoom);
     for (const edge of geometry.fastLaneEdges) {
       this.path(ctx, edge, camera);
       ctx.stroke();
@@ -355,16 +349,16 @@ export class TrackRenderer {
       ctx.fillStyle = `${box.team.color}55`;
       ctx.fill();
       ctx.strokeStyle = box.team.color;
-      ctx.lineWidth = 0.65 * zoom;
+      ctx.lineWidth = Math.max(0.6, 0.25 * zoom);
       ctx.stroke();
 
-      if (zoom >= 1.2) {
+      if (zoom >= 2.5) {
         const label = camera.worldToScreen(box.label.x, box.label.y);
         ctx.save();
         ctx.translate(label.x, label.y);
         const angle = box.angle + camera.rotation;
         ctx.rotate(Math.cos(angle) < 0 ? angle + Math.PI : angle);
-        ctx.font = `700 ${5 * zoom}px 'Rajdhani', sans-serif`;
+        ctx.font = `700 ${2.6 * zoom}px 'Rajdhani', sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = box.team.color;
@@ -384,11 +378,61 @@ export class TrackRenderer {
     ctx.restore();
   }
 
+  /** [G4] Muestras que se saltan al pintar los trazos largos: unos 8 px de pantalla entre punto y punto. */
+  static strideFor(zoom: number, samples: number, lapLengthMeters: number): number {
+    const stepM = lapLengthMeters / Math.max(1, samples);
+    const stride = Math.floor(8 / Math.max(1e-6, stepM * zoom));
+    // Nunca menos de un vértice cada 4 m: en la curva más cerrada el trazo se aparta del arco unos 15 cm.
+    const closest = Math.max(1, Math.floor(4 / Math.max(1e-6, stepM)));
+    return Number.isFinite(stride) ? Math.max(closest, Math.min(8, stride)) : 1;
+  }
+
+  /** [G5] Trazada ideal en coordenadas del mundo, calculada una vez por pista. */
+  private static racingLineFor(track: TrackDefinition): { x: number; y: number }[] {
+    let line = racingLines.get(track);
+    if (!line) {
+      const n = track.points.length;
+      line = track.points.map((p, i) => {
+        const w = calculateCarWorldPosition({ progress: i / n, lateralOffset: p.idealLineOffset || 0, isInPitLane: false }, track);
+        return { x: w.worldX, y: w.worldY };
+      });
+      racingLines.set(track, line);
+    }
+    return line;
+  }
+
+  /** [G8] El mismo lienzo sin trazos ni rellenos: deja pasar los rótulos y el estado. */
+  private static labelsOnly(ctx: CanvasRenderingContext2D): CanvasRenderingContext2D {
+    return new Proxy(ctx, {
+      get: (target, key) => {
+        if (key === 'stroke' || key === 'fill') return () => {};
+        const value = Reflect.get(target, key);
+        return typeof value === 'function' ? value.bind(target) : value;
+      },
+      set: (target, key, value) => Reflect.set(target, key, value),
+    });
+  }
+
+  /** [G7] Los 20 cajones de parrilla, a 8 m reales uno de otro: una marca en U delante de cada coche. */
+  private static renderGrid(ctx: CanvasRenderingContext2D, track: TrackDefinition, camera: Camera) {
+    if (!(track.lapLengthMeters > 0) || track.points.length < 2) return;
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+    ctx.lineWidth = Math.max(1, 0.15 * camera.zoom);
+    ctx.lineJoin = 'miter';
+    ctx.beginPath();
+    for (const bracket of gridBrackets(track)) {
+      bracket.forEach((p, i) => { const q = camera.worldToScreen(p.x, p.y); if (i === 0) ctx.moveTo(q.x, q.y); else ctx.lineTo(q.x, q.y); });
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
+
   private static renderStartFinishLine(ctx: CanvasRenderingContext2D, track: TrackDefinition, camera: Camera) {
     const startPoint = track.points[0];
     const zoom = camera.zoom;
     // Medidas del mundo: worldToScreen aplica el zoom a los extremos.
-    const trackWidth = (track.trackWidthMeters || 26) * 1.75;
+    const trackWidth = (track.trackWidthMeters || 12);
     const hw = trackWidth / 2;
 
     const nx = Math.cos(startPoint.angle + Math.PI / 2);
@@ -414,7 +458,7 @@ export class TrackRenderer {
       ctx.moveTo(sx1, sy1);
       ctx.lineTo(sx2, sy2);
       ctx.strokeStyle = s % 2 === 0 ? '#ffffff' : '#000000';
-      ctx.lineWidth = 5 * zoom;
+      ctx.lineWidth = FINISH_LINE_M * zoom;
       ctx.stroke();
     }
 
@@ -431,7 +475,7 @@ export class TrackRenderer {
     // 4. Faro oficial rojo en el lateral
     ctx.fillStyle = '#e10600';
     ctx.beginPath();
-    ctx.arc(p1.x, p1.y, 5.5 * zoom, 0, Math.PI * 2);
+    ctx.arc(p1.x, p1.y, 1.5 * zoom, 0, Math.PI * 2);
     ctx.fill();
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 1.5 * zoom;
@@ -448,7 +492,7 @@ export class TrackRenderer {
     const { zones, detections } = drsMarkers(track);
     if (!zones.length && !detections.length) return;
     const zoom = camera.zoom;
-    const half = ((track.trackWidthMeters || 26) * 1.75) / 2;
+    const half = (track.trackWidthMeters || 12) / 2;
     const fontSize = Math.max(8.5, Math.min(12, 10 * zoom));
     // Lado contrario al de los rótulos de las curvas.
     const side = (p: { x: number; y: number; angle: number }, distance: number) =>
@@ -506,7 +550,7 @@ export class TrackRenderer {
     for (const corner of track.corners) {
       const pointIdx = Math.floor(corner.t * track.points.length) % track.points.length;
       const pt = track.points[pointIdx];
-      const hw = ((track.trackWidthMeters || 26) * 1.75) / 2 + 18;
+      const hw = (track.trackWidthMeters || 12) / 2 + 18;
 
       const nx = Math.cos(pt.angle + Math.PI / 2);
       const ny = Math.sin(pt.angle + Math.PI / 2);

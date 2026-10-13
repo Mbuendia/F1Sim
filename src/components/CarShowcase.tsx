@@ -14,6 +14,8 @@ interface CarShowcaseProps {
   className?: string;
   /** [R55] Equipo del coche: el modelo 3D lleva sus patrocinadores (ficticios). */
   teamId?: string;
+  /** [T4.9] Patrocinadores firmados en la partida (sin esto, los de la librea). */
+  sponsors?: string[];
 }
 
 /** Comprueba si el navegador puede crear un contexto WebGL, sin lanzar errores. */
@@ -28,14 +30,14 @@ export function supportsWebGL(doc: Pick<Document, 'createElement'> | undefined =
 }
 
 /** Vitrina del monoplaza: visor 3D girable o, sin WebGL (o mientras carga), la silueta 2D. */
-export const CarShowcase: React.FC<CarShowcaseProps> = ({ teamColor, accentColor, number, compound, label = 'Monoplaza', className, teamId }) => {
+export const CarShowcase: React.FC<CarShowcaseProps> = ({ teamColor, accentColor, number, compound, label = 'Monoplaza', className, teamId, sponsors }) => {
   const [webgl, setWebgl] = useState(false);
   useEffect(() => { setWebgl(supportsWebGL()); }, []);
   const fallback = <F1CarSilhouette teamColor={teamColor} width={260} label={label} />;
   return (
     <div className={className} data-car-showcase={webgl ? '3d' : '2d'} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: 190 }}>
       {webgl
-        ? <Suspense fallback={fallback}><Car3DViewer teamColor={teamColor} accentColor={accentColor} number={number} compound={compound} label={label} teamId={teamId} /></Suspense>
+        ? <Suspense fallback={fallback}><Car3DViewer teamColor={teamColor} accentColor={accentColor} number={number} compound={compound} label={label} teamId={teamId} sponsors={sponsors} /></Suspense>
         : fallback}
       {/* [R55] El modelo 3D es de un tercero: su atribución va junto a él. */}
       {webgl && <ModelCredit model="car" />}

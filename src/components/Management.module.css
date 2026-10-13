@@ -1,0 +1,174 @@
+/* [Sprint 4] Piezas comunes de las páginas de gestión (docs/design/maqueta-sprint4.html): tarjetas, etiquetas, cifras,
+   listas de importes, tablas, fichas y niveles. Colores y tipografías, los de src/index.css. */
+.card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radio-l);
+  padding: 14px 16px;
+  min-width: 0;
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.3;
+}
+.stack { display: flex; flex-direction: column; gap: 8px; }
+.row { display: flex; align-items: center; gap: 10px; }
+.between { justify-content: space-between; }
+.wrap { flex-wrap: wrap; }
+
+.label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  font-weight: 600;
+}
+.big { font-family: var(--font-marca); font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.num { font-family: var(--font-marca); font-variant-numeric: tabular-nums; }
+.muted { color: var(--text-2); }
+.dim { color: var(--text-3); font-size: 14px; }
+.pos { color: var(--positivo); }
+.neg { color: var(--negativo); }
+.warn { color: var(--aviso); }
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 9px;
+  border-radius: 99px;
+  border: 1px solid var(--line-strong);
+  font-size: 14px;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+.chipWarn { border-color: var(--aviso); color: var(--aviso); }
+
+/* Listas «concepto … importe» */
+.lines > div { display: flex; justify-content: space-between; gap: 12px; padding: 3px 0; font-size: 15px; border-bottom: 1px solid var(--line); }
+.lines > div:last-child { border-bottom: 0; font-weight: 700; }
+
+.table { width: 100%; border-collapse: collapse; font-size: 15px; }
+.table th { text-align: left; font-size: 14px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-3); font-weight: 600; }
+.table th, .table td { padding: 5px 8px; border-bottom: 1px solid var(--line); }
+.right { text-align: right; }
+
+.bar { height: 8px; border-radius: 99px; background: var(--panel-2); overflow: hidden; }
+.bar > i { display: block; height: 100%; background: var(--equipo); border-radius: 99px; }
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 5px 12px;
+  border-radius: var(--radio-s);
+  border: 1px solid var(--line-strong);
+  background: var(--panel-2);
+  color: var(--text);
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 15px;
+  white-space: nowrap;
+}
+.button:hover:not(:disabled) { border-color: var(--text-3); }
+.button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Opciones excluyentes en una fila (plan de la semana, vistas) */
+.segmented { display: inline-flex; border: 1px solid var(--line-strong); border-radius: var(--radio-s); overflow: hidden; }
+.segmented button { background: transparent; border: 0; border-right: 1px solid var(--line-strong); padding: 5px 12px; min-height: 32px; cursor: pointer; font-weight: 600; font-size: 15px; color: var(--text-2); font-family: var(--font-ui); }
+.segmented button:last-child { border-right: 0; }
+.segmented button[aria-pressed="true"] { background: var(--panel-2); color: #fff; box-shadow: inset 0 -2px 0 var(--equipo); }
+
+/* Niveles de 1 a 5 */
+.pips { display: inline-flex; gap: 3px; }
+.pips i { width: 14px; height: 8px; border-radius: 2px; background: var(--panel-2); border: 1px solid var(--line-strong); }
+.pips i.pipOn { background: var(--equipo); border-color: var(--equipo); }
+.pips i.pipWork { background: repeating-linear-gradient(45deg, var(--aviso) 0 3px, transparent 3px 6px); border-color: var(--aviso); }
+
+/* Instalaciones: nombre y nivel, efecto y acción */
+.facility { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.facility:last-child { border-bottom: 0; }
+.facility > .muted { font-size: 15px; }
+
+/* Finanzas: saldo y gráfica arriba, conceptos en medio y el libro debajo */
+.finance { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.span2 { grid-column: span 2; }
+.span3 { grid-column: span 3; }
+.full { grid-column: 1 / -1; }
+.chart { width: 100%; height: 96px; display: block; }
+.ledger { max-height: 320px; overflow: auto; }
+
+@media (max-width: 1100px) {
+  .finance { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .span3 { grid-column: span 2; }
+}
+
+/* [T4.3] Centro de gestión: cabecera con el acento del equipo, pestañas y páginas de Inicio, Correr y Temporada */
+.hubHeader { flex: none; background: var(--panel); border-bottom: 1px solid var(--line); box-shadow: inset 0 3px 0 var(--equipo); border-radius: var(--radio-m); color: var(--text); font-family: var(--font-ui); }
+.hubBar { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; padding: 10px 18px 6px; }
+.hubTeam { font-family: var(--font-marca); font-weight: 700; font-size: 17px; letter-spacing: 0.06em; text-transform: uppercase; }
+.hubSpacer { flex: 1; }
+.kpi { display: flex; flex-direction: column; line-height: 1.1; }
+.kpi b { font-family: var(--font-marca); font-size: 16px; }
+.kpi span { font-size: 14px; color: var(--text-3); }
+.hubTabs { display: flex; gap: 2px; flex-wrap: wrap; padding: 0 10px; }
+.hubTabs button { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 16px; background: none; border: 0; border-bottom: 3px solid transparent; color: var(--text-3); cursor: pointer; font-family: var(--font-ui); font-size: 16px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.hubTabs button:hover { color: var(--text); }
+.hubTabs button[aria-selected="true"] { color: #fff; border-bottom-color: var(--equipo); }
+.hubTabs .hubTabRace { margin-left: auto; margin-bottom: 4px; min-height: 36px; background: var(--accion); color: #fff; border-radius: var(--radio-s); border-bottom-color: transparent; }
+.hubTabs .hubTabRace:hover { background: var(--accion-hover); color: #fff; }
+.hubTabs .hubTabRace[aria-selected="true"] { border-bottom-color: #fff; }
+.badge { min-width: 18px; height: 18px; padding: 0 5px; border-radius: 99px; background: var(--aviso); color: #111; font-size: 14px; line-height: 18px; text-align: center; font-weight: 700; }
+
+.primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 8px 22px; border-radius: var(--radio-s); border: 1px solid var(--accion); background: var(--accion); color: #fff; cursor: pointer; font-family: var(--font-ui); font-size: 16px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; }
+.primary:hover { background: var(--accion-hover); }
+.title { font-family: var(--font-marca); font-weight: 700; font-size: 24px; letter-spacing: 0.03em; }
+
+.hubHome { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 14px; flex-shrink: 0; }
+.nextRace { display: flex; flex-direction: column; gap: 10px; min-height: 220px; border-left: 4px solid var(--equipo); }
+.pending { list-style: none; margin: 0; padding: 0; }
+.pending li { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.pending li:last-child { border-bottom: 0; }
+.statusRow { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.statusCard { display: flex; flex-direction: column; gap: 6px; text-align: left; cursor: pointer; }
+.statusCard:hover { border-color: var(--equipo); }
+.statusValue { font-family: var(--font-marca); font-weight: 700; font-size: 22px; }
+
+.weekend { display: flex; flex-direction: column; gap: 14px; flex-shrink: 0; }
+/* El botón rojo se queda a la vista aunque la página se desplace. */
+.weekendFoot { position: sticky; bottom: 0; z-index: 2; padding: 10px 0 2px; background: var(--bg); }
+.steps { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; list-style: none; margin: 0; padding: 0; }
+.steps li { display: inline-flex; align-items: center; gap: 8px; color: var(--text-3); font-weight: 700; font-size: 16px; letter-spacing: 0.05em; text-transform: uppercase; }
+.stepMark { width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--line-strong); display: grid; place-items: center; font-family: var(--font-marca); font-size: 14px; }
+.steps li[data-state="hecha"] .stepMark { color: var(--positivo); border-color: var(--positivo); }
+.steps li[data-state="ahora"] { color: #fff; }
+.steps li[data-state="ahora"] .stepMark { border-color: var(--equipo); background: var(--equipo); color: #0d1117; }
+
+.strip { display: grid; grid-template-columns: repeat(24, minmax(0, 1fr)); gap: 4px; list-style: none; margin: 0; padding: 0; }
+.strip li { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0; padding: 6px 2px; background: var(--panel-2); border: 1px solid var(--line); border-radius: var(--radio-s); font-size: 14px; }
+.strip li[data-status="pendiente"] { background: transparent; }
+.strip li[data-status="saltada"] { opacity: 0.55; }
+.strip li[data-status="siguiente"] { border-color: var(--equipo); box-shadow: inset 0 3px 0 var(--equipo); }
+.stripNumber { font-family: var(--font-marca); font-size: 14px; color: var(--text-3); }
+.stripFlag { font-size: 16px; line-height: 1; }
+.stripResult { font-family: var(--font-marca); font-size: 14px; font-weight: 700; }
+.stripSprint { height: 16px; font-size: 14px; color: var(--aviso); font-weight: 700; }
+
+@media (max-width: 1100px) {
+  .hubHome { grid-template-columns: 1fr; }
+  .statusRow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .strip { grid-template-columns: repeat(12, minmax(0, 1fr)); }
+}
+
+/* [T4.20] Informe de la ronda */
+.report { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 14px; max-width: 1180px; margin: 0 auto; }
+.reportCars { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.reportCar { display: flex; justify-content: space-between; align-items: center; gap: 12px; border-left: 4px solid var(--equipo); }
+.count { animation: cuenta 0.7s ease-out both; }
+@keyframes cuenta { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@media (max-width: 900px) { .report, .reportCars { grid-template-columns: 1fr; } }

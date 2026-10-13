@@ -11,10 +11,10 @@ const SURFACE_COLORS: Record<RunoffSurface, string> = {
   tecpro: '#2563eb',
 };
 
-// ── Anchuras base en unidades de mundo ──
+// ── Anchuras base en metros ──
 const BASE_RUNOFF_WIDTH = 18;  // Ancho base de escapatoria (coherente con los 18*zoom de grava actual)
-const KERB_WIDTH = 8;          // Ancho de piano (coherente con los 8*zoom actuales)
-const BARRIER_WIDTH = 2;       // Ancho de barrera
+export const KERB_WIDTH = 1.6;  // [G4] Ancho de piano en metros
+const BARRIER_WIDTH = 1;       // Ancho de barrera
 
 /** Polígono de escapatoria listo para dibujar */
 export interface RunoffPolygon {
@@ -77,6 +77,18 @@ function getPointRange(points: { x: number; y: number; angle: number }[], startT
 }
 
 /**
+ * [G4] Desplazamiento lateral que no se pliega: por el interior de una curva no pasa del radio del eje en ese punto.
+ * `sign` es +1 hacia la normal (izquierda) y -1 al otro lado.
+ */
+function safeOffset(trackPoints: TrackDefinition['points'], idx: number, sign: number, offset: number): number {
+  const n = trackPoints.length, prev = trackPoints[(idx - 1 + n) % n], next = trackPoints[(idx + 1) % n];
+  const turn = Math.atan2(Math.sin(next.angle - prev.angle), Math.cos(next.angle - prev.angle));
+  const length = Math.hypot(next.x - prev.x, next.y - prev.y);
+  if (turn * sign <= 1e-9 || length < 1e-9) return offset;
+  return Math.min(offset, 0.9 * length / Math.abs(turn));
+}
+
+/**
  * Genera un polígono de offset a un lado de la pista.
  * El polígono se crea desplazando los puntos del spline hacia la normal
  * (exterior) o contra la normal (interior).
@@ -97,8 +109,9 @@ function buildOffsetPolygon(
       const pt = trackPoints[idx];
       const nx = Math.cos(pt.angle + Math.PI / 2) * sign;
       const ny = Math.sin(pt.angle + Math.PI / 2) * sign;
-      inner.push({ x: pt.x + nx * innerOffset, y: pt.y + ny * innerOffset });
-      outer.push({ x: pt.x + nx * outerOffset, y: pt.y + ny * outerOffset });
+      const inside = safeOffset(trackPoints, idx, sign, innerOffset), outside = safeOffset(trackPoints, idx, sign, outerOffset);
+      inner.push({ x: pt.x + nx * inside, y: pt.y + ny * inside });
+      outer.push({ x: pt.x + nx * outside, y: pt.y + ny * outside });
     }
     // Polígono cerrado: inner forward + outer backward
     results.push([...inner, ...outer.reverse()]);
@@ -127,7 +140,8 @@ function buildOffsetPath(
       const pt = trackPoints[idx];
       const nx = Math.cos(pt.angle + Math.PI / 2) * sign;
       const ny = Math.sin(pt.angle + Math.PI / 2) * sign;
-      path.push({ x: pt.x + nx * offsetDistance, y: pt.y + ny * offsetDistance });
+      const distance = safeOffset(trackPoints, idx, sign, offsetDistance);
+      path.push({ x: pt.x + nx * distance, y: pt.y + ny * distance });
     }
     results.push(path);
   };
@@ -146,8 +160,12 @@ export function buildScenarioGeometry(
   track: TrackDefinition,
   scenario: CircuitScenario
 ): ScenarioGeometry {
-  const trackHalfWidth = ((track.trackWidthMeters || 26) * 1.75) / 2;
+  const trackHalfWidth = (track.trackWidthMeters || 12) / 2;
   const points = track.points;
+  // [G4] Escapatorias, pianos y barreras se dibujan con un vértice cada 6 m: de sobra para su forma.
+  const stepM = track.lapLengthMeters > 0 ? track.lapLengthMeters / Math.max(1, points.length) : 6;
+  const every = Math.max(1, Math.round(6 / stepM));
+  const thin = (indices: number[]) => indices.filter((_, k) => k % every === 0 || k === indices.length - 1);
 
   // ── 0. PROCEDURAL GENERATION PARA CIRCUITOS SIN ESCENARIO (Q6) ──
   let runoffs = scenario.runoffZones;
@@ -199,7 +217,7 @@ export function buildScenarioGeometry(
   const runoffPolygons: RunoffPolygon[] = [];
 
   for (const zone of runoffs) {
-    const indices = getPointRange(points, zone.startT, zone.endT);
+    const indices = thin(getPointRange(points, zone.startT, zone.endT));
     if (indices.length < 2) continue;
 
     const innerEdge = trackHalfWidth;
@@ -216,7 +234,7 @@ export function buildScenarioGeometry(
   const kerbSegments: KerbSegment[] = [];
 
   for (const kerb of kerbs) {
-    const indices = getPointRange(points, kerb.startT, kerb.endT);
+    const indices = thin(getPointRange(points, kerb.startT, kerb.endT));
     if (indices.length < 2) continue;
 
     const kerbOffset = trackHalfWidth + KERB_WIDTH / 2;
@@ -230,11 +248,11 @@ export function buildScenarioGeometry(
   const barrierLines: BarrierLine[] = [];
 
   for (const barrier of barriers) {
-    const indices = getPointRange(points, barrier.startT, barrier.endT);
+    const indices = thin(getPointRange(points, barrier.startT, barrier.endT));
     if (indices.length < 2) continue;
 
-    // Las barreras se colocan justo al borde de la pista
-    const barrierOffset = trackHalfWidth + 1;
+    // [G4] Las barreras van por fuera del piano, nunca sobre el asfalto
+    const barrierOffset = trackHalfWidth + KERB_WIDTH + 0.6;
     const paths = buildOffsetPath(points, indices, barrier.side, barrierOffset);
     for (const path of paths) {
       barrierLines.push({

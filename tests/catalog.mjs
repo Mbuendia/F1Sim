@@ -536,5 +536,22 @@ export const modules = [
   { "id": "runoff-t31", "tasks": ["T3.1"], "sprint": "3", "kind": "contract" },
   { "id": "weather-fronts-t32", "tasks": ["T3.2"], "sprint": "3", "kind": "contract" },
   { "id": "tyre-water-t33", "tasks": ["T3.3"], "sprint": "3", "kind": "contract" },
-  { "id": "spray-particles-t34", "tasks": ["T3.4"], "sprint": "3", "kind": "contract" }
+  { "id": "spray-particles-t34", "tasks": ["T3.4"], "sprint": "3", "kind": "contract" },
+  { "id": "start-weather-t412", "tasks": ["T4.12"], "sprint": "4", "kind": "contract" },
+  { "id": "finance-t41", "tasks": ["T4.1"], "sprint": "4", "kind": "contract" },
+  { "id": "costs-t42", "tasks": ["T4.2"], "sprint": "4", "kind": "contract" },
+  { "id": "facilities-t44", "tasks": ["T4.4"], "sprint": "4", "kind": "contract" },
+  { "id": "pit-crew-t46", "tasks": ["T4.6"], "sprint": "4", "kind": "contract" },
+  { "id": "sponsors-t49", "tasks": ["T4.9"], "sprint": "4", "kind": "contract" },
+  { "id": "career-menu-t419", "tasks": ["T4.19"], "sprint": "4", "kind": "contract" },
+  { "id": "hub-t43", "tasks": ["T4.3"], "sprint": "4", "kind": "contract" },
+  { "id": "board-t410", "tasks": ["T4.10"], "sprint": "4", "kind": "contract" },
+  { "id": "round-report-t420", "tasks": ["T4.20"], "sprint": "4", "kind": "contract" },
+  { "id": "contracts-t47", "tasks": ["T4.7"], "sprint": "4", "kind": "contract" },
+  { "id": "academy-t48", "tasks": ["T4.8"], "sprint": "4", "kind": "contract" },
+  { "id": "winter-t411", "tasks": ["T4.11"], "sprint": "4", "kind": "contract" },
+  { "id": "pit-window-t415", "tasks": ["T4.15"], "sprint": "4", "kind": "contract" },
+  { "id": "polish-t417", "tasks": ["T4.17"], "sprint": "4", "kind": "contract" },
+  { "id": "circuit-quality", "tasks": ["G1"], "sprint": "4.5", "kind": "contract" },
+  { "id": "track-gl-g8", "tasks": ["G8", "G9"], "sprint": "4.5", "kind": "contract" }
 ];

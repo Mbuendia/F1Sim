@@ -1,0 +1,66 @@
+/* [T4.19] Páginas de entrada a la partida (menú de partidas, cargar partida, elegir equipo) y menú «Partida».
+   Composición de docs/design/maqueta-sprint4.html; colores y tipografías de src/index.css. */
+.screen { width: 100vw; height: 100vh; display: flex; flex-direction: column; background: var(--bg); color: var(--text); font-family: var(--font-ui); font-size: 16px; font-weight: 500; overflow: hidden; }
+
+/* Menú de partidas: contenido a la izquierda y la rueda grande, oscurecida, al fondo */
+.entry { position: relative; flex: 1; display: flex; overflow: hidden; }
+.wheel { position: absolute; right: -16vh; top: 50%; width: 96vh; height: 96vh; transform: translateY(-50%); opacity: 0.32; pointer-events: none; }
+.entry::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, var(--bg) 30%, rgba(13, 17, 23, 0.7) 60%, rgba(13, 17, 23, 0.1)); pointer-events: none; }
+.front { position: relative; z-index: 1; padding: 6vh 7vw; display: flex; flex-direction: column; justify-content: center; gap: 16px; width: min(780px, 64vw); }
+.brand { font-family: var(--font-marca); font-weight: 900; font-size: clamp(26px, 3.2vw, 40px); line-height: 1; letter-spacing: 0.02em; }
+.brand em { font-style: normal; color: var(--accion); }
+.continue { display: grid; grid-template-columns: auto 1fr; gap: 6px 18px; align-items: center; padding: 16px 18px; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--c, var(--equipo)); border-radius: var(--radio-l); }
+.continueTitle { font-family: var(--font-marca); font-weight: 700; font-size: 18px; letter-spacing: 0.04em; }
+.option { display: flex; justify-content: space-between; align-items: center; gap: 12px; width: 100%; padding: 12px 16px; background: rgba(23, 29, 38, 0.88); border: 1px solid var(--line); border-radius: var(--radio-m); color: var(--text); cursor: pointer; font-family: var(--font-ui); font-size: 18px; font-weight: 600; text-align: left; }
+.option:hover { border-color: var(--text-3); }
+.option span { display: inline-flex; align-items: center; gap: 10px; }
+.option small { font-size: 15px; color: var(--text-3); font-weight: 500; }
+.stack { display: flex; flex-direction: column; gap: 8px; }
+.muted { color: var(--text-2); }
+.dim { color: var(--text-3); font-size: 14px; }
+.warn { color: var(--aviso); }
+
+.primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 8px 22px; border-radius: var(--radio-s); border: 1px solid var(--accion); background: var(--accion); color: #fff; cursor: pointer; font-family: var(--font-ui); font-size: 16px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; }
+.primary:hover:not(:disabled) { background: var(--accion-hover); }
+.primary:disabled { opacity: 0.5; cursor: not-allowed; }
+.button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 36px; padding: 6px 14px; border-radius: var(--radio-s); border: 1px solid var(--line-strong); background: var(--panel-2); color: var(--text); cursor: pointer; font-family: var(--font-ui); font-size: 15px; font-weight: 600; white-space: nowrap; }
+.button:hover { border-color: var(--text-3); }
+.ghost { background: transparent; }
+
+/* Cabecera y pie de página */
+.head { flex: none; display: flex; align-items: center; gap: 16px; padding: 14px 24px; border-bottom: 1px solid var(--line); background: var(--panel); }
+.head h1 { font-family: var(--font-marca); font-size: 20px; letter-spacing: 0.06em; text-transform: uppercase; }
+.spacer { flex: 1; }
+.body { flex: 1; min-height: 0; overflow: auto; padding: 18px 24px; }
+.foot { flex: none; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 12px 24px; border-top: 1px solid var(--line); background: var(--panel); }
+.field { height: 40px; padding: 0 12px; background: var(--bg); border: 1px solid var(--line-strong); border-radius: var(--radio-s); min-width: 240px; color: var(--text); font-family: var(--font-ui); font-size: 16px; }
+.label { font-size: 14px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-3); font-weight: 600; }
+.row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.message { padding: 8px 12px; border-radius: var(--radio-s); background: var(--panel-2); margin-bottom: 12px; }
+
+/* Tarjetas de partida */
+.saves { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+.save { display: flex; flex-direction: column; gap: 6px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-top: 4px solid var(--c, var(--line-strong)); border-radius: var(--radio-l); }
+.saveName { font-family: var(--font-marca); font-weight: 700; font-size: 18px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 2px 9px; border-radius: 99px; border: 1px solid var(--aviso); color: var(--aviso); font-size: 14px; white-space: nowrap; align-self: flex-start; }
+
+/* Tarjetas de equipo */
+.teams { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
+.team { display: flex; flex-direction: column; gap: 5px; min-width: 0; padding: 10px 12px; text-align: left; cursor: pointer; background: var(--panel); border: 1px solid var(--line); border-top: 4px solid var(--c); border-radius: var(--radio-l); color: var(--text); font-family: var(--font-ui); font-size: 15px; }
+.team:hover { border-color: var(--text-3); border-top-color: var(--c); }
+.team[aria-pressed="true"] { outline: 2px solid var(--foco); outline-offset: 1px; background: var(--panel-2); }
+.teamName { font-family: var(--font-marca); font-weight: 700; font-size: 16px; }
+.car { height: 64px; display: flex; align-items: center; justify-content: center; }
+.car img, .car svg { max-width: 100%; max-height: 64px; }
+.kv { display: flex; justify-content: space-between; gap: 8px; color: var(--text-2); }
+.kv b { color: var(--text); }
+@media (max-width: 1100px) { .teams { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* Menú «Partida» */
+.game { position: relative; display: inline-flex; align-items: center; gap: 12px; }
+.saved { font-size: 14px; color: var(--text-3); white-space: nowrap; }
+.gameList { position: absolute; right: 0; top: 42px; z-index: 30; min-width: 240px; display: flex; flex-direction: column; gap: 2px; padding: 6px; background: var(--panel-2); border: 1px solid var(--line-strong); border-radius: var(--radio-m); box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5); }
+.gameList button { display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px 10px; background: none; border: 0; border-radius: var(--radio-s); color: var(--text); cursor: pointer; font-family: var(--font-ui); font-size: 15px; font-weight: 600; text-align: left; }
+.gameList button:hover { background: var(--panel); }
+.gameList hr { border: 0; border-top: 1px solid var(--line-strong); margin: 4px 0; }
+.gameList .field { min-width: 0; width: 100%; height: 34px; font-size: 15px; }

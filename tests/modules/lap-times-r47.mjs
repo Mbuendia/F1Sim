@@ -21,7 +21,7 @@ export default async function run({ server, assert, test }) {
     const ids = Object.keys(OFFICIAL_CIRCUITS);
     assert(ids.every(id => refs.LAP_REFERENCES[id]), 'R47: todos los circuitos tienen referencia', ids.filter(id => !refs.LAP_REFERENCES[id]).join());
     assert(Object.values(refs.LAP_REFERENCES).every(r => r.referenceLapSec > 60 && r.referenceLapSec < 110 && r.curvatureGain > 5 && r.curvatureGain < 120), 'R47: referencias y ganancias en rangos razonables');
-    assert(refs.LAP_REFERENCE_PROVENANCE === 'calibrado' && /no verificad/i.test(refs.LAP_REFERENCE_NOTE), 'R47: la procedencia de las referencias queda declarada');
+    assert(refs.LAP_REFERENCE_PROVENANCE === 'oficial' && /2025/.test(refs.LAP_REFERENCE_NOTE) && /formula1\.com/.test(refs.LAP_REFERENCE_NOTE), 'R47: la procedencia de las referencias queda declarada');
   });
 
   await test('R47: vuelta del motor a ±3 % de la referencia', () => {

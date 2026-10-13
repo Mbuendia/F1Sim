@@ -8,7 +8,7 @@ export default async function run({assert, server}) {
   const { Camera } = await server.ssrLoadModule('/src/renderer/Camera.ts');
     console.log('\n--- TEST GROUP 13: Q5 — escala de meta y legibilidad ---');
     {
-      const { TrackRenderer } = await server.ssrLoadModule('/src/renderer/TrackRenderer.ts');
+      const { TrackRenderer, FINISH_LINE_M } = await server.ssrLoadModule('/src/renderer/TrackRenderer.ts');
       const start = { x: 120, y: 90, angle: 0.5 };
       const track = { points: [start], trackWidthMeters: 24, corners: [{ number: 1, t: 0 }] };
       for (const zoom of [0.25, 0.5, 1, 2.75, 4.5, 8]) {
@@ -28,17 +28,17 @@ export default async function run({assert, server}) {
           const segments = strokes.filter(s => s.path.length === 2);
           const a = segments[0].path[0], b = segments.at(-1).path[1];
           const center = camera.worldToScreen(start.x, start.y);
-          const halfWidth = 24 * 1.75 / 2;
+          const halfWidth = track.trackWidthMeters / 2;   // [G2, Sprint 4.5] contrato revisado el 13/10/2026: la pista se pinta a su ancho real en metros
           const expectedEdge = camera.worldToScreen(start.x + Math.cos(start.angle + Math.PI / 2) * halfWidth,
             start.y + Math.sin(start.angle + Math.PI / 2) * halfWidth);
-          assert(segments.length === 10 && Math.abs(Math.hypot(a.x - b.x, a.y - b.y) - 42 * zoom) < 1e-7 &&
-            segments.every(s => s.width === 5 * zoom && s.cap === 'butt') && Math.hypot(a.x - expectedEdge.x, a.y - expectedEdge.y) < 1e-7,
+          assert(segments.length === 10 && Math.abs(Math.hypot(a.x - b.x, a.y - b.y) - 2 * halfWidth * zoom) < 1e-7 &&
+            segments.every(s => s.width === FINISH_LINE_M * zoom && s.cap === 'butt') && Math.hypot(a.x - expectedEdge.x, a.y - expectedEdge.y) < 1e-7,
             `Q5: Ancho, grosor y bordes de meta lineales (zoom ${zoom}, rotación ${rotation})`);
           assert(segments.every((s, i) => s.color === (i % 2 ? '#000000' : '#ffffff')),
             `Q5: Ajedrezado no tapado por una línea blanca (zoom ${zoom}, rotación ${rotation})`);
           TrackRenderer.renderCornerLabels(ctx, track, camera);
           const corner = texts.find(t => t.text === 'T1');
-          assert(Math.abs(Math.hypot(corner.x - center.x, corner.y - center.y) - (21 + 18) * zoom) < 1e-7,
+          assert(Math.abs(Math.hypot(corner.x - center.x, corner.y - center.y) - (halfWidth + 18) * zoom) < 1e-7,
             `Q5: Etiquetas de curva sin doble zoom (${zoom}, rotación ${rotation})`);
         }
       }

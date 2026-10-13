@@ -6,12 +6,20 @@ import { addRace, constructorsChampionship, driverStandings, emptyChampionship }
 import type { ChampionshipState } from './Championship';
 import { addDistance, completeRace, emptyComponents, ensureDriver } from './ComponentPool';
 import type { ComponentState } from './ComponentPool';
-import { emptyProgram } from './Development';
+import { carryOver } from './Development';
+import { buildWinter } from './Winter';
+import type { WinterReport } from './Winter';
 import type { DevelopmentProgram } from './Development';
 import type { RaceResult } from './RaceResult';
 import type { TireSet } from './TireInventory';
 import { SEASON_CALENDAR } from '../data/calendar';
 import type { CalendarRound } from '../data/calendar';
+import { OFFICIAL_CIRCUITS } from '../data/circuits';
+import { drawWeatherScenario } from '../data/weatherScenarios';
+import type { WeatherScenarioId } from '../data/weatherScenarios';
+import { streamSeed } from './Random';
+import { closeManagementSeason, settleManagementRound } from './Management';
+import type { ManagementState, RoundSettlement } from './Management';
 
 export const SEASON_RACES = 24;
 export const SEASONS_STORAGE_KEY = 'f1_seasons';
@@ -38,8 +46,29 @@ export interface SeasonSummary {
 /** [R52] Fin de semana sprint a medias: el sprint de esa ronda ya se corrió y estos son los juegos que quedan. */
 export interface WeekendState { round: number; tyres: Record<string, TireSet[]> }
 
-/** Lo que la temporada recuerda además del campeonato: las rondas del calendario que se saltaron. */
-export interface SeasonState { version: 1; skipped: number[]; weekend?: WeekendState }
+/**
+ * Lo que la temporada recuerda además del campeonato: las rondas del calendario que se saltaron. [T4.12] Y la semilla
+ * de su tiempo: con ella cada ronda tiene un tiempo fijo (ausente en las partidas anteriores y al empezar la temporada).
+ */
+export interface SeasonState { version: 1; skipped: number[]; weekend?: WeekendState; weatherSeed?: number }
+
+/** [T4.12] La semilla del tiempo pasa de un estado de la temporada al siguiente. */
+const keepSeed = (season: SeasonState): { weatherSeed?: number } => (season.weatherSeed === undefined ? {} : { weatherSeed: season.weatherSeed });
+
+/** [T4.12] Da a la temporada su semilla del tiempo; si ya la tiene, la conserva. */
+export function withWeatherSeed(season: SeasonState, seed: number): SeasonState {
+  return season.weatherSeed === undefined ? { ...season, weatherSeed: Math.floor(seed) >>> 0 } : season;
+}
+
+/**
+ * [T4.12] Tiempo de una ronda de la temporada: se sortea con la probabilidad de lluvia de su circuito y la semilla de
+ * la temporada, así que la misma ronda da siempre el mismo (reiniciar la carrera no lo cambia). El sprint y el Gran
+ * Premio se sortean por separado.
+ */
+export function roundWeather(season: SeasonState, round: CalendarRound, session: 'gp' | 'sprint' = 'gp'): WeatherScenarioId {
+  const chance = OFFICIAL_CIRCUITS[round.circuitId]?.rainProbabilityPercent ?? 0;
+  return drawWeatherScenario(chance, streamSeed(season.weatherSeed ?? 0, `ronda-${round.round}-${session}`));
+}
 
 export function emptySeason(): SeasonState {
   return { version: 1, skipped: [] };
@@ -56,7 +85,8 @@ export function parseSeason(text: string | null): SeasonState {
       const weekend = data.weekend;
       const valid = weekend && typeof weekend === 'object' && Number.isInteger(weekend.round) && weekend.round >= 1 && weekend.round <= SEASON_RACES
         && weekend.tyres && typeof weekend.tyres === 'object' && !Array.isArray(weekend.tyres);
-      return valid ? { version: 1, skipped: validRounds(data.skipped), weekend: { round: weekend.round, tyres: weekend.tyres } } : { version: 1, skipped: validRounds(data.skipped) };
+      const seed = Number.isInteger(data.weatherSeed) ? { weatherSeed: data.weatherSeed as number } : {};
+      return valid ? { version: 1, skipped: validRounds(data.skipped), weekend: { round: weekend.round, tyres: weekend.tyres }, ...seed } : { version: 1, skipped: validRounds(data.skipped), ...seed };
     }
   } catch { /* guardado ilegible */ }
   return emptySeason();
@@ -128,7 +158,7 @@ export function sprintPending(championship: ChampionshipState, season: SeasonSta
 /** Salta la ronda que toca: no se disputa y nadie puntúa. Sin rondas por disputar no cambia nada. */
 export function skipRound(championship: ChampionshipState, season: SeasonState = emptySeason()): SeasonState {
   const next = nextRound(championship, season);
-  return next ? { version: 1, skipped: validRounds([...season.skipped, next.round]) } : season;
+  return next ? { version: 1, skipped: validRounds([...season.skipped, next.round]), ...keepSeed(season) } : season;
 }
 
 export function parseArchive(text: string | null): SeasonSummary[] {
@@ -160,7 +190,8 @@ export function closeSeason({ championship, components, program, archive, season
   return {
     championship: emptyChampionship(),
     components: driverIds.reduce((s, id) => ensureDriver(s, id), emptyComponents()),
-    program: emptyProgram(),
+    // [T4.11] El coche nuevo conserva la mitad de cada mejora montada.
+    program: carryOver(program),
     archive: [...archive, summary],
     season: emptySeason(),
     summary,
@@ -174,13 +205,39 @@ export interface CareerProgress {
   program: DevelopmentProgram;
   season: SeasonState;
   archive: SeasonSummary[];
+  /** [T4.1] Gestión del equipo (dinero…). Ausente en las partidas y pruebas anteriores: entonces no se toca. */
+  management?: ManagementState;
 }
-export type SettledCareer = CareerProgress & { /** Resumen de la temporada, si esta carrera o este salto la ha cerrado. */ closed: SeasonSummary | null };
+export type SettledCareer = CareerProgress & {
+  /** Resumen de la temporada, si esta carrera o este salto la ha cerrado. */
+  closed: SeasonSummary | null;
+  /** [T4.11] Informe del invierno, si la temporada se ha cerrado y la carrera profesional lleva gestión. */
+  winter?: WinterReport;
+};
+
+/** [T4.1] Puntos que suma cada equipo en un resultado. */
+function teamPoints(result: RaceResult): Record<string, number> {
+  const points: Record<string, number> = {};
+  for (const row of result.rows) points[row.teamId] = (points[row.teamId] ?? 0) + row.points;
+  return points;
+}
+
+/** [T4.1] La gestión tras liquidar esa ronda; si la carrera profesional no lleva gestión, nada. */
+function settledManagement(career: CareerProgress, round: number | undefined, format: 'gp' | 'sprint' | 'saltada', points: Record<string, number>,
+  extra: Pick<RoundSettlement, 'damages' | 'stops' | 'result'> = {}): { management?: ManagementState } {
+  if (!career.management || round === undefined) return {};
+  return { management: settleManagementRound(career.management, { round, format, points, ...extra }) };
+}
 
 function closeIfComplete(career: CareerProgress, playerCodes: string[]): SettledCareer {
   if (!seasonComplete(career.championship, career.season)) return { ...career, closed: null };
   const { summary, ...next } = closeSeason({ ...career, playerCodes });
-  return { ...next, closed: summary };
+  // [T4.1] El premio de constructores se reparte con la clasificación de la temporada que se cierra.
+  const order = constructorsChampionship(career.championship).map(team => team.teamId);
+  if (!career.management) return { ...next, closed: summary };
+  // [T4.11] Con la gestión de antes y de después del cierre se cuenta el invierno.
+  const management = closeManagementSeason(career.management, order);
+  return { ...next, management, closed: summary, winter: buildWinter({ before: career.management, after: management, summary, program: next.program }) };
 }
 
 /**
@@ -193,24 +250,36 @@ export function settleRace(career: CareerProgress, race: {
   counts: boolean; id: string; circuitId: string; result: RaceResult; format: 'gp' | 'sprint'; raceKm: number; playerCodes?: string[];
   /** Juegos de neumáticos de cada piloto al acabar (solo tras un sprint). */
   tyres?: Record<string, TireSet[]>;
+  /** [T4.2] Daños de los coches en esta carrera: se cobran a su equipo al liquidar la ronda. */
+  damages?: RoundSettlement['damages'];
+  /** [T4.6] Paradas de la carrera, para la estadística de cada equipo de boxes. */
+  stops?: RoundSettlement['stops'];
 }): SettledCareer {
   if (!race.counts || race.result.status !== 'final') return { ...career, closed: null };
   const championship = addRace(career.championship, race.id, race.circuitId, race.result, race.format);
+  const round = nextRound(career.championship, career.season)?.round;
+  // [T4.1] El dinero de la ronda se liquida con el resultado: una sola vez por ronda y formato.
+  const management = settledManagement(career, round, race.format, teamPoints(race.result), {
+    damages: race.damages, stops: race.stops,
+    // [T4.9] Los objetivos de patrocinio se evalúan con el resultado oficial (ya con sanciones).
+    result: race.result.rows.map(row => ({ teamId: row.teamId, position: row.position, points: row.points })),
+  });
   if (race.format === 'sprint') {
-    const round = nextRound(career.championship, career.season)?.round;
     if (round === undefined) return { ...career, closed: null };
     return {
-      ...career, championship, components: addDistance(career.components, race.raceKm),
-      season: { version: 1, skipped: career.season.skipped, weekend: { round, tyres: race.tyres ?? {} } }, closed: null,
+      ...career, ...management, championship, components: addDistance(career.components, race.raceKm),
+      season: { version: 1, skipped: career.season.skipped, weekend: { round, tyres: race.tyres ?? {} }, ...keepSeed(career.season) }, closed: null,
     };
   }
   return closeIfComplete({
-    ...career, championship, components: completeRace(career.components, race.raceKm),
-    season: { version: 1, skipped: career.season.skipped },
+    ...career, ...management, championship, components: completeRace(career.components, race.raceKm),
+    season: { version: 1, skipped: career.season.skipped, ...keepSeed(career.season) },
   }, race.playerCodes ?? []);
 }
 
 /** Salta el Gran Premio que toca; si era el último, cierra la temporada. */
 export function settleSkip(career: CareerProgress, playerCodes: string[] = []): SettledCareer {
-  return closeIfComplete({ ...career, season: skipRound(career.championship, career.season) }, playerCodes);
+  // [T4.1] La ronda saltada paga los gastos fijos y no ingresa nada.
+  const management = settledManagement(career, nextRound(career.championship, career.season)?.round, 'saltada', {});
+  return closeIfComplete({ ...career, ...management, season: skipRound(career.championship, career.season) }, playerCodes);
 }

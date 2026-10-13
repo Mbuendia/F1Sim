@@ -82,6 +82,8 @@ export interface Driver {
   firstName: string;
   lastName: string;
   number: number;
+  /** [T4.11] Edad al empezar la partida (anotada de memoria; la gestión la hace avanzar cada invierno). */
+  age?: number;
   country: string;
   countryFlag: string;
   teamId: string;
@@ -238,6 +240,8 @@ export interface PitStopState {
   boxWaitTimer: number;              // accumulated wait time (sim seconds) behind teammate
   // Q17: beneficio D20 de servicio pendiente (se consume en la próxima parada real dentro de su validez)
   crewBenefit?: CrewServiceBenefit | null;
+  /** [T4.6] Efecto del equipo de boxes de este coche en el tiempo de servicio (ausente: el de siempre). */
+  crew?: { timeFactor: number; errorFactor: number };
 }
 
 /** [R08] Infracción en el pit lane. */

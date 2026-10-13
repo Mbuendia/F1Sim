@@ -9,6 +9,12 @@ import type { RaceResultHistory } from '../types/f1';
 import { emptySeason, parseSeason, seasonRaceNumber } from './Season';
 import { migrateSnapshot, validateSnapshot } from './Snapshot';
 import type { RaceSnapshot } from './Snapshot';
+import { DRIVERS } from '../data/drivers';
+import { TEAMS } from '../data/teams';
+import { constructorsChampionship } from './Championship';
+import { balanceOf } from './Finance';
+import { isManagement, readManagement, startManagement } from './Management';
+import type { ManagementState } from './Management';
 
 export const SAVE_SCHEMA = 'f1sim-partida';
 export const SAVE_VERSION = 1;
@@ -25,6 +31,8 @@ export interface CareerData {
   history: RaceResultHistory[];
   /** [R51] Rondas saltadas de la temporada en curso (ausente en las partidas anteriores: ninguna). */
   season?: SeasonState;
+  /** [T4.1] Gestión del equipo: dinero y demás (ausente en las partidas anteriores: saldos iniciales). */
+  management?: ManagementState;
 }
 
 export interface SaveSelection {
@@ -62,6 +70,11 @@ export interface SlotSummary {
   raceNumber: number;
   raceInProgress: { circuitId: string; lap: number; totalLaps: number; finished: boolean } | null;
   sizeChars: number;
+  /** [T4.19] Equipo del jugador, temporada, puesto en constructores (null sin carreras) y saldo. Ausentes en los resúmenes anteriores. */
+  team?: { id: string; name: string };
+  season?: number;
+  position?: number | null;
+  balance?: number;
 }
 
 export function createSave(input: { name: string; savedAt: string; career: CareerData; selection: SaveSelection; race: RaceSnapshot | null }): SaveGame {
@@ -94,6 +107,7 @@ export function validateSave(save: unknown): string[] {
     if (!Array.isArray(career.history)) errors.push('Carrera profesional: historial de carreras ausente');
     const season = career.season;
     if (season !== undefined && !(isObject(season) && season.version === 1 && Array.isArray(season.skipped))) errors.push('Carrera profesional: temporada (rondas saltadas) ilegible');
+    if (career.management !== undefined && !isManagement(career.management)) errors.push('Carrera profesional: gestión del equipo (dinero) ilegible');
   }
   const selection = save.selection;
   if (!isObject(selection) || typeof selection.driverId !== 'string' || typeof selection.circuitId !== 'string') errors.push('Partida: falta la selección de piloto y circuito');
@@ -145,9 +159,26 @@ export function savedSeason(save: SaveGame): SeasonState {
   return save.career.season ? parseSeason(JSON.stringify(save.career.season)) : emptySeason();
 }
 
+/** [T4.1] Gestión que guarda la partida; las anteriores empiezan con los saldos iniciales y el equipo de su piloto. */
+export function savedManagement(save: SaveGame): ManagementState {
+  const teamId = DRIVERS[save.selection.driverId]?.teamId ?? '';
+  return readManagement(save.career.management) ?? startManagement(teamId, save.career.archive.length + 1);
+}
+
 /** [R51] Si la carrera guardada cuenta para la temporada (antes de R51 todas contaban). */
 export function savedRaceCounts(save: SaveGame): boolean {
   return save.selection.counts !== false;
+}
+
+/** [T4.19] Estado de la carrera profesional para el resumen: equipo, temporada, puesto en constructores y saldo. */
+function careerStatus(save: SaveGame): Pick<SlotSummary, 'team' | 'season' | 'position' | 'balance'> {
+  const management = savedManagement(save);
+  const teamId = management.playerTeamId;
+  const place = constructorsChampionship(save.career.championship).findIndex(team => team.teamId === teamId);
+  return {
+    team: { id: teamId, name: TEAMS[teamId]?.shortName ?? teamId }, season: save.career.archive.length + 1,
+    position: place >= 0 ? place + 1 : null, balance: balanceOf(management.finance, teamId),
+  };
 }
 
 export function summarize(save: SaveGame, id: string, auto: boolean, sizeChars: number): SlotSummary {
@@ -157,6 +188,7 @@ export function summarize(save: SaveGame, id: string, auto: boolean, sizeChars: 
     raceNumber: seasonRaceNumber(save.career.championship, savedSeason(save)),
     raceInProgress: race ? { circuitId: race.circuitId, lap: race.state.flags.leaderLap, totalLaps: race.state.flags.totalLaps, finished: race.state.flags.isFinished } : null,
     sizeChars,
+    ...careerStatus(save),
   };
 }
 

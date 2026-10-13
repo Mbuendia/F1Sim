@@ -104,14 +104,18 @@ export function improvementPoints(outcome: RaceOutcome | undefined): number {
   return 1 + (outcome.points > 0 ? 1 : 0) + (outcome.position <= 3 ? 1 : 0);
 }
 
-/** Reparte los puntos (máx. +1 por atributo, nunca por encima de 100), con preferencia por el enfoque. Reproducible. */
-export function progressAfterRace(current: DriverAttributes, outcome: RaceOutcome | undefined, focus: FocusId, seed: number, driverId: string):
+/**
+ * Reparte los puntos (máx. +1 por atributo, nunca por encima de 100), con preferencia por el enfoque. Reproducible.
+ * [T4.4] `bonus`: puntos extra (del simulador) para un piloto que ya ha ganado alguno en la carrera.
+ */
+export function progressAfterRace(current: DriverAttributes, outcome: RaceOutcome | undefined, focus: FocusId, seed: number, driverId: string, bonus = 0):
   { gains: Partial<Record<AttributeKey, number>>; next: DriverAttributes } {
   const rng = mulberry32(streamSeed(seed, `mejora-${driverId}`));
   const next = { ...current };
   const gains: Partial<Record<AttributeKey, number>> = {};
   const focusKeys: readonly AttributeKey[] = FOCUS[focus]?.keys ?? [];
-  let points = improvementPoints(outcome);
+  const earned = improvementPoints(outcome);
+  let points = earned > 0 ? earned + Math.max(0, bonus) : 0;
   while (points > 0) {
     const open = ATTRIBUTE_KEYS.filter(key => next[key] < MAX_ATTRIBUTE && !gains[key]);
     if (!open.length) break;
@@ -153,10 +157,11 @@ export function attributesOf(state: DevelopmentState, driver: Driver): DriverAtt
 }
 
 /** Aplica la mejora de una carrera a todos los pilotos que la disputaron. No modifica el estado recibido. */
-export function developAfterRace(state: DevelopmentState, drivers: Driver[], outcomeOf: (driver: Driver) => RaceOutcome | undefined, seed: number): DevelopmentState {
+export function developAfterRace(state: DevelopmentState, drivers: Driver[], outcomeOf: (driver: Driver) => RaceOutcome | undefined, seed: number,
+  bonusOf: (driver: Driver) => number = () => 0): DevelopmentState {
   const next: DevelopmentState = { ...state, attributes: { ...state.attributes }, lastGains: {}, races: state.races + 1 };
   for (const driver of drivers) {
-    const result = progressAfterRace(attributesOf(state, driver), outcomeOf(driver), state.focus[driver.id] ?? 'equilibrado', seed + state.races, driver.id);
+    const result = progressAfterRace(attributesOf(state, driver), outcomeOf(driver), state.focus[driver.id] ?? 'equilibrado', seed + state.races, driver.id, bonusOf(driver));
     next.attributes[driver.id] = result.next;
     next.lastGains[driver.id] = result.gains;
   }

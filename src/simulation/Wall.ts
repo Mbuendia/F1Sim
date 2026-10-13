@@ -3,6 +3,7 @@
 // prioridad y sin repetirse. Umbrales y textos de los avisos: diseño del juego.
 import type { DrsStatus } from './DRSModel';
 import type { TireCompound } from '../types/f1';
+import type { PitWindow, TyreInfo } from './PitWindow';
 
 /** Por qué cambia un puesto: adelantamiento en pista, parada en boxes (propia o del rival) o abandono del rival. */
 export type MoveKind = 'pista' | 'boxes' | 'abandono';
@@ -63,6 +64,12 @@ export interface WallReading {
   moves: MoveTotals;
   paceLaps: PaceLaps;
   pit: boolean;
+  /** [T4.15] Dónde saldría si parase ahora; null si no se puede estimar (en boxes, carrera parada). */
+  pitWindow?: PitWindow | null;
+  /** [T4.15] Neumáticos propios y de los coches de delante y de detrás: compuesto, vueltas y vida estimada. */
+  rivalTyres?: { own: TyreInfo; ahead: TyreInfo | null; behind: TyreInfo | null };
+  /** [T4.15] Aviso de riesgo de undercut, si lo hay. */
+  undercut?: string | null;
 }
 
 export type WallAlertKind = 'sancion' | 'combustible' | 'compuestos' | 'desgaste' | 'vsc';
@@ -107,12 +114,13 @@ export function nextAlerts(alerts: WallAlert[], active: Set<string>, limit = WAL
 
 // [R54] Muro del jugador: en sus coches el estratega propone (parada o ritmo, con su motivo) y no ejecuta nada hasta
 // que el jugador acepta. Umbrales de batería y hueco: diseño del juego.
+// [T4.12] «salida»: el neumático con el que salir según el agua; vale mientras los coches están en la parrilla.
 export type WallPace = 'push' | 'balanced' | 'save';
 export interface WallProposal {
   id: string;
   /** Qué se propone, sin el motivo: mientras siga pendiente no se añade otra igual. */
   key: string;
-  kind: 'parada' | 'ritmo';
+  kind: 'parada' | 'ritmo' | 'salida';
   compound?: TireCompound;
   paceMode?: WallPace;
   reason: string;

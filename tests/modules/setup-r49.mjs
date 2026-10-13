@@ -221,7 +221,7 @@ export default async function run({ server, assert, test }) {
     const car = carOf(sim, 'alonso'), grid = sim.cars.filter(c => c !== car);
     assert(sim.cars.length === 20 && sim.cars[19] === car && car.gridPosition === 20, 'R49: sale último, con el último puesto', `${sim.cars.indexOf(car)} · P${car.gridPosition}`);
     assert(car.isInPitLane && car.currentSpeedKmh === 0 && car.pitLaneStart === 'espera' && car.startedFromPitLane === true && !car.pitStop.isPitting, 'R49: espera parado en el pit lane');
-    assert(grid.map(c => c.driver.id).join() === expected.join() && grid.every((c, i) => c.gridPosition === i + 1 && Math.abs(c.progress + (i + 1) * 0.0035) < 1e-12 && !c.isInPitLane && !c.startedFromPitLane),
+    assert(grid.map(c => c.driver.id).join() === expected.join() && grid.every((c, i) => c.gridPosition === i + 1 && Math.abs(c.progress + (i + 1) * sim.gridSpacing()) < 1e-12 && !c.isInPitLane && !c.startedFromPitLane),
       'R49: los demás conservan su orden y ocupan los 19 primeros puestos sin hueco');
     assert(sim.pitExitLight === 'rojo', 'R49: semáforo del pit lane en rojo antes de la salida');
     sim.update(1 / 60);
@@ -234,7 +234,7 @@ export default async function run({ server, assert, test }) {
     sim.update(1 / 60);   // un paso más: en «parrilla lista» los coches ya figuran parados
     assert(sim.lightState === 'grid-ready', 'R49: la vuelta de formación termina con el coche en boxes', sim.lightState);
     assert(car.progress === before && car.currentSpeedKmh === 0 && car.isInPitLane && car.pitLaneStart === 'espera', 'R49: no hace la vuelta de formación');
-    assert(grid.every((c, i) => Math.abs(c.progress + (i + 1) * 0.0035) < 1e-9 && c.currentSpeedKmh === 0), 'R49: la parrilla se forma en los 19 primeros puestos');
+    assert(grid.every((c, i) => Math.abs(c.progress + (i + 1) * sim.gridSpacing()) < 1e-9 && c.currentSpeedKmh === 0), 'R49: la parrilla se forma en los 19 primeros puestos');
 
     const back = gridRace('barcelona', ['alonso']);
     back.setPitLaneStarters([]);
@@ -316,7 +316,9 @@ export default async function run({ server, assert, test }) {
         kinds[kind] = id;
       }
     }
-    assert(Object.values(kinds).every(Boolean), 'R49: probados los tres tipos de pit lane', JSON.stringify(kinds));
+    // [G7, Sprint 4.5] contrato revisado el 13/10/2026: con la meta en su sitio real, en los 23 circuitos la salida de
+    // boxes queda tras la meta; los otros dos tipos ya no existen en el calendario.
+    assert(kinds['salida tras la meta'] && !kinds['salida antes de la meta'] && !kinds['pit lane entero tras la meta'], 'R49: probado el tipo de pit lane del calendario', JSON.stringify(kinds));
   });
 
   await test('R49: guardar con el coche esperando y cargar da la misma continuación; sin salidas desde boxes nada cambia', () => {

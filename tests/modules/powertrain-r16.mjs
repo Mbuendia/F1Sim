@@ -8,10 +8,15 @@ export default async function run({ server, assert, test }) {
   const { EnergyModel } = await server.ssrLoadModule('/src/simulation/EnergyModel.ts');
   const make = await raceFactory(server);
 
-  // Primer punto de frenada de Barcelona precedido de recta.
+  // Punto de frenada más fuerte de Barcelona precedido de recta. [Sprint 4.5] contrato revisado el 13/10/2026: antes era
+  // el primero tras la meta; con la meta en su sitio real y la velocidad de paso por curva calculada con el radio real,
+  // ese primer punto ya no exige la frenada máxima.
   const probe = make('barcelona', 1);
   const pts = probe.activeTrack.points, n = pts.length;
-  const brakeIdx = pts.findIndex((p, i) => p.isBrakingZone && !pts[(i - 1 + n) % n].isBrakingZone && pts[(i - 5 + n) % n].speedLimitFactor >= 0.9);
+  const reach = Math.round(160 / (probe.activeTrack.lapLengthMeters / n));
+  const slowest = i => Math.min(...Array.from({ length: reach }, (_, k) => pts[(i + k) % n].speedLimitFactor));
+  const brakeIdx = pts.map((p, i) => i).filter(i => pts[i].isBrakingZone && !pts[(i - 1 + n) % n].isBrakingZone && pts[(i - 5 + n) % n].speedLimitFactor >= 0.9)
+    .reduce((best, i) => (slowest(i) < slowest(best) ? i : best));
   const brakeT = brakeIdx / n, L = probe.activeTrack.lapLengthMeters;
 
   // Coche lanzado a 290 km/h 30 m antes de la frenada; devuelve metros hasta bajar de 150 km/h y el sim.

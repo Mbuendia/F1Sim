@@ -40,7 +40,7 @@ export default async function run({assert, server}) {
             return [0, 0.25, 0.5, 0.75, 1].every(t => {
               const p = { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
               return distanceToPath(p, geometry.fastLane) > geometry.fastLaneWidth / 2 + geometry.wallWidth / 2 &&
-                distanceToPath(p, points, true) > 24 * 1.75 / 2 + geometry.wallWidth / 2;
+                distanceToPath(p, points, true) > track.trackWidthMeters / 2 + geometry.wallWidth / 2;   // [G2, Sprint 4.5] contrato revisado el 13/10/2026: la pista se pinta a su ancho real en metros
             });
           }), `Q3: Muro separado del carril rápido y del asfalto (${label})`);
           assert(geometry.boxes.every(box => box.corners.every(p => distanceToPath(p, geometry.fastLane) > geometry.fastLaneWidth / 2)),
@@ -51,7 +51,7 @@ export default async function run({assert, server}) {
             Math.hypot(p.x - track.pitLanePoints.at(-1).x, p.y - track.pitLanePoints.at(-1).y) > 20)), `Q3: Entrada y salida abiertas (${label})`);
           assert(JSON.stringify(track) === before && geometry.fastLane[0] === track.pitLanePoints[0] && geometry.fastLane.at(-1) === track.pitLanePoints.at(-1),
             `Q3: Ruta Q2 y estado originales intactos (${label})`);
-          assert(geometry.trackEdges.length === 2 && geometry.trackEdges.every(edge => edge.every((p, i) => Math.abs(Math.hypot(p.x - points[i].x, p.y - points[i].y) - 21) < 1e-7)),
+          assert(geometry.trackEdges.length === 2 && geometry.trackEdges.every(edge => edge.every((p, i) => Math.abs(Math.hypot(p.x - points[i].x, p.y - points[i].y) - track.trackWidthMeters / 2) < 1e-7)),
             `Q3: Dos bordes blancos en los límites, sin línea central falsa (${label})`);
         }
       }
@@ -72,7 +72,8 @@ export default async function run({assert, server}) {
         TrackRenderer.renderTrack(ctx, referenceTrack, camera, 1);
         const fast = strokes.find(s => s.color === '#242c38');
         const wall = strokes.find(s => s.color === '#aeb9c8');
-        assert(fast?.width === 10 * zoom && wall?.width === zoom && wall.points.length > 0, `Q3: Renderer separa rutas y escala anchuras una vez (zoom ${zoom})`);
+        const pitGeometry = buildPitLaneGeometry(referenceTrack, []);   // [G2, Sprint 4.5] contrato revisado el 13/10/2026: la pista se pinta a su ancho real en metros
+        assert(fast?.width === pitGeometry.fastLaneWidth * zoom && wall?.width === pitGeometry.wallWidth * zoom && wall.points.length > 0, `Q3: Renderer separa rutas y escala anchuras una vez (zoom ${zoom})`);
         assert(teams.every(team => fills.filter(f => f.color === `${team.color}55`).length === 1), `Q3: Renderer dibuja los diez cajones de equipo (zoom ${zoom})`);
         assert(strokes.filter(s => s.color === 'rgba(255, 255, 255, 0.75)').length === 2, `Q3: Renderer dibuja ambos límites de pista (zoom ${zoom})`);
       }

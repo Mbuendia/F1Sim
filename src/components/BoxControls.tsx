@@ -6,6 +6,7 @@ import { PaceControls } from './PaceControls';
 import { CompoundBadge } from './CompoundBadge';
 import { COMPOUND_STYLES, TIRE_COMPOUNDS } from '../utils/compounds';
 import { WallProposals } from './WallProposals';
+import { PitWindowLine } from './WallPanel';
 
 const CROSSOVER_LABEL = { slick: 'neumático de seco', intermediate: 'INTERMEDIO', wet: 'LLUVIA' } as const;
 
@@ -65,6 +66,8 @@ export function BoxControls({ car, simulation, teamCars }: {
                 <span className={styles.pilotPos}>P{p.currentPosition}</span>
                 {statusBadge && <span className={`${styles.badge} ${statusClass}`}>{statusBadge}</span>}
               </div>
+              {/* [T4.15] Dónde saldría este coche si parase ahora. */}
+              <PitWindowLine window={simulation.getPitWindow(p.id)} />
               <div className={styles.pilotTire}>
                 <CompoundBadge compound={p.tires.compound} size={16} detail={`montado · salud ${Math.round(p.tires.health)}%`} />
                 <span>V{p.currentLap} · {Math.round(p.tires.health)}%</span>
