@@ -11,6 +11,7 @@ const index = buildTaskIndex(markdown);
 // Estado y nota corta de cada tarea, tal como constan en su línea del dashboard.
 const detail = new Map([...markdown.matchAll(/^\* \*\*(\S+) — (.+?):\*\* `\[([x ])\]([^`\n]*)`/gm)].map(([, id, , , text]) => [id, text.trim()]));
 const sprintOf = id => {
+  if (/^V\d/.test(id)) return 'Sprint 4.6';
   if (/^G\d/.test(id)) return 'Sprint 4.5';
   if (/^T4\./.test(id)) return 'Sprint 4';
   if (/^T3\./.test(id)) return 'Sprint 3';

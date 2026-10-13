@@ -56,6 +56,7 @@ Leyenda de Estado:
 | **Sprint 3** | **Audio, Telemetría Avanzada, Radar GPS & Clima (4 tareas definidas; desglose histórico de 16 incompleto)** | 🔄 **EN CURSO — T3.1 y T3.2 completadas: revisadas y aprobadas por el usuario y fusionadas en main el 08/10/2026, como sprint propio y separado del 2.11; T3.3 y T3.4 entregadas el 08/10/2026 con su contrato de tests y fusionadas en main, en revisión: el sprint queda completo a falta de esa revisión. Rama sprint/3 eliminada tras fusionarla** |
 | **Sprint 4** | **Director de equipo: economía, fábrica, personal, pilotos, patrocinio, junta y cambio de temporada, más tiempo por circuito, entrenamientos libres, órdenes de equipo, telemetría de decisión, audio y pulido, con menú de partidas, centro de gestión por pestañas, informe de la ronda e invierno por pasos (T4.1-T4.24; T4.21 a T4.24 son los pendientes de sprints anteriores, añadidos el 13/10/2026 con prioridad alta)** | 🟡 **PLANIFICADO Y REFINADO CON EL USUARIO el 09/10/2026 (sección 7.2) — empieza por T4.12; ninguna tarea implementada; cada una requiere contrato de tests y autorización** |
 | **Sprint 4.5** | **Circuitos a escala real y pintado en WebGL: banco de medidas y página de revisión, un metro por unidad, eje suave, bordes sin pliegues, trazada fluida, boxes fuera de la pista, meta y parrilla, pista y coches en WebGL y repaso de los 23 circuitos (G1-G10)** | ✅ **ENTREGADO Y FUSIONADO EN MAIN el 13/10/2026 (sección 7.3): las once tareas implementadas (G1 a G11); G10 revisada por el usuario y las demás en revisión local; G9 se cerró por medición sin pasar coches ni lluvia a WebGL, a falta de la conformidad del usuario** |
+| **Sprint 4.6** | **Rediseño visual y adaptación a móvil y tableta: base visual, carrera en móvil, muro sin selectores y de altura estable, estrategia en imagen, paddock con menos texto, accesibilidad, clasificación en directo, simular un Gran Premio, espía de setups y recogida del Safety Car (V1-V10)** | 🟡 **PLANIFICADO el 13/10/2026 a partir de la revisión del usuario (sección 7.4); V10 entregada; el resto requiere su visto bueno al plan, contrato de tests y autorización** |
 
 ---
 
@@ -1617,6 +1618,69 @@ Decisiones y esquemas de cada página en `docs/design/grill-sprint4-visual.md`. 
 **Pendiente de decidir por el usuario (planificación, ya contestado arriba):** (1) autorizar la revisión de contrato de los tests listados en cada ficha y la regeneración de la baseline de R27 y de la calibración de R47 (los tiempos de vuelta y resultados de carrera cambiarán algo); (2) sin WebGL: respaldo sencillo en Canvas (propuesto) o exigir WebGL para correr; (3) permiso para descargar de OpenStreetMap las referencias de meta (G7), como en Q20; (4) si el ancho de pista por circuito se toma de fuentes publicadas o se deja en un valor por tipo de circuito (permanente 14 m, urbano 10-12 m).
 
 **Para seguir:** resolver los tests en rojo del párrafo «Estado al cierre» (posiciones de Barcelona en T3.1 y T3.3, equilibrio de Q12, R14, R42 y R50, baseline de R27), mirar una carrera en el navegador y cerrar G2 a G7; después G8.
+
+---
+
+### 7.4 Sprint 4.6 — Rediseño visual y adaptación a móvil y tableta (planificado el 13/10/2026)
+
+**Origen:** revisión del usuario del 13/10/2026 jugando una temporada: «la web tiene mucha info a pelo… es demasiado texto… selectores a pelo… sobre todo el tema responsive», más cuatro peticiones de juego (clasificación animada, simular un Gran Premio en vez de saltarlo, espía de setups y revisión del Safety Car). El usuario pidió usar como guía la skill `ui-ux-pro-max` (github.com/nextlevelbuilder/ui-ux-pro-max-skill, MIT). **No está instalada en esta sesión** (instalar software de terceros lo decide el usuario): se ha aplicado su lista pública de comprobaciones, que es la que sigue.
+
+**Auditoría medida (13/10/2026, servidor de desarrollo, carrera libre en Melbourne):**
+- **375 px (móvil):** la pantalla de carrera no se puede usar: la barra superior se solapa (vuelta, banderas y velocidades unas encima de otras), la pista queda en una franja de unos 120 px, las dos tarjetas del muro salen cortadas y 7 textos quedan fuera por la derecha. En el menú hay 4 elementos cortados.
+- **768 px (tableta):** la carrera cabe, pero la torre de tiempos se come un tercio del ancho y los rótulos de la pista se pisan con el aviso de vuelta de formación.
+- **1024 y 1440 px:** sin recortes.
+- **En todos los anchos:** 20 de los 28 controles de la carrera miden menos de 40 px (difíciles de tocar); 4 `select` nativos en el muro; unas 245 palabras a la vez en pantalla durante la carrera y 388 en el paddock; 32 emojis usados como iconos en el paddock; 26 textos por debajo de 12 px en el paddock a 375 px.
+
+**Lista de comprobación que se adopta (de la skill):** contraste de texto 4,5:1 como mínimo; foco visible con teclado; respetar «reducir movimiento»; el significado no depende solo del color; iconos SVG (los de `lucide-react`, ya en el proyecto), no emojis; cursor de mano en todo lo pulsable; probado a 375, 768, 1024 y 1440 px sin texto cortado; el texto esencial se lee en ancho estrecho y con el zoom del navegador.
+
+**Reglas del sprint:** una pantalla por tarea, con sus cuatro anchos comprobados en el navegador y captura de cada uno; los tests de componentes siguen siendo de renderizado en servidor (no miden maquetación): la maquetación se valida en el navegador con el script de auditoría; no cambia el motor salvo en V8 a V10.
+
+#### Bloque A — Pantallas
+
+* **V1 — Base visual y auditoría repetible:** `[ ] PENDIENTE — PLANIFICADA 13/10/2026; REQUIERE CONTRATO DE TESTS Y AUTORIZACIÓN`
+  * *Alcance:* puntos de corte comunes (375, 768, 1024, 1440) y medidas mínimas (controles de 44 px, texto de 14 px) como variables de `index.css`; componentes base reutilizables (control segmentado, ficha, tarjeta de dato con icono, barra de progreso); script de auditoría del navegador que repite las medidas de arriba por pantalla y ancho.
+  * *Aceptación:* la auditoría da las cifras de hoy antes de tocar nada y sirve de referencia para V2 a V6.
+
+* **V2 — Carrera adaptada a móvil y tableta:** `[ ] PENDIENTE — PLANIFICADA 13/10/2026; REQUIERE CONTRATO DE TESTS Y AUTORIZACIÓN`
+  * *Alcance:* a 375 px, la pista ocupa la pantalla y tiempos, muro y detalle pasan a pestañas inferiores; la barra superior se queda en lo esencial (vuelta, bandera, velocidad, pausa) y lo demás va a un menú. A 768 px, pista arriba y tiempos y muro en dos columnas debajo. A partir de 1024 px, la composición actual.
+  * *Aceptación:* a los cuatro anchos, ningún texto cortado ni solapado, todos los controles de 44 px o más y la pista con al menos la mitad del alto en móvil.
+
+* **V3 — Muro visual y de altura estable:** `[ ] PENDIENTE — PLANIFICADA 13/10/2026; REQUIERE CONTRATO DE TESTS Y AUTORIZACIÓN`
+  * *Alcance:* el ritmo pasa de `select` a control segmentado (Ahorro · Normal · Ataque); el neumático de la parada, a fichas de compuesto con su color; el estado del coche (goma, batería, combustible, paradas), a medidores en vez de frases; las propuestas del muro, a tarjetas con icono, motivo en una línea y Aceptar / Descartar. La franja del muro tiene altura fija: una propuesta nueva no cambia el tamaño de la pista (hoy la redimensiona; el parpadeo ya está corregido).
+  * *Aceptación:* ningún `select` en el muro; con y sin propuestas la pista mide lo mismo; cada dato se entiende sin leer una frase.
+
+* **V4 — Estrategia en imagen:** `[ ] PENDIENTE — PLANIFICADA 13/10/2026; REQUIERE CONTRATO DE TESTS Y AUTORIZACIÓN`
+  * *Alcance:* el panel lateral de «mejor estrategia» y la ventana de parada dejan de ser texto: línea de tandas por compuesto con las vueltas de cada una, marca de la vuelta actual y de la ventana de parada, y comparación con el coche de delante y el de detrás como dos barras.
+  * *Aceptación:* la recomendación se lee en la línea de tandas sin texto de apoyo; el texto queda como detalle al pulsar.
+
+* **V5 — Paddock y centro de gestión con menos texto:** `[ ] PENDIENTE — PLANIFICADA 13/10/2026; REQUIERE CONTRATO DE TESTS Y AUTORIZACIÓN`
+  * *Alcance:* fichas de piloto, circuito y equipo con dato grande e icono en vez de párrafos; tablas que en móvil pasan a tarjetas; pestañas del centro de gestión como barra inferior en móvil; iconos de `lucide-react` en lugar de los emojis.
+  * *Aceptación:* menos de 200 palabras a la vez en el paddock; cero emojis como iconos; a 375 px sin texto por debajo de 14 px ni recortes.
+
+* **V6 — Accesibilidad y modales:** `[ ] PENDIENTE — PLANIFICADA 13/10/2026; REQUIERE CONTRATO DE TESTS Y AUTORIZACIÓN`
+  * *Alcance:* foco visible, contraste 4,5:1 medido, «reducir movimiento», cursor de mano; todas las modales (clasificación, podio, suerte, abandono, parrilla) a pantalla completa en móvil y con desplazamiento propio. Lo urgente (modales de podio, clasificación y suerte por encima de todo) ya se corrigió el 13/10/2026.
+  * *Aceptación:* se recorre una carrera completa solo con teclado; ninguna modal queda cortada a los cuatro anchos.
+
+#### Bloque B — Juego
+
+* **V7 — Clasificación en directo:** `[ ] PENDIENTE — PLANIFICADA 13/10/2026; REQUIERE CONTRATO DE TESTS Y AUTORIZACIÓN`
+  * *Alcance:* al simular la clasificación se ve el circuito con los coches como puntos dando sus vueltas en Q1, Q2 y Q3, la tabla de tiempos actualizándose y la zona de eliminación marcada; al final de cada sesión, un comentario (quién cae, quién sorprende, margen con el corte). Se puede saltar. El resultado es el mismo que da hoy `Qualifying` (misma semilla).
+  * *Aceptación:* la parrilla que sale es idéntica a la de la clasificación sin animación; cada sesión termina con su comentario; se puede saltar en cualquier momento.
+
+* **V8 — Simular un Gran Premio en vez de saltarlo:** `[ ] PENDIENTE — PLANIFICADA 13/10/2026; REQUIERE CONTRATO DE TESTS Y AUTORIZACIÓN`
+  * *Alcance:* junto a «Saltar», la opción «Simular»: la carrera se corre con el motor sin verla (los dos coches del jugador con el estratega delegado) y cuenta como una ronda normal: puntos, dinero, patrocinio, desgaste de componentes e informe de la ronda. Saltar sigue existiendo y sigue sin puntuar para el jugador.
+  * *Aceptación:* una ronda simulada deja el campeonato y la gestión como una ronda corrida; con la misma semilla da el mismo resultado; tarda pocos segundos.
+
+* **V9 — Espía de setups:** `[ ] PENDIENTE — PLANIFICADA 13/10/2026; REQUIERE CONTRATO DE TESTS Y AUTORIZACIÓN`
+  * *Alcance:* en la planificación de la temporada, pagar por información de un rival para una ronda: su configuración (carga aerodinámica, relación de cambio) y su plan de neumáticos, con un margen de error según lo que se pague y riesgo de que la junta lo penalice si se descubre. Depende de T4.13, que es donde los rivales pasan a tener setup propio.
+  * *Decisiones del usuario antes de empezar:* coste, fiabilidad y si hay riesgo de sanción.
+
+* **V10 — Safety Car: recogida del pelotón:** `[ ] EN REVISIÓN LOCAL — IMPLEMENTADO 13/10/2026 CON CONTRATO DE TESTS ACORDADO`
+  * *Entrega 13/10/2026:* el usuario vio un Safety Car que no recogía al pelotón en las tres vueltas previstas. Causa: un coche solo podía acelerar para alcanzar la fila si no tenía a nadie en 0,08 vueltas por delante (unos 400 m); en un pelotón estirado todos tenían a alguien dentro de esa distancia y la fila solo se cerraba cuando el Safety Car frenaba en las curvas. Ahora un coche está «en la fila» si tiene a otro a menos de 60 m (`QUEUE_JOINED_M`) y, si no, va a alcanzarla a 220 km/h como mucho (`CATCH_UP_KMH`), frenando al llegar con la curva de frenada que ya existía. Medido en Melbourne con el pelotón estirado 2,3 km: antes, la fila seguía en 550 m tras 14 minutos y cuatro vueltas; ahora el Safety Car la recoge en vuelta y media, se retira a las dos vueltas previstas y hay bandera verde a los 8,5 minutos. Baseline de R27 regenerada. Tests de Safety Car, VSC y bandera roja sin tocar y en verde; suite completa 5422 PASS / 0 FAIL. La reanudación tras bandera roja usa el mismo código y mejora igual; no se ha medido aparte.
+
+**Corregido el 13/10/2026 sin ficha propia (revisión del usuario):** (1) al llegar una propuesta al muro la pista parpadeaba: el lienzo se vaciaba al cambiar de tamaño y ahora se repinta en el acto (que no cambie de tamaño es V3); (2) a x32 la carrera iba a tirones: simular un fotograma costaba más que el fotograma (unos 27 pasos de simulación); ahora la simulación tiene un presupuesto de 8 ms por fotograma y, si lo pasa, avanza algo menos de tiempo de carrera en vez de perder fluidez (a x32 la carrera puede ir algo por debajo de 32 veces); (3) la modal de suerte solo sale si el beneficiado es un piloto propio; la de un rival se aplica sola y queda como aviso; (4) las modales de fin de carrera, clasificación y suerte salían cortadas porque estaban limitadas al área de la pista: ahora cubren toda la pantalla y tienen desplazamiento propio.
+
+**Orden propuesto:** V1 → V3 → V2 → V4 → V6 → V5 → V7 → V8 → V9. El muro va antes que el móvil porque es lo que más texto y selectores concentra y lo que el usuario señaló.
 
 ---
 
