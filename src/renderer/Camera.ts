@@ -26,10 +26,16 @@ export class Camera {
   currentMode: CameraMode = 'overview';
   lastTrack: TrackDefinition | null = null;
   
-  static readonly FOLLOW_ZOOM = 2.75;
-  static readonly CINEMATIC_ZOOM = 1.8;
-  static readonly ONBOARD_ZOOM = 4.5;
-  static readonly HELICOPTER_ZOOM = 1.3;
+  /** Segundos que tarda la cámara en quedar clavada al coche que se sigue. */
+  static readonly FOLLOW_LOCK_SEC = 0.6;
+  private followSec = 0;
+
+  // [G2] Píxeles por metro de cada modo. Con la pista a su ancho real (unas 3,5 veces más estrecha que antes) se
+  // acercan para que pista y coche sigan llenando la pantalla: seguimiento, cinemática, a bordo y helicóptero.
+  static readonly FOLLOW_ZOOM = 5;
+  static readonly CINEMATIC_ZOOM = 3.2;
+  static readonly ONBOARD_ZOOM = 8;
+  static readonly HELICOPTER_ZOOM = 2.4;
 
   constructor() {
     // Initial state
@@ -83,6 +89,7 @@ export class Camera {
   }
 
   followCar(carId: number) {
+    if (carId !== this.followingCarId) this.followSec = 0;
     this.followingCarId = carId;
     if (this.currentMode === 'overview' || this.currentMode === 'free') {
       this.currentMode = 'follow';
@@ -112,7 +119,7 @@ export class Camera {
 
   zoomBy(factor: number) {
     if (this.currentMode === 'free') {
-      this.targetZoom = Math.max(0.25, Math.min(8.0, this.targetZoom * factor));
+      this.targetZoom = Math.max(0.1, Math.min(16.0, this.targetZoom * factor));
       return;
     }
     this.zoomLevel = Math.max(Camera.MIN_ZOOM_LEVEL, Math.min(Camera.MAX_ZOOM_LEVEL, this.zoomLevel * factor));
@@ -121,6 +128,7 @@ export class Camera {
   update(cars: CarState[], dt: number, track?: TrackDefinition) {
     if (track) this.lastTrack = track;
     const activeTrack = track || this.lastTrack;
+    let following = false;
 
     if (this.currentMode === 'overview') {
       if (activeTrack) {
@@ -137,6 +145,7 @@ export class Camera {
     } else if (this.followingCarId !== null && this.currentMode !== 'free') {
       const car = cars.find(c => c.id === this.followingCarId);
       if (car && isCarVisible(car)) {
+        following = true;
         this.targetX = car.worldX;
         this.targetY = car.worldY;
         const modeZoom = this.currentMode === 'cinematic' ? Camera.CINEMATIC_ZOOM
@@ -158,6 +167,16 @@ export class Camera {
     const lerpSpeed = baseLerp * dt;
     this.x += (this.targetX - this.x) * Math.min(1.0, lerpSpeed);
     this.y += (this.targetY - this.y) * Math.min(1.0, lerpSpeed);
+    // El coche en foco queda centrado: el acercamiento suave solo dura la transición (FOLLOW_LOCK_SEC); después la cámara
+    // va clavada a él. Con solo el acercamiento, a 300 km/h el coche iba decenas de metros por delante del centro.
+    if (following) {
+      this.followSec += dt;
+      const lock = Math.min(1, this.followSec / Camera.FOLLOW_LOCK_SEC) ** 2;
+      this.x += (this.targetX - this.x) * lock;
+      this.y += (this.targetY - this.y) * lock;
+    } else {
+      this.followSec = 0;
+    }
     this.zoom += (this.targetZoom - this.zoom) * Math.min(1.0, lerpSpeed);
     this.rotation += (this.targetRotation - this.rotation) * Math.min(1.0, lerpSpeed * 1.5);
   }

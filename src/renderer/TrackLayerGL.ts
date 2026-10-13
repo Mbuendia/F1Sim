@@ -29,9 +29,21 @@ export class TrackLayerGL {
   private safetyCarNode: CarNode | null = null;
   private textures = new WeakMap<TopSprite, Texture>();
   private dropTexture: Texture | null = null;
+  private lost = false;
+
+  /** Falso mientras el navegador tenga retirado el contexto WebGL. */
+  get available(): boolean {
+    const gl = (this.app.renderer as unknown as { gl?: WebGLRenderingContext }).gl;
+    return !this.lost && !(gl && gl.isContextLost());
+  }
 
   private constructor(private app: Application) {
     app.stage.addChild(this.world);
+    // El navegador puede retirar el contexto WebGL (demasiados a la vez, controlador reiniciado): mientras no lo
+    // devuelva, el lienzo saldría en negro. Se avisa para que la carrera pinte con el Canvas.
+    const canvas = app.canvas as HTMLCanvasElement;
+    canvas.addEventListener('webglcontextlost', event => { event.preventDefault(); this.lost = true; });
+    canvas.addEventListener('webglcontextrestored', () => { this.lost = false; this.track = null; this.textures = new WeakMap(); this.dropTexture = null; });
     this.overlay.addChild(this.overlayWorld);
     this.overlayWorld.addChild(this.sprayLayer, this.carLayer);
   }

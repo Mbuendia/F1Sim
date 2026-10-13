@@ -76,6 +76,17 @@ export function visibleRainMmH(track: TrackDefinition, camera: Camera, rainBySeg
   return visible ? sum / visible : 0;
 }
 
+/**
+ * [G9] Cielo cubierto que se pinta: el de las nubes del escenario o, si es mayor, el que corresponde a la lluvia que
+ * cae ahora (media de los tramos): con llovizna ya está medio cubierto y con lluvia fuerte, cubierto del todo.
+ */
+export const RAIN_SKY = { MIN_MMH: 0.2, BASE_COVER: 0.45, FULL_MMH: 20 };
+export function skyCover(cloudCover: number, rainBySegment: readonly number[]): number {
+  const mean = rainBySegment.length ? rainBySegment.reduce((sum, rate) => sum + rate, 0) / rainBySegment.length : 0;
+  const rainCover = mean < RAIN_SKY.MIN_MMH ? 0 : Math.min(1, RAIN_SKY.BASE_COVER + (1 - RAIN_SKY.BASE_COVER) * mean / RAIN_SKY.FULL_MMH);
+  return Math.max(cloudCover, rainCover);
+}
+
 export class WeatherRenderer {
   /**
    * [R53] Gotas sobre la pantalla según la lluvia de la zona visible: ninguna si no llueve en lo que se ve y más cuanta

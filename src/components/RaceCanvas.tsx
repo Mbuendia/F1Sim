@@ -6,7 +6,7 @@ import { TrackRenderer } from '../renderer/TrackRenderer';
 import { CarRenderer } from '../renderer/CarRenderer';
 import { renderLeftMinimap } from '../renderer/MinimapRenderer';
 import { RenderInterpolator } from '../renderer/RenderPose';
-import { WeatherRenderer, weatherLayers } from '../renderer/WeatherRenderer';
+import { WeatherRenderer, weatherLayers, skyCover } from '../renderer/WeatherRenderer';
 import { SpraySystem } from '../renderer/SprayParticles';
 import { OFFICIAL_CIRCUITS } from '../data/circuits';
 import { supportsWebGL } from './CarShowcase';
@@ -36,6 +36,7 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const trackLayerRef = useRef<TrackLayerGL | null>(null);
+  const layerLostRef = useRef(false);
   const [canvasFallback, setCanvasFallback] = useState(false);
   // [G9] Tiempo de prueba elegido (-1: el de la carrera).
   const [weatherTestIndex, setWeatherTestIndex] = useState(-1);
@@ -133,7 +134,19 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
     window.addEventListener('resize', handleResize);
 
     const interpolator = new RenderInterpolator();
+    // Un fallo al pintar un fotograma no debe dejar la pista parada (y en negro al redimensionar): se anota una vez
+    // y se sigue con el siguiente.
+    let frameErrorLogged = false;
     const loop = (currentTime: number) => {
+      try {
+        paintFrame(currentTime);
+      } catch (error) {
+        if (!frameErrorLogged) { frameErrorLogged = true; console.error('Fallo al pintar un fotograma de la carrera', error); }
+        ctx.restore();
+      }
+      animationFrameId = requestAnimationFrame(loop);
+    };
+    const paintFrame = (currentTime: number) => {
       const dtRaw = Math.min((currentTime - lastTime) / 1000, 0.1);
       lastTime = currentTime;
 
@@ -155,7 +168,10 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
       // [G8] Pista fija desde la GPU; si el contexto WebGL se pierde, se vuelve al Canvas.
       let gpu = false;
       const trackLayer = trackLayerRef.current;
-      if (trackLayer) {
+      // Con el contexto WebGL retirado por el navegador se pinta con el Canvas hasta que vuelva.
+      const layerLost = trackLayer !== null && !trackLayer.available;
+      if (layerLost !== layerLostRef.current) { layerLostRef.current = layerLost; setCanvasFallback(layerLost); }
+      if (trackLayer && !layerLost) {
         try {
           const view = trackLayer.render(simulation.activeTrack, simulation.circuitId, camera, dpr, (simulation.weather?.waterPercentage || 0) > 10);
           ctx.drawImage(view, 0, 0, camera.screenWidth, camera.screenHeight);
@@ -207,8 +223,10 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
       const carsDone = performance.now();
 
       // [R53] Gotas en pantalla según la lluvia de la zona visible (por encima de pista y coches).
-      WeatherRenderer.renderClouds(ctx, camera, simulation.weatherModel.cloudCoverAt(simulation.raceTimeSec));
-      if (weatherView) WeatherRenderer.renderDrops(ctx, simulation.activeTrack, camera, simulation.weatherModel.rainBySegment(simulation.raceTimeSec), simulation.raceTimeSec);
+      // [G9] El cielo se cubre también donde llueve: con lluvia en el radar no puede verse despejado.
+      const rainBySegment = simulation.weatherModel.rainBySegment(simulation.raceTimeSec);
+      WeatherRenderer.renderClouds(ctx, camera, skyCover(simulation.weatherModel.cloudCoverAt(simulation.raceTimeSec), rainBySegment));
+      if (weatherView) WeatherRenderer.renderDrops(ctx, simulation.activeTrack, camera, rainBySegment, simulation.raceTimeSec);
 
       // ── MINIMAPA A LA IZQUIERDA DEL TODO (visible al seguir un coche) ──
       if (camera.followingCarId !== null) {
@@ -222,7 +240,6 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
       recordStage('simulacion', simulated - frameStart); recordStage('pista', trackDone - simulated); recordStage('clima', weatherDone - trackDone);
       recordStage('coches', carsDone - weatherDone); recordStage('resto', frameEnd - carsDone); recordStage('total', frameEnd - frameStart);
       frameCost.frames++;
-      animationFrameId = requestAnimationFrame(loop);
     };
 
     animationFrameId = requestAnimationFrame(loop);

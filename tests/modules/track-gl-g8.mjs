@@ -169,4 +169,36 @@ export default async function run({ server, assert, test }) {
     const depths = WEATHER_TESTS.map(({ scenario }) => { const sim = new RaceSimulation('barcelona'); sim.setWeatherScenario(scenario); return sim.weatherModel.meanDepth(); });
     assert(depths[0] === 0 && depths[1] > 0 && depths[2] > depths[1] && depths[3] > depths[2], 'G9: cada tiempo de prueba deja más agua en la pista que el anterior', depths.map(d => d.toFixed(2)).join());
   });
+  // Correcciones tras la revisión del usuario del 13/10/2026: coche en foco centrado y cielo acorde con la lluvia.
+  await test('G9: la cámara de seguimiento deja el coche centrado', async () => {
+    const { Camera } = await server.ssrLoadModule('/src/renderer/Camera.ts');
+    for (const mode of ['follow', 'cinematic', 'onboard', 'helicopter']) {
+      const camera = new Camera();
+      camera.resize?.(1200, 800);
+      const car = { id: 7, status: 'running', isRetiredVisible: false, worldX: 500, worldY: 300 };
+      camera.followCar(car.id);
+      camera.setMode?.(mode);
+      // El coche avanza a 80 m/s (casi 300 km/h) durante dos segundos, a 60 fotogramas por segundo.
+      let worst = 0;
+      for (let i = 0; i < 120; i++) {
+        car.worldX += 80 / 60; car.worldY += 20 / 60;
+        camera.update([car], 1 / 60);
+        if (i >= 60) worst = Math.max(worst, Math.hypot(camera.x - car.worldX, camera.y - car.worldY));
+      }
+      assert(camera.followingCarId === car.id && worst < 0.01, `G9: en modo ${mode}, pasada la transición la cámara va clavada al coche`, `${worst.toFixed(3)} m`);
+    }
+    const camera = new Camera();
+    const car = { id: 7, status: 'running', isRetiredVisible: false, worldX: 2000, worldY: 900 };
+    camera.followCar(car.id);
+    camera.update([car], 1 / 60);
+    assert(Math.hypot(camera.x - car.worldX, camera.y - car.worldY) > 100, 'G9: al empezar a seguir a un coche la cámara se acerca, no salta');
+  });
+
+  await test('G9: el cielo se cubre cuando llueve', async () => {
+    const { skyCover, RAIN_SKY } = await server.ssrLoadModule('/src/renderer/WeatherRenderer.ts');
+    assert(skyCover(0, new Array(40).fill(0)) === 0 && skyCover(0.3, new Array(40).fill(0)) === 0.3, 'G9: sin lluvia manda la nubosidad del escenario');
+    assert(skyCover(0, new Array(40).fill(4)) >= RAIN_SKY.BASE_COVER && skyCover(0, new Array(40).fill(15)) > skyCover(0, new Array(40).fill(4)) && skyCover(0, new Array(40).fill(40)) === 1,
+      'G9: con lluvia el cielo se cubre, más cuanto más llueve', [4, 15, 40].map(rate => skyCover(0, new Array(40).fill(rate)).toFixed(2)).join());
+    assert(skyCover(0.9, new Array(40).fill(4)) === 0.9, 'G9: nunca menos cubierto que las nubes del escenario');
+  });
 }
