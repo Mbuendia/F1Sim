@@ -105,7 +105,7 @@ interface HomeScreenProps {
     onImport: (text: string) => void; onDelete: (id: string) => void;
   };
   /** [R51] Temporada: calendario, Gran Premio que toca, salto de ronda e historial de temporadas cerradas. */
-  season?: { rounds: RoundView[]; seasonNumber: number; archive: SeasonSummary[]; onSelectNext: () => void; onSkip: () => void };
+  season?: { rounds: RoundView[]; seasonNumber: number; archive: SeasonSummary[]; onSelectNext: () => void; onSkip: () => void; onSimulate?: () => void };
   /** [R51] Atributos actuales de un piloto (R45), para su ficha. */
   driverAttributes?: (driver: Driver) => DriverAttributes;
   /** [T4.1] Dinero del equipo del jugador. */
@@ -332,7 +332,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             <span>Temporada {season.seasonNumber}{nextRound ? ` · ronda ${nextRound.round} de ${SEASON_RACES}` : ''}</span>
           </h2>
           <SeasonCalendar rounds={season.rounds} seasonNumber={season.seasonNumber} selectedCircuitId={selectedCircuitId}
-            onSelectNext={season.onSelectNext} onSkip={season.onSkip} />
+            onSelectNext={season.onSelectNext} onSkip={season.onSkip} onSimulate={season.onSimulate} />
         </section>
       )}
 

@@ -2,6 +2,13 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import styles from './App.module.css';
 import { RaceTabs, raceLayout } from './components/RaceTabs';
 import { StintTimeline } from './components/StintTimeline';
+import { QualifyingLive } from './components/QualifyingLive';
+import { advanceAutoRace, startAutoRace } from './simulation/AutoRace';
+
+/** Paso fijo del motor en una carrera que se ve (s). */
+const RACE_STEP_SEC = 0.02;
+/** [V8] Milisegundos seguidos que el motor corre una carrera simulada antes de dejar respirar a la página. */
+const AUTO_RACE_CHUNK_MS = 40;
 import type { RaceTab } from './components/RaceTabs';
 import { RaceSimulation } from './simulation/RaceSimulation';
 import { Camera } from './renderer/Camera';
@@ -149,7 +156,7 @@ export const App: React.FC = () => {
 
   // [R02] Paso fijo de 20 ms simulados: mismo resultado sea cual sea el FPS o la velocidad.
   // [T4.12] Con agua en la salida, cada coche elige su neumático (los del jugador reciben la propuesta en la parrilla).
-  const simulation = useMemo(() => { const sim = new RaceSimulation(selectedCircuitId); sim.setFixedStep(0.02); sim.autoStartTyres = true; return sim; }, []);
+  const simulation = useMemo(() => { const sim = new RaceSimulation(selectedCircuitId); sim.setFixedStep(RACE_STEP_SEC); sim.autoStartTyres = true; return sim; }, []);
   const camera = useMemo(() => new Camera(), []);
 
   // Vista actual: 'landing', 'home' o 'race'
@@ -343,6 +350,8 @@ export const App: React.FC = () => {
     } catch { return 'directo'; }
   });
   const [qualifying, setQualifying] = useState<QualifyingResult | null>(null);
+  // [V7] La clasificación recién corrida se ve primero en directo; después (o al saltarla), la tabla de siempre.
+  const [qualifyingLive, setQualifyingLive] = useState(false);
 
   // [R44] Meteorología de la próxima carrera
   const [weatherScenarioId, setWeatherScenarioId] = useState<string>('seco');
@@ -565,6 +574,7 @@ export const App: React.FC = () => {
       ? gridPenaltyLines(penalized.moved, started.penalties, id => DRIVERS[id] && { name: `${DRIVERS[id].firstName} ${DRIVERS[id].lastName}`, code: DRIVERS[id].code })
       : []);
     setQualifying(quali);
+    setQualifyingLive(Boolean(quali));
     // [R44] Meteorología ajustada a la duración prevista de la carrera. [T4.12] En una carrera de temporada se sortea
     // con la probabilidad de lluvia del circuito y la semilla de la temporada (la misma ronda da siempre el mismo
     // tiempo); en carrera libre es la elegida en el paddock.
@@ -1005,6 +1015,36 @@ export const App: React.FC = () => {
     simulation.startRaceSequence();
   }, [simulation, playerSetups, parcFermeStarts, pushNotice]);
 
+  // [V8] Simular el Gran Premio que toca: se prepara como una carrera normal y el motor la corre sin pintarla, a
+  // trozos para no bloquear la página, con el estratega al mando de los coches del jugador. Al acabar se liquida por el
+  // mismo camino que una carrera vista (puntos, dinero, componentes e informe de la ronda).
+  const [autoRace, setAutoRace] = useState<{ lap: number; total: number } | null>(null);
+  const autoRequested = useRef(false);
+  const autoLatest = useRef({ goHome: () => {}, fromQualifying: () => {}, fromPenalties: () => {}, qualifying: false, penalties: false, playerIds: [] as string[] });
+  const handleSimulateRound = useCallback(() => {
+    autoRequested.current = true;
+    handleStartRaceFromHome();
+  }, [handleStartRaceFromHome]);
+  useEffect(() => {
+    if (currentView !== 'race' || !autoRequested.current) return;
+    autoRequested.current = false;
+    const latest = autoLatest.current;
+    setQualifyingLive(false);
+    if (latest.qualifying) latest.fromQualifying();
+    else if (latest.penalties) latest.fromPenalties();
+    startAutoRace(simulation, simulation.cars.filter(car => latest.playerIds.includes(car.driver.id)).map(car => car.id));
+    setAutoRace({ lap: 0, total: simulation.totalLaps });
+    let timer = 0;
+    const run = () => {
+      const done = advanceAutoRace(simulation, AUTO_RACE_CHUNK_MS);
+      setAutoRace({ lap: Math.min(simulation.totalLaps, simulation.leaderLap), total: simulation.totalLaps });
+      if (done) { simulation.setFixedStep(RACE_STEP_SEC); setAutoRace(null); timer = window.setTimeout(() => autoLatest.current.goHome(), 0); }
+      else timer = window.setTimeout(run, 0);
+    };
+    timer = window.setTimeout(run, 0);
+    return () => window.clearTimeout(timer);
+  }, [currentView, simulation]);
+
   // Aviso cuando el semáforo del pit lane se pone en verde para un coche del jugador.
   const lastPitStart = useRef(new Map<number, string | undefined>());
   useEffect(() => {
@@ -1214,6 +1254,7 @@ export const App: React.FC = () => {
             if (sprintPending(championship, season)) setRaceFormat('sprint');
           },
           onSkip: handleSkipRound,
+          onSimulate: handleSimulateRound,
         }}
         driverAttributes={driver => attributesOf(development, driver)}
         finance={{ state: management.finance, teamId: management.playerTeamId }}
@@ -1313,6 +1354,9 @@ export const App: React.FC = () => {
     );
   }
 
+  autoLatest.current = { goHome: handleGoHome, fromQualifying: handleContinueFromQualifying, fromPenalties: handleContinueFromPenalties,
+    qualifying: Boolean(qualifying), penalties: penaltyNotice.length > 0, playerIds: playerDriverIds(roster, selectedDriverId) };
+
   // R30/R31: la vista de detalle sustituye a la clasificación en pantallas estrechas; en las anchas convive con ella.
   const isWide = viewportWidth >= 1600;
   const detailCar = selectedCar || favoriteCar;
@@ -1334,6 +1378,15 @@ export const App: React.FC = () => {
 
   return (
     <div className={styles.appContainer}>
+      {autoRace && (
+        <div className={styles.autoRace} role="status" aria-live="polite">
+          <strong>Simulando el Gran Premio</strong>
+          <span>Vuelta {autoRace.lap} de {autoRace.total} · el estratega lleva tus dos coches</span>
+          <div className={styles.autoRaceBar} role="progressbar" aria-valuemin={0} aria-valuemax={autoRace.total} aria-valuenow={autoRace.lap}>
+            <span style={{ width: `${autoRace.total ? 100 * autoRace.lap / autoRace.total : 0}%` }} />
+          </div>
+        </div>
+      )}
       {/* ── R32: BARRA DE CARRERA (estado, tiempo, velocidad, cámara y menú) ── */}
       <header className={styles.raceBar}>
         <div className={styles.barGroup}>
@@ -1467,7 +1520,12 @@ export const App: React.FC = () => {
               onStartClick={handleStartFormationLap}
             />
 
-            {qualifying && (
+            {qualifying && qualifyingLive && (
+              <div className={qualifyingStyles.overlay}>
+                <QualifyingLive result={qualifying} outline={simulation.activeTrack.points} playerIds={playerDriverIds(roster, selectedDriverId)} onDone={() => setQualifyingLive(false)} />
+              </div>
+            )}
+            {qualifying && !qualifyingLive && (
               <div className={qualifyingStyles.overlay}>
                 <QualifyingResults result={qualifying} gridChanges={gridChanges} pitLaneStarts={parcFermeStarts} onContinue={handleContinueFromQualifying}>
                   {qualifyingSetups && (

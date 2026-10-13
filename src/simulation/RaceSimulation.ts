@@ -681,7 +681,16 @@ export class RaceSimulation {
     return ruleValue(this.rules, key);
   }
 
+  /**
+   * Prepara la carrera. [V8] Con semilla, lo que se sortea al preparar (el retardo del semáforo, los juegos de
+   * neumáticos…) sale de un flujo propio: la misma semilla da la misma carrera desde la parrilla, no solo desde un guardado.
+   */
   initRace() {
+    useRng(this.stream('inicio'));
+    try { this.prepareRace(); } finally { useRng(null); }
+  }
+
+  private prepareRace() {
     IncidentModel.reset();
     this.activeLuckEvent = null;
     this.luckLog = [];

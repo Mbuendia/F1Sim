@@ -554,5 +554,7 @@ export const modules = [
   { "id": "polish-t417", "tasks": ["T4.17"], "sprint": "4", "kind": "contract" },
   { "id": "circuit-quality", "tasks": ["G1"], "sprint": "4.5", "kind": "contract" },
   { "id": "track-gl-g8", "tasks": ["G8", "G9"], "sprint": "4.5", "kind": "contract" },
-  { "id": "visual-v37", "tasks": ["V1", "V2", "V3", "V4"], "sprint": "3.7", "kind": "contract" }
+  { "id": "visual-v37", "tasks": ["V1", "V2", "V3", "V4"], "sprint": "3.7", "kind": "contract" },
+  { "id": "quali-live-v7", "tasks": ["V7"], "sprint": "3.7", "kind": "contract" },
+  { "id": "auto-race-v8", "tasks": ["V8"], "sprint": "3.7", "kind": "contract" }
 ];
