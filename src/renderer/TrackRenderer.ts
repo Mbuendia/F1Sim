@@ -7,11 +7,11 @@ import { getPitLaneGeometry, PitLaneGeometry } from '../utils/pitLaneGeometry';
 import { getScenario } from '../data/scenarioRegistry';
 import { buildScenarioGeometry, ScenarioGeometry } from '../utils/scenarioGeometry';
 import type { Point2D } from '../utils/spline';
-import { calculateCarWorldPosition, GRID_LATERAL_OFFSET, GRID_SLOT_M } from '../utils/carPosition';
+import { calculateCarWorldPosition } from '../utils/carPosition';
 import { KERB_WIDTH } from '../utils/scenarioGeometry';
+import { ASPHALT_DRY, ASPHALT_WET, FINISH_LINE_M, gridBrackets } from './trackLayers';
 
-/** [G7] Grosor de la línea de meta (m). */
-export const FINISH_LINE_M = 1.5;
+export { FINISH_LINE_M };
 const racingLines = new WeakMap<TrackDefinition, { x: number; y: number }[]>();
 
 export class TrackRenderer {
@@ -60,7 +60,9 @@ export class TrackRenderer {
     camera: Camera,
     _dpr: number,
     weather?: TrackWeatherState,
-    circuitId: string = 'barcelona'
+    circuitId: string = 'barcelona',
+    /** [G8] La pista fija ya está pintada en WebGL (`TrackLayerGL`): aquí solo van la goma y los rótulos. */
+    gpu: boolean = false
   ) {
     const points = track.points;
     const n = points.length;
@@ -89,7 +91,9 @@ export class TrackRenderer {
                   && scenarioGeo.kerbSegments.length === 0
                   && scenarioGeo.barrierLines.length === 0;
 
-    if (isLegacy) {
+    if (gpu) {
+      // Nada: terreno, escapatorias y pianos están en la GPU.
+    } else if (isLegacy) {
       // ── RENDERIZADO LEGACY (fallback para circuitos sin escenario) ──
       // Reproduce exactamente el comportamiento original: bandas uniformes
       this.renderLegacyLayers(ctx, buildPath, trackWidth, zoom);
@@ -103,10 +107,12 @@ export class TrackRenderer {
     ctx.lineJoin = 'round';
 
     // [G4] Asfalto al ancho real del circuito, en un solo trazo.
-    buildPath();
-    ctx.strokeStyle = isWet ? '#161922' : '#272b35';
-    ctx.lineWidth = trackWidth;
-    ctx.stroke();
+    if (!gpu) {
+      buildPath();
+      ctx.strokeStyle = isWet ? ASPHALT_WET : ASPHALT_DRY;
+      ctx.lineWidth = trackWidth;
+      ctx.stroke();
+    }
 
     // ── TRAZADA ENGOMADA (RACING LINE) Q8 ──
     // [G5] La goma se pinta sobre la trazada ideal; los tramos con la misma opacidad van en un solo trazo.
@@ -131,26 +137,28 @@ export class TrackRenderer {
     // [R44] El agua por tramo y el radar de lluvia los pinta WeatherRenderer con los datos del modelo.
 
     // ── BARRERAS (solo escenario Q6, se pintan encima del asfalto) ──
-    if (!isLegacy) {
+    if (!isLegacy && !gpu) {
       this.renderBarriers(ctx, scenarioGeo, camera, zoom);
     }
 
     // ── LÍNEAS DE LÍMITES DE PISTA BLANCAS ──
+    // [G8] Con la pista en la GPU, boxes y meta solo ponen sus rótulos: sus formas no se pintan dos veces.
+    const labels = gpu ? TrackRenderer.labelsOnly(ctx) : ctx;
     ctx.save();
     ctx.strokeStyle = isWet ? 'rgba(255, 255, 255, 0.55)' : 'rgba(255, 255, 255, 0.75)';
     ctx.lineWidth = Math.max(1, 0.25 * zoom);
-    for (const edge of this.geometryFor(track).trackEdges) {
+    for (const edge of gpu ? [] : this.geometryFor(track).trackEdges) {
       this.path(ctx, edge, camera, true, stride);
       ctx.stroke();
     }
     ctx.restore();
 
     // ── PIT LANE COMPLETO & MURO DE BOXES ──
-    this.renderPitLane(ctx, track, camera);
+    this.renderPitLane(labels, track, camera);
 
     // ── LÍNEA DE META OFICIAL AJEDREZADA & PÓRTICO FIA ──
-    this.renderStartFinishLine(ctx, track, camera);
-    if (zoom >= 1.5) this.renderGrid(ctx, track, camera);
+    this.renderStartFinishLine(labels, track, camera);
+    if (zoom >= 1.5 && !gpu) this.renderGrid(ctx, track, camera);
 
     // ── ETIQUETAS DE CURVAS OFICIALES ──
     if (zoom >= 0.70) {
@@ -393,6 +401,18 @@ export class TrackRenderer {
     return line;
   }
 
+  /** [G8] El mismo lienzo sin trazos ni rellenos: deja pasar los rótulos y el estado. */
+  private static labelsOnly(ctx: CanvasRenderingContext2D): CanvasRenderingContext2D {
+    return new Proxy(ctx, {
+      get: (target, key) => {
+        if (key === 'stroke' || key === 'fill') return () => {};
+        const value = Reflect.get(target, key);
+        return typeof value === 'function' ? value.bind(target) : value;
+      },
+      set: (target, key, value) => Reflect.set(target, key, value),
+    });
+  }
+
   /** [G7] Los 20 cajones de parrilla, a 8 m reales uno de otro: una marca en U delante de cada coche. */
   private static renderGrid(ctx: CanvasRenderingContext2D, track: TrackDefinition, camera: Camera) {
     if (!(track.lapLengthMeters > 0) || track.points.length < 2) return;
@@ -401,15 +421,8 @@ export class TrackRenderer {
     ctx.lineWidth = Math.max(1, 0.15 * camera.zoom);
     ctx.lineJoin = 'miter';
     ctx.beginPath();
-    for (let slot = 0; slot < 20; slot++) {
-      const pose = calculateCarWorldPosition({ progress: 1 - (slot + 1) * GRID_SLOT_M / track.lapLengthMeters,
-        lateralOffset: slot % 2 === 0 ? GRID_LATERAL_OFFSET : -GRID_LATERAL_OFFSET, isInPitLane: false }, track);
-      const tx = Math.cos(pose.worldAngle), ty = Math.sin(pose.worldAngle);
-      // Frente del cajón 3 m por delante del centro del coche; 1,3 m a cada lado y 1,5 m hacia atrás.
-      const fx = pose.worldX + tx * 3, fy = pose.worldY + ty * 3;
-      const corner = (side: number, back: number) => camera.worldToScreen(fx - ty * 1.3 * side - tx * back, fy + tx * 1.3 * side - ty * back);
-      const a = corner(1, 1.5), b = corner(1, 0), c = corner(-1, 0), d = corner(-1, 1.5);
-      ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.lineTo(c.x, c.y); ctx.lineTo(d.x, d.y);
+    for (const bracket of gridBrackets(track)) {
+      bracket.forEach((p, i) => { const q = camera.worldToScreen(p.x, p.y); if (i === 0) ctx.moveTo(q.x, q.y); else ctx.lineTo(q.x, q.y); });
     }
     ctx.stroke();
     ctx.restore();
