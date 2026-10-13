@@ -24,3 +24,10 @@ lerna-debug.log*
 *.njsproj
 *.sln
 *.sw?
+
+# Sprint 4.5: datos descargados y archivos intermedios que se pueden volver a generar
+scratch/g-multiviewer/
+scratch/g-tumftm/
+scratch/g11/
+scratch/g7-line-shifts.json
+assets3d/circuits/*.blend

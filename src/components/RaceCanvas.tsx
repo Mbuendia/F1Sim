@@ -11,6 +11,9 @@ import { SpraySystem } from '../renderer/SprayParticles';
 import { OFFICIAL_CIRCUITS } from '../data/circuits';
 import { supportsWebGL } from './CarShowcase';
 import type { TrackLayerGL } from '../renderer/TrackLayerGL';
+import { frameCost, recordStage } from '../renderer/frameCost';
+
+if (import.meta.env.DEV && typeof window !== 'undefined') (window as unknown as { __frameCost: typeof frameCost }).__frameCost = frameCost;
 import { Compass, RotateCw } from 'lucide-react';
 
 interface RaceCanvasProps {
@@ -59,7 +62,8 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
 
   // [G8] Pista en WebGL: se carga al entrar en carrera. Sin WebGL (o si falla) la pinta el Canvas, con un aviso.
   useEffect(() => {
-    if (!supportsWebGL()) { setCanvasFallback(true); return; }
+    // Con `?canvas` en la dirección se fuerza el respaldo, para probarlo en un navegador que sí tiene WebGL.
+    if (!supportsWebGL() || new URLSearchParams(window.location.search).has('canvas')) { setCanvasFallback(true); return; }
     let cancelled = false;
     let layer: TrackLayerGL | null = null;
     import('../renderer/TrackLayerGL')
@@ -121,7 +125,9 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
       const dtRaw = Math.min((currentTime - lastTime) / 1000, 0.1);
       lastTime = currentTime;
 
+      const frameStart = performance.now();
       simulation.update(dtRaw);
+      const simulated = performance.now();
       // [R43] Coches y Safety Car con la pose interpolada de este fotograma (pintado y cámara).
       const frame = interpolator.frame(simulation, dtRaw);
       camera.update(frame.cars, dtRaw, simulation.activeTrack);
@@ -150,6 +156,7 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
       TrackRenderer.renderTrack(ctx, simulation.activeTrack, camera, dpr, simulation.weather, simulation.circuitId, gpu);
       // [R04] Puntos de detección y tramos de activación del DRS.
       TrackRenderer.renderDrsMarkers(ctx, simulation.activeTrack, camera);
+      const trackDone = performance.now();
 
       // [R44] Pista mojada por tramo, radar de lluvia y spray (antes de los coches y sus etiquetas).
       const weatherView = weatherLayers(simulation.weatherModel, simulation.raceTimeSec);
@@ -157,6 +164,7 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
       // [T3.4] Spray con partículas: se emite con el tiempo de carrera y se pinta antes que los coches.
       spray.current.update(frame.cars, t => simulation.weatherModel.depthAt(t), simulation.raceTimeSec);
       spray.current.render(ctx, camera, simulation.raceTimeSec);
+      const weatherDone = performance.now();
 
       if (frame.safetyCar?.isDeployed && !safetyCarImageRequested) {
         safetyCarImageRequested = true;
@@ -169,6 +177,7 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
       const trackWidthCarsCapacity = circuitSpec?.trackWidthCars ?? 3;
       CarRenderer.renderCars(ctx, frame.cars, camera, selectedCarId, simulation.activeTrack, trackWidthCarsCapacity, frame.safetyCar,
         { depthAt: t => simulation.weatherModel.depthAt(t), timeSec: simulation.raceTimeSec });
+      const carsDone = performance.now();
 
       // [R53] Gotas en pantalla según la lluvia de la zona visible (por encima de pista y coches).
       WeatherRenderer.renderClouds(ctx, camera, simulation.weatherModel.cloudCoverAt(simulation.raceTimeSec));
@@ -180,6 +189,12 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
       }
 
       ctx.restore();
+      // [G8][G9] Coste de cada fase del fotograma.
+      const frameEnd = performance.now();
+      frameCost.gpu = gpu;
+      recordStage('simulacion', simulated - frameStart); recordStage('pista', trackDone - simulated); recordStage('clima', weatherDone - trackDone);
+      recordStage('coches', carsDone - weatherDone); recordStage('resto', frameEnd - carsDone); recordStage('total', frameEnd - frameStart);
+      frameCost.frames++;
       animationFrameId = requestAnimationFrame(loop);
     };
 

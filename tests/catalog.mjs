@@ -553,5 +553,5 @@ export const modules = [
   { "id": "pit-window-t415", "tasks": ["T4.15"], "sprint": "4", "kind": "contract" },
   { "id": "polish-t417", "tasks": ["T4.17"], "sprint": "4", "kind": "contract" },
   { "id": "circuit-quality", "tasks": ["G1"], "sprint": "4.5", "kind": "contract" },
-  { "id": "track-gl-g8", "tasks": ["G8"], "sprint": "4.5", "kind": "contract" }
+  { "id": "track-gl-g8", "tasks": ["G8", "G9"], "sprint": "4.5", "kind": "contract" }
 ];

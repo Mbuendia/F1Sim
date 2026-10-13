@@ -13,6 +13,7 @@ export default async function run({ server, assert, test }) {
   const { buildTrackLayers, getTrackLayers, FINISH_LINE_M } = await server.ssrLoadModule('/src/renderer/trackLayers.ts');
   const { getPitLaneGeometry } = await server.ssrLoadModule('/src/utils/pitLaneGeometry.ts');
   const { TrackRenderer } = await server.ssrLoadModule('/src/renderer/TrackRenderer.ts');
+  const { frameCost, recordStage, resetFrameCost } = await server.ssrLoadModule('/src/renderer/frameCost.ts');
 
   const nearestAxis = (p, points) => {
     let best = Infinity;
@@ -69,5 +70,17 @@ export default async function run({ server, assert, test }) {
       [...new Set(gpu.strokes.map(s => s.color))].join(' | '));
     assert(gpu.fills.every(f => f === 'rgba(10, 15, 25, 0.88)'), 'G8: con WebGL los únicos rellenos del Canvas son el fondo de los rótulos de curva', [...new Set(gpu.fills)].join(' | '));
     assert(gpu.texts.length > 0 && JSON.stringify(gpu.texts) === JSON.stringify(canvas.texts), 'G8: los rótulos son los mismos con y sin WebGL', `${gpu.texts.length} / ${canvas.texts.length}`);
+  });
+
+  // G9: el coste por fase del fotograma se mide con una media móvil (los valores reales se leen en el navegador).
+  await test('G9: medida del coste por fotograma', () => {
+    resetFrameCost();
+    recordStage('coches', 4);
+    assert(frameCost.ms.coches === 4, 'G9: la primera medida de una fase es su valor');
+    frameCost.frames = 1;
+    recordStage('coches', 10);
+    assert(frameCost.ms.coches > 4 && frameCost.ms.coches < 4.2, 'G9: las siguientes entran en una media móvil lenta', String(frameCost.ms.coches));
+    resetFrameCost();
+    assert(frameCost.frames === 0 && Object.values(frameCost.ms).every(v => v === 0), 'G9: la medida se puede poner a cero');
   });
 }

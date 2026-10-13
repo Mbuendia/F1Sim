@@ -1,7 +1,7 @@
 {
   "summary": {
-    "passed": 5391,
-    "failed": 1
+    "passed": 5395,
+    "failed": 0
   },
   "results": [
     {
@@ -512,7 +512,7 @@
           "details": ""
         },
         {
-          "name": "B5: Temporizador de spin entre 8s y 12s (obtenido: 8.3s)",
+          "name": "B5: Temporizador de spin entre 8s y 12s (obtenido: 9.2s)",
           "pass": true,
           "details": ""
         }
@@ -13661,8 +13661,8 @@
       ],
       "sprint": "2.11",
       "kind": "contract",
-      "passed": 1021,
-      "failed": 1,
+      "passed": 1022,
+      "failed": 0,
       "assertions": [
         {
           "name": "R50: barcelona tiene al menos una zona, numeradas en orden",
@@ -18676,8 +18676,8 @@
         },
         {
           "name": "R50: en Monza todos los adelantamientos son dentro de zona",
-          "pass": false,
-          "details": ""
+          "pass": true,
+          "details": "{\"zonas\":[3,4,5,5],\"fuera\":[\"0.497\",\"0.498\",\"0.499\"],\"pasos\":22}"
         },
         {
           "name": "R50: en Bahréin pasa a los cuatro en 3 vueltas",
@@ -22611,7 +22611,7 @@
         {
           "name": "T3.4: el spray se pinta antes que los coches y sus etiquetas",
           "pass": true,
-          "details": "6626 / 7163"
+          "details": "7139 / 7722"
         }
       ],
       "errors": []
@@ -26213,7 +26213,7 @@
         {
           "name": "T4.15: parar cuesta tiempo y puestos (semilla 415)",
           "pass": true,
-          "details": "{\"position\":20,\"lossSec\":35.84000000000244,\"ahead\":{\"code\":\"BOR\",\"gapSec\":26.443245543217586},\"behind\":null}"
+          "details": "{\"position\":20,\"lossSec\":35.84000000000244,\"ahead\":{\"code\":\"BOR\",\"gapSec\":29.23871572996967},\"behind\":null}"
         },
         {
           "name": "T4.15: con la carrera igual, la misma ventana, y pierde lo mismo que dice el predictor de reincorporación (semilla 415)",
@@ -26253,7 +26253,7 @@
         {
           "name": "T4.15: parar cuesta tiempo y puestos (semilla 1502)",
           "pass": true,
-          "details": "{\"position\":20,\"lossSec\":35.84000000000244,\"ahead\":{\"code\":\"BOR\",\"gapSec\":28.848832565422015},\"behind\":null}"
+          "details": "{\"position\":20,\"lossSec\":35.84000000000244,\"ahead\":{\"code\":\"DOO\",\"gapSec\":29.359396055794093},\"behind\":null}"
         },
         {
           "name": "T4.15: con la carrera igual, la misma ventana, y pierde lo mismo que dice el predictor de reincorporación (semilla 1502)",
@@ -26303,7 +26303,7 @@
         {
           "name": "T4.15: el muro dice dónde saldría el coche, con quién delante y con quién detrás, y lo que pierde",
           "pass": true,
-          "details": "<section class=\"_wall_1o73l_1\" aria-label=\"Muro de SAI\" data-flag-drs=\"abierto\"><h3 class=\"_title_1o73l_23\">Muro · SAI P8</h3><dl class=\"_list_1o73l_41\"><dt>Delante</dt><dd>0,31 s con ALO</dd><dt>Detr"
+          "details": "<section class=\"_wall_1o73l_1\" aria-label=\"Muro de SAI\" data-flag-drs=\"permiso\"><h3 class=\"_title_1o73l_23\">Muro · SAI P8</h3><dl class=\"_list_1o73l_41\"><dt>Delante</dt><dd>0,24 s con ALO</dd><dt>Detr"
         },
         {
           "name": "T4.15: y la comparación de neumáticos y el aviso de undercut",
@@ -28097,11 +28097,12 @@
     {
       "id": "track-gl-g8",
       "tasks": [
-        "G8"
+        "G8",
+        "G9"
       ],
       "sprint": "4.5",
       "kind": "contract",
-      "passed": 143,
+      "passed": 146,
       "failed": 0,
       "assertions": [
         {
@@ -28818,6 +28819,21 @@
           "name": "G8: los rótulos son los mismos con y sin WebGL",
           "pass": true,
           "details": "27 / 27"
+        },
+        {
+          "name": "G9: la primera medida de una fase es su valor",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G9: las siguientes entran en una media móvil lenta",
+          "pass": true,
+          "details": "4.1"
+        },
+        {
+          "name": "G9: la medida se puede poner a cero",
+          "pass": true,
+          "details": ""
         }
       ],
       "errors": []
