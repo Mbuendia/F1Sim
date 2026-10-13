@@ -20,6 +20,7 @@ export default async function run({ server, assert, test }) {
   const MINE = ['alonso', 'stroll'];
   const race = (seed, luck = true) => {
     const sim = new RaceSimulation('monza');
+    sim.seededPreparation = true;
     sim.setSeed(seed);
     sim.setRaceFormat('sprint');
     sim.setCircuit('monza');

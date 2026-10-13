@@ -236,6 +236,17 @@ export class RaceSimulation {
     for (const car of this.cars) car.technical = this.technicalFor(car);
   }
 
+  /**
+   * [T4.13] Vuelta de referencia del motor de un coche con cada setup de la lista, en el circuito elegido y con sus
+   * mejoras montadas. Es lo que «miden» los entrenamientos libres; no depende de la carrera.
+   */
+  setupLapTable(driverId: string, setups: CarSetup[]): { setup: CarSetup; lapSec: number }[] {
+    const car = this.cars.find(candidate => candidate.driver.id === driverId);
+    if (!car) return [];
+    const base = technicalWith(resolveTechnical(car.team.id, this.circuitId), this.technicalUpgrades[car.driver.id] ?? []);
+    return setups.map(setup => ({ setup, lapSec: RejoinModel.lapProfile(this.activeTrack, { team: car.team, driver: car.driver, technical: applySetup(base, setup) }, null).lapTime }));
+  }
+
   /** Perfil técnico del coche en este evento: equipo y circuito (R17), mejoras montadas (R18) y setup (R49). */
   private technicalFor(car: Pick<CarState, 'team' | 'driver'>): CarTechnical {
     return applySetup(technicalWith(resolveTechnical(car.team.id, this.circuitId), this.technicalUpgrades[car.driver.id] ?? []), this.carSetups[car.driver.id]);
@@ -682,11 +693,17 @@ export class RaceSimulation {
   }
 
   /**
-   * Prepara la carrera. [V8] Con semilla, lo que se sortea al preparar (el retardo del semáforo, los juegos de
-   * neumáticos…) sale de un flujo propio: la misma semilla da la misma carrera desde la parrilla, no solo desde un guardado.
+   * [V8] Con esto encendido (lo enciende la aplicación), lo que se sortea al preparar la carrera (el retardo del
+   * semáforo…) sale de la semilla: la misma semilla da la misma carrera desde la parrilla, no solo desde un guardado.
+   * Apagado, la preparación sortea como siempre.
    */
+  seededPreparation = false;
+
+  /** Prepara la carrera. */
   initRace() {
-    useRng(this.stream('inicio'));
+    if (!this.seededPreparation || this.seed === null) { this.prepareRace(); return; }
+    // El flujo de la preparación no se guarda: se rehace con la semilla, así que preparar dos veces da lo mismo.
+    useRng(mulberry32(streamSeed(this.seed, 'inicio')));
     try { this.prepareRace(); } finally { useRng(null); }
   }
 

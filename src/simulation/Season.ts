@@ -3,6 +3,8 @@
 // [R51] La temporada recorre un calendario de 24 rondas: cada una se disputa o se salta (no se corre y nadie puntúa).
 // Solo cuenta la carrera que se corre en el circuito de la ronda que toca; cualquier otra es una carrera libre.
 import { addRace, constructorsChampionship, driverStandings, emptyChampionship } from './Championship';
+import { readPractice } from './Practice';
+import type { PracticeResult } from './Practice';
 import type { ChampionshipState } from './Championship';
 import { addDistance, completeRace, emptyComponents, ensureDriver } from './ComponentPool';
 import type { ComponentState } from './ComponentPool';
@@ -50,7 +52,7 @@ export interface WeekendState { round: number; tyres: Record<string, TireSet[]> 
  * Lo que la temporada recuerda además del campeonato: las rondas del calendario que se saltaron. [T4.12] Y la semilla
  * de su tiempo: con ella cada ronda tiene un tiempo fijo (ausente en las partidas anteriores y al empezar la temporada).
  */
-export interface SeasonState { version: 1; skipped: number[]; weekend?: WeekendState; weatherSeed?: number }
+export interface SeasonState { version: 1; skipped: number[]; weekend?: WeekendState; weatherSeed?: number; /** [T4.13] Libres de la ronda que toca. */ practice?: PracticeResult }
 
 /** [T4.12] La semilla del tiempo pasa de un estado de la temporada al siguiente. */
 const keepSeed = (season: SeasonState): { weatherSeed?: number } => (season.weatherSeed === undefined ? {} : { weatherSeed: season.weatherSeed });
@@ -70,6 +72,17 @@ export function roundWeather(season: SeasonState, round: CalendarRound, session:
   return drawWeatherScenario(chance, streamSeed(season.weatherSeed ?? 0, `ronda-${round.round}-${session}`));
 }
 
+/** [T4.13] Anota los libres de la ronda que toca (o los borra con null). Liquidar o saltar la ronda los descarta. */
+export function withPractice(season: SeasonState, practice: PracticeResult | null): SeasonState {
+  const { practice: _previous, ...rest } = season;
+  return practice ? { ...rest, practice } : rest;
+}
+
+/** [T4.13] Libres ya hechos para esa ronda, si los hay. */
+export function practiceFor(season: SeasonState, round: number | null | undefined): PracticeResult | null {
+  return season.practice && season.practice.round === round ? season.practice : null;
+}
+
 export function emptySeason(): SeasonState {
   return { version: 1, skipped: [] };
 }
@@ -85,7 +98,8 @@ export function parseSeason(text: string | null): SeasonState {
       const weekend = data.weekend;
       const valid = weekend && typeof weekend === 'object' && Number.isInteger(weekend.round) && weekend.round >= 1 && weekend.round <= SEASON_RACES
         && weekend.tyres && typeof weekend.tyres === 'object' && !Array.isArray(weekend.tyres);
-      const seed = Number.isInteger(data.weatherSeed) ? { weatherSeed: data.weatherSeed as number } : {};
+      const practice = readPractice(data.practice);
+      const seed = { ...(Number.isInteger(data.weatherSeed) ? { weatherSeed: data.weatherSeed as number } : {}), ...(practice ? { practice } : {}) };
       return valid ? { version: 1, skipped: validRounds(data.skipped), weekend: { round: weekend.round, tyres: weekend.tyres }, ...seed } : { version: 1, skipped: validRounds(data.skipped), ...seed };
     }
   } catch { /* guardado ilegible */ }
@@ -268,7 +282,7 @@ export function settleRace(career: CareerProgress, race: {
     if (round === undefined) return { ...career, closed: null };
     return {
       ...career, ...management, championship, components: addDistance(career.components, race.raceKm),
-      season: { version: 1, skipped: career.season.skipped, weekend: { round, tyres: race.tyres ?? {} }, ...keepSeed(career.season) }, closed: null,
+      season: { version: 1, skipped: career.season.skipped, weekend: { round, tyres: race.tyres ?? {} }, ...keepSeed(career.season), ...(career.season.practice?.round === round ? { practice: career.season.practice } : {}) }, closed: null,
     };
   }
   return closeIfComplete({

@@ -76,9 +76,11 @@ export interface WeekendSession { name: string; done: boolean; current: boolean 
  * Sesiones del fin de semana según el formato elegido. En una ronda sprint con el sprint ya corrido (`sprintDone`) se
  * enseñan las cuatro, con las dos del sprint hechas.
  */
-export function weekendSessions(format: 'directo' | 'clasificacion' | 'sprint', sprintDone: boolean): WeekendSession[] {
+export function weekendSessions(format: 'directo' | 'clasificacion' | 'sprint', sprintDone: boolean, practiceDone?: boolean): WeekendSession[] {
   const names = format === 'sprint' || sprintDone ? ['Clasificación sprint', 'Sprint', 'Clasificación', 'Carrera']
     : format === 'clasificacion' ? ['Clasificación', 'Carrera'] : ['Carrera'];
   const doneCount = sprintDone ? 2 : 0;
-  return names.map((name, i) => ({ name, done: i < doneCount, current: i === doneCount }));
+  const sessions = names.map((name, i) => ({ name, done: i < doneCount, current: i === doneCount }));
+  // [T4.13] Los libres son el primer paso del fin de semana; son opcionales, así que no quitan el «ahora» a la sesión siguiente.
+  return practiceDone === undefined ? sessions : [{ name: 'Entrenamientos libres', done: practiceDone, current: false }, ...sessions];
 }
