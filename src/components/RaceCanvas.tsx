@@ -15,6 +15,9 @@ import { frameCost, recordStage } from '../renderer/frameCost';
 import { buildCarDraws, buildSafetyCarDraw } from '../renderer/carDraws';
 import { WEATHER_TESTS } from '../data/weatherScenarios';
 
+/** Milisegundos de simulación que caben en un fotograma sin que la imagen pierda fluidez. */
+const SIM_BUDGET_MS = 8;
+
 if (import.meta.env.DEV && typeof window !== 'undefined') (window as unknown as { __frameCost: typeof frameCost }).__frameCost = frameCost;
 import { Compass, RotateCw } from 'lucide-react';
 
@@ -117,7 +120,11 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
       ctx.resetTransform();
       ctx.scale(dpr, dpr);
       camera.resize(rect.width, rect.height, simulation.activeTrack);
+      // Cambiar el tamaño vacía el lienzo: se repinta en el acto para que no parpadee (pasa cada vez que el muro de
+      // abajo cambia de alto, por ejemplo al llegar una propuesta).
+      repaint?.();
     };
+    let repaint: (() => void) | null = null;
 
     const resizeObserver = new ResizeObserver(() => {
       handleResize();
@@ -146,9 +153,13 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
       }
       animationFrameId = requestAnimationFrame(loop);
     };
-    const paintFrame = (currentTime: number) => {
-      const dtRaw = Math.min((currentTime - lastTime) / 1000, 0.1);
-      lastTime = currentTime;
+    // A velocidades altas (x16, x32) simular un fotograma puede costar más que el propio fotograma y la imagen va a
+    // tirones. La simulación tiene un presupuesto de tiempo por fotograma: si lo pasa, el siguiente avanza menos tiempo
+    // de carrera (la carrera va algo más lenta de lo pedido, pero fluida).
+    let simScale = 1;
+    const paintFrame = (currentTime: number, advance = true) => {
+      const dtRaw = advance ? Math.min((currentTime - lastTime) / 1000, 0.1) * simScale : 0;
+      if (advance) lastTime = currentTime;
 
       const frameStart = performance.now();
       simulation.update(dtRaw);
@@ -236,12 +247,18 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
       ctx.restore();
       // [G8][G9] Coste de cada fase del fotograma.
       const frameEnd = performance.now();
+      if (advance) {
+        const simMs = simulated - frameStart;
+        simScale = simMs > SIM_BUDGET_MS ? Math.max(0.2, simScale * SIM_BUDGET_MS / simMs) : Math.min(1, simScale * 1.1);
+        frameCost.simScale = simScale;
+      }
       frameCost.gpu = gpu;
       recordStage('simulacion', simulated - frameStart); recordStage('pista', trackDone - simulated); recordStage('clima', weatherDone - trackDone);
       recordStage('coches', carsDone - weatherDone); recordStage('resto', frameEnd - carsDone); recordStage('total', frameEnd - frameStart);
       frameCost.frames++;
     };
 
+    repaint = () => { try { paintFrame(performance.now(), false); } catch { ctx.restore(); } };
     animationFrameId = requestAnimationFrame(loop);
 
     return () => {

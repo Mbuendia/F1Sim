@@ -1728,11 +1728,13 @@ export class RaceSimulation {
       // ── RESTRICCIONES DE VELOCIDAD BAJO SC / VSC / BANDERA AMARILLA ──
       const scMaxSpeed = SafetyCarModel.getMaxAllowedSpeed(this.raceFlagState, this.safetyCar.mode);
       // [FIX A1] isCatchingPack: comparar con el coche de delante, no con el líder.
-      // Solo si NO hay ningún coche no-pitting por delante a menos de 0.08 de vuelta
+      // Solo si NO hay ningún coche no-pitting por delante a menos de QUEUE_JOINED_M. [Sprint 4.5] Antes eran 0,08 vueltas
+      // (unos 400 m): en un pelotón estirado todos tenían a alguien dentro de esa distancia, nadie podía acelerar para
+      // alcanzar la fila y el Safety Car necesitaba cuatro o cinco vueltas para recogerla.
       // [R10] Distancia física en pista (un doblado dentro de la fila tiene coches delante aunque su progreso sea menor).
       const nearestAheadOnTrack = field.some(c =>
         c.id !== car.id && c.status === 'running' && !c.isPitting && !c.isInPitLane
-        && ((((c.progress - car.progress) % 1) + 1) % 1) > 0 && ((((c.progress - car.progress) % 1) + 1) % 1) < 0.08
+        && ((((c.progress - car.progress) % 1) + 1) % 1) > 0 && ((((c.progress - car.progress) % 1) + 1) % 1) * lapDistanceMeters < SafetyCarModel.QUEUE_JOINED_M
       );
       const isCatchingPack = !nearestAheadOnTrack && scMaxSpeed !== null && this.safetyCar.isDeployed;
 
@@ -1742,7 +1744,7 @@ export class RaceSimulation {
       } else if (scMaxSpeed !== null) {
         if (isCatchingPack && this.safetyCar.isDeployed) {
           // Los coches lejos del pelotón pueden ir a 220 km/h para alcanzar la cola del SC
-          targetKmh = Math.min(targetKmh, 220);
+          targetKmh = Math.min(targetKmh, SafetyCarModel.CATCH_UP_KMH);
         } else {
           targetKmh = Math.min(targetKmh, scMaxSpeed);
           // Prohibir adelantamientos bajo SC/VSC al pelotón normal

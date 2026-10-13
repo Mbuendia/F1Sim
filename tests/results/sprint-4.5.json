@@ -512,7 +512,7 @@
           "details": ""
         },
         {
-          "name": "B5: Temporizador de spin entre 8s y 12s (obtenido: 10.3s)",
+          "name": "B5: Temporizador de spin entre 8s y 12s (obtenido: 10.2s)",
           "pass": true,
           "details": ""
         }
@@ -22611,7 +22611,7 @@
         {
           "name": "T3.4: el spray se pinta antes que los coches y sus etiquetas",
           "pass": true,
-          "details": "8643 / 10387"
+          "details": "9414 / 11158"
         }
       ],
       "errors": []
@@ -26213,7 +26213,7 @@
         {
           "name": "T4.15: parar cuesta tiempo y puestos (semilla 415)",
           "pass": true,
-          "details": "{\"position\":20,\"lossSec\":35.84000000000244,\"ahead\":{\"code\":\"BOR\",\"gapSec\":31.254121193354194},\"behind\":null}"
+          "details": "{\"position\":20,\"lossSec\":35.84000000000244,\"ahead\":{\"code\":\"BOR\",\"gapSec\":30.101670679189624},\"behind\":null}"
         },
         {
           "name": "T4.15: con la carrera igual, la misma ventana, y pierde lo mismo que dice el predictor de reincorporación (semilla 415)",
@@ -26253,7 +26253,7 @@
         {
           "name": "T4.15: parar cuesta tiempo y puestos (semilla 1502)",
           "pass": true,
-          "details": "{\"position\":20,\"lossSec\":35.84000000000244,\"ahead\":{\"code\":\"DOO\",\"gapSec\":26.84840444271424},\"behind\":null}"
+          "details": "{\"position\":20,\"lossSec\":35.84000000000244,\"ahead\":{\"code\":\"BOR\",\"gapSec\":31.802142555569844},\"behind\":null}"
         },
         {
           "name": "T4.15: con la carrera igual, la misma ventana, y pierde lo mismo que dice el predictor de reincorporación (semilla 1502)",
@@ -26303,7 +26303,7 @@
         {
           "name": "T4.15: el muro dice dónde saldría el coche, con quién delante y con quién detrás, y lo que pierde",
           "pass": true,
-          "details": "<section class=\"_wall_1o73l_1\" aria-label=\"Muro de SAI\" data-flag-drs=\"permiso\"><h3 class=\"_title_1o73l_23\">Muro · SAI P8</h3><dl class=\"_list_1o73l_41\"><dt>Delante</dt><dd>0,28 s con ALO</dd><dt>Detr"
+          "details": "<section class=\"_wall_1o73l_1\" aria-label=\"Muro de SAI\" data-flag-drs=\"permiso\"><h3 class=\"_title_1o73l_23\">Muro · SAI P8</h3><dl class=\"_list_1o73l_41\"><dt>Delante</dt><dd>0,23 s con RUS</dd><dt>Detr"
         },
         {
           "name": "T4.15: y la comparación de neumáticos y el aviso de undercut",

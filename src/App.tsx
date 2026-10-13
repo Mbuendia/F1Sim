@@ -770,6 +770,18 @@ export const App: React.FC = () => {
     window.setTimeout(() => setNotices(list => list.filter(n => n.id !== id)), NOTICE_MS);
   }, []);
 
+  // El golpe de suerte de un rival no interrumpe: se aplica solo y queda como aviso. La modal es para los pilotos propios.
+  const ownLuckEvent = activeLuckEvent && teamCars.some(car => car.id === activeLuckEvent.luckyCarId) ? activeLuckEvent : null;
+  const rivalLuckId = useRef<string | null>(null);
+  useEffect(() => {
+    if (!activeLuckEvent || ownLuckEvent || rivalLuckId.current === activeLuckEvent.id) return;
+    rivalLuckId.current = activeLuckEvent.id;
+    pushNotice('info', 'Suerte', `${activeLuckEvent.luckyDriverName} (dado ${activeLuckEvent.rollValue}): ${activeLuckEvent.rewardTitle}`);
+    simulation.applyLuckEventReward(activeLuckEvent.id);
+    simulation.activeLuckEvent = null;
+    setActiveLuckEvent(null);
+  }, [activeLuckEvent, ownLuckEvent, pushNotice, simulation]);
+
   const clearNotices = useCallback(() => {
     setNotices([]);
     lastFlag.current = 'green';
@@ -1488,10 +1500,10 @@ export const App: React.FC = () => {
             />
 
             {/* ── MODAL DE SUERTE CON DADO D20 (SAFETY CAR & BANDERA ROJA) ── */}
-            {activeLuckEvent && (
+            {ownLuckEvent && activeLuckEvent && (
               <D20LuckModal
                 key={activeLuckEvent.id}
-                event={activeLuckEvent}
+                event={ownLuckEvent}
                 onApplyReward={handleApplyLuckReward}
                 onDismiss={handleDismissLuckEvent}
               />

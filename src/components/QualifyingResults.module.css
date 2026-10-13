@@ -1,12 +1,14 @@
 .overlay {
-  position: absolute;
+  /* Por encima de toda la pantalla: dentro del área de la pista se cortaba. */
+  position: fixed;
   inset: 0;
-  z-index: 100;
+  z-index: 1000;
   display: flex;
-  align-items: center;
+  align-items: safe center;
   justify-content: center;
   background: rgba(4, 7, 15, 0.9);
   backdrop-filter: blur(8px);
+  overflow-y: auto;
 }
 
 .panel {
