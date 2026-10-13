@@ -1,4 +1,5 @@
 import React from 'react';
+import { Segmented } from './ui/Segmented';
 import styles from './DriverProgressPanel.module.css';
 import type { Driver } from '../types/f1';
 import { ATTRIBUTE_KEYS, ATTRIBUTE_LABEL, FOCUS } from '../simulation/DriverDevelopment';
@@ -27,13 +28,11 @@ export const DriverProgressPanel: React.FC<DriverProgressPanelProps> = ({ entrie
           <div key={driver.id} className={styles.driver}>
             <div className={styles.header}>
               <strong>{driver.firstName} {driver.lastName}</strong>
-              <label className={styles.focus}>
-                Enfoque:{' '}
-                <select value={focus} aria-label={`Enfoque de entrenamiento de ${driver.code}`} disabled={!onFocusChange}
-                  onChange={event => onFocusChange?.(driver.id, event.target.value as FocusId)}>
-                  {(Object.keys(FOCUS) as FocusId[]).map(id => <option key={id} value={id}>{FOCUS[id].label}</option>)}
-                </select>
-              </label>
+              <div className={styles.focus}>
+                <Segmented wrap label={`Enfoque de entrenamiento de ${driver.code}`} name={`enfoque-${driver.id}`} value={focus} disabled={!onFocusChange}
+                  onChange={value => onFocusChange?.(driver.id, value)}
+                  options={(Object.keys(FOCUS) as FocusId[]).map(id => ({ value: id, label: FOCUS[id].label }))} />
+              </div>
             </div>
             <ul className={styles.attributes}>
               {ATTRIBUTE_KEYS.map(key => (

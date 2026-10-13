@@ -21,6 +21,8 @@ import { WeatherOutlook } from './WeatherOutlook';
 import { FinancePanel } from './FinancePanel';
 import { FacilitiesPanel } from './FacilitiesPanel';
 import { PitCrewPanel } from './PitCrewPanel';
+import { StaffPanel } from './StaffPanel';
+import type { StaffState } from '../simulation/Staff';
 import { SponsorsPanel } from './SponsorsPanel';
 import { HubHeader } from './HubHeader';
 import { BoardPanel } from './BoardPanel';
@@ -49,31 +51,7 @@ import type { DriverAttributes } from '../simulation/DriverDevelopment';
 import type { Driver } from '../types/f1';
 import { FlagIcon } from './FlagIcon';
 import { F1WheelSvg } from './F1WheelSvg';
-import { 
-  Play, 
-  MapPin, 
-  History, 
-  Sparkles, 
-  Wrench, 
-  Users, 
-  ExternalLink,
-  Flag,
-  CheckCircle2,
-  Zap,
-  RotateCw,
-  RotateCcw,
-  Globe,
-  Disc,
-  Gauge,
-  Award,
-  Flame,
-  Target,
-  Activity,
-  TrendingUp,
-  Compass,
-  Layers,
-  ShieldAlert
-} from 'lucide-react';
+import { Play, MapPin, History, Sparkles, Wrench, Users, ExternalLink, Flag, CheckCircle2, Zap, RotateCw, RotateCcw, Globe, Disc, Gauge, Award, Flame, Target, Activity, TrendingUp, Compass, Layers, ShieldAlert, Trophy, Rocket, Wind, Settings, CircleDot, Medal, TrendingDown, Timer, CloudRain, AlertTriangle, CarFront, BarChart3, Shield, Ruler, RefreshCw, Siren, FlaskConical, Mountain } from 'lucide-react';
 import { animate } from 'animejs';
 
 
@@ -113,6 +91,8 @@ interface HomeScreenProps {
   components?: ComponentState;
   onFitComponent?: (driverId: string, type: ComponentType) => void;
   onUndoComponent?: (driverId: string, type: ComponentType) => void;
+  /** [T4.22] Volver a montar una unidad usada. */
+  onRefitComponent?: (driverId: string, serial: string) => void;
   /** [T4.2] Coste de montar otra unidad nueva de un componente. */
   componentCostOf?: (driverId: string, type: ComponentType) => number;
   /** [R20] GP directo o con clasificación. */
@@ -129,7 +109,7 @@ interface HomeScreenProps {
     onImport: (text: string) => void; onDelete: (id: string) => void;
   };
   /** [R51] Temporada: calendario, Gran Premio que toca, salto de ronda e historial de temporadas cerradas. */
-  season?: { rounds: RoundView[]; seasonNumber: number; archive: SeasonSummary[]; onSelectNext: () => void; onSkip: () => void };
+  season?: { rounds: RoundView[]; seasonNumber: number; archive: SeasonSummary[]; onSelectNext: () => void; onSkip: () => void; onSimulate?: () => void };
   /** [R51] Atributos actuales de un piloto (R45), para su ficha. */
   driverAttributes?: (driver: Driver) => DriverAttributes;
   /** [T4.1] Dinero del equipo del jugador. */
@@ -140,6 +120,8 @@ interface HomeScreenProps {
   board?: BoardState;
   /** [T4.6] Equipo de boxes del equipo del jugador. */
   pitCrew?: { crew: PitCrew; onPlan: (plan: CrewPlan) => void };
+  /** [T4.5] Personal técnico del equipo y mercado de la temporada. */
+  staff?: { state: StaffState; teamId: string; round: number; drivers: string[]; onHire: (memberId: string) => void };
   /** [T4.7] Plantilla de la temporada (cada piloto con el equipo de su contrato); sin ella, la de partida. */
   roster?: Record<string, Driver>;
   /** [T4.7] Contratos de los pilotos del equipo del jugador y negociación de la temporada siguiente. */
@@ -169,6 +151,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   components,
   onFitComponent,
   onUndoComponent,
+  onRefitComponent,
   componentCostOf,
   development,
   saveGames,
@@ -179,6 +162,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   finance,
   facilities,
   pitCrew,
+  staff,
   roster = DRIVERS,
   contracts,
   reserve,
@@ -338,10 +322,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                   <span>{race.dateFormatted}</span>
                 </div>
                 <div className={styles.historyWinner}>
-                  🏆 1º {race.winnerName} ({race.winnerTeam})
+                  <Trophy size={14} aria-hidden="true" /> 1º {race.winnerName} ({race.winnerTeam})
                 </div>
                 <div className={styles.historyPodiumSub}>
-                  🥈 {race.p2Name} · 🥉 {race.p3Name}
+                  <Award size={14} aria-hidden="true" /> {race.p2Name} · <Award size={14} aria-hidden="true" /> {race.p3Name}
                 </div>
               </div>
             ))}
@@ -356,7 +340,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             <span>Temporada {season.seasonNumber}{nextRound ? ` · ronda ${nextRound.round} de ${SEASON_RACES}` : ''}</span>
           </h2>
           <SeasonCalendar rounds={season.rounds} seasonNumber={season.seasonNumber} selectedCircuitId={selectedCircuitId}
-            onSelectNext={season.onSelectNext} onSkip={season.onSkip} />
+            onSelectNext={season.onSelectNext} onSkip={season.onSkip} onSimulate={season.onSimulate} />
         </section>
       )}
 
@@ -420,6 +404,15 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         </section>
       )}
 
+      {section === 'equipo' && staff && (
+        <section className={styles.sectionBlock}>
+          <h2 className={styles.sectionHeading}>
+            <span>Personal técnico</span>
+          </h2>
+          <StaffPanel state={staff.state} teamId={staff.teamId} round={staff.round} drivers={staff.drivers} onHire={staff.onHire} />
+        </section>
+      )}
+
       {section === 'equipo' && pitCrew && (
         <section className={styles.sectionBlock}>
           <h2 className={styles.sectionHeading}>
@@ -447,7 +440,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             <span>Componentes de la unidad de potencia</span>
           </h2>
           <ComponentsPanel state={components} drivers={Object.values(roster).filter(d => d.teamId === selectedDriver.teamId)}
-            onFitNew={onFitComponent} onUndo={onUndoComponent} costOf={componentCostOf} />
+            onFitNew={onFitComponent} onUndo={onUndoComponent} costOf={componentCostOf} onRefit={onRefitComponent} />
         </section>
       )}
 
@@ -501,7 +494,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                       <FlagIcon country={d.country} emoji={d.countryFlag} size={14} />
                       <div>
                         <div className={styles.driverListName}>{d.firstName} {d.lastName}</div>
-                        <div className={styles.driverListTeam}>{t.shortName} · ⚡ {t.engineManufacturer}</div>
+                        <div className={styles.driverListTeam}>{t.shortName}</div>
                       </div>
                     </div>
 
@@ -541,7 +534,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                       <div>
                         <div className={styles.circuitListName}>{circuit.name}</div>
                         <div className={styles.circuitListSub}>
-                          {circuit.country} · {circuit.direction === 'clockwise' ? '🔄 Horario' : '🔄 Antihorario'}
+                          {circuit.country} · {circuit.direction === 'clockwise' ? 'Horario' : 'Antihorario'}
                         </div>
                       </div>
                     </div>
@@ -623,37 +616,37 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
                     <div className={styles.specs2ColGrid}>
                       <div className={styles.specItem}>
-                        <span className={styles.specItemLabel}>⚡ Motor V6 Turbo Híbrido</span>
+                        <span className={styles.specItemLabel}><Zap size={14} aria-hidden="true" /> Motor V6 Turbo Híbrido</span>
                         <span className={styles.specItemVal} style={{ color: '#ffd700' }}>{inspectedTeam.engineManufacturer}</span>
                       </div>
 
                       <div className={styles.specItem}>
-                        <span className={styles.specItemLabel}>🐎 Potencia Estimada</span>
+                        <span className={styles.specItemLabel}><Gauge size={14} aria-hidden="true" /> Potencia Estimada</span>
                         <span className={styles.specItemVal} style={{ color: '#38bdf8' }}>{inspectedTeam.horsepower} CV</span>
                       </div>
 
                       <div className={styles.specItem} style={{ gridColumn: 'span 2' }}>
-                        <span className={styles.specItemLabel}>🔧 Unidad de Potencia</span>
+                        <span className={styles.specItemLabel}><Wrench size={14} aria-hidden="true" /> Unidad de Potencia</span>
                         <span className={styles.specItemVal} style={{ fontSize: '11px' }}>{inspectedTeam.engineModel}</span>
                       </div>
 
                       <div className={styles.specItem}>
-                        <span className={styles.specItemLabel}>🚀 Velocidad Punta Teórica</span>
+                        <span className={styles.specItemLabel}><Rocket size={14} aria-hidden="true" /> Velocidad Punta Teórica</span>
                         <span className={styles.specItemVal}>{Math.round(338 + inspectedTeam.carPerformance * 16)} km/h</span>
                       </div>
 
                       <div className={styles.specItem}>
-                        <span className={styles.specItemLabel}>🌪️ Carga Aerodinámica</span>
+                        <span className={styles.specItemLabel}><Wind size={14} aria-hidden="true" /> Carga Aerodinámica</span>
                         <span className={styles.specItemVal}>{Math.round(1450 + inspectedTeam.aerodynamics * 350)} kgf</span>
                       </div>
 
                       <div className={styles.specItem}>
-                        <span className={styles.specItemLabel}>⚙️ Transmisión</span>
+                        <span className={styles.specItemLabel}><Settings size={14} aria-hidden="true" /> Transmisión</span>
                         <span className={styles.specItemVal}>8 Vel. Seamless Shift</span>
                       </div>
 
                       <div className={styles.specItem}>
-                        <span className={styles.specItemLabel}>🔴 Límite RPM FIA</span>
+                        <span className={styles.specItemLabel}><CircleDot size={14} aria-hidden="true" /> Límite RPM FIA</span>
                         <span className={styles.specItemVal}>15.000 RPM</span>
                       </div>
                     </div>
@@ -667,15 +660,15 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px' }}>
                       <div className={styles.specItem} style={{ textAlign: 'center', background: 'rgba(255,215,0,0.08)', borderColor: 'rgba(255,215,0,0.25)' }}>
-                        <span className={styles.specItemLabel}>🏆 Mundiales</span>
+                        <span className={styles.specItemLabel}><Trophy size={14} aria-hidden="true" /> Mundiales</span>
                         <span className={styles.specItemVal} style={{ color: '#ffd700', fontSize: '16px' }}>{inspectedDriver.worldChampionships}</span>
                       </div>
                       <div className={styles.specItem} style={{ textAlign: 'center', background: 'rgba(56,189,248,0.08)', borderColor: 'rgba(56,189,248,0.25)' }}>
-                        <span className={styles.specItemLabel}>🥇 Victorias</span>
+                        <span className={styles.specItemLabel}><Medal size={14} aria-hidden="true" /> Victorias</span>
                         <span className={styles.specItemVal} style={{ color: '#38bdf8', fontSize: '16px' }}>{inspectedDriver.careerWins}</span>
                       </div>
                       <div className={styles.specItem} style={{ textAlign: 'center', background: 'rgba(203,213,225,0.08)', borderColor: 'rgba(203,213,225,0.25)' }}>
-                        <span className={styles.specItemLabel}>🥈 Podios</span>
+                        <span className={styles.specItemLabel}><Award size={14} aria-hidden="true" /> Podios</span>
                         <span className={styles.specItemVal} style={{ color: '#e2e8f0', fontSize: '16px' }}>{inspectedDriver.careerPodiums}</span>
                       </div>
                     </div>
@@ -752,31 +745,31 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                     </div>
                     <div className={styles.specs2ColGrid}>
                       <div className={styles.specItem}>
-                        <span className={styles.specItemLabel}>📉 Desgaste Estimado</span>
+                        <span className={styles.specItemLabel}><TrendingDown size={14} aria-hidden="true" /> Desgaste Estimado</span>
                         <span className={styles.specItemVal} style={{ color: '#22c55e' }}>
                           {(1.45 - inspectedDriver.tireManagement * 0.65).toFixed(2)}% / vta
                         </span>
                       </div>
                       <div className={styles.specItem}>
-                        <span className={styles.specItemLabel}>⏱️ Ventana Overcut</span>
+                        <span className={styles.specItemLabel}><Timer size={14} aria-hidden="true" /> Ventana Overcut</span>
                         <span className={styles.specItemVal} style={{ color: '#38bdf8' }}>
                           {inspectedDriver.tireManagement > 0.85 ? 'Excelente (+4 Vtas)' : inspectedDriver.tireManagement > 0.70 ? 'Favorable (+2 Vtas)' : 'Estándar'}
                         </span>
                       </div>
                       <div className={styles.specItem} style={{ gridColumn: 'span 2' }}>
-                        <span className={styles.specItemLabel}>🌧️ Adaptabilidad a Lluvia & Clima Mixto</span>
+                        <span className={styles.specItemLabel}><CloudRain size={14} aria-hidden="true" /> Adaptabilidad a Lluvia & Clima Mixto</span>
                         <span className={styles.specItemVal} style={{ color: '#38bdf8' }}>
                           {Math.round(inspectedDriver.talentRating * 70 + inspectedDriver.consistency * 30)}%
                         </span>
                       </div>
                       <div className={styles.specItem}>
-                        <span className={styles.specItemLabel}>🔥 Tasa de Éxito en Adelantamiento</span>
+                        <span className={styles.specItemLabel}><Flame size={14} aria-hidden="true" /> Tasa de Éxito en Adelantamiento</span>
                         <span className={styles.specItemVal} style={{ color: '#ffd700' }}>
                           {Math.round(inspectedDriver.raceCraft * 75 + inspectedDriver.talentRating * 25)}%
                         </span>
                       </div>
                       <div className={styles.specItem}>
-                        <span className={styles.specItemLabel}>⚠️ Riesgo de Incidente</span>
+                        <span className={styles.specItemLabel}><AlertTriangle size={14} aria-hidden="true" /> Riesgo de Incidente</span>
                         <span className={styles.specItemVal} style={{ color: inspectedDriver.raceCraft > 0.85 ? '#ef4444' : '#22c55e' }}>
                           {Math.round(inspectedDriver.raceCraft * 30 * (1.1 - inspectedDriver.luckRating * 0.3))}%
                         </span>
@@ -794,10 +787,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                         <span className={styles.strategyHighlightTitle}>FILOSOFÍA DE CARRERA</span>
                         <span className={styles.strategyHighlightVal}>
                           {inspectedDriver.raceCraft > 0.85 
-                            ? '⚔️ Máxima Agresividad · Búsqueda constante de huecos y frenadas tardías' 
+                            ? 'Máxima Agresividad · Búsqueda constante de huecos y frenadas tardías' 
                             : inspectedDriver.tireManagement > 0.80 
-                            ? '🧠 Estratega Conservador · Cuidado de neumáticos y ritmo constante' 
-                            : '⚡ Piloto Equilibrado · Fuerte en ritmo de carrera y stint medio'}
+                            ? 'Estratega Conservador · Cuidado de neumáticos y ritmo constante' 
+                            : 'Piloto Equilibrado · Fuerte en ritmo de carrera y stint medio'}
                         </span>
                       </div>
                       <div className={styles.strategyHighlightBox} style={{ background: 'rgba(56,189,248,0.08)', borderColor: 'rgba(56,189,248,0.3)' }}>
@@ -820,19 +813,19 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                     </div>
                     <div className={styles.specs2ColGrid}>
                       <div className={styles.specItem}>
-                        <span className={styles.specItemLabel}>🏆 Campeonatos del Mundo</span>
+                        <span className={styles.specItemLabel}><Trophy size={14} aria-hidden="true" /> Campeonatos del Mundo</span>
                         <span className={styles.specItemVal} style={{ color: '#ffd700', fontSize: '15px' }}>{inspectedDriver.worldChampionships}</span>
                       </div>
                       <div className={styles.specItem}>
-                        <span className={styles.specItemLabel}>🥇 Grandes Premios Ganados</span>
+                        <span className={styles.specItemLabel}><Medal size={14} aria-hidden="true" /> Grandes Premios Ganados</span>
                         <span className={styles.specItemVal} style={{ color: '#38bdf8', fontSize: '15px' }}>{inspectedDriver.careerWins}</span>
                       </div>
                       <div className={styles.specItem}>
-                        <span className={styles.specItemLabel}>🥈 Podios Totales</span>
+                        <span className={styles.specItemLabel}><Award size={14} aria-hidden="true" /> Podios Totales</span>
                         <span className={styles.specItemVal} style={{ color: '#e2e8f0', fontSize: '15px' }}>{inspectedDriver.careerPodiums}</span>
                       </div>
                       <div className={styles.specItem}>
-                        <span className={styles.specItemLabel}>⚡ Eficiencia Q3 Calificación</span>
+                        <span className={styles.specItemLabel}><Zap size={14} aria-hidden="true" /> Eficiencia Q3 Calificación</span>
                         <span className={styles.specItemVal} style={{ color: '#22c55e' }}>{Math.round(inspectedDriver.talentRating * 95)}%</span>
                       </div>
                     </div>
@@ -845,19 +838,19 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                     </div>
                     <div className={styles.specs2ColGrid}>
                       <div className={styles.specItem}>
-                        <span className={styles.specItemLabel}>🏎️ Monoplaza 2026</span>
+                        <span className={styles.specItemLabel}><CarFront size={14} aria-hidden="true" /> Monoplaza 2026</span>
                         <span className={styles.specItemVal}>{inspectedTeam.name}</span>
                       </div>
                       <div className={styles.specItem}>
-                        <span className={styles.specItemLabel}>⚡ Unidad de Potencia</span>
+                        <span className={styles.specItemLabel}><Zap size={14} aria-hidden="true" /> Unidad de Potencia</span>
                         <span className={styles.specItemVal} style={{ color: '#ffd700' }}>{inspectedTeam.engineManufacturer}</span>
                       </div>
                       <div className={styles.specItem}>
-                        <span className={styles.specItemLabel}>📊 Puntuación Rating FIA</span>
+                        <span className={styles.specItemLabel}><BarChart3 size={14} aria-hidden="true" /> Puntuación Rating FIA</span>
                         <span className={styles.specItemVal} style={{ color: '#38bdf8' }}>{Math.round((inspectedDriver.talentRating + inspectedDriver.consistency + inspectedDriver.tireManagement) / 3 * 100)} / 100</span>
                       </div>
                       <div className={styles.specItem}>
-                        <span className={styles.specItemLabel}>🛡️ Fiabilidad Mecánica</span>
+                        <span className={styles.specItemLabel}><Shield size={14} aria-hidden="true" /> Fiabilidad Mecánica</span>
                         <span className={styles.specItemVal} style={{ color: '#22c55e' }}>{Math.round(inspectedTeam.reliability * 100)}%</span>
                       </div>
                     </div>
@@ -1030,19 +1023,19 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                       </div>
                       <div className={styles.specs2ColGrid}>
                         <div className={styles.specItem}>
-                          <span className={styles.specItemLabel}>📏 Longitud Oficial</span>
+                          <span className={styles.specItemLabel}><Ruler size={14} aria-hidden="true" /> Longitud Oficial</span>
                           <span className={styles.specItemVal}>{inspectedCircuit.lapLengthMeters} m</span>
                         </div>
                         <div className={styles.specItem}>
-                          <span className={styles.specItemLabel}>🔄 Vueltas de Carrera</span>
+                          <span className={styles.specItemLabel}><RefreshCw size={14} aria-hidden="true" /> Vueltas de Carrera</span>
                           <span className={styles.specItemVal}>{inspectedCircuit.totalLaps} Vtas</span>
                         </div>
                         <div className={styles.specItem}>
-                          <span className={styles.specItemLabel}>⚡ Curvas Totales</span>
+                          <span className={styles.specItemLabel}><Zap size={14} aria-hidden="true" /> Curvas Totales</span>
                           <span className={styles.specItemVal}>{inspectedCircuit.turns} Curvas</span>
                         </div>
                         <div className={styles.specItem}>
-                          <span className={styles.specItemLabel}>🏎️ Capacidad Paralelo</span>
+                          <span className={styles.specItemLabel}><CarFront size={14} aria-hidden="true" /> Capacidad Paralelo</span>
                           <span className={styles.specItemVal} style={{ color: inspectedCircuit.trackWidthCars === 2 ? '#eab308' : '#22c55e' }}>
                             {inspectedCircuit.trackWidthCars === 2 ? '2 Coches (Urbano)' : '3 Coches (Permanente)'}
                           </span>
@@ -1057,19 +1050,19 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                       </div>
                       <div className={styles.specs2ColGrid}>
                         <div className={styles.specItem}>
-                          <span className={styles.specItemLabel}>⏱️ Pérdida en Pit Lane</span>
+                          <span className={styles.specItemLabel}><Timer size={14} aria-hidden="true" /> Pérdida en Pit Lane</span>
                           <span className={styles.specItemVal} style={{ color: '#ffd700' }}>{inspectedCircuit.pitLaneTimeLossSec || 22.5}s</span>
                         </div>
                         <div className={styles.specItem}>
-                          <span className={styles.specItemLabel}>🏁 Distancia Total</span>
+                          <span className={styles.specItemLabel}><Flag size={14} aria-hidden="true" /> Distancia Total</span>
                           <span className={styles.specItemVal}>{((inspectedCircuit.lapLengthMeters * inspectedCircuit.totalLaps) / 1000).toFixed(1)} km</span>
                         </div>
                         <div className={styles.specItem}>
-                          <span className={styles.specItemLabel}>🚨 Probabilidad SC</span>
+                          <span className={styles.specItemLabel}><Siren size={14} aria-hidden="true" /> Probabilidad SC</span>
                           <span className={styles.specItemVal} style={{ color: '#f97316' }}>{inspectedCircuit.safetyCarProbabilityPercent || 50}%</span>
                         </div>
                         <div className={styles.specItem}>
-                          <span className={styles.specItemLabel}>👥 Espectadores</span>
+                          <span className={styles.specItemLabel}><Users size={14} aria-hidden="true" /> Espectadores</span>
                           <span className={styles.specItemVal}>{inspectedCircuit.spectators ? inspectedCircuit.spectators.toLocaleString('es-ES') : '140.000'}</span>
                         </div>
                       </div>
@@ -1090,7 +1083,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                         inspectedCircuit.drsZoneSpecs.map((zone) => (
                           <div key={zone.id} className={styles.drsCardItem}>
                             <div className={styles.drsZoneName}>
-                              <span>⚡ Zona {zone.id}: {zone.name}</span>
+                              <span><Zap size={14} aria-hidden="true" /> Zona {zone.id}: {zone.name}</span>
                             </div>
                             <span className={styles.drsZoneRange}>
                               {Math.round(zone.startT * 100)}% ➔ {Math.round(zone.endT * 100)}% de vuelta
@@ -1115,20 +1108,20 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                         <span className={styles.strategyHighlightTitle}>ESTRATEGIA ÓPTIMA (PIRELLI)</span>
                         <span className={styles.strategyHighlightVal}>
                           {inspectedCircuit.asphaltAbrasion === 'Muy Alta' || inspectedCircuit.asphaltAbrasion === 'Alta'
-                            ? '🔴 2 PARADAS (Blando ➔ Medio ➔ Duro)'
-                            : '🟡 1 PARADA (Medio ➔ Duro)'}
+                            ? '2 PARADAS (Blando ➔ Medio ➔ Duro)'
+                            : '1 PARADA (Medio ➔ Duro)'}
                         </span>
                       </div>
                       <div className={styles.strategyHighlightBox} style={{ background: 'rgba(56,189,248,0.08)', borderColor: 'rgba(56,189,248,0.3)' }}>
                         <span className={styles.strategyHighlightTitle} style={{ color: '#38bdf8' }}>PÉRDIDA ESTIMADA EN PIT LANE</span>
                         <span className={styles.strategyHighlightVal}>
-                          ⏱️ ~{inspectedCircuit.pitLaneTimeLossSec || 22.5} segundos totales (Límite: 80 km/h)
+                          <Timer size={14} aria-hidden="true" /> ~{inspectedCircuit.pitLaneTimeLossSec || 22.5} segundos totales (Límite: 80 km/h)
                         </span>
                       </div>
                       <div className={styles.strategyHighlightBox} style={{ background: 'rgba(34,197,94,0.08)', borderColor: 'rgba(34,197,94,0.3)' }}>
                         <span className={styles.strategyHighlightTitle} style={{ color: '#22c55e' }}>FACILIDAD DE ADELANTAMIENTO</span>
                         <span className={styles.strategyHighlightVal}>
-                          {inspectedCircuit.drsZones >= 3 ? '🟢 ALTA (Múltiples zonas DRS y rectas anchas)' : inspectedCircuit.trackWidthCars === 2 ? '🔴 MUY BAJA (Circuito urbano estrecho)' : '🟡 MEDIA (Dependiente del ritmo de carrera)'}
+                          {inspectedCircuit.drsZones >= 3 ? 'ALTA (Múltiples zonas DRS y rectas anchas)' : inspectedCircuit.trackWidthCars === 2 ? 'MUY BAJA (Circuito urbano estrecho)' : 'MEDIA (Dependiente del ritmo de carrera)'}
                         </span>
                       </div>
                     </div>
@@ -1146,34 +1139,34 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
                     <div className={styles.specs2ColGrid}>
                       <div className={styles.specItem}>
-                        <span className={styles.specItemLabel}>🛞 Abrasión del Asfalto</span>
+                        <span className={styles.specItemLabel}><Disc size={14} aria-hidden="true" /> Abrasión del Asfalto</span>
                         <span className={styles.specItemVal} style={{ color: '#ffd700' }}>{inspectedCircuit.asphaltAbrasion || 'Alta'}</span>
                       </div>
 
                       <div className={styles.specItem}>
-                        <span className={styles.specItemLabel}>🧪 Estrés Neumáticos</span>
+                        <span className={styles.specItemLabel}><FlaskConical size={14} aria-hidden="true" /> Estrés Neumáticos</span>
                         <span className={styles.specItemVal} style={{ color: '#38bdf8' }}>{inspectedCircuit.tireStressLevel || 'Alta'}</span>
                       </div>
 
                       <div className={styles.specItem}>
-                        <span className={styles.specItemLabel}>🌧️ Prob. Lluvia</span>
+                        <span className={styles.specItemLabel}><CloudRain size={14} aria-hidden="true" /> Prob. Lluvia</span>
                         <span className={styles.specItemVal} style={{ color: inspectedCircuit.rainProbabilityPercent > 30 ? '#38bdf8' : '#22c55e' }}>
                           {inspectedCircuit.rainProbabilityPercent}%
                         </span>
                       </div>
 
                       <div className={styles.specItem}>
-                        <span className={styles.specItemLabel}>💨 Viento</span>
+                        <span className={styles.specItemLabel}><Wind size={14} aria-hidden="true" /> Viento</span>
                         <span className={styles.specItemVal}>{inspectedCircuit.windSpeedKmh} km/h ({inspectedCircuit.windDirection})</span>
                       </div>
 
                       <div className={styles.specItem}>
-                        <span className={styles.specItemLabel}>🚨 Prob. Safety Car</span>
+                        <span className={styles.specItemLabel}><Siren size={14} aria-hidden="true" /> Prob. Safety Car</span>
                         <span className={styles.specItemVal} style={{ color: '#f97316' }}>{inspectedCircuit.safetyCarProbabilityPercent || 50}%</span>
                       </div>
 
                       <div className={styles.specItem}>
-                        <span className={styles.specItemLabel}>⛰️ Desnivel / Elevación</span>
+                        <span className={styles.specItemLabel}><Mountain size={14} aria-hidden="true" /> Desnivel / Elevación</span>
                         <span className={styles.specItemVal}>{inspectedCircuit.elevationChangeMeters || 30} metros</span>
                       </div>
                     </div>
@@ -1186,15 +1179,15 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                     </div>
                     <div className={styles.specs2ColGrid}>
                       <div className={styles.specItem} style={{ gridColumn: 'span 2' }}>
-                        <span className={styles.specItemLabel}>📍 Ubicación</span>
+                        <span className={styles.specItemLabel}><MapPin size={14} aria-hidden="true" /> Ubicación</span>
                         <span className={styles.specItemVal}>{inspectedCircuit.location}, {inspectedCircuit.country}</span>
                       </div>
                       <div className={styles.specItem}>
-                        <span className={styles.specItemLabel}>🌐 Latitud</span>
+                        <span className={styles.specItemLabel}><Globe size={14} aria-hidden="true" /> Latitud</span>
                         <span className={styles.specItemVal}>{inspectedCircuit.latitude || 0}</span>
                       </div>
                       <div className={styles.specItem}>
-                        <span className={styles.specItemLabel}>🌐 Longitud</span>
+                        <span className={styles.specItemLabel}><Globe size={14} aria-hidden="true" /> Longitud</span>
                         <span className={styles.specItemVal}>{inspectedCircuit.longitude || 0}</span>
                       </div>
                     </div>
@@ -1222,7 +1215,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 </div>
                 <div className={styles.summaryCardSub}>{selectedTeam.name}</div>
                 <div className={styles.summaryCardExtra}>
-                  ⚡ {selectedTeam.engineManufacturer} ({selectedTeam.horsepower} CV)
+                  <Zap size={14} aria-hidden="true" /> {selectedTeam.engineManufacturer} ({selectedTeam.horsepower} CV)
                 </div>
               </div>
 
@@ -1234,7 +1227,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 </div>
                 <div className={styles.summaryCardSub}>{selectedCircuit.officialGpName} · {selectedCircuit.country}</div>
                 <div className={styles.summaryCardExtra} style={{ color: '#ffd700', background: 'rgba(255,215,0,0.1)' }}>
-                  🏁 {selectedCircuit.totalLaps} Vueltas · {selectedCircuit.direction === 'clockwise' ? '🔄 Horario' : '🔄 Antihorario'}
+                  <Flag size={14} aria-hidden="true" /> {selectedCircuit.totalLaps} Vueltas · {selectedCircuit.direction === 'clockwise' ? 'Horario' : 'Antihorario'}
                 </div>
                 <div className={styles.summaryTrack}>
                   <img 

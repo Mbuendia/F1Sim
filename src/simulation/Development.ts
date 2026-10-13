@@ -40,6 +40,8 @@ export function researchRaces(key: string, constructorsPosition: number): number
 }
 
 export interface Project {
+  /** [T4.21] Carreras de retraso por tener la fábrica ocupada con otro paquete (ausente si no lo hay). */
+  delay?: number;
   id: string;
   key: string;
   startedRace: number;

@@ -73,6 +73,10 @@ export class SafetyCarModel {
   static readonly SC_RETURNING_KMH = 140;
   /** Distancia a la que se considera que el líder ha alcanzado al SC (m). */
   static readonly CATCH_DISTANCE_M = 30;
+  /** Un coche está en la fila si tiene a otro a menos de esta distancia por delante; más lejos, puede ir a alcanzarla. */
+  static readonly QUEUE_JOINED_M = 60;
+  /** Velocidad máxima para alcanzar la fila del Safety Car (km/h). */
+  static readonly CATCH_UP_KMH = 220;
   /** Posición del garaje del SC en el pit lane (fracción del carril desde la entrada). */
   static readonly GARAGE_FRACTION = 0.85;
   /** Aceleración y frenada del SC (km/h por segundo). */
@@ -268,7 +272,8 @@ export class SafetyCarModel {
         const carAhead = activeCars[i - 1];
         const gap = carAhead.progress - car.progress;
         if (gap > targetGap * 2 && car.fuelKg > 0) {
-          car.currentSpeedKmh = car.currentSpeedKmh > 130 ? capped(car, 130) : Math.min(car.currentSpeedKmh + dt * 15, 130);
+          // Lejos del coche de delante: va a alcanzar la fila (el motor lo frena al llegar con su curva de frenada).
+          car.currentSpeedKmh = capped(car, SafetyCarModel.CATCH_UP_KMH);
         } else if (gap < targetGap) {
           car.currentSpeedKmh = capped(car, carAhead.currentSpeedKmh * 0.98);
         }

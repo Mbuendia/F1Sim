@@ -5,6 +5,7 @@
 // de desarrollar y de montar fuera de cupo (decisión del usuario del 09/10/2026: sin mínimo garantizado).
 // Todos los importes son diseño del juego, en miles.
 import type { TrackIncident } from '../types/f1';
+import { staffEffects, staffResearchRaces } from './Staff';
 import type { RunoffSurface } from '../data/scenarioTypes';
 import { DRIVERS } from '../data/drivers';
 import { ALLOCATION, COMPONENT_LABEL, COMPONENT_TYPES, NOMINAL_RACES, fitNew, fittedUnit, undoFit } from './ComponentPool';
@@ -22,7 +23,7 @@ export const COSTS = {
   /** Coste de un proyecto que no esté en la tabla. */
   PROJECT_DEFAULT: 3000,
   /** Coste de una unidad nueva de cada componente dentro del cupo. */
-  COMPONENT: { ICE: 800, TC: 300, MGUH: 400, MGUK: 400, ES: 500, CE: 300 } as Record<ComponentType, number>,
+  COMPONENT: { ICE: 800, TC: 300, MGUH: 400, MGUK: 400, ES: 500, CE: 300, EX: 150 } as Record<ComponentType, number>,
   /** Una unidad fuera de cupo cuesta este tanto más (además de su sanción de parrilla). */
   EXCESS_FACTOR: 2,
   /** Daños de un accidente o una salida de pista según lo que hay fuera en ese punto. */
@@ -54,7 +55,23 @@ export function buyProject(management: ManagementState, program: DevelopmentProg
   if (missing > 0) return { ok: false, management, program, reason: `Faltan ${formatMoney(missing)} para empezar «${PROJECTS[key].label}» (cuesta ${formatMoney(projectCost(key))})` };
   const paid = spend(management.finance, teamId, { round, kind: 'proyecto', label: `Proyecto: ${PROJECTS[key].label}`, amount: projectCost(key) });
   if (!paid.ok) return { ok: false, management, program, reason: paid.reason };
-  return { ok: true, management: { ...management, finance: paid.state }, program: withFacilityTimes(started.program, management, teamId, key, constructorsPosition), reason: null };
+  return { ok: true, management: { ...management, finance: paid.state }, program: withProductionQueue(withFacilityTimes(started.program, management, teamId, key, constructorsPosition), teamId), reason: null };
+}
+
+/**
+ * [T4.21] Retraso de un paquete de mejoras: la fábrica fabrica un paquete cada vez. Si la fabricación del proyecto
+ * recién empezado coincide con la de otro que ya estaba en marcha, espera a que ese termine y llega más tarde; el
+ * retraso queda anotado en el proyecto. Sin coincidencia, los plazos son los de siempre.
+ */
+export function withProductionQueue(program: DevelopmentProgram, teamId: string): DevelopmentProgram {
+  const team = program.teams[teamId];
+  const project = team?.projects[team.projects.length - 1];
+  if (!team || !project) return program;
+  const busyUntil = team.projects.slice(0, -1).filter(other => !other.installed && other.researchEndRace < project.readyRace && project.researchEndRace < other.readyRace)
+    .reduce((latest, other) => Math.max(latest, other.readyRace), project.researchEndRace);
+  const delay = busyUntil - project.researchEndRace;
+  if (delay <= 0) return program;
+  return { ...program, teams: { ...program.teams, [teamId]: { ...team, projects: [...team.projects.slice(0, -1), { ...project, readyRace: project.readyRace + delay, delay }] } } };
 }
 
 /**
@@ -65,8 +82,10 @@ function withFacilityTimes(program: DevelopmentProgram, management: ManagementSt
   const tunnel = gainOf(management.facilities, teamId, 'tunel'), production = gainOf(management.facilities, teamId, 'produccion');
   const team = program.teams[teamId];
   const project = team?.projects[team.projects.length - 1];
-  if (!team || !project || (tunnel === 0 && production === 0)) return program;
-  const researchEndRace = project.startedRace + researchRacesWith(researchRaces(key, constructorsPosition), tunnel);
+  // [T4.5] El director técnico del equipo acorta o alarga la investigación (con el de la casa, factor 1).
+  const researchFactor = staffEffects(management.staff, teamId).researchFactor;
+  if (!team || !project || (tunnel === 0 && production === 0 && researchFactor === 1)) return program;
+  const researchEndRace = project.startedRace + staffResearchRaces(researchRacesWith(researchRaces(key, constructorsPosition), tunnel), researchFactor);
   const readyRace = researchEndRace + fabricationRacesWith(PROJECTS[key].productionRaces, production);
   return { ...program, teams: { ...program.teams, [teamId]: { ...team, projects: [...team.projects.slice(0, -1), { ...project, researchEndRace, readyRace }] } } };
 }
@@ -74,7 +93,7 @@ function withFacilityTimes(program: DevelopmentProgram, management: ManagementSt
 /** [T4.4] Carreras hasta tener listo un proyecto que el equipo empezase ahora, con sus instalaciones. */
 export function projectLeadTime(management: ManagementState, teamId: string, key: string, constructorsPosition: number): number {
   if (!PROJECTS[key]) return 0;
-  return researchRacesWith(researchRaces(key, constructorsPosition), gainOf(management.facilities, teamId, 'tunel'))
+  return staffResearchRaces(researchRacesWith(researchRaces(key, constructorsPosition), gainOf(management.facilities, teamId, 'tunel')), staffEffects(management.staff, teamId).researchFactor)
     + fabricationRacesWith(PROJECTS[key].productionRaces, gainOf(management.facilities, teamId, 'produccion'));
 }
 

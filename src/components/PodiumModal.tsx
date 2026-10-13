@@ -124,7 +124,7 @@ export const PodiumModal: React.FC<PodiumModalProps> = ({ podiumCars, result, on
       <div ref={containerRef} className={styles.podiumContainer}>
         <div className={styles.header}>
           <div className={styles.f1Logo}>FORMULA 1</div>
-          <h1 className={styles.title}>🏆 GRAN PREMIO DE F1 🏆</h1>
+          <h1 className={styles.title}><Trophy size={26} aria-hidden="true" /> GRAN PREMIO DE F1 <Trophy size={26} aria-hidden="true" /></h1>
           <p className={styles.subtitle}>CEREMONIA OFICIAL DEL PODIO</p>
         </div>
 

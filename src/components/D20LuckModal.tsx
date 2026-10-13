@@ -159,10 +159,10 @@ export const D20LuckModal: React.FC<D20LuckModalProps> = ({
           <ShieldAlert size={18} className={styles.alertIcon} />
           <span>
             {event.triggerType === 'sc'
-              ? '🚨 SAFETY CAR DESPLEGADO · TIRADA TÁCTICA'
+              ? 'SAFETY CAR DESPLEGADO · TIRADA TÁCTICA'
               : event.triggerType === 'red'
-              ? '🔴 BANDERA ROJA EN PISTA · TIRADA TÁCTICA'
-              : '🟡 VIRTUAL SAFETY CAR · TIRADA TÁCTICA'}
+              ? 'BANDERA ROJA EN PISTA · TIRADA TÁCTICA'
+              : 'VIRTUAL SAFETY CAR · TIRADA TÁCTICA'}
           </span>
         </div>
 

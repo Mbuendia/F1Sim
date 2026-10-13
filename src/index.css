@@ -32,6 +32,12 @@
   --radio-m: 8px;
   --radio-l: 10px;
 
+  /* [V1] Medidas mínimas del rediseño: lo que se toca mide 44 px y el texto que se lee, 14 px. Puntos de corte comunes
+     (no pueden ser variables dentro de @media): móvil hasta 767 px, tableta hasta 1023 px, escritorio desde 1024 px. */
+  --toque: 44px;
+  --texto-min: 14px;
+  --alto-pestanas: 56px;
+
   --barra-carrera: 52px;
   --ancho-posiciones: 248px;
   --ancho-detalle: 360px;
@@ -51,6 +57,11 @@ body {
 
 button, select, input {
   font-family: inherit;
+}
+
+/* [V6] Todo lo que se pulsa enseña el cursor de mano. */
+button:not(:disabled), select:not(:disabled), summary, [role='button'], [role='tab'] {
+  cursor: pointer;
 }
 
 :focus-visible {

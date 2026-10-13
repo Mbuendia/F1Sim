@@ -172,3 +172,74 @@
 .count { animation: cuenta 0.7s ease-out both; }
 @keyframes cuenta { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 @media (max-width: 900px) { .report, .reportCars { grid-template-columns: 1fr; } }
+
+/* ── [V5] Centro de gestión en tableta y móvil ── */
+.button { min-height: var(--toque); }
+.hubTabs button, .hubTabs .hubTabRace { min-height: var(--toque); }
+@media (max-width: 767px) {
+  .hubBar { gap: 10px; padding: 8px 10px 6px; }
+  /* Las pestañas pasan a una barra fija al pie, con el icono encima del nombre. */
+  .hubTabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(72px, 1fr); gap: 0; padding: 0;
+    overflow-x: auto; scrollbar-width: none; background: var(--panel); border-top: 1px solid var(--line); }
+  .hubTabs button, .hubTabs .hubTabRace { flex-direction: column; justify-content: center; gap: 2px; min-height: var(--alto-pestanas); margin: 0; padding: 0 4px; border-bottom: 0; border-top: 3px solid transparent;
+    border-radius: 0; font-size: 14px; letter-spacing: 0; text-transform: none; }
+  .hubTabs button[aria-selected="true"] { border-top-color: var(--equipo); }
+  .hubTabs .hubTabRace[aria-selected="true"] { border-top-color: #fff; }
+  .hubTabs .badge { position: absolute; transform: translate(18px, -14px); }
+  .finance, .statusRow, .hubHome, .report, .reportCars { grid-template-columns: minmax(0, 1fr); }
+  .strip { grid-template-columns: repeat(8, minmax(0, 1fr)); }
+  .facility { grid-template-columns: minmax(0, 1fr); }
+  .facility .button { white-space: normal; text-align: left; }
+  .table { display: block; overflow-x: auto; }
+}
+.button { min-width: var(--toque); }
+.segmented button { min-height: var(--toque); }
+
+/* [T4.13] Entrenamientos libres */
+.practiceRow { display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: 10px; align-items: center; padding: 6px 0; border-top: 1px solid var(--line); }
+.practiceLearned { display: flex; flex-direction: column; gap: 4px; min-width: 0; font-size: 15px; }
+/* Setups en imagen: una fila por setup y una escala por ajuste, con la casilla del valor marcada. */
+.setupTable { align-self: flex-start; max-width: 100%; border-collapse: collapse; font-size: 14px; }
+.setupTable th { padding: 3px 18px 3px 0; text-align: left; font-size: 14px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-3); white-space: nowrap; }
+.setupTable tbody th { font-family: var(--font-marca); font-weight: 700; letter-spacing: 0; color: var(--text); }
+.setupTable td { padding: 3px 18px 3px 0; }
+.setupTable th:last-child, .setupTable td:last-child { padding-right: 0; }
+.setupCell { display: inline-flex; align-items: center; gap: 8px; }
+.setupPips { display: inline-flex; align-items: center; gap: 3px; }
+.setupPips i { width: 12px; height: 8px; border-radius: 2px; background: var(--panel-2); border: 1px solid var(--line-strong); }
+/* La casilla de referencia es más alta: se ve hacia qué lado se aparta el valor. */
+.setupPips i[data-ref] { height: 14px; }
+.setupPips i[data-on] { background: var(--text-2); border-color: var(--text-2); }
+.setupValue { min-width: 62px; color: var(--text-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.setupTable td[data-differs] .setupPips i[data-on] { background: var(--equipo); border-color: var(--equipo); }
+.setupTable td[data-differs] .setupValue { color: var(--text); font-weight: 700; }
+@media (max-width: 767px) {
+  .setupTable th, .setupTable td { padding-right: 8px; }
+  .setupTable thead th { letter-spacing: 0.02em; }
+  .setupPips i { width: 10px; }
+  .setupCell { flex-direction: column; align-items: flex-start; gap: 2px; }
+  .setupValue { min-width: 0; }
+}
+
+/* [T4.8] Reserva y cantera: el reserva a la izquierda y los jóvenes libres como fichas a su derecha. */
+.academy { display: grid; grid-template-columns: minmax(260px, 1fr) minmax(0, 2.6fr); gap: 12px 20px; align-items: start; }
+.juniorGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+.juniorCard { display: flex; flex-direction: column; gap: 6px; min-width: 0; padding: 10px; border: 1px solid var(--line); border-radius: var(--radio-m); background: var(--panel-2); font-size: 15px; }
+.juniorCard .button { margin-top: auto; }
+.juniorName { font-weight: 700; font-size: 17px; overflow-wrap: anywhere; }
+.paceRow { display: flex; align-items: center; gap: 8px; font-size: 15px; white-space: nowrap; }
+.paceTrack { position: relative; flex: 1; min-width: 60px; height: 8px; border-radius: 99px; background: var(--line); overflow: hidden; }
+.paceTrack i { position: absolute; inset: 0 auto 0 0; border-radius: 99px; }
+.pacePotential { background: color-mix(in srgb, var(--equipo) 35%, transparent); }
+.paceNow { background: var(--equipo); }
+.hint { font-size: 14px; color: var(--text-3); }
+.hint summary { padding: 11px 0; cursor: pointer; color: var(--text-2); font-weight: 600; }
+.hint summary:focus-visible { outline: 3px solid var(--foco); outline-offset: 2px; }
+@media (max-width: 1100px) { .academy { grid-template-columns: minmax(0, 1fr); } }
+
+/* [T4.5] Personal técnico */
+.staffGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+.staffCard { display: flex; gap: 10px; align-items: flex-start; padding: 10px; border: 1px solid var(--line); border-radius: var(--radio-m); background: var(--panel-2); min-width: 0; }
+.staffBadge { flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 50%; background: var(--panel); border: 2px solid var(--equipo); color: var(--text); font-weight: 700; font-size: 15px; }
+.staffBody { display: flex; flex-direction: column; gap: 4px; min-width: 0; font-size: 15px; }
+.staffBody .button { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; }

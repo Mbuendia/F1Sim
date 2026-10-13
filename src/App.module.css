@@ -36,7 +36,9 @@
 
 .homeBtn,
 .barBtn {
-  height: 36px;
+  height: var(--toque);
+  min-width: var(--toque);
+  justify-content: center;
   padding: 0 12px;
   display: inline-flex;
   align-items: center;
@@ -195,3 +197,55 @@
   .barGroup { gap: 6px; }
   .barBtn { padding: 0 10px; }
 }
+
+/* ── [V2] Carrera en tableta y móvil ── */
+.viewTools { flex-shrink: 0; }
+
+/* Tableta (768 a 1023 px): pista arriba; debajo, posiciones (o detalle) a la izquierda y el muro a la derecha. */
+.raceShell[data-layout='tableta'] {
+  grid-template-columns: 300px minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) minmax(0, auto);
+  grid-template-areas: 'canvas canvas' 'side wall';
+}
+.raceShell[data-layout='tableta'][data-side='none'] { grid-template-areas: 'canvas canvas' 'wall wall'; }
+.raceShell[data-layout='tableta'] .centerArea,
+.raceShell[data-layout='movil'] .centerArea { display: contents; }
+.raceShell[data-layout='tableta'] .canvasArea,
+.raceShell[data-layout='movil'] .canvasArea { grid-area: canvas; min-height: 0; }
+.raceShell[data-layout='tableta'] .wallArea { grid-area: wall; min-width: 0; }
+.raceShell[data-layout='tableta'] .positionsArea,
+.raceShell[data-layout='tableta'] .detailArea { grid-area: side; max-height: 346px; border-top: 1px solid var(--line); overflow-y: auto; }
+
+/* Móvil (hasta 767 px): la pista arriba y, debajo, el panel de la pestaña elegida; con «Pista» ocupa toda la pantalla. */
+.raceShell[data-layout='movil'] {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(40%, 1fr) minmax(0, auto);
+  grid-template-areas: 'canvas' 'panel';
+}
+.raceShell[data-layout='movil'] .positionsArea,
+.raceShell[data-layout='movil'] .wallArea,
+.raceShell[data-layout='movil'] .detailArea { grid-area: panel; min-width: 0; max-height: 48vh; overflow-y: auto; border: none; border-top: 1px solid var(--line); }
+/* El muro de un piloto cabe entero sin desplazarlo (la pista conserva su 40 % mínimo). */
+.raceShell[data-layout='movil'] .wallArea { max-height: 60vh; }
+
+@media (max-width: 1023px) {
+  .raceBar { gap: 6px; padding: 0 6px; }
+  .homeBtn span { display: none; }
+  .homeBtn, .barBtn { padding: 0 8px; }
+}
+@media (max-width: 767px) {
+  .panelToggle { display: none; }
+  /* Las herramientas de cámara flotan sobre la pista, a la derecha, para dejar la barra en lo esencial. */
+  .viewTools { position: fixed; top: calc(var(--barra-carrera) + 8px); right: 8px; z-index: 30; flex-direction: column; gap: 6px; }
+  .viewTools .barBtn { background: rgba(13, 17, 23, 0.82); }
+  .flagChip { padding: 4px 6px; font-size: 14px; }
+  .formationBanner { max-width: calc(100% - 72px); font-size: 14px; padding: 6px 10px; white-space: normal; }
+}
+
+/* ── [V8] Carrera simulada sin verla: cubre la pantalla mientras el motor la corre ── */
+.autoRace { position: fixed; inset: 0; z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 24px;
+  background: rgba(13, 17, 23, 0.96); color: var(--text); font-family: var(--font-ui); font-size: 17px; text-align: center; }
+.autoRace strong { font-family: var(--font-marca); font-size: 22px; }
+.autoRace span { color: var(--text-2); }
+.autoRaceBar { width: min(420px, 90%); height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
+.autoRaceBar span { display: block; height: 100%; background: var(--accion); }

@@ -11,7 +11,7 @@ export function SeasonStrip({ rounds }: { rounds: RoundView[] }) {
     <ol className={m.strip} aria-label="Rondas de la temporada">
       {rounds.map(round => {
         const circuit = OFFICIAL_CIRCUITS[round.circuitId];
-        const result = round.status === 'disputada' ? round.winner?.driverCode ?? '✓' : round.status === 'saltada' ? '—' : round.status === 'siguiente' ? '▶' : '·';
+        const result = round.status === 'disputada' ? round.winner?.driverCode ?? '✓' : round.status === 'saltada' ? '—' : round.status === 'siguiente' ? '›' : '·';
         return (
           <li key={round.round} data-round={round.round} data-status={round.status} {...(round.sprint ? { 'data-sprint': '' } : {})}
             title={`Ronda ${round.round}: ${circuit?.name ?? round.circuitId}${round.substitutes ? ` (por ${round.substitutes})` : ''}`}>

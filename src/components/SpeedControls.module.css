@@ -142,3 +142,17 @@
 @media (max-width: 1599px) {
   .lapLabel, .timeLabel { display: none; }
 }
+
+/* [V2] Controles de 44 px. Por debajo de 1280 px un solo botón recorre las velocidades y el reloj sale de la barra; en
+   móvil tampoco está el reinicio. */
+.btn { height: var(--toque); min-width: var(--toque); }
+.resetBtn { height: var(--toque); width: var(--toque); }
+.buttonGroup { flex-shrink: 0; }
+.cycle { display: none; }
+@media (max-width: 1279px) {
+  .step, .timeBadge { display: none; }
+  .cycle { display: flex; min-width: 52px; }
+}
+@media (max-width: 767px) {
+  .resetBtn { display: none; }
+}

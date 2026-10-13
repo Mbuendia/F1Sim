@@ -1,5 +1,6 @@
 .overlay {
-  position: absolute;
+  /* Por encima de toda la pantalla: dentro del área de la pista se cortaba. */
+  position: fixed;
   top: 0;
   left: 0;
   right: 0;
@@ -7,11 +8,11 @@
   background: rgba(4, 7, 15, 0.88);
   backdrop-filter: blur(14px);
   display: flex;
-  align-items: center;
+  align-items: safe center;
   justify-content: center;
-  z-index: 95;
-  overflow: hidden;
-  user-select: none;
+  z-index: 1000;
+    user-select: none;
+  overflow-y: auto;
 }
 
 .modalContainer {
@@ -75,7 +76,7 @@
 
 .modalSubtitle {
   font-family: 'Rajdhani', sans-serif;
-  font-size: 13.5px;
+  font-size: 14px;
   color: var(--text-2);
   margin-bottom: 16px;
   line-height: 1.4;
@@ -124,7 +125,7 @@
 
 .d20Label {
   font-family: var(--font-ui);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 800;
   color: #38bdf8;
   letter-spacing: 1px;
@@ -185,7 +186,7 @@
 
 .teamTag {
   font-family: 'Rajdhani', sans-serif;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
 }
 
@@ -193,7 +194,7 @@
   background: #e10600;
   color: #ffffff;
   font-family: var(--font-ui);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 900;
   padding: 2px 7px;
   border-radius: 10px;
@@ -205,7 +206,7 @@
 
 .rewardDesc {
   font-family: 'Rajdhani', sans-serif;
-  font-size: 13px;
+  font-size: 14px;
   color: #cbd5e1;
   margin: 0;
 }
@@ -219,7 +220,7 @@
 
 .tiresLabel {
   font-family: 'Rajdhani', sans-serif;
-  font-size: 12px;
+  font-size: 14px;
   color: var(--text-2);
   font-weight: 700;
 }
@@ -229,7 +230,7 @@
   align-items: center;
   gap: 6px;
   font-family: var(--font-ui);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 800;
   letter-spacing: 0.5px;
   color: #e2e8f0;
@@ -272,7 +273,7 @@
 /* [Q17] Aclaración: el D20 da un consejo, no monta neumáticos */
 .adviceNote {
   margin: 8px 0 0;
-  font-size: 11px;
+  font-size: 14px;
   color: var(--text-2);
   text-align: center;
 }
@@ -287,7 +288,14 @@
   margin-top: 6px;
 }
 .benefitValue {
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 700;
   color: #86efac;
+}
+
+/* [V6] En móvil la modal ocupa toda la pantalla y se desplaza por dentro. */
+@media (max-width: 767px) {
+  .overlay { align-items: stretch; padding: 0; }
+  .modalContainer { width: 100%; max-width: none; min-height: 100%; border-radius: 0; padding: 16px 12px; }
+  .modalContainer button { min-height: var(--toque); }
 }

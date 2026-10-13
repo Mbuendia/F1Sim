@@ -20,7 +20,7 @@ export const RainForecastPanel: React.FC<RainForecastPanelProps> = ({ forecast, 
   return (
     <section aria-label="Previsión de lluvia" style={{ margin: '8px 0', padding: '8px 10px', border: '1px solid rgba(56, 189, 248, 0.3)', borderRadius: 8, fontSize: 12, color: '#e2e8f0' }}>
       <strong>Previsión del radar · {headline}</strong>
-      {cloudCoverPct !== undefined && <div style={{ marginTop: 4, color: '#cbd5e1' }}>{cloudCoverPct >= 70 ? '☁️' : cloudCoverPct >= 20 ? '⛅' : '☀️'} Nubosidad: {cloudCoverPct} %</div>}
+      {cloudCoverPct !== undefined && <div style={{ marginTop: 4, color: '#cbd5e1'}}>Nubosidad: {cloudCoverPct} %</div>}
       <table style={{ width: '100%', marginTop: 6, borderCollapse: 'collapse' }}>
         <thead>
           <tr>

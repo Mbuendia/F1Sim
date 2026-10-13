@@ -16,10 +16,11 @@ export default async function run({ server, assert, test }) {
   const fitAndStart = (state, driverId, type) => c.markRaceStart(c.fitNew(state, driverId, type));
 
   await test('R19: cupo, series y primer uso', () => {
-    assert(JSON.stringify(c.ALLOCATION) === JSON.stringify({ ICE: 4, TC: 4, MGUH: 4, MGUK: 4, ES: 2, CE: 2 }), 'R19: cupos del reglamento');
+    // [T4.22, 13/10/2026] El escape entra en el cupo (ocho por temporada): siete tipos y catorce unidades iniciales entre los dos pilotos.
+    assert(JSON.stringify(c.ALLOCATION) === JSON.stringify({ ICE: 4, TC: 4, MGUH: 4, MGUK: 4, ES: 2, CE: 2, EX: 8 }), 'R19: cupos del reglamento');
     let state = fresh('alonso', 'stroll');
-    assert(state.units.length === 12 && new Set(state.units.map(u => u.serial)).size === 12 && state.units.every(u => u.fitted && u.firstUsedRace === null), 'R19: una unidad de cada tipo por piloto, con serie única y sin estrenar');
-    assert(c.ensureDriver(state, 'alonso').units.length === 12, 'R19: preparar dos veces a un piloto no duplica unidades');
+    assert(state.units.length === 14 && new Set(state.units.map(u => u.serial)).size === 14 && state.units.every(u => u.fitted && u.firstUsedRace === null), 'R19: una unidad de cada tipo por piloto, con serie única y sin estrenar');
+    assert(c.ensureDriver(state, 'alonso').units.length === 14, 'R19: preparar dos veces a un piloto no duplica unidades');
     const started = c.markRaceStart(state);
     assert(started.state.units.every(u => u.firstUsedRace === 0) && started.penalties.length === 0 && c.unitsUsed(started.state, 'alonso', 'ICE') === 1, 'R19: al salir a pista las unidades cuentan como usadas, sin sanción');
     assert(c.markRaceStart(started.state).penalties.length === 0 && JSON.stringify(c.markRaceStart(started.state).state) === JSON.stringify(started.state), 'R19: el primer uso no se registra dos veces');

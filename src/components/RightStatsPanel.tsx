@@ -1,19 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import styles from './RightStatsPanel.module.css';
 import { CarState, TrackWeatherState } from '../types/f1';
-import { 
-  Timer, 
-  History, 
-  TrendingDown, 
-  Gauge, 
-  Wind, 
-  CloudRain, 
-  Thermometer, 
-  Droplets,
-  Radio,
-  Compass,
-  Zap
-} from 'lucide-react';
+import { Timer, History, TrendingDown, Gauge, Wind, CloudRain, Thermometer, Droplets, Radio, Compass, Zap, Sun, CircleDot } from 'lucide-react';
+import { StintTimeline } from './StintTimeline';
 import { animate } from 'animejs';
 import { CircuitSpec } from '../data/circuits';
 import { RaceHeader } from './RaceHeader';
@@ -253,9 +242,9 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
   };
 
   const getBrakeStatus = (temp: number) => {
-    if (temp > 650) return { label: 'SOBRECALENTADOS 🔴', className: styles.statusHot };
-    if (temp < 250) return { label: 'FRÍOS 🟡', className: styles.statusCold };
-    return { label: 'ÓPTIMOS 🟢', className: styles.statusOptimal };
+    if (temp > 650) return { label: 'SOBRECALENTADOS', className: styles.statusHot };
+    if (temp < 250) return { label: 'FRÍOS', className: styles.statusCold };
+    return { label: 'ÓPTIMOS', className: styles.statusOptimal };
   };
   const brakeStatus = getBrakeStatus(stats.brakeTempCelsius);
 
@@ -405,9 +394,8 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
                 </div>
               </div>
 
-              <div className={styles.forecastBanner}>
-                <span>🎯 Neumático <CompoundBadge compound={tires.compound} size={16} showName /> rinde hasta <strong>Vuelta {Math.round(expectedEndLap)}</strong> ({currentStint.expectedLaps} vtas previstas)</span>
-              </div>
+              {/* [V4] La previsión del neumático, en la línea de tandas en vez de en una frase. */}
+              <StintTimeline stints={stints.map((stint, index) => (index === stints.length - 1 ? { ...stint, compound: tires.compound } : stint))} currentLap={activeCar.currentLap} totalLaps={totalLaps} />
             </div>
           </div>
 
@@ -437,7 +425,7 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
                 <span className={styles.miniBoxLabel}>Temp. Motor V6</span>
                 <span className={styles.miniBoxVal}>{stats.engineTempCelsius}°C</span>
                 <span className={stats.engineTempCelsius > 115 ? styles.statusHot : styles.statusOptimal}>
-                  {stats.engineTempCelsius > 115 ? 'ALERTA 🔴' : 'CORRECTA 🟢'}
+                  {stats.engineTempCelsius > 115 ? 'ALERTA' : 'CORRECTA'}
                 </span>
               </div>
 
@@ -461,8 +449,8 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
 
             {pitStop.isPitting && (
               <div ref={pitBannerRef} className={styles.pitActiveBanner}>
-                <span className={styles.pitBlink}>🔴 EN BOXES AHORA MISMO</span>
-                <span className={styles.pitCurrentTimer}>⏱️ {pitStop.currentStopTimer.toFixed(2)}s / {pitStop.stopDuration}s</span>
+                <span className={styles.pitBlink}><CircleDot size={14} aria-hidden="true" /> EN BOXES AHORA MISMO</span>
+                <span className={styles.pitCurrentTimer}><Timer size={14} aria-hidden="true" /> {pitStop.currentStopTimer.toFixed(2)}s / {pitStop.stopDuration}s</span>
               </div>
             )}
           </div>
@@ -570,7 +558,7 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
                 <span>CANTIDAD DE AGUA & LLUVIA</span>
               </div>
               <span className={styles.weatherConditionBadge}>
-                {weather.condition === 'dry' ? '☀️ SECO' : '🌧️ LLUVIA'}
+                {weather.condition === 'dry' ? <><Sun size={14} aria-hidden="true" /> SECO</> : <><CloudRain size={14} aria-hidden="true" /> LLUVIA</>}
               </span>
             </div>
 
@@ -604,10 +592,9 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
             <div className={styles.strategyRecBox} style={{ borderColor: rainRec.col, background: `${rainRec.col}15` }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <Zap size={13} color={rainRec.col} />
-                <span className={styles.recTitle} style={{ color: rainRec.col }}>ESTRATEGIA RECOMENDADA</span>
+                <span className={styles.recTitle} style={{ color: rainRec.col }}>NEUMÁTICO RECOMENDADO</span>
               </div>
-              <span className={styles.recCompound}>{rainRec.compound}</span>
-              <p className={styles.recAdvice}>{rainRec.advice}</p>
+              <span className={styles.recCompound} title={rainRec.advice}>{rainRec.compound}</span>
             </div>
           </div>
 
@@ -667,7 +654,7 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
                     {Math.round(weather.gripMultiplier * 100)}% ADHERENCIA
                   </span>
                   <span className={styles.weatherBoxSub}>
-                    {weather.gripMultiplier >= 0.95 ? 'Grip Máximo 🟢' : 'Pérdida de tracción 🟡'}
+                    {weather.gripMultiplier >= 0.95 ? 'Grip Máximo' : 'Pérdida de tracción'}
                   </span>
                 </div>
               </div>

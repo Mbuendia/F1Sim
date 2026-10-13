@@ -1,13 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import styles from './BottomTelemetryDock.module.css';
 import { CarState } from '../types/f1';
-import { 
-  Zap,
-  Gauge, 
-  Battery,
-  ChevronUp, 
-  ChevronDown
-} from 'lucide-react';
+import { Zap, Gauge, Battery, ChevronUp, ChevronDown, MousePointerClick, Crown, Flag } from 'lucide-react';
 import { animate } from 'animejs';
 import { FlagIcon } from './FlagIcon';
 import { CompoundBadge } from './CompoundBadge';
@@ -50,7 +44,7 @@ export const BottomTelemetryDock: React.FC<BottomTelemetryDockProps> = ({
   if (!car) {
     return (
       <div className={styles.dockEmpty}>
-        <span className={styles.emptyHint}>👈 SELECCIONA UN PILOTO EN LA TABLA O EN LA PISTA PARA VER SU TELEMETRÍA EN VIVO</span>
+        <span className={styles.emptyHint}><MousePointerClick size={14} aria-hidden="true" /> SELECCIONA UN PILOTO EN LA TABLA O EN LA PISTA PARA VER SU TELEMETRÍA EN VIVO</span>
       </div>
     );
   }
@@ -81,7 +75,7 @@ export const BottomTelemetryDock: React.FC<BottomTelemetryDockProps> = ({
           </div>
         ) : (
           <div className={styles.relativeEmptyLeader}>
-            <span>👑 LÍDER DE CARRERA (P1)</span>
+            <span><Crown size={14} aria-hidden="true" /> LÍDER DE CARRERA (P1)</span>
           </div>
         )}
       </div>
@@ -199,7 +193,7 @@ export const BottomTelemetryDock: React.FC<BottomTelemetryDockProps> = ({
           </div>
         ) : (
           <div className={styles.relativeEmptyLast}>
-            <span>🏁 ÚLTIMO COCHE EN PISTA</span>
+            <span><Flag size={14} aria-hidden="true" /> ÚLTIMO COCHE EN PISTA</span>
           </div>
         )}
       </div>

@@ -96,6 +96,6 @@ export default async function run({ server, assert, test }) {
     assert(result.grid.every(g => html.includes(g.code)) && (html.match(/<tr/g) ?? []).length >= 21, 'R20 UI: los 20 pilotos en la tabla');
     assert(html.includes('Pole') && html.includes('Eliminado en Q1') && html.includes('Eliminado en Q2') && /\d:\d\d\.\d\d\d/.test(html) && html.includes('A la parrilla'), 'R20 UI: pole, zona de eliminación, tiempos y botón');
     const select = renderToStaticMarkup(createElement(RaceFormatSelect, { value: 'clasificacion', onChange: () => {} }));
-    assert(select.includes('value="directo"') && /value="clasificacion" selected/.test(select) && /parrilla prefijada/i.test(select), 'R20 UI: selector GP directo / con clasificación');
+    assert(select.includes('value="directo"') && /<input[^>]*checked=""[^>]*value="clasificacion"/.test(select) && /parrilla prefijada/i.test(select), 'R20 UI: selector GP directo / con clasificación');
   });
 }

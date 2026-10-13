@@ -64,3 +64,6 @@
 .gameList button:hover { background: var(--panel); }
 .gameList hr { border: 0; border-top: 1px solid var(--line-strong); margin: 4px 0; }
 .gameList .field { min-width: 0; width: 100%; height: 34px; font-size: 15px; }
+
+/* [V5] Botones de 44 px. */
+.button { min-height: var(--toque); min-width: var(--toque); }

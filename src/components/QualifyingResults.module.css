@@ -1,12 +1,14 @@
 .overlay {
-  position: absolute;
+  /* Por encima de toda la pantalla: dentro del área de la pista se cortaba. */
+  position: fixed;
   inset: 0;
-  z-index: 100;
+  z-index: 1000;
   display: flex;
-  align-items: center;
+  align-items: safe center;
   justify-content: center;
   background: rgba(4, 7, 15, 0.9);
   backdrop-filter: blur(8px);
+  overflow-y: auto;
 }
 
 .panel {
@@ -127,4 +129,12 @@
 .penalty {
   color: #f87171;
   font-weight: 600;
+}
+
+/* [V6] En móvil la modal ocupa toda la pantalla y se desplaza por dentro. */
+@media (max-width: 767px) {
+  .overlay { align-items: stretch; padding: 0; }
+  .panel { width: 100%; max-width: none; min-height: 100%; border-radius: 0; padding: 16px 12px; }
+  .panel table { display: block; overflow-x: auto; }
+  .panel button { min-height: var(--toque); }
 }

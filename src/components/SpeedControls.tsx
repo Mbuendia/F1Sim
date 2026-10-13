@@ -42,10 +42,16 @@ export const SpeedControls: React.FC<SpeedControlsProps> = ({
           {isPaused ? <Play size={14} /> : <Pause size={14} />}
         </button>
 
+        {/* [V2] En móvil, un solo botón que recorre las velocidades. */}
+        <button className={`${styles.btn} ${styles.cycle} ${!isPaused ? styles.active : ''}`} title="Cambiar la velocidad"
+          aria-label={`Velocidad: ${currentSpeed}x; pulsar para cambiar`}
+          onClick={() => onSpeedChange(speeds[(speeds.indexOf(currentSpeed) + 1) % speeds.length])}>
+          {currentSpeed}x
+        </button>
         {speeds.map((s) => (
           <button
             key={s}
-            className={`${styles.btn} ${!isPaused && currentSpeed === s ? styles.active : ''}`}
+            className={`${styles.btn} ${styles.step} ${!isPaused && currentSpeed === s ? styles.active : ''}`}
             onClick={() => onSpeedChange(s)}
           >
             {s}x

@@ -14,6 +14,8 @@ interface RaceMenuProps {
   /** [R48] Guardar la partida (con la carrera en curso) en la ranura del nombre indicado. */
   onSaveGame?: (name: string) => void;
   saveName?: string;
+  /** [T4.16] Sonido: nivel elegido (índice), sus nombres, cómo cambiarlo y la atribución de cada sonido. */
+  audio?: { level: number; labels: string[]; onLevel: (level: number) => void; credits: { id: string; label: string; text: string }[] };
 }
 
 // R32: menú secundario de carrera. Las herramientas de prueba (Safety Car y bandera roja) viven aquí, cerradas por
@@ -27,6 +29,7 @@ export const RaceMenu: React.FC<RaceMenuProps> = ({
   onToggleLuckVariant,
   onSaveGame,
   saveName,
+  audio,
 }) => {
   const [open, setOpen] = useState(defaultOpen);
   const [name, setName] = useState(saveName || 'Mi partida');
@@ -84,6 +87,20 @@ export const RaceMenu: React.FC<RaceMenuProps> = ({
               <button type="button" role="menuitemcheckbox" aria-checked={luckVariantEnabled} className={styles.item} onClick={run(onToggleLuckVariant)}>
                 {luckVariantEnabled ? 'D20 de suerte: activado' : 'D20 de suerte: desactivado'}
               </button>
+            </>
+          )}
+          {audio && (
+            <>
+              <div className={styles.section}>Sonido</div>
+              <div className={styles.audioLevels} role="group" aria-label="Volumen del sonido">
+                {audio.labels.map((label, level) => (
+                  <button key={label} type="button" role="menuitemradio" aria-checked={audio.level === level} className={styles.item} onClick={() => audio.onLevel(level)}>{label}</button>
+                ))}
+              </div>
+              <details className={styles.credits}>
+                <summary>Créditos de los sonidos</summary>
+                <ul>{audio.credits.map(credit => <li key={credit.id}><b>{credit.label}:</b> {credit.text}</li>)}</ul>
+              </details>
             </>
           )}
           <div className={styles.section}>Herramientas de desarrollo</div>

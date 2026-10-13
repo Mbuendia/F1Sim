@@ -1,0 +1,42 @@
+/* [V7] Clasificación en directo: circuito con los coches en vuelta, tabla de tiempos y comentario de cada sesión. */
+.live { position:relative; width:min(980px, 96%); max-height:96vh; display:flex; flex-direction:column; gap:10px; padding:18px 20px; border:1px solid var(--line-strong); border-radius:var(--radio-l); background:var(--panel); color:var(--text); font-family:var(--font-ui); overflow-y:auto; }
+.header { display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+.title { margin:0; font-size:22px; font-weight:700; }
+.steps { display:flex; gap:6px; margin:0; padding:0; list-style:none; }
+.steps li { min-width:48px; padding:4px 10px; border:1px solid var(--line-strong); border-radius:var(--radio-s); text-align:center; font-size:15px; font-weight:700; color:var(--text-3); }
+.steps li[data-state='actual'] { background:var(--text); color:var(--bg); border-color:var(--text); }
+.steps li[data-state='hecha'] { color:var(--positivo); border-color:color-mix(in srgb, var(--positivo) 40%, transparent); }
+.tools { margin-left:auto; display:flex; gap:8px; }
+.tool { display:inline-flex; align-items:center; justify-content:center; gap:6px; min-height:var(--toque); min-width:var(--toque); padding:0 12px; border:1px solid var(--line-strong); border-radius:var(--radio-m); background:var(--panel-2); color:var(--text); font:700 15px var(--font-ui); cursor:pointer; }
+.tool[aria-pressed='true'] { border-color:var(--text); }
+.progress { height:4px; border-radius:2px; background:var(--line); overflow:hidden; flex-shrink:0; }
+.progress span { display:block; height:100%; background:var(--accion); }
+.body { display:grid; grid-template-columns:minmax(0, 1fr) minmax(260px, 340px); gap:16px; min-height:0; }
+/* Circuito y comentario comparten casilla: el comentario sale centrado sobre el trazado atenuado. */
+.stage { display:grid; min-width:0; }
+.stage > * { grid-area:1 / 1; }
+.map[data-dim] { opacity:.35; }
+.map { width:100%; max-height:62vh; aspect-ratio:1; border-radius:var(--radio-m); background:var(--bg); }
+.outline { fill:none; stroke:var(--line-strong); stroke-width:7; stroke-linejoin:round; }
+.dotLabel { fill:var(--text); font:700 12px var(--font-ui); paint-order:stroke; stroke:var(--bg); stroke-width:3px; }
+.table { margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:1px; font-size:15px; font-variant-numeric:tabular-nums; overflow-y:auto; }
+.row { display:grid; grid-template-columns:26px 10px 46px minmax(0, 1fr) 76px; align-items:center; gap:6px; padding:2px 6px; border-radius:4px; }
+.row[data-mine] { background:color-mix(in srgb, var(--equipo) 22%, transparent); font-weight:700; }
+.row[data-out] { color:var(--text-3); }
+.row[data-cut] { border-top:2px solid var(--accion); border-radius:0 0 4px 4px; }
+.pos { text-align:right; color:var(--text-2); }
+.dot { width:10px; height:10px; border-radius:50%; }
+.code { font-weight:700; }
+.time { text-align:right; }
+.gap { text-align:right; color:var(--text-2); font-size:14px; }
+.legend { margin:0; font-size:14px; color:var(--text-2); }
+.comment { z-index:1; align-self:center; justify-self:center; width:min(100% - 32px, 480px); box-sizing:border-box; box-shadow:0 12px 32px rgba(0, 0, 0, 0.5); display:flex; flex-direction:column; gap:12px; padding:18px 20px; border:1px solid var(--line-strong); border-left:4px solid var(--accion); border-radius:var(--radio-m); background:var(--panel-2); }
+.comment strong { font-size:20px; }
+.comment ul { margin:0; padding-left:18px; display:flex; flex-direction:column; gap:8px; font-size:17px; line-height:1.35; }
+.next { align-self:flex-end; margin-top:6px; display:inline-flex; align-items:center; gap:6px; min-height:var(--toque); padding:0 18px; border:0; border-radius:var(--radio-m); background:var(--accion); color:#fff; font:700 16px var(--font-ui); cursor:pointer; }
+.next:hover { background:var(--accion-hover); }
+@media (max-width:767px) {
+  .live { width:100%; min-height:100%; max-height:none; border-radius:0; padding:12px; }
+  .body { grid-template-columns:minmax(0, 1fr); }
+  .map { max-height:38vh; }
+}

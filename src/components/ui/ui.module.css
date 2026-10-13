@@ -1,0 +1,39 @@
+/* [V1] Piezas base del rediseño: control segmentado, medidor, ficha y tarjeta de dato. Medidas mínimas en index.css. */
+.segmented { display:inline-flex; min-width:0; border:1px solid var(--line-strong); border-radius:var(--radio-m); background:var(--panel); padding:0; overflow:hidden; }
+.segmented:disabled { opacity:.45; }
+.segment { position:relative; flex:1 1 0; min-width:var(--toque); height:var(--toque); padding:0 10px; display:inline-flex; align-items:center; justify-content:center; gap:6px;
+  color:var(--text-2); font-size:15px; font-weight:700; white-space:nowrap; cursor:pointer; }
+.compact .segment { padding:0 4px; }
+.wrap { display:flex; flex-wrap:wrap; }
+.wrap .segment { flex:1 1 auto; }
+.field { display:flex; flex-direction:column; gap:6px; min-width:0; font-size:14px; font-weight:700; color:var(--text-2); }
+.segmented:disabled .segment { cursor:default; }
+.segment input { position:absolute; inset:0; width:100%; height:100%; margin:0; opacity:0; cursor:inherit; }
+.segment[data-active] { background:var(--text); color:var(--bg); }
+.segment:hover:not([data-active]) { background:var(--panel-2); color:var(--text); }
+.segment:has(input:focus-visible) { outline:3px solid var(--foco); outline-offset:-3px; }
+
+.meter { display:inline-flex; align-items:center; gap:6px; min-width:0; font-size:14px; font-weight:700; color:var(--text); white-space:nowrap; }
+.meterIcon { display:inline-flex; color:var(--text-2); }
+.meterBar { position:relative; width:44px; height:8px; border-radius:4px; background:var(--line); overflow:hidden; flex-shrink:0; }
+.meterFill { position:absolute; inset:0 auto 0 0; border-radius:4px; background:var(--text-2); }
+.meter[data-tone='ok'] .meterFill { background:var(--positivo); }
+.meter[data-tone='warn'] .meterFill { background:var(--aviso); }
+.meter[data-tone='bad'] .meterFill { background:var(--negativo); }
+.meter[data-tone='bad'] .meterText { color:var(--negativo); }
+.meterText { font-variant-numeric:tabular-nums; }
+
+.chip { display:inline-flex; align-items:center; gap:6px; height:26px; padding:0 8px; border-radius:var(--radio-s); background:var(--panel); border:1px solid var(--line); color:var(--text-2); font-size:14px; font-weight:600; white-space:nowrap; flex-shrink:0; }
+.chip[data-tone='ok'] { color:var(--positivo); border-color:color-mix(in srgb, var(--positivo) 40%, transparent); }
+.chip[data-tone='warn'] { color:var(--aviso); border-color:color-mix(in srgb, var(--aviso) 40%, transparent); }
+.chip[data-tone='bad'] { color:var(--negativo); border-color:color-mix(in srgb, var(--negativo) 40%, transparent); }
+
+/* Tarjeta de dato: icono, cifra grande y rótulo corto. */
+.tile { display:flex; align-items:center; gap:10px; min-width:0; padding:10px 12px; border:1px solid var(--line); border-radius:var(--radio-l); background:var(--panel-2); }
+.tileIcon { display:inline-flex; align-items:center; justify-content:center; width:36px; height:36px; border-radius:50%; background:var(--panel); color:var(--equipo); flex-shrink:0; }
+.tileBody { display:flex; flex-direction:column; min-width:0; }
+.tileValue { font-size:20px; font-weight:700; line-height:1.1; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.tileLabel { font-size:14px; color:var(--text-2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.tile[data-tone='ok'] .tileValue { color:var(--positivo); }
+.tile[data-tone='warn'] .tileValue { color:var(--aviso); }
+.tile[data-tone='bad'] .tileValue { color:var(--negativo); }

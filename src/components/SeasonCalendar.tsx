@@ -14,10 +14,12 @@ interface SeasonCalendarProps {
   onSelectNext: () => void;
   /** Salta el Gran Premio que toca: no se disputa y nadie puntúa. */
   onSkip: () => void;
+  /** [V8] Corre el Gran Premio que toca sin verlo, con el estratega al mando: cuenta como una ronda corrida. */
+  onSimulate?: () => void;
 }
 
 /** [R51] Calendario de la temporada: qué Gran Premio toca, cuáles se han disputado o saltado y cuáles quedan. */
-export const SeasonCalendar: React.FC<SeasonCalendarProps> = ({ rounds, seasonNumber, selectedCircuitId, onSelectNext, onSkip }) => {
+export const SeasonCalendar: React.FC<SeasonCalendarProps> = ({ rounds, seasonNumber, selectedCircuitId, onSelectNext, onSkip, onSimulate }) => {
   const [confirmingSkip, setConfirmingSkip] = useState(false);
   const next = rounds.find(round => round.status === 'siguiente');
   const nextCircuit = next && OFFICIAL_CIRCUITS[next.circuitId];
@@ -41,6 +43,12 @@ export const SeasonCalendar: React.FC<SeasonCalendarProps> = ({ rounds, seasonNu
           </p>
           <div className={styles.actions}>
             {freeRace && <button type="button" className={`${styles.button} ${styles.primary}`} onClick={onSelectNext}>Volver al Gran Premio que toca</button>}
+            {onSimulate && !freeRace && !confirmingSkip && (
+              <button type="button" className={`${styles.button} ${styles.primary}`} onClick={onSimulate}
+                title="La carrera se corre con el motor sin que la veas: tus dos coches los lleva el estratega y puntúa como cualquier otra">
+                Simular este Gran Premio
+              </button>
+            )}
             {confirmingSkip ? (
               <>
                 <button type="button" className={`${styles.button} ${styles.danger}`} onClick={() => { setConfirmingSkip(false); onSkip(); }}>Sí, saltarlo</button>

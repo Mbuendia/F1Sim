@@ -551,7 +551,16 @@ export const modules = [
   { "id": "academy-t48", "tasks": ["T4.8"], "sprint": "4", "kind": "contract" },
   { "id": "winter-t411", "tasks": ["T4.11"], "sprint": "4", "kind": "contract" },
   { "id": "pit-window-t415", "tasks": ["T4.15"], "sprint": "4", "kind": "contract" },
+  { "id": "audio-t416", "tasks": ["T4.16"], "sprint": "4", "kind": "contract" },
   { "id": "polish-t417", "tasks": ["T4.17"], "sprint": "4", "kind": "contract" },
+  { "id": "backlog-t421", "tasks": ["T4.21", "T4.22", "T4.23"], "sprint": "4", "kind": "contract" },
+  { "id": "staff-t45", "tasks": ["T4.5"], "sprint": "4", "kind": "contract" },
+  { "id": "practice-t413", "tasks": ["T4.13"], "sprint": "4", "kind": "contract" },
+  { "id": "team-orders-t414", "tasks": ["T4.14"], "sprint": "4", "kind": "contract" },
   { "id": "circuit-quality", "tasks": ["G1"], "sprint": "4.5", "kind": "contract" },
-  { "id": "track-gl-g8", "tasks": ["G8", "G9"], "sprint": "4.5", "kind": "contract" }
+  { "id": "track-gl-g8", "tasks": ["G8", "G9"], "sprint": "4.5", "kind": "contract" },
+  { "id": "visual-v37", "tasks": ["V1", "V2", "V3", "V4"], "sprint": "3.7", "kind": "contract" },
+  { "id": "quali-live-v7", "tasks": ["V7"], "sprint": "3.7", "kind": "contract" },
+  { "id": "auto-race-v8", "tasks": ["V8"], "sprint": "3.7", "kind": "contract" },
+  { "id": "spy-v9", "tasks": ["V9"], "sprint": "3.7", "kind": "contract" }
 ];

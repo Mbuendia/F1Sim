@@ -1,5 +1,26 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import styles from './App.module.css';
+import { RaceTabs, raceLayout } from './components/RaceTabs';
+import { StintTimeline } from './components/StintTimeline';
+import { QualifyingLive } from './components/QualifyingLive';
+import { PracticePanel } from './components/PracticePanel';
+import { SpyPanel } from './components/SpyPanel';
+import { AUDIO_LEVELS, AUDIO_LEVEL_LABEL, AUDIO_STORAGE_KEY, AudioEngine, parseAudioLevel } from './audio/AudioEngine';
+import { soundCredits, soundsBetween } from './audio/sounds';
+import type { AudioSnapshot } from './audio/sounds';
+import { engineerPoint, hireStaff, staffEffects } from './simulation/Staff';
+import { canSpy, runSpy, settleSpy } from './simulation/Spy';
+import type { SpyLevel } from './simulation/Spy';
+import { allSetups, practiceTyres, runPractice } from './simulation/Practice';
+import type { PracticeProgram } from './simulation/Practice';
+import { advanceAutoRace, startAutoRace } from './simulation/AutoRace';
+
+/** Paso fijo del motor en una carrera que se ve (s). */
+const RACE_STEP_SEC = 0.02;
+/** [V8] Milisegundos seguidos que el motor corre una carrera simulada antes de dejar respirar a la página. */
+const AUTO_RACE_CHUNK_MS = 40;
+const AUTO_RACE_HIDDEN_CHUNK_MS = 800;
+import type { RaceTab } from './components/RaceTabs';
 import { RaceSimulation } from './simulation/RaceSimulation';
 import { Camera } from './renderer/Camera';
 import { RaceCanvas } from './components/RaceCanvas';
@@ -44,14 +65,14 @@ import { buildWeatherScenario } from './data/weatherScenarios';
 import { runQualifying } from './simulation/Qualifying';
 import { activeProjects, emptyProgram, installFirst, parseProgram, upgradesFor, PROGRAM_STORAGE_KEY } from './simulation/Development';
 import type { DevelopmentProgram } from './simulation/Development';
-import { calendarView, emptySeason, grandsPrixRun, isSeasonRace, nextRound, parseArchive, parseSeason, roundWeather, settleRace, settleSkip, sprintPending, withWeatherSeed, SEASONS_STORAGE_KEY, SEASON_RACES, SEASON_STATE_KEY } from './simulation/Season';
+import { calendarView, emptySeason, grandsPrixRun, isSeasonRace, nextRound, parseArchive, parseSeason, roundWeather, settleRace, settleSkip, sprintPending, withWeatherSeed, practiceFor, withPractice, SEASONS_STORAGE_KEY, SEASON_RACES, SEASON_STATE_KEY } from './simulation/Season';
 import { COMPOUND_LABEL } from './simulation/TireInventory';
 import { carryTyres, isSprintVenue, podiumHomeLabel, sprintWeekendTyres } from './simulation/Weekend';
 import type { SeasonState, SeasonSummary, SettledCareer } from './simulation/Season';
 import { SeasonEndScreen } from './components/SeasonEndScreen';
 import { GridPenaltyNotice } from './components/GridPenaltyNotice';
 import { addRace, constructorsChampionship } from './simulation/Championship';
-import { applyGridPenalties, emptyComponents, ensureDriver, gridPenaltyLines, hazardFactor, markRaceStart, parseComponents, raceStartGate, COMPONENTS_STORAGE_KEY } from './simulation/ComponentPool';
+import { addDistance, refitUsed, applyGridPenalties, emptyComponents, ensureDriver, gridPenaltyLines, hazardFactor, markRaceStart, parseComponents, raceStartGate, COMPONENTS_STORAGE_KEY } from './simulation/ComponentPool';
 import type { ComponentState, GridChange, PenaltyLine } from './simulation/ComponentPool';
 import type { QualifyingResult } from './simulation/Qualifying';
 import { QualifyingResults } from './components/QualifyingResults';
@@ -67,14 +88,14 @@ import { AUTOSAVE_ID, AUTOSAVE_LABEL, SaveStore, createSave, exportSave, importS
 import { MANAGEMENT_STORAGE_KEY, parseManagement, startManagement } from './simulation/Management';
 import type { ManagementState } from './simulation/Management';
 import { aiDevelopPaying, aiReplaceComponents, buyComponent, buyProject, componentCost, projectCost, projectLeadTime, projectShortfall, raceDamages, refundComponent } from './simulation/Costs';
-import { aiInvestFacilities, benchHazard, gainOf, maxProjects, simulatorBonus, startWork } from './simulation/Facilities';
+import { aiInvestFacilities, benchHazard, gainOf, levelOf, maxProjects, simulatorBonus, startWork } from './simulation/Facilities';
 import { balanceOf, canSpend, formatMoney, roundForecast } from './simulation/Finance';
 import { aiCrewPlans, crewEffect, setCrewPlan } from './simulation/PitCrew';
 import { aiSignSponsors, carSponsors, signSponsor } from './simulation/Sponsors';
 import type { SaveGame, SlotSummary } from './simulation/SaveGame';
 import type { SaveGameMessage } from './components/SaveGamePanel';
 import { SetupPanel } from './components/SetupPanel';
-import { normalizeSetup, parcFermeCheck, pitLaneReason, withPitLaneStarts } from './simulation/Setup';
+import { NEUTRAL_SETUP, normalizeSetup, parcFermeCheck, pitLaneReason, withPitLaneStarts } from './simulation/Setup';
 import type { CarSetup } from './simulation/Setup';
 import { DRIVERS } from './data/drivers';
 import { lineupOf, offerContract, pairOf, rosterOf } from './simulation/Contracts';
@@ -146,7 +167,7 @@ export const App: React.FC = () => {
 
   // [R02] Paso fijo de 20 ms simulados: mismo resultado sea cual sea el FPS o la velocidad.
   // [T4.12] Con agua en la salida, cada coche elige su neumático (los del jugador reciben la propuesta en la parrilla).
-  const simulation = useMemo(() => { const sim = new RaceSimulation(selectedCircuitId); sim.setFixedStep(0.02); sim.autoStartTyres = true; return sim; }, []);
+  const simulation = useMemo(() => { const sim = new RaceSimulation(selectedCircuitId); sim.setFixedStep(RACE_STEP_SEC); sim.autoStartTyres = true; sim.seededPreparation = true; sim.autoTeamOrders = true; return sim; }, []);
   const camera = useMemo(() => new Camera(), []);
 
   // Vista actual: 'landing', 'home' o 'race'
@@ -169,6 +190,8 @@ export const App: React.FC = () => {
   /** Hay una partida en curso en el navegador (también una anterior al menú de partidas). */
   const [careerActive, setCareerActive] = useState(() => { try { return hasStoredCareer(localStorage); } catch { return false; } });
 
+  // [T4.14] Para avisar desde el bucle que lee el motor, definido antes que los avisos.
+  const noticeRef = useRef<(tone: 'info' | 'warning' | 'danger', tag: string, text: string) => void>(() => {});
   // Coche seleccionado expresamente en pista
   const [selectedCarId, setSelectedCarId] = useState<number | null>(null);
 
@@ -176,6 +199,8 @@ export const App: React.FC = () => {
   const [leftSidebarOpen, setLeftSidebarOpen] = useState(true);
   const [detailOpen, setDetailOpen] = useState(false);
   const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth);
+  // [V2] En móvil la pista ocupa la pantalla y posiciones, muro y detalle van en pestañas inferiores.
+  const [raceTab, setRaceTab] = useState<RaceTab>('pista');
 
   useEffect(() => {
     const onResize = () => setViewportWidth(window.innerWidth);
@@ -233,7 +258,10 @@ export const App: React.FC = () => {
     return row ? { position: row.position, status: row.status, points: row.points } : undefined;
   }, simulation.totalLaps,
   // [T4.4] El simulador de cada equipo puede dar a sus pilotos un punto de mejora extra.
-  driver => simulatorBonus(gainOf(management.facilities, driver.teamId, 'simulador'), simulation.totalLaps + development.races, driver.id)), [development, simulation, management, roster, mode]);
+  // [T4.5] Y su ingeniero de carrera, otro (si es mejor que el de la casa).
+  driver => simulatorBonus(gainOf(management.facilities, driver.teamId, 'simulador'), simulation.totalLaps + development.races, driver.id)
+    + engineerPoint(staffEffects(management.staff, driver.teamId).engineerBonus[Math.max(0, pairOf(management.contracts, driver.teamId).indexOf(driver.id)) % 2], simulation.totalLaps + development.races, driver.id)),
+  [development, simulation, management, roster, mode]);
 
   // [R19] Componentes de la unidad de potencia de todos los pilotos, guardados en el navegador
   const [components, setComponents] = useState<ComponentState>(() => {
@@ -326,6 +354,8 @@ export const App: React.FC = () => {
   }, []);
   const [qualifyingSetups, setQualifyingSetups] = useState<Record<string, CarSetup> | null>(null);
   /** Setups de los pilotos del equipo del jugador (los rivales corren con el de referencia). */
+  // [T4.13] Programa de cada piloto en los entrenamientos libres (por defecto, buscar el setup).
+  const [practicePrograms, setPracticePrograms] = useState<Record<string, PracticeProgram>>({});
   const playerSetups = useMemo(() => {
     return Object.fromEntries(playerDriverIds(roster, selectedDriverId).map(id => [id, normalizeSetup(setups[id])]));
   }, [setups, selectedDriverId, roster]);
@@ -338,6 +368,8 @@ export const App: React.FC = () => {
     } catch { return 'directo'; }
   });
   const [qualifying, setQualifying] = useState<QualifyingResult | null>(null);
+  // [V7] La clasificación recién corrida se ve primero en directo; después (o al saltarla), la tabla de siempre.
+  const [qualifyingLive, setQualifyingLive] = useState(false);
 
   // [R44] Meteorología de la próxima carrera
   const [weatherScenarioId, setWeatherScenarioId] = useState<string>('seco');
@@ -366,6 +398,22 @@ export const App: React.FC = () => {
   const [bestS2, setBestS2] = useState<number | null>(null);
   const [bestS3, setBestS3] = useState<number | null>(null);
 
+  // [T4.16] Audio: apagado por defecto; el nivel elegido se guarda en el navegador. Sin una interacción previa no suena
+  // nada, se calla con la página oculta o la carrera en pausa y se libera al salir de la carrera.
+  const audio = useMemo(() => new AudioEngine(undefined, undefined, import.meta.env.BASE_URL), []);
+  const [audioLevel, setAudioLevel] = useState(() => { try { return parseAudioLevel(localStorage.getItem(AUDIO_STORAGE_KEY)); } catch { return 0; } });
+  const audioSeen = useRef<AudioSnapshot | null>(null);
+  useEffect(() => {
+    audio.setVolume(AUDIO_LEVELS[audioLevel]);
+    try { localStorage.setItem(AUDIO_STORAGE_KEY, String(audioLevel)); } catch { /* sin almacenamiento */ }
+  }, [audio, audioLevel]);
+  useEffect(() => {
+    const unlock = () => audio.unlock();
+    window.addEventListener('pointerdown', unlock);
+    window.addEventListener('keydown', unlock);
+    return () => { window.removeEventListener('pointerdown', unlock); window.removeEventListener('keydown', unlock); audio.dispose(); };
+  }, [audio]);
+
   // Race flags & Safety Car & DNF & Luck D20 state
   const [raceFlagState, setRaceFlagState] = useState<RaceFlagState>('green');
   const [sectorFlags, setSectorFlags] = useState<[RaceFlagState, RaceFlagState, RaceFlagState]>(['green', 'green', 'green']);
@@ -392,7 +440,21 @@ export const App: React.FC = () => {
       setSafetyCar(simulation.safetyCar.isDeployed ? { ...simulation.safetyCar } : null);
       setActiveDnf(simulation.latestDnf ? { ...simulation.latestDnf } : null);
       setActiveLuckEvent(simulation.activeLuckEvent ? { ...simulation.activeLuckEvent } : null);
+      // [T4.14] Órdenes de equipo cumplidas (las propias y las de los rivales): cada una, un aviso.
+      if (simulation.teamOrderNotices.length) {
+        for (const notice of simulation.teamOrderNotices) noticeRef.current('info', 'Órdenes', notice.text);
+        simulation.teamOrderNotices = [];
+      }
       setWeather({ ...simulation.weather });
+      // [T4.16] Lo que ha cambiado desde la lectura anterior, en sonidos (solo los coches del jugador dan radio y pistola).
+      const mine = simulation.cars.filter(car => simulation.isPlayerCar(car.driver.id));
+      const heard: AudioSnapshot = {
+        lightState: simulation.lightState, flag: simulation.raceFlagState, finished: simulation.isFinished,
+        wallMessages: mine.reduce((sum, car) => sum + (car.wallProposals?.length ?? 0), 0),
+        servicing: mine.filter(car => car.pitStop.isPitting && car.pitStop.currentStopTimer > 0 && car.pitStop.currentStopTimer < car.pitStop.stopDuration).length,
+      };
+      for (const sound of soundsBetween(audioSeen.current, heard)) audio.play(sound);
+      audioSeen.current = heard;
 
       if (simulation.isFinished) {
         setPodiumCars(simulation.podiumCars);
@@ -410,6 +472,7 @@ export const App: React.FC = () => {
     if (carId !== null) {
       camera.followCar(carId);
       setDetailOpen(true);
+      setRaceTab(tab => (tab === 'tiempos' ? 'detalle' : tab));
     } else {
       camera.resetToFullTrack();
       setDetailOpen(false);
@@ -501,7 +564,8 @@ export const App: React.FC = () => {
     if (saveStore && mode === 'career') { saveStore.remove(AUTOSAVE_ID); setSlots(saveStore.list()); }
     simulation.setDriverAttributes(development.attributes);
     // [R49] Setup del jugador antes de clasificar; nadie sale desde el pit lane hasta que lo decida el parc fermé.
-    simulation.setCarSetups(playerSetups);
+    const practice = mode === 'career' && isSeasonRace(selectedCircuitId, championship, season) ? practiceFor(season, nextRound(championship, season)?.round) : null;
+    simulation.setCarSetups({ ...practice?.rivalSetups, ...playerSetups });
     simulation.setPitLaneStarters([]);
     // [R52] Fin de semana sprint: primero la clasificación sprint y el sprint (100 km, sin paradas obligatorias);
     // el Gran Premio de esa ronda se corre después con los neumáticos que queden.
@@ -509,13 +573,17 @@ export const App: React.FC = () => {
     const seasonRace = mode === 'career' && isSeasonRace(selectedCircuitId, championship, season);
     simulation.setRaceFormat(sprintRace ? 'sprint' : 'gp');
     const weekendNow = season.weekend;
-    simulation.setWeekendTyres(!sprintRace && seasonRace && weekendNow && weekendNow.round === nextRound(championship, season)?.round ? weekendNow.tyres : null);
+    // [T4.13] Tras los libres, cada piloto llega con los juegos que gastó ya usados.
+    simulation.setWeekendTyres(!sprintRace && seasonRace && weekendNow && weekendNow.round === nextRound(championship, season)?.round ? weekendNow.tyres
+      : practice && !sprintRace ? practiceTyres(selectedCircuitId, practice.tyreUse) : null);
     setQualifyingSetups(format !== 'directo' ? playerSetups : null);
     simulation.setStartingGrid(null);
     simulation.setCircuit(selectedCircuitId);
     // [R20] Con clasificación, la parrilla sale de Q1-Q3 y se enseña antes de formar; el GP directo usa la prefijada.
     const quali = format !== 'directo' ? runQualifying(simulation.qualifyingEntrants(), Date.now() % 2147483647, { format: sprintRace ? 'sprint' : 'gp' }) : null;
-    if (sprintRace && quali) simulation.setWeekendTyres(sprintWeekendTyres(selectedCircuitId, quali.tyreUse));
+    if (sprintRace && quali) simulation.setWeekendTyres(sprintWeekendTyres(selectedCircuitId, practice
+      ? Object.fromEntries(Object.entries(quali.tyreUse).map(([id, used]) => [id, { ...used, medium: used.medium + (practice.tyreUse[id]?.medium ?? 0), soft: used.soft + (practice.tyreUse[id]?.soft ?? 0) }]))
+      : quali.tyreUse));
     // [R19] Antes de salir: la IA sustituye lo agotado, las unidades sin estrenar cuentan como usadas y sus sanciones
     // recolocan la parrilla (la de la clasificación o la prefijada).
     // [R51] Solo cuenta para la temporada la carrera del circuito que toca; una carrera libre no gasta componentes,
@@ -548,6 +616,7 @@ export const App: React.FC = () => {
     // [T4.6] En una carrera de temporada (Gran Premio o sprint) cada coche para con el equipo de boxes de su equipo; en
     // una libre, como siempre.
     simulation.setPitCrews(counts ? Object.fromEntries(Object.entries(managed.pitCrews.teams).map(([teamId, crew]) => [teamId, crewEffect(crew)])) : {});
+    simulation.setUpgradeTradeoffs(counts ? Object.fromEntries([...new Set(Object.values(roster).map(d => d.teamId))].map(teamId => [teamId, staffEffects(managed.staff, teamId).tradeoffFactor])) : {});
     simulation.setTechnicalUpgrades(Object.fromEntries(Object.values(roster).map(d => [d.id, upgradesFor(developed, d.teamId, d.id, raceIndex)])));
     const baseGrid = quali ? quali.grid.map(slot => slot.driverId) : simulation.cars.map(c => c.driver.id);
     const penalized = applyGridPenalties(baseGrid, started.penalties);
@@ -559,6 +628,7 @@ export const App: React.FC = () => {
       ? gridPenaltyLines(penalized.moved, started.penalties, id => DRIVERS[id] && { name: `${DRIVERS[id].firstName} ${DRIVERS[id].lastName}`, code: DRIVERS[id].code })
       : []);
     setQualifying(quali);
+    setQualifyingLive(Boolean(quali));
     // [R44] Meteorología ajustada a la duración prevista de la carrera. [T4.12] En una carrera de temporada se sortea
     // con la probabilidad de lluvia del circuito y la semilla de la temporada (la misma ronda da siempre el mismo
     // tiempo); en carrera libre es la elegida en el paddock.
@@ -575,6 +645,46 @@ export const App: React.FC = () => {
     setCurrentView('race');
     if (gate === 'directo') simulation.startRaceSequence();
   }, [simulation, camera, selectedCircuitId, weatherScenarioId, development, raceFormat, components, saveComponents, selectedDriverId, program, saveProgram, championship, constructorsPosition, saveStore, playerSetups, season, saveSeason, effectiveFormat, management, saveManagement, mode, roster]);
+
+  /**
+   * [T4.13] Entrenamientos libres de la ronda que toca: se resuelven sin pista con las vueltas de referencia del motor en
+   * ese circuito. Suman kilómetros a los componentes de todos y dejan anotados los juegos gastados y el setup de los rivales.
+   */
+  const handleRunPractice = useCallback(() => {
+    const round = nextRound(championship, season);
+    if (mode !== 'career' || !round || practiceFor(season, round.round)) return;
+    simulation.setCircuit(round.circuitId);
+    const raceIndex = grandsPrixRun(championship);
+    simulation.setTechnicalUpgrades(Object.fromEntries(Object.values(roster).map(d => [d.id, upgradesFor(program, d.teamId, d.id, raceIndex)])));
+    const setups = allSetups();
+    const mine = playerDriverIds(roster, selectedDriverId);
+    const result = runPractice({
+      round: round.round, seed: newRaceSeed(), sprintWeekend: isSprintVenue(round.circuitId), lapLengthMeters: simulation.activeTrack.lapLengthMeters,
+      programs: Object.fromEntries(mine.map(id => [id, practicePrograms[id] ?? 'setup'])),
+      drivers: simulation.cars.map(car => ({
+        driverId: car.driver.id, code: car.driver.code, teamId: car.driver.teamId, simulatorLevel: levelOf(management.facilities, car.driver.teamId, 'simulador'),
+        lapTable: simulation.setupLapTable(car.driver.id, setups), tyreWear: car.technical?.tyreWear ?? 1,
+        strategyBonus: staffEffects(management.staff, car.driver.teamId).practiceMargin,
+      })),
+    });
+    saveSeason(withPractice(season, result));
+    saveComponents(addDistance(components, Object.values(result.km)[0] ?? 0));
+  }, [championship, season, mode, simulation, roster, program, selectedDriverId, practicePrograms, management, saveSeason, saveComponents, components]);
+
+  /** [V9] Encarga un informe de espionaje de un equipo rival para la ronda que toca (hacen falta los libres hechos). */
+  const handleSpy = useCallback((teamId: string, level: SpyLevel) => {
+    const round = nextRound(championship, season)?.round;
+    const practice = practiceFor(season, round);
+    if (!practice || round === undefined || !canSpy(practice.spy ?? [], round, teamId)) return;
+    const report = runSpy({
+      round, seed: practice.seed, teamId, level,
+      setups: Object.fromEntries(Object.values(roster).filter(driver => driver.teamId === teamId).map(driver => [driver.id, practice.rivalSetups[driver.id] ?? NEUTRAL_SETUP])),
+    });
+    const settled = settleSpy(management, report, TEAMS[teamId]?.shortName ?? teamId);
+    if (!settled.ok) return;
+    saveManagement(settled.management);
+    saveSeason(withPractice(season, { ...practice, spy: [...(practice.spy ?? []), report] }));
+  }, [championship, season, roster, management, saveManagement, saveSeason]);
 
   /** [R51] Visto el aviso de sanciones, empieza la carrera. */
   const handleContinueFromPenalties = useCallback(() => {
@@ -769,6 +879,28 @@ export const App: React.FC = () => {
     setNotices(list => [...list, { id, tone, tag, text }].slice(-3));
     window.setTimeout(() => setNotices(list => list.filter(n => n.id !== id)), NOTICE_MS);
   }, []);
+
+  noticeRef.current = pushNotice;
+  // [T4.16] El audio se calla fuera de la carrera, en pausa y con la página oculta; al salir de la carrera se libera.
+  useEffect(() => {
+    const sync = () => audio.setPaused(document.hidden || isPaused || currentView !== 'race');
+    sync();
+    if (currentView !== 'race') { audio.dispose(); audioSeen.current = null; }
+    document.addEventListener('visibilitychange', sync);
+    return () => document.removeEventListener('visibilitychange', sync);
+  }, [audio, isPaused, currentView]);
+
+  // El golpe de suerte de un rival no interrumpe: se aplica solo y queda como aviso. La modal es para los pilotos propios.
+  const ownLuckEvent = activeLuckEvent && teamCars.some(car => car.id === activeLuckEvent.luckyCarId) ? activeLuckEvent : null;
+  const rivalLuckId = useRef<string | null>(null);
+  useEffect(() => {
+    if (!activeLuckEvent || ownLuckEvent || rivalLuckId.current === activeLuckEvent.id) return;
+    rivalLuckId.current = activeLuckEvent.id;
+    pushNotice('info', 'Suerte', `${activeLuckEvent.luckyDriverName} (dado ${activeLuckEvent.rollValue}): ${activeLuckEvent.rewardTitle}`);
+    simulation.applyLuckEventReward(activeLuckEvent.id);
+    simulation.activeLuckEvent = null;
+    setActiveLuckEvent(null);
+  }, [activeLuckEvent, ownLuckEvent, pushNotice, simulation]);
 
   const clearNotices = useCallback(() => {
     setNotices([]);
@@ -980,12 +1112,43 @@ export const App: React.FC = () => {
   }, [setups, saveSetups]);
 
   const handleContinueFromQualifying = useCallback(() => {
-    simulation.setCarSetups(playerSetups);
+    simulation.setCarSetups({ ...(raceCounts ? practiceFor(season, nextRound(championship, season)?.round)?.rivalSetups : undefined), ...playerSetups });
     if (parcFermeStarts.length) simulation.setPitLaneStarters(parcFermeStarts.map(start => start.driverId));
     setQualifying(null);
     for (const start of parcFermeStarts) pushNotice('warning', 'Salida', `${DRIVERS[start.driverId]?.code ?? start.driverId} sale desde el pit lane: ${start.reason.toLowerCase()}`);
     simulation.startRaceSequence();
-  }, [simulation, playerSetups, parcFermeStarts, pushNotice]);
+  }, [simulation, playerSetups, parcFermeStarts, pushNotice, raceCounts, season, championship]);
+
+  // [V8] Simular el Gran Premio que toca: se prepara como una carrera normal y el motor la corre sin pintarla, a
+  // trozos para no bloquear la página, con el estratega al mando de los coches del jugador. Al acabar se liquida por el
+  // mismo camino que una carrera vista (puntos, dinero, componentes e informe de la ronda).
+  const [autoRace, setAutoRace] = useState<{ lap: number; total: number } | null>(null);
+  const autoRequested = useRef(false);
+  const autoLatest = useRef({ goHome: () => {}, fromQualifying: () => {}, fromPenalties: () => {}, qualifying: false, penalties: false, playerIds: [] as string[] });
+  const handleSimulateRound = useCallback(() => {
+    autoRequested.current = true;
+    handleStartRaceFromHome();
+  }, [handleStartRaceFromHome]);
+  useEffect(() => {
+    if (currentView !== 'race' || !autoRequested.current) return;
+    autoRequested.current = false;
+    const latest = autoLatest.current;
+    setQualifyingLive(false);
+    if (latest.qualifying) latest.fromQualifying();
+    else if (latest.penalties) latest.fromPenalties();
+    startAutoRace(simulation, simulation.cars.filter(car => latest.playerIds.includes(car.driver.id)).map(car => car.id));
+    setAutoRace({ lap: 0, total: simulation.totalLaps });
+    let timer = 0;
+    const run = () => {
+      // Con la pestaña en segundo plano el navegador solo deja un turno por segundo: se aprovecha entero.
+      const done = advanceAutoRace(simulation, document.hidden ? AUTO_RACE_HIDDEN_CHUNK_MS : AUTO_RACE_CHUNK_MS);
+      setAutoRace({ lap: Math.min(simulation.totalLaps, simulation.leaderLap), total: simulation.totalLaps });
+      if (done) { simulation.setFixedStep(RACE_STEP_SEC); setAutoRace(null); timer = window.setTimeout(() => autoLatest.current.goHome(), 0); }
+      else timer = window.setTimeout(run, 0);
+    };
+    timer = window.setTimeout(run, 0);
+    return () => window.clearTimeout(timer);
+  }, [currentView, simulation]);
 
   // Aviso cuando el semáforo del pit lane se pone en verde para un coche del jugador.
   const lastPitStart = useRef(new Map<number, string | undefined>());
@@ -1122,7 +1285,7 @@ export const App: React.FC = () => {
       ]} />
     ),
     correr: hubNext ? (
-      <RaceWeekendPanel round={hubNext} sessions={weekendSessions(effectiveFormat, sprintDone)}
+      <RaceWeekendPanel round={hubNext} sessions={weekendSessions(effectiveFormat, sprintDone, Boolean(practiceFor(season, hubNext.round)))}
         drivers={teamDrivers.map(driver => ({ id: driver.id, code: driver.code, name: driver.lastName, number: driver.number }))}
         followedId={selectedDriverId} onFollow={setSelectedDriverId}
         launchLabel={effectiveFormat === 'sprint' ? 'Clasificación sprint y sprint' : effectiveFormat === 'clasificacion' ? 'Clasificación y Gran Premio' : 'Entrar a pista'}
@@ -1130,6 +1293,11 @@ export const App: React.FC = () => {
         <section className={managementStyles.card}>
           <RaceFormatSelect value={effectiveFormat} onChange={setRaceFormat} sprintAvailable={sprintAvailable} />
         </section>
+        <PracticePanel drivers={teamDrivers.map(driver => ({ id: driver.id, code: driver.code }))} programs={practicePrograms} result={practiceFor(season, hubNext.round)}
+          sprintWeekend={isSprintVenue(selectedCircuitId)} onProgram={(id, value) => setPracticePrograms(current => ({ ...current, [id]: value }))} onRun={handleRunPractice} />
+        <SpyPanel round={hubNext.round} available={Boolean(practiceFor(season, hubNext.round))} reports={practiceFor(season, hubNext.round)?.spy ?? []}
+          teams={[...new Set(Object.values(roster).map(driver => driver.teamId))].filter(id => id !== management.playerTeamId).map(id => ({ id, name: TEAMS[id]?.shortName ?? id }))}
+          canAfford={cost => canSpend(management.finance, management.playerTeamId, cost)} driverCode={id => roster[id]?.code ?? id} onSpy={handleSpy} />
         <SetupPanel drivers={teamDrivers} setups={setups} onChange={handleSetupChange} />
       </RaceWeekendPanel>
     ) : <p>La temporada está completa: no quedan rondas por correr.</p>,
@@ -1196,6 +1364,7 @@ export const App: React.FC = () => {
             if (sprintPending(championship, season)) setRaceFormat('sprint');
           },
           onSkip: handleSkipRound,
+          onSimulate: handleSimulateRound,
         }}
         driverAttributes={driver => attributesOf(development, driver)}
         finance={{ state: management.finance, teamId: management.playerTeamId }}
@@ -1235,6 +1404,14 @@ export const App: React.FC = () => {
             setContractMessage(`${DRIVERS[driverId]?.lastName ?? driverId}: ${answer.reason}`);
           },
         }}
+        staff={management.staff ? {
+          state: management.staff, teamId: management.playerTeamId, round: nextRound(championship, season)?.round ?? SEASON_RACES,
+          drivers: pairOf(management.contracts, management.playerTeamId).map(id => roster[id]?.code ?? id),
+          onHire: memberId => {
+            const hired = hireStaff(management.staff!, management.playerTeamId, memberId, nextRound(championship, season)?.round ?? SEASON_RACES);
+            if (hired.ok) saveManagement({ ...management, staff: hired.state });
+          },
+        } : undefined}
         pitCrew={{
           crew: management.pitCrews.teams[management.playerTeamId],
           onPlan: plan => saveManagement({ ...management, pitCrews: setCrewPlan(management.pitCrews, management.playerTeamId, plan) }),
@@ -1268,6 +1445,7 @@ export const App: React.FC = () => {
           const bought = buyComponent(management, components, management.playerTeamId, driverId, type, nextRound(championship, season)?.round ?? SEASON_RACES);
           if (bought.ok) { saveComponents(bought.components); saveManagement(bought.management); }
         }}
+        onRefitComponent={(driverId, serial) => saveComponents(refitUsed(components, driverId, serial))}
         onUndoComponent={(driverId, type) => {
           const undone = refundComponent(management, components, management.playerTeamId, driverId, type, nextRound(championship, season)?.round ?? SEASON_RACES);
           if (undone.ok) { saveComponents(undone.components); saveManagement(undone.management); }
@@ -1295,22 +1473,39 @@ export const App: React.FC = () => {
     );
   }
 
+  autoLatest.current = { goHome: handleGoHome, fromQualifying: handleContinueFromQualifying, fromPenalties: handleContinueFromPenalties,
+    qualifying: Boolean(qualifying), penalties: penaltyNotice.length > 0, playerIds: playerDriverIds(roster, selectedDriverId) };
+
   // R30/R31: la vista de detalle sustituye a la clasificación en pantallas estrechas; en las anchas convive con ella.
   const isWide = viewportWidth >= 1600;
   const detailCar = selectedCar || favoriteCar;
   const detailIsRival = !teamCars.some(c => c.id === detailCar.id);
+  // [V2] Tres composiciones: móvil (pestañas), tableta (pista arriba; posiciones y muro debajo) y escritorio.
+  const layout = raceLayout(viewportWidth);
   const detailReplacesPositions = detailOpen && !isWide;
-  const showPositions = leftSidebarOpen && !detailReplacesPositions;
+  const showPositions = layout === 'movil' ? raceTab === 'tiempos' : leftSidebarOpen && !detailReplacesPositions;
+  const showDetail = layout === 'movil' ? raceTab === 'detalle' : detailOpen;
+  const showWall = layout !== 'movil' || raceTab === 'muro';
   const columns: string[] = [];
   const areas: string[] = [];
   if (showPositions) { columns.push('var(--ancho-posiciones)'); areas.push('pos'); }
   if (detailReplacesPositions) { columns.push('var(--ancho-detalle)'); areas.push('detail'); }
   columns.push('minmax(0, 1fr)'); areas.push('center');
   if (detailOpen && isWide) { columns.push('var(--ancho-detalle)'); areas.push('detail'); }
-  const shellLayout = { gridTemplateColumns: columns.join(' '), gridTemplateAreas: `"${areas.join(' ')}"` };
+  const shellLayout = layout === 'escritorio' ? { gridTemplateColumns: columns.join(' '), gridTemplateAreas: `"${areas.join(' ')}"` } : undefined;
+  const shellSide = showPositions ? 'pos' : showDetail ? 'detail' : 'none';
 
   return (
     <div className={styles.appContainer}>
+      {autoRace && (
+        <div className={styles.autoRace} role="status" aria-live="polite">
+          <strong>Simulando el Gran Premio</strong>
+          <span>Vuelta {autoRace.lap} de {autoRace.total} · el estratega lleva tus dos coches</span>
+          <div className={styles.autoRaceBar} role="progressbar" aria-valuemin={0} aria-valuemax={autoRace.total} aria-valuenow={autoRace.lap}>
+            <span style={{ width: `${autoRace.total ? 100 * autoRace.lap / autoRace.total : 0}%` }} />
+          </div>
+        </div>
+      )}
       {/* ── R32: BARRA DE CARRERA (estado, tiempo, velocidad, cámara y menú) ── */}
       <header className={styles.raceBar}>
         <div className={styles.barGroup}>
@@ -1337,7 +1532,7 @@ export const App: React.FC = () => {
           totalLaps={simulation.totalLaps}
         />
 
-        <div className={styles.barGroup}>
+        <div className={`${styles.barGroup} ${styles.viewTools}`}>
           <button
             className={styles.barBtn}
             onClick={handleCycleCameraMode}
@@ -1357,8 +1552,10 @@ export const App: React.FC = () => {
             <Maximize2 size={16} aria-hidden="true" />
             <span className={styles.barLabel}>Vista general</span>
           </button>
+        </div>
+        <div className={styles.barGroup}>
           <button
-            className={styles.barBtn}
+            className={`${styles.barBtn} ${styles.panelToggle}`}
             aria-pressed={leftSidebarOpen}
             onClick={() => setLeftSidebarOpen(open => !open)}
             title={leftSidebarOpen ? 'Ocultar posiciones' : 'Mostrar posiciones'}
@@ -1368,7 +1565,7 @@ export const App: React.FC = () => {
             <span className={styles.barLabel}>Posiciones</span>
           </button>
           <button
-            className={styles.barBtn}
+            className={`${styles.barBtn} ${styles.panelToggle}`}
             aria-pressed={detailOpen}
             onClick={() => setDetailOpen(open => !open)}
             title={detailOpen ? 'Cerrar detalle del coche' : 'Abrir detalle del coche'}
@@ -1386,11 +1583,12 @@ export const App: React.FC = () => {
             onToggleLuckVariant={handleToggleLuckVariant}
             onSaveGame={saveStore ? handleSaveGame : undefined}
             saveName={saveName}
+            audio={{ level: audioLevel, labels: AUDIO_LEVEL_LABEL, onLevel: setAudioLevel, credits: soundCredits() }}
           />
         </div>
       </header>
 
-      <div className={styles.raceShell} style={shellLayout}>
+      <div className={styles.raceShell} style={shellLayout} data-layout={layout} data-side={shellSide} data-tab={raceTab}>
         {/* ── 1. CLASIFICACIÓN COMPACTA ── */}
         <aside className={`${styles.positionsArea} ${showPositions ? '' : styles.isHidden}`} aria-label="Posiciones">
           <Leaderboard
@@ -1442,7 +1640,12 @@ export const App: React.FC = () => {
               onStartClick={handleStartFormationLap}
             />
 
-            {qualifying && (
+            {qualifying && qualifyingLive && (
+              <div className={qualifyingStyles.overlay}>
+                <QualifyingLive result={qualifying} outline={simulation.activeTrack.points} playerIds={playerDriverIds(roster, selectedDriverId)} onDone={() => setQualifyingLive(false)} />
+              </div>
+            )}
+            {qualifying && !qualifyingLive && (
               <div className={qualifyingStyles.overlay}>
                 <QualifyingResults result={qualifying} gridChanges={gridChanges} pitLaneStarts={parcFermeStarts} onContinue={handleContinueFromQualifying}>
                   {qualifyingSetups && (
@@ -1488,23 +1691,23 @@ export const App: React.FC = () => {
             />
 
             {/* ── MODAL DE SUERTE CON DADO D20 (SAFETY CAR & BANDERA ROJA) ── */}
-            {activeLuckEvent && (
+            {ownLuckEvent && activeLuckEvent && (
               <D20LuckModal
                 key={activeLuckEvent.id}
-                event={activeLuckEvent}
+                event={ownLuckEvent}
                 onApplyReward={handleApplyLuckReward}
                 onDismiss={handleDismissLuckEvent}
               />
             )}
           </div>
 
-          <section className={styles.wallArea}>
+          <section className={`${styles.wallArea} ${showWall ? '' : styles.isHidden}`}>
             <BoxControls key={teamCars.map(c => c.id).join(':') + ':' + selectedCircuitId} car={favoriteCar} simulation={simulation} teamCars={teamCars} />
           </section>
         </main>
 
         {/* ── 3. DETALLE DEL COCHE CONSULTADO (se conserva montado para no perder pestaña ni selección) ── */}
-        <aside className={`${styles.detailArea} ${detailOpen ? '' : styles.isHidden}`} aria-label="Detalle del coche">
+        <aside className={`${styles.detailArea} ${showDetail ? '' : styles.isHidden}`} aria-label="Detalle del coche">
           <div className={styles.detailHeader}>
             {detailReplacesPositions ? (
               <button className={styles.barBtn} onClick={() => setDetailOpen(false)}>← Volver a posiciones</button>
@@ -1521,6 +1724,8 @@ export const App: React.FC = () => {
             </div>
           )}
           <BottomTelemetryDock car={detailCar} onSelectCar={handleSelectCar} compact />
+          {/* [V4] La estrategia en una línea: tandas, vuelta actual y ventana de parada. */}
+          <StintTimeline stints={detailCar.pitStop.stints ?? []} currentLap={detailCar.currentLap} totalLaps={simulation.totalLaps} />
           {/* [R24] Lectura del muro del coche en detalle. */}
           <WallPanel reading={detailCar ? simulation.getWallReading(detailCar.id) : null} />
           <div className={styles.detailStats}>
@@ -1538,6 +1743,7 @@ export const App: React.FC = () => {
           </div>
         </aside>
       </div>
+      {layout === 'movil' && <RaceTabs tab={raceTab} onChange={setRaceTab} />}
     </div>
   );
 };
