@@ -1851,17 +1851,59 @@ Decisiones y esquemas de cada página en `docs/design/grill-sprint4-visual.md`. 
 
 **Orden propuesto:** N1 → N2 → N3 → N4 → N11 → N5 → N6 → N7 → N8 → N9 → N10 → N12. N1 va primera porque puede cambiar el plan; N2 y N3 son las que más tocan lo que ya funciona y se pueden entregar y revisar sin red (la carrera de un jugador tiene que seguir igual); N4 puede adelantarse en paralelo en cuanto exista el proyecto de Firebase; N11 va justo después de N4 para que las pruebas entre dispositivos se hagan ya en la dirección definitiva; N12 es independiente y puede ir en cualquier momento a partir de N11.
 
-**Tareas del usuario (lo que no puede hacer el agente):**
+**Tareas del usuario (lo que no puede hacer el agente), paso a paso:**
 
-- [ ] **Crear el proyecto de Firebase** con su cuenta, en el plan gratuito (Spark). *Hace falta ya para N1.*
-- [ ] **Activar Realtime Database** en ese proyecto (región europea) y **el inicio de sesión anónimo** en Authentication. *N1 y N4.*
-- [ ] **Registrar una aplicación web** en el proyecto y pasar su configuración (el bloque `firebaseConfig`). Es pública por diseño. *N1 y N4.*
-- [ ] **Activar Firebase Hosting** y decidir el nombre del sitio (`<proyecto>.web.app`). *N11.*
-- [ ] **Dar acceso al despliegue automático:** crear la cuenta de servicio de despliegue y guardarla como secreto del repositorio de GitHub (el asistente de `firebase init hosting:github` lo hace en un paso; hay que ejecutarlo con su sesión). *N11.*
-- [ ] **Preparar la landing en una conversación aparte** (diseño, vídeo y textos) y traer el resultado. *N12.*
-- [ ] **Hacer la prueba entre dos redes** con dos dispositivos reales (por ejemplo, el ordenador en casa y el móvil con datos). *N10.*
-- [ ] **Vigilar el consumo** del plan gratuito en la consola de Firebase las primeras semanas. *N10 y N11.*
-- [ ] **Confirmar los valores por defecto** del multijugador (tope x4, diez jugadores y diez espectadores, entrar a mitad de carrera, quien tiene el código entra). *Antes de N6.*
+Los nombres de los menús son los de la consola de Firebase tal como el agente los recuerda el 13/10/2026; pueden haber cambiado algo de sitio. Orden recomendado: de la 1 a la 4 antes de empezar el sprint; el resto, cuando llegue su tarea.
+
+- [ ] **1. Crear el proyecto de Firebase.** *Desbloquea N1.*
+  1. Entrar en `https://console.firebase.google.com` con la cuenta de Google que se quiera usar como dueña del juego.
+  2. «Crear un proyecto» (o «Agregar proyecto»). Nombre sugerido: `f1sim` o parecido; Firebase le añade un sufijo y ese identificador será la dirección del juego (`<identificador>.web.app`), así que conviene que sea presentable.
+  3. Google Analytics: desactivarlo (no se usa).
+  4. Comprobar abajo a la izquierda que el plan es **Spark** (gratuito). No hace falta tarjeta.
+
+- [ ] **2. Activar Realtime Database.** *N1 y N4.*
+  1. Menú «Compilación» → «Realtime Database» → «Crear base de datos».
+  2. Ubicación: **Bélgica (europe-west1)**. No se puede cambiar después.
+  3. Reglas de seguridad: elegir **modo bloqueado**. Las reglas definitivas las escribe el agente en N4 y se publican con el despliegue.
+  4. Ojo: es «Realtime Database», no «Firestore Database»; son dos productos distintos.
+
+- [ ] **3. Activar el inicio de sesión anónimo.** *N1 y N4.*
+  1. Menú «Compilación» → «Authentication» → «Comenzar».
+  2. Pestaña «Método de acceso» → «Anónimo» → activar → guardar.
+
+- [ ] **4. Registrar la aplicación web y pasar su configuración.** *N1 y N4.*
+  1. Rueda dentada (arriba a la izquierda) → «Configuración del proyecto» → pestaña «General» → sección «Tus apps» → icono web (`</>`).
+  2. Apodo: `f1sim-web`. Se puede marcar ya «Configurar también Firebase Hosting».
+  3. Copiar el bloque `firebaseConfig` que aparece (`apiKey`, `authDomain`, `databaseURL`, `projectId`…) y pegárselo al agente en la conversación.
+  4. Ese bloque es público por diseño y puede ir en el repositorio; la seguridad la ponen las reglas de la base de datos. **Lo que nunca hay que pegar en una conversación ni subir al repositorio es un archivo de cuenta de servicio** (el `.json` de claves privadas del paso 6).
+  5. Si en el bloque no aparece `databaseURL`, es que el paso 2 se hizo después: volver a abrir la configuración y copiarlo de nuevo.
+
+- [ ] **5. Activar Firebase Hosting.** *N11.*
+  1. Menú «Compilación» → «Hosting» → «Comenzar». El asistente enseña comandos de terminal: se puede pasar hasta el final sin ejecutarlos, porque la configuración (`firebase.json`) la prepara el agente en N11.
+  2. Apuntar la dirección del sitio (`<identificador>.web.app`) y pasársela al agente.
+
+- [ ] **6. Dar acceso al despliegue automático desde GitHub.** *N11; hacerlo cuando el agente avise de que `firebase.json` ya está en la rama.*
+  1. En un terminal, dentro de la carpeta del repositorio: `npm install -g firebase-tools` (instala la herramienta oficial de Firebase) y `firebase login` (abre el navegador para iniciar sesión).
+  2. `firebase init hosting:github` → repositorio `Mbuendia/F1Sim`. El asistente crea la cuenta de servicio y la guarda él solo como secreto del repositorio en GitHub (se llamará `FIREBASE_SERVICE_ACCOUNT_<IDENTIFICADOR>`); no hay que copiar ninguna clave a mano.
+  3. A las preguntas sobre generar los archivos de despliegue (`.github/workflows/...`): decir que sí y avisar al agente, que los ajusta al proyecto (comando de construcción y carpeta `dist`). Si pregunta por sobrescribir `firebase.json`, decir que no.
+  4. El despliegue actual a GitHub Pages (`.github/workflows/deploy.yml`) lo retira o lo adapta el agente en N11; no hay que tocarlo.
+
+- [ ] **7. Confirmar los valores por defecto del multijugador.** *Antes de N6.* Tope de velocidad x4 con invitados; diez jugadores (uno por equipo) y diez espectadores; se puede entrar a mitad de carrera como espectador o tomando un equipo de la IA; el equipo de quien se cae pasa al estratega y lo recupera al volver; quien tiene el código entra sin que el anfitrión lo acepte.
+
+- [ ] **8. Hacer la prueba entre dos redes.** *N10.*
+  1. Ordenador en la wifi de casa: abrir el juego en su dirección de Firebase y crear una sala.
+  2. Móvil **con la wifi apagada, usando datos**: abrir el enlace o escribir el código, elegir un equipo.
+  3. Desde el móvil, dar una orden de parada y comprobar que el coche para.
+  4. En el ordenador, cambiar a otra pestaña durante un minuto y comprobar en el móvil que la carrera sigue.
+  5. Repetir con el respaldo forzado (el agente dejará un interruptor de pruebas para cortar la conexión directa) y comprobar que se sigue pudiendo jugar, aunque la pista vaya menos fluida.
+  6. Contarle al agente qué indicaba el estado del enlace en cada caso.
+
+- [ ] **9. Vigilar el consumo del plan gratuito las primeras semanas.** *N10 y N11.*
+  1. Consola de Firebase → «Realtime Database» → pestaña «Uso»: conexiones simultáneas y descarga.
+  2. «Hosting» → pestaña «Uso»: almacenamiento y transferencia diaria.
+  3. Rueda dentada → «Uso y facturación» para la vista de conjunto. En el plan Spark no se cobra nunca: si se pasa la cuota, el servicio se corta hasta el día o el mes siguiente. Si eso ocurre con el alojamiento, la alternativa anotada en N11 es Cloudflare Pages.
+
+- [ ] **10. Preparar la landing en una conversación aparte** (diseño, vídeo y textos) y traer el resultado. *N12; no bloquea nada más.*
 
 **Avisos:** (1) N2 y N3 cambian cómo se montan los tests de interfaz de carrera: harán falta autorizaciones para adaptar tests acordados; (2) el sprint añade dos dependencias (`zustand` y `firebase`) y el paquete crecerá: conviene cargar la parte de red solo al crear o unirse a una sala; (3) si el anfitrión cierra el navegador, la carrera se acaba para todos: el guardado automático que ya existe permite al anfitrión retomarla, pero los invitados tienen que volver a entrar.
 
