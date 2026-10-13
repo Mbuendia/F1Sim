@@ -5,6 +5,9 @@ import { StintTimeline } from './components/StintTimeline';
 import { QualifyingLive } from './components/QualifyingLive';
 import { PracticePanel } from './components/PracticePanel';
 import { SpyPanel } from './components/SpyPanel';
+import { AUDIO_LEVELS, AUDIO_LEVEL_LABEL, AUDIO_STORAGE_KEY, AudioEngine, parseAudioLevel } from './audio/AudioEngine';
+import { soundCredits, soundsBetween } from './audio/sounds';
+import type { AudioSnapshot } from './audio/sounds';
 import { engineerPoint, hireStaff, staffEffects } from './simulation/Staff';
 import { canSpy, runSpy, settleSpy } from './simulation/Spy';
 import type { SpyLevel } from './simulation/Spy';
@@ -394,6 +397,22 @@ export const App: React.FC = () => {
   const [bestS2, setBestS2] = useState<number | null>(null);
   const [bestS3, setBestS3] = useState<number | null>(null);
 
+  // [T4.16] Audio: apagado por defecto; el nivel elegido se guarda en el navegador. Sin una interacción previa no suena
+  // nada, se calla con la página oculta o la carrera en pausa y se libera al salir de la carrera.
+  const audio = useMemo(() => new AudioEngine(undefined, undefined, import.meta.env.BASE_URL), []);
+  const [audioLevel, setAudioLevel] = useState(() => { try { return parseAudioLevel(localStorage.getItem(AUDIO_STORAGE_KEY)); } catch { return 0; } });
+  const audioSeen = useRef<AudioSnapshot | null>(null);
+  useEffect(() => {
+    audio.setVolume(AUDIO_LEVELS[audioLevel]);
+    try { localStorage.setItem(AUDIO_STORAGE_KEY, String(audioLevel)); } catch { /* sin almacenamiento */ }
+  }, [audio, audioLevel]);
+  useEffect(() => {
+    const unlock = () => audio.unlock();
+    window.addEventListener('pointerdown', unlock);
+    window.addEventListener('keydown', unlock);
+    return () => { window.removeEventListener('pointerdown', unlock); window.removeEventListener('keydown', unlock); audio.dispose(); };
+  }, [audio]);
+
   // Race flags & Safety Car & DNF & Luck D20 state
   const [raceFlagState, setRaceFlagState] = useState<RaceFlagState>('green');
   const [sectorFlags, setSectorFlags] = useState<[RaceFlagState, RaceFlagState, RaceFlagState]>(['green', 'green', 'green']);
@@ -426,6 +445,15 @@ export const App: React.FC = () => {
         simulation.teamOrderNotices = [];
       }
       setWeather({ ...simulation.weather });
+      // [T4.16] Lo que ha cambiado desde la lectura anterior, en sonidos (solo los coches del jugador dan radio y pistola).
+      const mine = simulation.cars.filter(car => simulation.isPlayerCar(car.driver.id));
+      const heard: AudioSnapshot = {
+        lightState: simulation.lightState, flag: simulation.raceFlagState, finished: simulation.isFinished,
+        wallMessages: mine.reduce((sum, car) => sum + (car.wallProposals?.length ?? 0), 0),
+        servicing: mine.filter(car => car.pitStop.isPitting && car.pitStop.currentStopTimer > 0 && car.pitStop.currentStopTimer < car.pitStop.stopDuration).length,
+      };
+      for (const sound of soundsBetween(audioSeen.current, heard)) audio.play(sound);
+      audioSeen.current = heard;
 
       if (simulation.isFinished) {
         setPodiumCars(simulation.podiumCars);
@@ -852,6 +880,14 @@ export const App: React.FC = () => {
   }, []);
 
   noticeRef.current = pushNotice;
+  // [T4.16] El audio se calla fuera de la carrera, en pausa y con la página oculta; al salir de la carrera se libera.
+  useEffect(() => {
+    const sync = () => audio.setPaused(document.hidden || isPaused || currentView !== 'race');
+    sync();
+    if (currentView !== 'race') { audio.dispose(); audioSeen.current = null; }
+    document.addEventListener('visibilitychange', sync);
+    return () => document.removeEventListener('visibilitychange', sync);
+  }, [audio, isPaused, currentView]);
 
   // El golpe de suerte de un rival no interrumpe: se aplica solo y queda como aviso. La modal es para los pilotos propios.
   const ownLuckEvent = activeLuckEvent && teamCars.some(car => car.id === activeLuckEvent.luckyCarId) ? activeLuckEvent : null;
@@ -1544,6 +1580,7 @@ export const App: React.FC = () => {
             onToggleLuckVariant={handleToggleLuckVariant}
             onSaveGame={saveStore ? handleSaveGame : undefined}
             saveName={saveName}
+            audio={{ level: audioLevel, labels: AUDIO_LEVEL_LABEL, onLevel: setAudioLevel, credits: soundCredits() }}
           />
         </div>
       </header>

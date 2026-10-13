@@ -360,6 +360,11 @@ export class RaceSimulation {
   static readonly PIT_START_SLOT_M = 8;
 
   /** [R54] Dice qué pilotos lleva el jugador. Los coches que dejan de ser suyos pierden sus propuestas. */
+  /** Ese piloto lo dirige el jugador. */
+  isPlayerCar(driverId: string): boolean {
+    return this.playerCars.includes(driverId);
+  }
+
   setPlayerCars(driverIds: string[]) {
     this.playerCars = [...new Set(driverIds)];
     for (const car of this.cars) if (!this.playerCars.includes(car.driver.id) && car.wallProposals?.length) car.wallProposals = [];

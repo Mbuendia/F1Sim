@@ -97,3 +97,10 @@
 @media (max-width: 1439px) {
   .label { display: none; }
 }
+
+/* [T4.16] Sonido */
+.audioLevels { display: flex; flex-direction: column; }
+.audioLevels [aria-checked='true'] { background: var(--panel-2); box-shadow: inset 3px 0 0 var(--accion); }
+.credits { padding: 4px 10px 8px; font-size: 14px; color: var(--text-2); }
+.credits summary { min-height: 32px; display: flex; align-items: center; cursor: pointer; }
+.credits ul { margin: 4px 0 0; padding-left: 16px; display: flex; flex-direction: column; gap: 4px; }
