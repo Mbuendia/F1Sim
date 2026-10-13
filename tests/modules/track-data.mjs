@@ -45,15 +45,19 @@ export default async function run({ server, assert, test }) {
     const zone = OFFICIAL_CIRCUITS.barcelona.drsZoneSpecs.find(z => z.id === 2);
     const interval = geo.trackInterval(zone.startT, zone.endT);
     assert(interval.crossesFinish, 'R03: la zona DRS 2 de Barcelona cruza la meta');
-    assert(interval.contains(0.95) && interval.contains(0.05) && !interval.contains(0.5), 'R03: contiene 0,95 y 0,05 pero no 0,5');
-    const expected = (1 - 0.9015 + 0.0867) * OFFICIAL_CIRCUITS.barcelona.lapLengthMeters;
+    // [G7, Sprint 4.5] contrato revisado el 13/10/2026: la meta está en su sitio real y la zona empieza más cerca de ella.
+    assert(interval.contains(0.99) && interval.contains(0.05) && !interval.contains(0.5), 'R03: contiene 0,99 y 0,05 pero no 0,5');
+    const expected = (1 - zone.startT + zone.endT) * OFFICIAL_CIRCUITS.barcelona.lapLengthMeters;
     const meters = interval.length * OFFICIAL_CIRCUITS.barcelona.lapLengthMeters;
     assert(Math.abs(meters - expected) < 0.5, 'R03: longitud correcta a través de la meta', `${meters.toFixed(1)} m`);
   });
 
   await test('R03: pit lane que cruza y que no cruza la meta', () => {
     const pit = id => geo.trackInterval(tracks[id].pitEntryT, tracks[id].pitExitT);
-    assert(!pit('monaco').crossesFinish && !pit('monaco').contains(0), 'R03: el pit lane de Mónaco no cruza la meta');
+    // [G7, Sprint 4.5] con la meta real, el pit lane de los 23 circuitos la cruza (la meta está junto a los boxes).
+    assert(pit('monaco').crossesFinish && pit('monaco').contains(0), 'R03: el pit lane de Mónaco cruza la meta');
+    const inside = geo.trackInterval(0.2, 0.4);
+    assert(!inside.crossesFinish && !inside.contains(0) && inside.contains(0.3), 'R03: un intervalo que no cruza la meta');
     assert(pit('barcelona').crossesFinish && pit('barcelona').contains(0), 'R03: el pit lane de Barcelona cruza la meta');
   });
 

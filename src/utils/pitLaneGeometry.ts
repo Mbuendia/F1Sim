@@ -21,12 +21,16 @@ export interface PitLaneGeometry {
   wallWidth: number;
 }
 
-// Unidades visuales del mundo, compatibles con la huella actual de CarRenderer.
-// La escala física por circuito es responsabilidad de R03, no del zoom.
-const FAST_LANE_WIDTH = 10;
-const SERVICE_WIDTH = 14;
-const WALL_WIDTH = 1;
+// [G6] Medidas en metros: carril rápido, zona de trabajo con los cajones y muro entre el carril y la pista.
+export const FAST_LANE_WIDTH = 5;
+const SERVICE_WIDTH = 7;
+const BOX_HALF_DEPTH = 2.5;
+const WALL_WIDTH = 0.6;
 const WALL_OFFSET = FAST_LANE_WIDTH / 2 + 1;
+/** [G6] Distancia mínima entre el eje de la pista y el del carril rápido en la zona de servicio, para un ancho de pista dado. */
+export function pitLaneClearance(trackWidthMeters: number): number {
+  return trackWidthMeters / 2 + 1 + FAST_LANE_WIDTH / 2 + 1.5;
+}
 
 function normalAt(points: Point2D[], index: number, closed = false): Point2D {
   const previous = points[closed ? (index - 1 + points.length) % points.length : Math.max(0, index - 1)];
@@ -82,7 +86,7 @@ export function getPitLaneGeometry(track: TrackDefinition): PitLaneGeometry {
 /** Geometría independiente del motor: nunca modifica la ruta ni la posición del coche. */
 export function buildPitLaneGeometry(track: TrackDefinition, teams: PitTeam[]): PitLaneGeometry {
   const main = track.points;
-  const trackHalfWidth = (track.trackWidthMeters || 26) * 1.75 / 2;
+  const trackHalfWidth = (track.trackWidthMeters || 12) / 2;
   const trackEdges = main.length >= 3 ? [-1, 1].map(side => main.map((p, i) => offset(p, normalAt(main, i, true), side * trackHalfWidth))) : [];
   const result: PitLaneGeometry = {
     trackEdges, fastLane: [], fastLaneEdges: [], serviceArea: [], walls: [], boxes: [],
@@ -149,10 +153,10 @@ export function buildPitLaneGeometry(track: TrackDefinition, teams: PitTeam[]): 
     const center = offset(point, normal, serviceSide * (FAST_LANE_WIDTH / 2 + SERVICE_WIDTH / 2));
     const tangent = { x: normal.y, y: -normal.x };
     const corners = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([x, y]) => ({
-      x: center.x + tangent.x * x * halfLength + normal.x * y * 3.5,
-      y: center.y + tangent.y * x * halfLength + normal.y * y * 3.5,
+      x: center.x + tangent.x * x * halfLength + normal.x * y * BOX_HALF_DEPTH,
+      y: center.y + tangent.y * x * halfLength + normal.y * y * BOX_HALF_DEPTH,
     }));
-    result.boxes.push({ team, center, corners, angle, label: offset(point, normal, serviceSide * (FAST_LANE_WIDTH / 2 + SERVICE_WIDTH + 5)) });
+    result.boxes.push({ team, center, corners, angle, label: offset(point, normal, serviceSide * (FAST_LANE_WIDTH / 2 + SERVICE_WIDTH + 3)) });
   }
   return result;
 }

@@ -104,10 +104,10 @@ export default async function run({ server, assert, test }) {
     // En una escapatoria de asfalto (Barcelona, 0,35-0,42) el aquaplaning es una salida de pista y el coche sigue.
     const wide = Array.from({ length: 150 }, (_, i) => {
       const sim = make('barcelona', 1), car = sim.cars[0];
-      Object.assign(car, { progress: 5.355, trackT: 0.355, currentLap: 5, currentSpeedKmh: 220 });
+      Object.assign(car, { progress: 5.421, trackT: 0.421, currentLap: 5, currentSpeedKmh: 220 });
       sim.weatherModel.water.fill(6); sim.weatherModel.waterOff.fill(6);
       sim.setSeed(i + 1); sim.setFixedStep(0.02);
-      while (sim.raceTimeSec < 6 && car.trackT < 0.415 && !sim.incidents.length) sim.update(1 / 30);
+      while (sim.raceTimeSec < 6 && car.trackT < 0.481 && !sim.incidents.length) sim.update(1 / 30);
       return { status: car.status, incident: sim.incidents[0] ? sim.incidents[0].type + '|' + sim.incidents[0].surface + '|' + sim.incidents[0].reason : null, off: Boolean(car.offTrack) };
     }).filter(o => o.incident);
     assert(wide.length >= 1 && wide.every(o => o.status === 'running' && o.off && /^spin|asphalt|.*AQUAPLANING/.test(o.incident)), 'T3.3: en una escapatoria de asfalto el coche se sale por aquaplaning y sigue en carrera', wide.length + ' salidas en 150 intentos');

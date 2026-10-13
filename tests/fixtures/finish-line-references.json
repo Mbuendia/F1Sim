@@ -1,0 +1,118 @@
+{
+  "_nota": "Meta real: distancia (m) de la línea de meta a la salida de boxes a lo largo de la pista, con la meta del trazado de MultiViewer ajustado al eje del juego (scripts/align-circuit-references.mjs).",
+  "barcelona": {
+    "lineToPitExitM": 591,
+    "fitRmsM": 3.9,
+    "year": 2023
+  },
+  "monza": {
+    "lineToPitExitM": 480,
+    "fitRmsM": 3.7,
+    "year": 2021
+  },
+  "silverstone": {
+    "lineToPitExitM": 680,
+    "fitRmsM": 7.8,
+    "year": 2022
+  },
+  "spa": {
+    "lineToPitExitM": 562,
+    "fitRmsM": 9.6,
+    "year": 2021
+  },
+  "monaco": {
+    "lineToPitExitM": 12,
+    "fitRmsM": 7.8,
+    "year": 2022
+  },
+  "spielberg": {
+    "lineToPitExitM": 575,
+    "fitRmsM": 3.9,
+    "year": 2022
+  },
+  "interlagos": {
+    "lineToPitExitM": 1007,
+    "fitRmsM": 9.3,
+    "year": 2023
+  },
+  "suzuka": {
+    "lineToPitExitM": 592,
+    "fitRmsM": 9.1,
+    "year": 2025
+  },
+  "zandvoort": {
+    "lineToPitExitM": 529,
+    "fitRmsM": 10,
+    "year": 2021
+  },
+  "las-vegas": {
+    "lineToPitExitM": 325,
+    "fitRmsM": 10.3,
+    "year": 2023
+  },
+  "bahrain": {
+    "lineToPitExitM": 532,
+    "fitRmsM": 8.3,
+    "year": 2022
+  },
+  "baku": {
+    "lineToPitExitM": 393,
+    "fitRmsM": 10.9,
+    "year": 2022
+  },
+  "melbourne": {
+    "lineToPitExitM": 140,
+    "fitRmsM": 5.9,
+    "year": 2022
+  },
+  "miami": {
+    "lineToPitExitM": 484,
+    "fitRmsM": 6.6,
+    "year": 2022
+  },
+  "shanghai": {
+    "lineToPitExitM": 486,
+    "fitRmsM": 4,
+    "year": 2019
+  },
+  "jeddah": {
+    "lineToPitExitM": 565,
+    "fitRmsM": 5.2,
+    "year": 2022
+  },
+  "marina-bay": {
+    "lineToPitExitM": 490,
+    "fitRmsM": 10.7,
+    "year": 2023
+  },
+  "lusail": {
+    "lineToPitExitM": 618,
+    "fitRmsM": 4.7,
+    "year": 2023
+  },
+  "yas-marina": {
+    "lineToPitExitM": 856,
+    "fitRmsM": 11.2,
+    "year": 2021
+  },
+  "hungaroring": {
+    "lineToPitExitM": 602,
+    "fitRmsM": 3.8,
+    "year": 2021
+  },
+  "mexico-city": {
+    "lineToPitExitM": 560,
+    "fitRmsM": 5.1,
+    "year": 2021
+  },
+  "montreal": {
+    "lineToPitExitM": 361,
+    "fitRmsM": 7.4,
+    "year": 2022
+  },
+  "austin": {
+    "lineToPitExitM": 618,
+    "fitRmsM": 5.8,
+    "year": 2021
+  }
+}

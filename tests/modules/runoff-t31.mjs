@@ -45,14 +45,14 @@ export default async function run({ server, assert, test }) {
 
   await test('T3.1: superficie del punto del accidente', () => {
     const barcelona = getScenario('barcelona');
-    assert(runoff.surfaceAt(barcelona, 0.099) === 'asphalt' && runoff.surfaceAt(barcelona, 0.101) === 'gravel', 'T3.1: a cada lado del final de un tramo sale su superficie',
-      `${runoff.surfaceAt(barcelona, 0.099)} / ${runoff.surfaceAt(barcelona, 0.101)}`);
-    assert(runoff.surfaceAt(barcelona, 0.349) === 'gravel' && runoff.surfaceAt(barcelona, 0.351) === 'asphalt', 'T3.1: y a cada lado del principio de otro');
+    assert(runoff.surfaceAt(barcelona, 0.165) === 'asphalt' && runoff.surfaceAt(barcelona, 0.167) === 'gravel', 'T3.1: a cada lado del final de un tramo sale su superficie',
+      `${runoff.surfaceAt(barcelona, 0.165)} / ${runoff.surfaceAt(barcelona, 0.167)}`);
+    assert(runoff.surfaceAt(barcelona, 0.415) === 'gravel' && runoff.surfaceAt(barcelona, 0.417) === 'asphalt', 'T3.1: y a cada lado del principio de otro');
     assert([0, 0.2, 0.5, 0.9].every(t => runoff.surfaceAt(getScenario('monaco'), t) === 'wall' && runoff.surfaceAt(getScenario('baku'), t) === 'wall'), 'T3.1: en un circuito urbano, muro');
     assert(runoff.surfaceAt(getScenario('silverstone'), 0.5) === 'grass', 'T3.1: fuera de los tramos marcados vale la superficie general del circuito');
 
     const sim = race('barcelona', [0.5, 0.35, 0.2]);
-    assert(sim.runoffSurfaceAt(0.099) === 'asphalt' && sim.runoffSurfaceAt(0.101) === 'gravel', 'T3.1: el motor usa los tramos del circuito');
+    assert(sim.runoffSurfaceAt(0.165) === 'asphalt' && sim.runoffSurfaceAt(0.167) === 'gravel', 'T3.1: el motor usa los tramos del circuito');
     sim.reportIncident(sim.cars[2], 'crash');
     assert(sim.incidents.at(-1).surface === 'gravel' && /GRAVA/.test(sim.cars[2].dnfReason), 'T3.1: el incidente queda registrado con su superficie', `${sim.incidents.at(-1).surface} · ${sim.cars[2].dnfReason}`);
 
@@ -77,9 +77,9 @@ export default async function run({ server, assert, test }) {
   });
 
   await test('T3.1: en una escapatoria de asfalto el coche pierde tiempo y sigue', () => {
-    const T = 0.38; // Barcelona: tramo de asfalto de 0,35 a 0,42.
+    const T = 0.446; // Barcelona: tramo de asfalto de 0,416 a 0,486 (meta real, Sprint 4.5; antes 0,35 a 0,42).
     const solo = crash => {
-      const sim = race('barcelona', [T], { seed: 31 });
+      const sim = race('barcelona', [0.446], { seed: 31 });
       const outcome = crash ? sim.reportCrash(sim.cars[0]) : null;
       return { sim, car: sim.cars[0], outcome };
     };
@@ -166,7 +166,7 @@ export default async function run({ server, assert, test }) {
   });
 
   await test('T3.1: bandera roja y perfil FIA', () => {
-    const grave = race('barcelona', [0.9, 0.8, 0.38]);
+    const grave = race('barcelona', [0.9, 0.8, 0.446]);
     grave.reportIncident(grave.cars[2], 'major_crash');
     assert(grave.raceFlagState === 'red' && grave.incidents.at(-1).surface === 'asphalt', 'T3.1: un accidente grave saca la roja también en asfalto');
     const same = race('barcelona', [0.9, 0.8, 0.7, 0.15, 0.1]);
@@ -174,7 +174,7 @@ export default async function run({ server, assert, test }) {
     same.reportIncident(same.cars[3], 'crash');
     assert(same.incidents[0].sector === same.incidents[1].sector && same.raceFlagState === 'red', 'T3.1: dos coches parados en el mismo sector siguen sacando la roja');
     // Una salida de pista no es un coche parado: no cuenta para la roja.
-    const wide = race('barcelona', [0.9, 0.8, 0.7, 0.41, 0.38]);
+    const wide = race('barcelona', [0.9, 0.8, 0.7, 0.476, 0.446]);
     wide.reportCrash(wide.cars[4]);
     wide.reportIncident(wide.cars[3], 'crash');
     assert(wide.incidents[0].sector === wide.incidents[1].sector && wide.raceFlagState === 'sc' && wide.cars[4].status === 'running', 'T3.1: una salida de pista no suma para la bandera roja', wide.raceFlagState);
@@ -204,7 +204,7 @@ export default async function run({ server, assert, test }) {
       'T3.1: la duración, su motivo y la superficie vuelven con la partida', outcome.errors?.join(' · '));
 
     // Una salida de pista a medias sigue igual tras cargar.
-    const live = race('barcelona', [0.38], { seed: 31 });
+    const live = race('barcelona', [0.446], { seed: 31 });
     live.reportCrash(live.cars[0]);
     run(live, 2);
     const loaded = new RaceSimulation('barcelona');

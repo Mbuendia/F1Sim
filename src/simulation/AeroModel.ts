@@ -82,8 +82,10 @@ export function longitudinalAccel(input: LongitudinalInput, params: AeroParams =
 export const REFERENCE_MASS_KG = CAR_DRY_MASS_KG + 50;
 
 /** [R14] Factor de velocidad de paso por curva por masa: con el mismo apoyo, más masa da menos aceleración lateral. */
+/** [R14] Sensibilidad de la velocidad de paso por curva a la masa; recalibrada en el Sprint 4.5 con el eje a escala real. */
+export const CORNER_MASS_EXPONENT = 0.24;
 export function cornerMassFactor(massKg: number): number {
-  return Math.pow(REFERENCE_MASS_KG / Math.max(1, massKg), 0.15);
+  return Math.pow(REFERENCE_MASS_KG / Math.max(1, massKg), CORNER_MASS_EXPONENT);
 }
 
 /** [R14] Fracción de la potencia necesaria para mantener la velocidad (drag + rodadura frente a empuje disponible). */

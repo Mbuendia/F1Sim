@@ -7,7 +7,9 @@ export default async function run({server, assert, test}) {
     await test(`Q7 ${circuit}`, () => {
       const sim = make(circuit), points = sim.activeTrack.points;
       assert(points.every(p => Number.isFinite(p.trackWidthMeters) && p.trackWidthMeters > 0), `Q7: anchuras válidas en ${circuit}`);
-      assert(new Set(points.map(p => p.trackWidthMeters)).size > 1, `Q7: anchura variable en ${circuit}`);
+      // [G2, Sprint 4.5] contrato revisado el 13/10/2026: la pista se pinta a su ancho real en metros, igual en toda la vuelta; lo que varía por tramo es la capacidad.
+      assert(new Set(points.map(p => p.trackWidthMeters)).size === 1 && points[0].trackWidthMeters === sim.activeTrack.trackWidthMeters && points[0].trackWidthMeters >= 8 && points[0].trackWidthMeters <= 16, `Q7: anchura real del circuito en ${circuit}`);
+      assert(new Set(points.map(p => p.trackWidthCars)).size > 1, `Q7: capacidad variable en ${circuit}`);
     });
   }
   // Frontera sintética ancho→estrecho y costura de meta. No son medidas oficiales.

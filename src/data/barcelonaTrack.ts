@@ -21,6 +21,8 @@ export interface TrackDefinition {
   corners: CornerMarker[];
   points: SplinePoint[];
   pitLanePoints: Point2D[];
+  /** [G6] El carril de boxes cruza la pista por un túnel. */
+  pitTunnel?: boolean;
   pitEntryT: number;
   pitCommitmentT?: number;
   pitCommitmentSource?: 'calibrated';

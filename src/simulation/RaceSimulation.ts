@@ -106,7 +106,7 @@ export class RaceSimulation {
   static readonly UNLAP_KMH = 160;
   static readonly SC_TRAIN_GAP_M = 56;
   /** [R14] Distancia de lift-and-coast antes de cada frenada en modo ahorro (m), calibración del juego. */
-  static readonly LIFT_AND_COAST_M = 35;
+  static readonly LIFT_AND_COAST_M = 18;
 
   // ── TELEMETRÍA AMBIENTAL & CONDICIONES DE PISTA ──
   weather: TrackWeatherState = {
@@ -738,7 +738,7 @@ export class RaceSimulation {
       const driver = applyAttributes(this.baseDriver(driverId), this.attributesFor(driverId));
       const team = TEAMS[driver.teamId];
 
-      const gridSpacing = 0.0035;
+      const gridSpacing = this.gridSpacing();
       const initialProgress = -((idx + 1) * gridSpacing);
 
       const initialTires = TireModel.createFreshTire('medium');
@@ -907,7 +907,7 @@ export class RaceSimulation {
       this.lightsTimer = 0;
       this.cars.forEach((car, idx) => {
         if (car.pitLaneStart) return;   // [R49] espera en el pit lane
-        car.progress = -((idx + 1) * 0.0035);
+        car.progress = -((idx + 1) * this.gridSpacing());
         car.speed = 0.007;
         car.lateralOffset = idx % 2 === 0 ? 0.65 : -0.65;
         car.targetLateralOffset = car.lateralOffset;
@@ -1241,6 +1241,12 @@ export class RaceSimulation {
 
   previousSafetyCarRoute() {
     return this.previousSafetyCar;
+  }
+
+  /** [G7] Separación entre dos puestos de parrilla consecutivos (8 m reales), en fracción de vuelta. */
+  static readonly GRID_SLOT_M = 8;
+  gridSpacing(): number {
+    return RaceSimulation.GRID_SLOT_M / this.activeTrack.lapLengthMeters;
   }
 
   private updateWorldPositions() {
@@ -2326,7 +2332,7 @@ export class RaceSimulation {
     // [R49] Los coches que salen desde el pit lane van al final de `cars` y no ocupan puesto en la parrilla.
     const gridCars = this.cars.filter(car => !car.pitLaneStart);
     gridCars.forEach((car, idx) => {
-      const gridTargetProgress = 1.0 - (idx + 1) * 0.0035;
+      const gridTargetProgress = 1.0 - (idx + 1) * this.gridSpacing();
 
       if (car.progress < gridTargetProgress) {
         car.progress += 0.0025 * dt;
@@ -2344,11 +2350,11 @@ export class RaceSimulation {
     });
 
     const lastCar = gridCars[gridCars.length - 1];
-    const lastCarTarget = 1.0 - (gridCars.length) * 0.0035;
+    const lastCarTarget = 1.0 - (gridCars.length) * this.gridSpacing();
 
     if (!lastCar || lastCar.progress >= lastCarTarget - 0.0005) {
       gridCars.forEach((car, idx) => {
-        car.progress = -((idx + 1) * 0.0035);
+        car.progress = -((idx + 1) * this.gridSpacing());
         car.lateralOffset = idx % 2 === 0 ? 0.65 : -0.65;
         car.targetLateralOffset = car.lateralOffset;
         car.currentLap = 0;

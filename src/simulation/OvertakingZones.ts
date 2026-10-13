@@ -51,7 +51,7 @@ export const ZONES = {
   /** Con sitio para dos coches en vez de tres. */
   NARROW_FACTOR: 0.7,
   /** Metros equivalentes con calidad 0 y con calidad 1. */
-  POOR_M: 300,
+  POOR_M: 350,   // recalibrado en el Sprint 4.5: con el radio real hay más tramos a fondo
   FULL_M: 1350,
   /** La ventaja necesaria crece en proporción inversa a los metros equivalentes, hasta este tope. */
   MAX_DIFFICULTY: 5,

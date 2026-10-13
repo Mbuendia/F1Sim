@@ -4,12 +4,20 @@ import type { TrackDefinition } from '../data/barcelonaTrack';
 export type CarWorldPosition = Pick<CarState, 'worldX' | 'worldY' | 'worldAngle'>;
 type CarRouteState = Pick<CarState, 'progress' | 'isInPitLane' | 'lateralOffset'>;
 
-export function getTrackHalfWidth(trackWidthMeters = 24): number {
-  return trackWidthMeters * 1.75 / 2;
+/** [G2] Medio ancho de pista: el mundo está en metros y la pista se pinta a su ancho real. */
+export function getTrackHalfWidth(trackWidthMeters = 12): number {
+  return trackWidthMeters / 2;
 }
 
-export function getLateralDisplacement(lateralOffset: number, trackWidthMeters = 24, capacity = 3): number {
-  return lateralOffset * getTrackHalfWidth(trackWidthMeters) * (capacity === 2 ? 0.72 : 0.82);
+/** Margen entre el centro del coche y el borde de la pista con `lateralOffset` ±1 (medio coche y un palmo). */
+export const EDGE_MARGIN_M = 1.2;
+
+/**
+ * [G2] Metros a un lado del eje. Con ±1 el coche queda pegado al borde, por dentro; no depende de la capacidad del
+ * tramo, para que el coche no se mueva de lado al pasar de un tramo a otro.
+ */
+export function getLateralDisplacement(lateralOffset: number, trackWidthMeters = 12, _capacity = 3): number {
+  return lateralOffset * Math.max(1, getTrackHalfWidth(trackWidthMeters) - EDGE_MARGIN_M);
 }
 
 export function isCarVisible(car: Pick<CarState, 'status' | 'isRetiredVisible'>): boolean {

@@ -224,7 +224,9 @@ export default async function run({ server, assert, test }) {
     // En la mejor zona de Mónaco: ventaja suficiente sin defensa e insuficiente con ella.
     const best = new RaceSimulation('monaco').overtakingZones.reduce((a, b) => (b.difficulty < a.difficulty ? b : a));
     const undefended = OT.MIN_ADVANTAGE * best.difficulty;
-    const advantage = undefended + 0.002;
+    // [Sprint 4.5] contrato revisado el 13/10/2026: con el radio real la mejor zona de Mónaco es menos difícil y el margen
+    // entre los dos umbrales es más estrecho; la ventaja de la prueba se acerca al umbral sin defensa (antes +0,002).
+    const advantage = undefended + 0.0012;
     assert(advantage + OT.CLOSING_AID_MAX < undefended * OT.DEFENCE_FACTOR, 'R50: la ventaja de la prueba queda entre los dos umbrales', `${(undefended * 100).toFixed(2)} % / ${(undefended * OT.DEFENCE_FACTOR * 100).toFixed(2)} %`);
     const factor = OT.DEFENCE_FACTOR;
     let withoutDefence;

@@ -73,7 +73,7 @@ export default async function run({ server, assert, test }) {
   });
 
   await test('R42: un coche con pinchazo se supera también fuera de zona', () => {
-    const s = puncture(0.15);
+    const s = puncture(0.216);   // [G7, Sprint 4.5] mismo punto del circuito, contado desde la meta real (antes 0,15)
     const { passes } = watch(s, p => p.length > 0, 60);
     assert(passes.length === 1 && passes[0].by === 'behind', 'R42: lo pasa en menos de una vuelta', String(passes.length));
     assert(passes.length === 1 && !s.sim.isOvertakingAllowedZone(passes[0].t), 'R42: fuera de zona, por la gran diferencia de velocidad',

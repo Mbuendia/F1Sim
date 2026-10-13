@@ -1,4 +1,5 @@
 {
+ "_metaG7": "Sprint 4.5 (13/10/2026): las fracciones de vuelta se cuentan desde la meta real de cada circuito (antes, desde la meta anterior del juego); el punto del terreno de cada referencia no ha cambiado.",
  "_nota": "Q19: puntos de detección DRS y activaciones oficiales FIA 2025 transformados a la pista del juego. Texto literal del plano \"Event Notes - Circuit Map\" del Director de Carrera (URL por circuito); posición de las curvas numeradas y de la línea de cronometraje: datos de circuito del cronometraje oficial F1 (api.multiviewer.app, circuitKey 2025), ajustados a buildTrackFromSvg (semejanza + ICP; fitMedianM). Referencias no métricas (entrada/salida de curva, líneas SC, interpretación) marcadas con approx y source calibrated. Fin de zona: frenada de la siguiente curva lenta, sin pasar de la siguiente detección/activación (el flap se cierra al frenar). Generado con scratch/q19-drs.mjs.",
  "barcelona": {
   "event": "Spanish Grand Prix",
@@ -9,25 +10,25 @@
   "points": {
    "D1": {
     "text": "86m before turn 9",
-    "t": 0.5366,
+    "t": 0.6026,
     "approx": null,
     "offTrackM": 3.2
    },
    "D2": {
     "text": "Safety Car Line 1",
-    "t": 0.8343,
+    "t": 0.9003,
     "approx": "línea SC1 ≈ inicio de la entrada a boxes (pitEntryT)",
     "offTrackM": 0
    },
    "A1": {
     "text": "40m after turn 9",
-    "t": 0.5641,
+    "t": 0.6301,
     "approx": null,
     "offTrackM": 0.9
    },
    "A2": {
     "text": "162m after turn 14",
-    "t": 0.9015,
+    "t": 0.9675,
     "approx": null,
     "offTrackM": 0.7
    }
@@ -36,20 +37,20 @@
    {
     "id": 1,
     "name": "A1 · 40m after turn 9",
-    "startT": 0.5641,
-    "endT": 0.6547
+    "startT": 0.6301,
+    "endT": 0.7207
    },
    {
     "id": 2,
     "name": "A2 · 162m after turn 14",
-    "startT": 0.9015,
-    "endT": 0.0867
+    "startT": 0.9675,
+    "endT": 0.1527
    }
   ],
   "drsDetections": [
    {
     "id": "D1",
-    "t": 0.5366,
+    "t": 0.6026,
     "zoneIds": [
      1
     ],
@@ -57,7 +58,7 @@
    },
    {
     "id": "D2",
-    "t": 0.8343,
+    "t": 0.9003,
     "zoneIds": [
      2
     ],
@@ -74,25 +75,25 @@
   "points": {
    "D1": {
     "text": "95m before Turn 7",
-    "t": 0.4126,
+    "t": 0.48,
     "approx": null,
     "offTrackM": 2.6
    },
    "A1": {
     "text": "170m after Turn 7",
-    "t": 0.4585,
+    "t": 0.5259,
     "approx": null,
     "offTrackM": 1.4
    },
    "D2": {
     "text": "20m after Turn 11",
-    "t": 0.8393,
+    "t": 0.9067,
     "approx": null,
     "offTrackM": 0.9
    },
    "A2": {
     "text": "12m after finish line",
-    "t": 0.9347,
+    "t": 0.0021,
     "approx": null,
     "offTrackM": 3.5
    }
@@ -101,20 +102,20 @@
    {
     "id": 1,
     "name": "A1 · 170m after Turn 7",
-    "startT": 0.4585,
-    "endT": 0.588
+    "startT": 0.5259,
+    "endT": 0.6554
    },
    {
     "id": 2,
     "name": "A2 · 12m after finish line",
-    "startT": 0.9347,
-    "endT": 0.0653
+    "startT": 0.0021,
+    "endT": 0.1327
    }
   ],
   "drsDetections": [
    {
     "id": "D1",
-    "t": 0.4126,
+    "t": 0.48,
     "zoneIds": [
      1
     ],
@@ -122,7 +123,7 @@
    },
    {
     "id": "D2",
-    "t": 0.8393,
+    "t": 0.9067,
     "zoneIds": [
      2
     ],
@@ -139,25 +140,25 @@
   "points": {
    "D1": {
     "text": "25m before Turn 3",
-    "t": 0.6626,
+    "t": 0.1425,
     "approx": null,
     "offTrackM": 3.9
    },
    "D2": {
     "text": "Turn 11",
-    "t": 0.1529,
+    "t": 0.6328,
     "approx": null,
     "offTrackM": 12
    },
    "A1": {
     "text": "30m after Turn 5",
-    "t": 0.7356,
+    "t": 0.2155,
     "approx": null,
     "offTrackM": 3.6
    },
    "A2": {
     "text": "Turn 14",
-    "t": 0.2284,
+    "t": 0.7083,
     "approx": null,
     "offTrackM": 5.1
    }
@@ -166,20 +167,20 @@
    {
     "id": 1,
     "name": "A1 · 30m after Turn 5",
-    "startT": 0.7356,
-    "endT": 0.828
+    "startT": 0.2155,
+    "endT": 0.3079
    },
    {
     "id": 2,
     "name": "A2 · Turn 14",
-    "startT": 0.2284,
-    "endT": 0.3507
+    "startT": 0.7083,
+    "endT": 0.8306
    }
   ],
   "drsDetections": [
    {
     "id": "D1",
-    "t": 0.6626,
+    "t": 0.1425,
     "zoneIds": [
      1
     ],
@@ -187,7 +188,7 @@
    },
    {
     "id": "D2",
-    "t": 0.1529,
+    "t": 0.6328,
     "zoneIds": [
      2
     ],
@@ -204,25 +205,25 @@
   "points": {
    "D1": {
     "text": "240m before Turn 2",
-    "t": 0.017,
+    "t": 0.117,
     "approx": null,
     "offTrackM": 1
    },
    "D2": {
     "text": "160m before Turn 18",
-    "t": 0.8389,
+    "t": 0.9389,
     "approx": null,
     "offTrackM": 3.2
    },
    "A1": {
     "text": "305m after Turn 4",
-    "t": 0.1256,
+    "t": 0.2256,
     "approx": null,
     "offTrackM": 0.6
    },
    "A2": {
     "text": "30m after Turn 19",
-    "t": 0.8765,
+    "t": 0.9765,
     "approx": null,
     "offTrackM": 0.2
    }
@@ -231,20 +232,20 @@
    {
     "id": 1,
     "name": "A1 · 305m after Turn 4",
-    "startT": 0.1256,
-    "endT": 0.2187
+    "startT": 0.2256,
+    "endT": 0.3187
    },
    {
     "id": 2,
     "name": "A2 · 30m after Turn 19",
-    "startT": 0.8765,
-    "endT": 0.9267
+    "startT": 0.9765,
+    "endT": 0.0267
    }
   ],
   "drsDetections": [
    {
     "id": "D1",
-    "t": 0.017,
+    "t": 0.117,
     "zoneIds": [
      1
     ],
@@ -252,7 +253,7 @@
    },
    {
     "id": "D2",
-    "t": 0.8389,
+    "t": 0.9389,
     "zoneIds": [
      2
     ],
@@ -269,13 +270,13 @@
   "points": {
    "D1": {
     "text": "80m after Turn 16",
-    "t": 0.5345,
+    "t": 0.838,
     "approx": null,
     "offTrackM": 1.1
    },
    "A1": {
     "text": "18m after Turn 19",
-    "t": 0.6067,
+    "t": 0.9102,
     "approx": null,
     "offTrackM": 1.8
    }
@@ -284,14 +285,14 @@
    {
     "id": 1,
     "name": "A1 · 18m after Turn 19",
-    "startT": 0.6067,
-    "endT": 0.732
+    "startT": 0.9102,
+    "endT": 0.0355
    }
   ],
   "drsDetections": [
    {
     "id": "D1",
-    "t": 0.5345,
+    "t": 0.838,
     "zoneIds": [
      1
     ],
@@ -308,37 +309,37 @@
   "points": {
    "D1": {
     "text": "160m before T1",
-    "t": 0.3308,
+    "t": 0.0634,
     "approx": null,
     "offTrackM": 2.8
    },
    "A1": {
     "text": "102m after T1",
-    "t": 0.3918,
+    "t": 0.1244,
     "approx": null,
     "offTrackM": 1.5
    },
    "D2": {
     "text": "40m before T3",
-    "t": 0.5757,
+    "t": 0.3083,
     "approx": null,
     "offTrackM": 3.3
    },
    "A2": {
     "text": "100m after T3",
-    "t": 0.6094,
+    "t": 0.342,
     "approx": null,
     "offTrackM": 2.6
    },
    "D3": {
     "text": "120m before T10",
-    "t": 0.1581,
+    "t": 0.8907,
     "approx": null,
     "offTrackM": 0.2
    },
    "A3": {
     "text": "106m after T10",
-    "t": 0.2121,
+    "t": 0.9447,
     "approx": null,
     "offTrackM": 2.1
    }
@@ -347,26 +348,26 @@
    {
     "id": 1,
     "name": "A1 · 102m after T1",
-    "startT": 0.3918,
-    "endT": 0.5587
+    "startT": 0.1244,
+    "endT": 0.2913
    },
    {
     "id": 2,
     "name": "A2 · 100m after T3",
-    "startT": 0.6094,
-    "endT": 0.7493
+    "startT": 0.342,
+    "endT": 0.4819
    },
    {
     "id": 3,
     "name": "A3 · 106m after T10",
-    "startT": 0.2121,
-    "endT": 0.3308
+    "startT": 0.9447,
+    "endT": 0.0634
    }
   ],
   "drsDetections": [
    {
     "id": "D1",
-    "t": 0.3308,
+    "t": 0.0634,
     "zoneIds": [
      1
     ],
@@ -374,7 +375,7 @@
    },
    {
     "id": "D2",
-    "t": 0.5757,
+    "t": 0.3083,
     "zoneIds": [
      2
     ],
@@ -382,7 +383,7 @@
    },
    {
     "id": "D3",
-    "t": 0.1581,
+    "t": 0.8907,
     "zoneIds": [
      3
     ],
@@ -399,25 +400,25 @@
   "points": {
    "D1": {
     "text": "Apex of Turn 2",
-    "t": 0.3015,
+    "t": 0.1064,
     "approx": null,
     "offTrackM": 8.2
    },
    "A1": {
     "text": "30m after Turn 3",
-    "t": 0.3514,
+    "t": 0.1563,
     "approx": null,
     "offTrackM": 2.5
    },
    "D2": {
     "text": "30m after Turn 13",
-    "t": 0.9884,
+    "t": 0.7933,
     "approx": null,
     "offTrackM": 0.3
    },
    "A2": {
     "text": "160m before Turn 15",
-    "t": 0.0983,
+    "t": 0.9032,
     "approx": null,
     "offTrackM": 2
    }
@@ -426,20 +427,20 @@
    {
     "id": 1,
     "name": "A1 · 30m after Turn 3",
-    "startT": 0.3514,
-    "endT": 0.4987
+    "startT": 0.1563,
+    "endT": 0.3036
    },
    {
     "id": 2,
     "name": "A2 · 160m before Turn 15",
-    "startT": 0.0983,
-    "endT": 0.2493
+    "startT": 0.9032,
+    "endT": 0.0542
    }
   ],
   "drsDetections": [
    {
     "id": "D1",
-    "t": 0.3015,
+    "t": 0.1064,
     "zoneIds": [
      1
     ],
@@ -447,7 +448,7 @@
    },
    {
     "id": "D2",
-    "t": 0.9884,
+    "t": 0.7933,
     "zoneIds": [
      2
     ],
@@ -464,13 +465,13 @@
   "points": {
    "D1": {
     "text": "40m after Turn 15",
-    "t": 0.8301,
+    "t": 0.8655,
     "approx": null,
     "offTrackM": 5.5
    },
    "A1": {
     "text": "100m before control line",
-    "t": 0.9481,
+    "t": 0.9835,
     "approx": null,
     "offTrackM": 0.7
    }
@@ -479,14 +480,14 @@
    {
     "id": 1,
     "name": "A1 · 100m before control line",
-    "startT": 0.9481,
-    "endT": 0.0853
+    "startT": 0.9835,
+    "endT": 0.1207
    }
   ],
   "drsDetections": [
    {
     "id": "D1",
-    "t": 0.8301,
+    "t": 0.8655,
     "zoneIds": [
      1
     ],
@@ -503,25 +504,25 @@
   "points": {
    "D1": {
     "text": "At entry to turn 10",
-    "t": 0.9132,
+    "t": 0.5778,
     "approx": "entrada de curva ≈ 50 m antes del vértice",
     "offTrackM": 4.5
    },
    "D2": {
     "text": "20m after turn 12",
-    "t": 0.0904,
+    "t": 0.755,
     "approx": null,
     "offTrackM": 0.5
    },
    "A1": {
     "text": "50m after turn 10",
-    "t": 0.9349,
+    "t": 0.5995,
     "approx": null,
     "offTrackM": 2.4
    },
    "A2": {
     "text": "40m after turn 13",
-    "t": 0.1672,
+    "t": 0.8318,
     "approx": null,
     "offTrackM": 1.4
    }
@@ -530,20 +531,20 @@
    {
     "id": 1,
     "name": "A1 · 50m after turn 10",
-    "startT": 0.9349,
-    "endT": 0.036
+    "startT": 0.5995,
+    "endT": 0.7006
    },
    {
     "id": 2,
     "name": "A2 · 40m after turn 13",
-    "startT": 0.1672,
-    "endT": 0.392
+    "startT": 0.8318,
+    "endT": 0.0566
    }
   ],
   "drsDetections": [
    {
     "id": "D1",
-    "t": 0.9132,
+    "t": 0.5778,
     "zoneIds": [
      1
     ],
@@ -551,7 +552,7 @@
    },
    {
     "id": "D2",
-    "t": 0.0904,
+    "t": 0.755,
     "zoneIds": [
      2
     ],
@@ -568,25 +569,25 @@
   "points": {
    "D1": {
     "text": "10m After T2",
-    "t": 0.1167,
+    "t": 0.0611,
     "approx": null,
     "offTrackM": 0.8
    },
    "D2": {
     "text": "710m After T12",
-    "t": 0.6884,
+    "t": 0.6328,
     "approx": null,
     "offTrackM": 0.6
    },
    "A1": {
     "text": "20m After T4",
-    "t": 0.1695,
+    "t": 0.1139,
     "approx": null,
     "offTrackM": 7.2
    },
    "A2": {
     "text": "870m Before T14",
-    "t": 0.7478,
+    "t": 0.6922,
     "approx": null,
     "offTrackM": 2.9
    }
@@ -595,20 +596,20 @@
    {
     "id": 1,
     "name": "A1 · 20m After T4",
-    "startT": 0.1695,
-    "endT": 0.2853
+    "startT": 0.1139,
+    "endT": 0.2297
    },
    {
     "id": 2,
     "name": "A2 · 870m Before T14",
-    "startT": 0.7478,
-    "endT": 0.864
+    "startT": 0.6922,
+    "endT": 0.8084
    }
   ],
   "drsDetections": [
    {
     "id": "D1",
-    "t": 0.1167,
+    "t": 0.0611,
     "zoneIds": [
      1
     ],
@@ -616,7 +617,7 @@
    },
    {
     "id": "D2",
-    "t": 0.6884,
+    "t": 0.6328,
     "zoneIds": [
      2
     ],
@@ -633,37 +634,37 @@
   "points": {
    "D1": {
     "text": "50m before T1",
-    "t": 0.3311,
+    "t": 0.1186,
     "approx": null,
     "offTrackM": 2.2
    },
    "D2": {
     "text": "10m before T9",
-    "t": 0.6922,
+    "t": 0.4797,
     "approx": null,
     "offTrackM": 1.3
    },
    "D3": {
     "text": "110m before T14",
-    "t": 0.0974,
+    "t": 0.8849,
     "approx": null,
     "offTrackM": 3.4
    },
    "A1": {
     "text": "23m after T3",
-    "t": 0.3856,
+    "t": 0.1731,
     "approx": null,
     "offTrackM": 2.5
    },
    "A2": {
     "text": "50m after T10",
-    "t": 0.7216,
+    "t": 0.5091,
     "approx": null,
     "offTrackM": 2.8
    },
    "A3": {
     "text": "250m after T15",
-    "t": 0.1793,
+    "t": 0.9668,
     "approx": null,
     "offTrackM": 0.2
    }
@@ -672,26 +673,26 @@
    {
     "id": 1,
     "name": "A1 · 23m after T3",
-    "startT": 0.3856,
-    "endT": 0.472
+    "startT": 0.1731,
+    "endT": 0.2595
    },
    {
     "id": 2,
     "name": "A2 · 50m after T10",
-    "startT": 0.7216,
-    "endT": 0.836
+    "startT": 0.5091,
+    "endT": 0.6235
    },
    {
     "id": 3,
     "name": "A3 · 250m after T15",
-    "startT": 0.1793,
-    "endT": 0.3173
+    "startT": 0.9668,
+    "endT": 0.1048
    }
   ],
   "drsDetections": [
    {
     "id": "D1",
-    "t": 0.3311,
+    "t": 0.1186,
     "zoneIds": [
      1
     ],
@@ -699,7 +700,7 @@
    },
    {
     "id": "D2",
-    "t": 0.6922,
+    "t": 0.4797,
     "zoneIds": [
      2
     ],
@@ -707,7 +708,7 @@
    },
    {
     "id": "D3",
-    "t": 0.0974,
+    "t": 0.8849,
     "zoneIds": [
      3
     ],
@@ -724,25 +725,25 @@
   "points": {
    "D1": {
     "text": "SC2 before Turn 2",
-    "t": 0.1252,
+    "t": 0.0655,
     "approx": "línea SC2 ≈ reincorporación de boxes (pitExitT)",
     "offTrackM": 0
    },
    "D2": {
     "text": "On Turn 20",
-    "t": 0.8907,
+    "t": 0.831,
     "approx": null,
     "offTrackM": 6.5
    },
    "A1": {
     "text": "54m after Turn 2",
-    "t": 0.1732,
+    "t": 0.1135,
     "approx": null,
     "offTrackM": 1.4
    },
    "A2": {
     "text": "347m after Turn 20",
-    "t": 0.9488,
+    "t": 0.8891,
     "approx": null,
     "offTrackM": 1.6
    }
@@ -751,20 +752,20 @@
    {
     "id": 1,
     "name": "A1 · 54m after Turn 2",
-    "startT": 0.1732,
-    "endT": 0.2827
+    "startT": 0.1135,
+    "endT": 0.223
    },
    {
     "id": 2,
     "name": "A2 · 347m after Turn 20",
-    "startT": 0.9488,
-    "endT": 0.08
+    "startT": 0.8891,
+    "endT": 0.0203
    }
   ],
   "drsDetections": [
    {
     "id": "D1",
-    "t": 0.1252,
+    "t": 0.0655,
     "zoneIds": [
      1
     ],
@@ -772,7 +773,7 @@
    },
    {
     "id": "D2",
-    "t": 0.8907,
+    "t": 0.831,
     "zoneIds": [
      2
     ],
@@ -789,37 +790,37 @@
   "points": {
    "D1": {
     "text": "40m after T6",
-    "t": 0.8064,
+    "t": 0.3633,
     "approx": null,
     "offTrackM": 4
    },
    "D2": {
     "text": "90m before T13",
-    "t": 0.305,
+    "t": 0.8619,
     "approx": null,
     "offTrackM": 2.4
    },
    "A1": {
     "text": "130m after TSP1",
-    "t": 0.8839,
+    "t": 0.4408,
     "approx": "interpretación: 'TSP1' no figura en la leyenda; en el plano la activación 1 está en la recta tras la curva 8 (Lakeside Drive)",
     "offTrackM": 0.3
    },
    "A2": {
     "text": "100m after T10",
-    "t": 0.1099,
+    "t": 0.6668,
     "approx": null,
     "offTrackM": 2.1
    },
    "A3": {
     "text": "30m after T14",
-    "t": 0.3591,
+    "t": 0.916,
     "approx": null,
     "offTrackM": 3.8
    },
    "A4": {
     "text": "30m after T2",
-    "t": 0.5322,
+    "t": 0.0891,
     "approx": null,
     "offTrackM": 4.7
    }
@@ -828,32 +829,32 @@
    {
     "id": 1,
     "name": "A1 · 130m after TSP1",
-    "startT": 0.8839,
-    "endT": 0.0587
+    "startT": 0.4408,
+    "endT": 0.6156
    },
    {
     "id": 2,
     "name": "A2 · 100m after T10",
-    "startT": 0.1099,
-    "endT": 0.1973
+    "startT": 0.6668,
+    "endT": 0.7542
    },
    {
     "id": 3,
     "name": "A3 · 30m after T14",
-    "startT": 0.3591,
-    "endT": 0.484
+    "startT": 0.916,
+    "endT": 0.0409
    },
    {
     "id": 4,
     "name": "A4 · 30m after T2",
-    "startT": 0.5322,
-    "endT": 0.6227
+    "startT": 0.0891,
+    "endT": 0.1796
    }
   ],
   "drsDetections": [
    {
     "id": "D1",
-    "t": 0.8064,
+    "t": 0.3633,
     "zoneIds": [
      1,
      2
@@ -862,7 +863,7 @@
    },
    {
     "id": "D2",
-    "t": 0.305,
+    "t": 0.8619,
     "zoneIds": [
      3,
      4
@@ -880,37 +881,37 @@
   "points": {
    "D1": {
     "text": "90m after turn 8",
-    "t": 0.5524,
+    "t": 0.326,
     "approx": null,
     "offTrackM": 3
    },
    "D2": {
     "text": "70m after turn 16",
-    "t": 0.9017,
+    "t": 0.6753,
     "approx": null,
     "offTrackM": 2.6
    },
    "D3": {
     "text": "15m after turn 17",
-    "t": 0.1363,
+    "t": 0.9099,
     "approx": null,
     "offTrackM": 1.2
    },
    "A1": {
     "text": "30m after turn 9",
-    "t": 0.6387,
+    "t": 0.4123,
     "approx": null,
     "offTrackM": 2.3
    },
    "A2": {
     "text": "525m after turn 16",
-    "t": 0.9848,
+    "t": 0.7584,
     "approx": null,
     "offTrackM": 0.7
    },
    "A3": {
     "text": "On turn 19 apex",
-    "t": 0.1984,
+    "t": 0.972,
     "approx": null,
     "offTrackM": 5.1
    }
@@ -919,26 +920,26 @@
    {
     "id": 1,
     "name": "A1 · 30m after turn 9",
-    "startT": 0.6387,
-    "endT": 0.7813
+    "startT": 0.4123,
+    "endT": 0.5549
    },
    {
     "id": 2,
     "name": "A2 · 525m after turn 16",
-    "startT": 0.9848,
-    "endT": 0.108
+    "startT": 0.7584,
+    "endT": 0.8816
    },
    {
     "id": 3,
     "name": "A3 · On turn 19 apex",
-    "startT": 0.1984,
-    "endT": 0.276
+    "startT": 0.972,
+    "endT": 0.0496
    }
   ],
   "drsDetections": [
    {
     "id": "D1",
-    "t": 0.5524,
+    "t": 0.326,
     "zoneIds": [
      1
     ],
@@ -946,7 +947,7 @@
    },
    {
     "id": "D2",
-    "t": 0.9017,
+    "t": 0.6753,
     "zoneIds": [
      2
     ],
@@ -954,7 +955,7 @@
    },
    {
     "id": "D3",
-    "t": 0.1363,
+    "t": 0.9099,
     "zoneIds": [
      3
     ],
@@ -971,25 +972,25 @@
   "points": {
    "D1": {
     "text": "on turn 12",
-    "t": 0.6943,
+    "t": 0.5929,
     "approx": null,
     "offTrackM": 2.3
    },
    "A1": {
     "text": "375m after turn 13",
-    "t": 0.8004,
+    "t": 0.699,
     "approx": null,
     "offTrackM": 0.7
    },
    "D2": {
     "text": "35m before turn 16",
-    "t": 0.0442,
+    "t": 0.9428,
     "approx": null,
     "offTrackM": 0.5
    },
    "A2": {
     "text": "98m after turn 16",
-    "t": 0.0681,
+    "t": 0.9667,
     "approx": null,
     "offTrackM": 1.3
    }
@@ -998,20 +999,20 @@
    {
     "id": 1,
     "name": "A1 · 375m after turn 13",
-    "startT": 0.8004,
-    "endT": 0.956
+    "startT": 0.699,
+    "endT": 0.8546
    },
    {
     "id": 2,
     "name": "A2 · 98m after turn 16",
-    "startT": 0.0681,
-    "endT": 0.2027
+    "startT": 0.9667,
+    "endT": 0.1013
    }
   ],
   "drsDetections": [
    {
     "id": "D1",
-    "t": 0.6943,
+    "t": 0.5929,
     "zoneIds": [
      1
     ],
@@ -1019,7 +1020,7 @@
    },
    {
     "id": "D2",
-    "t": 0.0442,
+    "t": 0.9428,
     "zoneIds": [
      2
     ],
@@ -1036,37 +1037,37 @@
   "points": {
    "D1": {
     "text": "On exit to turn 17",
-    "t": 0.5352,
+    "t": 0.5269,
     "approx": "salida de curva ≈ 50 m después del vértice",
     "offTrackM": 3.9
    },
    "D2": {
     "text": "On entry to turn 22",
-    "t": 0.6942,
+    "t": 0.6859,
     "approx": "entrada de curva ≈ 50 m antes del vértice",
     "offTrackM": 0.7
    },
    "D3": {
     "text": "On exit to turn 27",
-    "t": 0.9182,
+    "t": 0.9099,
     "approx": "salida de curva ≈ 50 m después del vértice",
     "offTrackM": 0.4
    },
    "A1": {
     "text": "On exit to turn 19",
-    "t": 0.6039,
+    "t": 0.5956,
     "approx": "salida de curva ≈ 50 m después del vértice",
     "offTrackM": 2.3
    },
    "A2": {
     "text": "On entry to turn 25",
-    "t": 0.7804,
+    "t": 0.7721,
     "approx": "entrada de curva ≈ 50 m antes del vértice",
     "offTrackM": 3.3
    },
    "A3": {
     "text": "240m after turn 27",
-    "t": 0.9487,
+    "t": 0.9404,
     "approx": null,
     "offTrackM": 0.9
    }
@@ -1075,26 +1076,26 @@
    {
     "id": 1,
     "name": "A1 · On exit to turn 19",
-    "startT": 0.6039,
-    "endT": 0.6942
+    "startT": 0.5956,
+    "endT": 0.6859
    },
    {
     "id": 2,
     "name": "A2 · On entry to turn 25",
-    "startT": 0.7804,
-    "endT": 0.884
+    "startT": 0.7721,
+    "endT": 0.8757
    },
    {
     "id": 3,
     "name": "A3 · 240m after turn 27",
-    "startT": 0.9487,
-    "endT": 0.0613
+    "startT": 0.9404,
+    "endT": 0.053
    }
   ],
   "drsDetections": [
    {
     "id": "D1",
-    "t": 0.5352,
+    "t": 0.5269,
     "zoneIds": [
      1
     ],
@@ -1102,7 +1103,7 @@
    },
    {
     "id": "D2",
-    "t": 0.6942,
+    "t": 0.6859,
     "zoneIds": [
      2
     ],
@@ -1110,7 +1111,7 @@
    },
    {
     "id": "D3",
-    "t": 0.9182,
+    "t": 0.9099,
     "zoneIds": [
      3
     ],
@@ -1231,13 +1232,13 @@
   "points": {
    "D1": {
     "text": "40m After Turn 15",
-    "t": 0.7487,
+    "t": 0.8348,
     "approx": null,
     "offTrackM": 1.5
    },
    "A1": {
     "text": "305m After Turn 16",
-    "t": 0.8861,
+    "t": 0.9722,
     "approx": null,
     "offTrackM": 5.7
    }
@@ -1246,14 +1247,14 @@
    {
     "id": 1,
     "name": "A1 · 305m After Turn 16",
-    "startT": 0.8861,
-    "endT": 0.0427
+    "startT": 0.9722,
+    "endT": 0.1288
    }
   ],
   "drsDetections": [
    {
     "id": "D1",
-    "t": 0.7487,
+    "t": 0.8348,
     "zoneIds": [
      1
     ],
@@ -1270,25 +1271,25 @@
   "points": {
    "D1": {
     "text": "250m before Turn 5",
-    "t": 0.7982,
+    "t": 0.2281,
     "approx": null,
     "offTrackM": 2.3
    },
    "D2": {
     "text": "50m after Turn 7",
-    "t": 0.0923,
+    "t": 0.5222,
     "approx": null,
     "offTrackM": 1.7
    },
    "A1": {
     "text": "260m after Turn 5",
-    "t": 0.8917,
+    "t": 0.3216,
     "approx": null,
     "offTrackM": 4.1
    },
    "A2": {
     "text": "165m after Turn 7",
-    "t": 0.1138,
+    "t": 0.5437,
     "approx": null,
     "offTrackM": 4.4
    }
@@ -1297,20 +1298,20 @@
    {
     "id": 1,
     "name": "A1 · 260m after Turn 5",
-    "startT": 0.8917,
-    "endT": 0.0427
+    "startT": 0.3216,
+    "endT": 0.4726
    },
    {
     "id": 2,
     "name": "A2 · 165m after Turn 7",
-    "startT": 0.1138,
-    "endT": 0.2387
+    "startT": 0.5437,
+    "endT": 0.6686
    }
   ],
   "drsDetections": [
    {
     "id": "D1",
-    "t": 0.7982,
+    "t": 0.2281,
     "zoneIds": [
      1
     ],
@@ -1318,7 +1319,7 @@
    },
    {
     "id": "D2",
-    "t": 0.0923,
+    "t": 0.5222,
     "zoneIds": [
      2
     ],
@@ -1335,19 +1336,19 @@
   "points": {
    "D1": {
     "text": "5m before Turn 14",
-    "t": 0.5776,
+    "t": 0.9366,
     "approx": null,
     "offTrackM": 2.5
    },
    "A1": {
     "text": "40m after Turn 14",
-    "t": 0.5884,
+    "t": 0.9474,
     "approx": null,
     "offTrackM": 3.4
    },
    "A2": {
     "text": "6m after Turn 1",
-    "t": 0.7908,
+    "t": 0.1498,
     "approx": null,
     "offTrackM": 4
    }
@@ -1356,20 +1357,20 @@
    {
     "id": 1,
     "name": "A1 · 40m after Turn 14",
-    "startT": 0.5884,
-    "endT": 0.7587
+    "startT": 0.9474,
+    "endT": 0.1177
    },
    {
     "id": 2,
     "name": "A2 · 6m after Turn 1",
-    "startT": 0.7908,
-    "endT": 0.8733
+    "startT": 0.1498,
+    "endT": 0.2323
    }
   ],
   "drsDetections": [
    {
     "id": "D1",
-    "t": 0.5776,
+    "t": 0.9366,
     "zoneIds": [
      1,
      2
@@ -1387,31 +1388,31 @@
   "points": {
    "D1": {
     "text": "70m after Turn 9",
-    "t": 0.5345,
+    "t": 0.6678,
     "approx": null,
     "offTrackM": 1
    },
    "A1": {
     "text": "80m after Turn 11",
-    "t": 0.6045,
+    "t": 0.7378,
     "approx": null,
     "offTrackM": 4.8
    },
    "D2": {
     "text": "Exit Turn 15",
-    "t": 0.7978,
+    "t": 0.9311,
     "approx": "salida de curva ≈ 50 m después del vértice",
     "offTrackM": 1.8
    },
    "A2": {
     "text": "240m after Turn 17",
-    "t": 0.8855,
+    "t": 0.0188,
     "approx": null,
     "offTrackM": 5.5
    },
    "A3": {
     "text": "115m after Turn 3",
-    "t": 0.2091,
+    "t": 0.3424,
     "approx": null,
     "offTrackM": 1.9
    }
@@ -1420,26 +1421,26 @@
    {
     "id": 1,
     "name": "A1 · 80m after Turn 11",
-    "startT": 0.6045,
-    "endT": 0.692
+    "startT": 0.7378,
+    "endT": 0.8253
    },
    {
     "id": 2,
     "name": "A2 · 240m after Turn 17",
-    "startT": 0.8855,
-    "endT": 0.124
+    "startT": 0.0188,
+    "endT": 0.2573
    },
    {
     "id": 3,
     "name": "A3 · 115m after Turn 3",
-    "startT": 0.2091,
-    "endT": 0.3187
+    "startT": 0.3424,
+    "endT": 0.452
    }
   ],
   "drsDetections": [
    {
     "id": "D1",
-    "t": 0.5345,
+    "t": 0.6678,
     "zoneIds": [
      1
     ],
@@ -1447,7 +1448,7 @@
    },
    {
     "id": "D2",
-    "t": 0.7978,
+    "t": 0.9311,
     "zoneIds": [
      2,
      3
@@ -1465,31 +1466,31 @@
   "points": {
    "D1": {
     "text": "15m after Turn 5",
-    "t": 0.4686,
+    "t": 0.229,
     "approx": null,
     "offTrackM": 5.4
    },
    "A1": {
     "text": "95m after Turn 7",
-    "t": 0.5608,
+    "t": 0.3212,
     "approx": null,
     "offTrackM": 2.1
    },
    "D2": {
     "text": "110m after Turn 9",
-    "t": 0.7402,
+    "t": 0.5006,
     "approx": null,
     "offTrackM": 3
    },
    "A2": {
     "text": "155m before Turn 12",
-    "t": 0.9264,
+    "t": 0.6868,
     "approx": null,
     "offTrackM": 2.4
    },
    "A3": {
     "text": "70m after Turn 14",
-    "t": 0.1512,
+    "t": 0.9116,
     "approx": null,
     "offTrackM": 3.3
    }
@@ -1498,26 +1499,26 @@
    {
     "id": 1,
     "name": "A1 · 95m after Turn 7",
-    "startT": 0.5608,
-    "endT": 0.668
+    "startT": 0.3212,
+    "endT": 0.4284
    },
    {
     "id": 2,
     "name": "A2 · 155m before Turn 12",
-    "startT": 0.9264,
-    "endT": 0.1013
+    "startT": 0.6868,
+    "endT": 0.8617
    },
    {
     "id": 3,
     "name": "A3 · 70m after Turn 14",
-    "startT": 0.1512,
-    "endT": 0.264
+    "startT": 0.9116,
+    "endT": 0.0244
    }
   ],
   "drsDetections": [
    {
     "id": "D1",
-    "t": 0.4686,
+    "t": 0.229,
     "zoneIds": [
      1
     ],
@@ -1525,7 +1526,7 @@
    },
    {
     "id": "D2",
-    "t": 0.7402,
+    "t": 0.5006,
     "zoneIds": [
      2,
      3
@@ -1543,25 +1544,25 @@
   "points": {
    "D1": {
     "text": "150m after turn 10",
-    "t": 0.9985,
+    "t": 0.4242,
     "approx": null,
     "offTrackM": 2.4
    },
    "D2": {
     "text": "65m after turn 18",
-    "t": 0.451,
+    "t": 0.8767,
     "approx": null,
     "offTrackM": 2.9
    },
    "A1": {
     "text": "345m after turn 11",
-    "t": 0.1042,
+    "t": 0.5299,
     "approx": null,
     "offTrackM": 0.4
    },
    "A2": {
     "text": "80m after turn 20",
-    "t": 0.5624,
+    "t": 0.9881,
     "approx": null,
     "offTrackM": 4.2
    }
@@ -1570,20 +1571,20 @@
    {
     "id": 1,
     "name": "A1 · 345m after turn 11",
-    "startT": 0.1042,
-    "endT": 0.2333
+    "startT": 0.5299,
+    "endT": 0.659
    },
    {
     "id": 2,
     "name": "A2 · 80m after turn 20",
-    "startT": 0.5624,
-    "endT": 0.6653
+    "startT": 0.9881,
+    "endT": 0.091
    }
   ],
   "drsDetections": [
    {
     "id": "D1",
-    "t": 0.9985,
+    "t": 0.4242,
     "zoneIds": [
      1
     ],
@@ -1591,7 +1592,7 @@
    },
    {
     "id": "D2",
-    "t": 0.451,
+    "t": 0.8767,
     "zoneIds": [
      2
     ],

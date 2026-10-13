@@ -107,8 +107,10 @@ export class WeatherRenderer {
     const points = track.points, n = points.length;
     if (!n) return;
     const zoom = camera.zoom;
-    const trackWidth = (track.trackWidthMeters || 26) * 1.75 * zoom;
+    const trackWidth = (track.trackWidthMeters || 12) * zoom;
     const perSegment = n / SEGMENTS;
+    // [G4] Un vértice cada 6 m basta para el agua: el eje tiene una muestra cada 2 m.
+    const stride = track.lapLengthMeters > 0 ? Math.max(1, Math.round(6 / (track.lapLengthMeters / n))) : 1;
     ctx.save();
     ctx.lineCap = 'butt';
     for (let s = 0; s < SEGMENTS; s++) {
@@ -117,7 +119,7 @@ export class WeatherRenderer {
       if (opacity <= 0) continue;
       const from = Math.floor(s * perSegment), to = Math.floor((s + 1) * perSegment);
       ctx.beginPath();
-      for (let i = from; i <= to; i++) {
+      for (let i = from; i <= to; i = i < to ? Math.min(to, i + stride) : to + 1) {
         const p = points[i % n];
         const screen = camera.worldToScreen(p.x, p.y);
         if (i === from) ctx.moveTo(screen.x, screen.y); else ctx.lineTo(screen.x, screen.y);
@@ -133,7 +135,7 @@ export class WeatherRenderer {
       if (line > 0.01) {
         // La franja sigue la trazada ideal curva a curva, no el centro de la pista.
         ctx.beginPath();
-        for (let i = from; i <= to; i++) {
+        for (let i = from; i <= to; i = i < to ? Math.min(to, i + stride) : to + 1) {
           const ideal = dryLinePoint(track, i);
           const screen = camera.worldToScreen(ideal.x, ideal.y);
           if (i === from) ctx.moveTo(screen.x, screen.y); else ctx.lineTo(screen.x, screen.y);
