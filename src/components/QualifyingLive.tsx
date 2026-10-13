@@ -24,7 +24,8 @@ function fitOutline(points: OutlinePoint[]): OutlinePoint[] {
 /**
  * [V7] Clasificación en directo: los coches como puntos dando su vuelta, la tabla de tiempos al día con la zona de
  * eliminación marcada y, al acabar cada sesión, un comentario. Se puede saltar en cualquier momento; el resultado es el
- * de `result`, que ya está calculado: aquí solo se cuenta.
+ * de `result`, que ya está calculado: aquí solo se cuenta. El comentario sale dentro del recuadro del circuito (ya no
+ * rueda nadie), así no tapa ni la tabla ni su leyenda y la ventana no cambia de tamaño.
  */
 export function QualifyingLive({ result, outline, playerIds = [], onDone, startAt }: {
   result: QualifyingResult;
@@ -90,7 +91,8 @@ export function QualifyingLive({ result, outline, playerIds = [], onDone, startA
       </div>
 
       <div className={styles.body}>
-        <svg className={styles.map} viewBox={`0 0 ${VIEW} ${VIEW}`} role="img" aria-label={`Circuito: ${running.length} ${running.length === 1 ? 'coche' : 'coches'} en vuelta lanzada`}>
+        <div className={styles.stage}>
+        <svg className={styles.map} data-dim={comment ? 'true' : undefined} viewBox={`0 0 ${VIEW} ${VIEW}`} role="img" aria-label={`Circuito: ${running.length} ${running.length === 1 ? 'coche' : 'coches'} en vuelta lanzada`}>
           {path.length > 0 && <polygon className={styles.outline} points={path.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ')} />}
           {running.map(dot => {
             const p = at(dot.progress), slot = slots.get(dot.driverId), mine = playerIds.includes(dot.driverId);
@@ -102,6 +104,16 @@ export function QualifyingLive({ result, outline, playerIds = [], onDone, startA
             );
           })}
         </svg>
+        {comment && (
+          <div className={styles.comment} role="status">
+            <strong>Final de {session.label}</strong>
+            <ul>{sessionComment(result, session.id, playerIds).map(line => <li key={line}>{line}</li>)}</ul>
+            <button type="button" className={styles.next} onClick={next}>
+              {index >= sessions.length - 1 ? 'Ver la parrilla' : `Empezar ${sessions[index + 1].label}`}<ChevronRight size={18} aria-hidden="true" />
+            </button>
+          </div>
+        )}
+        </div>
 
         <ol className={styles.table} aria-label={`Tiempos de ${session.label}`}>
           {standings.map((row, position) => {
@@ -120,16 +132,6 @@ export function QualifyingLive({ result, outline, playerIds = [], onDone, startA
         </ol>
       </div>
       {session.advance !== null && <p className={styles.legend}>Por debajo de la línea roja, zona de eliminación: pasan {session.advance}.</p>}
-
-      {comment && (
-        <div className={styles.comment} role="status">
-          <strong>Final de {session.label}</strong>
-          <ul>{sessionComment(result, session.id, playerIds).map(line => <li key={line}>{line}</li>)}</ul>
-          <button type="button" className={styles.next} onClick={next}>
-            {index >= sessions.length - 1 ? 'Ver la parrilla' : `Empezar ${sessions[index + 1].label}`}<ChevronRight size={18} aria-hidden="true" />
-          </button>
-        </div>
-      )}
     </section>
   );
 }

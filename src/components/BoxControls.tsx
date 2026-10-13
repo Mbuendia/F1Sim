@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowUpDown, CloudRain, Dices, Fuel, Hourglass, Lock, Swords, Wrench, Zap } from 'lucide-react';
+import { ArrowUpDown, CloudRain, Dices, Fuel, Gauge, Hourglass, Lock, Swords, Wrench, Zap } from 'lucide-react';
 import type { CarState, TireCompound } from '../types/f1';
 import type { RaceSimulation } from '../simulation/RaceSimulation';
 import styles from './BoxControls.module.css';
@@ -165,7 +165,7 @@ export function BoxControls({ car, simulation, teamCars }: {
                   </Chip>
                 )}
                 {isWaiting && <Chip tone="warn" icon={<Hourglass size={15} aria-hidden="true" />}>Esperando cajón ({p.pitStop.boxWaitTimer.toFixed(1)}s)</Chip>}
-                {pace && <span className={styles.message}>{pace}</span>}
+                {pace && <Chip tone="warn" icon={<Gauge size={15} aria-hidden="true" />} title={`Ritmo: ${pace}`}>{pace}</Chip>}
                 {(message || order) && (
                   <span className={styles.message}>
                     {message}

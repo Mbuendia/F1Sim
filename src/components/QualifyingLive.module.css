@@ -12,6 +12,10 @@
 .progress { height:4px; border-radius:2px; background:var(--line); overflow:hidden; flex-shrink:0; }
 .progress span { display:block; height:100%; background:var(--accion); }
 .body { display:grid; grid-template-columns:minmax(0, 1fr) minmax(260px, 340px); gap:16px; min-height:0; }
+/* Circuito y comentario comparten casilla: el comentario sale centrado sobre el trazado atenuado. */
+.stage { display:grid; min-width:0; }
+.stage > * { grid-area:1 / 1; }
+.map[data-dim] { opacity:.35; }
 .map { width:100%; max-height:62vh; aspect-ratio:1; border-radius:var(--radio-m); background:var(--bg); }
 .outline { fill:none; stroke:var(--line-strong); stroke-width:7; stroke-linejoin:round; }
 .dotLabel { fill:var(--text); font:700 12px var(--font-ui); paint-order:stroke; stroke:var(--bg); stroke-width:3px; }
@@ -26,10 +30,10 @@
 .time { text-align:right; }
 .gap { text-align:right; color:var(--text-2); font-size:14px; }
 .legend { margin:0; font-size:14px; color:var(--text-2); }
-.comment { position:sticky; bottom:0; display:flex; flex-direction:column; gap:8px; padding:14px 16px; border:1px solid var(--line-strong); border-left:4px solid var(--accion); border-radius:var(--radio-m); background:var(--panel-2); box-shadow:0 -8px 24px rgba(0, 0, 0, 0.5); }
-.comment strong { font-size:17px; }
-.comment ul { margin:0; padding-left:18px; display:flex; flex-direction:column; gap:4px; font-size:16px; }
-.next { align-self:flex-end; display:inline-flex; align-items:center; gap:6px; min-height:var(--toque); padding:0 18px; border:0; border-radius:var(--radio-m); background:var(--accion); color:#fff; font:700 16px var(--font-ui); cursor:pointer; }
+.comment { z-index:1; align-self:center; justify-self:center; width:min(100% - 32px, 480px); box-sizing:border-box; box-shadow:0 12px 32px rgba(0, 0, 0, 0.5); display:flex; flex-direction:column; gap:12px; padding:18px 20px; border:1px solid var(--line-strong); border-left:4px solid var(--accion); border-radius:var(--radio-m); background:var(--panel-2); }
+.comment strong { font-size:20px; }
+.comment ul { margin:0; padding-left:18px; display:flex; flex-direction:column; gap:8px; font-size:17px; line-height:1.35; }
+.next { align-self:flex-end; margin-top:6px; display:inline-flex; align-items:center; gap:6px; min-height:var(--toque); padding:0 18px; border:0; border-radius:var(--radio-m); background:var(--accion); color:#fff; font:700 16px var(--font-ui); cursor:pointer; }
 .next:hover { background:var(--accion-hover); }
 @media (max-width:767px) {
   .live { width:100%; min-height:100%; max-height:none; border-radius:0; padding:12px; }

@@ -66,4 +66,5 @@
 .bad { color: var(--negativo) !important; }
 .warn { color: var(--aviso); }
 /* [T4.15] Ventana de parada en la tarjeta del piloto */
-.pitWindow { display: inline-block; font-size: 14px; color: var(--text-2, #cbd5e1); white-space: nowrap; flex-shrink: 0; }
+/* Es el dato fijo de la línea de avisos: si llega un aviso y no caben los dos, se acorta este y el aviso se lee entero. */
+.pitWindow { flex: 0 1 auto; min-width: 96px; overflow: hidden; text-overflow: ellipsis; font-size: 14px; color: var(--text-2, #cbd5e1); white-space: nowrap; }

@@ -8,10 +8,14 @@ type Pace = NonNullable<CarState['paceMode']>;
 export const PACE_LABEL: Record<Pace, string> = { save: 'Ahorro', balanced: 'Normal', push: 'Ataque' };
 const OPTIONS = (['save', 'balanced', 'push'] as Pace[]).map(value => ({ value, label: PACE_LABEL[value] }));
 
-/** Lo que hay que contar del ritmo además del botón marcado: si el coche no puede ir al ritmo pedido, y por qué. */
+/**
+ * Lo que hay que contar del ritmo además del botón marcado: si el coche no puede ir al ritmo pedido, y por qué. Cuando
+ * va al ritmo pedido solo queda el motivo del aviso (el ritmo ya se ve en el botón marcado), para que quepa entero.
+ */
 export function paceNote(simulation: RaceSimulation, carId: number): string | null {
   const pace = simulation.getPaceStatus(carId);
   if (!pace || (pace.requested === pace.effective && !pace.reason)) return null;
+  if (pace.requested === pace.effective) return pace.reason;
   return `Pedido: ${PACE_LABEL[pace.requested]} · Efectivo: ${PACE_LABEL[pace.effective]}${pace.reason ? ` · ${pace.reason}` : ''}`;
 }
 

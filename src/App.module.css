@@ -225,6 +225,8 @@
 .raceShell[data-layout='movil'] .positionsArea,
 .raceShell[data-layout='movil'] .wallArea,
 .raceShell[data-layout='movil'] .detailArea { grid-area: panel; min-width: 0; max-height: 48vh; overflow-y: auto; border: none; border-top: 1px solid var(--line); }
+/* El muro de un piloto cabe entero sin desplazarlo (la pista conserva su 40 % mínimo). */
+.raceShell[data-layout='movil'] .wallArea { max-height: 60vh; }
 
 @media (max-width: 1023px) {
   .raceBar { gap: 6px; padding: 0 6px; }

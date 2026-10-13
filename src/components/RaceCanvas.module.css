@@ -91,4 +91,14 @@
   border: 1px solid rgba(56, 189, 248, 0.6);
   color: #e8e6df;
   font: 700 14px 'Rajdhani', sans-serif;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* En móvil el botón se queda en su icono (y el tiempo elegido, si no es el de la carrera) para no tapar la pista. */
+@media (max-width: 767px) {
+  .weatherTest { right: 8px; bottom: 8px; min-width: var(--toque); justify-content: center; padding: 6px 10px; }
+  .weatherTestLead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .weatherTest[data-default] .weatherTestText { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 }

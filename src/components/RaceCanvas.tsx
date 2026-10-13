@@ -19,7 +19,7 @@ import { WEATHER_TESTS } from '../data/weatherScenarios';
 const SIM_BUDGET_MS = 8;
 
 if (import.meta.env.DEV && typeof window !== 'undefined') (window as unknown as { __frameCost: typeof frameCost }).__frameCost = frameCost;
-import { Compass, RotateCw } from 'lucide-react';
+import { CloudSun, Compass, RotateCw } from 'lucide-react';
 
 interface RaceCanvasProps {
   simulation: RaceSimulation;
@@ -343,8 +343,9 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
 
       {weatherTest && (
         <button type="button" onClick={nextWeatherTest} title="Cambia el tiempo de esta carrera libre para probar la lluvia y el spray"
-          className={styles.weatherTest}>
-          Probar tiempo: {weatherTestIndex < 0 ? 'el de la carrera' : WEATHER_TESTS[weatherTestIndex].label}
+          className={styles.weatherTest} data-default={weatherTestIndex < 0 ? 'true' : undefined}>
+          <CloudSun size={18} aria-hidden="true" />
+          <span className={styles.weatherTestText}><span className={styles.weatherTestLead}>Probar tiempo: </span>{weatherTestIndex < 0 ? 'el de la carrera' : WEATHER_TESTS[weatherTestIndex].label}</span>
         </button>
       )}
 

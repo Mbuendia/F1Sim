@@ -198,7 +198,44 @@
 /* [T4.13] Entrenamientos libres */
 .practiceRow { display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: 10px; align-items: center; padding: 6px 0; border-top: 1px solid var(--line); }
 .practiceLearned { display: flex; flex-direction: column; gap: 4px; min-width: 0; font-size: 15px; }
-.practiceSetups { margin: 0; padding-left: 18px; color: var(--text-2); font-size: 15px; }
+/* Setups en imagen: una fila por setup y una escala por ajuste, con la casilla del valor marcada. */
+.setupTable { align-self: flex-start; max-width: 100%; border-collapse: collapse; font-size: 14px; }
+.setupTable th { padding: 3px 18px 3px 0; text-align: left; font-size: 14px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-3); white-space: nowrap; }
+.setupTable tbody th { font-family: var(--font-marca); font-weight: 700; letter-spacing: 0; color: var(--text); }
+.setupTable td { padding: 3px 18px 3px 0; }
+.setupTable th:last-child, .setupTable td:last-child { padding-right: 0; }
+.setupCell { display: inline-flex; align-items: center; gap: 8px; }
+.setupPips { display: inline-flex; align-items: center; gap: 3px; }
+.setupPips i { width: 12px; height: 8px; border-radius: 2px; background: var(--panel-2); border: 1px solid var(--line-strong); }
+/* La casilla de referencia es más alta: se ve hacia qué lado se aparta el valor. */
+.setupPips i[data-ref] { height: 14px; }
+.setupPips i[data-on] { background: var(--text-2); border-color: var(--text-2); }
+.setupValue { min-width: 62px; color: var(--text-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.setupTable td[data-differs] .setupPips i[data-on] { background: var(--equipo); border-color: var(--equipo); }
+.setupTable td[data-differs] .setupValue { color: var(--text); font-weight: 700; }
+@media (max-width: 767px) {
+  .setupTable th, .setupTable td { padding-right: 8px; }
+  .setupTable thead th { letter-spacing: 0.02em; }
+  .setupPips i { width: 10px; }
+  .setupCell { flex-direction: column; align-items: flex-start; gap: 2px; }
+  .setupValue { min-width: 0; }
+}
+
+/* [T4.8] Reserva y cantera: el reserva a la izquierda y los jóvenes libres como fichas a su derecha. */
+.academy { display: grid; grid-template-columns: minmax(260px, 1fr) minmax(0, 2.6fr); gap: 12px 20px; align-items: start; }
+.juniorGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+.juniorCard { display: flex; flex-direction: column; gap: 6px; min-width: 0; padding: 10px; border: 1px solid var(--line); border-radius: var(--radio-m); background: var(--panel-2); font-size: 15px; }
+.juniorCard .button { margin-top: auto; }
+.juniorName { font-weight: 700; font-size: 17px; overflow-wrap: anywhere; }
+.paceRow { display: flex; align-items: center; gap: 8px; font-size: 15px; white-space: nowrap; }
+.paceTrack { position: relative; flex: 1; min-width: 60px; height: 8px; border-radius: 99px; background: var(--line); overflow: hidden; }
+.paceTrack i { position: absolute; inset: 0 auto 0 0; border-radius: 99px; }
+.pacePotential { background: color-mix(in srgb, var(--equipo) 35%, transparent); }
+.paceNow { background: var(--equipo); }
+.hint { font-size: 14px; color: var(--text-3); }
+.hint summary { padding: 11px 0; cursor: pointer; color: var(--text-2); font-weight: 600; }
+.hint summary:focus-visible { outline: 3px solid var(--foco); outline-offset: 2px; }
+@media (max-width: 1100px) { .academy { grid-template-columns: minmax(0, 1fr); } }
 
 /* [T4.5] Personal técnico */
 .staffGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }

@@ -3,7 +3,7 @@ import { AlertTriangle, Eye, ShieldCheck } from 'lucide-react';
 import { SPY, SPY_LABEL, SPY_LEVELS, canSpy } from '../simulation/Spy';
 import type { SpyLevel, SpyReport } from '../simulation/Spy';
 import { formatMoney } from '../simulation/Finance';
-import { setupText } from './PracticePanel';
+import { SetupCompare } from './SetupCompare';
 import { Segmented } from './ui/Segmented';
 import { Chip } from './ui/Tile';
 import m from './Management.module.css';
@@ -50,9 +50,7 @@ export function SpyPanel({ round, teams, reports, available, canAfford, driverCo
       {mine.map(report => (
         <div key={`${report.teamId}-${report.level}`} className={m.practiceLearned} data-spy={report.teamId}>
           <span className={m.label}>{nameOf(report.teamId)} · {SPY_LABEL[report.level]}</span>
-          <ul className={m.practiceSetups}>
-            {Object.entries(report.setups).map(([driverId, setup]) => <li key={driverId}><b>{driverCode(driverId)}</b>: {setupText(setup)}</li>)}
-          </ul>
+          <SetupCompare caption={`Setups de ${nameOf(report.teamId)}`} head="Piloto" rows={Object.entries(report.setups).map(([driverId, setup]) => ({ id: driverId, name: driverCode(driverId), setup }))} />
           {report.exact
             ? <Chip tone="ok" icon={<ShieldCheck size={14} aria-hidden="true" />}>Informe exacto</Chip>
             : <Chip tone="warn">Puede traer un ajuste desviado un punto</Chip>}

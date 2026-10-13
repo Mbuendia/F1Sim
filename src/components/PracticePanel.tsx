@@ -4,6 +4,8 @@ import type { PracticeProgram, PracticeResult } from '../simulation/Practice';
 import { SETUP_FIELDS } from '../simulation/Setup';
 import type { CarSetup } from '../simulation/Setup';
 import { Segmented } from './ui/Segmented';
+import { SetupCompare } from './SetupCompare';
+import { CompoundBadge } from './CompoundBadge';
 import { Chip } from './ui/Tile';
 import m from './Management.module.css';
 
@@ -62,11 +64,17 @@ function PracticeLearned({ entry }: { entry: PracticeResult['learning'][string] 
       {entry.program === 'setup' && (
         <>
           <span>El setup más rápido está entre estos {entry.setupCandidates?.length}:</span>
-          <ul className={m.practiceSetups}>{(entry.setupCandidates ?? []).map(setup => <li key={setupText(setup)}>{setupText(setup)}</li>)}</ul>
+          <SetupCompare caption="Setups candidatos" head="Opción" rows={(entry.setupCandidates ?? []).map((setup, order) => ({ id: setupText(setup), name: order + 1, setup }))} />
+          {(entry.setupCandidates?.length ?? 0) > 1 && <span className={m.dim}>Resaltado, lo que cambia de una opción a otra.</span>}
         </>
       )}
       {entry.program === 'tanda-larga' && entry.tyreLife && (
-        <span>Vida estimada (±{entry.tyreLifeMargin} vueltas): blando <b>{entry.tyreLife.soft}</b> · medio <b>{entry.tyreLife.medium}</b> · duro <b>{entry.tyreLife.hard}</b></span>
+        <span className={`${m.row} ${m.wrap}`}>
+          <span>Vida estimada (±{entry.tyreLifeMargin} vueltas)</span>
+          {(['soft', 'medium', 'hard'] as const).map(compound => (
+            <span key={compound} className={m.chip}><CompoundBadge compound={compound} size={18} detail="vida estimada" /><b className={m.num}>{entry.tyreLife![compound]}</b> vueltas</span>
+          ))}
+        </span>
       )}
       {entry.program === 'clasificacion' && (
         <span>Ritmo a una vuelta: hacia el puesto <b>{entry.paceRank}</b> (±{entry.paceRankMargin}), a {(entry.paceGapSec ?? 0).toFixed(2).replace('.', ',')} s del mejor</span>
