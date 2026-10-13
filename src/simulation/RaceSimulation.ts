@@ -68,7 +68,7 @@ import type { EndReason, RaceResult, ResultEntry } from './RaceResult';
 import { tyreCrossover, tyreClassOf, tyreWaterGrip, WeatherModel, WeatherScenario } from './WeatherModel';
 import type { TyreClass } from './WeatherModel';
 import { chooseCompound, STRATEGY, StrategyState } from './Strategist';
-import { AERO, CAR_DRY_MASS_KG, cornerMassFactor, dirtyAirLevel, holdThrottle, longitudinalAccel, slipstreamLevel, topSpeedKmh } from './AeroModel';
+import { AERO, CAR_DRY_MASS_KG, TRACTION_GRIP, cornerMassFactor, dirtyAirLevel, holdThrottle, longitudinalAccel, slipstreamLevel, topSpeedKmh } from './AeroModel';
 import { mulberry32, random, Rng, rngState, streamSeed, useRng } from './Random';
 import type { RaceSnapshot } from './Snapshot';
 import { overtakingZonesOf, zoneAt } from './OvertakingZones';
@@ -1665,6 +1665,8 @@ export class RaceSimulation {
         // [R49] Relación de cambio del setup (sin definir con la relación larga).
         gearDrive: technical.gearDrive,
         revLimitFactor: technical.revLimitFactor,
+        // [Sprint 4.5] Tracción según el agarre del coche (goma, temperatura, trazada) frente a su ritmo de potencia.
+        tractionFactor: Math.max(TRACTION_GRIP.MIN, Math.min(TRACTION_GRIP.MAX, (effectivePace / Math.max(1e-6, powerPace)) ** TRACTION_GRIP.EXPONENT)),
       };
 
       // ── FÍSICA LONGITUDINAL REALISTA: FRENADAS VIOLENTAS Y ACELERACIÓN A FONDO ──

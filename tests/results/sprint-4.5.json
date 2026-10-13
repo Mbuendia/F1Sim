@@ -1,6 +1,6 @@
 {
   "summary": {
-    "passed": 5248,
+    "passed": 5391,
     "failed": 1
   },
   "results": [
@@ -512,7 +512,7 @@
           "details": ""
         },
         {
-          "name": "B5: Temporizador de spin entre 8s y 12s (obtenido: 9.1s)",
+          "name": "B5: Temporizador de spin entre 8s y 12s (obtenido: 8.3s)",
           "pass": true,
           "details": ""
         }
@@ -2215,7 +2215,7 @@
         {
           "name": "Q8: misma duración a distintos FPS conserva distribución de goma (1%)",
           "pass": true,
-          "details": "error=0.0003013817447936405"
+          "details": "error=0.002262538333652651"
         }
       ],
       "errors": []
@@ -2334,12 +2334,12 @@
         {
           "name": "Q14: SC no recoloca ni retrocede coche x16",
           "pass": true,
-          "details": "distancia=0.7286615387418873 m; retroceso interno=false"
+          "details": "distancia=0.6834644065699189 m; retroceso interno=false"
         },
         {
           "name": "Q14: SC no recoloca ni retrocede coche x32",
           "pass": true,
-          "details": "distancia=8.755471209015763 m; retroceso interno=false"
+          "details": "distancia=8.230652741704594 m; retroceso interno=false"
         },
         {
           "name": "Q14: reanudación de roja conserva distancia completada",
@@ -4461,7 +4461,7 @@
         {
           "name": "barcelona: sin teletransportes entre pasos consecutivos",
           "pass": true,
-          "details": "ratio 1.1803278688445638"
+          "details": "ratio 1.180327868844954"
         },
         {
           "name": "monaco: al menos 10 puntos de ruta",
@@ -4776,7 +4776,7 @@
         {
           "name": "monaco: sin teletransportes entre pasos consecutivos",
           "pass": true,
-          "details": "ratio 1.1803278688458574"
+          "details": "ratio 1.1803278688567291"
         },
         {
           "name": "suzuka: al menos 10 puntos de ruta",
@@ -5091,7 +5091,7 @@
         {
           "name": "suzuka: sin teletransportes entre pasos consecutivos",
           "pass": true,
-          "details": "ratio 1.1803278688537855"
+          "details": "ratio 1.1803278688532124"
         },
         {
           "name": "barcelona: referencia verificada aportada (estado VERIFICADO)",
@@ -6407,7 +6407,7 @@
         {
           "name": "Q16: despliegue ES→MGU-K <= 4 MJ por vuelta",
           "pass": true,
-          "details": "máx 3.511 MJ"
+          "details": "máx 3.522 MJ"
         },
         {
           "name": "Q16: energía almacenada siempre entre 0 y 4 MJ",
@@ -6417,7 +6417,7 @@
         {
           "name": "Q16: potencia MGU-K <= 120 kW en recarga y despliegue",
           "pass": true,
-          "details": "0 de 69820 pasos"
+          "details": "0 de 69859 pasos"
         },
         {
           "name": "Q16: variación almacenada = recargada − desplegada (sin energía creada ni perdida)",
@@ -6598,27 +6598,27 @@
         {
           "name": "monza green: pérdida prevista a ±1.5 s de la medida",
           "pass": true,
-          "details": "prevista 26.48 s, medida 26.84 s"
+          "details": "prevista 26.48 s, medida 26.88 s"
         },
         {
           "name": "monza vsc: pérdida prevista a ±1.5 s de la medida",
           "pass": true,
-          "details": "prevista 18.38 s, medida 18.35 s"
+          "details": "prevista 18.38 s, medida 18.39 s"
         },
         {
           "name": "silverstone green: pérdida prevista a ±1.5 s de la medida",
           "pass": true,
-          "details": "prevista 38.76 s, medida 39.20 s"
+          "details": "prevista 38.76 s, medida 39.25 s"
         },
         {
           "name": "silverstone vsc: pérdida prevista a ±1.5 s de la medida",
           "pass": true,
-          "details": "prevista 30.48 s, medida 30.23 s"
+          "details": "prevista 30.48 s, medida 30.27 s"
         },
         {
           "name": "spa green: pérdida prevista a ±1.5 s de la medida",
           "pass": true,
-          "details": "prevista 21.18 s, medida 21.34 s"
+          "details": "prevista 21.18 s, medida 21.30 s"
         },
         {
           "name": "spa vsc: pérdida prevista a ±1.5 s de la medida",
@@ -6628,37 +6628,37 @@
         {
           "name": "monaco green: pérdida prevista a ±1.5 s de la medida",
           "pass": true,
-          "details": "prevista 11.62 s, medida 11.88 s"
+          "details": "prevista 11.62 s, medida 12.01 s"
         },
         {
           "name": "monaco vsc: pérdida prevista a ±1.5 s de la medida",
           "pass": true,
-          "details": "prevista 9.50 s, medida 9.46 s"
+          "details": "prevista 9.50 s, medida 9.59 s"
         },
         {
           "name": "spielberg green: pérdida prevista a ±1.5 s de la medida",
           "pass": true,
-          "details": "prevista 30.02 s, medida 29.92 s"
+          "details": "prevista 30.02 s, medida 29.83 s"
         },
         {
           "name": "spielberg vsc: pérdida prevista a ±1.5 s de la medida",
           "pass": true,
-          "details": "prevista 24.40 s, medida 24.02 s"
+          "details": "prevista 24.40 s, medida 24.16 s"
         },
         {
           "name": "interlagos green: pérdida prevista a ±1.5 s de la medida",
           "pass": true,
-          "details": "prevista 43.40 s, medida 43.60 s"
+          "details": "prevista 43.40 s, medida 43.65 s"
         },
         {
           "name": "interlagos vsc: pérdida prevista a ±1.5 s de la medida",
           "pass": true,
-          "details": "prevista 32.46 s, medida 32.21 s"
+          "details": "prevista 32.46 s, medida 31.99 s"
         },
         {
           "name": "suzuka green: pérdida prevista a ±1.5 s de la medida",
           "pass": true,
-          "details": "prevista 30.84 s, medida 31.28 s"
+          "details": "prevista 30.84 s, medida 31.42 s"
         },
         {
           "name": "suzuka vsc: pérdida prevista a ±1.5 s de la medida",
@@ -6673,22 +6673,22 @@
         {
           "name": "zandvoort vsc: pérdida prevista a ±1.5 s de la medida",
           "pass": true,
-          "details": "prevista 19.16 s, medida 19.18 s"
+          "details": "prevista 19.16 s, medida 19.14 s"
         },
         {
           "name": "las-vegas green: pérdida prevista a ±1.5 s de la medida",
           "pass": true,
-          "details": "prevista 16.12 s, medida 16.50 s"
+          "details": "prevista 16.12 s, medida 16.46 s"
         },
         {
           "name": "las-vegas vsc: pérdida prevista a ±1.5 s de la medida",
           "pass": true,
-          "details": "prevista 13.02 s, medida 12.67 s"
+          "details": "prevista 13.02 s, medida 12.89 s"
         },
         {
           "name": "bahrain green: pérdida prevista a ±1.5 s de la medida",
           "pass": true,
-          "details": "prevista 26.36 s, medida 26.88 s"
+          "details": "prevista 26.36 s, medida 27.02 s"
         },
         {
           "name": "bahrain vsc: pérdida prevista a ±1.5 s de la medida",
@@ -6698,22 +6698,22 @@
         {
           "name": "baku green: pérdida prevista a ±1.5 s de la medida",
           "pass": true,
-          "details": "prevista 23.66 s, medida 23.94 s"
+          "details": "prevista 23.66 s, medida 23.98 s"
         },
         {
           "name": "baku vsc: pérdida prevista a ±1.5 s de la medida",
           "pass": true,
-          "details": "prevista 18.20 s, medida 18.26 s"
+          "details": "prevista 18.20 s, medida 18.13 s"
         },
         {
           "name": "melbourne green: pérdida prevista a ±1.5 s de la medida",
           "pass": true,
-          "details": "prevista 24.62 s, medida 24.95 s"
+          "details": "prevista 24.62 s, medida 25.08 s"
         },
         {
           "name": "melbourne vsc: pérdida prevista a ±1.5 s de la medida",
           "pass": true,
-          "details": "prevista 18.06 s, medida 17.95 s"
+          "details": "prevista 18.06 s, medida 17.91 s"
         },
         {
           "name": "miami green: pérdida prevista a ±1.5 s de la medida",
@@ -6723,67 +6723,67 @@
         {
           "name": "miami vsc: pérdida prevista a ±1.5 s de la medida",
           "pass": true,
-          "details": "prevista 18.90 s, medida 18.74 s"
+          "details": "prevista 18.90 s, medida 18.66 s"
         },
         {
           "name": "shanghai green: pérdida prevista a ±1.5 s de la medida",
           "pass": true,
-          "details": "prevista 25.82 s, medida 26.40 s"
+          "details": "prevista 25.82 s, medida 26.49 s"
         },
         {
           "name": "shanghai vsc: pérdida prevista a ±1.5 s de la medida",
           "pass": true,
-          "details": "prevista 19.00 s, medida 19.32 s"
+          "details": "prevista 19.00 s, medida 19.27 s"
         },
         {
           "name": "jeddah green: pérdida prevista a ±1.5 s de la medida",
           "pass": true,
-          "details": "prevista 26.26 s, medida 26.49 s"
+          "details": "prevista 26.26 s, medida 26.53 s"
         },
         {
           "name": "jeddah vsc: pérdida prevista a ±1.5 s de la medida",
           "pass": true,
-          "details": "prevista 20.30 s, medida 19.89 s"
+          "details": "prevista 20.30 s, medida 19.98 s"
         },
         {
           "name": "marina-bay green: pérdida prevista a ±1.5 s de la medida",
           "pass": true,
-          "details": "prevista 23.46 s, medida 23.45 s"
+          "details": "prevista 23.46 s, medida 23.63 s"
         },
         {
           "name": "marina-bay vsc: pérdida prevista a ±1.5 s de la medida",
           "pass": true,
-          "details": "prevista 19.82 s, medida 19.80 s"
+          "details": "prevista 19.82 s, medida 19.76 s"
         },
         {
           "name": "lusail green: pérdida prevista a ±1.5 s de la medida",
           "pass": true,
-          "details": "prevista 41.48 s, medida 41.93 s"
+          "details": "prevista 41.48 s, medida 42.02 s"
         },
         {
           "name": "lusail vsc: pérdida prevista a ±1.5 s de la medida",
           "pass": true,
-          "details": "prevista 30.04 s, medida 29.48 s"
+          "details": "prevista 30.04 s, medida 29.83 s"
         },
         {
           "name": "yas-marina green: pérdida prevista a ±1.5 s de la medida",
           "pass": true,
-          "details": "prevista 34.18 s, medida 34.28 s"
+          "details": "prevista 34.18 s, medida 34.23 s"
         },
         {
           "name": "yas-marina vsc: pérdida prevista a ±1.5 s de la medida",
           "pass": true,
-          "details": "prevista 27.10 s, medida 26.88 s"
+          "details": "prevista 27.10 s, medida 26.84 s"
         },
         {
           "name": "hungaroring green: pérdida prevista a ±1.5 s de la medida",
           "pass": true,
-          "details": "prevista 34.32 s, medida 34.54 s"
+          "details": "prevista 34.32 s, medida 34.67 s"
         },
         {
           "name": "hungaroring vsc: pérdida prevista a ±1.5 s de la medida",
           "pass": true,
-          "details": "prevista 26.38 s, medida 26.40 s"
+          "details": "prevista 26.38 s, medida 26.49 s"
         },
         {
           "name": "mexico-city green: pérdida prevista a ±1.5 s de la medida",
@@ -6793,27 +6793,27 @@
         {
           "name": "mexico-city vsc: pérdida prevista a ±1.5 s de la medida",
           "pass": true,
-          "details": "prevista 19.92 s, medida 19.71 s"
+          "details": "prevista 19.92 s, medida 19.76 s"
         },
         {
           "name": "montreal green: pérdida prevista a ±1.5 s de la medida",
           "pass": true,
-          "details": "prevista 23.24 s, medida 23.32 s"
+          "details": "prevista 23.24 s, medida 23.45 s"
         },
         {
           "name": "montreal vsc: pérdida prevista a ±1.5 s de la medida",
           "pass": true,
-          "details": "prevista 19.30 s, medida 19.05 s"
+          "details": "prevista 19.30 s, medida 19.14 s"
         },
         {
           "name": "austin green: pérdida prevista a ±1.5 s de la medida",
           "pass": true,
-          "details": "prevista 29.76 s, medida 29.74 s"
+          "details": "prevista 29.76 s, medida 29.83 s"
         },
         {
           "name": "austin vsc: pérdida prevista a ±1.5 s de la medida",
           "pass": true,
-          "details": "prevista 23.20 s, medida 22.84 s"
+          "details": "prevista 23.20 s, medida 22.88 s"
         },
         {
           "name": "Q13: pérdida SC < VSC < verde",
@@ -6833,7 +6833,7 @@
         {
           "name": "Q13: error máximo dentro de tolerancia",
           "pass": true,
-          "details": "0.58 s"
+          "details": "0.67 s"
         }
       ],
       "errors": []
@@ -6949,32 +6949,32 @@
         {
           "name": "Q12 barcelona: push -0.3 ± 0.2 s/vuelta frente a Balanced",
           "pass": true,
-          "details": "-0.104 s (Balanced 76.45 s)"
+          "details": "-0.138 s (Balanced 76.46 s)"
         },
         {
           "name": "Q12 barcelona: save +0.4 ± 0.2 s/vuelta frente a Balanced",
           "pass": true,
-          "details": "+0.478 s (Balanced 76.45 s)"
+          "details": "+0.481 s (Balanced 76.46 s)"
         },
         {
           "name": "Q12 monza: push -0.3 ± 0.2 s/vuelta frente a Balanced",
           "pass": true,
-          "details": "-0.292 s (Balanced 81.56 s)"
+          "details": "-0.365 s (Balanced 81.70 s)"
         },
         {
           "name": "Q12 monza: save +0.4 ± 0.2 s/vuelta frente a Balanced",
           "pass": true,
-          "details": "+0.552 s (Balanced 81.56 s)"
+          "details": "+0.470 s (Balanced 81.70 s)"
         },
         {
           "name": "Q12 monaco: push -0.3 ± 0.2 s/vuelta frente a Balanced",
           "pass": true,
-          "details": "-0.337 s (Balanced 73.92 s)"
+          "details": "-0.380 s (Balanced 73.80 s)"
         },
         {
           "name": "Q12 monaco: save +0.4 ± 0.2 s/vuelta frente a Balanced",
           "pass": true,
-          "details": "+0.264 s (Balanced 73.92 s)"
+          "details": "+0.293 s (Balanced 73.80 s)"
         }
       ],
       "errors": []
@@ -7681,12 +7681,12 @@
         {
           "name": "R36: el líder alcanza y dobla al coche lento",
           "pass": true,
-          "details": "43 s"
+          "details": "42 s"
         },
         {
           "name": "R36: la señal dura al menos 2 s antes del adelantamiento",
           "pass": true,
-          "details": "33.96 s"
+          "details": "33.36 s"
         },
         {
           "name": "R36: el doblado llega a ceder del todo antes de ser pasado",
@@ -7701,12 +7701,12 @@
         {
           "name": "R36: el líder no atraviesa al doblado (pasa con separación lateral)",
           "pass": true,
-          "details": "0 pasos encima · lateral 0.89"
+          "details": "0 pasos encima · lateral 1.58"
         },
         {
           "name": "R36: el doblaje se completa en menos de una vuelta desde el aviso",
           "pass": true,
-          "details": "34.0 s"
+          "details": "33.4 s"
         },
         {
           "name": "R36: un coche de la misma vuelta a 2 s no provoca bandera azul",
@@ -7797,7 +7797,7 @@
         {
           "name": "Q16: fixture: había energía contabilizada en la vuelta",
           "pass": true,
-          "details": "desplegada 0.441 MJ, recuperada 0.253 MJ"
+          "details": "desplegada 0.444 MJ, recuperada 0.256 MJ"
         },
         {
           "name": "Q16: al entrar en boxes se reinician los contadores por vuelta",
@@ -8061,7 +8061,7 @@
         {
           "name": "R02: s1 + s2 + s3 = tiempo de vuelta en cada vuelta",
           "pass": true,
-          "details": "76.439, 76.412, 76.365"
+          "details": "76.419, 76.407, 76.371"
         },
         {
           "name": "R02: gapToCarAheadSec = diferencia de tiempos de paso",
@@ -8071,7 +8071,7 @@
         {
           "name": "R02: ya no es progress × 77,8 s",
           "pass": true,
-          "details": "1.888 s"
+          "details": "1.874 s"
         },
         {
           "name": "R02: el líder tiene al doblado como vecino físico, no como rival deportivo",
@@ -8096,7 +8096,7 @@
         {
           "name": "R02: el mismo resultado con la lista invertida",
           "pass": true,
-          "details": "3.299046308,3.292585121 / 3.299046308,3.292585121"
+          "details": "3.299065854,3.292267410 / 3.299065854,3.292267410"
         },
         {
           "name": "R02: dos carreras con la misma semilla son idénticas",
@@ -8514,8 +8514,8 @@
       ],
       "sprint": "2.9",
       "kind": "contract",
-      "passed": 45,
-      "failed": 1,
+      "passed": 46,
+      "failed": 0,
       "assertions": [
         {
           "name": "R27: barcelona usa la geometría SVG real del juego",
@@ -8674,8 +8674,8 @@
         },
         {
           "name": "R50: monza-remontada con al menos 6 adelantamientos en verde",
-          "pass": false,
-          "details": "4 en zona · 0 fuera"
+          "pass": true,
+          "details": "7 en zona · 0 fuera"
         },
         {
           "name": "R50: monza-remontada sin adelantamientos fuera de zona",
@@ -8685,7 +8685,7 @@
         {
           "name": "R50: monza-remontada cuenta los adelantamientos por zona",
           "pass": true,
-          "details": "{\"3\":1,\"4\":1,\"6\":2}"
+          "details": "{\"3\":2,\"4\":2,\"6\":3}"
         },
         {
           "name": "R42: bahrain-remontada sin invariantes rotas",
@@ -8695,7 +8695,7 @@
         {
           "name": "R50: bahrain-remontada con al menos 6 adelantamientos en verde",
           "pass": true,
-          "details": "16 en zona · 0 fuera"
+          "details": "17 en zona · 0 fuera"
         },
         {
           "name": "R50: bahrain-remontada sin adelantamientos fuera de zona",
@@ -8705,7 +8705,7 @@
         {
           "name": "R50: bahrain-remontada cuenta los adelantamientos por zona",
           "pass": true,
-          "details": "{\"1\":5,\"4\":6,\"5\":5}"
+          "details": "{\"1\":4,\"3\":3,\"4\":5,\"5\":5}"
         },
         {
           "name": "R27: Barcelona idéntica a 30/144 FPS y x1/x16",
@@ -8784,22 +8784,22 @@
         {
           "name": "R05: punta con DRS en Barcelona entre 315 y 340 km/h (rango provisional)",
           "pass": true,
-          "details": "337.9 km/h"
+          "details": "337.8 km/h"
         },
         {
           "name": "R05: ningún coche supera 370 km/h en barcelona",
           "pass": true,
-          "details": "337.9 km/h"
+          "details": "337.8 km/h"
         },
         {
           "name": "R05: ningún coche supera 370 km/h en monaco",
           "pass": true,
-          "details": "297.1 km/h"
+          "details": "297.0 km/h"
         },
         {
           "name": "R05: ningún paso acelera más de 15 m/s² (también al entrar o salir del DRS)",
           "pass": true,
-          "details": "12.95 m/s²"
+          "details": "13.05 m/s²"
         },
         {
           "name": "R05: ningún paso frena más de 55 m/s²",
@@ -8844,12 +8844,12 @@
         {
           "name": "R05: el motor aplica aire sucio al seguir de cerca en curva",
           "pass": true,
-          "details": "0.8426280331704512"
+          "details": "0.8419456856627089"
         },
         {
           "name": "R05: en curva, seguir de cerca no es más rápido que ir solo",
           "pass": true,
-          "details": "123.65 / 123.65 km/h"
+          "details": "123.38 / 123.38 km/h"
         }
       ],
       "errors": []
@@ -8882,7 +8882,7 @@
         {
           "name": "R06: en una vuelta de barcelona se gasta más el lado izquierdo",
           "pass": true,
-          "details": "izq 194.422 · der 194.499"
+          "details": "izq 194.422 · der 194.498"
         },
         {
           "name": "R06: en una vuelta de interlagos se gasta más el lado derecho",
@@ -8952,7 +8952,7 @@
         {
           "name": "R06: la vuelta con el juego frío es 0,3–2,0 s más lenta que la siguiente",
           "pass": true,
-          "details": "0.457 s"
+          "details": "0.470 s"
         },
         {
           "name": "R06: Push calienta más",
@@ -9010,7 +9010,7 @@
         {
           "name": "R14: quemado = inicial − actual",
           "pass": true,
-          "details": "1.1210753710912655 / 1.1210753710912655"
+          "details": "1.118919828522749 / 1.118919828522749"
         },
         {
           "name": "R14: Barcelona en balanced consume 1,3–1,9 kg/vuelta",
@@ -9025,7 +9025,7 @@
         {
           "name": "R14: la carga cubre la carrera más la muestra",
           "pass": true,
-          "details": "101.04 kg ≥ 97.74 kg"
+          "details": "101.04 kg ≥ 97.71 kg"
         },
         {
           "name": "R14: muestra = litros × densidad",
@@ -9045,12 +9045,12 @@
         {
           "name": "R14: save levanta antes de frenar (lift-and-coast)",
           "pass": true,
-          "details": "4.22 s"
+          "details": "4.14 s"
         },
         {
           "name": "R14: con 100 kg es 1–4 s/vuelta más lento que con 10 kg",
           "pass": true,
-          "details": "1.480 s"
+          "details": "1.440 s"
         },
         {
           "name": "R14: con un resto que se muestra 0,0 sigue en carrera",
@@ -9153,12 +9153,12 @@
         {
           "name": "R15: MGU-K→ES ≤ 2 MJ y ES→MGU-K ≤ 4 MJ por vuelta",
           "pass": true,
-          "details": "2.000 / 3.037 MJ"
+          "details": "2.000 / 3.035 MJ"
         },
         {
           "name": "R15: ES→K + H→K ≤ 120 kW en cada paso",
           "pass": true,
-          "details": "0 de 29280"
+          "details": "0 de 29282"
         },
         {
           "name": "R15: con la batería llena no se recarga (saturación)",
@@ -9203,7 +9203,7 @@
         {
           "name": "R15: fixture: el coche sale de la parrilla y pasa de 100 km/h",
           "pass": true,
-          "details": "247.3 km/h"
+          "details": "246.5 km/h"
         },
         {
           "name": "R15: sin despliegue del MGU-K por debajo de 100 km/h en la salida",
@@ -9256,7 +9256,7 @@
         {
           "name": "R16: tras 60 s a 0,4 s de otro coche, el motor está más caliente",
           "pass": true,
-          "details": "97.88 / 96.03 °C"
+          "details": "97.96 / 96.03 °C"
         },
         {
           "name": "R16: frenos fríos limitan ya la deceleración del primer paso",
@@ -9419,12 +9419,12 @@
         {
           "name": "R17: en Monza la baja carga es más rápida",
           "pass": true,
-          "details": "81.040 / 83.440 s"
+          "details": "81.140 / 83.340 s"
         },
         {
           "name": "R17: en Mónaco la alta carga es más rápida",
           "pass": true,
-          "details": "74.060 / 74.400 s"
+          "details": "73.960 / 74.520 s"
         },
         {
           "name": "R17: el perfil McLaren es más rápido que el Sauber con el mismo piloto",
@@ -9449,7 +9449,7 @@
         {
           "name": "R17: calentar antes el neumático hace la out-lap más rápida",
           "pass": true,
-          "details": "77.029 / 77.050 s"
+          "details": "77.050 / 77.069 s"
         },
         {
           "name": "R17: y desgasta más",
@@ -9610,17 +9610,17 @@
         {
           "name": "R08: tránsito + servicio + cola + retención = total medido",
           "pass": true,
-          "details": "49.020 / 49.020 s"
+          "details": "49.000 / 49.000 s"
         },
         {
           "name": "R08: en double-stack el segundo coche registra cola",
           "pass": true,
-          "details": "2.40 s"
+          "details": "2.42 s"
         },
         {
           "name": "R08: la cola no supera el servicio del compañero",
           "pass": true,
-          "details": "2.40 / 2.78 s"
+          "details": "2.42 / 2.78 s"
         },
         {
           "name": "R08: se aceptan dos paradas programadas",
@@ -9944,7 +9944,7 @@
         {
           "name": "R11: el hueco cambia menos de un 10 %",
           "pass": true,
-          "details": "8.56 → 8.58 s"
+          "details": "8.62 → 8.64 s"
         },
         {
           "name": "R11: tras frenar, nunca supera a su referencia",
@@ -9954,7 +9954,7 @@
         {
           "name": "R11: el tiempo perdido no se recupera (el hueco crece)",
           "pass": true,
-          "details": "173.1 → 239.7 m"
+          "details": "175.4 → 242.2 m"
         },
         {
           "name": "R11: se anuncia «VSC ending»",
@@ -10014,7 +10014,7 @@
         {
           "name": "R11: al salir, la referencia arranca desde el coche con a lo sumo 1 s de margen",
           "pass": true,
-          "details": "0.9799458714236948"
+          "details": "0.9799458714112461"
         }
       ],
       "errors": []
@@ -10191,7 +10191,7 @@
         {
           "name": "R13: espera 5 s parado antes del servicio",
           "pass": true,
-          "details": "7.38 s parado, servicio 2.38 s"
+          "details": "7.58 s parado, servicio 2.58 s"
         },
         {
           "name": "R13: cruza el pit lane sin detenerse y queda cumplido",
@@ -10377,7 +10377,7 @@
         {
           "name": "R25: antes de llegar a desgaste crítico",
           "pass": true,
-          "details": "29.187074317339615"
+          "details": "29.191430188029756"
         },
         {
           "name": "R25: compuesto que llega al final (sin blando para 20 vueltas)",
@@ -10417,7 +10417,7 @@
         {
           "name": "R25: con neumático crítico paran los dos y la espera queda registrada",
           "pass": true,
-          "details": "1.70 s"
+          "details": "1.82 s"
         },
         {
           "name": "R25: no para justo delante de otro coche",
@@ -10510,7 +10510,7 @@
         {
           "name": "R42: fuera de zona, por la gran diferencia de velocidad",
           "pass": true,
-          "details": "0.21841617972161798"
+          "details": "0.21838466894208342"
         },
         {
           "name": "R42: neumáticos — sin adelantamiento en el sector con amarilla",
@@ -11077,12 +11077,12 @@
         {
           "name": "R43: el ángulo pintado no gira más de 6 rad por segundo simulado",
           "pass": true,
-          "details": "3.64 rad/s"
+          "details": "3.36 rad/s"
         },
         {
           "name": "R43: el ángulo pintado sigue al real",
           "pass": true,
-          "details": "-0.0013068777136468806"
+          "details": "-0.0011849647294066338"
         },
         {
           "name": "R43: el objetivo de la cámara es la pose pintada",
@@ -13344,7 +13344,7 @@
         {
           "name": "R49: barcelona — espera, sale en verde y se incorpora detrás de todos",
           "pass": true,
-          "details": "{\"joined\":true,\"movedOnRed\":false,\"greenStep\":695,\"fieldPassedAtGreen\":true,\"worstPosition\":1,\"maxLimitedKmh\":74,\"othersAhead\":true,\"joinStep\":791}"
+          "details": "{\"joined\":true,\"movedOnRed\":false,\"greenStep\":702,\"fieldPassedAtGreen\":true,\"worstPosition\":1,\"maxLimitedKmh\":74,\"othersAhead\":true,\"joinStep\":798}"
         },
         {
           "name": "R49: barcelona — sin infracción ni parada",
@@ -13359,7 +13359,7 @@
         {
           "name": "R49: monza — espera, sale en verde y se incorpora detrás de todos",
           "pass": true,
-          "details": "{\"joined\":true,\"movedOnRed\":false,\"greenStep\":618,\"fieldPassedAtGreen\":true,\"worstPosition\":1,\"maxLimitedKmh\":74,\"othersAhead\":true,\"joinStep\":714}"
+          "details": "{\"joined\":true,\"movedOnRed\":false,\"greenStep\":628,\"fieldPassedAtGreen\":true,\"worstPosition\":1,\"maxLimitedKmh\":74,\"othersAhead\":true,\"joinStep\":724}"
         },
         {
           "name": "R49: monza — sin infracción ni parada",
@@ -13369,7 +13369,7 @@
         {
           "name": "R49: silverstone — espera, sale en verde y se incorpora detrás de todos",
           "pass": true,
-          "details": "{\"joined\":true,\"movedOnRed\":false,\"greenStep\":800,\"fieldPassedAtGreen\":true,\"worstPosition\":1,\"maxLimitedKmh\":74,\"othersAhead\":true,\"joinStep\":896}"
+          "details": "{\"joined\":true,\"movedOnRed\":false,\"greenStep\":807,\"fieldPassedAtGreen\":true,\"worstPosition\":1,\"maxLimitedKmh\":74,\"othersAhead\":true,\"joinStep\":903}"
         },
         {
           "name": "R49: silverstone — sin infracción ni parada",
@@ -13379,7 +13379,7 @@
         {
           "name": "R49: spa — espera, sale en verde y se incorpora detrás de todos",
           "pass": true,
-          "details": "{\"joined\":true,\"movedOnRed\":false,\"greenStep\":933,\"fieldPassedAtGreen\":true,\"worstPosition\":1,\"maxLimitedKmh\":74,\"othersAhead\":true,\"joinStep\":1029}"
+          "details": "{\"joined\":true,\"movedOnRed\":false,\"greenStep\":944,\"fieldPassedAtGreen\":true,\"worstPosition\":1,\"maxLimitedKmh\":74,\"othersAhead\":true,\"joinStep\":1040}"
         },
         {
           "name": "R49: spa — sin infracción ni parada",
@@ -13389,7 +13389,7 @@
         {
           "name": "R49: monaco — espera, sale en verde y se incorpora detrás de todos",
           "pass": true,
-          "details": "{\"joined\":true,\"movedOnRed\":false,\"greenStep\":270,\"fieldPassedAtGreen\":true,\"worstPosition\":1,\"maxLimitedKmh\":74,\"othersAhead\":true,\"joinStep\":366}"
+          "details": "{\"joined\":true,\"movedOnRed\":false,\"greenStep\":274,\"fieldPassedAtGreen\":true,\"worstPosition\":1,\"maxLimitedKmh\":74,\"othersAhead\":true,\"joinStep\":370}"
         },
         {
           "name": "R49: monaco — sin infracción ni parada",
@@ -13399,7 +13399,7 @@
         {
           "name": "R49: spielberg — espera, sale en verde y se incorpora detrás de todos",
           "pass": true,
-          "details": "{\"joined\":true,\"movedOnRed\":false,\"greenStep\":904,\"fieldPassedAtGreen\":true,\"worstPosition\":1,\"maxLimitedKmh\":74,\"othersAhead\":true,\"joinStep\":1000}"
+          "details": "{\"joined\":true,\"movedOnRed\":false,\"greenStep\":913,\"fieldPassedAtGreen\":true,\"worstPosition\":1,\"maxLimitedKmh\":74,\"othersAhead\":true,\"joinStep\":1009}"
         },
         {
           "name": "R49: spielberg — sin infracción ni parada",
@@ -13409,7 +13409,7 @@
         {
           "name": "R49: interlagos — espera, sale en verde y se incorpora detrás de todos",
           "pass": true,
-          "details": "{\"joined\":true,\"movedOnRed\":false,\"greenStep\":1252,\"fieldPassedAtGreen\":true,\"worstPosition\":1,\"maxLimitedKmh\":74,\"othersAhead\":true,\"joinStep\":1348}"
+          "details": "{\"joined\":true,\"movedOnRed\":false,\"greenStep\":1260,\"fieldPassedAtGreen\":true,\"worstPosition\":1,\"maxLimitedKmh\":74,\"othersAhead\":true,\"joinStep\":1356}"
         },
         {
           "name": "R49: interlagos — sin infracción ni parada",
@@ -13419,7 +13419,7 @@
         {
           "name": "R49: suzuka — espera, sale en verde y se incorpora detrás de todos",
           "pass": true,
-          "details": "{\"joined\":true,\"movedOnRed\":false,\"greenStep\":696,\"fieldPassedAtGreen\":true,\"worstPosition\":1,\"maxLimitedKmh\":74,\"othersAhead\":true,\"joinStep\":792}"
+          "details": "{\"joined\":true,\"movedOnRed\":false,\"greenStep\":703,\"fieldPassedAtGreen\":true,\"worstPosition\":1,\"maxLimitedKmh\":74,\"othersAhead\":true,\"joinStep\":799}"
         },
         {
           "name": "R49: suzuka — sin infracción ni parada",
@@ -13429,7 +13429,7 @@
         {
           "name": "R49: zandvoort — espera, sale en verde y se incorpora detrás de todos",
           "pass": true,
-          "details": "{\"joined\":true,\"movedOnRed\":false,\"greenStep\":823,\"fieldPassedAtGreen\":true,\"worstPosition\":1,\"maxLimitedKmh\":74,\"othersAhead\":true,\"joinStep\":919}"
+          "details": "{\"joined\":true,\"movedOnRed\":false,\"greenStep\":830,\"fieldPassedAtGreen\":true,\"worstPosition\":1,\"maxLimitedKmh\":74,\"othersAhead\":true,\"joinStep\":926}"
         },
         {
           "name": "R49: zandvoort — sin infracción ni parada",
@@ -13439,7 +13439,7 @@
         {
           "name": "R49: las-vegas — espera, sale en verde y se incorpora detrás de todos",
           "pass": true,
-          "details": "{\"joined\":true,\"movedOnRed\":false,\"greenStep\":637,\"fieldPassedAtGreen\":true,\"worstPosition\":1,\"maxLimitedKmh\":74,\"othersAhead\":true,\"joinStep\":733}"
+          "details": "{\"joined\":true,\"movedOnRed\":false,\"greenStep\":646,\"fieldPassedAtGreen\":true,\"worstPosition\":1,\"maxLimitedKmh\":74,\"othersAhead\":true,\"joinStep\":742}"
         },
         {
           "name": "R49: las-vegas — sin infracción ni parada",
@@ -13449,7 +13449,7 @@
         {
           "name": "R49: bahrain — espera, sale en verde y se incorpora detrás de todos",
           "pass": true,
-          "details": "{\"joined\":true,\"movedOnRed\":false,\"greenStep\":657,\"fieldPassedAtGreen\":true,\"worstPosition\":1,\"maxLimitedKmh\":74,\"othersAhead\":true,\"joinStep\":753}"
+          "details": "{\"joined\":true,\"movedOnRed\":false,\"greenStep\":664,\"fieldPassedAtGreen\":true,\"worstPosition\":1,\"maxLimitedKmh\":74,\"othersAhead\":true,\"joinStep\":760}"
         },
         {
           "name": "R49: bahrain — sin infracción ni parada",
@@ -13459,7 +13459,7 @@
         {
           "name": "R49: baku — espera, sale en verde y se incorpora detrás de todos",
           "pass": true,
-          "details": "{\"joined\":true,\"movedOnRed\":false,\"greenStep\":733,\"fieldPassedAtGreen\":true,\"worstPosition\":1,\"maxLimitedKmh\":74,\"othersAhead\":true,\"joinStep\":829}"
+          "details": "{\"joined\":true,\"movedOnRed\":false,\"greenStep\":742,\"fieldPassedAtGreen\":true,\"worstPosition\":1,\"maxLimitedKmh\":74,\"othersAhead\":true,\"joinStep\":838}"
         },
         {
           "name": "R49: baku — sin infracción ni parada",
@@ -13469,7 +13469,7 @@
         {
           "name": "R49: melbourne — espera, sale en verde y se incorpora detrás de todos",
           "pass": true,
-          "details": "{\"joined\":true,\"movedOnRed\":false,\"greenStep\":381,\"fieldPassedAtGreen\":true,\"worstPosition\":1,\"maxLimitedKmh\":74,\"othersAhead\":true,\"joinStep\":477}"
+          "details": "{\"joined\":true,\"movedOnRed\":false,\"greenStep\":388,\"fieldPassedAtGreen\":true,\"worstPosition\":1,\"maxLimitedKmh\":74,\"othersAhead\":true,\"joinStep\":484}"
         },
         {
           "name": "R49: melbourne — sin infracción ni parada",
@@ -13479,7 +13479,7 @@
         {
           "name": "R49: miami — espera, sale en verde y se incorpora detrás de todos",
           "pass": true,
-          "details": "{\"joined\":true,\"movedOnRed\":false,\"greenStep\":831,\"fieldPassedAtGreen\":true,\"worstPosition\":1,\"maxLimitedKmh\":74,\"othersAhead\":true,\"joinStep\":927}"
+          "details": "{\"joined\":true,\"movedOnRed\":false,\"greenStep\":838,\"fieldPassedAtGreen\":true,\"worstPosition\":1,\"maxLimitedKmh\":74,\"othersAhead\":true,\"joinStep\":934}"
         },
         {
           "name": "R49: miami — sin infracción ni parada",
@@ -13489,7 +13489,7 @@
         {
           "name": "R49: shanghai — espera, sale en verde y se incorpora detrás de todos",
           "pass": true,
-          "details": "{\"joined\":true,\"movedOnRed\":false,\"greenStep\":628,\"fieldPassedAtGreen\":true,\"worstPosition\":1,\"maxLimitedKmh\":74,\"othersAhead\":true,\"joinStep\":724}"
+          "details": "{\"joined\":true,\"movedOnRed\":false,\"greenStep\":635,\"fieldPassedAtGreen\":true,\"worstPosition\":1,\"maxLimitedKmh\":74,\"othersAhead\":true,\"joinStep\":731}"
         },
         {
           "name": "R49: shanghai — sin infracción ni parada",
@@ -13499,7 +13499,7 @@
         {
           "name": "R49: jeddah — espera, sale en verde y se incorpora detrás de todos",
           "pass": true,
-          "details": "{\"joined\":true,\"movedOnRed\":false,\"greenStep\":903,\"fieldPassedAtGreen\":true,\"worstPosition\":1,\"maxLimitedKmh\":74,\"othersAhead\":true,\"joinStep\":999}"
+          "details": "{\"joined\":true,\"movedOnRed\":false,\"greenStep\":914,\"fieldPassedAtGreen\":true,\"worstPosition\":1,\"maxLimitedKmh\":74,\"othersAhead\":true,\"joinStep\":1010}"
         },
         {
           "name": "R49: jeddah — sin infracción ni parada",
@@ -13509,7 +13509,7 @@
         {
           "name": "R49: marina-bay — espera, sale en verde y se incorpora detrás de todos",
           "pass": true,
-          "details": "{\"joined\":true,\"movedOnRed\":false,\"greenStep\":821,\"fieldPassedAtGreen\":true,\"worstPosition\":1,\"maxLimitedKmh\":74,\"othersAhead\":true,\"joinStep\":917}"
+          "details": "{\"joined\":true,\"movedOnRed\":false,\"greenStep\":823,\"fieldPassedAtGreen\":true,\"worstPosition\":1,\"maxLimitedKmh\":74,\"othersAhead\":true,\"joinStep\":919}"
         },
         {
           "name": "R49: marina-bay — sin infracción ni parada",
@@ -13519,7 +13519,7 @@
         {
           "name": "R49: lusail — espera, sale en verde y se incorpora detrás de todos",
           "pass": true,
-          "details": "{\"joined\":true,\"movedOnRed\":false,\"greenStep\":710,\"fieldPassedAtGreen\":true,\"worstPosition\":1,\"maxLimitedKmh\":74,\"othersAhead\":true,\"joinStep\":806}"
+          "details": "{\"joined\":true,\"movedOnRed\":false,\"greenStep\":717,\"fieldPassedAtGreen\":true,\"worstPosition\":1,\"maxLimitedKmh\":74,\"othersAhead\":true,\"joinStep\":813}"
         },
         {
           "name": "R49: lusail — sin infracción ni parada",
@@ -13529,7 +13529,7 @@
         {
           "name": "R49: yas-marina — espera, sale en verde y se incorpora detrás de todos",
           "pass": true,
-          "details": "{\"joined\":true,\"movedOnRed\":false,\"greenStep\":998,\"fieldPassedAtGreen\":true,\"worstPosition\":1,\"maxLimitedKmh\":74,\"othersAhead\":true,\"joinStep\":1094}"
+          "details": "{\"joined\":true,\"movedOnRed\":false,\"greenStep\":1005,\"fieldPassedAtGreen\":true,\"worstPosition\":1,\"maxLimitedKmh\":74,\"othersAhead\":true,\"joinStep\":1101}"
         },
         {
           "name": "R49: yas-marina — sin infracción ni parada",
@@ -13539,7 +13539,7 @@
         {
           "name": "R49: hungaroring — espera, sale en verde y se incorpora detrás de todos",
           "pass": true,
-          "details": "{\"joined\":true,\"movedOnRed\":false,\"greenStep\":785,\"fieldPassedAtGreen\":true,\"worstPosition\":1,\"maxLimitedKmh\":74,\"othersAhead\":true,\"joinStep\":881}"
+          "details": "{\"joined\":true,\"movedOnRed\":false,\"greenStep\":789,\"fieldPassedAtGreen\":true,\"worstPosition\":1,\"maxLimitedKmh\":74,\"othersAhead\":true,\"joinStep\":885}"
         },
         {
           "name": "R49: hungaroring — sin infracción ni parada",
@@ -13549,7 +13549,7 @@
         {
           "name": "R49: mexico-city — espera, sale en verde y se incorpora detrás de todos",
           "pass": true,
-          "details": "{\"joined\":true,\"movedOnRed\":false,\"greenStep\":680,\"fieldPassedAtGreen\":true,\"worstPosition\":1,\"maxLimitedKmh\":74,\"othersAhead\":true,\"joinStep\":776}"
+          "details": "{\"joined\":true,\"movedOnRed\":false,\"greenStep\":684,\"fieldPassedAtGreen\":true,\"worstPosition\":1,\"maxLimitedKmh\":74,\"othersAhead\":true,\"joinStep\":780}"
         },
         {
           "name": "R49: mexico-city — sin infracción ni parada",
@@ -13559,7 +13559,7 @@
         {
           "name": "R49: montreal — espera, sale en verde y se incorpora detrás de todos",
           "pass": true,
-          "details": "{\"joined\":true,\"movedOnRed\":false,\"greenStep\":781,\"fieldPassedAtGreen\":true,\"worstPosition\":1,\"maxLimitedKmh\":74,\"othersAhead\":true,\"joinStep\":877}"
+          "details": "{\"joined\":true,\"movedOnRed\":false,\"greenStep\":786,\"fieldPassedAtGreen\":true,\"worstPosition\":1,\"maxLimitedKmh\":74,\"othersAhead\":true,\"joinStep\":882}"
         },
         {
           "name": "R49: montreal — sin infracción ni parada",
@@ -13569,7 +13569,7 @@
         {
           "name": "R49: austin — espera, sale en verde y se incorpora detrás de todos",
           "pass": true,
-          "details": "{\"joined\":true,\"movedOnRed\":false,\"greenStep\":803,\"fieldPassedAtGreen\":true,\"worstPosition\":1,\"maxLimitedKmh\":74,\"othersAhead\":true,\"joinStep\":899}"
+          "details": "{\"joined\":true,\"movedOnRed\":false,\"greenStep\":810,\"fieldPassedAtGreen\":true,\"worstPosition\":1,\"maxLimitedKmh\":74,\"othersAhead\":true,\"joinStep\":906}"
         },
         {
           "name": "R49: austin — sin infracción ni parada",
@@ -13661,8 +13661,8 @@
       ],
       "sprint": "2.11",
       "kind": "contract",
-      "passed": 1022,
-      "failed": 0,
+      "passed": 1021,
+      "failed": 1,
       "assertions": [
         {
           "name": "R50: barcelona tiene al menos una zona, numeradas en orden",
@@ -18632,7 +18632,7 @@
         {
           "name": "R50: en monza un coche un 3 % más rápido pasa en menos de 2 vueltas, dentro de una zona",
           "pass": true,
-          "details": "[{\"t\":0.5832359304984798,\"laps\":0.28354181781847254,\"lap\":3,\"zone\":4}]"
+          "details": "[{\"t\":0.584157784188561,\"laps\":0.2844625555661766,\"lap\":3,\"zone\":4}]"
         },
         {
           "name": "R50: en monza la maniobra solo está activa dentro de zona",
@@ -18642,7 +18642,7 @@
         {
           "name": "R50: en bahrain un coche un 3 % más rápido pasa en menos de 2 vueltas, dentro de una zona",
           "pass": true,
-          "details": "[{\"t\":0.6163110454205509,\"laps\":0.3165353074298931,\"lap\":3,\"zone\":3}]"
+          "details": "[{\"t\":0.6165555370572529,\"laps\":0.3167713971139978,\"lap\":3,\"zone\":3}]"
         },
         {
           "name": "R50: en bahrain la maniobra solo está activa dentro de zona",
@@ -18676,7 +18676,7 @@
         },
         {
           "name": "R50: en Monza todos los adelantamientos son dentro de zona",
-          "pass": true,
+          "pass": false,
           "details": ""
         },
         {
@@ -18687,7 +18687,7 @@
         {
           "name": "R50: el coche atacado se defiende dentro de una zona",
           "pass": true,
-          "details": "372"
+          "details": "379"
         },
         {
           "name": "R50: se coloca en el interior de la curva que cierra la zona",
@@ -18702,7 +18702,7 @@
         {
           "name": "R50: el atacante toma el otro lado",
           "pass": true,
-          "details": "255 pasos por fuera · 2 por el mismo lado"
+          "details": "259 pasos por fuera · 2 por el mismo lado"
         },
         {
           "name": "R50: un coche solo no se defiende",
@@ -18742,7 +18742,7 @@
         {
           "name": "R50: sin el efecto de la defensa, esa ventaja basta para pasar en la mejor zona",
           "pass": true,
-          "details": "[{\"t\":0.6081934225491601,\"laps\":1.3084518518622703,\"lap\":4,\"zone\":2}]"
+          "details": "[{\"t\":0.6078198109917401,\"laps\":0.30808252608615616,\"lap\":3,\"zone\":2}]"
         },
         {
           "name": "R50: con el interior cubierto, la misma ventaja no basta",
@@ -18762,12 +18762,12 @@
         {
           "name": "R50: el coche solapado que no ataca cede y se descuelga",
           "pass": true,
-          "details": "8.42 m"
+          "details": "8.19 m"
         },
         {
           "name": "R50: a los dos coches les enseñan bandera azul a la vez",
           "pass": true,
-          "details": "1580"
+          "details": "1577"
         },
         {
           "name": "R50: con bandera azul ninguno gana el puesto al otro sin maniobra",
@@ -19959,7 +19959,7 @@
         {
           "name": "R04: bloqueado con pista mojada, con su motivo",
           "pass": true,
-          "details": "{\"gapSec\":0.79056901220416,\"aheadCarId\":0,\"zoneId\":1,\"detectionId\":\"SYN\",\"state\":\"bloqueado\",\"reason\":\"Pista mojada o poca visibilidad: Dirección de Carrera desactiva el DRS\"}"
+          "details": "{\"gapSec\":0.7932248753092163,\"aheadCarId\":0,\"zoneId\":1,\"detectionId\":\"SYN\",\"state\":\"bloqueado\",\"reason\":\"Pista mojada o poca visibilidad: Dirección de Carrera desactiva el DRS\"}"
         },
         {
           "name": "R04: el líder a menos de 1 s de un doblado obtiene permiso y lo usa",
@@ -20805,7 +20805,7 @@
         {
           "name": "R24: hueco real con el de delante",
           "pass": true,
-          "details": "0.3007361089901224 / 0.3007361089901224"
+          "details": "0.16735460058180252 / 0.16735460058180252"
         },
         {
           "name": "R24: hueco real con el de detrás",
@@ -20830,7 +20830,7 @@
         {
           "name": "R24: combustible, vueltas que da y reserva respecto a las que faltan",
           "pass": true,
-          "details": "{\"kg\":69.57156290844927,\"lapsOfFuel\":47.661297768161866,\"lapsToGo\":43.79543488624651,\"reserveLaps\":3.865862881915355}"
+          "details": "{\"kg\":69.56723495798954,\"lapsOfFuel\":47.65833282491547,\"lapsToGo\":43.85087189200881,\"reserveLaps\":3.8074609329066575}"
         },
         {
           "name": "R24: neumáticos montados y juegos disponibles",
@@ -21248,7 +21248,7 @@
         {
           "name": "R23: pista dentro del límite (barcelona seco zoom 0.4)",
           "pass": true,
-          "details": "8259"
+          "details": "8271"
         },
         {
           "name": "R23: lluvia dentro del límite (barcelona seco zoom 0.4)",
@@ -21263,12 +21263,12 @@
         {
           "name": "R23: fotograma completo dentro del límite (barcelona seco zoom 0.4)",
           "pass": true,
-          "details": "8425"
+          "details": "8437"
         },
         {
           "name": "R23: pista dentro del límite (barcelona seco zoom 1.5)",
           "pass": true,
-          "details": "13953"
+          "details": "13941"
         },
         {
           "name": "R23: lluvia dentro del límite (barcelona seco zoom 1.5)",
@@ -21283,12 +21283,12 @@
         {
           "name": "R23: fotograma completo dentro del límite (barcelona seco zoom 1.5)",
           "pass": true,
-          "details": "15404"
+          "details": "15392"
         },
         {
           "name": "R23: pista dentro del límite (barcelona seco zoom 4)",
           "pass": true,
-          "details": "14003"
+          "details": "13991"
         },
         {
           "name": "R23: lluvia dentro del límite (barcelona seco zoom 4)",
@@ -21303,7 +21303,7 @@
         {
           "name": "R23: fotograma completo dentro del límite (barcelona seco zoom 4)",
           "pass": true,
-          "details": "15490"
+          "details": "15478"
         },
         {
           "name": "R23: de lejos los coches cuestan mucho menos que en detalle (barcelona)",
@@ -21408,7 +21408,7 @@
         {
           "name": "R23: pista dentro del límite (monaco seco zoom 1.5)",
           "pass": true,
-          "details": "9460"
+          "details": "9466"
         },
         {
           "name": "R23: lluvia dentro del límite (monaco seco zoom 1.5)",
@@ -21418,17 +21418,17 @@
         {
           "name": "R23: 20 coches dentro del límite (monaco seco zoom 1.5)",
           "pass": true,
-          "details": "1447"
+          "details": "1451"
         },
         {
           "name": "R23: fotograma completo dentro del límite (monaco seco zoom 1.5)",
           "pass": true,
-          "details": "10907"
+          "details": "10917"
         },
         {
           "name": "R23: pista dentro del límite (monaco seco zoom 4)",
           "pass": true,
-          "details": "9510"
+          "details": "9516"
         },
         {
           "name": "R23: lluvia dentro del límite (monaco seco zoom 4)",
@@ -21443,12 +21443,12 @@
         {
           "name": "R23: fotograma completo dentro del límite (monaco seco zoom 4)",
           "pass": true,
-          "details": "10989"
+          "details": "10995"
         },
         {
           "name": "R23: de lejos los coches cuestan mucho menos que en detalle (monaco)",
           "pass": true,
-          "details": "146 / 1447"
+          "details": "146 / 1451"
         },
         {
           "name": "R23 (preparación): monaco mojado con 20 coches",
@@ -21523,7 +21523,7 @@
         {
           "name": "R23: coste medido en Barcelona y Mónaco, en seco y con lluvia, a tres zooms",
           "pass": true,
-          "details": "barcelona seco: z4 14003+0+1487, z0.4 8259+0+166, z1.5 13953+0+1451 | barcelona mojado: z4 13961+1082+1431, z0.4 8241+1082+154, z1.5 13911+1082+1431 | monaco seco: z4 9510+0+1479, z0.4 5963+0+146, z1.5 9460+0+1447 | monaco mojado: z4 9456+859+1431, z0.4 5930+859+142, z1.5 9406+859+1431"
+          "details": "barcelona seco: z4 13991+0+1487, z0.4 8271+0+166, z1.5 13941+0+1451 | barcelona mojado: z4 13961+1082+1431, z0.4 8241+1082+154, z1.5 13911+1082+1431 | monaco seco: z4 9516+0+1479, z0.4 5963+0+146, z1.5 9466+0+1451 | monaco mojado: z4 9456+859+1431, z0.4 5930+859+142, z1.5 9406+859+1431"
         }
       ],
       "errors": []
@@ -21711,7 +21711,7 @@
         {
           "name": "R53: fotograma con 20 coches, lluvia y gotas dentro del límite (zoom 4)",
           "pass": true,
-          "details": "16718"
+          "details": "16647"
         },
         {
           "name": "R53: dice cuándo se espera la lluvia, con su margen",
@@ -22152,7 +22152,7 @@
         {
           "name": "T3.1: los coches de detrás lo adelantan y no pierden el tiempo con él",
           "pass": true,
-          "details": "pasan todos a los 3.3 s; pierden 0.44, 0.52, 0.48, 0.52 s"
+          "details": "pasan todos a los 3.3 s; pierden 0.40, 0.52, 0.48, 0.52 s"
         },
         {
           "name": "T3.1: en grava el coche se queda y sale el Safety Car",
@@ -22242,7 +22242,7 @@
         {
           "name": "T3.1: y continúa igual que en la carrera original",
           "pass": true,
-          "details": "5.76265387266813 / 5.76265387266813"
+          "details": "5.762433698699227 / 5.762433698699227"
         }
       ],
       "errors": []
@@ -22488,7 +22488,7 @@
         {
           "name": "T3.3: con slicks sobre 3 mm de agua hay accidentes por aquaplaning",
           "pass": true,
-          "details": "5 abandonos y 1 salidas en 40 carreras"
+          "details": "8 abandonos y 2 salidas en 40 carreras"
         },
         {
           "name": "T3.3: siguen las reglas de T3.1: en asfalto el coche se sale y sigue; en grava, hierba o muro abandona, con su motivo",
@@ -22611,7 +22611,7 @@
         {
           "name": "T3.4: el spray se pinta antes que los coches y sus etiquetas",
           "pass": true,
-          "details": "5088 / 5625"
+          "details": "6626 / 7163"
         }
       ],
       "errors": []
@@ -22844,7 +22844,7 @@
         {
           "name": "T4.12 (control): saliendo con slicks sí hay accidentes por aquaplaning en esas vueltas",
           "pass": true,
-          "details": "[4,0]"
+          "details": "[2,0]"
         },
         {
           "name": "T4.12: el paddock enseña la previsión con la probabilidad de lluvia, sin selector",
@@ -23761,7 +23761,7 @@
         {
           "name": "T4.6: con un equipo de boxes muy rápido y sin errores, el servicio dura lo que le toca y el tránsito por el pit lane no cambia",
           "pass": true,
-          "details": "{\"lap\":2,\"setId\":\"H1\",\"compound\":\"hard\",\"serviceSec\":0.9600000000000005,\"penaltySec\":0,\"totalSec\":47.16000000000177,\"queueSec\":0,\"releaseHoldSec\":0,\"transitSec\":46.20000000000177}"
+          "details": "{\"lap\":2,\"setId\":\"H1\",\"compound\":\"hard\",\"serviceSec\":0.9600000000000005,\"penaltySec\":0,\"totalSec\":47.14000000000177,\"queueSec\":0,\"releaseHoldSec\":0,\"transitSec\":46.18000000000177}"
         },
         {
           "name": "T4.6: al formar la carrera cada coche lleva el equipo de boxes de su equipo",
@@ -26213,7 +26213,7 @@
         {
           "name": "T4.15: parar cuesta tiempo y puestos (semilla 415)",
           "pass": true,
-          "details": "{\"position\":20,\"lossSec\":35.84000000000244,\"ahead\":{\"code\":\"BOR\",\"gapSec\":31.448051419263322},\"behind\":null}"
+          "details": "{\"position\":20,\"lossSec\":35.84000000000244,\"ahead\":{\"code\":\"BOR\",\"gapSec\":26.443245543217586},\"behind\":null}"
         },
         {
           "name": "T4.15: con la carrera igual, la misma ventana, y pierde lo mismo que dice el predictor de reincorporación (semilla 415)",
@@ -26253,7 +26253,7 @@
         {
           "name": "T4.15: parar cuesta tiempo y puestos (semilla 1502)",
           "pass": true,
-          "details": "{\"position\":20,\"lossSec\":35.84000000000244,\"ahead\":{\"code\":\"BOR\",\"gapSec\":27.395753361830714},\"behind\":null}"
+          "details": "{\"position\":20,\"lossSec\":35.84000000000244,\"ahead\":{\"code\":\"BOR\",\"gapSec\":28.848832565422015},\"behind\":null}"
         },
         {
           "name": "T4.15: con la carrera igual, la misma ventana, y pierde lo mismo que dice el predictor de reincorporación (semilla 1502)",
@@ -26303,7 +26303,7 @@
         {
           "name": "T4.15: el muro dice dónde saldría el coche, con quién delante y con quién detrás, y lo que pierde",
           "pass": true,
-          "details": "<section class=\"_wall_1o73l_1\" aria-label=\"Muro de SAI\"><h3 class=\"_title_1o73l_23\">Muro · SAI P8</h3><dl class=\"_list_1o73l_41\"><dt>Delante</dt><dd>0,28 s con ALO</dd><dt>Detrás</dt><dd>0,29 s con AN"
+          "details": "<section class=\"_wall_1o73l_1\" aria-label=\"Muro de SAI\" data-flag-drs=\"abierto\"><h3 class=\"_title_1o73l_23\">Muro · SAI P8</h3><dl class=\"_list_1o73l_41\"><dt>Delante</dt><dd>0,31 s con ALO</dd><dt>Detr"
         },
         {
           "name": "T4.15: y la comparación de neumáticos y el aviso de undercut",
@@ -26424,12 +26424,12 @@
         {
           "name": "G1 barcelona: el coche completa la vuelta",
           "pass": true,
-          "details": "3830 pasos"
+          "details": "3829 pasos"
         },
         {
           "name": "G1 barcelona: avance por paso proporcional a la velocidad (±5 %)",
           "pass": true,
-          "details": "0.7 %"
+          "details": "0.8 %"
         },
         {
           "name": "G1 barcelona: giro por metro acotado por la curva más cerrada (≤ 0.076 rad/m)",
@@ -26499,17 +26499,17 @@
         {
           "name": "G1 monza: el coche completa la vuelta",
           "pass": true,
-          "details": "4056 pasos"
+          "details": "4060 pasos"
         },
         {
           "name": "G1 monza: avance por paso proporcional a la velocidad (±5 %)",
           "pass": true,
-          "details": "2.2 %"
+          "details": "2.9 %"
         },
         {
           "name": "G1 monza: giro por metro acotado por la curva más cerrada (≤ 0.241 rad/m)",
           "pass": true,
-          "details": "0.137 rad/m"
+          "details": "0.139 rad/m"
         },
         {
           "name": "G1 silverstone: Escala: una unidad es un metro (1 ± 0.005)",
@@ -26579,12 +26579,12 @@
         {
           "name": "G1 silverstone: avance por paso proporcional a la velocidad (±5 %)",
           "pass": true,
-          "details": "2.0 %"
+          "details": "1.5 %"
         },
         {
           "name": "G1 silverstone: giro por metro acotado por la curva más cerrada (≤ 0.138 rad/m)",
           "pass": true,
-          "details": "0.073 rad/m"
+          "details": "0.072 rad/m"
         },
         {
           "name": "G1 spa: Escala: una unidad es un metro (1 ± 0.005)",
@@ -26649,12 +26649,12 @@
         {
           "name": "G1 spa: el coche completa la vuelta",
           "pass": true,
-          "details": "5284 pasos"
+          "details": "5289 pasos"
         },
         {
           "name": "G1 spa: avance por paso proporcional a la velocidad (±5 %)",
           "pass": true,
-          "details": "2.6 %"
+          "details": "2.3 %"
         },
         {
           "name": "G1 spa: giro por metro acotado por la curva más cerrada (≤ 0.243 rad/m)",
@@ -26724,12 +26724,12 @@
         {
           "name": "G1 monaco: el coche completa la vuelta",
           "pass": true,
-          "details": "3713 pasos"
+          "details": "3709 pasos"
         },
         {
           "name": "G1 monaco: avance por paso proporcional a la velocidad (±5 %)",
           "pass": true,
-          "details": "2.8 %"
+          "details": "2.7 %"
         },
         {
           "name": "G1 monaco: giro por metro acotado por la curva más cerrada (≤ 0.263 rad/m)",
@@ -26799,12 +26799,12 @@
         {
           "name": "G1 spielberg: el coche completa la vuelta",
           "pass": true,
-          "details": "3430 pasos"
+          "details": "3432 pasos"
         },
         {
           "name": "G1 spielberg: avance por paso proporcional a la velocidad (±5 %)",
           "pass": true,
-          "details": "2.6 %"
+          "details": "2.7 %"
         },
         {
           "name": "G1 spielberg: giro por metro acotado por la curva más cerrada (≤ 0.236 rad/m)",
@@ -26874,7 +26874,7 @@
         {
           "name": "G1 interlagos: el coche completa la vuelta",
           "pass": true,
-          "details": "3662 pasos"
+          "details": "3664 pasos"
         },
         {
           "name": "G1 interlagos: avance por paso proporcional a la velocidad (±5 %)",
@@ -26949,7 +26949,7 @@
         {
           "name": "G1 suzuka: el coche completa la vuelta",
           "pass": true,
-          "details": "4572 pasos"
+          "details": "4574 pasos"
         },
         {
           "name": "G1 suzuka: avance por paso proporcional a la velocidad (±5 %)",
@@ -27024,17 +27024,17 @@
         {
           "name": "G1 zandvoort: el coche completa la vuelta",
           "pass": true,
-          "details": "3653 pasos"
+          "details": "3654 pasos"
         },
         {
           "name": "G1 zandvoort: avance por paso proporcional a la velocidad (±5 %)",
           "pass": true,
-          "details": "1.9 %"
+          "details": "1.7 %"
         },
         {
           "name": "G1 zandvoort: giro por metro acotado por la curva más cerrada (≤ 0.151 rad/m)",
           "pass": true,
-          "details": "0.065 rad/m"
+          "details": "0.066 rad/m"
         },
         {
           "name": "G1 las-vegas: Escala: una unidad es un metro (1 ± 0.005)",
@@ -27099,17 +27099,17 @@
         {
           "name": "G1 las-vegas: el coche completa la vuelta",
           "pass": true,
-          "details": "4695 pasos"
+          "details": "4703 pasos"
         },
         {
           "name": "G1 las-vegas: avance por paso proporcional a la velocidad (±5 %)",
           "pass": true,
-          "details": "1.9 %"
+          "details": "1.8 %"
         },
         {
           "name": "G1 las-vegas: giro por metro acotado por la curva más cerrada (≤ 0.224 rad/m)",
           "pass": true,
-          "details": "0.118 rad/m"
+          "details": "0.119 rad/m"
         },
         {
           "name": "G1 bahrain: Escala: una unidad es un metro (1 ± 0.005)",
@@ -27179,12 +27179,12 @@
         {
           "name": "G1 bahrain: avance por paso proporcional a la velocidad (±5 %)",
           "pass": true,
-          "details": "3.4 %"
+          "details": "3.3 %"
         },
         {
           "name": "G1 bahrain: giro por metro acotado por la curva más cerrada (≤ 0.240 rad/m)",
           "pass": true,
-          "details": "0.139 rad/m"
+          "details": "0.138 rad/m"
         },
         {
           "name": "G1 baku: Escala: una unidad es un metro (1 ± 0.005)",
@@ -27249,17 +27249,17 @@
         {
           "name": "G1 baku: el coche completa la vuelta",
           "pass": true,
-          "details": "5219 pasos"
+          "details": "5228 pasos"
         },
         {
           "name": "G1 baku: avance por paso proporcional a la velocidad (±5 %)",
           "pass": true,
-          "details": "3.0 %"
+          "details": "3.2 %"
         },
         {
           "name": "G1 baku: giro por metro acotado por la curva más cerrada (≤ 0.219 rad/m)",
           "pass": true,
-          "details": "0.135 rad/m"
+          "details": "0.133 rad/m"
         },
         {
           "name": "G1 melbourne: Escala: una unidad es un metro (1 ± 0.005)",
@@ -27324,12 +27324,12 @@
         {
           "name": "G1 melbourne: el coche completa la vuelta",
           "pass": true,
-          "details": "4124 pasos"
+          "details": "4126 pasos"
         },
         {
           "name": "G1 melbourne: avance por paso proporcional a la velocidad (±5 %)",
           "pass": true,
-          "details": "2.1 %"
+          "details": "2.2 %"
         },
         {
           "name": "G1 melbourne: giro por metro acotado por la curva más cerrada (≤ 0.234 rad/m)",
@@ -27399,12 +27399,12 @@
         {
           "name": "G1 miami: el coche completa la vuelta",
           "pass": true,
-          "details": "4523 pasos"
+          "details": "4522 pasos"
         },
         {
           "name": "G1 miami: avance por paso proporcional a la velocidad (±5 %)",
           "pass": true,
-          "details": "4.0 %"
+          "details": "3.9 %"
         },
         {
           "name": "G1 miami: giro por metro acotado por la curva más cerrada (≤ 0.231 rad/m)",
@@ -27474,7 +27474,7 @@
         {
           "name": "G1 shanghai: el coche completa la vuelta",
           "pass": true,
-          "details": "4811 pasos"
+          "details": "4812 pasos"
         },
         {
           "name": "G1 shanghai: avance por paso proporcional a la velocidad (±5 %)",
@@ -27549,17 +27549,17 @@
         {
           "name": "G1 jeddah: el coche completa la vuelta",
           "pass": true,
-          "details": "4573 pasos"
+          "details": "4578 pasos"
         },
         {
           "name": "G1 jeddah: avance por paso proporcional a la velocidad (±5 %)",
           "pass": true,
-          "details": "2.9 %"
+          "details": "2.5 %"
         },
         {
           "name": "G1 jeddah: giro por metro acotado por la curva más cerrada (≤ 0.188 rad/m)",
           "pass": true,
-          "details": "0.101 rad/m"
+          "details": "0.100 rad/m"
         },
         {
           "name": "G1 marina-bay: Escala: una unidad es un metro (1 ± 0.005)",
@@ -27624,17 +27624,17 @@
         {
           "name": "G1 marina-bay: el coche completa la vuelta",
           "pass": true,
-          "details": "4747 pasos"
+          "details": "4740 pasos"
         },
         {
           "name": "G1 marina-bay: avance por paso proporcional a la velocidad (±5 %)",
           "pass": true,
-          "details": "2.7 %"
+          "details": "2.5 %"
         },
         {
           "name": "G1 marina-bay: giro por metro acotado por la curva más cerrada (≤ 0.238 rad/m)",
           "pass": true,
-          "details": "0.172 rad/m"
+          "details": "0.171 rad/m"
         },
         {
           "name": "G1 lusail: Escala: una unidad es un metro (1 ± 0.005)",
@@ -27699,12 +27699,12 @@
         {
           "name": "G1 lusail: el coche completa la vuelta",
           "pass": true,
-          "details": "4175 pasos"
+          "details": "4178 pasos"
         },
         {
           "name": "G1 lusail: avance por paso proporcional a la velocidad (±5 %)",
           "pass": true,
-          "details": "1.5 %"
+          "details": "1.6 %"
         },
         {
           "name": "G1 lusail: giro por metro acotado por la curva más cerrada (≤ 0.110 rad/m)",
@@ -27784,7 +27784,7 @@
         {
           "name": "G1 yas-marina: giro por metro acotado por la curva más cerrada (≤ 0.241 rad/m)",
           "pass": true,
-          "details": "0.111 rad/m"
+          "details": "0.110 rad/m"
         },
         {
           "name": "G1 hungaroring: Escala: una unidad es un metro (1 ± 0.005)",
@@ -27849,17 +27849,17 @@
         {
           "name": "G1 hungaroring: el coche completa la vuelta",
           "pass": true,
-          "details": "4027 pasos"
+          "details": "4023 pasos"
         },
         {
           "name": "G1 hungaroring: avance por paso proporcional a la velocidad (±5 %)",
           "pass": true,
-          "details": "2.5 %"
+          "details": "2.1 %"
         },
         {
           "name": "G1 hungaroring: giro por metro acotado por la curva más cerrada (≤ 0.218 rad/m)",
           "pass": true,
-          "details": "0.147 rad/m"
+          "details": "0.148 rad/m"
         },
         {
           "name": "G1 mexico-city: Escala: una unidad es un metro (1 ± 0.005)",
@@ -27924,7 +27924,7 @@
         {
           "name": "G1 mexico-city: el coche completa la vuelta",
           "pass": true,
-          "details": "4056 pasos"
+          "details": "4051 pasos"
         },
         {
           "name": "G1 mexico-city: avance por paso proporcional a la velocidad (±5 %)",
@@ -27934,7 +27934,7 @@
         {
           "name": "G1 mexico-city: giro por metro acotado por la curva más cerrada (≤ 0.240 rad/m)",
           "pass": true,
-          "details": "0.145 rad/m"
+          "details": "0.146 rad/m"
         },
         {
           "name": "G1 montreal: Escala: una unidad es un metro (1 ± 0.005)",
@@ -27999,12 +27999,12 @@
         {
           "name": "G1 montreal: el coche completa la vuelta",
           "pass": true,
-          "details": "3742 pasos"
+          "details": "3743 pasos"
         },
         {
           "name": "G1 montreal: avance por paso proporcional a la velocidad (±5 %)",
           "pass": true,
-          "details": "2.5 %"
+          "details": "2.3 %"
         },
         {
           "name": "G1 montreal: giro por metro acotado por la curva más cerrada (≤ 0.174 rad/m)",
@@ -28079,17 +28079,745 @@
         {
           "name": "G1 austin: avance por paso proporcional a la velocidad (±5 %)",
           "pass": true,
-          "details": "3.5 %"
+          "details": "3.4 %"
         },
         {
           "name": "G1 austin: giro por metro acotado por la curva más cerrada (≤ 0.253 rad/m)",
           "pass": true,
-          "details": "0.126 rad/m"
+          "details": "0.125 rad/m"
         },
         {
           "name": "G1: los límites son los del contrato",
           "pass": true,
           "details": ""
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "track-gl-g8",
+      "tasks": [
+        "G8"
+      ],
+      "sprint": "4.5",
+      "kind": "contract",
+      "passed": 143,
+      "failed": 0,
+      "assertions": [
+        {
+          "name": "G8 barcelona: formas completas y sin coordenadas inválidas",
+          "pass": true,
+          "details": "1725"
+        },
+        {
+          "name": "G8 barcelona: un asfalto, al ancho del circuito y sobre todo el eje",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G8 barcelona: los bordes blancos son los de la geometría común",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G8 barcelona: meta ajedrezada de borde a borde",
+          "pass": true,
+          "details": "10 · 5.75 m"
+        },
+        {
+          "name": "G8 barcelona: 20 cajones de parrilla dentro de la pista",
+          "pass": true,
+          "details": "20"
+        },
+        {
+          "name": "G8 barcelona: las capas se calculan una vez por pista",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G8 monza: formas completas y sin coordenadas inválidas",
+          "pass": true,
+          "details": "982"
+        },
+        {
+          "name": "G8 monza: un asfalto, al ancho del circuito y sobre todo el eje",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G8 monza: los bordes blancos son los de la geometría común",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G8 monza: meta ajedrezada de borde a borde",
+          "pass": true,
+          "details": "10 · 5.00 m"
+        },
+        {
+          "name": "G8 monza: 20 cajones de parrilla dentro de la pista",
+          "pass": true,
+          "details": "20"
+        },
+        {
+          "name": "G8 monza: las capas se calculan una vez por pista",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G8 silverstone: formas completas y sin coordenadas inválidas",
+          "pass": true,
+          "details": "1452"
+        },
+        {
+          "name": "G8 silverstone: un asfalto, al ancho del circuito y sobre todo el eje",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G8 silverstone: los bordes blancos son los de la geometría común",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G8 silverstone: meta ajedrezada de borde a borde",
+          "pass": true,
+          "details": "10 · 7.25 m"
+        },
+        {
+          "name": "G8 silverstone: 20 cajones de parrilla dentro de la pista",
+          "pass": true,
+          "details": "20"
+        },
+        {
+          "name": "G8 silverstone: las capas se calculan una vez por pista",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G8 spa: formas completas y sin coordenadas inválidas",
+          "pass": true,
+          "details": "1473"
+        },
+        {
+          "name": "G8 spa: un asfalto, al ancho del circuito y sobre todo el eje",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G8 spa: los bordes blancos son los de la geometría común",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G8 spa: meta ajedrezada de borde a borde",
+          "pass": true,
+          "details": "10 · 5.50 m"
+        },
+        {
+          "name": "G8 spa: 20 cajones de parrilla dentro de la pista",
+          "pass": true,
+          "details": "20"
+        },
+        {
+          "name": "G8 spa: las capas se calculan una vez por pista",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G8 monaco: formas completas y sin coordenadas inválidas",
+          "pass": true,
+          "details": "777"
+        },
+        {
+          "name": "G8 monaco: un asfalto, al ancho del circuito y sobre todo el eje",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G8 monaco: los bordes blancos son los de la geometría común",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G8 monaco: meta ajedrezada de borde a borde",
+          "pass": true,
+          "details": "10 · 4.50 m"
+        },
+        {
+          "name": "G8 monaco: 20 cajones de parrilla dentro de la pista",
+          "pass": true,
+          "details": "20"
+        },
+        {
+          "name": "G8 monaco: las capas se calculan una vez por pista",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G8 spielberg: formas completas y sin coordenadas inválidas",
+          "pass": true,
+          "details": "993"
+        },
+        {
+          "name": "G8 spielberg: un asfalto, al ancho del circuito y sobre todo el eje",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G8 spielberg: los bordes blancos son los de la geometría común",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G8 spielberg: meta ajedrezada de borde a borde",
+          "pass": true,
+          "details": "10 · 5.50 m"
+        },
+        {
+          "name": "G8 spielberg: 20 cajones de parrilla dentro de la pista",
+          "pass": true,
+          "details": "20"
+        },
+        {
+          "name": "G8 spielberg: las capas se calculan una vez por pista",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G8 interlagos: formas completas y sin coordenadas inválidas",
+          "pass": true,
+          "details": "1198"
+        },
+        {
+          "name": "G8 interlagos: un asfalto, al ancho del circuito y sobre todo el eje",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G8 interlagos: los bordes blancos son los de la geometría común",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G8 interlagos: meta ajedrezada de borde a borde",
+          "pass": true,
+          "details": "10 · 6.50 m"
+        },
+        {
+          "name": "G8 interlagos: 20 cajones de parrilla dentro de la pista",
+          "pass": true,
+          "details": "20"
+        },
+        {
+          "name": "G8 interlagos: las capas se calculan una vez por pista",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G8 suzuka: formas completas y sin coordenadas inválidas",
+          "pass": true,
+          "details": "1366"
+        },
+        {
+          "name": "G8 suzuka: un asfalto, al ancho del circuito y sobre todo el eje",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G8 suzuka: los bordes blancos son los de la geometría común",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G8 suzuka: meta ajedrezada de borde a borde",
+          "pass": true,
+          "details": "10 · 5.75 m"
+        },
+        {
+          "name": "G8 suzuka: 20 cajones de parrilla dentro de la pista",
+          "pass": true,
+          "details": "20"
+        },
+        {
+          "name": "G8 suzuka: las capas se calculan una vez por pista",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G8 zandvoort: formas completas y sin coordenadas inválidas",
+          "pass": true,
+          "details": "1064"
+        },
+        {
+          "name": "G8 zandvoort: un asfalto, al ancho del circuito y sobre todo el eje",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G8 zandvoort: los bordes blancos son los de la geometría común",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G8 zandvoort: meta ajedrezada de borde a borde",
+          "pass": true,
+          "details": "10 · 5.75 m"
+        },
+        {
+          "name": "G8 zandvoort: 20 cajones de parrilla dentro de la pista",
+          "pass": true,
+          "details": "20"
+        },
+        {
+          "name": "G8 zandvoort: las capas se calculan una vez por pista",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G8 las-vegas: formas completas y sin coordenadas inválidas",
+          "pass": true,
+          "details": "1012"
+        },
+        {
+          "name": "G8 las-vegas: un asfalto, al ancho del circuito y sobre todo el eje",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G8 las-vegas: los bordes blancos son los de la geometría común",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G8 las-vegas: meta ajedrezada de borde a borde",
+          "pass": true,
+          "details": "10 · 6.50 m"
+        },
+        {
+          "name": "G8 las-vegas: 20 cajones de parrilla dentro de la pista",
+          "pass": true,
+          "details": "20"
+        },
+        {
+          "name": "G8 las-vegas: las capas se calculan una vez por pista",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G8 bahrain: formas completas y sin coordenadas inválidas",
+          "pass": true,
+          "details": "1254"
+        },
+        {
+          "name": "G8 bahrain: un asfalto, al ancho del circuito y sobre todo el eje",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G8 bahrain: los bordes blancos son los de la geometría común",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G8 bahrain: meta ajedrezada de borde a borde",
+          "pass": true,
+          "details": "10 · 7.25 m"
+        },
+        {
+          "name": "G8 bahrain: 20 cajones de parrilla dentro de la pista",
+          "pass": true,
+          "details": "20"
+        },
+        {
+          "name": "G8 bahrain: las capas se calculan una vez por pista",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G8 baku: formas completas y sin coordenadas inválidas",
+          "pass": true,
+          "details": "1160"
+        },
+        {
+          "name": "G8 baku: un asfalto, al ancho del circuito y sobre todo el eje",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G8 baku: los bordes blancos son los de la geometría común",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G8 baku: meta ajedrezada de borde a borde",
+          "pass": true,
+          "details": "10 · 5.50 m"
+        },
+        {
+          "name": "G8 baku: 20 cajones de parrilla dentro de la pista",
+          "pass": true,
+          "details": "20"
+        },
+        {
+          "name": "G8 baku: las capas se calculan una vez por pista",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G8 melbourne: formas completas y sin coordenadas inválidas",
+          "pass": true,
+          "details": "1122"
+        },
+        {
+          "name": "G8 melbourne: un asfalto, al ancho del circuito y sobre todo el eje",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G8 melbourne: los bordes blancos son los de la geometría común",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G8 melbourne: meta ajedrezada de borde a borde",
+          "pass": true,
+          "details": "10 · 6.50 m"
+        },
+        {
+          "name": "G8 melbourne: 20 cajones de parrilla dentro de la pista",
+          "pass": true,
+          "details": "20"
+        },
+        {
+          "name": "G8 melbourne: las capas se calculan una vez por pista",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G8 miami: formas completas y sin coordenadas inválidas",
+          "pass": true,
+          "details": "1216"
+        },
+        {
+          "name": "G8 miami: un asfalto, al ancho del circuito y sobre todo el eje",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G8 miami: los bordes blancos son los de la geometría común",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G8 miami: meta ajedrezada de borde a borde",
+          "pass": true,
+          "details": "10 · 6.50 m"
+        },
+        {
+          "name": "G8 miami: 20 cajones de parrilla dentro de la pista",
+          "pass": true,
+          "details": "20"
+        },
+        {
+          "name": "G8 miami: las capas se calculan una vez por pista",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G8 shanghai: formas completas y sin coordenadas inválidas",
+          "pass": true,
+          "details": "1295"
+        },
+        {
+          "name": "G8 shanghai: un asfalto, al ancho del circuito y sobre todo el eje",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G8 shanghai: los bordes blancos son los de la geometría común",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G8 shanghai: meta ajedrezada de borde a borde",
+          "pass": true,
+          "details": "10 · 6.75 m"
+        },
+        {
+          "name": "G8 shanghai: 20 cajones de parrilla dentro de la pista",
+          "pass": true,
+          "details": "20"
+        },
+        {
+          "name": "G8 shanghai: las capas se calculan una vez por pista",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G8 jeddah: formas completas y sin coordenadas inválidas",
+          "pass": true,
+          "details": "1290"
+        },
+        {
+          "name": "G8 jeddah: un asfalto, al ancho del circuito y sobre todo el eje",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G8 jeddah: los bordes blancos son los de la geometría común",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G8 jeddah: meta ajedrezada de borde a borde",
+          "pass": true,
+          "details": "10 · 5.50 m"
+        },
+        {
+          "name": "G8 jeddah: 20 cajones de parrilla dentro de la pista",
+          "pass": true,
+          "details": "20"
+        },
+        {
+          "name": "G8 jeddah: las capas se calculan una vez por pista",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G8 marina-bay: formas completas y sin coordenadas inválidas",
+          "pass": true,
+          "details": "1184"
+        },
+        {
+          "name": "G8 marina-bay: un asfalto, al ancho del circuito y sobre todo el eje",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G8 marina-bay: los bordes blancos son los de la geometría común",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G8 marina-bay: meta ajedrezada de borde a borde",
+          "pass": true,
+          "details": "10 · 5.00 m"
+        },
+        {
+          "name": "G8 marina-bay: 20 cajones de parrilla dentro de la pista",
+          "pass": true,
+          "details": "20"
+        },
+        {
+          "name": "G8 marina-bay: las capas se calculan una vez por pista",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G8 lusail: formas completas y sin coordenadas inválidas",
+          "pass": true,
+          "details": "1376"
+        },
+        {
+          "name": "G8 lusail: un asfalto, al ancho del circuito y sobre todo el eje",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G8 lusail: los bordes blancos son los de la geometría común",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G8 lusail: meta ajedrezada de borde a borde",
+          "pass": true,
+          "details": "10 · 6.00 m"
+        },
+        {
+          "name": "G8 lusail: 20 cajones de parrilla dentro de la pista",
+          "pass": true,
+          "details": "20"
+        },
+        {
+          "name": "G8 lusail: las capas se calculan una vez por pista",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G8 yas-marina: formas completas y sin coordenadas inválidas",
+          "pass": true,
+          "details": "1236"
+        },
+        {
+          "name": "G8 yas-marina: un asfalto, al ancho del circuito y sobre todo el eje",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G8 yas-marina: los bordes blancos son los de la geometría común",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G8 yas-marina: meta ajedrezada de borde a borde",
+          "pass": true,
+          "details": "10 · 6.75 m"
+        },
+        {
+          "name": "G8 yas-marina: 20 cajones de parrilla dentro de la pista",
+          "pass": true,
+          "details": "20"
+        },
+        {
+          "name": "G8 yas-marina: las capas se calculan una vez por pista",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G8 hungaroring: formas completas y sin coordenadas inválidas",
+          "pass": true,
+          "details": "1175"
+        },
+        {
+          "name": "G8 hungaroring: un asfalto, al ancho del circuito y sobre todo el eje",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G8 hungaroring: los bordes blancos son los de la geometría común",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G8 hungaroring: meta ajedrezada de borde a borde",
+          "pass": true,
+          "details": "10 · 5.75 m"
+        },
+        {
+          "name": "G8 hungaroring: 20 cajones de parrilla dentro de la pista",
+          "pass": true,
+          "details": "20"
+        },
+        {
+          "name": "G8 hungaroring: las capas se calculan una vez por pista",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G8 mexico-city: formas completas y sin coordenadas inválidas",
+          "pass": true,
+          "details": "1081"
+        },
+        {
+          "name": "G8 mexico-city: un asfalto, al ancho del circuito y sobre todo el eje",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G8 mexico-city: los bordes blancos son los de la geometría común",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G8 mexico-city: meta ajedrezada de borde a borde",
+          "pass": true,
+          "details": "10 · 6.25 m"
+        },
+        {
+          "name": "G8 mexico-city: 20 cajones de parrilla dentro de la pista",
+          "pass": true,
+          "details": "20"
+        },
+        {
+          "name": "G8 mexico-city: las capas se calculan una vez por pista",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G8 montreal: formas completas y sin coordenadas inválidas",
+          "pass": true,
+          "details": "925"
+        },
+        {
+          "name": "G8 montreal: un asfalto, al ancho del circuito y sobre todo el eje",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G8 montreal: los bordes blancos son los de la geometría común",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G8 montreal: meta ajedrezada de borde a borde",
+          "pass": true,
+          "details": "10 · 5.25 m"
+        },
+        {
+          "name": "G8 montreal: 20 cajones de parrilla dentro de la pista",
+          "pass": true,
+          "details": "20"
+        },
+        {
+          "name": "G8 montreal: las capas se calculan una vez por pista",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G8 austin: formas completas y sin coordenadas inválidas",
+          "pass": true,
+          "details": "1338"
+        },
+        {
+          "name": "G8 austin: un asfalto, al ancho del circuito y sobre todo el eje",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G8 austin: los bordes blancos son los de la geometría común",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G8 austin: meta ajedrezada de borde a borde",
+          "pass": true,
+          "details": "10 · 7.50 m"
+        },
+        {
+          "name": "G8 austin: 20 cajones de parrilla dentro de la pista",
+          "pass": true,
+          "details": "20"
+        },
+        {
+          "name": "G8 austin: las capas se calculan una vez por pista",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G8: sin WebGL el Canvas pinta el asfalto y los rellenos (respaldo)",
+          "pass": true,
+          "details": "87 trazos · 39 rellenos"
+        },
+        {
+          "name": "G8: con WebGL el Canvas no pinta el asfalto",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G8: con WebGL los únicos trazos del Canvas son la goma de la trazada y el marco de los rótulos",
+          "pass": true,
+          "details": "rgba(20, 22, 28, 0.15) | rgba(255, 255, 255, 0.15)"
+        },
+        {
+          "name": "G8: con WebGL los únicos rellenos del Canvas son el fondo de los rótulos de curva",
+          "pass": true,
+          "details": "rgba(10, 15, 25, 0.88)"
+        },
+        {
+          "name": "G8: los rótulos son los mismos con y sin WebGL",
+          "pass": true,
+          "details": "27 / 27"
         }
       ],
       "errors": []

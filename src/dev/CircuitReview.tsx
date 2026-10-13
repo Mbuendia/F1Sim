@@ -8,6 +8,7 @@ import { calculateCarWorldPosition, getTrackHalfWidth, worldUnitsPerMeter } from
 import { measureCircuit, qualityChecks, QUALITY_LIMITS } from '../utils/circuitQuality';
 import { getPitLaneGeometry } from '../utils/pitLaneGeometry';
 import type { Point2D } from '../utils/spline';
+import finishReferences from '../../tests/fixtures/finish-line-references.json';
 
 const IDS = Object.keys(OFFICIAL_CIRCUITS);
 const LAYERS = ['asfalto', 'bordes', 'eje', 'trazada', 'boxes', 'meta y parrilla', 'curvas', 'coche'] as const;
@@ -32,7 +33,8 @@ export default function CircuitReview() {
   const id = IDS[index];
   const sim = useMemo(() => soloCar(id), [id]);
   const track = sim.activeTrack;
-  const checks = useMemo(() => qualityChecks(measureCircuit(track)), [track]);
+  // La referencia de la meta es la misma que usa el test (distancia real de la meta a la salida de boxes).
+  const checks = useMemo(() => qualityChecks(measureCircuit(track), (finishReferences as Record<string, { lineToPitExitM?: number }>)[id]?.lineToPitExitM), [track, id]);
 
   useEffect(() => {
     const canvas = canvasRef.current!;
