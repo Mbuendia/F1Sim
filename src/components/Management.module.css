@@ -172,3 +172,25 @@
 .count { animation: cuenta 0.7s ease-out both; }
 @keyframes cuenta { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 @media (max-width: 900px) { .report, .reportCars { grid-template-columns: 1fr; } }
+
+/* ── [V5] Centro de gestión en tableta y móvil ── */
+.button { min-height: var(--toque); }
+.hubTabs button, .hubTabs .hubTabRace { min-height: var(--toque); }
+@media (max-width: 767px) {
+  .hubBar { gap: 10px; padding: 8px 10px 6px; }
+  /* Las pestañas pasan a una barra fija al pie, con el icono encima del nombre. */
+  .hubTabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(72px, 1fr); gap: 0; padding: 0;
+    overflow-x: auto; scrollbar-width: none; background: var(--panel); border-top: 1px solid var(--line); }
+  .hubTabs button, .hubTabs .hubTabRace { flex-direction: column; justify-content: center; gap: 2px; min-height: var(--alto-pestanas); margin: 0; padding: 0 4px; border-bottom: 0; border-top: 3px solid transparent;
+    border-radius: 0; font-size: 14px; letter-spacing: 0; text-transform: none; }
+  .hubTabs button[aria-selected="true"] { border-top-color: var(--equipo); }
+  .hubTabs .hubTabRace[aria-selected="true"] { border-top-color: #fff; }
+  .hubTabs .badge { position: absolute; transform: translate(18px, -14px); }
+  .finance, .statusRow, .hubHome, .report, .reportCars { grid-template-columns: minmax(0, 1fr); }
+  .strip { grid-template-columns: repeat(8, minmax(0, 1fr)); }
+  .facility { grid-template-columns: minmax(0, 1fr); }
+  .facility .button { white-space: normal; text-align: left; }
+  .table { display: block; overflow-x: auto; }
+}
+.button { min-width: var(--toque); }
+.segmented button { min-height: var(--toque); }

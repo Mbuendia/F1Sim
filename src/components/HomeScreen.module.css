@@ -47,7 +47,7 @@
 
 .headerTitles p {
   font-family: 'Rajdhani', sans-serif;
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 700;
   color: var(--text-2);
   margin: 1px 0 0;
@@ -67,7 +67,7 @@
 
 .historyTitle {
   font-family: var(--font-ui);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 900;
   color: #ffd700;
   letter-spacing: 1px;
@@ -114,13 +114,13 @@
 
 .historyWinner {
   font-family: var(--font-ui);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 900;
   color: #ffffff;
 }
 
 .historyPodiumSub {
-  font-size: 9px;
+  font-size: 14px;
   font-family: 'Rajdhani', sans-serif;
   font-weight: 700;
   color: #cbd5e1;
@@ -161,7 +161,7 @@
   padding: 6px 8px;
   border-radius: 6px;
   font-family: var(--font-ui);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 800;
   letter-spacing: 1px;
   cursor: pointer;
@@ -227,13 +227,13 @@
 
 .driverListName {
   font-family: 'Rajdhani', sans-serif;
-  font-size: 13.5px;
+  font-size: 14px;
   font-weight: 800;
   color: #ffffff;
 }
 
 .driverListTeam {
-  font-size: 10px;
+  font-size: 14px;
   font-family: 'Rajdhani', sans-serif;
   font-weight: 600;
   color: var(--text-2);
@@ -271,13 +271,13 @@
 
 .circuitListName {
   font-family: 'Rajdhani', sans-serif;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 800;
   color: #ffffff;
 }
 
 .circuitListSub {
-  font-size: 10px;
+  font-size: 14px;
   font-family: 'Rajdhani', sans-serif;
   font-weight: 600;
   color: var(--text-2);
@@ -326,7 +326,7 @@
 
 .detailSubtitle {
   font-family: 'Rajdhani', sans-serif;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
   color: var(--text-2);
 }
@@ -377,7 +377,7 @@
 }
 
 .specItemLabel {
-  font-size: 9.5px;
+  font-size: 14px;
   font-family: 'Rajdhani', sans-serif;
   font-weight: 700;
   color: var(--text-2);
@@ -409,7 +409,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 11px;
+  font-size: 14px;
   font-family: 'Rajdhani', sans-serif;
   font-weight: 700;
   color: #e2e8f0;
@@ -470,7 +470,7 @@
   padding: 4px 8px;
   border-radius: 5px;
   font-family: 'Rajdhani', sans-serif;
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 700;
   text-decoration: none;
   display: inline-flex;
@@ -551,7 +551,7 @@
 
 .summaryCardBadge {
   font-family: var(--font-ui);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 900;
   letter-spacing: 1px;
 }
@@ -567,14 +567,14 @@
 }
 
 .summaryCardSub {
-  font-size: 10.5px;
+  font-size: 14px;
   font-family: 'Rajdhani', sans-serif;
   font-weight: 600;
   color: var(--text-2);
 }
 
 .summaryCardExtra {
-  font-size: 9.5px;
+  font-size: 14px;
   font-family: 'Rajdhani', sans-serif;
   font-weight: 700;
   color: #38bdf8;
@@ -631,7 +631,7 @@
   padding: 6px 10px;
   border-radius: 6px;
   font-family: var(--font-ui);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 800;
   letter-spacing: 0.8px;
   cursor: pointer;
@@ -673,14 +673,14 @@
 
 .drsZoneName {
   font-family: 'Rajdhani', sans-serif;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 800;
   color: #ffffff;
 }
 
 .drsZoneRange {
   font-family: var(--font-ui);
-  font-size: 13px;
+  font-size: 14px;
   color: #00ff66;
   font-weight: 700;
 }
@@ -697,7 +697,7 @@
 
 .strategyHighlightTitle {
   font-family: var(--font-ui);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 800;
   color: #ffd700;
   letter-spacing: 0.5px;
@@ -722,10 +722,10 @@
 .driverListTeam, .circuitListSub { font-size: 14px; color: var(--text-2); }
 .driverListNum { font-family: var(--font-ui); font-size: 16px; font-weight: 700; }
 .driverListItem:focus-visible, .circuitListItem:focus-visible { outline: 3px solid var(--foco); outline-offset: 2px; }
-.activeMark { font-size: 13px; font-weight: 700; color: var(--text); }
+.activeMark { font-size: 14px; font-weight: 700; color: var(--text); }
 .circuitLaps { font-size: 15px; font-weight: 700; color: var(--text-2); }
 .sidePanelTitle { font-family: var(--font-ui); font-size: 15px; font-weight: 700; letter-spacing: 0.06em; }
-.summaryCardBadge { font-family: var(--font-ui); font-size: 13px; font-weight: 700; letter-spacing: 0.06em; }
+.summaryCardBadge { font-family: var(--font-ui); font-size: 14px; font-weight: 700; letter-spacing: 0.06em; }
 .summaryCardMain { font-size: 18px; font-weight: 700; }
 .summaryCardSub { font-size: 15px; color: var(--text-2); }
 .summaryCardExtra { font-size: 14px; }
@@ -758,3 +758,41 @@
 .mainLayout3Col { overflow: hidden; }
 .rightSidePanel { overflow-y: auto; min-height: 0; }
 .launchBigButton { position: sticky; bottom: 0; flex-shrink: 0; z-index: 1; }
+
+/* ── [V5] Paddock en tableta y móvil ── */
+.specItemLabel { display: inline-flex; align-items: center; gap: 6px; }
+.sectionNav button { min-height: var(--toque); }
+.tabBtn, .subTabBtn { min-height: var(--toque); }
+@media (max-width: 1023px) {
+  .homeContainer { padding: 10px 12px 0; }
+  .mainLayout3Col { grid-template-columns: 280px minmax(0, 1fr); overflow: visible; flex: none; }
+  .leftColumn { max-height: 70vh; }
+  .centerColumn { overflow-y: visible; max-height: none; }
+  .rightSidePanel { grid-column: 1 / -1; overflow: visible; }
+  .sectionNav { flex-wrap: nowrap; overflow-x: auto; max-width: 100%; scrollbar-width: none; }
+  .sectionNav button { flex-shrink: 0; }
+}
+@media (max-width: 767px) {
+  .homeContainer { padding: 8px 8px 0; }
+  .mainLayout3Col { grid-template-columns: minmax(0, 1fr); }
+  .leftColumn { max-height: 300px; }
+  .centerColumn { padding: 12px; }
+  .detailContentGrid { grid-template-columns: minmax(0, 1fr); }
+  .detailTitleBig { font-size: 22px; }
+  .subTabBar { overflow-x: auto; scrollbar-width: none; }
+  .subTabBtn { flex-shrink: 0; }
+  .specItem { flex-wrap: wrap; }
+}
+
+/* [V5] El botón de entrar a pista, fijo al pie de la ventana en tableta y móvil. */
+@media (max-width: 1023px) {
+  .homeContainer { padding-bottom: 88px; }
+  .launchBigButton { position: fixed; left: 8px; right: 8px; bottom: 8px; width: auto; z-index: 20; }
+}
+
+/* [V5] En móvil el centro de gestión tiene su barra de pestañas al pie: el contenido y el botón de entrar a pista le
+   dejan sitio. */
+@media (max-width: 767px) {
+  .homeContainer { padding-bottom: calc(var(--alto-pestanas) + 96px); }
+  .launchBigButton { bottom: calc(var(--alto-pestanas) + 8px); }
+}

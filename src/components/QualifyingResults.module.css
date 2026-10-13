@@ -130,3 +130,11 @@
   color: #f87171;
   font-weight: 600;
 }
+
+/* [V6] En móvil la modal ocupa toda la pantalla y se desplaza por dentro. */
+@media (max-width: 767px) {
+  .overlay { align-items: stretch; padding: 0; }
+  .panel { width: 100%; max-width: none; min-height: 100%; border-radius: 0; padding: 16px 12px; }
+  .panel table { display: block; overflow-x: auto; }
+  .panel button { min-height: var(--toque); }
+}

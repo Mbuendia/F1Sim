@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import styles from './StartLights.module.css';
 import { StartLightState, CarState } from '../types/f1';
-import { Play } from 'lucide-react';
+import { Play, Flag, CarFront, Wind } from 'lucide-react';
 import { animate } from 'animejs';
 
 interface StartLightsProps {
@@ -96,13 +96,13 @@ export const StartLights: React.FC<StartLightsProps> = ({
         {isGridReady && (
           <button className={styles.startButton} onClick={onStartClick} style={{ background: 'linear-gradient(135deg, #16a34a, #15803d)' }}>
             <Play size={18} fill="#ffffff" />
-            <span>🏁 CONFIRMAR INICIO DE CARRERA</span>
+            <span><Flag size={14} aria-hidden="true" /> CONFIRMAR INICIO DE CARRERA</span>
           </button>
         )}
 
         {lightState === 'lights-out' && (
           <div ref={bannerRef} className={styles.lightsOutBanner}>
-            ¡LIGHTS OUT AND AWAY WE GO! 🏎️💨
+            ¡LIGHTS OUT AND AWAY WE GO! <CarFront size={14} aria-hidden="true" /><Wind size={14} aria-hidden="true" />
           </div>
         )}
 

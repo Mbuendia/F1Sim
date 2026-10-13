@@ -4,7 +4,7 @@
   gap: 16px;
   padding: 10px 14px 14px;
   color: #e2e8f0;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .table {
@@ -50,4 +50,14 @@
 .action:hover,
 .action:focus-visible {
   background: rgba(255, 255, 255, 0.1);
+}
+
+/* [V5] En móvil la tabla se desplaza de lado dentro de su tarjeta en vez de ensanchar la página. */
+@media (max-width: 767px) {
+  .table { display: block; overflow-x: auto; }
+}
+/* [V5] Botones de 44 px y, hasta tableta, la tabla con desplazamiento propio. */
+.table button { min-height: var(--toque); min-width: var(--toque); }
+@media (max-width: 1023px) {
+  .table { display: block; overflow-x: auto; }
 }

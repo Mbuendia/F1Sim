@@ -96,7 +96,7 @@ export default async function run({ server, assert, test }) {
   await test('R44: selector de meteorología en el paddock', async () => {
     const { WeatherScenarioSelect } = await server.ssrLoadModule('/src/components/WeatherScenarioSelect.tsx');
     const html = renderToStaticMarkup(createElement(WeatherScenarioSelect, { value: 'chubasco', onChange: () => {} }));
-    assert(WEATHER_SCENARIOS.every(s => html.includes(`value="${s.id}"`)) && /Meteorología/.test(html) && /value="chubasco" selected/.test(html),
+    assert(WEATHER_SCENARIOS.every(s => html.includes(`value="${s.id}"`)) && /Meteorología/.test(html) && /<input[^>]*checked=""[^>]*value="chubasco"/.test(html),
       'R44 UI: el selector ofrece los escenarios y marca el elegido');
     const sim = make('barcelona', 1);
     sim.setWeatherScenario(buildWeatherScenario('chubasco', 5000));

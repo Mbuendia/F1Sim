@@ -119,6 +119,6 @@ export default async function run({ server, assert, test }) {
     }));
     assert(html.includes('Mejora del piloto') && html.includes(driver.lastName) && (html.match(/\+1/g) ?? []).length === 2, 'R45 UI: muestra los +1 del piloto', String((html.match(/\+1/g) ?? []).length));
     assert(html.includes(`>${next.lluvia}<`) && Object.values(dev.ATTRIBUTE_LABEL).every(label => html.includes(label)), 'R45 UI: los ocho atributos con su valor');
-    assert(Object.keys(dev.FOCUS).every(id => html.includes(`value="${id}"`)) && /value="lluvia" selected/.test(html), 'R45 UI: selector de enfoque con el elegido');
+    assert(Object.keys(dev.FOCUS).every(id => html.includes(`value="${id}"`)) && /<input[^>]*checked=""[^>]*value="lluvia"/.test(html), 'R45 UI: selector de enfoque con el elegido');
   });
 }

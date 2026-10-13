@@ -269,7 +269,7 @@ export default async function run({ server, assert, test }) {
   await test('R52: interfaz del fin de semana sprint', async () => {
     const withSprint = await render('/src/components/RaceFormatSelect.tsx', 'RaceFormatSelect', { value: 'sprint', onChange: () => {}, sprintAvailable: true });
     const without = await render('/src/components/RaceFormatSelect.tsx', 'RaceFormatSelect', { value: 'clasificacion', onChange: () => {} });
-    assert(/<option[^>]*value="sprint"/.test(withSprint) && /sprint/i.test(withSprint) && /value="directo"/.test(withSprint) && /value="clasificacion"/.test(withSprint), 'R52: en un circuito sprint el paddock ofrece el fin de semana sprint y los otros formatos');
+    assert(/<input[^>]*value="sprint"/.test(withSprint) && /sprint/i.test(withSprint) && /value="directo"/.test(withSprint) && /value="clasificacion"/.test(withSprint), 'R52: en un circuito sprint el paddock ofrece el fin de semana sprint y los otros formatos');
     assert(!/value="sprint"/.test(without), 'R52: en los demás circuitos el sprint no aparece');
 
     const start = career(firstSprint.round);

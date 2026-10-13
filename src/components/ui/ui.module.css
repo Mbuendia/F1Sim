@@ -4,6 +4,9 @@
 .segment { position:relative; flex:1 1 0; min-width:var(--toque); height:var(--toque); padding:0 10px; display:inline-flex; align-items:center; justify-content:center; gap:6px;
   color:var(--text-2); font-size:15px; font-weight:700; white-space:nowrap; cursor:pointer; }
 .compact .segment { padding:0 4px; }
+.wrap { display:flex; flex-wrap:wrap; }
+.wrap .segment { flex:1 1 auto; }
+.field { display:flex; flex-direction:column; gap:6px; min-width:0; font-size:14px; font-weight:700; color:var(--text-2); }
 .segmented:disabled .segment { cursor:default; }
 .segment input { position:absolute; inset:0; width:100%; height:100%; margin:0; opacity:0; cursor:inherit; }
 .segment[data-active] { background:var(--text); color:var(--bg); }

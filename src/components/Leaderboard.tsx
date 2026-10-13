@@ -101,11 +101,11 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
 
   const formatGap = (car: CarState, index: number): string => {
     if (car.status === 'out') {
-      if (car.dnfReason?.includes('MOTOR')) return '💥 DNF MOTOR';
-      if (car.dnfReason?.includes('CAMBIOS')) return '⚙️ DNF CAMBIO';
-      if (car.dnfReason?.includes('MGU-K') || car.dnfReason?.includes('HÍBRIDO')) return '🔌 DNF MGU-K';
-      if (car.dnfReason?.includes('HIDRÁULICA')) return '💧 DNF HIDR.';
-      return '❌ DNF';
+      if (car.dnfReason?.includes('MOTOR')) return 'DNF MOTOR';
+      if (car.dnfReason?.includes('CAMBIOS')) return 'DNF CAMBIO';
+      if (car.dnfReason?.includes('MGU-K') || car.dnfReason?.includes('HÍBRIDO')) return 'DNF MGU-K';
+      if (car.dnfReason?.includes('HIDRÁULICA')) return 'DNF HIDR.';
+      return 'DNF';
     }
     if (car.hasPuncture) return 'PINCHAZO';
     if (index === 0) return 'LÍDER';

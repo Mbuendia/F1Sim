@@ -1,7 +1,7 @@
 .panel {
   padding: 10px 14px 14px;
   color: #e2e8f0;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .saveRow {
@@ -123,7 +123,7 @@
   padding: 1px 6px;
   border: 1px solid rgba(255, 255, 255, 0.3);
   border-radius: 999px;
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 600;
   color: #94a3b8;
 }
