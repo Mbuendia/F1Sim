@@ -198,6 +198,16 @@
   .barBtn { padding: 0 10px; }
 }
 
+/* Menú «Partida» en la barra de carrera: sin el «Guardado hace…» cuando la barra va justa, y fuera en tableta y móvil (guardar
+   está en el menú de carrera y salir, en la flecha de la izquierda). */
+.gameSlot { display: inline-flex; align-items: center; flex-shrink: 0; }
+@media (max-width: 1599px) {
+  .gameSlot [role='status'] { display: none; }
+}
+@media (max-width: 1023px) {
+  .gameSlot { display: none; }
+}
+
 /* ── [V2] Carrera en tableta y móvil ── */
 .viewTools { flex-shrink: 0; }
 
@@ -239,7 +249,11 @@
   .viewTools { position: fixed; top: calc(var(--barra-carrera) + 8px); right: 8px; z-index: 30; flex-direction: column; gap: 6px; }
   .viewTools .barBtn { background: rgba(13, 17, 23, 0.82); }
   .flagChip { padding: 4px 6px; font-size: 14px; }
-  .formationBanner { max-width: calc(100% - 72px); font-size: 14px; padding: 6px 10px; white-space: normal; }
+  /* La barra no desborda: el chip de bandera cede antes de que nada se monte encima de nada. */
+  .raceBar > .barGroup:first-child { flex: 0 1 auto; min-width: 0; }
+  .flagChip { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  /* Bajo la brújula y a la izquierda de las herramientas de cámara, sin pisarlas. */
+  .formationBanner { top: 52px; left: 8px; right: 60px; transform: none; max-width: none; font-size: 14px; padding: 6px 10px; white-space: normal; }
 }
 
 /* ── [V8] Carrera simulada sin verla: cubre la pantalla mientras el motor la corre ── */

@@ -16,11 +16,13 @@ export function renderLeftMinimap(
   /** [R44] Capas de lluvia para el radar del minimapa. */
   weather: WeatherLayers | null = null
 ): { x: number; y: number; worldX: number; worldY: number } | null {
-  const mmW = 180;
-  const mmH = 115;
-  const mmX = 20;
+  // En un lienzo pequeño (móvil) el minimapa es menor y va pegado abajo: arriba pisaría la brújula y los avisos.
+  const small = camera.screenWidth < 480 || camera.screenHeight < 420;
+  const mmW = small ? 132 : 180;
+  const mmH = small ? 84 : 115;
+  const mmX = small ? 8 : 20;
   // Subimos el minimapa para evitar que se solape con el dock inferior
-  const mmY = camera.screenHeight - mmH - 120;
+  const mmY = camera.screenHeight - mmH - (small ? 8 : 120);
   const bounds = simulation.activeTrack.bounds;
   const b = { ...bounds };
   // Ruta de boxes del motor (fuente única), no una ruta propia.

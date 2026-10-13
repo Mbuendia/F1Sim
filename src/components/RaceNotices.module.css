@@ -44,6 +44,14 @@
 .danger { border-color: #7f1d1d; background: rgba(60, 12, 12, 0.94); }
 .danger .tag { color: #fca5a5; }
 
+/* Móvil: los avisos van bajo la brújula y a la izquierda de las herramientas de cámara; con el aviso de vuelta de
+   formación a la vista, debajo de él. */
+@media (max-width: 767px) {
+  .zone { top: 52px; left: 8px; right: 60px; width: auto; }
+  [data-formation] .zone { top: 96px; }
+  .notice { padding: 6px 10px; font-size: 14px; }
+}
+
 @keyframes noticeIn {
   from { opacity: 0; transform: translateY(-6px); }
   to { opacity: 1; transform: translateY(0); }
