@@ -57,6 +57,7 @@ Leyenda de Estado:
 | **Sprint 4** | **Director de equipo: economía, fábrica, personal, pilotos, patrocinio, junta y cambio de temporada, más tiempo por circuito, entrenamientos libres, órdenes de equipo, telemetría de decisión, audio y pulido, con menú de partidas, centro de gestión por pestañas, informe de la ronda e invierno por pasos (T4.1-T4.24; T4.21 a T4.24 son los pendientes de sprints anteriores, añadidos el 13/10/2026 con prioridad alta)** | 🟡 **ENTREGADO el 13/10/2026: las 24 tareas tienen entrega o cierre. T4.1 a T4.4, T4.6 a T4.12, T4.15 y T4.18 a T4.20 dadas por válidas por el usuario ese día; T4.5, T4.13, T4.14, T4.16 y T4.21 a T4.23 entregadas en la rama `sprint/3.7` y en revisión local; T4.17 cerrada conservando los dos archivos y T4.24 descartada (decisiones asumidas). Sin fusionar en main** |
 | **Sprint 4.5** | **Circuitos a escala real y pintado en WebGL: banco de medidas y página de revisión, un metro por unidad, eje suave, bordes sin pliegues, trazada fluida, boxes fuera de la pista, meta y parrilla, pista y coches en WebGL y repaso de los 23 circuitos (G1-G10)** | ✅ **COMPLETADO — entregado y fusionado en main el 13/10/2026; las once tareas (G1 a G11) dadas por válidas por el usuario ese día. No queda trabajo abierto: las mejoras opcionales (circuitos en 3D con relieve, apilar los lienzos WebGL) no tienen ficha** |
 | **Sprint 3.7** | **Rediseño visual y adaptación a móvil y tableta: base visual, carrera en móvil y tableta, muro sin desplegables y de altura estable, estrategia en imagen, paddock y centro de gestión adaptables, accesibilidad, clasificación en directo, simular un Gran Premio, espía de setups y recogida del Safety Car (V1-V10)** | 🟡 **ENTREGADO el 13/10/2026 en la rama `sprint/3.7`, sin fusionar en main (indicación del usuario); V10 dada por válida, V1 a V9 en revisión local. Planificado ese día como «Sprint 4.6» y renombrado a 3.7 por el usuario** |
+| **Sprint 5** | **Carrera compartida: el escritorio como servidor por WebRTC. Motor en un Web Worker, foto ligera del estado y órdenes como mensajes, almacenes con Zustand, salas y respaldo en Firebase Realtime Database, equipos con dueño, pantallas de sala y carrera en modo cliente (N1-N10)** | 🟡 **PLANIFICADO el 13/10/2026 tras acotar el alcance con el usuario; ninguna tarea implementada ni con contrato de tests. La liga queda fuera** |
 
 ---
 
@@ -1500,7 +1501,7 @@ Decisiones y esquemas de cada página en `docs/design/grill-sprint4-visual.md`. 
   * *Aceptación:* como T4.21.
 
 * **T4.24 — Seguimiento móvil de la carrera (MOB01):** `[ ] EN REVISIÓN LOCAL — DESCARTADA 13/10/2026 POR DECISIÓN ASUMIDA: SIN SERVICIO DE RED`
-  * *Cierre 13/10/2026:* el seguimiento de la carrera desde otro dispositivo necesita un servicio de red propio (GitHub Pages solo sirve archivos) con su coste y su mantenimiento. Opción recomendada asumida: no contratarlo y cerrar la ficha. Lo que sí queda hecho es jugar en el propio móvil o tableta (V2 y V5 del Sprint 3.7). Si el usuario quiere el seguimiento remoto, hay que decidir transporte, alojamiento y coste y reabrirla.
+  * *Cierre 13/10/2026:* el seguimiento de la carrera desde otro dispositivo necesita un servicio de red propio (GitHub Pages solo sirve archivos) con su coste y su mantenimiento. Opción recomendada asumida: no contratarlo y cerrar la ficha. Lo que sí queda hecho es jugar en el propio móvil o tableta (V2 y V5 del Sprint 3.7). Si el usuario quiere el seguimiento remoto, hay que decidir transporte, alojamiento y coste y reabrirla. **Actualización del mismo día:** el usuario lo retoma con otro planteamiento (el escritorio como servidor por WebRTC, con Firebase gratuito): ver el Sprint 5, sección 7.5.
   * *Prioridad/dependencias:* P0 (limpieza) por petición del usuario; R02, R24, R28. Es la ficha MOB01 de la sección 6.8, que sigue siendo la referencia de alcance y aceptación.
   * *Antes de empezar:* decidir transporte y alojamiento (necesita un servicio de red; GitHub Pages solo sirve archivos) y su coste. Si no se quiere ese servicio, la tarea se cierra como descartada con la decisión anotada.
 
@@ -1705,6 +1706,113 @@ Decisiones y esquemas de cada página en `docs/design/grill-sprint4-visual.md`. 
 **Corregido el 13/10/2026 sin ficha propia (revisión del usuario):** (1) al llegar una propuesta al muro la pista parpadeaba: el lienzo se vaciaba al cambiar de tamaño y ahora se repinta en el acto (que no cambie de tamaño es V3); (2) a x32 la carrera iba a tirones: simular un fotograma costaba más que el fotograma (unos 27 pasos de simulación); ahora la simulación tiene un presupuesto de 8 ms por fotograma y, si lo pasa, avanza algo menos de tiempo de carrera en vez de perder fluidez (a x32 la carrera puede ir algo por debajo de 32 veces); (3) la modal de suerte solo sale si el beneficiado es un piloto propio; la de un rival se aplica sola y queda como aviso; (4) las modales de fin de carrera, clasificación y suerte salían cortadas porque estaban limitadas al área de la pista: ahora cubren toda la pantalla y tienen desplazamiento propio.
 
 **Orden propuesto al planificar:** V1 → V3 → V2 → V4 → V6 → V5 → V7 → V8 → V9. El muro va antes que el móvil porque es lo que más texto y selectores concentra y lo que el usuario señaló.
+
+---
+
+### 7.5 Sprint 5 — Carrera compartida: el escritorio como servidor por WebRTC (planificado el 13/10/2026)
+
+**Origen:** el 13/10/2026, al revisar las opciones para seguir la carrera desde el móvil (T4.24, descartada por necesitar un servicio de red), el usuario propone darle la vuelta: que el navegador de escritorio sea el servidor y la gente se conecte por WebRTC y dirija su equipo desde su dispositivo. Pide acotarlo técnicamente antes de abordar nada y hacerlo en un solo sprint, con alojamiento en cuentas gratuitas. El alcance se cerró ese día en una entrevista de siete preguntas (método de la skill `scriptorium-cowork:grill-question`) y tres aclaraciones (gestión de estado, cómo se conecta la gente y qué son STUN y TURN). **Estado: planificado. Ninguna tarea está implementada ni tiene contrato de tests (el usuario pidió expresamente no generarlos todavía); cada una requiere su contrato y autorización antes de empezar.**
+
+**Qué se construye:** una **sala de carrera libre** alojada por el navegador de escritorio. Cada invitado entra desde su dispositivo con un código, elige un equipo libre (o solo mira) y lo dirige desde el muro; la IA lleva el resto. No toca temporada, dinero ni desarrollo. Sustituye a T4.24 y a MOB01: el seguimiento desde el móvil es el mismo sistema con un cliente que solo mira.
+
+**Decisiones del usuario (13/10/2026):**
+
+| Tema | Decisión |
+|---|---|
+| Alcance | Carrera compartida: espectador, mando remoto del propio equipo y varios jugadores en una carrera. **La liga (temporada y gestión compartidas) queda fuera.** |
+| Red | Pensado para internet (cada uno desde su casa); la misma wifi es el caso fácil de la misma solución. |
+| Si falla la conexión directa | Respaldo por la nube: el mismo servicio de la señalización retransmite los datos a menos lecturas por segundo. Sin servidor TURN. |
+| Servicio | **Firebase Realtime Database** (plan gratuito) para salas, señalización y respaldo, con sesión anónima. Descartados Supabase (los proyectos gratuitos sin actividad se pausan) y un broker público tipo PeerJS (sin respaldo ni control de acceso). El juego sigue publicándose en GitHub Pages. |
+| Modelo | **Solo el anfitrión calcula:** el motor corre en un Web Worker del escritorio y cada cliente recibe una foto ligera del estado 5 a 10 veces por segundo, la suaviza y devuelve solo órdenes. Descartado que todos calculen lo mismo con la semilla. |
+| Tiempo | El anfitrión elige la velocidad dentro de un tope y es el único que pausa; los invitados tienen «pedir pausa». |
+| Tipo de carrera | Solo sala de carrera libre; la carrera de la temporada no se comparte en este sprint. |
+| Gestión de estado | **Zustand**, con tres almacenes pequeños: carrera (la última foto del estado), sala (quién está y qué equipo lleva) y conexión (estado del enlace con cada uno). Anfitrión e invitado usan la misma interfaz; solo cambia de dónde llega la foto (Worker o red) y a dónde van las órdenes. La gestión entre carreras no se toca. Descartado Redux. |
+
+**Valores por defecto propuestos (el usuario no los ha cambiado; se confirman en el contrato de cada tarea):** tope de velocidad x4 con invitados conectados; el equipo de un jugador que se cae pasa al estratega y lo recupera si vuelve con la misma sesión; se puede entrar a mitad de carrera como espectador o tomando un equipo que lleve la IA; máximo diez jugadores (uno por equipo) y diez espectadores; el invitado usa la misma aplicación en «modo cliente» (pista, tiempos y su muro, sin herramientas ni control de tiempo); cada uno ve solo las tiradas de suerte y los avisos de su equipo; código de sala de seis caracteres sin letras ni cifras que se confundan, con enlace y QR; la sala existe mientras el anfitrión esté conectado.
+
+**Cómo se conecta la gente:** (1) el anfitrión crea la sala: sesión anónima en Firebase, código corto, enlace y QR; (2) el invitado abre el enlace o escribe el código, con otra sesión anónima y sin registrarse; (3) los dos navegadores se intercambian por Firebase los datos para encontrarse (señalización: Firebase solo hace de buzón); (4) con conexión directa, todo va de navegador a navegador por un canal de datos WebRTC; (5) si no se logra en unos segundos, respaldo: el anfitrión escribe la foto en Firebase unas dos veces por segundo y el invitado la lee de ahí; (6) el invitado elige un equipo libre y el anfitrión lo anota como suyo.
+
+**STUN y TURN (para quien lea esto sin contexto):** casi ningún dispositivo tiene dirección de internet propia; está detrás de un router. **STUN** es un servidor al que el navegador pregunta cómo se le ve desde fuera, para que el otro pueda llegar a él directamente; no transporta nada de la partida y los hay públicos y gratuitos. **TURN** es un puente por el que pasa todo el tráfico cuando la conexión directa es imposible (algunas redes móviles, de empresa o universidad); gasta ancho de banda y se cobra. Aquí se usa STUN público y, en lugar de TURN, el respaldo por Firebase: el juego solo necesita unas pocas lecturas por segundo, no audio ni vídeo.
+
+**Organización del código:** `src/worker/` (el motor en su Worker y el protocolo de mensajes con la pestaña), `src/net/` (transporte con WebRTC y respaldo tras la misma interfaz, sala y protocolo de red) y `src/state/` (los tres almacenes). Las claves de Firebase del navegador son públicas por diseño: van en el repositorio y la seguridad la ponen las reglas de la base de datos.
+
+**Fuera de este sprint:** liga y gestión compartida; compartir la carrera de la temporada; emparejamiento sin internet con código QR manual; servidor TURN; chat de voz o de texto; que el anfitrión acepte a cada invitado (quien tiene el código entra).
+
+**Lo que hay que comprobar antes de comprometer el resto (es la tarea N1):** (1) las cuotas del plan gratuito de Firebase: las cifras manejadas en la entrevista (unas 100 conexiones simultáneas y 10 GB de descarga al mes) son de memoria y hay que confirmarlas y medir cuánto gasta el respaldo; (2) la pestaña del anfitrión en segundo plano: el motor en el Worker no debería frenarse, pero el reenvío por WebRTC pasa por la pestaña (ya se vio en V8 que una pestaña oculta solo recibe un turno por segundo); si se frena, el plan B es avisar al anfitrión de que no cambie de pestaña; (3) el coste de pasar la interfaz de leer el motor directamente a leer mensajes, que es la parte más grande del sprint y la que más puede romper lo que ya funciona.
+
+**Requisito del usuario antes de N4:** crear el proyecto de Firebase con su cuenta (plan gratuito), activar Realtime Database y el inicio de sesión anónimo, y pasar la configuración web del proyecto. Crear cuentas no lo hace el agente.
+
+**Cómo se sabrá que está hecho:** dos navegadores en redes distintas; uno aloja y el otro entra con el código, elige equipo, da una orden de parada y la ve cumplirse; el anfitrión cambia de pestaña un minuto y la carrera sigue; se corta la conexión directa y el invitado sigue jugando por el respaldo.
+
+#### Bloque A — Cimientos
+
+* **N1 — Prueba de viabilidad:** `[ ] PENDIENTE — PLANIFICADA 13/10/2026; REQUIERE CONTRATO DE TESTS Y AUTORIZACIÓN`
+  * *Prioridad/dependencias:* P0; ninguna. Decide si el resto del sprint sigue como está planificado.
+  * *Alcance:* prototipo desechable, fuera de la aplicación: un Worker que hace avanzar `RaceSimulation`, un canal de datos WebRTC entre dos pestañas con STUN público y un respaldo mínimo por Firebase. Se mide: pasos de motor por segundo con la pestaña visible y oculta, lecturas por segundo que llegan al otro lado en los dos casos, tamaño de la foto del estado y consumo de Firebase por minuto de respaldo. Se confirman las cuotas reales del plan gratuito.
+  * *Aceptación:* un informe corto en `docs/` con las cifras y una de dos conclusiones: el plan vale, o qué cambia (por ejemplo, avisar al anfitrión de que no oculte la pestaña, o bajar las lecturas del respaldo).
+  * *Tests antes de implementación:* ninguno; es una medición. El prototipo no entra en el paquete.
+
+* **N2 — Motor en un Web Worker, foto del estado y órdenes como mensajes:** `[ ] PENDIENTE — PLANIFICADA 13/10/2026; REQUIERE CONTRATO DE TESTS Y AUTORIZACIÓN`
+  * *Prioridad/dependencias:* P0; N1. R02 (paso fijo y semilla), R28/R48 (guardado), R24 (lectura del muro).
+  * *Alcance:* `RaceSimulation` corre en un Worker dedicado. Se define la **foto del estado** (`RaceView`): un objeto plano con solo lo que pinta la pantalla (posición, velocidad y estado de los veinte coches, banderas, Safety Car, vuelta, tiempos, clima y, por equipo, la lectura de su muro, sus propuestas y sus avisos). Se definen las **órdenes** como mensajes con tipo que envuelven las llamadas que el motor ya tiene (parada y compuesto, anular parada, ritmo, órdenes de equipo, aceptar o descartar una propuesta, delegar en el estratega, tiempo y pausa). El guardado y la carga siguen funcionando a través del Worker.
+  * *Aceptación:* con la misma semilla y las mismas órdenes, la carrera en el Worker es idéntica a la de hoy en la pestaña; la foto del estado no contiene nada que el jugador no deba ver de otros equipos (setup, propuestas ajenas); la carrera de un jugador se juega igual que antes.
+  * *Tests antes de implementación:* igualdad de la carrera con y sin Worker, contenido y tamaño de la foto, cada orden con su efecto y su rechazo, y guardado y carga a través del Worker.
+
+* **N3 — Almacenes con Zustand y pantalla de carrera leyendo de la foto:** `[ ] PENDIENTE — PLANIFICADA 13/10/2026; REQUIERE CONTRATO DE TESTS Y AUTORIZACIÓN`
+  * *Prioridad/dependencias:* P0; N2.
+  * *Alcance:* dependencia nueva (`zustand`). Tres almacenes: carrera (última foto y la anterior, para suavizar), sala y conexión. La pantalla de carrera (pista, torre de tiempos, muro, detalle, avisos, modales) deja de leer el objeto del motor y lee del almacén con selectores, de modo que cada pieza se repinta solo cuando cambia su parte. `App.tsx` pierde el temporizador que copia datos del motor. La gestión entre carreras sigue como está.
+  * *Aceptación:* ninguna pieza de la pantalla de carrera toca el motor directamente; la carrera de un jugador se ve y se juega igual; la pista sigue fluida a x1 y a x32.
+  * *Tests antes de implementación:* los módulos de interfaz de carrera siguen en verde alimentados con una foto en lugar de con el motor (habrá que adaptar cómo se montan: pide autorización para cambiar tests acordados), y una comprobación de que los componentes no importan `RaceSimulation`.
+
+#### Bloque B — Red
+
+* **N4 — Salas en Firebase:** `[ ] PENDIENTE — PLANIFICADA 13/10/2026; REQUIERE CONTRATO DE TESTS Y AUTORIZACIÓN`
+  * *Prioridad/dependencias:* P0; N1. **Requiere el proyecto de Firebase creado por el usuario.**
+  * *Alcance:* dependencia nueva (`firebase`, solo los módulos de base de datos en tiempo real y sesión). Sesión anónima; crear sala con código de seis caracteres; unirse por código o enlace; presencia (quién está, con aviso de desconexión que borra la sala cuando se va el anfitrión); reglas de acceso: solo el anfitrión escribe el estado de la sala y cada invitado escribe solo en su buzón. Las reglas se guardan en el repositorio.
+  * *Aceptación:* un invitado no puede escribir en la sala ni en el buzón de otro; una sala sin anfitrión desaparece; el código no se repite entre salas vivas.
+  * *Tests antes de implementación:* generación y validación del código, ciclo de vida de la sala con una base de datos simulada y las reglas de acceso comprobadas con el emulador de Firebase si se puede instalar; si no, revisión manual anotada.
+
+* **N5 — Transporte: WebRTC con respaldo por Firebase:** `[ ] PENDIENTE — PLANIFICADA 13/10/2026; REQUIERE CONTRATO DE TESTS Y AUTORIZACIÓN`
+  * *Prioridad/dependencias:* P0; N2, N4.
+  * *Alcance:* una sola interfaz de transporte (enviar foto, enviar orden, estado del enlace) con dos realizaciones: canal de datos WebRTC con STUN público, usando Firebase como buzón de señalización, y respaldo que escribe y lee la foto en Firebase a unas dos lecturas por segundo. Cambio automático al respaldo si la conexión directa no se logra en unos segundos o se cae, y vuelta a la directa si se recupera. Topología en estrella: cada invitado habla solo con el anfitrión.
+  * *Aceptación:* con la conexión directa bloqueada, el invitado sigue recibiendo fotos y sus órdenes llegan; el enlace de cada jugador dice en qué modo está; una orden no se aplica dos veces aunque llegue repetida.
+  * *Tests antes de implementación:* la máquina de estados del enlace con transportes simulados (conectando, directo, respaldo, caído), numeración de órdenes para no duplicarlas y frecuencia de envío en cada modo. La conexión real entre dos redes es revisión del usuario (N10).
+
+* **N6 — Equipos con dueño:** `[ ] PENDIENTE — PLANIFICADA 13/10/2026; REQUIERE CONTRATO DE TESTS Y AUTORIZACIÓN`
+  * *Prioridad/dependencias:* P0; N2, N5. T4.14 (órdenes de equipo), R54 (delegar en el estratega).
+  * *Alcance:* el motor pasa de «los coches del jugador» a un dueño por equipo. El anfitrión mantiene qué sesión dirige qué equipo y rechaza cualquier orden sobre un equipo ajeno. Si un jugador se cae, su equipo pasa al estratega y lo recupera al volver con la misma sesión. Entrar a mitad de carrera: como espectador o tomando un equipo que lleve la IA. Límites: diez jugadores y diez espectadores. Cada jugador recibe en su foto solo el muro, las propuestas, los avisos y las tiradas de suerte de su equipo.
+  * *Aceptación:* una orden sobre un equipo ajeno no cambia nada y queda registrada como rechazada; dos jugadores no pueden tener el mismo equipo; la carrera de un solo jugador es idéntica a la de hoy.
+  * *Tests antes de implementación:* propiedad y rechazo de órdenes, caída y vuelta de un jugador, entrada a mitad de carrera, y que la foto de un jugador no trae datos reservados de otro equipo.
+
+#### Bloque C — Juego compartido
+
+* **N7 — Pantallas de sala:** `[ ] PENDIENTE — PLANIFICADA 13/10/2026; REQUIERE CONTRATO DE TESTS Y AUTORIZACIÓN`
+  * *Prioridad/dependencias:* P1; N3, N4, N6. V1 (piezas base) y V2 (móvil).
+  * *Alcance:* en el menú, «Crear sala» y «Unirse a una sala». El anfitrión ve el código, el enlace y el QR, elige circuito, formato y meteorología, y ve la lista de jugadores con su equipo y el estado de su enlace. El invitado escribe el código (o llega por el enlace), elige un equipo libre o entra a mirar, y espera a que el anfitrión empiece. Todo adaptado a móvil con las piezas del Sprint 3.7.
+  * *Aceptación:* se puede crear una sala, entrar y elegir equipo sin registrarse; un equipo cogido no se ofrece a otro; a 375 px no hay textos cortados ni controles de menos de 44 px.
+  * *Tests antes de implementación:* renderizado de las pantallas con estados de sala simulados; la maquetación se mide en el navegador con `__uiAudit()`.
+
+* **N8 — Carrera en modo cliente:** `[ ] PENDIENTE — PLANIFICADA 13/10/2026; REQUIERE CONTRATO DE TESTS Y AUTORIZACIÓN`
+  * *Prioridad/dependencias:* P1; N3, N5, N6.
+  * *Alcance:* la pantalla de carrera en un dispositivo invitado: pinta la pista suavizando entre fotos (con conexión directa y con respaldo), enseña los tiempos y el muro de su equipo y envía sus órdenes. Sin menú de herramientas ni control de tiempo; con botón de «pedir pausa», que avisa al anfitrión. El anfitrión tiene tope de velocidad x4 mientras haya invitados y ve quién pide pausa. Indicador de la calidad del enlace. El espectador ve pista y tiempos, sin muro.
+  * *Aceptación:* el invitado da una orden de parada y la ve cumplirse; en modo respaldo los coches se mueven sin saltos aunque con menos detalle; el invitado no puede cambiar la velocidad ni pausar.
+  * *Tests antes de implementación:* suavizado entre fotos (un coche nunca salta ni retrocede), qué controles existen en cada papel (anfitrión, jugador, espectador) y el tope de velocidad.
+
+* **N9 — Clasificación, final de carrera y cierre de sala:** `[ ] PENDIENTE — PLANIFICADA 13/10/2026; REQUIERE CONTRATO DE TESTS Y AUTORIZACIÓN`
+  * *Prioridad/dependencias:* P2; N7, N8. V7 (clasificación en directo).
+  * *Alcance:* con formato de clasificación, todos ven la misma clasificación en directo y el mismo comentario; al acabar la carrera, podio y resultado comunes; el anfitrión puede lanzar otra carrera en la misma sala o cerrarla; si el anfitrión se va, los invitados ven un aviso claro y vuelven al menú.
+  * *Aceptación:* todos los dispositivos ven la misma parrilla y el mismo resultado; nadie se queda en una pantalla colgada cuando se cierra la sala.
+  * *Tests antes de implementación:* misma parrilla y mismo resultado a partir de la misma foto, y el aviso de sala cerrada.
+
+* **N10 — Prueba entre redes y guía de puesta en marcha:** `[ ] PENDIENTE — PLANIFICADA 13/10/2026; REQUIERE CONTRATO DE TESTS Y AUTORIZACIÓN`
+  * *Prioridad/dependencias:* P1; N1 a N9.
+  * *Alcance:* la prueba de «cómo se sabrá que está hecho» con dos dispositivos reales en redes distintas (la hace el usuario; el agente no tiene dos redes) y con el respaldo forzado; guía en `docs/` para crear el proyecto de Firebase, publicar las reglas y vigilar el consumo; suite completa.
+  * *Aceptación:* la prueba pasa en conexión directa y en respaldo, y el consumo medido de Firebase en una carrera entera cabe con holgura en el plan gratuito.
+  * *Tests antes de implementación:* ninguno nuevo; es validación del conjunto.
+
+**Orden propuesto:** N1 → N2 → N3 → N4 → N5 → N6 → N7 → N8 → N9 → N10. N1 va primera porque puede cambiar el plan; N2 y N3 son las que más tocan lo que ya funciona y se pueden entregar y revisar sin red (la carrera de un jugador tiene que seguir igual); N4 puede adelantarse en paralelo en cuanto exista el proyecto de Firebase.
+
+**Avisos:** (1) N2 y N3 cambian cómo se montan los tests de interfaz de carrera: harán falta autorizaciones para adaptar tests acordados; (2) el sprint añade dos dependencias (`zustand` y `firebase`) y el paquete crecerá: conviene cargar la parte de red solo al crear o unirse a una sala; (3) si el anfitrión cierra el navegador, la carrera se acaba para todos: el guardado automático que ya existe permite al anfitrión retomarla, pero los invitados tienen que volver a entrar.
 
 ---
 

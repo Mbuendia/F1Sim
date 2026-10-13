@@ -12,6 +12,7 @@ const index = buildTaskIndex(markdown);
 const detail = new Map([...markdown.matchAll(/^\* \*\*(\S+) — (.+?):\*\* `\[([x ])\]([^`\n]*)`/gm)].map(([, id, , , text]) => [id, text.trim()]));
 const sprintOf = id => {
   if (/^V\d/.test(id)) return 'Sprint 3.7';
+  if (/^N\d/.test(id)) return 'Sprint 5';
   if (/^G\d/.test(id)) return 'Sprint 4.5';
   if (/^T4\./.test(id)) return 'Sprint 4';
   if (/^T3\./.test(id)) return 'Sprint 3';
