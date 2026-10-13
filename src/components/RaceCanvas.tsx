@@ -343,8 +343,7 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
 
       {weatherTest && (
         <button type="button" onClick={nextWeatherTest} title="Cambia el tiempo de esta carrera libre para probar la lluvia y el spray"
-          style={{ position: 'absolute', right: 12, bottom: 12, padding: '6px 12px', borderRadius: 6, cursor: 'pointer',
-            background: 'rgba(20, 24, 31, 0.92)', border: '1px solid rgba(56, 189, 248, 0.6)', color: '#e8e6df', font: "700 13px 'Rajdhani', sans-serif" }}>
+          className={styles.weatherTest}>
           Probar tiempo: {weatherTestIndex < 0 ? 'el de la carrera' : WEATHER_TESTS[weatherTestIndex].label}
         </button>
       )}
@@ -364,7 +363,7 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
 
       {/* ── HINT DE CONTROLES DE CÁMARA & PISTA ── */}
       <div className={styles.cameraHint}>
-        🖱️ <strong>Click + Arrastrar:</strong> Rotar pista 360° | <strong>Click Dcho:</strong> Mover | <strong>Rueda:</strong> Zoom | <strong>Doble Click:</strong> Reset
+        <strong>Arrastrar:</strong> girar · <strong>Botón derecho:</strong> mover · <strong>Rueda:</strong> zoom · <strong>Doble clic:</strong> restablecer
       </div>
     </div>
   );

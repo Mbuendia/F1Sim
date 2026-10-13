@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import styles from './App.module.css';
+import { RaceTabs, raceLayout } from './components/RaceTabs';
+import { StintTimeline } from './components/StintTimeline';
+import type { RaceTab } from './components/RaceTabs';
 import { RaceSimulation } from './simulation/RaceSimulation';
 import { Camera } from './renderer/Camera';
 import { RaceCanvas } from './components/RaceCanvas';
@@ -176,6 +179,8 @@ export const App: React.FC = () => {
   const [leftSidebarOpen, setLeftSidebarOpen] = useState(true);
   const [detailOpen, setDetailOpen] = useState(false);
   const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth);
+  // [V2] En móvil la pista ocupa la pantalla y posiciones, muro y detalle van en pestañas inferiores.
+  const [raceTab, setRaceTab] = useState<RaceTab>('pista');
 
   useEffect(() => {
     const onResize = () => setViewportWidth(window.innerWidth);
@@ -410,6 +415,7 @@ export const App: React.FC = () => {
     if (carId !== null) {
       camera.followCar(carId);
       setDetailOpen(true);
+      setRaceTab(tab => (tab === 'tiempos' ? 'detalle' : tab));
     } else {
       camera.resetToFullTrack();
       setDetailOpen(false);
@@ -1311,15 +1317,20 @@ export const App: React.FC = () => {
   const isWide = viewportWidth >= 1600;
   const detailCar = selectedCar || favoriteCar;
   const detailIsRival = !teamCars.some(c => c.id === detailCar.id);
+  // [V2] Tres composiciones: móvil (pestañas), tableta (pista arriba; posiciones y muro debajo) y escritorio.
+  const layout = raceLayout(viewportWidth);
   const detailReplacesPositions = detailOpen && !isWide;
-  const showPositions = leftSidebarOpen && !detailReplacesPositions;
+  const showPositions = layout === 'movil' ? raceTab === 'tiempos' : leftSidebarOpen && !detailReplacesPositions;
+  const showDetail = layout === 'movil' ? raceTab === 'detalle' : detailOpen;
+  const showWall = layout !== 'movil' || raceTab === 'muro';
   const columns: string[] = [];
   const areas: string[] = [];
   if (showPositions) { columns.push('var(--ancho-posiciones)'); areas.push('pos'); }
   if (detailReplacesPositions) { columns.push('var(--ancho-detalle)'); areas.push('detail'); }
   columns.push('minmax(0, 1fr)'); areas.push('center');
   if (detailOpen && isWide) { columns.push('var(--ancho-detalle)'); areas.push('detail'); }
-  const shellLayout = { gridTemplateColumns: columns.join(' '), gridTemplateAreas: `"${areas.join(' ')}"` };
+  const shellLayout = layout === 'escritorio' ? { gridTemplateColumns: columns.join(' '), gridTemplateAreas: `"${areas.join(' ')}"` } : undefined;
+  const shellSide = showPositions ? 'pos' : showDetail ? 'detail' : 'none';
 
   return (
     <div className={styles.appContainer}>
@@ -1349,7 +1360,7 @@ export const App: React.FC = () => {
           totalLaps={simulation.totalLaps}
         />
 
-        <div className={styles.barGroup}>
+        <div className={`${styles.barGroup} ${styles.viewTools}`}>
           <button
             className={styles.barBtn}
             onClick={handleCycleCameraMode}
@@ -1369,8 +1380,10 @@ export const App: React.FC = () => {
             <Maximize2 size={16} aria-hidden="true" />
             <span className={styles.barLabel}>Vista general</span>
           </button>
+        </div>
+        <div className={styles.barGroup}>
           <button
-            className={styles.barBtn}
+            className={`${styles.barBtn} ${styles.panelToggle}`}
             aria-pressed={leftSidebarOpen}
             onClick={() => setLeftSidebarOpen(open => !open)}
             title={leftSidebarOpen ? 'Ocultar posiciones' : 'Mostrar posiciones'}
@@ -1380,7 +1393,7 @@ export const App: React.FC = () => {
             <span className={styles.barLabel}>Posiciones</span>
           </button>
           <button
-            className={styles.barBtn}
+            className={`${styles.barBtn} ${styles.panelToggle}`}
             aria-pressed={detailOpen}
             onClick={() => setDetailOpen(open => !open)}
             title={detailOpen ? 'Cerrar detalle del coche' : 'Abrir detalle del coche'}
@@ -1402,7 +1415,7 @@ export const App: React.FC = () => {
         </div>
       </header>
 
-      <div className={styles.raceShell} style={shellLayout}>
+      <div className={styles.raceShell} style={shellLayout} data-layout={layout} data-side={shellSide} data-tab={raceTab}>
         {/* ── 1. CLASIFICACIÓN COMPACTA ── */}
         <aside className={`${styles.positionsArea} ${showPositions ? '' : styles.isHidden}`} aria-label="Posiciones">
           <Leaderboard
@@ -1510,13 +1523,13 @@ export const App: React.FC = () => {
             )}
           </div>
 
-          <section className={styles.wallArea}>
+          <section className={`${styles.wallArea} ${showWall ? '' : styles.isHidden}`}>
             <BoxControls key={teamCars.map(c => c.id).join(':') + ':' + selectedCircuitId} car={favoriteCar} simulation={simulation} teamCars={teamCars} />
           </section>
         </main>
 
         {/* ── 3. DETALLE DEL COCHE CONSULTADO (se conserva montado para no perder pestaña ni selección) ── */}
-        <aside className={`${styles.detailArea} ${detailOpen ? '' : styles.isHidden}`} aria-label="Detalle del coche">
+        <aside className={`${styles.detailArea} ${showDetail ? '' : styles.isHidden}`} aria-label="Detalle del coche">
           <div className={styles.detailHeader}>
             {detailReplacesPositions ? (
               <button className={styles.barBtn} onClick={() => setDetailOpen(false)}>← Volver a posiciones</button>
@@ -1533,6 +1546,8 @@ export const App: React.FC = () => {
             </div>
           )}
           <BottomTelemetryDock car={detailCar} onSelectCar={handleSelectCar} compact />
+          {/* [V4] La estrategia en una línea: tandas, vuelta actual y ventana de parada. */}
+          <StintTimeline stints={detailCar.pitStop.stints ?? []} currentLap={detailCar.currentLap} totalLaps={simulation.totalLaps} />
           {/* [R24] Lectura del muro del coche en detalle. */}
           <WallPanel reading={detailCar ? simulation.getWallReading(detailCar.id) : null} />
           <div className={styles.detailStats}>
@@ -1550,6 +1565,7 @@ export const App: React.FC = () => {
           </div>
         </aside>
       </div>
+      {layout === 'movil' && <RaceTabs tab={raceTab} onChange={setRaceTab} />}
     </div>
   );
 };

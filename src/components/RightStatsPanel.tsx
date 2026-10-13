@@ -1,19 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import styles from './RightStatsPanel.module.css';
 import { CarState, TrackWeatherState } from '../types/f1';
-import { 
-  Timer, 
-  History, 
-  TrendingDown, 
-  Gauge, 
-  Wind, 
-  CloudRain, 
-  Thermometer, 
-  Droplets,
-  Radio,
-  Compass,
-  Zap
-} from 'lucide-react';
+import { Timer, History, TrendingDown, Gauge, Wind, CloudRain, Thermometer, Droplets, Radio, Compass, Zap, Sun } from 'lucide-react';
+import { StintTimeline } from './StintTimeline';
 import { animate } from 'animejs';
 import { CircuitSpec } from '../data/circuits';
 import { RaceHeader } from './RaceHeader';
@@ -405,9 +394,8 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
                 </div>
               </div>
 
-              <div className={styles.forecastBanner}>
-                <span>🎯 Neumático <CompoundBadge compound={tires.compound} size={16} showName /> rinde hasta <strong>Vuelta {Math.round(expectedEndLap)}</strong> ({currentStint.expectedLaps} vtas previstas)</span>
-              </div>
+              {/* [V4] La previsión del neumático, en la línea de tandas en vez de en una frase. */}
+              <StintTimeline stints={stints.map((stint, index) => (index === stints.length - 1 ? { ...stint, compound: tires.compound } : stint))} currentLap={activeCar.currentLap} totalLaps={totalLaps} />
             </div>
           </div>
 
@@ -570,7 +558,7 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
                 <span>CANTIDAD DE AGUA & LLUVIA</span>
               </div>
               <span className={styles.weatherConditionBadge}>
-                {weather.condition === 'dry' ? '☀️ SECO' : '🌧️ LLUVIA'}
+                {weather.condition === 'dry' ? <><Sun size={14} aria-hidden="true" /> SECO</> : <><CloudRain size={14} aria-hidden="true" /> LLUVIA</>}
               </span>
             </div>
 
@@ -604,10 +592,9 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
             <div className={styles.strategyRecBox} style={{ borderColor: rainRec.col, background: `${rainRec.col}15` }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <Zap size={13} color={rainRec.col} />
-                <span className={styles.recTitle} style={{ color: rainRec.col }}>ESTRATEGIA RECOMENDADA</span>
+                <span className={styles.recTitle} style={{ color: rainRec.col }}>NEUMÁTICO RECOMENDADO</span>
               </div>
-              <span className={styles.recCompound}>{rainRec.compound}</span>
-              <p className={styles.recAdvice}>{rainRec.advice}</p>
+              <span className={styles.recCompound} title={rainRec.advice}>{rainRec.compound}</span>
             </div>
           </div>
 

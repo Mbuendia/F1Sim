@@ -3,7 +3,9 @@
 }
 
 .trigger {
-  height: 36px;
+  height: var(--toque);
+  min-width: var(--toque);
+  justify-content: center;
   padding: 0 12px;
   display: inline-flex;
   align-items: center;

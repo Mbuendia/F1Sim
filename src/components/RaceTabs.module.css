@@ -1,0 +1,4 @@
+/* [V2] Pestañas inferiores de la carrera en móvil. */
+.tabs { flex-shrink:0; display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); height:var(--alto-pestanas); background:var(--panel); border-top:1px solid var(--line); z-index:40; }
+.tab { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; border:none; background:transparent; color:var(--text-2); font:700 14px var(--font-ui); cursor:pointer; }
+.tab[aria-selected='true'] { color:var(--text); box-shadow:inset 0 3px 0 var(--accion); }

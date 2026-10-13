@@ -1,41 +1,69 @@
+/* [R24][V4] Lectura del muro en el detalle del coche, en imagen: barras, medidores y fichas en lugar de frases. */
 .wall {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   margin: 8px 0;
   padding: 10px 12px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 10px;
-  background: rgba(15, 20, 32, 0.9);
+  border: 1px solid var(--line);
+  border-radius: var(--radio-l);
+  background: var(--panel-2);
   color: var(--text);
   font-family: var(--font-ui);
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .title {
-  margin: 0 0 8px;
-  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0;
+  font-size: 14px;
   font-weight: 800;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--text-2);
 }
 
-.list {
-  display: grid;
-  grid-template-columns: max-content 1fr;
-  gap: 5px 10px;
-  margin: 0;
-}
+.block { display: flex; flex-direction: column; gap: 6px; }
+.blockTitle { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-weight: 700; color: var(--text-2); }
+.sets { display: inline-flex; gap: 8px; }
+.set { display: inline-flex; align-items: center; gap: 3px; color: var(--text); font-variant-numeric: tabular-nums; }
 
-.list dt {
-  color: var(--text-2);
-  font-weight: 700;
-}
+.bar { position: relative; flex: 1; min-width: 40px; height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
+.barFill { position: absolute; inset: 0 auto 0 0; border-radius: 4px; background: var(--text-2); }
+.barFill[data-close] { background: var(--aviso); }
+.barFill[data-worn] { background: var(--negativo); }
 
-.list dd {
-  margin: 0;
-  line-height: 1.35;
-}
+.gap, .tyreRow { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.gapLabel { display: inline-flex; align-items: center; gap: 4px; width: 74px; color: var(--text-2); font-weight: 700; flex-shrink: 0; }
+.gapValue { width: 92px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; flex-shrink: 0; }
+.tyreWho { width: 36px; font-weight: 700; flex-shrink: 0; }
+.tyreLaps { width: 112px; text-align: right; color: var(--text-2); font-variant-numeric: tabular-nums; white-space: nowrap; flex-shrink: 0; }
 
-.bad { color: #fca5a5; }
-.warn { color: #fcd34d; }
+.meters { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.meterCell { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.meterCell small { font-size: 14px; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.window { display: flex; align-items: center; gap: 12px; padding: 8px 10px; border: 1px solid var(--line-strong); border-radius: var(--radio-m); background: var(--panel); }
+.windowPos { display: flex; flex-direction: column; align-items: center; font-size: 26px; font-weight: 800; line-height: 1; }
+.windowPos small { font-size: 14px; font-weight: 700; color: var(--text-2); white-space: nowrap; }
+.windowText { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
+.dim { color: var(--text-2); }
+
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chips:empty { display: none; }
+.chips > * { white-space: normal; height: auto; min-height: 26px; }
+
+.footer { display: flex; align-items: center; justify-content: space-between; gap: 10px; color: var(--text-2); }
+.footer b { color: var(--positivo); }
+.paceBar { display: flex; width: 96px; height: 8px; border-radius: 4px; overflow: hidden; background: var(--line); flex-shrink: 0; }
+.paceBar [data-pace='push'] { background: var(--accion); }
+.paceBar [data-pace='balanced'] { background: var(--text-2); }
+.paceBar [data-pace='save'] { background: var(--positivo); }
+
+.bad { color: var(--negativo) !important; }
+.warn { color: var(--aviso); }
 /* [T4.15] Ventana de parada en la tarjeta del piloto */
-.pitWindow { display: block; font-size: 14px; color: var(--text-2, #cbd5e1); }
+.pitWindow { display: inline-block; font-size: 14px; color: var(--text-2, #cbd5e1); white-space: nowrap; flex-shrink: 0; }
