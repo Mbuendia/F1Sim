@@ -1411,6 +1411,7 @@ export const App: React.FC = () => {
               camera={camera}
               selectedCarId={selectedCarId}
               onSelectCar={handleSelectCar}
+              weatherTest={mode === 'free'}
             />
 
             {/* HUD de Banderas y Safety Car en Directo */}

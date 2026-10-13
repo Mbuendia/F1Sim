@@ -12,6 +12,8 @@ import { OFFICIAL_CIRCUITS } from '../data/circuits';
 import { supportsWebGL } from './CarShowcase';
 import type { TrackLayerGL } from '../renderer/TrackLayerGL';
 import { frameCost, recordStage } from '../renderer/frameCost';
+import { buildCarDraws, buildSafetyCarDraw } from '../renderer/carDraws';
+import { WEATHER_TESTS } from '../data/weatherScenarios';
 
 if (import.meta.env.DEV && typeof window !== 'undefined') (window as unknown as { __frameCost: typeof frameCost }).__frameCost = frameCost;
 import { Compass, RotateCw } from 'lucide-react';
@@ -21,17 +23,27 @@ interface RaceCanvasProps {
   camera: Camera;
   selectedCarId: number | null;
   onSelectCar: (carId: number | null) => void;
+  /** [G9] Carrera libre: enseña el botón que cambia el tiempo para probar lluvia y spray. */
+  weatherTest?: boolean;
 }
 
 export const RaceCanvas: React.FC<RaceCanvasProps> = ({
   simulation,
   camera,
   selectedCarId,
-  onSelectCar
+  onSelectCar,
+  weatherTest = false
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const trackLayerRef = useRef<TrackLayerGL | null>(null);
   const [canvasFallback, setCanvasFallback] = useState(false);
+  // [G9] Tiempo de prueba elegido (-1: el de la carrera).
+  const [weatherTestIndex, setWeatherTestIndex] = useState(-1);
+  const nextWeatherTest = () => {
+    const next = (weatherTestIndex + 1) % WEATHER_TESTS.length;
+    simulation.setWeatherScenario(WEATHER_TESTS[next].scenario);
+    setWeatherTestIndex(next);
+  };
   // [T3.4] Partículas de spray de esta vista.
   const spray = useRef(new SpraySystem());
   const isDraggingRef = useRef(false);
@@ -163,7 +175,7 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
       WeatherRenderer.render(ctx, simulation.activeTrack, camera, weatherView, simulation.raceTimeSec);
       // [T3.4] Spray con partículas: se emite con el tiempo de carrera y se pinta antes que los coches.
       spray.current.update(frame.cars, t => simulation.weatherModel.depthAt(t), simulation.raceTimeSec);
-      spray.current.render(ctx, camera, simulation.raceTimeSec);
+      if (!gpu) spray.current.render(ctx, camera, simulation.raceTimeSec);
       const weatherDone = performance.now();
 
       if (frame.safetyCar?.isDeployed && !safetyCarImageRequested) {
@@ -175,8 +187,23 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
 
       const circuitSpec = OFFICIAL_CIRCUITS[simulation.circuitId];
       const trackWidthCarsCapacity = circuitSpec?.trackWidthCars ?? 3;
-      CarRenderer.renderCars(ctx, frame.cars, camera, selectedCarId, simulation.activeTrack, trackWidthCarsCapacity, frame.safetyCar,
-        { depthAt: t => simulation.weatherModel.depthAt(t), timeSec: simulation.raceTimeSec });
+      const carEffects = { depthAt: (t: number) => simulation.weatherModel.depthAt(t), timeSec: simulation.raceTimeSec };
+      // [G9] Spray, coches y Safety Car desde la GPU, compuestos sobre la pista y el agua; el Canvas pone encima humo,
+      // etiquetas y rótulos, y pinta entero cualquier coche que todavía no tenga su imagen.
+      let onGpu: { cars: ReadonlySet<number>; safetyCar: boolean } | undefined;
+      if (gpu && trackLayerRef.current) {
+        try {
+          const draws = buildCarDraws(frame.cars, camera, selectedCarId, simulation.activeTrack, trackWidthCarsCapacity, carEffects);
+          const safetyCarDraw = buildSafetyCarDraw(frame.safetyCar, simulation.activeTrack, camera, performance.now());
+          const view = trackLayerRef.current.renderCars(camera, dpr, draws, safetyCarDraw, spray.current, simulation.raceTimeSec);
+          ctx.drawImage(view, 0, 0, camera.screenWidth, camera.screenHeight);
+          onGpu = { cars: new Set(draws.map(draw => draw.id)), safetyCar: safetyCarDraw !== null };
+        } catch {
+          trackLayerRef.current = null;
+          setCanvasFallback(true);
+        }
+      }
+      CarRenderer.renderCars(ctx, frame.cars, camera, selectedCarId, simulation.activeTrack, trackWidthCarsCapacity, frame.safetyCar, carEffects, onGpu);
       const carsDone = performance.now();
 
       // [R53] Gotas en pantalla según la lluvia de la zona visible (por encima de pista y coches).
@@ -279,6 +306,14 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
         onDoubleClick={handleDoubleClick}
         onContextMenu={(e) => e.preventDefault()}
       />
+
+      {weatherTest && (
+        <button type="button" onClick={nextWeatherTest} title="Cambia el tiempo de esta carrera libre para probar la lluvia y el spray"
+          style={{ position: 'absolute', right: 12, bottom: 12, padding: '6px 12px', borderRadius: 6, cursor: 'pointer',
+            background: 'rgba(20, 24, 31, 0.92)', border: '1px solid rgba(56, 189, 248, 0.6)', color: '#e8e6df', font: "700 13px 'Rajdhani', sans-serif" }}>
+          Probar tiempo: {weatherTestIndex < 0 ? 'el de la carrera' : WEATHER_TESTS[weatherTestIndex].label}
+        </button>
+      )}
 
       {canvasFallback && (
         <div role="status" style={{ position: 'absolute', left: 12, bottom: 12, maxWidth: 420, padding: '6px 10px', borderRadius: 6,

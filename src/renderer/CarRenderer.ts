@@ -14,9 +14,13 @@ export interface CarEffects {
   timeSec?: number;
 }
 
+const NOTHING_ON_GPU: { cars: ReadonlySet<number>; safetyCar: boolean } = { cars: new Set<number>(), safetyCar: false };
+
 export class CarRenderer {
   static readonly BASE_CAR_LEN = 14;
   static readonly BASE_CAR_WID = 6;
+  /** [G2] Ancho de la huella del coche, de rueda a rueda (m). */
+  static readonly CAR_FOOTPRINT_M = 2.2;
 
   static pickCarAtScreen(cars: CarState[], camera: Camera, x: number, y: number): number | null {
     let selected: number | null = null;
@@ -40,10 +44,9 @@ export class CarRenderer {
   static getCarDimensions(zoom: number, trackWidthMeters: number = 24, trackWidthCarsCapacity: number = 3) {
     // cw = carWid * 0.8; las ruedas alcanzan +/- (1.15 + 0.45 / 2) * cw.
     const footprintWidthFactor = 2 * 0.8 * (1.15 + 0.45 / 2);
-    // Huella fija calibrada para el ancho mínimo de 8 m; cambia el espacio de
-    // maniobra, nunca el tamaño físico del coche al pasar de un tramo a otro.
-    const laneSpacing = CarRenderer.getLateralDisplacement(0.55, 8, 2);
-    const worldScale = laneSpacing / (1.25 * CarRenderer.BASE_CAR_WID * footprintWidthFactor);
+    // [G2] Huella real del coche con sus ruedas (m). Antes salía de la separación entre carriles, que cambió con la
+    // escala real y dejaba el coche a la mitad de su tamaño.
+    const worldScale = CarRenderer.CAR_FOOTPRINT_M / (CarRenderer.BASE_CAR_WID * footprintWidthFactor);
     const scale = worldScale * zoom;
     return {
       scale,
@@ -83,7 +86,9 @@ export class CarRenderer {
     trackWidthCarsCapacity: number = 2,
     safetyCar?: SafetyCarState | null,
     /** [R46] Datos para el detalle del coche: agua del tramo y hora de carrera (luz trasera). */
-    effects: CarEffects = {}
+    effects: CarEffects = {},
+    /** [G9] Coches (y Safety Car) cuyo cuerpo ya ha pintado la GPU: aquí solo van humo, etiquetas y rótulos. */
+    onGpu: { cars: ReadonlySet<number>; safetyCar: boolean } = NOTHING_ON_GPU
   ) {
     const activeCars = cars.filter(isCarVisible);
 
@@ -137,6 +142,7 @@ export class CarRenderer {
       // ── OPACIDAD DEL COCHE RETIRADO (FADING ANTES DE GRÚA) ──
       const retiredOpacity = car.status === 'out' ? Math.max(0.25, Math.min(1.0, car.retireTimer / 10)) : 1.0;
 
+      if (onGpu.cars.has(car.id)) continue;
       if (camera.zoom <= OVERVIEW_ZOOM) {
         this.drawOverviewCar(ctx, screen.x, screen.y, car, isSelected, retiredOpacity);
       } else {
@@ -149,7 +155,7 @@ export class CarRenderer {
 
     // ── RENDERIZADO DEL SAFETY CAR FÍSICO ──
     if (safetyCar && safetyCar.isDeployed && safetyCar.mode !== 'idle' && safetyCar.mode !== 'in') {
-      this.drawSafetyCar(ctx, safetyCar, track, camera);
+      this.drawSafetyCar(ctx, safetyCar, track, camera, onGpu.safetyCar);
     }
   }
 
@@ -171,7 +177,8 @@ export class CarRenderer {
     ctx: CanvasRenderingContext2D,
     sc: SafetyCarState,
     track: TrackDefinition,
-    camera: Camera
+    camera: Camera,
+    labelOnly = false
   ) {
     // [Q14] Misma ruta que los coches: pista o pit lane (salida y retirada del SC).
     const { worldX, worldY, worldAngle: angle } = calculateCarWorldPosition(
@@ -198,6 +205,8 @@ export class CarRenderer {
     ctx.save();
     ctx.translate(screen.x, screen.y);
     ctx.rotate(angle + camera.rotation);
+    // [G9] Con el coche ya pintado por la GPU, aquí solo queda su rótulo.
+    if (labelOnly) ctx.globalAlpha = 0;
 
     // Sombra del Safety Car
     ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';

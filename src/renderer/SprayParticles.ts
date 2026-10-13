@@ -98,6 +98,16 @@ export class SpraySystem {
     return list;
   }
 
+  /** [G9] Recorre las partículas vivas: posición en el mundo (m), tamaño (m) y vida gastada (0 recién nacida, 1 al morir). */
+  forEachAlive(timeSec: number, visit: (x: number, y: number, sizeM: number, life: number) => void): void {
+    for (let i = 0; i < SPRAY.MAX; i++) {
+      const age = timeSec - this.born[i];
+      if (age < 0 || age >= SPRAY.LIFE_SEC) continue;
+      const life = age / SPRAY.LIFE_SEC;
+      visit(this.x[i] + this.vx[i] * age, this.y[i] + this.vy[i] * age, this.size[i] * (1 + life), life);
+    }
+  }
+
   /**
    * Pinta las partículas vivas que caen en pantalla, agrupadas por lo desvanecidas que están y por tamaño. [T4.17] Cada
    * gota es un punto redondo: un rectángulo mínimo trazado con unión redonda y el grosor de la gota, para que con mucho

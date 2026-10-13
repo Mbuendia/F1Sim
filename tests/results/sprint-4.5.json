@@ -1,6 +1,6 @@
 {
   "summary": {
-    "passed": 5395,
+    "passed": 5414,
     "failed": 0
   },
   "results": [
@@ -512,7 +512,7 @@
           "details": ""
         },
         {
-          "name": "B5: Temporizador de spin entre 8s y 12s (obtenido: 9.2s)",
+          "name": "B5: Temporizador de spin entre 8s y 12s (obtenido: 8.6s)",
           "pass": true,
           "details": ""
         }
@@ -531,17 +531,17 @@
       "failed": 0,
       "assertions": [
         {
-          "name": "Q1: Separación del coche centrado supera 1.2 veces la huella completa (obtenido: 4.82x)",
+          "name": "Q1: Separación del coche centrado supera 1.2 veces la huella completa (obtenido: 2.70x)",
           "pass": true,
           "details": ""
         },
         {
-          "name": "Q1: Huellas transversales disjuntas en zoom 0.5–4.5 (gap mínimo: +5.3px)",
+          "name": "Q1: Huellas transversales disjuntas en zoom 0.5–4.5 (gap mínimo: +4.8px)",
           "pass": true,
           "details": ""
         },
         {
-          "name": "Q1: Margen en pista estrecha sobre huella completa (obtenido: 6.07x)",
+          "name": "Q1: Margen en pista estrecha sobre huella completa (obtenido: 3.40x)",
           "pass": true,
           "details": ""
         },
@@ -22611,7 +22611,7 @@
         {
           "name": "T3.4: el spray se pinta antes que los coches y sus etiquetas",
           "pass": true,
-          "details": "7139 / 7722"
+          "details": "7757 / 9501"
         }
       ],
       "errors": []
@@ -26213,7 +26213,7 @@
         {
           "name": "T4.15: parar cuesta tiempo y puestos (semilla 415)",
           "pass": true,
-          "details": "{\"position\":20,\"lossSec\":35.84000000000244,\"ahead\":{\"code\":\"BOR\",\"gapSec\":29.23871572996967},\"behind\":null}"
+          "details": "{\"position\":20,\"lossSec\":35.84000000000244,\"ahead\":{\"code\":\"BOR\",\"gapSec\":27.486114864029332},\"behind\":null}"
         },
         {
           "name": "T4.15: con la carrera igual, la misma ventana, y pierde lo mismo que dice el predictor de reincorporación (semilla 415)",
@@ -26253,7 +26253,7 @@
         {
           "name": "T4.15: parar cuesta tiempo y puestos (semilla 1502)",
           "pass": true,
-          "details": "{\"position\":20,\"lossSec\":35.84000000000244,\"ahead\":{\"code\":\"DOO\",\"gapSec\":29.359396055794093},\"behind\":null}"
+          "details": "{\"position\":20,\"lossSec\":35.84000000000244,\"ahead\":{\"code\":\"BOR\",\"gapSec\":29.32320387571366},\"behind\":null}"
         },
         {
           "name": "T4.15: con la carrera igual, la misma ventana, y pierde lo mismo que dice el predictor de reincorporación (semilla 1502)",
@@ -26303,7 +26303,7 @@
         {
           "name": "T4.15: el muro dice dónde saldría el coche, con quién delante y con quién detrás, y lo que pierde",
           "pass": true,
-          "details": "<section class=\"_wall_1o73l_1\" aria-label=\"Muro de SAI\" data-flag-drs=\"permiso\"><h3 class=\"_title_1o73l_23\">Muro · SAI P8</h3><dl class=\"_list_1o73l_41\"><dt>Delante</dt><dd>0,24 s con ALO</dd><dt>Detr"
+          "details": "<section class=\"_wall_1o73l_1\" aria-label=\"Muro de SAI\" data-flag-drs=\"permiso\"><h3 class=\"_title_1o73l_23\">Muro · SAI P8</h3><dl class=\"_list_1o73l_41\"><dt>Delante</dt><dd>0,40 s con ALO</dd><dt>Detr"
         },
         {
           "name": "T4.15: y la comparación de neumáticos y el aviso de undercut",
@@ -28102,7 +28102,7 @@
       ],
       "sprint": "4.5",
       "kind": "contract",
-      "passed": 146,
+      "passed": 165,
       "failed": 0,
       "assertions": [
         {
@@ -28834,6 +28834,101 @@
           "name": "G9: la medida se puede poner a cero",
           "pass": true,
           "details": ""
+        },
+        {
+          "name": "G9: de lejos, un punto por coche y el seleccionado el último, con su contorno",
+          "pass": true,
+          "details": "20"
+        },
+        {
+          "name": "G9: sin imagen del modelo, el coche lo pinta el Canvas",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G9: de cerca, la imagen del modelo con sus proporciones y a tamaño de coche",
+          "pass": true,
+          "details": "5.09 × 1.82 m"
+        },
+        {
+          "name": "G9: posición y rumbo son los del motor",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G9: el alerón abierto solo en el coche con DRS",
+          "pass": true,
+          "details": "1 / 0"
+        },
+        {
+          "name": "G9: la luz trasera se enciende al frenar",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G9: la marca del neumático lleva el color de su compuesto",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G9: aro del color del equipo en el coche seleccionado",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G9: solo se mandan a la GPU los coches que caen en pantalla",
+          "pass": true,
+          "details": "20 de 20"
+        },
+        {
+          "name": "G9: sin imagen, el Safety Car lo pinta el Canvas",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G9: el Safety Car va a la GPU cuando está en pista y tiene imagen",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G9: de lejos conserva su tamaño mínimo en pantalla",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G9: sin GPU, el Canvas pinta la imagen de cada coche en pantalla y la del Safety Car (respaldo)",
+          "pass": true,
+          "details": "21 / 21"
+        },
+        {
+          "name": "G9: con los coches en la GPU, el Canvas no vuelve a pintar sus imágenes",
+          "pass": true,
+          "details": "1"
+        },
+        {
+          "name": "G9: etiquetas y rótulo del Safety Car, iguales con y sin GPU",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G9: con agua, la GPU recibe las gotas vivas del spray",
+          "pass": true,
+          "details": "280"
+        },
+        {
+          "name": "G9: pasada su vida no queda ninguna gota",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G9: el botón recorre seco, llovizna, lluvia y diluvio",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G9: cada tiempo de prueba deja más agua en la pista que el anterior",
+          "pass": true,
+          "details": "0.00,0.40,1.20,2.50"
         }
       ],
       "errors": []

@@ -83,3 +83,17 @@ export function buildWeatherScenario(id: string, raceDurationSec: number): Weath
       return { id: 'seco', cells: [] };
   }
 }
+
+/**
+ * [G9] Tiempos de prueba para la carrera libre: toda la pista con la misma lluvia y el agua ya en el asfalto, para ver
+ * de inmediato el spray y la pista mojada. No se usan en la carrera profesional.
+ */
+const testRain = (id: string, rateMmH: number, initialWaterMm: number): WeatherScenario => ({
+  id, initialWaterMm, cells: rateMmH > 0 ? [{ startSec: 0, endSec: 1e6, centerT: 0, widthT: 1, rateMmH }] : [],
+});
+export const WEATHER_TESTS: { label: string; scenario: WeatherScenario }[] = [
+  { label: 'seco', scenario: testRain('prueba-seco', 0, 0) },
+  { label: 'llovizna', scenario: testRain('prueba-llovizna', 4, 0.4) },
+  { label: 'lluvia', scenario: testRain('prueba-lluvia', 15, 1.2) },
+  { label: 'diluvio', scenario: testRain('prueba-diluvio', 40, 2.5) },
+];
