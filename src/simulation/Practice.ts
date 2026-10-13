@@ -14,6 +14,7 @@ import type { TireSet } from './TireInventory';
 import { TireModel } from './TireModel';
 import { TYRE_LIFE_LAPS } from './PitWindow';
 import type { TireCompound } from '../types/f1';
+import type { SpyReport } from './Spy';
 
 export const PRACTICE_PROGRAMS = ['setup', 'tanda-larga', 'clasificacion'] as const;
 export type PracticeProgram = typeof PRACTICE_PROGRAMS[number];
@@ -83,6 +84,8 @@ export interface PracticeResult {
   /** Juegos gastados por cada piloto (todos) y kilómetros hechos por cada coche. */
   tyreUse: Record<string, Record<SlickCompound, number>>;
   km: Record<string, number>;
+  /** [V9] Informes de espionaje encargados en esta ronda. */
+  spy?: SpyReport[];
 }
 
 export interface PracticeInput {

@@ -4,6 +4,9 @@ import { RaceTabs, raceLayout } from './components/RaceTabs';
 import { StintTimeline } from './components/StintTimeline';
 import { QualifyingLive } from './components/QualifyingLive';
 import { PracticePanel } from './components/PracticePanel';
+import { SpyPanel } from './components/SpyPanel';
+import { canSpy, runSpy, settleSpy } from './simulation/Spy';
+import type { SpyLevel } from './simulation/Spy';
 import { allSetups, practiceTyres, runPractice } from './simulation/Practice';
 import type { PracticeProgram } from './simulation/Practice';
 import { advanceAutoRace, startAutoRace } from './simulation/AutoRace';
@@ -87,7 +90,7 @@ import { aiSignSponsors, carSponsors, signSponsor } from './simulation/Sponsors'
 import type { SaveGame, SlotSummary } from './simulation/SaveGame';
 import type { SaveGameMessage } from './components/SaveGamePanel';
 import { SetupPanel } from './components/SetupPanel';
-import { normalizeSetup, parcFermeCheck, pitLaneReason, withPitLaneStarts } from './simulation/Setup';
+import { NEUTRAL_SETUP, normalizeSetup, parcFermeCheck, pitLaneReason, withPitLaneStarts } from './simulation/Setup';
 import type { CarSetup } from './simulation/Setup';
 import { DRIVERS } from './data/drivers';
 import { lineupOf, offerContract, pairOf, rosterOf } from './simulation/Contracts';
@@ -625,6 +628,21 @@ export const App: React.FC = () => {
     saveSeason(withPractice(season, result));
     saveComponents(addDistance(components, Object.values(result.km)[0] ?? 0));
   }, [championship, season, mode, simulation, roster, program, selectedDriverId, practicePrograms, management, saveSeason, saveComponents, components]);
+
+  /** [V9] Encarga un informe de espionaje de un equipo rival para la ronda que toca (hacen falta los libres hechos). */
+  const handleSpy = useCallback((teamId: string, level: SpyLevel) => {
+    const round = nextRound(championship, season)?.round;
+    const practice = practiceFor(season, round);
+    if (!practice || round === undefined || !canSpy(practice.spy ?? [], round, teamId)) return;
+    const report = runSpy({
+      round, seed: practice.seed, teamId, level,
+      setups: Object.fromEntries(Object.values(roster).filter(driver => driver.teamId === teamId).map(driver => [driver.id, practice.rivalSetups[driver.id] ?? NEUTRAL_SETUP])),
+    });
+    const settled = settleSpy(management, report, TEAMS[teamId]?.shortName ?? teamId);
+    if (!settled.ok) return;
+    saveManagement(settled.management);
+    saveSeason(withPractice(season, { ...practice, spy: [...(practice.spy ?? []), report] }));
+  }, [championship, season, roster, management, saveManagement, saveSeason]);
 
   /** [R51] Visto el aviso de sanciones, empieza la carrera. */
   const handleContinueFromPenalties = useCallback(() => {
@@ -1224,6 +1242,9 @@ export const App: React.FC = () => {
         </section>
         <PracticePanel drivers={teamDrivers.map(driver => ({ id: driver.id, code: driver.code }))} programs={practicePrograms} result={practiceFor(season, hubNext.round)}
           sprintWeekend={isSprintVenue(selectedCircuitId)} onProgram={(id, value) => setPracticePrograms(current => ({ ...current, [id]: value }))} onRun={handleRunPractice} />
+        <SpyPanel round={hubNext.round} available={Boolean(practiceFor(season, hubNext.round))} reports={practiceFor(season, hubNext.round)?.spy ?? []}
+          teams={[...new Set(Object.values(roster).map(driver => driver.teamId))].filter(id => id !== management.playerTeamId).map(id => ({ id, name: TEAMS[id]?.shortName ?? id }))}
+          canAfford={cost => canSpend(management.finance, management.playerTeamId, cost)} driverCode={id => roster[id]?.code ?? id} onSpy={handleSpy} />
         <SetupPanel drivers={teamDrivers} setups={setups} onChange={handleSetupChange} />
       </RaceWeekendPanel>
     ) : <p>La temporada está completa: no quedan rondas por correr.</p>,
