@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CloudRain, Dices, Fuel, Hourglass, Wrench, Zap } from 'lucide-react';
+import { ArrowUpDown, CloudRain, Dices, Fuel, Hourglass, Lock, Swords, Wrench, Zap } from 'lucide-react';
 import type { CarState, TireCompound } from '../types/f1';
 import type { RaceSimulation } from '../simulation/RaceSimulation';
 import styles from './BoxControls.module.css';
@@ -36,6 +36,12 @@ export function BoxControls({ car, simulation, teamCars }: {
   const pilots = teamCars && teamCars.length === 2 ? teamCars : [car];
 
   const shown = pilots.some(p => p.id === shownId) ? shownId! : pilots[0].id;
+  // [T4.14] Orden de equipo vigente entre los dos coches.
+  const [, refreshOrders] = useState(0);
+  const teamId = pilots[0].driver.teamId;
+  const teamOrder = simulation.getTeamOrder(teamId);
+  const orderValue = teamOrder.mode === 'dejar-pasar' ? String(teamOrder.favouredCarId) : teamOrder.mode;
+  const ordersAvailable = simulation.lightState === 'racing' && !simulation.isFinished && pilots.every(p => p.status === 'running');
 
   const setCompoundFor = (carId: number, compound: TireCompound) => {
     setCompounds(prev => ({ ...prev, [carId]: compound }));
@@ -55,7 +61,24 @@ export function BoxControls({ car, simulation, teamCars }: {
             options={pilots.map(p => ({ value: String(p.id), label: `${p.driver.code} · P${p.currentPosition}` }))} />
         </div>
       )}
-      <div className={styles.pilotsGrid}>
+      <div className={styles.pilotsGrid} data-orders={pilots.length > 1 ? 'true' : undefined}>
+        {/* [T4.14] Órdenes de equipo: franja estrecha entre las dos tarjetas. */}
+        {pilots.length > 1 && (
+          <div className={styles.teamOrders}>
+            <Segmented compact label="Órdenes de equipo" name="ordenes-equipo" value={orderValue} disabled={!ordersAvailable}
+              onChange={value => {
+                if (value === 'libre' || value === 'mantener') simulation.setTeamOrder(teamId, value);
+                else simulation.setTeamOrder(teamId, 'dejar-pasar', Number(value));
+                refreshOrders(count => count + 1);
+              }}
+              options={[
+                { value: 'libre', label: 'Lucha libre', title: 'Lucha libre: cada piloto hace su carrera', content: <><Swords size={16} aria-hidden="true" />Libre</> },
+                { value: 'mantener', label: 'Mantener posiciones', title: 'Mantener posiciones: el de detrás no ataca a su compañero', content: <><Lock size={16} aria-hidden="true" />Mantener</> },
+                ...pilots.map(p => ({ value: String(p.id), label: `Dejar pasar a ${p.driver.code}`, title: `Dejar pasar a ${p.driver.code}: su compañero levanta en la siguiente zona de adelantamiento`,
+                  content: <><ArrowUpDown size={16} aria-hidden="true" />Pasa {p.driver.code}</> })),
+              ]} />
+          </div>
+        )}
         {pilots.map(p => {
           const order = p.pitStop.activeBoxOrder;
           const available = simulation.lightState === 'racing' && !simulation.isFinished &&

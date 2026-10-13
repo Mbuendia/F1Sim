@@ -162,7 +162,7 @@ export const App: React.FC = () => {
 
   // [R02] Paso fijo de 20 ms simulados: mismo resultado sea cual sea el FPS o la velocidad.
   // [T4.12] Con agua en la salida, cada coche elige su neumático (los del jugador reciben la propuesta en la parrilla).
-  const simulation = useMemo(() => { const sim = new RaceSimulation(selectedCircuitId); sim.setFixedStep(RACE_STEP_SEC); sim.autoStartTyres = true; sim.seededPreparation = true; return sim; }, []);
+  const simulation = useMemo(() => { const sim = new RaceSimulation(selectedCircuitId); sim.setFixedStep(RACE_STEP_SEC); sim.autoStartTyres = true; sim.seededPreparation = true; sim.autoTeamOrders = true; return sim; }, []);
   const camera = useMemo(() => new Camera(), []);
 
   // Vista actual: 'landing', 'home' o 'race'
@@ -185,6 +185,8 @@ export const App: React.FC = () => {
   /** Hay una partida en curso en el navegador (también una anterior al menú de partidas). */
   const [careerActive, setCareerActive] = useState(() => { try { return hasStoredCareer(localStorage); } catch { return false; } });
 
+  // [T4.14] Para avisar desde el bucle que lee el motor, definido antes que los avisos.
+  const noticeRef = useRef<(tone: 'info' | 'warning' | 'danger', tag: string, text: string) => void>(() => {});
   // Coche seleccionado expresamente en pista
   const [selectedCarId, setSelectedCarId] = useState<number | null>(null);
 
@@ -414,6 +416,11 @@ export const App: React.FC = () => {
       setSafetyCar(simulation.safetyCar.isDeployed ? { ...simulation.safetyCar } : null);
       setActiveDnf(simulation.latestDnf ? { ...simulation.latestDnf } : null);
       setActiveLuckEvent(simulation.activeLuckEvent ? { ...simulation.activeLuckEvent } : null);
+      // [T4.14] Órdenes de equipo cumplidas (las propias y las de los rivales): cada una, un aviso.
+      if (simulation.teamOrderNotices.length) {
+        for (const notice of simulation.teamOrderNotices) noticeRef.current('info', 'Órdenes', notice.text);
+        simulation.teamOrderNotices = [];
+      }
       setWeather({ ...simulation.weather });
 
       if (simulation.isFinished) {
@@ -837,6 +844,8 @@ export const App: React.FC = () => {
     setNotices(list => [...list, { id, tone, tag, text }].slice(-3));
     window.setTimeout(() => setNotices(list => list.filter(n => n.id !== id)), NOTICE_MS);
   }, []);
+
+  noticeRef.current = pushNotice;
 
   // El golpe de suerte de un rival no interrumpe: se aplica solo y queda como aviso. La modal es para los pilotos propios.
   const ownLuckEvent = activeLuckEvent && teamCars.some(car => car.id === activeLuckEvent.luckyCarId) ? activeLuckEvent : null;

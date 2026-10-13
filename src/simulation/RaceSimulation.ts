@@ -77,6 +77,10 @@ import type { OvertakingZone } from './OvertakingZones';
 // Q20: distancia previa a la entrada de boxes en la que un coche que va a parar se coloca en el eje.
 const PIT_APPROACH_METERS = 250;
 
+/** [T4.14] Orden de equipo entre los dos coches de un equipo. */
+export type TeamOrderMode = 'libre' | 'mantener' | 'dejar-pasar';
+export interface TeamOrder { mode: TeamOrderMode; favouredCarId?: number }
+
 export class RaceSimulation {
   cars: CarState[] = [];
   raceTimeSec: number = 0;
@@ -257,6 +261,86 @@ export class RaceSimulation {
   /** [R52] Juegos de neumáticos de cada piloto que vienen de sesiones anteriores del fin de semana (o null). */
   private weekendTyres: Record<string, TireSet[]> | null = null;
   /** [R54] Pilotos del jugador: en sus coches el estratega propone y no ejecuta (salvo que el jugador delegue). */
+  // ── [T4.14] Órdenes de equipo ──
+  /**
+   * Orden vigente de cada equipo entre sus dos coches. «mantener»: el de detrás no ataca a su compañero; «dejar-pasar»:
+   * el de delante levanta en la siguiente zona de adelantamiento y el favorecido completa la maniobra por el camino
+   * normal de R50; sin orden (o «libre»), el motor es el de siempre. El cambio de posición sale de la velocidad.
+   */
+  teamOrders: Record<string, TeamOrder> = {};
+  /** Avisos de cumplimiento pendientes de enseñar (los consume la interfaz). */
+  teamOrderNotices: { teamId: string; text: string }[] = [];
+  /** Con esto encendido (lo enciende la aplicación), los equipos rivales también dan órdenes con una regla sencilla. */
+  autoTeamOrders = false;
+  private teamOrderClock = 0;
+  static readonly TEAM_ORDER = {
+    /** Cuánto levanta en zona el coche que deja pasar y a qué distancia tiene que estar el favorecido (m). */
+    LIFT: 0.86, RANGE_M: 70,
+    /** Regla de los rivales: el de detrás pegado (m) y claramente más rápido, y nadie cerca por detrás (m). Se revisa cada segundo. */
+    AI_GAP_M: 60, AI_PACE: 1.008, AI_THREAT_M: 120, AI_CHECK_SEC: 1,
+    /** El ritmo se compara suavizado (peso de cada revisión) y la condición tiene que durar estas revisiones seguidas. */
+    AI_PACE_BLEND: 0.2, AI_STREAK: 8,
+  };
+  /** Ritmo suavizado de cada coche, revisiones seguidas que lleva cumpliéndose la regla y equipos que ya han intercambiado. */
+  private teamOrderPace = new Map<number, number>();
+  private teamOrderStreak = new Map<number, number>();
+  private teamOrderSwapped = new Set<string>();
+
+  /** Da una orden de equipo. `favouredCarId` es el coche al que hay que dejar pasar (solo con «dejar-pasar»). */
+  setTeamOrder(teamId: string, mode: TeamOrderMode, favouredCarId?: number): boolean {
+    const cars = this.cars.filter(car => car.driver.teamId === teamId);
+    if (mode === 'libre') { const { [teamId]: _removed, ...rest } = this.teamOrders; this.teamOrders = rest; return true; }
+    if (cars.length < 2) return false;
+    if (mode === 'dejar-pasar' && !cars.some(car => car.id === favouredCarId)) return false;
+    this.teamOrders = { ...this.teamOrders, [teamId]: mode === 'dejar-pasar' ? { mode, favouredCarId } : { mode } };
+    return true;
+  }
+
+  getTeamOrder(teamId: string): TeamOrder {
+    return this.teamOrders[teamId] ?? { mode: 'libre' };
+  }
+
+  /** Órdenes cumplidas y, si están encendidas, las de los equipos rivales. */
+  private updateTeamOrders(dt: number, lapDistanceMeters: number) {
+    // Cumplimiento: el favorecido ya va delante de su compañero.
+    for (const [teamId, order] of Object.entries(this.teamOrders)) {
+      if (order.mode !== 'dejar-pasar') continue;
+      const favoured = this.cars.find(car => car.id === order.favouredCarId);
+      const mate = this.cars.find(car => car.driver.teamId === teamId && car.id !== order.favouredCarId);
+      const active = (car?: CarState) => car !== undefined && car.status === 'running';
+      if (!favoured || !mate || !active(favoured) || !active(mate)) { this.setTeamOrder(teamId, 'libre'); continue; }
+      if (favoured.progress > mate.progress) {
+        this.setTeamOrder(teamId, 'libre');
+        this.teamOrderNotices = [...this.teamOrderNotices, { teamId, text: `Orden cumplida: ${mate.driver.code} deja pasar a ${favoured.driver.code}` }];
+      }
+    }
+    if (!this.autoTeamOrders) return;
+    this.teamOrderClock += dt;
+    if (this.teamOrderClock < RaceSimulation.TEAM_ORDER.AI_CHECK_SEC) return;
+    this.teamOrderClock = 0;
+    const T = RaceSimulation.TEAM_ORDER;
+    const running = this.cars.filter(car => car.status === 'running' && !car.isInPitLane && !car.pitStop.isPitting);
+    for (const car of running) this.teamOrderPace.set(car.id, (this.teamOrderPace.get(car.id) ?? car.paceIndex ?? 1) * (1 - T.AI_PACE_BLEND) + (car.paceIndex ?? 1) * T.AI_PACE_BLEND);
+    for (const behind of running) {
+      const teamId = behind.driver.teamId;
+      // Un intercambio por equipo y carrera: sin vaivenes.
+      if (this.playerCars.includes(behind.driver.id) || this.teamOrders[teamId] || this.teamOrderSwapped.has(teamId)) continue;
+      const ahead = behind.carAheadId !== null ? running.find(car => car.id === behind.carAheadId) : undefined;
+      if (!ahead || ahead.driver.teamId !== teamId) continue;
+      const gapM = (ahead.progress - behind.progress) * lapDistanceMeters;
+      const chaser = running.find(car => car.carAheadId === behind.id);
+      const threatM = chaser ? (behind.progress - chaser.progress) * lapDistanceMeters : Infinity;
+      // El de detrás, pegado y claramente más rápido; y nadie cerca que pueda aprovechar el intercambio.
+      const faster = (this.teamOrderPace.get(behind.id) ?? 1) / Math.max(1e-6, this.teamOrderPace.get(ahead.id) ?? 1) > T.AI_PACE;
+      const streak = gapM > 0 && gapM < T.AI_GAP_M && faster && threatM > T.AI_THREAT_M ? (this.teamOrderStreak.get(behind.id) ?? 0) + 1 : 0;
+      this.teamOrderStreak.set(behind.id, streak);
+      if (streak >= T.AI_STREAK) {
+        this.teamOrderSwapped.add(teamId);
+        this.setTeamOrder(teamId, 'dejar-pasar', behind.id);
+      }
+    }
+  }
+
   private playerCars: string[] = [];
   /** Separación entre los coches que esperan en el pit lane (m), como en la fila de la bandera roja. */
   static readonly PIT_START_SLOT_M = 8;
@@ -563,6 +647,7 @@ export class RaceSimulation {
         carSetups: this.carSetups, pitLaneStarters: this.pitLaneStarters, weekendTyres: this.weekendTyres,
         // [R54] Ausente en los guardados anteriores: se lee como «ningún coche del jugador» hasta que la aplicación lo diga.
         playerCars: this.playerCars,
+        teamOrders: this.teamOrders,
         // [T4.6] Ausente en los guardados anteriores: paradas con el reparto de siempre.
         pitCrews: this.pitCrews,
         // [T4.7] Ausente en los guardados anteriores: cada piloto en su equipo de partida.
@@ -652,6 +737,7 @@ export class RaceSimulation {
     this.carSetups = setup.carSetups ?? {}; this.pitLaneStarters = setup.pitLaneStarters ?? [];
     this.weekendTyres = setup.weekendTyres ?? null;
     this.playerCars = setup.playerCars ?? [];
+    this.teamOrders = (setup as { teamOrders?: Record<string, TeamOrder> }).teamOrders ?? {};
     this.pitCrews = setup.pitCrews ?? {};
     this.grid = setup.grid ?? { lineup: {}, extra: {}, standIns: {} };
 
@@ -708,6 +794,11 @@ export class RaceSimulation {
   }
 
   private prepareRace() {
+    // [T4.14] Carrera nueva, sin órdenes de equipo.
+    this.teamOrders = {};
+    this.teamOrderNotices = [];
+    this.teamOrderClock = 0;
+    this.teamOrderPace.clear(); this.teamOrderStreak.clear(); this.teamOrderSwapped.clear();
     IncidentModel.reset();
     this.activeLuckEvent = null;
     this.luckLog = [];
@@ -1193,6 +1284,8 @@ export class RaceSimulation {
       const laneBefore = this.cars.map(car => car.isInPitLane);
       const onTrack = this.cars.map(car => car.status === 'running' && !car.isInPitLane && !car.pitStop.isPitting);
       const racing = this.lightState === 'racing' && !this.isPaused && !this.isFinished;
+      // [T4.14] Órdenes de equipo: solo hay algo que hacer si hay alguna dada o los rivales pueden darlas.
+      if (racing && (this.autoTeamOrders || Object.keys(this.teamOrders).length > 0)) this.updateTeamOrders(dt, this.activeTrack.lapLengthMeters);
       this.advanceSimulation(dt);
       if (racing) {
         this.drsPermissions.record(this.cars.map((car, i) => ({
@@ -1724,10 +1817,13 @@ export class RaceSimulation {
       // [R50] Defensa básica: atacado dentro de una zona, el coche cubre el interior de la curva que la cierra. Un solo
       // movimiento por zona; si el atacante ya está en paralelo no se le cierra.
       const zone = this.overtakingZoneAt(normalizedT);
+      // [T4.14] Orden de su equipo, si la hay (sin orden, todo lo que sigue es el motor de siempre).
+      const teamOrder = this.teamOrders[car.driver.teamId];
       if (car.defence && (!zone || zone.id !== car.defence.zoneId || !perms.overtake || car.isBlueFlagged)) car.defence = undefined;
       if (!car.defence && zone && perms.overtake && !car.isBlueFlagged && !car.isOvertaking) {
         const alongside = RaceSimulation.OVERTAKE.ALONGSIDE_M / lapDistanceMeters, range = RaceSimulation.OVERTAKE.DEFENCE_RANGE_M / lapDistanceMeters;
-        const threat = field.some(o => o.attackingId === car.id && car.progress - o.progress >= alongside && car.progress - o.progress < range);
+        const letBy = teamOrder?.mode === 'dejar-pasar' && teamOrder.favouredCarId !== car.id ? teamOrder.favouredCarId : null;
+        const threat = field.some(o => o.attackingId === car.id && o.id !== letBy && car.progress - o.progress >= alongside && car.progress - o.progress < range);
         if (threat) car.defence = { zoneId: zone.id, side: zone.insideSign };
       }
 
@@ -1736,6 +1832,13 @@ export class RaceSimulation {
         const alongsideLaps = RaceSimulation.OVERTAKE.ALONGSIDE_M / lapDistanceMeters;
         const attacker = field.find(o => o.attackingId === car.id && car.progress - o.progress > 0 && car.progress - o.progress < alongsideLaps);
         if (attacker) targetKmh = Math.min(targetKmh, attacker.currentSpeedKmh * RaceSimulation.OVERTAKE.YIELD_FACTOR);
+      }
+
+      // [T4.14] «Dejar pasar»: en zona de adelantamiento, con el compañero favorecido pegado detrás, el coche levanta.
+      if (teamOrder?.mode === 'dejar-pasar' && teamOrder.favouredCarId !== car.id && zone && perms.overtake) {
+        const favoured = field.find(o => o.id === teamOrder.favouredCarId);
+        const behindM = favoured ? (car.progress - favoured.progress) * lapDistanceMeters : -1;
+        if (favoured && favoured.status === 'running' && !favoured.isInPitLane && behindM > 0 && behindM < RaceSimulation.TEAM_ORDER.RANGE_M) targetKmh *= RaceSimulation.TEAM_ORDER.LIFT;
       }
 
       // [Q15] Levantar en proporción a la cesión (máx. BLUE_FLAG_LIFT), sin salto de velocidad objetivo.
@@ -1891,7 +1994,11 @@ export class RaceSimulation {
       const paceAdvantage = carAhead ? paceIndex * offLineGrip / Math.max(1e-6, carAhead.paceIndex) - 1 : 0;
       const closingKmh = carAhead ? car.currentSpeedKmh - carAhead.currentSpeedKmh : 0;
       // [R50] Un coche retenido detrás rueda al 99 % del de delante y nunca «se acerca»: basta con que no pierda terreno.
-      const hasOvertakePace = closingKmh > -OT.HELD_TOLERANCE * car.currentSpeedKmh
+      // [T4.14] Orden de equipo frente al coche de delante, si es su compañero.
+      const mateAhead = teamOrder !== undefined && carAhead !== null && this.getCarById(carAhead.id)?.driver.teamId === car.driver.teamId;
+      const orderPass = mateAhead && teamOrder?.mode === 'dejar-pasar' && teamOrder.favouredCarId === car.id;
+      const orderHold = mateAhead && teamOrder?.mode === 'mantener';
+      const hasOvertakePace = orderPass || closingKmh > -OT.HELD_TOLERANCE * car.currentSpeedKmh
         && paceAdvantage + Math.min(OT.CLOSING_AID_MAX, Math.max(0, closingKmh) * OT.CLOSING_AID_PER_KMH)
           > overtakeAdvantageNeeded(OT.MIN_ADVANTAGE * (zone?.difficulty ?? 1) * (defended ? OT.DEFENCE_FACTOR : 1), car.driver.development?.overtake, carAhead?.defencePoints);
       const overtakeAnywhere = closingKmh > 0 && paceAdvantage > OT.ANYWHERE_ADVANTAGE;
@@ -1913,6 +2020,8 @@ export class RaceSimulation {
           zoneAllows = (canGetAlongside && hasOvertakePace) || alongsideNow;
         } else zoneAllows = alongsideNow;
       }
+      // [T4.14] Con la orden de dejar pasar el de delante colabora: el favorecido puede lanzar la maniobra en toda la zona.
+      if (orderPass && zone) zoneAllows = true;
       // Justo al salir de su zona, quien ya no puede evitar pasar termina la maniobra (cuenta como de esa zona); el
       // resto la abandona a tiempo: nadie completa por inercia un adelantamiento fuera de zona.
       const committed = !zone && car.isOvertaking && car.attackZoneId != null && carAhead !== null && closingKmh > 0
@@ -1927,7 +2036,7 @@ export class RaceSimulation {
         if (deltaProgress > 0 && deltaProgress < minSafeSpacing) {
           // Si está lejos bajo SC, SIEMPRE puede adelantar para desdoblarse/alcanzar
           const isCatchingPackUnderSc = isCatchingPack && this.safetyCar.isDeployed;
-          const wantsToOvertake = (canOvertakeHere && zoneAllows) || committed || overtakeAnywhere || isCatchingPackUnderSc;
+          const wantsToOvertake = !orderHold && ((canOvertakeHere && zoneAllows) || committed) || overtakeAnywhere || isCatchingPackUnderSc;
 
           // [T3.1] A un coche que se ha salido de la pista se le pasa también con amarilla en ese tramo.
           if (wantsToOvertake && !car.isBlueFlagged && !isWaitingForScRestartLine && (perms.overtake || carAhead.offTrack)) {
