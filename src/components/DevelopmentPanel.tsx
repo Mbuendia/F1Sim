@@ -41,7 +41,11 @@ export const DevelopmentPanel: React.FC<DevelopmentPanelProps> = ({ program, tea
               <tr key={project.id}>
                 <td>{PROJECTS[project.key]?.label ?? project.key}</td>
                 <td>{STATUS_LABEL[status]}</td>
-                <td>{status === 'listo' ? 'ya' : `carrera ${project.readyRace % SEASON_RACES + 1}`}</td>
+                <td>
+                  {status === 'listo' ? 'ya' : `carrera ${project.readyRace % SEASON_RACES + 1}`}
+                  {/* [T4.21] Retraso por tener la fábrica ocupada con otro paquete. */}
+                  {project.delay ? <span className={styles.worn} title="La fábrica fabrica un paquete cada vez: este espera a que termine el anterior"> · retraso de {project.delay} {project.delay === 1 ? 'carrera' : 'carreras'}</span> : null}
+                </td>
                 <td>
                   {status === 'listo' && drivers.map(d => (
                     <button key={d.id} type="button" className={styles.action} onClick={() => onInstall?.(project.id, d.id)}>Montar en {d.code}</button>

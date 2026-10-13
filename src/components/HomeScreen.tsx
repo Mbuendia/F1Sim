@@ -91,6 +91,8 @@ interface HomeScreenProps {
   components?: ComponentState;
   onFitComponent?: (driverId: string, type: ComponentType) => void;
   onUndoComponent?: (driverId: string, type: ComponentType) => void;
+  /** [T4.22] Volver a montar una unidad usada. */
+  onRefitComponent?: (driverId: string, serial: string) => void;
   /** [T4.2] Coste de montar otra unidad nueva de un componente. */
   componentCostOf?: (driverId: string, type: ComponentType) => number;
   /** [R20] GP directo o con clasificación. */
@@ -149,6 +151,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   components,
   onFitComponent,
   onUndoComponent,
+  onRefitComponent,
   componentCostOf,
   development,
   saveGames,
@@ -437,7 +440,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             <span>Componentes de la unidad de potencia</span>
           </h2>
           <ComponentsPanel state={components} drivers={Object.values(roster).filter(d => d.teamId === selectedDriver.teamId)}
-            onFitNew={onFitComponent} onUndo={onUndoComponent} costOf={componentCostOf} />
+            onFitNew={onFitComponent} onUndo={onUndoComponent} costOf={componentCostOf} onRefit={onRefitComponent} />
         </section>
       )}
 

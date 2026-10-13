@@ -71,7 +71,7 @@ import type { SeasonState, SeasonSummary, SettledCareer } from './simulation/Sea
 import { SeasonEndScreen } from './components/SeasonEndScreen';
 import { GridPenaltyNotice } from './components/GridPenaltyNotice';
 import { addRace, constructorsChampionship } from './simulation/Championship';
-import { addDistance, applyGridPenalties, emptyComponents, ensureDriver, gridPenaltyLines, hazardFactor, markRaceStart, parseComponents, raceStartGate, COMPONENTS_STORAGE_KEY } from './simulation/ComponentPool';
+import { addDistance, refitUsed, applyGridPenalties, emptyComponents, ensureDriver, gridPenaltyLines, hazardFactor, markRaceStart, parseComponents, raceStartGate, COMPONENTS_STORAGE_KEY } from './simulation/ComponentPool';
 import type { ComponentState, GridChange, PenaltyLine } from './simulation/ComponentPool';
 import type { QualifyingResult } from './simulation/Qualifying';
 import { QualifyingResults } from './components/QualifyingResults';
@@ -1443,6 +1443,7 @@ export const App: React.FC = () => {
           const bought = buyComponent(management, components, management.playerTeamId, driverId, type, nextRound(championship, season)?.round ?? SEASON_RACES);
           if (bought.ok) { saveComponents(bought.components); saveManagement(bought.management); }
         }}
+        onRefitComponent={(driverId, serial) => saveComponents(refitUsed(components, driverId, serial))}
         onUndoComponent={(driverId, type) => {
           const undone = refundComponent(management, components, management.playerTeamId, driverId, type, nextRound(championship, season)?.round ?? SEASON_RACES);
           if (undone.ok) { saveComponents(undone.components); saveManagement(undone.management); }

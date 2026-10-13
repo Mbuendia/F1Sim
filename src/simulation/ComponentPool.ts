@@ -6,14 +6,15 @@
 // Diseño del juego: vida nominal en carreras, riesgo de avería pasada esa vida, fondo de parrilla con más de 15 puestos
 // y la política de sustitución de la IA.
 
-export const COMPONENT_TYPES = ['ICE', 'TC', 'MGUH', 'MGUK', 'ES', 'CE'] as const;
+// [T4.22] El escape (EX) entra en el cupo: ocho por temporada (Reglamento Deportivo); su vida nominal es diseño del juego.
+export const COMPONENT_TYPES = ['ICE', 'TC', 'MGUH', 'MGUK', 'ES', 'CE', 'EX'] as const;
 export type ComponentType = typeof COMPONENT_TYPES[number];
 
 export const COMPONENT_LABEL: Record<ComponentType, string> = {
-  ICE: 'Motor (ICE)', TC: 'Turbo (TC)', MGUH: 'MGU-H', MGUK: 'MGU-K', ES: 'Batería (ES)', CE: 'Centralita (CE)',
+  ICE: 'Motor (ICE)', TC: 'Turbo (TC)', MGUH: 'MGU-H', MGUK: 'MGU-K', ES: 'Batería (ES)', CE: 'Centralita (CE)', EX: 'Escape (EX)',
 };
-export const ALLOCATION: Record<ComponentType, number> = { ICE: 4, TC: 4, MGUH: 4, MGUK: 4, ES: 2, CE: 2 };
-export const NOMINAL_RACES: Record<ComponentType, number> = { ICE: 7, TC: 7, MGUH: 7, MGUK: 7, ES: 12, CE: 12 };
+export const ALLOCATION: Record<ComponentType, number> = { ICE: 4, TC: 4, MGUH: 4, MGUK: 4, ES: 2, CE: 2, EX: 8 };
+export const NOMINAL_RACES: Record<ComponentType, number> = { ICE: 7, TC: 7, MGUH: 7, MGUK: 7, ES: 12, CE: 12, EX: 4 };
 export const FIRST_EXCESS_PLACES = 10;
 export const NEXT_EXCESS_PLACES = 5;
 /** Con más puestos acumulados que estos se sale desde el fondo de la parrilla. */
@@ -100,6 +101,23 @@ export function undoFit(state: ComponentState, driverId: string, type: Component
   if (!current || current.firstUsedRace !== null || current.ordinal === 1) return state;
   const previous = of(state, driverId, type).filter(u => u.serial !== current.serial).sort((a, b) => b.ordinal - a.ordinal)[0];
   return { ...state, units: state.units.filter(u => u.serial !== current.serial).map(u => (u.serial === previous.serial ? { ...u, fitted: true } : u)) };
+}
+
+/**
+ * [T4.22] Vuelve a montar una unidad usada del pool (por ejemplo, una con pocas carreras para un circuito exigente).
+ * No gasta cupo ni sanciona: ya se estrenó. La que estaba montada vuelve al pool. Devuelve el mismo estado si esa unidad
+ * no existe, no es de ese piloto, ya está montada o aún no se ha estrenado.
+ */
+export function refitUsed(state: ComponentState, driverId: string, serial: string): ComponentState {
+  const unit = state.units.find(candidate => candidate.serial === serial);
+  if (!unit || unit.driverId !== driverId || unit.fitted || unit.firstUsedRace === null) return state;
+  return { ...state, units: state.units.map(u => (u.driverId === driverId && u.type === unit.type ? { ...u, fitted: u.serial === serial } : u)) };
+}
+
+/** [T4.22] Dossier de la unidad de potencia de un piloto: todas sus unidades, por tipo y orden. */
+export function dossierOf(state: ComponentState, driverId: string): ComponentUnit[] {
+  return state.units.filter(unit => unit.driverId === driverId)
+    .sort((a, b) => COMPONENT_TYPES.indexOf(a.type) - COMPONENT_TYPES.indexOf(b.type) || a.ordinal - b.ordinal);
 }
 
 /** Sanciones que se aplicarán en la próxima salida: unidades montadas sin estrenar que exceden el cupo. */
