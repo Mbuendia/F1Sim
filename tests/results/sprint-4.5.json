@@ -1,6 +1,6 @@
 {
   "summary": {
-    "passed": 5414,
+    "passed": 5422,
     "failed": 0
   },
   "results": [
@@ -512,7 +512,7 @@
           "details": ""
         },
         {
-          "name": "B5: Temporizador de spin entre 8s y 12s (obtenido: 8.6s)",
+          "name": "B5: Temporizador de spin entre 8s y 12s (obtenido: 10.3s)",
           "pass": true,
           "details": ""
         }
@@ -7930,7 +7930,7 @@
         {
           "name": "R32: acercar se mantiene al seguir y la vista general lo restablece",
           "pass": true,
-          "details": "2.75 → 3.44"
+          "details": "5.00 → 6.25"
         }
       ],
       "errors": []
@@ -22611,7 +22611,7 @@
         {
           "name": "T3.4: el spray se pinta antes que los coches y sus etiquetas",
           "pass": true,
-          "details": "7757 / 9501"
+          "details": "8643 / 10387"
         }
       ],
       "errors": []
@@ -26213,7 +26213,7 @@
         {
           "name": "T4.15: parar cuesta tiempo y puestos (semilla 415)",
           "pass": true,
-          "details": "{\"position\":20,\"lossSec\":35.84000000000244,\"ahead\":{\"code\":\"BOR\",\"gapSec\":27.486114864029332},\"behind\":null}"
+          "details": "{\"position\":20,\"lossSec\":35.84000000000244,\"ahead\":{\"code\":\"BOR\",\"gapSec\":31.254121193354194},\"behind\":null}"
         },
         {
           "name": "T4.15: con la carrera igual, la misma ventana, y pierde lo mismo que dice el predictor de reincorporación (semilla 415)",
@@ -26253,7 +26253,7 @@
         {
           "name": "T4.15: parar cuesta tiempo y puestos (semilla 1502)",
           "pass": true,
-          "details": "{\"position\":20,\"lossSec\":35.84000000000244,\"ahead\":{\"code\":\"BOR\",\"gapSec\":29.32320387571366},\"behind\":null}"
+          "details": "{\"position\":20,\"lossSec\":35.84000000000244,\"ahead\":{\"code\":\"DOO\",\"gapSec\":26.84840444271424},\"behind\":null}"
         },
         {
           "name": "T4.15: con la carrera igual, la misma ventana, y pierde lo mismo que dice el predictor de reincorporación (semilla 1502)",
@@ -26303,7 +26303,7 @@
         {
           "name": "T4.15: el muro dice dónde saldría el coche, con quién delante y con quién detrás, y lo que pierde",
           "pass": true,
-          "details": "<section class=\"_wall_1o73l_1\" aria-label=\"Muro de SAI\" data-flag-drs=\"permiso\"><h3 class=\"_title_1o73l_23\">Muro · SAI P8</h3><dl class=\"_list_1o73l_41\"><dt>Delante</dt><dd>0,40 s con ALO</dd><dt>Detr"
+          "details": "<section class=\"_wall_1o73l_1\" aria-label=\"Muro de SAI\" data-flag-drs=\"permiso\"><h3 class=\"_title_1o73l_23\">Muro · SAI P8</h3><dl class=\"_list_1o73l_41\"><dt>Delante</dt><dd>0,28 s con ALO</dd><dt>Detr"
         },
         {
           "name": "T4.15: y la comparación de neumáticos y el aviso de undercut",
@@ -28102,7 +28102,7 @@
       ],
       "sprint": "4.5",
       "kind": "contract",
-      "passed": 165,
+      "passed": 173,
       "failed": 0,
       "assertions": [
         {
@@ -28929,6 +28929,46 @@
           "name": "G9: cada tiempo de prueba deja más agua en la pista que el anterior",
           "pass": true,
           "details": "0.00,0.40,1.20,2.50"
+        },
+        {
+          "name": "G9: en modo follow, pasada la transición la cámara va clavada al coche",
+          "pass": true,
+          "details": "0.000 m"
+        },
+        {
+          "name": "G9: en modo cinematic, pasada la transición la cámara va clavada al coche",
+          "pass": true,
+          "details": "0.000 m"
+        },
+        {
+          "name": "G9: en modo onboard, pasada la transición la cámara va clavada al coche",
+          "pass": true,
+          "details": "0.000 m"
+        },
+        {
+          "name": "G9: en modo helicopter, pasada la transición la cámara va clavada al coche",
+          "pass": true,
+          "details": "0.000 m"
+        },
+        {
+          "name": "G9: al empezar a seguir a un coche la cámara se acerca, no salta",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G9: sin lluvia manda la nubosidad del escenario",
+          "pass": true,
+          "details": ""
+        },
+        {
+          "name": "G9: con lluvia el cielo se cubre, más cuanto más llueve",
+          "pass": true,
+          "details": "0.56,0.86,1.00"
+        },
+        {
+          "name": "G9: nunca menos cubierto que las nubes del escenario",
+          "pass": true,
+          "details": ""
         }
       ],
       "errors": []
