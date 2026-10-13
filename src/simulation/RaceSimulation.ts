@@ -40,7 +40,7 @@ import { aquaplaningReason, aquaplaningRiskPerSec } from './Aquaplaning';
 import { asphaltLossSec, crashReason, noMinimumText, RUNOFF, safetyCarLaps, surfaceAt } from './Runoff';
 import { RejoinModel } from './RejoinModel';
 import { IncidentModel } from './IncidentModel';
-import { calculateCarWorldPosition, lapsToPitEntry, limitLateralChange } from '../utils/carPosition';
+import { calculateCarWorldPosition, lapsToPitEntry, limitLateralChange, GRID_SLOT_M } from '../utils/carPosition';
 import { lineCrossings, TimingLine, TimingService } from './Timing';
 import { brakeDecelFactor, brakeTempStep, engineTempStep, gearFor, rpmFor } from './PowertrainModel';
 import { chassisGripAt, resolveTechnical } from '../data/teamProfiles';
@@ -1244,7 +1244,7 @@ export class RaceSimulation {
   }
 
   /** [G7] Separación entre dos puestos de parrilla consecutivos (8 m reales), en fracción de vuelta. */
-  static readonly GRID_SLOT_M = 8;
+  static readonly GRID_SLOT_M = GRID_SLOT_M;
   gridSpacing(): number {
     return RaceSimulation.GRID_SLOT_M / this.activeTrack.lapLengthMeters;
   }

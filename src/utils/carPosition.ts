@@ -2,7 +2,11 @@ import type { CarState } from '../types/f1';
 import type { TrackDefinition } from '../data/barcelonaTrack';
 
 export type CarWorldPosition = Pick<CarState, 'worldX' | 'worldY' | 'worldAngle'>;
-type CarRouteState = Pick<CarState, 'progress' | 'isInPitLane' | 'lateralOffset'>;
+type CarRouteState = Pick<CarState, 'progress' | 'isInPitLane' | 'lateralOffset'> & Partial<Pick<CarState, 'targetLateralOffset' | 'currentSpeedKmh' | 'status'>>;
+
+/** [G7] Separación real entre dos puestos de parrilla consecutivos (m) y desplazamiento lateral de cada fila. */
+export const GRID_SLOT_M = 8;
+export const GRID_LATERAL_OFFSET = 0.65;
 
 /** [G2] Medio ancho de pista: el mundo está en metros y la pista se pinta a su ancho real. */
 export function getTrackHalfWidth(trackWidthMeters = 12): number {
@@ -69,12 +73,25 @@ export function calculateCarWorldPosition(car: CarRouteState, track: TrackDefini
   const lateralA = getLateralDisplacement(car.lateralOffset, a.trackWidthMeters ?? track.trackWidthMeters ?? 24, a.trackWidthCars ?? capacity);
   const lateralB = getLateralDisplacement(car.lateralOffset, b.trackWidthMeters ?? track.trackWidthMeters ?? 24, b.trackWidthCars ?? capacity);
   const lateral = lateralA + (lateralB - lateralA) * fraction;
+  // [G5] El morro apunta hacia donde va el coche: al rumbo de la pista se le suma parte del movimiento lateral hacia
+  // su objetivo (metros de lado por metro de avance, con el límite del propio movimiento). Solo con el estado completo
+  // del coche; la trazada y los cajones se calculan sin él.
+  let heading = worldAngle;
+  if (car.targetLateralOffset !== undefined && car.currentSpeedKmh !== undefined && car.status !== 'out') {
+    const lateralPerSec = (car.targetLateralOffset - car.lateralOffset) * LATERAL_RESPONSE * getLateralDisplacement(1, a.trackWidthMeters ?? track.trackWidthMeters ?? 12);
+    const slope = Math.max(-MAX_LATERAL_SLOPE, Math.min(MAX_LATERAL_SLOPE, lateralPerSec / Math.max(5, car.currentSpeedKmh / 3.6)));
+    heading += Math.atan(slope * HEADING_SLOPE_SHARE);
+  }
   return {
     worldX: a.x + (b.x - a.x) * fraction + Math.cos(worldAngle + Math.PI / 2) * lateral,
     worldY: a.y + (b.y - a.y) * fraction + Math.sin(worldAngle + Math.PI / 2) * lateral,
-    worldAngle,
+    worldAngle: heading,
   };
 }
+
+/** [G5] Respuesta lateral del coche (1/s, la del motor) y parte de ese movimiento que se ve en el rumbo pintado. */
+const LATERAL_RESPONSE = 4;
+const HEADING_SLOPE_SHARE = 0.6;
 
 // Pendiente lateral máxima respecto al avance (~19°): un coche no se desplaza de lado más rápido que eso.
 export const MAX_LATERAL_SLOPE = 0.35;

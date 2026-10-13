@@ -7,7 +7,7 @@ import { getPitLaneGeometry, PitLaneGeometry } from '../utils/pitLaneGeometry';
 import { getScenario } from '../data/scenarioRegistry';
 import { buildScenarioGeometry, ScenarioGeometry } from '../utils/scenarioGeometry';
 import type { Point2D } from '../utils/spline';
-import { calculateCarWorldPosition } from '../utils/carPosition';
+import { calculateCarWorldPosition, GRID_LATERAL_OFFSET, GRID_SLOT_M } from '../utils/carPosition';
 import { KERB_WIDTH } from '../utils/scenarioGeometry';
 
 /** [G7] Grosor de la línea de meta (m). */
@@ -150,6 +150,7 @@ export class TrackRenderer {
 
     // ── LÍNEA DE META OFICIAL AJEDREZADA & PÓRTICO FIA ──
     this.renderStartFinishLine(ctx, track, camera);
+    if (zoom >= 1.5) this.renderGrid(ctx, track, camera);
 
     // ── ETIQUETAS DE CURVAS OFICIALES ──
     if (zoom >= 0.70) {
@@ -390,6 +391,28 @@ export class TrackRenderer {
       racingLines.set(track, line);
     }
     return line;
+  }
+
+  /** [G7] Los 20 cajones de parrilla, a 8 m reales uno de otro: una marca en U delante de cada coche. */
+  private static renderGrid(ctx: CanvasRenderingContext2D, track: TrackDefinition, camera: Camera) {
+    if (!(track.lapLengthMeters > 0) || track.points.length < 2) return;
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+    ctx.lineWidth = Math.max(1, 0.15 * camera.zoom);
+    ctx.lineJoin = 'miter';
+    ctx.beginPath();
+    for (let slot = 0; slot < 20; slot++) {
+      const pose = calculateCarWorldPosition({ progress: 1 - (slot + 1) * GRID_SLOT_M / track.lapLengthMeters,
+        lateralOffset: slot % 2 === 0 ? GRID_LATERAL_OFFSET : -GRID_LATERAL_OFFSET, isInPitLane: false }, track);
+      const tx = Math.cos(pose.worldAngle), ty = Math.sin(pose.worldAngle);
+      // Frente del cajón 3 m por delante del centro del coche; 1,3 m a cada lado y 1,5 m hacia atrás.
+      const fx = pose.worldX + tx * 3, fy = pose.worldY + ty * 3;
+      const corner = (side: number, back: number) => camera.worldToScreen(fx - ty * 1.3 * side - tx * back, fy + tx * 1.3 * side - ty * back);
+      const a = corner(1, 1.5), b = corner(1, 0), c = corner(-1, 0), d = corner(-1, 1.5);
+      ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.lineTo(c.x, c.y); ctx.lineTo(d.x, d.y);
+    }
+    ctx.stroke();
+    ctx.restore();
   }
 
   private static renderStartFinishLine(ctx: CanvasRenderingContext2D, track: TrackDefinition, camera: Camera) {

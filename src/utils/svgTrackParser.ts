@@ -6,6 +6,7 @@ import { setIdealRacingLine } from './racingLine';
 import { sampleSvgPath } from './svgPathSampler';
 import { closedFrames, closedLength, resampleClosed, smoothClosed, type AxisFrame } from './circuitGeometry';
 import pitLaneRoutes from '../data/pitLaneRoutes.json';
+import circuitReferences from '../data/circuitReferences.json';
 import { pitLaneClearance } from './pitLaneGeometry';
 import { BRAKE_LOOKAHEAD_M, DEFAULT_CURVATURE_GAIN, LAP_REFERENCES } from '../data/lapReferences';
 
@@ -269,23 +270,44 @@ export function buildTrackFromSvg(circuit: CircuitSpec, _sampleCount?: number): 
     : generatePitLanePoints(splinePoints, pitEntryT, pitExitT, pitOffset);
 
   // ── 5. CURVAS Y BORDES OFICIALES ──
-  const corners: CornerMarker[] = [];
-  let cornerCount = 0;
-  // Paso y salto en muestras equivalentes a los de las 750 muestras por vuelta anteriores.
-  const cornerStride = Math.max(1, Math.round(total * 15 / 750)), cornerSkip = Math.round(total * 18 / 750);
-  for (let i = cornerStride; i < total - cornerStride; i += cornerStride) {
-    const pt = splinePoints[i];
-    if (pt.speedLimitFactor < 0.58 && smoothedCurvatures[i] > CORNER_CURVATURE) {
-      cornerCount++;
-      corners.push({
-        number: cornerCount,
-        name: `T${cornerCount}`,
-        t: i / total,
-        gear: pt.speedLimitFactor < 0.35 ? 2 : (pt.speedLimitFactor < 0.50 ? 3 : 4),
-        apexSpeedKmh: Math.round(pt.speedLimitFactor * 320)
-      });
-      i += cornerSkip;
+  // [G7] Curvas con su número real (referencia de una vuelta real, `circuitReferences.json`); cada una se lleva al
+  // punto más lento del eje a menos de 40 m. Sin referencia, se detectan por velocidad y curvatura.
+  const realCorners = (circuitReferences as Record<string, { corners?: { number: number; letter?: string; t: number }[] }>)[circuit.id]?.corners;
+  const corners: CornerMarker[] = realCorners?.length ? realCorners.map(ref => {
+    const centre = Math.round(ref.t * total), reach = Math.round(40 / stepM);
+    let best = ((centre % total) + total) % total;
+    for (let d = -reach; d <= reach; d++) {
+      const i = (((centre + d) % total) + total) % total;
+      if (splinePoints[i].speedLimitFactor < splinePoints[best].speedLimitFactor - 1e-9) best = i;
     }
+    const pt = splinePoints[best];
+    return {
+      number: ref.number, name: `T${ref.number}${ref.letter ?? ''}`, t: best / total,
+      gear: pt.speedLimitFactor < 0.35 ? 2 : (pt.speedLimitFactor < 0.50 ? 3 : 4),
+      apexSpeedKmh: Math.round(pt.speedLimitFactor * 320),
+    };
+  }) : detectCorners();
+
+  function detectCorners(): CornerMarker[] {
+    const corners: CornerMarker[] = [];
+    let cornerCount = 0;
+    // Paso y salto en muestras equivalentes a los de las 750 muestras por vuelta anteriores.
+    const cornerStride = Math.max(1, Math.round(total * 15 / 750)), cornerSkip = Math.round(total * 18 / 750);
+    for (let i = cornerStride; i < total - cornerStride; i += cornerStride) {
+      const pt = splinePoints[i];
+      if (pt.speedLimitFactor < 0.58 && smoothedCurvatures[i] > CORNER_CURVATURE) {
+        cornerCount++;
+        corners.push({
+          number: cornerCount,
+          name: `T${cornerCount}`,
+          t: i / total,
+          gear: pt.speedLimitFactor < 0.35 ? 2 : (pt.speedLimitFactor < 0.50 ? 3 : 4),
+          apexSpeedKmh: Math.round(pt.speedLimitFactor * 320)
+        });
+        i += cornerSkip;
+      }
+    }
+    return corners;
   }
 
   let minX = Infinity, maxX = -Infinity;

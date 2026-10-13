@@ -1,7 +1,7 @@
 {
   "summary": {
-    "passed": 5247,
-    "failed": 2
+    "passed": 5248,
+    "failed": 1
   },
   "results": [
     {
@@ -512,7 +512,7 @@
           "details": ""
         },
         {
-          "name": "B5: Temporizador de spin entre 8s y 12s (obtenido: 8.1s)",
+          "name": "B5: Temporizador de spin entre 8s y 12s (obtenido: 9.1s)",
           "pass": true,
           "details": ""
         }
@@ -9225,8 +9225,8 @@
       ],
       "sprint": "2.9",
       "kind": "contract",
-      "passed": 13,
-      "failed": 1,
+      "passed": 14,
+      "failed": 0,
       "assertions": [
         {
           "name": "R16: dentro de la ventana, frenada completa",
@@ -9240,18 +9240,18 @@
         },
         {
           "name": "R16: con frenos fríos se necesita más distancia en una frenada real",
-          "pass": false,
-          "details": "140.12 m / 140.12 m"
+          "pass": true,
+          "details": "115.22 m / 115.22 m"
         },
         {
           "name": "R16: solo hay regeneración con espacio en la batería",
           "pass": true,
-          "details": "0 / 0.2352 MJ"
+          "details": "0 / 0.1824 MJ"
         },
         {
           "name": "R16: con la batería llena los frenos se calientan más",
           "pass": true,
-          "details": "681.3 / 667.9 °C"
+          "details": "741.0 / 726.4 °C"
         },
         {
           "name": "R16: tras 60 s a 0,4 s de otro coche, el motor está más caliente",
@@ -11077,12 +11077,12 @@
         {
           "name": "R43: el ángulo pintado no gira más de 6 rad por segundo simulado",
           "pass": true,
-          "details": "1.78 rad/s"
+          "details": "3.64 rad/s"
         },
         {
           "name": "R43: el ángulo pintado sigue al real",
           "pass": true,
-          "details": "-0.00009828487355421011"
+          "details": "-0.0013068777136468806"
         },
         {
           "name": "R43: el objetivo de la cámara es la pose pintada",
@@ -21268,7 +21268,7 @@
         {
           "name": "R23: pista dentro del límite (barcelona seco zoom 1.5)",
           "pass": true,
-          "details": "13819"
+          "details": "13953"
         },
         {
           "name": "R23: lluvia dentro del límite (barcelona seco zoom 1.5)",
@@ -21283,12 +21283,12 @@
         {
           "name": "R23: fotograma completo dentro del límite (barcelona seco zoom 1.5)",
           "pass": true,
-          "details": "15270"
+          "details": "15404"
         },
         {
           "name": "R23: pista dentro del límite (barcelona seco zoom 4)",
           "pass": true,
-          "details": "13869"
+          "details": "14003"
         },
         {
           "name": "R23: lluvia dentro del límite (barcelona seco zoom 4)",
@@ -21303,7 +21303,7 @@
         {
           "name": "R23: fotograma completo dentro del límite (barcelona seco zoom 4)",
           "pass": true,
-          "details": "15356"
+          "details": "15490"
         },
         {
           "name": "R23: de lejos los coches cuestan mucho menos que en detalle (barcelona)",
@@ -21338,7 +21338,7 @@
         {
           "name": "R23: pista dentro del límite (barcelona mojado zoom 1.5)",
           "pass": true,
-          "details": "13777"
+          "details": "13911"
         },
         {
           "name": "R23: lluvia dentro del límite (barcelona mojado zoom 1.5)",
@@ -21353,12 +21353,12 @@
         {
           "name": "R23: fotograma completo dentro del límite (barcelona mojado zoom 1.5)",
           "pass": true,
-          "details": "16290"
+          "details": "16424"
         },
         {
           "name": "R23: pista dentro del límite (barcelona mojado zoom 4)",
           "pass": true,
-          "details": "13827"
+          "details": "13961"
         },
         {
           "name": "R23: lluvia dentro del límite (barcelona mojado zoom 4)",
@@ -21373,7 +21373,7 @@
         {
           "name": "R23: fotograma completo dentro del límite (barcelona mojado zoom 4)",
           "pass": true,
-          "details": "16340"
+          "details": "16474"
         },
         {
           "name": "R23: de lejos los coches cuestan mucho menos que en detalle (barcelona)",
@@ -21408,7 +21408,7 @@
         {
           "name": "R23: pista dentro del límite (monaco seco zoom 1.5)",
           "pass": true,
-          "details": "9321"
+          "details": "9460"
         },
         {
           "name": "R23: lluvia dentro del límite (monaco seco zoom 1.5)",
@@ -21423,12 +21423,12 @@
         {
           "name": "R23: fotograma completo dentro del límite (monaco seco zoom 1.5)",
           "pass": true,
-          "details": "10768"
+          "details": "10907"
         },
         {
           "name": "R23: pista dentro del límite (monaco seco zoom 4)",
           "pass": true,
-          "details": "9371"
+          "details": "9510"
         },
         {
           "name": "R23: lluvia dentro del límite (monaco seco zoom 4)",
@@ -21443,7 +21443,7 @@
         {
           "name": "R23: fotograma completo dentro del límite (monaco seco zoom 4)",
           "pass": true,
-          "details": "10850"
+          "details": "10989"
         },
         {
           "name": "R23: de lejos los coches cuestan mucho menos que en detalle (monaco)",
@@ -21478,7 +21478,7 @@
         {
           "name": "R23: pista dentro del límite (monaco mojado zoom 1.5)",
           "pass": true,
-          "details": "9267"
+          "details": "9406"
         },
         {
           "name": "R23: lluvia dentro del límite (monaco mojado zoom 1.5)",
@@ -21493,12 +21493,12 @@
         {
           "name": "R23: fotograma completo dentro del límite (monaco mojado zoom 1.5)",
           "pass": true,
-          "details": "11557"
+          "details": "11696"
         },
         {
           "name": "R23: pista dentro del límite (monaco mojado zoom 4)",
           "pass": true,
-          "details": "9317"
+          "details": "9456"
         },
         {
           "name": "R23: lluvia dentro del límite (monaco mojado zoom 4)",
@@ -21513,7 +21513,7 @@
         {
           "name": "R23: fotograma completo dentro del límite (monaco mojado zoom 4)",
           "pass": true,
-          "details": "11607"
+          "details": "11746"
         },
         {
           "name": "R23: de lejos los coches cuestan mucho menos que en detalle (monaco)",
@@ -21523,7 +21523,7 @@
         {
           "name": "R23: coste medido en Barcelona y Mónaco, en seco y con lluvia, a tres zooms",
           "pass": true,
-          "details": "barcelona seco: z4 13869+0+1487, z0.4 8259+0+166, z1.5 13819+0+1451 | barcelona mojado: z4 13827+1082+1431, z0.4 8241+1082+154, z1.5 13777+1082+1431 | monaco seco: z4 9371+0+1479, z0.4 5963+0+146, z1.5 9321+0+1447 | monaco mojado: z4 9317+859+1431, z0.4 5930+859+142, z1.5 9267+859+1431"
+          "details": "barcelona seco: z4 14003+0+1487, z0.4 8259+0+166, z1.5 13953+0+1451 | barcelona mojado: z4 13961+1082+1431, z0.4 8241+1082+154, z1.5 13911+1082+1431 | monaco seco: z4 9510+0+1479, z0.4 5963+0+146, z1.5 9460+0+1447 | monaco mojado: z4 9456+859+1431, z0.4 5930+859+142, z1.5 9406+859+1431"
         }
       ],
       "errors": []
@@ -21706,12 +21706,12 @@
         {
           "name": "R53: fotograma con 20 coches, lluvia y gotas dentro del límite (zoom 1.5)",
           "pass": true,
-          "details": "16534"
+          "details": "16668"
         },
         {
           "name": "R53: fotograma con 20 coches, lluvia y gotas dentro del límite (zoom 4)",
           "pass": true,
-          "details": "16584"
+          "details": "16718"
         },
         {
           "name": "R53: dice cuándo se espera la lluvia, con su margen",
@@ -26213,7 +26213,7 @@
         {
           "name": "T4.15: parar cuesta tiempo y puestos (semilla 415)",
           "pass": true,
-          "details": "{\"position\":20,\"lossSec\":35.84000000000244,\"ahead\":{\"code\":\"BOR\",\"gapSec\":28.98851390047696},\"behind\":null}"
+          "details": "{\"position\":20,\"lossSec\":35.84000000000244,\"ahead\":{\"code\":\"BOR\",\"gapSec\":31.448051419263322},\"behind\":null}"
         },
         {
           "name": "T4.15: con la carrera igual, la misma ventana, y pierde lo mismo que dice el predictor de reincorporación (semilla 415)",
@@ -26253,7 +26253,7 @@
         {
           "name": "T4.15: parar cuesta tiempo y puestos (semilla 1502)",
           "pass": true,
-          "details": "{\"position\":20,\"lossSec\":35.84000000000244,\"ahead\":{\"code\":\"BOR\",\"gapSec\":27.34026364015915},\"behind\":null}"
+          "details": "{\"position\":20,\"lossSec\":35.84000000000244,\"ahead\":{\"code\":\"BOR\",\"gapSec\":27.395753361830714},\"behind\":null}"
         },
         {
           "name": "T4.15: con la carrera igual, la misma ventana, y pierde lo mismo que dice el predictor de reincorporación (semilla 1502)",
@@ -26303,7 +26303,7 @@
         {
           "name": "T4.15: el muro dice dónde saldría el coche, con quién delante y con quién detrás, y lo que pierde",
           "pass": true,
-          "details": "<section class=\"_wall_1o73l_1\" aria-label=\"Muro de SAI\" data-flag-drs=\"permiso\"><h3 class=\"_title_1o73l_23\">Muro · SAI P8</h3><dl class=\"_list_1o73l_41\"><dt>Delante</dt><dd>0,22 s con ALO</dd><dt>Detr"
+          "details": "<section class=\"_wall_1o73l_1\" aria-label=\"Muro de SAI\"><h3 class=\"_title_1o73l_23\">Muro · SAI P8</h3><dl class=\"_list_1o73l_41\"><dt>Delante</dt><dd>0,28 s con ALO</dd><dt>Detrás</dt><dd>0,29 s con AN"
         },
         {
           "name": "T4.15: y la comparación de neumáticos y el aviso de undercut",
@@ -26434,7 +26434,7 @@
         {
           "name": "G1 barcelona: giro por metro acotado por la curva más cerrada (≤ 0.076 rad/m)",
           "pass": true,
-          "details": "0.040 rad/m"
+          "details": "0.056 rad/m"
         },
         {
           "name": "G1 monza: Escala: una unidad es un metro (1 ± 0.005)",
@@ -26509,7 +26509,7 @@
         {
           "name": "G1 monza: giro por metro acotado por la curva más cerrada (≤ 0.241 rad/m)",
           "pass": true,
-          "details": "0.089 rad/m"
+          "details": "0.137 rad/m"
         },
         {
           "name": "G1 silverstone: Escala: una unidad es un metro (1 ± 0.005)",
@@ -26584,7 +26584,7 @@
         {
           "name": "G1 silverstone: giro por metro acotado por la curva más cerrada (≤ 0.138 rad/m)",
           "pass": true,
-          "details": "0.056 rad/m"
+          "details": "0.073 rad/m"
         },
         {
           "name": "G1 spa: Escala: una unidad es un metro (1 ± 0.005)",
@@ -26659,7 +26659,7 @@
         {
           "name": "G1 spa: giro por metro acotado por la curva más cerrada (≤ 0.243 rad/m)",
           "pass": true,
-          "details": "0.086 rad/m"
+          "details": "0.112 rad/m"
         },
         {
           "name": "G1 monaco: Escala: una unidad es un metro (1 ± 0.005)",
@@ -26734,7 +26734,7 @@
         {
           "name": "G1 monaco: giro por metro acotado por la curva más cerrada (≤ 0.263 rad/m)",
           "pass": true,
-          "details": "0.099 rad/m"
+          "details": "0.172 rad/m"
         },
         {
           "name": "G1 spielberg: Escala: una unidad es un metro (1 ± 0.005)",
@@ -26809,7 +26809,7 @@
         {
           "name": "G1 spielberg: giro por metro acotado por la curva más cerrada (≤ 0.236 rad/m)",
           "pass": true,
-          "details": "0.086 rad/m"
+          "details": "0.123 rad/m"
         },
         {
           "name": "G1 interlagos: Escala: una unidad es un metro (1 ± 0.005)",
@@ -26884,7 +26884,7 @@
         {
           "name": "G1 interlagos: giro por metro acotado por la curva más cerrada (≤ 0.133 rad/m)",
           "pass": true,
-          "details": "0.057 rad/m"
+          "details": "0.127 rad/m"
         },
         {
           "name": "G1 suzuka: Escala: una unidad es un metro (1 ± 0.005)",
@@ -26959,7 +26959,7 @@
         {
           "name": "G1 suzuka: giro por metro acotado por la curva más cerrada (≤ 0.222 rad/m)",
           "pass": true,
-          "details": "0.080 rad/m"
+          "details": "0.149 rad/m"
         },
         {
           "name": "G1 zandvoort: Escala: una unidad es un metro (1 ± 0.005)",
@@ -27109,7 +27109,7 @@
         {
           "name": "G1 las-vegas: giro por metro acotado por la curva más cerrada (≤ 0.224 rad/m)",
           "pass": true,
-          "details": "0.077 rad/m"
+          "details": "0.118 rad/m"
         },
         {
           "name": "G1 bahrain: Escala: una unidad es un metro (1 ± 0.005)",
@@ -27184,7 +27184,7 @@
         {
           "name": "G1 bahrain: giro por metro acotado por la curva más cerrada (≤ 0.240 rad/m)",
           "pass": true,
-          "details": "0.074 rad/m"
+          "details": "0.139 rad/m"
         },
         {
           "name": "G1 baku: Escala: una unidad es un metro (1 ± 0.005)",
@@ -27259,7 +27259,7 @@
         {
           "name": "G1 baku: giro por metro acotado por la curva más cerrada (≤ 0.219 rad/m)",
           "pass": true,
-          "details": "0.082 rad/m"
+          "details": "0.135 rad/m"
         },
         {
           "name": "G1 melbourne: Escala: una unidad es un metro (1 ± 0.005)",
@@ -27334,7 +27334,7 @@
         {
           "name": "G1 melbourne: giro por metro acotado por la curva más cerrada (≤ 0.234 rad/m)",
           "pass": true,
-          "details": "0.078 rad/m"
+          "details": "0.102 rad/m"
         },
         {
           "name": "G1 miami: Escala: una unidad es un metro (1 ± 0.005)",
@@ -27409,7 +27409,7 @@
         {
           "name": "G1 miami: giro por metro acotado por la curva más cerrada (≤ 0.231 rad/m)",
           "pass": true,
-          "details": "0.078 rad/m"
+          "details": "0.130 rad/m"
         },
         {
           "name": "G1 shanghai: Escala: una unidad es un metro (1 ± 0.005)",
@@ -27484,7 +27484,7 @@
         {
           "name": "G1 shanghai: giro por metro acotado por la curva más cerrada (≤ 0.251 rad/m)",
           "pass": true,
-          "details": "0.079 rad/m"
+          "details": "0.130 rad/m"
         },
         {
           "name": "G1 jeddah: Escala: una unidad es un metro (1 ± 0.005)",
@@ -27559,7 +27559,7 @@
         {
           "name": "G1 jeddah: giro por metro acotado por la curva más cerrada (≤ 0.188 rad/m)",
           "pass": true,
-          "details": "0.076 rad/m"
+          "details": "0.101 rad/m"
         },
         {
           "name": "G1 marina-bay: Escala: una unidad es un metro (1 ± 0.005)",
@@ -27634,7 +27634,7 @@
         {
           "name": "G1 marina-bay: giro por metro acotado por la curva más cerrada (≤ 0.238 rad/m)",
           "pass": true,
-          "details": "0.091 rad/m"
+          "details": "0.172 rad/m"
         },
         {
           "name": "G1 lusail: Escala: una unidad es un metro (1 ± 0.005)",
@@ -27709,7 +27709,7 @@
         {
           "name": "G1 lusail: giro por metro acotado por la curva más cerrada (≤ 0.110 rad/m)",
           "pass": true,
-          "details": "0.053 rad/m"
+          "details": "0.059 rad/m"
         },
         {
           "name": "G1 yas-marina: Escala: una unidad es un metro (1 ± 0.005)",
@@ -27784,7 +27784,7 @@
         {
           "name": "G1 yas-marina: giro por metro acotado por la curva más cerrada (≤ 0.241 rad/m)",
           "pass": true,
-          "details": "0.078 rad/m"
+          "details": "0.111 rad/m"
         },
         {
           "name": "G1 hungaroring: Escala: una unidad es un metro (1 ± 0.005)",
@@ -27859,7 +27859,7 @@
         {
           "name": "G1 hungaroring: giro por metro acotado por la curva más cerrada (≤ 0.218 rad/m)",
           "pass": true,
-          "details": "0.080 rad/m"
+          "details": "0.147 rad/m"
         },
         {
           "name": "G1 mexico-city: Escala: una unidad es un metro (1 ± 0.005)",
@@ -27934,7 +27934,7 @@
         {
           "name": "G1 mexico-city: giro por metro acotado por la curva más cerrada (≤ 0.240 rad/m)",
           "pass": true,
-          "details": "0.082 rad/m"
+          "details": "0.145 rad/m"
         },
         {
           "name": "G1 montreal: Escala: una unidad es un metro (1 ± 0.005)",
@@ -28009,7 +28009,7 @@
         {
           "name": "G1 montreal: giro por metro acotado por la curva más cerrada (≤ 0.174 rad/m)",
           "pass": true,
-          "details": "0.074 rad/m"
+          "details": "0.127 rad/m"
         },
         {
           "name": "G1 austin: Escala: una unidad es un metro (1 ± 0.005)",
@@ -28084,7 +28084,7 @@
         {
           "name": "G1 austin: giro por metro acotado por la curva más cerrada (≤ 0.253 rad/m)",
           "pass": true,
-          "details": "0.075 rad/m"
+          "details": "0.126 rad/m"
         },
         {
           "name": "G1: los límites son los del contrato",
