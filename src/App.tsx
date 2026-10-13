@@ -1574,7 +1574,7 @@ export const App: React.FC = () => {
             <PanelRight size={16} aria-hidden="true" />
             <span className={styles.barLabel}>Detalle</span>
           </button>
-          {mode === 'career' && gameMenu}
+          {mode === 'career' && <span className={styles.gameSlot}>{gameMenu}</span>}
           <RaceMenu
             safetyCarDeployed={simulation.safetyCar.isDeployed}
             onToggleSafetyCarTest={handleSafetyCarTest}
@@ -1603,7 +1603,7 @@ export const App: React.FC = () => {
 
         {/* ── 2. CIRCUITO LIBRE + MURO EN SU FRANJA ── */}
         <main className={styles.centerArea}>
-          <div className={styles.canvasArea}>
+          <div className={styles.canvasArea} data-formation={lightState === 'formation-lap' ? 'true' : undefined}>
             <RaceCanvas
               simulation={simulation}
               camera={camera}

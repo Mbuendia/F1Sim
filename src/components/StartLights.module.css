@@ -14,6 +14,11 @@
   pointer-events: auto;
 }
 
+/* Móvil: el semáforo cubre entera la franja de arriba (brújula y herramientas de cámara) en vez de pisarlas a medias. */
+@media (max-width: 767px) {
+  .overlay { top: 8px; left: 8px; right: 8px; transform: none; }
+}
+
 .gantryContainer {
   background: linear-gradient(180deg, #11141f 0%, #090b12 100%);
   border: 1px solid rgba(255, 255, 255, 0.12);
