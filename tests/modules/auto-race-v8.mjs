@@ -72,7 +72,7 @@ export default async function run({ server, assert, test }) {
       && !/Simular este Gran Premio/.test(renderToStaticMarkup(createElement(SeasonCalendar, { ...props, selectedCircuitId: calendar[5].circuitId, onSimulate() {} }))),
       'V8: sin esa opción (carrera libre u otro circuito elegido) no se ofrece simular');
     const app = source('src/App.tsx');
-    assert(/onSimulate: handleSimulateRound/.test(app) && /autoRequested\.current = true;\s*handleStartRaceFromHome\(\)/.test(app) && /advanceAutoRace\(simulation, AUTO_RACE_CHUNK_MS\)/.test(app)
+    assert(/onSimulate: handleSimulateRound/.test(app) && /autoRequested\.current = true;\s*handleStartRaceFromHome\(\)/.test(app) && /advanceAutoRace\(simulation, [^)]*AUTO_RACE_CHUNK_MS\)/.test(app)
       && /autoLatest\.current\.goHome\(\)/.test(app) && /goHome: handleGoHome/.test(app),
       'V8: la simulación se prepara como una carrera normal, corre a trozos y se liquida por el mismo camino que una carrera vista');
   });

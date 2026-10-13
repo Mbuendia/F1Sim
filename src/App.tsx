@@ -19,6 +19,7 @@ import { advanceAutoRace, startAutoRace } from './simulation/AutoRace';
 const RACE_STEP_SEC = 0.02;
 /** [V8] Milisegundos seguidos que el motor corre una carrera simulada antes de dejar respirar a la página. */
 const AUTO_RACE_CHUNK_MS = 40;
+const AUTO_RACE_HIDDEN_CHUNK_MS = 800;
 import type { RaceTab } from './components/RaceTabs';
 import { RaceSimulation } from './simulation/RaceSimulation';
 import { Camera } from './renderer/Camera';
@@ -1139,7 +1140,8 @@ export const App: React.FC = () => {
     setAutoRace({ lap: 0, total: simulation.totalLaps });
     let timer = 0;
     const run = () => {
-      const done = advanceAutoRace(simulation, AUTO_RACE_CHUNK_MS);
+      // Con la pestaña en segundo plano el navegador solo deja un turno por segundo: se aprovecha entero.
+      const done = advanceAutoRace(simulation, document.hidden ? AUTO_RACE_HIDDEN_CHUNK_MS : AUTO_RACE_CHUNK_MS);
       setAutoRace({ lap: Math.min(simulation.totalLaps, simulation.leaderLap), total: simulation.totalLaps });
       if (done) { simulation.setFixedStep(RACE_STEP_SEC); setAutoRace(null); timer = window.setTimeout(() => autoLatest.current.goHome(), 0); }
       else timer = window.setTimeout(run, 0);
