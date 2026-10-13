@@ -1,85 +1,119 @@
-# 🏎️ React F1 2026 Grand Prix Simulator
+# F1 Race Manager
 
-A deeply technical, physics-driven Formula 1 race simulator built with React 19, TypeScript, Vite, and Anime.js. This project models the granular details of F1 racing, including real aerodynamic downforce, tire thermodynamics, slipstream (tow), dynamic DRS, and authentic multi-sector circuit geometries generated from real SVG map data.
+A Formula 1 strategy and team-management simulator that runs entirely in the browser. You do not drive: you run the pit wall for your two cars (stops, compounds, pace, team orders) and, in career mode, the whole team between races (money, factory, staff, drivers, sponsors, board).
 
----
+Built with React 19, TypeScript and Vite. The race engine is deterministic and physics-driven; the track is painted with WebGL (PixiJS) with a Canvas fallback. The game interface is in Spanish.
 
-## 🏁 Latest Updates (v30.0)
-
-We have recently completed a massive upgrade covering UI/UX, race mechanics, camera systems, and telemetry:
-
-- **🎬 Anime.js Cinematic Landing Page**: Immersive entry screen featuring a stylized Pirelli F1 tire with an elastic spin-in animation, continuous ambient rotation, and dynamic particle background.
-- **🚦 Official Formation Lap Flow**: True-to-life pre-race procedure with tire warming weaves in formation, automatic grid parking, and mandatory user confirmation (**"🏁 Confirmar Inicio de Carrera"**) before initiating the 5 red lights sequence.
-- **📹 Multi-Camera System (5 Perspectives)**:
-  - `OVERVIEW`: Full-track satellite view.
-  - `FOLLOW`: Dynamic tracking locked onto active battles.
-  - `CINEMATIC`: Wide sweep with 60m kinematic lookahead.
-  - `ONBOARD`: Cockpit-tight camera with high zoom (4.5x).
-  - `HELICOPTER`: High-altitude aerial broadcast angle.
-  - *Accessible via HUD badge or pressing the **`C`** key.*
-- **🏎️ Aerodynamic Car Redesign & Scaled Capacity**: Slimmer chassis with front wing details and circuit-dependent parallel capacity (**2 cars** on tight street circuits like Monaco or Baku; **3 cars** on wide permanent circuits like Silverstone or Spa).
-- **🛠️ Realistic Pit Lane Physics & Stop Variability**: 80 km/h speed-limited transit (~6-7s per phase) with real-world pit stop time distributions (20% perfect 1.9s stops, 55% standard, 15% slow, and 10% mechanical cross-thread delays up to 8s).
-- **📊 Extended HomeScreen Sub-Toggles**:
-  - **Drivers**: Toggle between *Atributos & Ficha*, *Estrategia & Estilo* (degradation rates, overcut window, rain adaptability, incident risk), and *Rendimiento 2026*.
-  - **Circuits**: Toggle between *Trazado & Ficha*, *Zonas DRS & Estrategia* (individual DRS breakdown, pit loss, tire strategy), and *Meteorología & Asfalto*.
-- **↔️ Collapsible Sidebars & Layer Hierarchy**: Independent retractable toggles for the *Timing Tower* and *Right Telemetry Dock* with corrected z-index layering.
+**Play:** https://mbuendia.github.io/F1Sim/
 
 ---
 
-## 📊 Game Balance & Ecosystem
+## What is in the game
 
-The simulation ecosystem is meticulously balanced around real-world F1 parameters, allowing for highly tactical races:
+### Race
 
-### Circuit Ecosystem
-- **Abrasion & Tire Stress**: Tracks like **Suzuka (Japón)** and **Silverstone (Reino Unido)** are notoriously tough on tires (High Abrasion), forcing teams towards multi-stop strategies or harder compounds. Contrastingly, street circuits like **Mónaco** and **Las Vegas** offer Low Abrasion, rewarding soft tire longevity and track position.
-- **Weather & Safety Car**: Circuits like **Spa-Francorchamps** feature high weather unpredictability, while desert tracks like **Bahrain** and **Lusail** offer guaranteed dry races. Safety Car probability scales dynamically per track profile.
-- **Flow & Downforce**: High-speed temples (**Monza**) demand low drag setups, while technical tracks (**Hungaroring**) require maximum downforce and driver skill.
+- **Pit wall for two cars.** Pace (save / normal / attack), stop with any of the five compounds, cancel a stop, and delegate either car to the strategist. Tyre, battery and fuel are shown as gauges; the strategist's proposals arrive as cards you accept or discard.
+- **Team orders.** Free racing, hold positions, or let one driver through: the car ahead lifts in the next overtaking zone and the swap comes from speed, never from repositioning. Rival teams use them too, under a simple observable rule.
+- **Strategy at a glance.** A stint timeline with the current lap and the expected stop window, gaps to the cars ahead and behind, and rival tyre life as bars.
+- **Race control.** Local yellow flags, Virtual Safety Car, Safety Car with lapped cars and restart, red flag with suspension and resumption, stewards and penalties, blue flags, DRS detection and zones per circuit.
+- **Weather.** Rain cells that cross the circuit, a radar with a forecast, standing water, intermediate and wet tyres, aquaplaning, spray and a drying line.
+- **Physics.** Corner speed from real radius, minimum-curvature racing line, aerodynamic drag and dirty air, slipstream, four-wheel tyre temperature and wear, fuel mass, 2025-style energy recovery and deployment, component wear and failures.
+- **23 circuits at real scale** (1 unit = 1 metre), rebuilt from official lap lengths, with the finish line aligned to real lap data, pit lanes outside the track, and lap times calibrated against the 2025 season.
+- **Cameras.** Overview, follow, cinematic, onboard and helicopter, plus free zoom and rotation.
 
-### Driver Performance Delta
-- **Raw Pace & Skill**: Elite world champions anchor the top skill tiers, boasting the highest base pace and raw lap time potential.
-- **Tire Whisperers**: Veteran drivers possess exceptional `Tire Management` stats. While they might lack single-lap qualifying pace, their delta over a long stint at abrasive tracks often yields strategic overcuts.
-- **Aggression vs. Consistency**: High-aggression drivers excel at slipstreaming and late-braking overtakes but suffer higher incident risks and thermal degradation, creating dynamic battles with consistent, smooth drivers.
+### Weekend
+
+- **Free practice** (optional, resolved off-track): each driver runs a programme — find the setup, long run, or qualifying simulation. Rivals practise too and tune their own setup.
+- **Qualifying shown live.** Q1, Q2 and Q3 with the cars as dots on the circuit, the timing table with the elimination zone, and a comment at the end of each session. It can be skipped.
+- **Sprint weekends**, car setup (wing, stiffness, gearing) and parc fermé with pit-lane starts.
+- **Setup spy.** After practice you can pay for a report on a rival team's setup, with a risk of being caught and fined.
+
+### Career
+
+- **Team management between races:** finances, development projects, factory facilities, technical staff (five roles, a seeded market each season), pit crew, driver contracts and market, reserve driver and academy, sponsors, board objectives and a five-step winter between seasons.
+- **Power unit components** with season allocations (including exhausts), grid penalties and a per-driver dossier.
+- **Simulate a Grand Prix** instead of skipping it: the same engine runs the race without drawing it, with the strategist in charge of your cars, and it counts like any other round.
+- **Saved games** with named slots, autosave, export and import.
+
+### Interface
+
+- **Responsive:** desktop, tablet, and phone (track on top; timing, wall and car detail in bottom tabs).
+- No native dropdowns: segmented controls, gauges and chips; vector icons; controls of at least 44 px; visible focus and reduced-motion support.
+- **Audio** (off by default, volume in the race menu) for the start lights, radio, flags and Safety Car, pit gun and chequered flag. The sounds are provisional synthesised tones for now.
 
 ---
 
-## ⌨️ Controls & Shortcuts
+## Controls
 
 | Key | Action |
 |---|---|
-| **`Space`** | Pausar / Reanudar la carrera |
-| **`C`** | Alternar modos de cámara (`OVERVIEW` ➔ `FOLLOW` ➔ `CINEMATIC` ➔ `ONBOARD` ➔ `HELICOPTER`) |
-| **`1` - `6`** | Multiplicador de velocidad de simulación (1x, 2x, 4x, 8x, 16x, 32x) |
-| **`Esc`** | Deseleccionar piloto enfocado (volver a vista general) |
-| **`Click en Fila`** | Enfocar cámara y telemetría en cualquier piloto de la Timing Tower |
+| `Space` | Pause / resume |
+| `C` | Cycle camera modes |
+| `1` – `6` | Simulation speed (1x, 2x, 4x, 8x, 16x, 32x) |
+| `Esc` | Back to the full-track view |
+| Click on a timing row | Follow that car and open its detail |
+| Drag / right-drag / wheel / double-click | Rotate / pan / zoom / reset the track view |
 
 ---
 
-## 🛠️ Stack & Architecture
+## Stack and architecture
 
-- **React 19 & TypeScript**: High-performance functional components with strict typing.
-- **Vite**: Ultra-fast build tool and development server.
-- **Anime.js**: Physics-based UI transitions and landing animations.
-- **Canvas 2D Dual-Loop Engine**: `requestAnimationFrame` running at 60 FPS for interpolation and camera lerping, decoupled from 15 FPS React UI polling.
-- **SVG Track Parser**: Proprietary parser (`svgTrackParser.ts`) that digests bezier curves from official track maps, computing normal vectors for optimal racing lines, braking zones, and sector definitions.
-- **CSS Modules**: Fully scoped styles ensuring zero collision across a massive dashboard UI.
+- **React 19 + TypeScript + Vite**, CSS Modules, `lucide-react` icons, Anime.js for interface motion, Three.js for the 3D car and wheel viewers.
+- **`src/simulation/`** — the engine. `RaceSimulation` advances the race in fixed steps with seeded random streams, so a race can be saved, loaded and replayed. Around it: tyres, aero, energy, fuel, weather, race control, stewards, strategist, pit stops, qualifying, practice, and the management models (finance, development, staff, contracts, sponsors, board, season).
+- **`src/renderer/`** — static track layers uploaded once to WebGL through PixiJS, with cars, Safety Car and spray on a second scene; a 2D Canvas path is kept as fallback. `?canvas` in the URL forces the fallback.
+- **`src/utils/`** — circuit geometry: SVG path → axis scaled to the official length → smoothing and resampling → racing line, pit lane, kerbs and grid.
+- **`src/components/`** — the interface; `src/components/ui/` holds the shared pieces (segmented control, gauge, chip, tile).
+- **`assets3d/circuits/`** — the 23 circuits exported as `.glb` meshes (not yet used by the game).
 
 ---
 
-## 🚀 Running the App
+## Running it
 
 ```bash
-# Install dependencies
 npm install
+npm run dev      # development server
+npm run build    # production build
+```
 
-# Start development server
-npm run dev
+### Tests
 
-# Build for production
-npm run build
+Each module in `tests/catalog.mjs` runs in its own process against the real engine code.
+
+```bash
+node test-suite.mjs --module team-orders-t414   # one module (comma-separated for several)
+node test-suite.mjs --all                       # full suite, about 25 minutes
+```
+
+The last full run, on 13 October 2026, was 5605 passed / 0 failed across 150 modules.
+
+### Project scripts
+
+```bash
+npm run sync:tasks                   # task index in index.html from DASHBOARD.md
+npm run dashboard                    # regenerates dashboard_visual.html
+node scripts/capture-screens.mjs     # review screenshots with headless Chrome (dev server running)
+node scripts/calibrate-laps.mjs      # lap-time calibration against the 2025 reference laps
 ```
 
 ---
 
-## 🌐 Automated GitHub Pages Deployment
+## Project status
 
-The repository includes a GitHub Actions workflow (`.github/workflows/deploy.yml`) that automatically builds and deploys the latest version to GitHub Pages upon pushing to `main`.
+`DASHBOARD.md` is the source of truth for scope and status, in Spanish; `dashboard_visual.html` is its visual summary. Everything through Sprint 4.5 and Sprint 3.7 is delivered and merged.
+
+**Next: Sprint 5 (planned, not started).**
+
+- **Shared race.** The desktop browser hosts a free-race room and friends join from their own devices over WebRTC, each running one team from the pit wall. The engine moves to a Web Worker, state goes through Zustand stores, and Firebase Realtime Database handles rooms, signalling and a slower fallback when a direct connection is not possible.
+- **Hosting.** The game moves to Firebase Hosting; GitHub Pages becomes a presentation landing page.
+
+Parked for later: licensed audio recordings, and playable on-track sessions (directed qualifying).
+
+---
+
+## Deployment
+
+Pushing to `main` builds the project and publishes it to GitHub Pages through `.github/workflows/deploy.yml`.
+
+## Credits
+
+Third-party 3D models are credited next to where they appear in the game, under their Creative Commons licences. Track widths come from the TUMFTM racetrack database, and finish-line alignment uses real lap geometry from the MultiViewer API.
