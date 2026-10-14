@@ -784,15 +784,13 @@
   .specItem { flex-wrap: wrap; }
 }
 
-/* [V5] El botón de entrar a pista, fijo al pie de la ventana en tableta y móvil. */
+/* En tableta y móvil el botón de entrar a pista va en el flujo, al final del contenido: no flota sobre él. */
 @media (max-width: 1023px) {
-  .homeContainer { padding-bottom: 88px; }
-  .launchBigButton { position: fixed; left: 8px; right: 8px; bottom: 8px; width: auto; z-index: 20; }
+  .homeContainer { padding-bottom: 12px; }
+  .launchBigButton { position: static; }
 }
 
-/* [V5] En móvil el centro de gestión tiene su barra de pestañas al pie: el contenido y el botón de entrar a pista le
-   dejan sitio. */
+/* [V5] En móvil el centro de gestión tiene su barra de pestañas al pie: el contenido le deja sitio. */
 @media (max-width: 767px) {
-  .homeContainer { padding-bottom: calc(var(--alto-pestanas) + 96px); }
-  .launchBigButton { bottom: calc(var(--alto-pestanas) + 8px); }
+  .homeContainer { padding-bottom: calc(var(--alto-pestanas) + 12px); }
 }

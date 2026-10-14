@@ -13,4 +13,11 @@ export default async function run({ assert, test }) {
     }).map(([file, selector]) => `${file} ${selector}`);
     assert(wrong.length === 0, 'Móvil: cada pantalla completa usa 100dvh (con 100vh de respaldo), para que la barra del navegador no tape los botones de abajo', wrong.join(', '));
   });
+
+  await test('Paddock en tableta y móvil: «Entrar a pista» al final del scroll', () => {
+    const narrow = [...css('components/HomeScreen.module.css').matchAll(/@media \(max-width: (?:1023|767)px\) \{([\s\S]*?)\n\}/g)].map(match => match[1]).join('\n');
+    const rules = [...narrow.matchAll(/\.launchBigButton\s*\{([^}]*)\}/g)].map(match => match[1]);
+    const floating = rules.some(rule => /position:\s*(fixed|sticky)/.test(rule)), inFlow = rules.some(rule => /position:\s*static/.test(rule));
+    assert(!floating && inFlow, 'Paddock: en tableta y móvil el botón de entrar a pista va en el flujo, al final del contenido, sin flotar sobre él', JSON.stringify(rules));
+  });
 }
