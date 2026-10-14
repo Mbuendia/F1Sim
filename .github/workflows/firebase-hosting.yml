@@ -1,0 +1,56 @@
+name: Deploy game to Firebase Hosting
+
+# Proyecto de Firebase: f1sim-d5085. Mientras el repositorio no tenga el secreto de la cuenta de
+# servicio (lo crea `firebase init hosting:github`), el trabajo termina sin construir ni publicar.
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      HAS_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_F1SIM_D5085 != '' }}
+    steps:
+      - name: Checkout
+        if: ${{ env.HAS_SERVICE_ACCOUNT == 'true' }}
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        if: ${{ env.HAS_SERVICE_ACCOUNT == 'true' }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        if: ${{ env.HAS_SERVICE_ACCOUNT == 'true' }}
+        run: npm ci
+
+      - name: Build
+        if: ${{ env.HAS_SERVICE_ACCOUNT == 'true' }}
+        run: npm run build
+        env:
+          BASE_PATH: /
+
+      # En un pull request publica una vista previa temporal; en main o a mano, la versión real.
+      - name: Deploy to Firebase Hosting
+        if: ${{ env.HAS_SERVICE_ACCOUNT == 'true' }}
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_F1SIM_D5085 }}
+          projectId: f1sim-d5085
+          channelId: ${{ github.event_name != 'pull_request' && 'live' || '' }}
+
+      - name: Sin credenciales todavía
+        if: ${{ env.HAS_SERVICE_ACCOUNT != 'true' }}
+        run: echo "Falta el secreto FIREBASE_SERVICE_ACCOUNT_F1SIM_D5085; no se publica nada."
