@@ -1,0 +1,365 @@
+/* Landing de F1 Race Manager. El motor (scrollcraft.css) no se toca: aquí solo van
+   los tokens del tema y las clases propias de la página. */
+
+:root {
+  --sc-canvas:     #0a0d14;
+  --sc-surface:    #141a24;
+  --sc-ink:        #f2f4f8;
+  --sc-ink-soft:   #aab3c3;
+  --sc-accent:     #e10600;   /* lo cambia el compuesto montado (landing.js) */
+  --sc-accent-ink: #ffffff;
+  --sc-font-display: "Orbitron", system-ui, sans-serif;
+  --sc-font-text:    "Rajdhani", system-ui, sans-serif;
+
+  --barra-h: 3.5rem;
+  --muro-h: 7.75rem;
+
+  --c-s: #e10600; --c-m: #ffd400; --c-h: #f1f1f1; --c-i: #2fbf5b; --c-w: #4d94ff;
+}
+
+body { font-size: 1.1875rem; font-weight: 500; line-height: 1.4; }
+.solo-lectores { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+/* El foco se ve siempre igual, monte el compuesto que monte. */
+:focus-visible { outline: 2px solid var(--sc-ink); outline-offset: 3px; }
+a, button { touch-action: manipulation; }
+.salto {
+  position: fixed; top: 0.5rem; left: 0.5rem; z-index: 100; padding: 0.75rem 1rem;
+  background: var(--sc-ink); color: var(--sc-canvas); font-weight: 700; border-radius: var(--sc-r-sm);
+  transform: translateY(-200%);
+}
+.salto:focus-visible { transform: none; }
+.sin-js { position: fixed; inset: auto 0 0 0; z-index: 99; margin: 0; padding: 1rem; background: var(--sc-surface); }
+
+/* ------------------------------------------------------------ barra -- */
+.barra {
+  position: fixed; inset: 0 0 auto 0; z-index: var(--sc-z-chrome);
+  height: var(--barra-h);
+  display: flex; align-items: center; gap: var(--sc-5);
+  padding-inline: var(--sc-gutter);
+  background: color-mix(in oklab, var(--sc-canvas) 86%, transparent);
+  border-bottom: 1px solid var(--sc-hairline);
+}
+.marca {
+  font-family: var(--sc-font-display); font-weight: 700; font-size: 0.95rem;
+  letter-spacing: 0.06em; text-transform: uppercase; text-decoration: none; white-space: nowrap;
+  min-height: 2.75rem; display: inline-flex; align-items: center; gap: 0.4em;
+}
+.marca__f1 { color: var(--c-s); font-weight: 900; }
+.barra__nav { display: flex; gap: var(--sc-5); margin-inline: auto; }
+.barra__nav a {
+  text-decoration: none; color: var(--sc-ink-soft); font-weight: 600;
+  min-height: 2.75rem; display: inline-flex; align-items: center;
+  transition: color 150ms var(--sc-ease-out);
+}
+.barra__nav a:hover { color: var(--sc-ink); }
+.estado { margin: 0; display: flex; align-items: center; gap: var(--sc-3); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.estado__bandera {
+  font-weight: 700; font-size: 0.875rem; letter-spacing: 0.08em; text-transform: uppercase;
+  padding: 0.2rem 0.6rem; border-radius: var(--sc-r-sm);
+  background: var(--sc-surface); color: var(--sc-ink-soft); border: 1px solid var(--sc-hairline-strong);
+}
+.estado__bandera[data-estado="verde"] { background: #0f3a22; color: #6ff0a4; border-color: #1c6b3e; }
+.estado__bandera[data-estado="meta"] {
+  color: var(--sc-ink); border-color: var(--sc-hairline-strong);
+  background: repeating-conic-gradient(#2a3140 0 25%, #10141c 0 50%) 0 0 / 10px 10px;
+}
+.estado__vuelta { color: var(--sc-ink-soft); font-weight: 600; }
+.estado__vuelta b { color: var(--sc-ink); font-family: var(--sc-font-display); font-weight: 700; font-size: 1rem; display: inline-block; min-width: 2ch; text-align: right; }
+
+/* ---------------------------------------------------------- botones -- */
+.boton {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-height: 2.75rem; padding: 0 1.25rem;
+  background: var(--sc-accent); color: var(--sc-accent-ink);
+  font-family: var(--sc-font-text); font-weight: 700; font-size: 1.0625rem; letter-spacing: 0.04em;
+  text-transform: uppercase; text-decoration: none; white-space: nowrap;
+  border: 0; border-radius: var(--sc-r-sm);
+  box-shadow: var(--sc-e1), var(--sc-edge);
+  transition: transform 140ms var(--sc-ease-out), background-color 240ms var(--sc-ease-out), color 240ms var(--sc-ease-out);
+}
+.boton:active { transform: translateY(1px) scale(0.98); }
+@media (hover: hover) and (pointer: fine) { .boton:hover { transform: translateY(-1px); } }
+.boton--grande { min-height: 3.5rem; padding: 0 2.25rem; font-size: 1.25rem; box-shadow: var(--sc-e2), var(--sc-edge); }
+.enlace { font-weight: 600; min-height: 2.75rem; display: inline-flex; align-items: center; }
+.acciones { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: var(--sc-5); }
+.acciones--centro { justify-content: center; }
+
+/* --------------------------------------------------- bloques de texto -- */
+.bloque {
+  position: absolute;
+  /* El motor desplaza cada bloque hasta 2vh arriba y abajo: se reserva ese margen. */
+  top: calc(var(--barra-h) + var(--sc-5) + 2svh);
+  bottom: calc(var(--muro-h) + var(--sc-5) + 2svh);
+  left: var(--sc-gutter); right: var(--sc-gutter);
+  z-index: 1;
+  display: grid; align-content: end; justify-items: start; gap: var(--sc-4);
+}
+.titular {
+  font-family: var(--sc-font-display); font-weight: 700; line-height: 1.04;
+  letter-spacing: -0.01em; text-wrap: balance; margin: 0;
+}
+.titular--xl { font-size: clamp(2.1rem, 1.1rem + 4.4vw, 5rem); max-width: 14ch; }
+.titular--lg { font-size: clamp(1.75rem, 1.1rem + 2.9vw, 3.5rem); max-width: 18ch; }
+.titular--md { font-size: clamp(1.4rem, 1rem + 1.6vw, 2.4rem); max-width: 20ch; }
+.entrada { margin: 0; font-size: clamp(1.1875rem, 1.05rem + 0.6vw, 1.5rem); line-height: 1.35; max-width: 34ch; text-wrap: pretty; }
+.pista { margin: 0; font-weight: 700; color: var(--sc-accent); }
+:root[data-compuesto="S"] .pista { color: #ff6a66; }  /* el rojo puro no llega a 4,5:1 sobre el fondo */
+.nota { margin: 0; color: var(--sc-ink-soft); max-width: 40ch; }
+
+/* Salida y Box: abajo a la izquierda. Carrera: abajo a la derecha. */
+/* Cada bloque ocupa solo el lado donde está su velo. */
+.bloque--salida { right: auto; width: min(100% - 2 * var(--sc-gutter), 46rem); }
+.bloque--carrera { left: auto; width: min(100% - 2 * var(--sc-gutter), 36rem); }
+.hechos { margin: 0; display: grid; grid-template-columns: 1fr 1fr; gap: var(--sc-4) var(--sc-5); }
+.hechos dt { font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; font-size: 0.9375rem; color: var(--sc-ink); padding-top: var(--sc-2); border-top: 1px solid var(--sc-hairline-strong); }
+.hechos dd { margin: var(--sc-1) 0 0; color: var(--sc-ink-soft); line-height: 1.3; }
+
+.bloque--meta, .bloque--jugar { align-content: center; justify-items: center; text-align: center; }
+.bloque--meta .titular, .bloque--jugar .titular { max-width: 20ch; }
+
+/* Paneles: texto a un lado, captura al otro. */
+.bloque--panel, .bloque--pantallas {
+  align-content: center; align-items: center;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--sc-7);
+}
+.bloque--panel-inv { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); }
+.panel__texto { display: grid; gap: var(--sc-4); justify-items: start; }
+.puntos { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--sc-3); }
+.puntos li { color: var(--sc-ink-soft); line-height: 1.3; padding-top: var(--sc-3); border-top: 1px solid var(--sc-hairline); max-width: 38ch; }
+.puntos b { color: var(--sc-ink); font-weight: 700; }
+.areas { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: 1fr 1fr; column-gap: var(--sc-5); width: 100%; max-width: 30rem; }
+.areas li { padding: var(--sc-2) 0; border-top: 1px solid var(--sc-hairline); font-weight: 600; }
+
+.monitor {
+  margin: 0; overflow: hidden; border-radius: var(--sc-r-sm);
+  border: 1px solid var(--sc-hairline-strong); background: var(--sc-surface);
+  box-shadow: var(--sc-e3);
+}
+.monitor img { display: block; width: 100%; height: auto; }
+/* La captura de clasificación trae márgenes desenfocados: se encuadra solo el panel. */
+.monitor--clasif img { width: 146.9%; max-width: none; margin: -10.6% 0 -10.6% -23.5%; }
+.monitor--gestion img { height: auto; aspect-ratio: 1440 / 500; object-fit: cover; object-position: top; }
+
+.bloque--pantallas { grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); }
+.telefonos { display: flex; gap: var(--sc-4); justify-content: center; align-items: flex-end; }
+.telefonos img {
+  display: block; width: auto; height: min(52svh, 30rem); max-width: 31%;
+  object-fit: contain;
+  border-radius: var(--sc-r-md); border: 1px solid var(--sc-hairline-strong); box-shadow: var(--sc-e2);
+}
+.telefonos img:nth-child(2) { margin-bottom: var(--sc-6); }
+
+.resumen { margin: 0; font-size: clamp(1.1875rem, 1.05rem + 0.5vw, 1.4rem); max-width: 40ch; text-wrap: balance; }
+.pie { margin-top: var(--sc-5); display: grid; gap: var(--sc-2); color: var(--sc-ink-soft); font-size: 1rem; line-height: 1.35; max-width: 62ch; }
+.pie p { margin: 0; text-wrap: pretty; }
+.pie a { color: var(--sc-ink); }
+
+/* ------------------------------------------------------------- velos -- */
+/* Un velo por bloque, hermano suyo. landing.js copia la opacidad del bloque. */
+.velo { position: absolute; inset: 0; z-index: 0; opacity: 0; pointer-events: none; }
+.velo--izq    { background: linear-gradient(90deg, rgb(6 8 13 / 0.94) 0%, rgb(6 8 13 / 0.84) 34%, transparent 66%), linear-gradient(to top, rgb(6 8 13 / 0.6) 0%, transparent 45%); }
+.velo--der    { background: linear-gradient(270deg, rgb(6 8 13 / 0.95) 0%, rgb(6 8 13 / 0.9) 46%, transparent 74%); }
+.velo--centro { background: radial-gradient(70% 60% at 50% 50%, rgb(6 8 13 / 0.82) 0%, rgb(6 8 13 / 0.55) 55%, transparent 100%); }
+.velo--todo   { background: rgb(8 11 17 / 0.88); }
+/* El muro va sobre la recta, ya sin marcas que tapar: velo más ligero. */
+.velo--muro   { background: linear-gradient(100deg, rgb(8 11 17 / 0.9) 0%, rgb(8 11 17 / 0.8) 45%, rgb(8 11 17 / 0.62) 100%); }
+/* La llamada a boxes deja ver la parada: solo una franja abajo. */
+.velo--pie    {
+  background: linear-gradient(90deg, rgb(6 8 13 / 0.95) 0%, rgb(6 8 13 / 0.88) 38%, transparent 66%);
+  -webkit-mask-image: linear-gradient(to top, #000 56%, transparent 84%); mask-image: linear-gradient(to top, #000 56%, transparent 84%);
+}
+.bloque--llamada { top: auto; right: auto; width: min(100% - 2 * var(--sc-gutter), 40rem); }
+.velo--boxes  { background: linear-gradient(100deg, rgb(6 8 13 / 0.92) 0%, rgb(6 8 13 / 0.78) 42%, rgb(6 8 13 / 0.6) 100%); }
+
+/* ------------------------------------------------------------ figura -- */
+/* Figura A, la parada en boxes. El dibujo lo genera figuras/boxes.build.mjs;
+   aquí solo van la placa y los colores del tema. */
+.bloque--boxes {
+  align-content: center; align-items: center;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--sc-7);
+}
+.figura {
+  margin: 0; width: 100%; max-width: 46rem; justify-self: end;
+  --anatomy-paper: #0e131c; --anatomy-card: #0e131c; --anatomy-face: #1b2330; --anatomy-top: #1a222e;
+  --anatomy-shade-0: #0a0e15; --anatomy-shade-1: #0d121a; --anatomy-shade-2: #111720; --anatomy-shade-3: #151c27;
+  --anatomy-lit-top: #2b3546; --anatomy-lit-shade: #202938;
+  --anatomy-hi: #f2f4f8; --anatomy-mid: #a3adbd; --anatomy-lo: #6b7791; --anatomy-faint: #3c475c; --anatomy-lit: #ffffff;
+  --anatomy-halo: #04060a; --anatomy-weight: 0.7px;
+}
+.figura__placa {
+  position: relative; display: grid; gap: var(--sc-2);
+  padding: var(--sc-3) var(--sc-4);
+  background: var(--anatomy-card); border: 1px solid var(--sc-hairline-strong); border-radius: var(--sc-r-sm);
+  box-shadow: var(--sc-e3);
+}
+.figura__rotulo, .figura__lectura {
+  margin: 0; font-size: 0.8125rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--sc-ink-soft); line-height: 1.3;
+}
+.figura__rotulo { display: flex; justify-content: space-between; gap: var(--sc-4); }
+.figura__lectura { min-height: 1.3em; color: var(--sc-ink); font-variant-numeric: tabular-nums; }
+.figura__lienzo {
+  display: block; width: 100%; padding: 0; border: 0; background: none; color: inherit; cursor: pointer;
+  border-radius: 4px;
+}
+.figura__lienzo svg { display: block; width: 100%; height: auto; max-height: min(50svh, 30rem); overflow: hidden; }
+.fig-halo { stroke: var(--anatomy-mid); stroke-width: 2.2px; }
+.fig-banda { fill: none; stroke: var(--c, var(--c-s)); stroke-width: 1.9px; vector-effect: non-scaling-stroke; }
+.fig-surco { display: none; stroke: var(--anatomy-mid); }
+[data-lluvia] .fig-surco { display: inline; }
+.fig-luz { fill: #1a212d; stroke: none; }
+[data-estado="parada"] .fig-luz[data-luz="rojo"] { fill: var(--c-s); }
+[data-estado="hecha"] .fig-luz[data-luz="verde"] { fill: var(--c-i); }
+
+/* -------------------------------------------------------------- muro -- */
+.muro {
+  position: fixed; inset: auto 0 0 0; z-index: var(--sc-z-chrome);
+  min-height: var(--muro-h);
+  display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: var(--sc-6);
+  padding: var(--sc-3) var(--sc-gutter) calc(var(--sc-3) + env(safe-area-inset-bottom));
+  background: color-mix(in oklab, var(--sc-canvas) 94%, transparent);
+  border-top: 1px solid var(--sc-hairline-strong);
+}
+.muro__mandos { display: flex; align-items: center; gap: var(--sc-3); }
+.compuestos { display: flex; padding: 2px; border: 1px solid var(--sc-hairline-strong); border-radius: var(--sc-r-sm); background: var(--sc-surface); }
+.compuestos button {
+  --c: var(--c-s);
+  width: 2.75rem; height: 2.75rem; padding: 0; border: 0; border-radius: 4px; background: transparent;
+  display: grid; place-items: center; cursor: pointer;
+  /* La letra del botón se oculta (font-size 0) y se repinta en ::after, centrada sobre el disco. */
+  font-family: var(--sc-font-text); font-weight: 700; font-size: 0; line-height: 1; color: var(--c);
+  transition: background-color 140ms var(--sc-ease-out);
+}
+.compuestos button::before {
+  content: ""; grid-area: 1 / 1; width: 1.6rem; height: 1.6rem; border-radius: 50%;
+  border: 3px solid var(--c); background: #0b0e14;
+}
+.compuestos button::after { content: attr(data-compuesto); grid-area: 1 / 1; z-index: 1; font-size: 0.8125rem; }
+.compuestos [data-compuesto="M"] { --c: var(--c-m); }
+.compuestos [data-compuesto="H"] { --c: var(--c-h); }
+.compuestos [data-compuesto="I"] { --c: var(--c-i); }
+.compuestos [data-compuesto="W"] { --c: var(--c-w); }
+.compuestos [aria-checked="true"] { background: #e9edf3; }
+.compuestos button:active { background: #2a3140; }
+
+.box {
+  position: relative;
+  min-width: 5.5rem; height: 2.75rem; padding: 0 1.25rem; border: 0; border-radius: var(--sc-r-sm); cursor: pointer;
+  background: var(--c-s); color: #fff;
+  font-family: var(--sc-font-text); font-weight: 700; font-size: 1.0625rem; letter-spacing: 0.08em;
+  box-shadow: var(--sc-e1), var(--sc-edge);
+  transition: transform 120ms var(--sc-ease-out);
+}
+.box:active { transform: scale(0.97); }
+.box::after {
+  content: ""; position: absolute; inset: -5px; border-radius: 10px; border: 2px solid var(--c-s);
+  opacity: 0; pointer-events: none;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .en-boxes .box::after { animation: latido 1.5s var(--sc-ease-out) infinite; }
+}
+@keyframes latido { 0% { opacity: 0.9; transform: scale(0.94); } 100% { opacity: 0; transform: scale(1.12); } }
+
+.muro__pista { display: grid; gap: 0; min-width: 0; }
+.tandas { position: relative; height: 0.875rem; }
+.tandas__plan, .tandas__hecho { position: absolute; inset: 0; border-radius: 2px; background: var(--tandas, var(--c-s)); }
+.tandas__plan { opacity: 0.3; }
+.tandas__plan::after {
+  content: ""; position: absolute; inset: 0;
+  background: repeating-linear-gradient(-45deg, transparent 0 5px, rgb(10 13 20 / 0.75) 5px 9px);
+}
+.tandas__hecho { clip-path: inset(0 calc(100% - var(--carrera, 0) * 100%) 0 0); }
+.tandas__cursor { position: absolute; inset: 0; transform: translateX(calc(var(--carrera, 0) * 100%)); pointer-events: none; }
+.tandas__cursor::before { content: ""; position: absolute; left: -1px; top: -4px; bottom: -4px; width: 2px; background: var(--sc-ink); }
+.tandas__marcas span {
+  position: absolute; top: 50%; translate: -50% -50%;
+  width: 1.1rem; height: 1.1rem; border-radius: 50%;
+  background: #0b0e14; border: 2px solid var(--c); color: var(--c);
+  font-size: 0.625rem; font-weight: 700; line-height: 1; display: grid; place-items: center;
+}
+.hitos { position: relative; height: 2.75rem; margin: 0; padding: 0; list-style: none; }
+.hitos li { position: absolute; left: calc(var(--en, 0) * 100%); top: 0; }
+.hitos li:last-child { left: auto; right: 0; }
+.hitos a {
+  display: inline-flex; align-items: center; height: 2.75rem; min-width: 2.75rem;
+  font-size: 0.8125rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; text-decoration: none;
+  color: var(--sc-ink-soft); transition: color 150ms var(--sc-ease-out);
+}
+.hitos a:hover, .hitos a[aria-current="true"] { color: var(--sc-ink); }
+.muro__radio { margin: 0; font-size: 1rem; line-height: 1.25; color: var(--sc-ink-soft); }
+
+/* ------------------------------------------------------------- móvil -- */
+@media (max-width: 1100px) {
+  .barra__nav { display: none; }
+  .estado { margin-left: auto; }
+}
+@media (max-width: 860px) {
+  :root { --muro-h: 9.75rem; }
+  .barra { gap: var(--sc-3); }
+  .marca { font-size: 0.8125rem; }
+  .estado__bandera { display: none; }
+  .barra .boton { padding: 0 1rem; }
+
+  .muro { grid-template-columns: minmax(0, 1fr); gap: var(--sc-2); align-content: center; }
+  .muro__pista { order: -1; }
+  .hitos { display: none; }
+  .muro__pista { gap: 0.4rem; }
+  .muro__radio { min-height: 2.5em; font-size: 0.9375rem; }
+  .muro__mandos { justify-content: space-between; }
+  .box { flex: 1; max-width: 9rem; }
+
+  .bloque { gap: var(--sc-3); top: calc(var(--barra-h) + var(--sc-3) + 2svh); bottom: calc(var(--muro-h) + var(--sc-3) + 2svh); }
+  .bloque--salida, .bloque--carrera { left: var(--sc-gutter); right: var(--sc-gutter); width: auto; }
+  .hechos { grid-template-columns: 1fr; gap: var(--sc-2); }
+  .hechos dd { font-size: 1.0625rem; }
+
+  .bloque--panel, .bloque--panel-inv, .bloque--pantallas, .bloque--boxes { grid-template-columns: minmax(0, 1fr); gap: var(--sc-4); align-content: center; }
+  .bloque--boxes { gap: var(--sc-3); }
+  .bloque--boxes .panel__texto { gap: var(--sc-2); }
+  .bloque--boxes .entrada { font-size: 1.0625rem; }
+  .velo--pie { background: linear-gradient(to top, rgb(6 8 13 / 0.95) 0%, rgb(6 8 13 / 0.9) 48%, transparent 76%); -webkit-mask-image: none; mask-image: none; }
+  .bloque--llamada { top: auto; left: var(--sc-gutter); right: var(--sc-gutter); width: auto; }
+  .bloque--boxes .titular { font-size: 1.5rem; }
+  .figura { justify-self: center; max-width: 30rem; }
+  .figura__placa { padding: var(--sc-2) var(--sc-3); gap: var(--sc-1); }
+  .figura__lienzo svg { max-height: 32svh; }
+  .velo--muro, .velo--boxes { background: rgb(6 8 13 / 0.84); }
+  .bloque--panel .monitor { order: 2; }
+  .bloque--panel-inv .monitor { order: 0; }
+  .monitor:not(.monitor--clasif) img { aspect-ratio: 16 / 8; object-fit: cover; object-position: top left; }
+  .monitor--muro img { object-position: bottom right; }
+  .puntos { gap: var(--sc-2); }
+  .puntos li { padding-top: var(--sc-2); font-size: 1.0625rem; }
+  .areas li { padding: var(--sc-1) 0; font-size: 1.0625rem; }
+  .telefonos img { height: min(34svh, 17rem); }
+  .monitor--gestion img { aspect-ratio: 1440 / 500; }
+  /* En pantallas estrechas el texto ocupa todo el ancho: el velo sube desde abajo. */
+  .velo--izq    { background: linear-gradient(to top, rgb(6 8 13 / 0.95) 0%, rgb(6 8 13 / 0.9) 60%, transparent 94%); }
+  .velo--der    { background: linear-gradient(to top, rgb(6 8 13 / 0.94) 0%, rgb(6 8 13 / 0.84) 62%, rgb(6 8 13 / 0.45) 100%); }
+  .velo--centro { background: rgb(6 8 13 / 0.74); }
+  .telefonos img:nth-child(2) { margin-bottom: var(--sc-4); }
+  .pie { font-size: 0.9375rem; margin-top: var(--sc-3); }
+  .boton--grande { min-height: 3.25rem; }
+}
+@media (max-width: 860px) and (max-height: 720px) {
+  .bloque--panel .pista, .nota { display: none; }
+  .hechos { gap: var(--sc-1); }
+  .hechos dd { font-size: 1rem; line-height: 1.25; margin-top: 0; }
+  .hechos dt { padding-top: var(--sc-1); }
+  .monitor--clasif { max-height: 24svh; }
+  .figura__lienzo svg { max-height: 28svh; }
+}
+
+/* -------------------------------------------------- reducir movimiento -- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; }
+}
+
+/* -------------------------------------------------------------- grano -- */
+/* El vídeo original viene con poca definición. Un grano fino por encima
+   disimula los bloques de compresión sin añadir peso al archivo. */
+[data-sc-world]::after {
+  content: ""; position: absolute; inset: 0; z-index: 200; pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 0.9 0'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23g)'/%3E%3C/svg%3E");
+  mix-blend-mode: overlay; opacity: 0.32;
+}

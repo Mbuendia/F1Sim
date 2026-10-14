@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>F1 Race Manager · La carrera se decide en el muro</title>
+<meta name="description" content="Simulador de estrategia y gestión de Fórmula 1 que funciona entero en el navegador. No conduces: diriges el muro de boxes de tus dos coches y, en modo carrera, el equipo completo.">
+<meta name="theme-color" content="#0a0d14">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%230a0d14'/><circle cx='16' cy='16' r='9' fill='none' stroke='%23e10600' stroke-width='4'/></svg>">
+<link rel="preload" as="image" href="assets/img/parrilla.webp">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="scrollcraft.css">
+<link rel="stylesheet" href="figura.css">
+<link rel="stylesheet" href="landing.css">
+</head>
+<body>
+
+<a class="salto" href="#jugar">Saltar al final: jugar</a>
+
+<header class="barra">
+  <a class="marca" href="#salida"><span class="marca__f1">F1</span> Race Manager</a>
+  <nav class="barra__nav" aria-label="Secciones">
+    <a href="#muro">El muro</a>
+    <a href="#fin-de-semana">El fin de semana</a>
+    <a href="#gestion">La gestión</a>
+  </nav>
+  <p class="estado">
+    <span class="estado__bandera" data-bandera>Parrilla</span>
+    <span class="estado__vuelta"><span class="solo-lectores">Vuelta </span><b data-vuelta>0</b> / 58</span>
+  </p>
+  <a class="boton" data-jugar href="#jugar">Jugar</a>
+</header>
+
+<main data-sc-mode="worldflight" data-sc-seam="0.16" data-sc-lerp="0.12">
+
+  <!-- El escenario: el vídeo de la carrera (parrilla y recta), el de la parada en
+       boxes y, para cerrar, otra vez la parrilla en imagen fija. -->
+  <div data-sc-world>
+    <div data-sc-segment data-sc-w="5.6" data-sc-waypoint="Carrera">
+      <img class="sc-world__poster" src="assets/img/parrilla.webp" width="1922" height="1080" alt="" decoding="async">
+      <video data-sc-src="assets/video/carrera.mp4" data-sc-src-mobile="assets/video/carrera-m.mp4" muted playsinline></video>
+    </div>
+    <div data-sc-segment data-sc-w="3.4" data-sc-waypoint="Boxes">
+      <img class="sc-world__poster" src="assets/img/boxes.webp" width="1922" height="1080" alt="" decoding="async">
+      <video data-sc-src="assets/video/boxes.mp4" data-sc-src-mobile="assets/video/boxes-m.mp4" muted playsinline></video>
+    </div>
+    <div data-sc-segment data-sc-w="4.8" data-sc-waypoint="Paddock">
+      <img class="sc-world__poster" src="assets/img/parrilla-cierre.webp" width="1920" height="1080" alt="" decoding="async">
+    </div>
+  </div>
+
+  <div data-sc-world-copy>
+
+    <!-- 1 · SALIDA -->
+    <div class="velo velo--izq" aria-hidden="true"></div>
+    <section id="salida" class="bloque bloque--salida" data-sc-copy data-sc-window="0 0.097 0 0.4">
+      <h1 class="titular titular--xl">La carrera se decide en el muro</h1>
+      <p class="entrada">No conduces. Diriges el muro de boxes de tus dos coches, entero en el navegador.</p>
+      <p class="acciones">
+        <a class="boton boton--grande" data-jugar href="#jugar">Jugar</a>
+        <a class="enlace" href="#muro">Ver cómo se juega</a>
+      </p>
+    </section>
+
+    <!-- 2 · LA CARRERA -->
+    <div class="velo velo--der" aria-hidden="true"></div>
+    <section id="carrera" class="bloque bloque--carrera" data-sc-copy data-sc-window="0.11 0.24">
+      <h2 class="titular titular--lg">Ningún plan sobrevive a la vuelta 20</h2>
+      <dl class="hechos">
+        <div><dt>Lluvia</dt><dd>Celdas que cruzan el circuito y un radar con previsión para verlas venir.</dd></div>
+        <div><dt>Dirección de carrera</dt><dd>Banderas, Safety Car, bandera roja, comisarios y sanciones.</dd></div>
+        <div><dt>23 circuitos</dt><dd>A escala real, con tiempos calibrados con la temporada 2025.</dd></div>
+        <div><dt>Cinco cámaras</dt><dd>General, seguimiento, cinematográfica, a bordo y helicóptero.</dd></div>
+      </dl>
+    </section>
+
+    <!-- 3 · EL MURO -->
+    <div class="velo velo--muro" aria-hidden="true"></div>
+    <section id="muro" class="bloque bloque--panel" data-sc-copy data-sc-window="0.252 0.388">
+      <div class="panel__texto">
+        <h2 class="titular titular--md">Dos coches, un muro, todas las decisiones</h2>
+        <ul class="puntos">
+          <li><b>Ritmo y parada.</b> Ahorro, normal o ataque. Cinco compuestos y un BOX que puedes cancelar.</li>
+          <li><b>Estratega.</b> Propone jugadas en tarjetas: las aceptas o las descartas.</li>
+          <li><b>Órdenes de equipo.</b> Carrera libre, mantener o dejar pasar al compañero.</li>
+        </ul>
+        <p class="pista">Pruébalo aquí abajo: elige compuesto y pulsa BOX.</p>
+      </div>
+      <figure class="monitor monitor--muro">
+        <img data-src="assets/img/05-carrera-1440.webp" width="1440" height="900" alt="Vuelta 9 de 58 en Albert Park: circuito visto desde arriba, tabla de tiempos y los paneles de los dos coches con ritmo, compuestos, botón BOX, órdenes de equipo y una propuesta del estratega.">
+      </figure>
+    </section>
+
+    <!-- 4 · BOX, BOX (el pico) -->
+    <!-- Primero se ve la parada del vídeo, casi sin texto. Después entra la figura. -->
+    <div class="velo velo--pie" aria-hidden="true"></div>
+    <section id="box-box" class="bloque bloque--llamada" data-sc-copy data-sc-window="0.408 0.492 0.15 0.2">
+      <h2 class="titular titular--xl">Box, box</h2>
+      <p class="entrada">Antes de llamar al coche, el muro te dice en qué posición saldría y a cuánto del siguiente. El momento lo eliges tú.</p>
+    </section>
+
+    <div class="velo velo--boxes" aria-hidden="true"></div>
+    <section id="boxes" class="bloque bloque--boxes" data-sc-copy data-sc-window="0.5 0.643 0.1 0.1">
+      <div class="panel__texto">
+        <h3 class="titular titular--lg">Ahora, la tuya</h3>
+        <p class="entrada">Elige compuesto en el muro de abajo y pulsa BOX. El crono mide la parada.</p>
+      </div>
+      <figure class="figura iso" data-figura="boxes">
+        <div class="figura__placa">
+          <p class="figura__rotulo" aria-hidden="true"><span>Fig. A</span><span>Parada en boxes</span></p>
+          <button type="button" class="figura__lienzo" data-figura-lienzo aria-label="Lanzar la parada en boxes con el compuesto elegido"></button>
+          <p class="figura__lectura" data-figura-lectura></p>
+        </div>
+        <figcaption class="solo-lectores">Dibujo isométrico de un monoplaza en su cajón de boxes, con los gatos, las pistolas y un juego de neumáticos del compuesto elegido esperando junto a cada rueda. Al pulsar BOX, el coche sube, salen los neumáticos usados y entran los nuevos.</figcaption>
+      </figure>
+    </section>
+
+    <!-- 5 · META -->
+    <div class="velo velo--centro" aria-hidden="true"></div>
+    <section id="meta" class="bloque bloque--meta" data-sc-copy data-sc-window="0.652 0.715 0.2 0.2">
+      <h2 class="titular titular--lg">Bandera a cuadros</h2>
+      <p class="entrada">Hasta aquí, el domingo. El resto de la semana también es tuyo.</p>
+    </section>
+
+    <!-- 6 · EL FIN DE SEMANA -->
+    <div class="velo velo--todo" aria-hidden="true"></div>
+    <section id="fin-de-semana" class="bloque bloque--panel bloque--panel-inv" data-sc-copy data-sc-window="0.727 0.797 0.2 0.2">
+      <figure class="monitor monitor--clasif">
+        <img data-src="assets/img/14-clasificacion-directo-1440.webp" width="1440" height="900" alt="Q1 en directo: los veinte coches como puntos de colores sobre el trazado y la tabla de tiempos con la línea roja de eliminación.">
+      </figure>
+      <div class="panel__texto">
+        <h2 class="titular titular--md">El domingo se prepara el viernes</h2>
+        <ul class="puntos">
+          <li><b>Libres.</b> Buscar el reglaje, tanda larga o simulación de clasificación.</li>
+          <li><b>Reglajes y espía.</b> Alerón, rigidez y cambio. Y un informe del rival, con riesgo de multa.</li>
+          <li><b>Clasificación en directo.</b> Q1, Q2 y Q3 con zona de eliminación. También hay rondas con sprint.</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- 7 · LA GESTIÓN -->
+    <div class="velo velo--todo" aria-hidden="true"></div>
+    <section id="gestion" class="bloque bloque--panel" data-sc-copy data-sc-window="0.806 0.876 0.2 0.2">
+      <div class="panel__texto">
+        <h2 class="titular titular--md">Entre carrera y carrera, el equipo es tuyo</h2>
+        <ul class="areas">
+          <li>Finanzas</li>
+          <li>Patrocinadores</li>
+          <li>Fábrica y desarrollo</li>
+          <li>Personal técnico</li>
+          <li>Pilotos y academia</li>
+          <li>Unidad de potencia</li>
+          <li>La junta</li>
+          <li>El invierno</li>
+        </ul>
+        <p class="nota">¿Sin tiempo para una ronda? Simúlala: el mismo motor la corre y cuenta como cualquier otra.</p>
+      </div>
+      <figure class="monitor monitor--gestion">
+        <img data-src="assets/img/18-gestion-inicio-1440.webp" width="1440" height="900" alt="Centro de gestión: siguiente ronda, decisiones pendientes y resumen de campeonato, finanzas, fábrica y junta.">
+      </figure>
+    </section>
+
+    <!-- 8 · EN CUALQUIER PANTALLA -->
+    <div class="velo velo--todo" aria-hidden="true"></div>
+    <section id="pantallas" class="bloque bloque--pantallas" data-sc-copy data-sc-window="0.885 0.95 0.2 0.2">
+      <div class="panel__texto">
+        <h2 class="titular titular--md">El muro cabe en el bolsillo</h2>
+        <p class="entrada">En el teléfono, la pista queda arriba y los tiempos, el muro y el detalle pasan a pestañas.</p>
+      </div>
+      <div class="telefonos">
+        <img data-src="assets/img/10-carrera-movil-pista.webp" width="540" height="1170" alt="Pestaña Pista en el teléfono.">
+        <img data-src="assets/img/11-carrera-movil-tiempos.webp" width="540" height="1170" alt="Pestaña Tiempos en el teléfono.">
+        <img data-src="assets/img/12-carrera-movil-muro.webp" width="540" height="1170" alt="Pestaña Muro en el teléfono.">
+      </div>
+    </section>
+
+    <!-- 9 · JUGAR -->
+    <div class="velo velo--centro" aria-hidden="true"></div>
+    <section id="jugar" class="bloque bloque--jugar" data-sc-copy data-sc-window="0.958 1 0.5 0">
+      <h2 class="titular titular--lg">Los semáforos están a punto de apagarse</h2>
+      <p class="resumen" data-resumen>Has llegado a meta sin parar, con los blandos de la salida.</p>
+      <p class="acciones acciones--centro">
+        <a class="boton boton--grande" data-jugar href="#jugar">Jugar</a>
+      </p>
+      <footer class="pie">
+        <p>Próximamente: carrera compartida, con cada amigo al mando de un equipo desde su dispositivo.</p>
+        <p><a href="https://github.com/Mbuendia/F1Sim">Código en GitHub</a>. Proyecto personal no oficial, sin relación con la Fórmula 1, sus equipos ni sus pilotos. El vídeo de fondo es una recreación generada con IA, no imágenes del juego.</p>
+      </footer>
+    </section>
+
+  </div>
+
+  <div data-sc-spacer aria-hidden="true"></div>
+</main>
+
+<!-- El muro en miniatura: el scroll es la carrera y aquí se decide la parada. -->
+<aside class="muro" aria-label="Tu estrategia de carrera" data-sc-verify-state="0">
+  <div class="muro__mandos">
+    <div class="compuestos" role="radiogroup" aria-label="Compuesto para la próxima parada">
+      <button type="button" role="radio" aria-checked="false" tabindex="-1" data-compuesto="S" aria-label="Blando">S</button>
+      <button type="button" role="radio" aria-checked="true" data-compuesto="M" aria-label="Medio">M</button>
+      <button type="button" role="radio" aria-checked="false" tabindex="-1" data-compuesto="H" aria-label="Duro">H</button>
+      <button type="button" role="radio" aria-checked="false" tabindex="-1" data-compuesto="I" aria-label="Intermedio">I</button>
+      <button type="button" role="radio" aria-checked="false" tabindex="-1" data-compuesto="W" aria-label="Lluvia extrema">W</button>
+    </div>
+    <button type="button" class="box" data-box>BOX</button>
+  </div>
+  <div class="muro__pista">
+    <div class="tandas" data-tandas aria-hidden="true">
+      <div class="tandas__plan"></div>
+      <div class="tandas__hecho"></div>
+      <div class="tandas__marcas" data-marcas></div>
+      <div class="tandas__cursor"></div>
+    </div>
+    <ol class="hitos">
+      <li><a href="#salida">Salida</a></li>
+      <li><a href="#carrera">Carrera</a></li>
+      <li><a href="#muro">El muro</a></li>
+      <li><a href="#boxes">Boxes</a></li>
+      <li><a href="#meta">Meta</a></li>
+    </ol>
+    <p class="muro__radio" data-radio aria-live="polite">El scroll son las 58 vueltas. Elige compuesto y pulsa BOX cuando quieras parar.</p>
+  </div>
+</aside>
+
+<noscript><p class="sin-js">Esta página necesita JavaScript. El juego está en <a href="https://github.com/Mbuendia/F1Sim">github.com/Mbuendia/F1Sim</a>.</p></noscript>
+
+<script src="scrollcraft.js"></script>
+<script src="js/config.js"></script>
+<script src="js/figura-boxes.js"></script>
+<script src="js/landing.js"></script>
+</body>
+</html>
