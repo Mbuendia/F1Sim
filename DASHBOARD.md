@@ -1686,6 +1686,7 @@ Decisiones y esquemas de cada página en `docs/design/grill-sprint4-visual.md`. 
   * *Aceptación:* la recomendación se lee en la línea de tandas sin texto de apoyo; el texto queda como detalle al pulsar.
 
 * **V5 — Paddock y centro de gestión con menos texto:** `[x] COMPLETADO — DADO POR VÁLIDO POR EL USUARIO EL 13/10/2026`
+  * *Corrección posterior (14/10/2026, pedida por el usuario tras probar en el móvil; pull request 23, fusionado):* (1) las cuatro pantallas a toda altura (carrera, paddock, portada y pantallas genéricas) medían con `100vh`, que en Chrome y Safari de móvil incluye la franja bajo la barra del navegador, y esta tapaba las pestañas y botones de abajo; ahora usan `100dvh` con `100vh` de respaldo. (2) En tableta y móvil el botón de entrar a pista deja de estar fijo al pie, como se entregó aquí, y pasa al final del scroll, bajo formato y meteorología; en escritorio sigue fijo al pie del panel derecho. Comprobación nueva `viewport-movil` (2 PASS; las dos fallaban antes del cambio). **Verificado por el usuario en un dispositivo real** el 14/10/2026 sobre la vista previa de Firebase.
   * *Revisión del usuario (13/10/2026):* dada por válida.
   * *Entrega 13/10/2026 (rama `sprint/3.7`):* Paddock adaptable: en tableta, dos columnas con el resumen debajo; en móvil, una columna con el botón de entrar a pista fijo al pie. Los 60 emojis del paddock y los de la carrera pasan a iconos de `lucide-react`. Ya no queda ningún `select` nativo en la aplicación: formato del Gran Premio, meteorología y enfoque de entrenamiento son controles segmentados. En móvil las pestañas del centro de gestión son una barra inferior y las tablas se desplazan dentro de su tarjeta. Texto mínimo de 14 px. **Medido a 375 px:** paddock y las seis pestañas del centro de gestión sin textos fuera, sin controles pequeños y sin textos menores de 14 px. **No cumplido:** la aceptación pedía menos de 200 palabras a la vez en el paddock; a 1440 px hay entre 108 y 254 según la pestaña (Fábrica es la que más). **Contratos cambiados (anotados):** cuatro comprobaciones que buscaban `<option selected>` en `qualifying-r20`, `sprint-weekend-r52`, `weather-view-r44` y `driver-dev-r45` buscan ahora el radio marcado.
   * *Alcance:* fichas de piloto, circuito y equipo con dato grande e icono en vez de párrafos; tablas que en móvil pasan a tarjetas; pestañas del centro de gestión como barra inferior en móvil; iconos de `lucide-react` en lugar de los emojis.
@@ -1943,6 +1944,17 @@ Lo que el usuario dejó aparcado el 13/10/2026, con las opciones que se le prese
 - También queda sin decidir si la clasificación del Gran Premio debe gastar juegos de neumáticos (hoy no los gasta).
 
 **Otras cosas que quedaron apuntadas:** la tanda larga de los libres informa de la vida del neumático pero no cambia las propuestas del estratega; medir el contraste color a color y recorrer una carrera solo con teclado; subir el texto base de 14 a 16 px; la liga (temporada y gestión compartidas), fuera del Sprint 5.
+
+**Cabos sueltos tras la mudanza a Firebase y la landing (anotados el 14/10/2026).**
+- **Marcas reales en el vídeo de boxes de la landing:** se leen «aramco» y el logotipo de F1, y la landing es ya la portada pública. Hay que regenerar ese clip sin marcas en el proyecto de la landing y volver a importarlo.
+- **Caché de la landing:** GitHub Pages hace que los navegadores guarden cada archivo 10 minutos, así que un cambio (por ejemplo el enlace «Jugar») tarda ese tiempo en verse. Si molesta, se corrige en el proyecto de la landing añadiendo un número de versión a los enlaces de sus scripts; los archivos de `public/landing/` no se editan a mano.
+- **Fuentes externas:** la landing carga Orbitron y Rajdhani desde Google Fonts.
+- **Franja vacía bajo «Entrar a pista» en carrera libre (móvil):** unos 70 px, el hueco reservado a la barra de pestañas del centro de gestión, que en carrera libre no existe.
+- **Otros paneles con altura en `vh`:** la tabla de clasificación, el podio y el detalle del coche en móvil usan `vh` para su altura máxima; no se han tocado porque no se ha visto ninguno cortado.
+- **`.agents/` y `skills-lock.json`:** aparecieron al instalarse las skills de Firebase; siguen sin añadir a Git ni a `.gitignore`, a la espera de que el usuario decida.
+- **Secreto `FIREBASE_PROJECT_ID` de GitHub:** no se usa (el identificador va escrito en el repositorio); se puede borrar.
+- **Cuentas de servicio sobrantes:** el primer intento fallido del asistente de Firebase pudo dejar una cuenta `github-action-...` sin usar; se borra desde la consola de Google Cloud, «IAM y administración» → «Cuentas de servicio».
+- **Revisión pendiente:** N11 y N12 siguen «en revisión local» hasta que el usuario las dé por válidas.
 
 ---
 
