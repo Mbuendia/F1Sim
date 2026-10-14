@@ -563,5 +563,6 @@ export const modules = [
   { "id": "quali-live-v7", "tasks": ["V7"], "sprint": "3.7", "kind": "contract" },
   { "id": "auto-race-v8", "tasks": ["V8"], "sprint": "3.7", "kind": "contract" },
   { "id": "spy-v9", "tasks": ["V9"], "sprint": "3.7", "kind": "contract" },
-  { "id": "hosting-n11", "tasks": ["N11"], "sprint": "5", "kind": "contract" }
+  { "id": "hosting-n11", "tasks": ["N11"], "sprint": "5", "kind": "contract" },
+  { "id": "viewport-movil", "tasks": [], "sprint": null, "kind": "regression" }
 ];

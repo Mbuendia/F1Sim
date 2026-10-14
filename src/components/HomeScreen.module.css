@@ -1,6 +1,6 @@
 .homeContainer {
   width: 100vw;
-  height: 100vh;
+  height: 100vh; height: 100dvh;
   overflow: hidden;
   background: radial-gradient(circle at 50% 10%, #111728 0%, #060912 100%);
   color: var(--text);
