@@ -4,7 +4,7 @@ A Formula 1 strategy and team-management simulator that runs entirely in the bro
 
 Built with React 19, TypeScript and Vite. The race engine is deterministic and physics-driven; the track is painted with WebGL (PixiJS) with a Canvas fallback. The game interface is in Spanish.
 
-**Play:** https://f1sim-d5085.web.app/ · **Presentation page:** https://mbuendia.github.io/F1Sim/landing/
+**Play:** https://f1sim-d5085.web.app/ · **Presentation page:** https://mbuendia.github.io/F1Sim/
 
 ---
 
