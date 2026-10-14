@@ -40,7 +40,8 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './dist'
+          # Con la variable PAGES_SOLO_LANDING=true (cuando el juego viva en Firebase), Pages publica solo la landing.
+          path: ${{ vars.PAGES_SOLO_LANDING == 'true' && './public/landing' || './dist' }}
 
   deploy:
     environment:
