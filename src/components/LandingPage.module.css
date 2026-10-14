@@ -1,7 +1,7 @@
 /* R30: portada. La rueda es fondo (grande, desplazada, oscurecida); el texto se lee sobre un degradado localizado. */
 .landingContainer {
   width: 100vw;
-  height: 100vh;
+  height: 100vh; height: 100dvh;
   position: relative;
   overflow: hidden;
   display: flex;
