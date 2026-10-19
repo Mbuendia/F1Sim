@@ -1,9 +1,11 @@
 // [N7] La sala antes de la carrera: quién lleva cada equipo y qué ha elegido el anfitrión. Todo va en la sala de N4:
-//   rooms/{código}/presence/{uid}/wants   lo que pide cada invitado: un equipo o mirar      (cada uno el suyo)
+//   rooms/{código}/presence/{uid}/wants   lo que pide cada jugador: un equipo o mirar       (cada uno el suyo)
 //   rooms/{código}/meta/seats             el reparto: equipo → uid, espectadores y peticiones atendidas (el anfitrión)
 //   rooms/{código}/meta/settings          circuito, formato y tiempo                                   (el anfitrión)
+//   rooms/{código}/meta/phase             «sala» (se conecta la gente) o «equipos» (se eligen)          (el anfitrión)
 // El anfitrión reparte (resolveSeats) cada vez que cambia la sala: por orden de petición, sin dar un equipo cogido a
-// otro y con los límites de N6. Cada petición se atiende una vez; si el equipo estaba cogido, hay que pedir otro.
+// otro y con los límites de N6. Él elige equipo igual que los demás (y no puede quedarse mirando). Cada petición se
+// atiende una vez; si el equipo estaba cogido, hay que pedir otro.
 import type { RoomDb, RoomStatus } from './RoomService';
 import { roomPaths } from './RoomService';
 import { MULTIPLAYER_LIMITS } from '../engine/limits';
@@ -17,10 +19,12 @@ export interface Seats {
   handled?: Record<string, number>;
 }
 export interface LobbySettings { circuitId: string; format: RaceFormatId; weather: string }
+export type LobbyPhase = 'sala' | 'equipos';
 export interface LobbyMember { uid: string; name: string; role: 'host' | 'guest'; joinedAt?: number; wants?: SeatWant | null }
 export interface LobbyState {
   hostUid: string | null;
   status: RoomStatus | null;
+  phase: LobbyPhase;
   closed: boolean;
   members: LobbyMember[];
   seats: Seats | null;
@@ -55,6 +59,7 @@ export function watchLobby(db: RoomDb, code: string, cb: (state: LobbyState) => 
     cb({
       hostUid: meta?.host ?? null,
       status: meta?.status ?? null,
+      phase: meta?.phase === 'equipos' ? 'equipos' : 'sala',
       closed: seenMeta && meta == null,
       members,
       seats: readSeats(meta?.seats),
@@ -81,28 +86,33 @@ export async function saveSettings(db: RoomDb, code: string, settings: LobbySett
   await db.set(`${metaPath(code)}/settings`, settings);
 }
 
-export interface ResolveSeatsInput { hostUid: string; hostTeamId: string; teamIds: string[]; lobby: Pick<LobbyState, 'members' | 'seats'> | null }
+/** El anfitrión pasa a todos de la sala a la elección de equipos. */
+export async function setPhase(db: RoomDb, code: string, phase: LobbyPhase) {
+  await db.set(`${metaPath(code)}/phase`, phase);
+}
+
+export interface ResolveSeatsInput { hostUid: string; teamIds: string[]; lobby: Pick<LobbyState, 'members' | 'seats'> | null }
 
 /** Reparto de los asientos que hace el anfitrión. No cambia nada: devuelve el reparto nuevo. */
-export function resolveSeats({ hostUid, hostTeamId, teamIds, lobby }: ResolveSeatsInput): Seats {
+export function resolveSeats({ hostUid, teamIds, lobby }: ResolveSeatsInput): Seats {
   const prev = lobby?.seats ?? { teams: {}, spectators: [], handled: {} };
   const handledBefore = prev.handled ?? {};
-  const guests = (lobby?.members ?? []).filter(m => m.uid !== hostUid);
+  const members = lobby?.members ?? [];
   const teamOf = (uid: string) => Object.entries(prev.teams).find(([, owner]) => owner === uid)?.[0];
 
-  const teams: Record<string, string> = { [hostTeamId]: hostUid };
+  const teams: Record<string, string> = {};
   const spectators: string[] = [];
   const handled: Record<string, number> = {};
   const fresh: LobbyMember[] = [];
 
   // Lo ya atendido se queda como estaba (si sigue en la sala).
-  for (const m of guests) {
+  for (const m of members) {
     const at = m.wants?.at ?? 0;
     const seen = handledBefore[m.uid];
     if (m.wants && (seen === undefined || at > seen)) { fresh.push(m); continue; }
     if (seen !== undefined) handled[m.uid] = seen;
     const team = teamOf(m.uid);
-    if (team && team !== hostTeamId && teamIds.includes(team)) teams[team] = m.uid;
+    if (team && teamIds.includes(team)) teams[team] = m.uid;
     else if (prev.spectators.includes(m.uid)) spectators.push(m.uid);
   }
 
@@ -115,7 +125,8 @@ export function resolveSeats({ hostUid, hostTeamId, teamIds, lobby }: ResolveSea
     const previous = teamOf(m.uid);
     const wasSpectator = prev.spectators.includes(m.uid);
     if ('spectator' in want) {
-      if (spectators.length < MULTIPLAYER_LIMITS.spectators) {
+      // El anfitrión no puede quedarse mirando: lleva el motor y un equipo.
+      if (m.uid !== hostUid && spectators.length < MULTIPLAYER_LIMITS.spectators) {
         spectators.push(m.uid);
         continue;
       }
@@ -124,7 +135,7 @@ export function resolveSeats({ hostUid, hostTeamId, teamIds, lobby }: ResolveSea
       continue;
     }
     // No se ha podido: conserva lo que tuviera.
-    if (previous && previous !== hostTeamId && teams[previous] === undefined) teams[previous] = m.uid;
+    if (previous && teamIds.includes(previous) && teams[previous] === undefined) teams[previous] = m.uid;
     else if (wasSpectator && spectators.length < MULTIPLAYER_LIMITS.spectators) spectators.push(m.uid);
   }
   return { teams, spectators, handled };

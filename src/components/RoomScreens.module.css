@@ -21,7 +21,7 @@
 .linkRow { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .linkText { flex: 1; min-width: 0; color: var(--text-2); font-size: 14px; overflow-wrap: anywhere; }
 
-.primary, .button, .ghost, .choice, .teamButton { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; min-width: 44px; padding: 8px 16px; border-radius: var(--radio-s); font-family: var(--font-ui); font-size: 16px; font-weight: 600; cursor: pointer; box-sizing: border-box; }
+.primary, .button, .ghost, .choice { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; min-width: 44px; padding: 8px 16px; border-radius: var(--radio-s); font-family: var(--font-ui); font-size: 16px; font-weight: 600; cursor: pointer; box-sizing: border-box; }
 .primary { border: 1px solid var(--accion); background: var(--accion); color: #fff; padding: 8px 22px; }
 .primary:hover:not(:disabled) { background: var(--accion-hover); }
 .primary:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -45,10 +45,6 @@
 .link[data-link="fallback"] { border-color: var(--aviso); color: var(--aviso); }
 .link[data-link="down"] { border-color: var(--peligro, #f85149); color: var(--peligro, #f85149); }
 
-.teams { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
-.teamButton { border: 1px solid var(--line); border-top: 4px solid var(--c); background: var(--panel-2); color: var(--text); text-align: center; }
-.teamButton[aria-pressed="true"] { outline: 2px solid var(--foco); outline-offset: 1px; }
-.teamMark { width: 12px; height: 12px; border-radius: 50%; background: var(--c); flex: none; }
 
 .inputRow { display: flex; flex-direction: column; gap: 6px; }
 .input { min-height: 44px; padding: 0 12px; background: var(--bg); border: 1px solid var(--line-strong); border-radius: var(--radio-s); color: var(--text); font-family: var(--font-ui); font-size: 18px; width: 100%; box-sizing: border-box; }
@@ -57,4 +53,25 @@
 @media (min-width: 768px) {
   .head, .foot { padding-left: 24px; padding-right: 24px; }
   .qr { width: 150px; height: 150px; }
+}
+
+/* Elección de equipos: una tarjeta por equipo con quién lo lleva */
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.teamCard { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 4px; min-height: 64px; padding: 8px 12px; border: 1px solid var(--line); border-left: 6px solid var(--c); border-radius: var(--radio-s); background: var(--panel); color: var(--text); font-family: var(--font-ui); text-align: left; cursor: pointer; min-width: 0; box-sizing: border-box; }
+.teamCard:hover:not(:disabled) { border-color: var(--text-3); border-left-color: var(--c); }
+.teamCard:disabled { cursor: not-allowed; background: var(--panel-2); opacity: 0.75; }
+.teamCard[aria-pressed="true"] { outline: 2px solid var(--foco); outline-offset: 1px; background: var(--panel-2); }
+.teamName { font-weight: 700; font-size: 15px; overflow-wrap: anywhere; }
+.teamOwner { font-size: 14px; color: var(--text-2); }
+.teamCard[aria-pressed="true"] .teamOwner { color: var(--text); font-weight: 700; }
+.foot { gap: 12px; align-items: center; }
+@media (min-width: 768px) { .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+
+/* Respuesta al elegir equipo: pidiendo (el borde late en el color del equipo) y confirmado */
+.teamOwner { display: inline-flex; align-items: center; gap: 4px; }
+.teamCard[data-state="pidiendo"] { animation: pidiendo 1s ease-in-out infinite; }
+.teamCard[data-state="mio"] { border-color: var(--c); box-shadow: 0 0 0 1px var(--c), 0 0 18px -4px var(--c); }
+@keyframes pidiendo {
+  0%, 100% { box-shadow: 0 0 0 1px var(--c); }
+  50% { box-shadow: 0 0 0 3px var(--c), 0 0 16px -2px var(--c); }
 }

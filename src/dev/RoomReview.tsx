@@ -1,11 +1,12 @@
 // [N7] Página de revisión de las pantallas de sala con datos simulados, sin Firebase: solo en desarrollo
-// (`?revision=sala&pantalla=anfitrion|unirse|invitado|equipo`). Sirve para medirlas con `__uiAudit()` a cada ancho.
-import { useState } from 'react';
+// (`?revision=sala&pantalla=anfitrion|unirse|espera|equipos|equipos-anfitrion`; `vivo`: anfitrión e invitado a la
+// vez, ver RoomLive). Sirve para medirlas con `__uiAudit()` a cada ancho.
+import { lazy, Suspense, useState } from 'react';
 import { TEAMS } from '../data/teams';
 import { DEFAULT_SETTINGS } from '../net/Lobby';
 import type { LobbySettings } from '../net/Lobby';
 import { qrSvg } from '../net/roomQr';
-import { GuestLobby, HostLobby, JoinRoomScreen } from '../components/RoomScreens';
+import { GuestWaiting, HostLobby, JoinRoomScreen, TeamSelection } from '../components/RoomScreens';
 import type { RoomPlayer } from '../components/RoomScreens';
 
 const teams = Object.values(TEAMS).map(t => ({ id: t.id, name: t.name, color: t.color }));
@@ -20,14 +21,23 @@ const players: RoomPlayer[] = [
 const seats = { teams: { [ids[0]]: 'host', [ids[1]]: 'g1', [ids[2]]: 'g2' }, spectators: ['g4'], handled: {} };
 const link = 'https://f1sim-d5085.web.app/?sala=ABC234';
 
-export default function RoomReview() {
-  const screen = new URLSearchParams(location.search).get('pantalla') ?? 'anfitrion';
+const RoomLive = lazy(() => import('./RoomLive'));
+
+function Screens({ screen }: { screen: string }) {
   const [settings, setSettings] = useState<LobbySettings>({ ...DEFAULT_SETTINGS, circuitId: 'monaco' });
   const noop = () => {};
-  if (screen === 'unirse') return <JoinRoomScreen initialCode="ABC234" error="no-existe" busy={false} onJoin={noop} onBack={noop} />;
-  if (screen === 'invitado' || screen === 'equipo') {
-    return <GuestLobby code="ABC234" myUid={screen === 'equipo' ? 'g1' : 'g3'} teams={teams} players={players} seats={seats} settings={settings} wants={null} status="lobby" onPick={noop} onLeave={noop} />;
+  if (screen === 'unirse') return <JoinRoomScreen initialCode="ABC234" error="misma-sesion" busy={false} onJoin={noop} onBack={noop} />;
+  if (screen === 'espera') return <GuestWaiting code="ABC234" players={players} settings={settings} status="lobby" onLeave={noop} />;
+  if (screen === 'equipos' || screen === 'equipos-anfitrion') {
+    const host = screen === 'equipos-anfitrion';
+    return <TeamSelection code="ABC234" myUid={host ? 'host' : 'g3'} isHost={host} teams={teams} players={players} seats={seats} settings={settings}
+      wants={null} status="lobby" onPick={noop} onStart={noop} onLeave={noop} />;
   }
-  return <HostLobby code="ABC234" link={link} qr={qrSvg(link)} settings={settings} teams={teams} players={players} hostTeamId={ids[0]}
-    onSettings={setSettings} onHostTeam={noop} onStart={noop} onClose={noop} />;
+  return <HostLobby code="ABC234" link={link} qr={qrSvg(link)} settings={settings} players={players} onSettings={setSettings} onOpenTeams={noop} onClose={noop} />;
+}
+
+export default function RoomReview() {
+  const screen = new URLSearchParams(location.search).get('pantalla') ?? 'anfitrion';
+  if (screen === 'vivo') return <Suspense fallback={null}><RoomLive /></Suspense>;
+  return <Screens screen={screen} />;
 }
