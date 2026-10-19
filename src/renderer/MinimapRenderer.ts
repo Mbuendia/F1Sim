@@ -1,4 +1,5 @@
-import type { RaceSimulation } from '../simulation/RaceSimulation';
+import type { CarState } from '../types/f1';
+import type { TrackDefinition } from '../data/barcelonaTrack';
 import type { Camera } from './Camera';
 import type { RejoinEstimate } from '../types/f1';
 import { getPitRoute, isCarVisible } from '../utils/carPosition';
@@ -10,7 +11,7 @@ import { carFlags } from '../simulation/Wall';
 
 export function renderLeftMinimap(
   ctx: CanvasRenderingContext2D,
-  simulation: Pick<RaceSimulation, 'activeTrack' | 'cars'>,
+  race: { activeTrack: TrackDefinition; cars: CarState[] },
   camera: Camera,
   rejoin: RejoinEstimate | null = null,
   /** [R44] Capas de lluvia para el radar del minimapa. */
@@ -23,10 +24,10 @@ export function renderLeftMinimap(
   const mmX = small ? 8 : 20;
   // Subimos el minimapa para evitar que se solape con el dock inferior
   const mmY = camera.screenHeight - mmH - (small ? 8 : 120);
-  const bounds = simulation.activeTrack.bounds;
+  const bounds = race.activeTrack.bounds;
   const b = { ...bounds };
   // Ruta de boxes del motor (fuente única), no una ruta propia.
-  const pitRoute = getPitRoute(simulation.activeTrack);
+  const pitRoute = getPitRoute(race.activeTrack);
   for (const point of pitRoute) {
     b.minX = Math.min(b.minX, point.x);
     b.maxX = Math.max(b.maxX, point.x);
@@ -49,7 +50,7 @@ export function renderLeftMinimap(
   const mmOffsetX = mmX + (mmW - (b.maxX - b.minX) * mmScale) / 2;
   const mmOffsetY = mmY + (mmH - (b.maxY - b.minY) * mmScale) / 2;
 
-  const points = simulation.activeTrack.points;
+  const points = race.activeTrack.points;
   if (points.length > 0) {
     ctx.beginPath();
     const firstX = mmOffsetX + (points[0].x - b.minX) * mmScale;
@@ -81,10 +82,10 @@ export function renderLeftMinimap(
     ctx.stroke();
   }
 
-  WeatherRenderer.renderMinimapRain(ctx, simulation.activeTrack, weather,
+  WeatherRenderer.renderMinimapRain(ctx, race.activeTrack, weather,
     (x, y) => ({ x: mmOffsetX + (x - b.minX) * mmScale, y: mmOffsetY + (y - b.minY) * mmScale }));
 
-  for (const car of simulation.cars) {
+  for (const car of race.cars) {
     if (!isCarVisible(car)) continue;
     const cx = mmOffsetX + (car.worldX - b.minX) * mmScale;
     const cy = mmOffsetY + (car.worldY - b.minY) * mmScale;
@@ -109,7 +110,7 @@ export function renderLeftMinimap(
   // [Q13] Marcador de reincorporación estimada: anillo discontinuo con el color del equipo en el punto de pista
   // donde saldría el piloto objetivo si parase ahora. Es una estimación (± incertidumbre), no una posición real.
   if (!rejoin || !rejoin.available || points.length === 0) return null;
-  const target = simulation.cars.find(car => car.id === rejoin.carId);
+  const target = race.cars.find(car => car.id === rejoin.carId);
   const point = points[Math.floor(rejoin.rejoinTrackT * points.length) % points.length];
   const x = mmOffsetX + (point.x - b.minX) * mmScale;
   const y = mmOffsetY + (point.y - b.minY) * mmScale;

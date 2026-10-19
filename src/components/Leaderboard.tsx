@@ -194,7 +194,10 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
                 {!isOut && (
                   <>
                     <CompoundBadge compound={car.tires.compound} size={16}
-                      detail={`Salud ${Math.round(car.tires.health)}%`} />
+                      detail={typeof car.tires.health === 'number'
+                        ? `Salud ${Math.round(car.tires.health)}%`
+                        // [N3] De un rival solo se ven el compuesto y las vueltas que lleva; su desgaste lo estima el muro.
+                        : `${car.tires.lapsOnTire} vueltas`} />
                     {car.pitStop.totalPitStops > 0 && (
                       <span className={styles.pitCountBadge}>{car.pitStop.totalPitStops}P</span>
                     )}

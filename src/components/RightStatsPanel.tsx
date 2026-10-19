@@ -180,6 +180,8 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
   if (!activeCar) return null;
 
   const { team, sectors, pitStop, stats, tires, lapHistory, bestLapTime } = activeCar;
+  // [N3] De un rival solo se ve lo público (sectores, vueltas y compuesto): su desgaste, sus frenos y su motor no.
+  const known = typeof tires.health === 'number' && Boolean(stats);
 
   // ── ESTILOS DE SECTORES ──
   const getSectorStyle = (
@@ -246,7 +248,7 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
     if (temp < 250) return { label: 'FRÍOS', className: styles.statusCold };
     return { label: 'ÓPTIMOS', className: styles.statusOptimal };
   };
-  const brakeStatus = getBrakeStatus(stats.brakeTempCelsius);
+  const brakeStatus = getBrakeStatus(stats?.brakeTempCelsius ?? 0);
 
   const brakeBiasFront = 56.5;
   const tirePressurePsi = (22.5 + (tires.tempCelsius - 85) * 0.05).toFixed(1);
@@ -318,7 +320,18 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
             </div>
           </div>
 
+          {!known && (
+            <div className={styles.sectionCard} data-private-telemetry="hidden">
+              <div className={styles.cardHeader}>
+                <span>DESGASTE Y MECÁNICA</span>
+              </div>
+              <span style={{ fontSize: '11px', color: '#94a3b8' }}>
+                De un rival se ven el compuesto ({tires.compound.toUpperCase()}, {tires.lapsOnTire} vueltas), los sectores y las vueltas. Su desgaste, sus frenos y su motor solo los ve su equipo; el muro los estima.
+              </span>
+            </div>
+          )}
           {/* 2. GRÁFICA DE DEGRADACIÓN Y PREVISIÓN */}
+          {known && (<>
           <div className={styles.sectionCard}>
             <div className={styles.cardHeader}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -454,13 +467,14 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
               </div>
             )}
           </div>
+          </>)}
 
           {/* 4. HISTORIAL DE TODAS LAS VUELTAS */}
           <div className={styles.sectionCard}>
             <div className={styles.cardHeader}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <History size={14} color="#c084fc" />
-                <span>HISTORIAL DE VUELTAS ({lapHistory.length}/{totalLaps})</span>
+                <span>HISTORIAL DE VUELTAS ({(lapHistory ?? []).length}/{totalLaps})</span>
               </div>
             </div>
 
@@ -478,14 +492,14 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
                   </tr>
                 </thead>
                 <tbody>
-                  {lapHistory.length === 0 ? (
+                  {(lapHistory ?? []).length === 0 ? (
                     <tr>
                       <td colSpan={7} style={{ padding: '12px', color: '#64748b', fontStyle: 'italic' }}>
                         Completando Vuelta 1 en pista...
                       </td>
                     </tr>
                   ) : (
-                    [...lapHistory].reverse().map((h) => {
+                    [...(lapHistory ?? [])].reverse().map((h) => {
                       const isBestLap = bestLapTime && Math.abs(h.lapTime - bestLapTime) < 0.005;
                       return (
                         <tr key={h.lap}>

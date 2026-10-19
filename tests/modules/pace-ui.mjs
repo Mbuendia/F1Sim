@@ -1,15 +1,17 @@
 import {createElement} from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {raceFactory, fixedRandom} from '../support/race.mjs';
+import { viewsFactory } from '../support/views.mjs';
 
 export default async function run({server, assert, test}) {
+  const wallProps = await viewsFactory(server); // [N3] el muro se monta con las vistas del motor
   const make=await raceFactory(server);
   const {BoxControls}=await server.ssrLoadModule('/src/components/BoxControls.tsx');
   await fixedRandom(.99, async () => {
     await test('Q12 muro dual', () => {
       const sim=make('barcelona',2),[car,other]=sim.cars;
       other.driver.teamId=car.driver.teamId;other.team=structuredClone(car.team);
-      const render=()=>renderToStaticMarkup(createElement(BoxControls,{car,simulation:sim,teamCars:sim.cars}));
+      const render=()=>renderToStaticMarkup(createElement(BoxControls,wallProps(sim,car,sim.cars)));
       let html=render();
       assert(sim.cars.every(p=>html.includes(`Ritmo para ${p.driver.code}`)), 'Q12 UI: selector de ritmo accesible por cada piloto');
       assert(['push','balanced','save'].every(value=>html.includes(`value="${value}"`)), 'Q12 UI: ofrece Push, Balanced y Save');

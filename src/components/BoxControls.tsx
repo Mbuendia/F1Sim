@@ -1,7 +1,11 @@
 import { useState } from 'react';
 import { ArrowUpDown, CloudRain, Dices, Fuel, Gauge, Hourglass, Lock, Swords, Wrench, Zap } from 'lucide-react';
 import type { CarState, TireCompound } from '../types/f1';
-import type { RaceSimulation } from '../simulation/RaceSimulation';
+import type { EngineOrder } from '../engine/EngineHost';
+import type { TeamView } from '../engine/RaceView';
+import type { Ack } from '../engine/RaceSession';
+import type { WallProposal, WallReading } from '../simulation/Wall';
+import type { PaceStatus } from './PaceControls';
 import styles from './BoxControls.module.css';
 import { PaceControls, paceNote } from './PaceControls';
 import { CompoundBadge } from './CompoundBadge';
@@ -19,14 +23,20 @@ const decimal = (value: number) => value.toFixed(1).replace('.', ',');
 // [Q11] Panel dual de pilotos del equipo — controles independientes de boxes para ambos coches.
 // [V3] Sin desplegables: el ritmo y el compuesto son controles segmentados, el estado del coche son medidores y los
 // avisos, fichas en una sola línea. Cada tarjeta mide siempre lo mismo, así que el muro no le cambia el alto al circuito.
-export function BoxControls({ car, simulation, teamCars }: {
+export function BoxControls({ car, teamCars, team, race, send }: {
   car: CarState;
-  simulation: RaceSimulation;
   teamCars?: CarState[];
+  /** [N3] Vista privada del equipo (muro, propuestas, órdenes, ritmo y cruce de compuestos) que manda el motor. */
+  team: TeamView | null | undefined;
+  /** [N3] Estado de la carrera que decide si se pueden dar órdenes. */
+  race: { lightState: string; isFinished: boolean; raceFlagState: string };
+  /** [N3] Manda una orden al motor; se resuelve con su acuse. */
+  send: (order: EngineOrder) => Promise<Ack>;
 }) {
+  const own = (carId: number) => team?.cars.find(c => c.id === carId);
   // State is keyed per car id so toggling between pilots doesn't lose compound selection
   // [R44] Cruce de compuestos según el agua actual.
-  const crossover = (carId: number) => simulation.getTyreCrossover(carId);
+  const crossover = (carId: number) => (own(carId)?.crossover as { recommended: 'slick' | 'intermediate' | 'wet'; depthMm: number; advise: boolean } | undefined) ?? { recommended: 'slick' as const, depthMm: 0, advise: false };
   const [compounds, setCompounds] = useState<Record<number, TireCompound>>({});
   const [feedbacks, setFeedbacks] = useState<Record<number, string>>({});
   // [V2] En pantallas estrechas se enseña un piloto cada vez; el conmutador elige cuál.
@@ -37,11 +47,10 @@ export function BoxControls({ car, simulation, teamCars }: {
 
   const shown = pilots.some(p => p.id === shownId) ? shownId! : pilots[0].id;
   // [T4.14] Orden de equipo vigente entre los dos coches.
-  const [, refreshOrders] = useState(0);
   const teamId = pilots[0].driver.teamId;
-  const teamOrder = simulation.getTeamOrder(teamId);
+  const teamOrder = (team?.teamOrder as { mode: string; favouredCarId?: number } | null) ?? { mode: 'libre' };
   const orderValue = teamOrder.mode === 'dejar-pasar' ? String(teamOrder.favouredCarId) : teamOrder.mode;
-  const ordersAvailable = simulation.lightState === 'racing' && !simulation.isFinished && pilots.every(p => p.status === 'running');
+  const ordersAvailable = race.lightState === 'racing' && !race.isFinished && pilots.every(p => p.status === 'running');
 
   const setCompoundFor = (carId: number, compound: TireCompound) => {
     setCompounds(prev => ({ ...prev, [carId]: compound }));
@@ -67,9 +76,8 @@ export function BoxControls({ car, simulation, teamCars }: {
           <div className={styles.teamOrders}>
             <Segmented compact label="Órdenes de equipo" name="ordenes-equipo" value={orderValue} disabled={!ordersAvailable}
               onChange={value => {
-                if (value === 'libre' || value === 'mantener') simulation.setTeamOrder(teamId, value);
-                else simulation.setTeamOrder(teamId, 'dejar-pasar', Number(value));
-                refreshOrders(count => count + 1);
+                if (value === 'libre' || value === 'mantener') void send({ kind: 'teamOrder', teamId, mode: value });
+                else void send({ kind: 'teamOrder', teamId, mode: 'dejar-pasar', favouredCarId: Number(value) });
               }}
               options={[
                 { value: 'libre', label: 'Lucha libre', title: 'Lucha libre: cada piloto hace su carrera', content: <><Swords size={16} aria-hidden="true" />Libre</> },
@@ -81,16 +89,17 @@ export function BoxControls({ car, simulation, teamCars }: {
         )}
         {pilots.map(p => {
           const order = p.pitStop.activeBoxOrder;
-          const available = simulation.lightState === 'racing' && !simulation.isFinished &&
-            simulation.raceFlagState !== 'red' && p.status === 'running' && !p.isInPitLane && !p.pitStop.isPitting;
+          const available = race.lightState === 'racing' && !race.isFinished &&
+            race.raceFlagState !== 'red' && p.status === 'running' && !p.isInPitLane && !p.pitStop.isPitting;
           const locked = order?.status === 'committed';
           const compound = compounds[p.id] || 'hard';
           const feedback = feedbacks[p.id] || '';
           const isWaiting = p.pitStop.waitingForBox;
           const isPitting = p.pitStop.isPitting && p.isInPitLane;
-          const reading = simulation.getWallReading(p.id);
+          const reading = (own(p.id)?.reading as WallReading | null | undefined) ?? null;
           const advice = crossover(p.id);
-          const pace = paceNote(simulation, p.id);
+          const paceStatus = own(p.id)?.paceStatus as PaceStatus | null | undefined;
+          const pace = paceNote(paceStatus);
 
           // Status badge
           let statusBadge = '';
@@ -131,7 +140,7 @@ export function BoxControls({ car, simulation, teamCars }: {
                 </span>
               </div>
               <div className={styles.paceControls}>
-                <PaceControls car={p} simulation={simulation} />
+                <PaceControls car={p} pace={paceStatus} send={send} />
               </div>
               {/* [R57] Dos grupos (selección y botones) para que la fila salte de línea entera cuando la columna es estrecha. */}
               <div className={styles.orderRow}>
@@ -140,11 +149,10 @@ export function BoxControls({ car, simulation, teamCars }: {
                   options={TIRE_COMPOUNDS.map(c => ({ value: c, label: COMPOUND_STYLES[c].name, content: <CompoundBadge compound={c} size={24} detail="selección para la orden" /> }))} />
                 <span className={styles.orderActions}>
                   <button disabled={!available || locked} onClick={() => {
-                    const issued = simulation.issueBoxOrder(p.id, compound);
-                    setFeedbackFor(p.id, issued ? '' : 'Rechazada');
+                    void send({ kind: 'box', carId: p.id, compound }).then(ack => setFeedbackFor(p.id, ack.ok ? '' : 'Rechazada'));
                   }}>{order?.status === 'accepted' ? 'Actualizar' : 'BOX'}</button>
                   <button disabled={!available || order?.status !== 'accepted'} title="Anular la parada y seguir en pista" onClick={() => {
-                    setFeedbackFor(p.id, simulation.cancelBoxOrder(p.id) ? '' : 'No cancelable');
+                    void send({ kind: 'cancelBox', carId: p.id }).then(ack => setFeedbackFor(p.id, ack.ok ? '' : 'No cancelable'));
                   }}>Seguir</button>
                 </span>
               </div>
@@ -174,11 +182,11 @@ export function BoxControls({ car, simulation, teamCars }: {
                 )}
               </div>
               {/* [R54] El estratega propone; nada se ejecuta en este coche sin aceptar (o sin delegar). */}
-              {(p.status === 'running' || p.status === 'pit') && !simulation.isFinished ? (
-                <WallProposals proposals={simulation.getWallProposals(p.id)} delegated={Boolean(p.wallDelegated)}
-                  onAccept={id => setFeedbackFor(p.id, simulation.acceptWallProposal(p.id, id) ? '' : 'Propuesta no aplicable ahora')}
-                  onDiscard={id => { simulation.discardWallProposal(p.id, id); setFeedbackFor(p.id, ''); }}
-                  onDelegate={on => { simulation.setWallDelegation(p.id, on); setFeedbackFor(p.id, ''); }} />
+              {(p.status === 'running' || p.status === 'pit') && !race.isFinished ? (
+                <WallProposals proposals={(own(p.id)?.proposals as WallProposal[] | undefined) ?? []} delegated={Boolean(own(p.id)?.delegated ?? p.wallDelegated)}
+                  onAccept={id => { void send({ kind: 'acceptProposal', carId: p.id, proposalId: id }).then(ack => setFeedbackFor(p.id, ack.ok ? '' : 'Propuesta no aplicable ahora')); }}
+                  onDiscard={id => { void send({ kind: 'discardProposal', carId: p.id, proposalId: id }); setFeedbackFor(p.id, ''); }}
+                  onDelegate={on => { void send({ kind: 'delegate', carId: p.id, delegated: on }); setFeedbackFor(p.id, ''); }} />
               ) : <div className={styles.proposalsGap} />}
             </div>
           );

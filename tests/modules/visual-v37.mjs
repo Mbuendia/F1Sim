@@ -11,11 +11,13 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { readFileSync } from 'node:fs';
 import { raceFactory, fixedRandom } from '../support/race.mjs';
+import { viewsFactory } from '../support/views.mjs';
 
 const checkedValues = html => (html.match(/<input[^>]*>/g) ?? []).filter(tag => / checked/.test(tag)).map(tag => /value="([^"]*)"/.exec(tag)?.[1]).join();
 const source = file => readFileSync(new URL(`../../${file}`, import.meta.url), 'utf8');
 
 export default async function run({ server, assert, test }) {
+  const wallProps = await viewsFactory(server); // [N3] el muro se monta con las vistas del motor
   const make = await raceFactory(server);
 
   await test('V1: piezas base', async () => {
@@ -48,7 +50,7 @@ export default async function run({ server, assert, test }) {
       const { BoxControls } = await server.ssrLoadModule('/src/components/BoxControls.tsx');
       const sim = make('barcelona', 2), [car, other] = sim.cars;
       other.driver.teamId = car.driver.teamId; other.team = structuredClone(car.team);
-      const render = () => renderToStaticMarkup(createElement(BoxControls, { car, simulation: sim, teamCars: sim.cars }));
+      const render = () => renderToStaticMarkup(createElement(BoxControls, wallProps(sim, car, sim.cars)));
       const rows = html => html.split('data-shown').length - 1 >= 1 ? ['statusLine', 'proposals'].map(name => (html.match(new RegExp(`class="[^"]*${name}[^"]*"`, 'g')) ?? []).length) : [];
       const calm = render();
       assert(!/<select/.test(calm), 'V3: ningún desplegable en el muro');

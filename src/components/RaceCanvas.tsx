@@ -1,12 +1,11 @@
 import React, { useRef, useEffect, useState } from 'react';
 import styles from './RaceCanvas.module.css';
-import { RaceSimulation } from '../simulation/RaceSimulation';
 import { Camera } from '../renderer/Camera';
 import { TrackRenderer } from '../renderer/TrackRenderer';
 import { CarRenderer } from '../renderer/CarRenderer';
 import { renderLeftMinimap } from '../renderer/MinimapRenderer';
-import { RenderInterpolator } from '../renderer/RenderPose';
-import { WeatherRenderer, weatherLayers, skyCover } from '../renderer/WeatherRenderer';
+import { WeatherRenderer, skyCover } from '../renderer/WeatherRenderer';
+import type { WeatherLayers } from '../renderer/WeatherRenderer';
 import { SpraySystem } from '../renderer/SprayParticles';
 import { OFFICIAL_CIRCUITS } from '../data/circuits';
 import { supportsWebGL } from './CarShowcase';
@@ -14,28 +13,53 @@ import type { TrackLayerGL } from '../renderer/TrackLayerGL';
 import { frameCost, recordStage } from '../renderer/frameCost';
 import { buildCarDraws, buildSafetyCarDraw } from '../renderer/carDraws';
 import { WEATHER_TESTS } from '../data/weatherScenarios';
-
-/** Milisegundos de simulación que caben en un fotograma sin que la imagen pierda fluidez. */
-const SIM_BUDGET_MS = 8;
+import type { TrackDefinition } from '../data/barcelonaTrack';
+import type { CarState, RejoinEstimate, SafetyCarState, TrackWeatherState } from '../types/f1';
+import { raceStore } from '../state/raceStore';
+import { carViews } from '../engine/raceCars';
+import type { RosterEntry } from '../engine/raceCars';
+import { ViewInterpolator } from '../engine/ViewInterpolator';
 
 if (import.meta.env.DEV && typeof window !== 'undefined') (window as unknown as { __frameCost: typeof frameCost }).__frameCost = frameCost;
 import { CloudSun, Compass, RotateCw } from 'lucide-react';
 
 interface RaceCanvasProps {
-  simulation: RaceSimulation;
+  /** [N3] Geometría del circuito (fija durante la carrera) y lista de salida; el resto llega en las vistas del motor. */
+  track: TrackDefinition;
+  circuitId: string;
+  roster: RosterEntry[];
   camera: Camera;
   selectedCarId: number | null;
   onSelectCar: (carId: number | null) => void;
   /** [G9] Carrera libre: enseña el botón que cambia el tiempo para probar lluvia y spray. */
   weatherTest?: boolean;
+  /** [G9][N3] Pide al motor el tiempo de prueba elegido. */
+  onWeatherTest?: (index: number) => void;
 }
 
+/** [N3] Lo que pinta un fotograma, montado con las vistas: coches con su pose interpolada, Safety Car y tiempo. */
+interface PaintScene {
+  cars: CarState[];
+  safetyCar: SafetyCarState;
+  raceTimeSec: number;
+  weather: TrackWeatherState | undefined;
+  layers: WeatherLayers | null;
+  rain: number[];
+  cloudCover: number;
+  depthAt: (t: number) => number;
+}
+
+const segmentAt = (values: readonly number[], t: number) => values.length ? values[Math.floor((((t % 1) + 1) % 1) * values.length) % values.length] ?? 0 : 0;
+
 export const RaceCanvas: React.FC<RaceCanvasProps> = ({
-  simulation,
+  track,
+  circuitId,
+  roster,
   camera,
   selectedCarId,
   onSelectCar,
-  weatherTest = false
+  weatherTest = false,
+  onWeatherTest,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const trackLayerRef = useRef<TrackLayerGL | null>(null);
@@ -45,11 +69,13 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
   const [weatherTestIndex, setWeatherTestIndex] = useState(-1);
   const nextWeatherTest = () => {
     const next = (weatherTestIndex + 1) % WEATHER_TESTS.length;
-    simulation.setWeatherScenario(WEATHER_TESTS[next].scenario);
+    onWeatherTest?.(next);
     setWeatherTestIndex(next);
   };
   // [T3.4] Partículas de spray de esta vista.
   const spray = useRef(new SpraySystem());
+  // [N3] Coches del último fotograma pintado (para elegir uno con el ratón).
+  const paintedRef = useRef<CarState[]>([]);
   const isDraggingRef = useRef(false);
   const dragButtonRef = useRef<number>(0);
   const dragStartPosRef = useRef({ x: 0, y: 0 });
@@ -61,20 +87,20 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
     if (selectedCarId !== null) {
       camera.followCar(selectedCarId);
     } else {
-      camera.resetToFullTrack(simulation.activeTrack);
+      camera.resetToFullTrack(track);
     }
-  }, [selectedCarId, camera, simulation.activeTrack]);
+  }, [selectedCarId, camera, track]);
 
   // [R56] Imágenes de los modelos 3D vistos desde arriba para los coches de pista. Se generan aparte al entrar en
   // carrera; hasta que están (o si no hay WebGL o falla la carga) la pista sigue con su dibujo vectorial.
   useEffect(() => {
-    if (!supportsWebGL()) return;
+    if (!supportsWebGL() || !roster.length) return;
     let cancelled = false;
     import('../renderer/carSprites3d')
-      .then(sprites => sprites.buildCarSprites(simulation.cars, import.meta.env.BASE_URL, () => cancelled))
+      .then(sprites => sprites.buildCarSprites(roster as unknown as CarState[], import.meta.env.BASE_URL, () => cancelled))
       .catch(() => { /* sin imágenes: dibujo vectorial */ });
     return () => { cancelled = true; };
-  }, [simulation]);
+  }, [roster]);
 
   // [G8] Pista en WebGL: se carga al entrar en carrera. Sin WebGL (o si falla) la pinta el Canvas, con un aviso.
   useEffect(() => {
@@ -119,7 +145,7 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
 
       ctx.resetTransform();
       ctx.scale(dpr, dpr);
-      camera.resize(rect.width, rect.height, simulation.activeTrack);
+      camera.resize(rect.width, rect.height, track);
       // Cambiar el tamaño vacía el lienzo: se repinta en el acto para que no parpadee (pasa cada vez que el muro de
       // abajo cambia de alto, por ejemplo al llegar una propuesta).
       repaint?.();
@@ -136,11 +162,45 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
 
     handleResize();
     if (selectedCarId === null) {
-      camera.resetToFullTrack(simulation.activeTrack);
+      camera.resetToFullTrack(track);
     }
     window.addEventListener('resize', handleResize);
 
-    const interpolator = new RenderInterpolator();
+    // [N3] La pose sale de las vistas rápidas que manda el motor: se interpola entre ellas al ritmo de la pantalla.
+    const interpolator = new ViewInterpolator();
+    let seenFastAt = -1;
+    /** Fotograma montado con lo último del almacén. */
+    const scene = (now: number): PaintScene => {
+      const state = raceStore.getState();
+      if (state.fast && state.fastAt !== seenFastAt) {
+        if (state.prevFast && seenFastAt < state.prevFastAt) interpolator.push(state.prevFast, state.prevFastAt);
+        interpolator.push(state.fast, state.fastAt);
+        seenFastAt = state.fastAt;
+      }
+      const painted = interpolator.frame(now);
+      const base = carViews({ roster, fast: state.fast, slow: state.slow, teams: state.teams, drsChangedAt: state.drsChangedAt });
+      const poses = new Map(painted.cars.map(car => [car.id, car]));
+      const cars = base.map(car => {
+        const pose = poses.get(car.id);
+        return pose ? Object.assign(car, { worldX: pose.worldX, worldY: pose.worldY, worldAngle: pose.worldAngle, progress: pose.progress, trackT: pose.trackT }) : car;
+      });
+      const slow = state.slow;
+      const sc = painted.safetyCar;
+      const safetyCar = {
+        isDeployed: sc?.isDeployed ?? false, mode: sc?.mode ?? 'idle', progress: sc?.progress ?? 0, trackT: (((sc?.progress ?? 0) % 1) + 1) % 1,
+        isInPitLane: sc?.isInPitLane ?? false, currentSpeedKmh: 0, lapCount: slow?.safetyCar.lapCount ?? 0, targetLaps: slow?.safetyCar.targetLaps ?? 0,
+        triggerReason: slow?.safetyCar.reason ?? '', deployedAtRaceTime: 0,
+      } as SafetyCarState;
+      const sceneData = slow?.weatherScene;
+      const water = sceneData?.water ?? [], waterOff = sceneData?.waterOff ?? [], rain = sceneData?.rain ?? [];
+      const wet = rain.some(r => r > 0) || water.some(w => w > 0) || waterOff.some(w => w > 0);
+      return {
+        cars, safetyCar, raceTimeSec: painted.raceTimeSec || slow?.t || 0,
+        weather: slow?.weatherState as TrackWeatherState | undefined,
+        layers: wet ? { rain, water, waterOff } : null, rain, cloudCover: sceneData?.cloudCover ?? 0,
+        depthAt: (t: number) => segmentAt(water, t),
+      };
+    };
     // Un fallo al pintar un fotograma no debe dejar la pista parada (y en negro al redimensionar): se anota una vez
     // y se sigue con el siguiente.
     let frameErrorLogged = false;
@@ -153,20 +213,16 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
       }
       animationFrameId = requestAnimationFrame(loop);
     };
-    // A velocidades altas (x16, x32) simular un fotograma puede costar más que el propio fotograma y la imagen va a
-    // tirones. La simulación tiene un presupuesto de tiempo por fotograma: si lo pasa, el siguiente avanza menos tiempo
-    // de carrera (la carrera va algo más lenta de lo pedido, pero fluida).
-    let simScale = 1;
     const paintFrame = (currentTime: number, advance = true) => {
-      const dtRaw = advance ? Math.min((currentTime - lastTime) / 1000, 0.1) * simScale : 0;
+      const dtRaw = advance ? Math.min((currentTime - lastTime) / 1000, 0.1) : 0;
       if (advance) lastTime = currentTime;
 
       const frameStart = performance.now();
-      simulation.update(dtRaw);
+      // [N3] El motor corre aparte (Worker): aquí solo se monta el fotograma con las vistas que han llegado.
+      const frame = scene(currentTime);
+      paintedRef.current = frame.cars;
       const simulated = performance.now();
-      // [R43] Coches y Safety Car con la pose interpolada de este fotograma (pintado y cámara).
-      const frame = interpolator.frame(simulation, dtRaw);
-      camera.update(frame.cars, dtRaw, simulation.activeTrack);
+      camera.update(frame.cars, dtRaw, track);
 
       ctx.save();
       const dpr = window.devicePixelRatio || 1;
@@ -184,7 +240,7 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
       if (layerLost !== layerLostRef.current) { layerLostRef.current = layerLost; setCanvasFallback(layerLost); }
       if (trackLayer && !layerLost) {
         try {
-          const view = trackLayer.render(simulation.activeTrack, simulation.circuitId, camera, dpr, (simulation.weather?.waterPercentage || 0) > 10);
+          const view = trackLayer.render(track, circuitId, camera, dpr, (frame.weather?.waterPercentage || 0) > 10);
           ctx.drawImage(view, 0, 0, camera.screenWidth, camera.screenHeight);
           gpu = true;
         } catch {
@@ -192,17 +248,17 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
           setCanvasFallback(true);
         }
       }
-      TrackRenderer.renderTrack(ctx, simulation.activeTrack, camera, dpr, simulation.weather, simulation.circuitId, gpu);
+      TrackRenderer.renderTrack(ctx, track, camera, dpr, frame.weather as TrackWeatherState, circuitId, gpu);
       // [R04] Puntos de detección y tramos de activación del DRS.
-      TrackRenderer.renderDrsMarkers(ctx, simulation.activeTrack, camera);
+      TrackRenderer.renderDrsMarkers(ctx, track, camera);
       const trackDone = performance.now();
 
       // [R44] Pista mojada por tramo, radar de lluvia y spray (antes de los coches y sus etiquetas).
-      const weatherView = weatherLayers(simulation.weatherModel, simulation.raceTimeSec);
-      WeatherRenderer.render(ctx, simulation.activeTrack, camera, weatherView, simulation.raceTimeSec);
+      const weatherView = frame.layers;
+      WeatherRenderer.render(ctx, track, camera, weatherView, frame.raceTimeSec);
       // [T3.4] Spray con partículas: se emite con el tiempo de carrera y se pinta antes que los coches.
-      spray.current.update(frame.cars, t => simulation.weatherModel.depthAt(t), simulation.raceTimeSec);
-      if (!gpu) spray.current.render(ctx, camera, simulation.raceTimeSec);
+      spray.current.update(frame.cars, frame.depthAt, frame.raceTimeSec);
+      if (!gpu) spray.current.render(ctx, camera, frame.raceTimeSec);
       const weatherDone = performance.now();
 
       if (frame.safetyCar?.isDeployed && !safetyCarImageRequested) {
@@ -212,17 +268,17 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
           .catch(() => { /* sin imagen: dibujo anterior del Safety Car */ });
       }
 
-      const circuitSpec = OFFICIAL_CIRCUITS[simulation.circuitId];
+      const circuitSpec = OFFICIAL_CIRCUITS[circuitId];
       const trackWidthCarsCapacity = circuitSpec?.trackWidthCars ?? 3;
-      const carEffects = { depthAt: (t: number) => simulation.weatherModel.depthAt(t), timeSec: simulation.raceTimeSec };
+      const carEffects = { depthAt: frame.depthAt, timeSec: frame.raceTimeSec };
       // [G9] Spray, coches y Safety Car desde la GPU, compuestos sobre la pista y el agua; el Canvas pone encima humo,
       // etiquetas y rótulos, y pinta entero cualquier coche que todavía no tenga su imagen.
       let onGpu: { cars: ReadonlySet<number>; safetyCar: boolean } | undefined;
       if (gpu && trackLayerRef.current) {
         try {
-          const draws = buildCarDraws(frame.cars, camera, selectedCarId, simulation.activeTrack, trackWidthCarsCapacity, carEffects);
-          const safetyCarDraw = buildSafetyCarDraw(frame.safetyCar, simulation.activeTrack, camera, performance.now());
-          const view = trackLayerRef.current.renderCars(camera, dpr, draws, safetyCarDraw, spray.current, simulation.raceTimeSec);
+          const draws = buildCarDraws(frame.cars, camera, selectedCarId, track, trackWidthCarsCapacity, carEffects);
+          const safetyCarDraw = buildSafetyCarDraw(frame.safetyCar, track, camera, performance.now());
+          const view = trackLayerRef.current.renderCars(camera, dpr, draws, safetyCarDraw, spray.current, frame.raceTimeSec);
           ctx.drawImage(view, 0, 0, camera.screenWidth, camera.screenHeight);
           onGpu = { cars: new Set(draws.map(draw => draw.id)), safetyCar: safetyCarDraw !== null };
         } catch {
@@ -230,28 +286,26 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
           setCanvasFallback(true);
         }
       }
-      CarRenderer.renderCars(ctx, frame.cars, camera, selectedCarId, simulation.activeTrack, trackWidthCarsCapacity, frame.safetyCar, carEffects, onGpu);
+      CarRenderer.renderCars(ctx, frame.cars, camera, selectedCarId, track, trackWidthCarsCapacity, frame.safetyCar, carEffects, onGpu);
       const carsDone = performance.now();
 
       // [R53] Gotas en pantalla según la lluvia de la zona visible (por encima de pista y coches).
       // [G9] El cielo se cubre también donde llueve: con lluvia en el radar no puede verse despejado.
-      const rainBySegment = simulation.weatherModel.rainBySegment(simulation.raceTimeSec);
-      WeatherRenderer.renderClouds(ctx, camera, skyCover(simulation.weatherModel.cloudCoverAt(simulation.raceTimeSec), rainBySegment));
-      if (weatherView) WeatherRenderer.renderDrops(ctx, simulation.activeTrack, camera, rainBySegment, simulation.raceTimeSec);
+      WeatherRenderer.renderClouds(ctx, camera, skyCover(frame.cloudCover, frame.rain));
+      if (weatherView) WeatherRenderer.renderDrops(ctx, track, camera, frame.rain, frame.raceTimeSec);
 
       // ── MINIMAPA A LA IZQUIERDA DEL TODO (visible al seguir un coche) ──
       if (camera.followingCarId !== null) {
-        renderLeftMinimap(ctx, simulation, camera, simulation.getRejoinEstimate(camera.followingCarId), weatherView);
+        // [N3] Reincorporación estimada: solo de los coches propios (la trae la vista del equipo).
+        const followed = camera.followingCarId;
+        const ownCar = Object.values(raceStore.getState().teams).flatMap(team => team.cars).find(car => car.id === followed);
+        renderLeftMinimap(ctx, { activeTrack: track, cars: frame.cars }, camera, (ownCar?.rejoin as RejoinEstimate | null | undefined) ?? null, weatherView);
       }
 
       ctx.restore();
       // [G8][G9] Coste de cada fase del fotograma.
       const frameEnd = performance.now();
-      if (advance) {
-        const simMs = simulated - frameStart;
-        simScale = simMs > SIM_BUDGET_MS ? Math.max(0.2, simScale * SIM_BUDGET_MS / simMs) : Math.min(1, simScale * 1.1);
-        frameCost.simScale = simScale;
-      }
+      frameCost.simScale = 1;
       frameCost.gpu = gpu;
       recordStage('simulacion', simulated - frameStart); recordStage('pista', trackDone - simulated); recordStage('clima', weatherDone - trackDone);
       recordStage('coches', carsDone - weatherDone); recordStage('resto', frameEnd - carsDone); recordStage('total', frameEnd - frameStart);
@@ -266,7 +320,7 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
       resizeObserver.disconnect();
       window.removeEventListener('resize', handleResize);
     };
-  }, [simulation, camera, simulation.circuitId, selectedCarId]);
+  }, [track, roster, camera, circuitId, selectedCarId]);
 
   // ── MANEJADORES DE RATÓN: ROTACIÓN 360°, PAN Y ZOOM ──
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -307,7 +361,7 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
       const clickX = e.clientX - rect.left;
       const clickY = e.clientY - rect.top;
 
-      const clickedCarId = CarRenderer.pickCarAtScreen(simulation.cars, camera, clickX, clickY);
+      const clickedCarId = CarRenderer.pickCarAtScreen(paintedRef.current, camera, clickX, clickY);
 
       if (clickedCarId !== null) {
         onSelectCar(clickedCarId);
@@ -323,7 +377,7 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
   };
 
   const handleDoubleClick = () => {
-    camera.resetToFullTrack(simulation.activeTrack);
+    camera.resetToFullTrack(track);
     setCurrentRotationDeg(0);
     onSelectCar(null);
   };

@@ -1,13 +1,15 @@
 import {createElement} from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {raceFactory,fixedRandom} from '../support/race.mjs';
+import { viewsFactory } from '../support/views.mjs';
 export default async function run({server,assert,test}){
+  const wallProps = await viewsFactory(server); // [N3] el muro se monta con las vistas del motor
   const make=await raceFactory(server);
   const {BoxControls}=await server.ssrLoadModule('/src/components/BoxControls.tsx');
   await fixedRandom(.99,async()=>{
     await test('Q9/Q10 UI',()=>{
       const sim=make(),car=sim.cars[0];
-      const render=()=>renderToStaticMarkup(createElement(BoxControls,{car,simulation:sim}));
+      const render=()=>renderToStaticMarkup(createElement(BoxControls,wallProps(sim,car)));
       let html=render();
       assert(['soft','medium','hard','intermediate','wet'].every(c=>html.includes(`value="${c}"`)),'Q9 UI: ofrece los cinco compuestos');
       sim.issueBoxOrder(car.id,'wet');html=render();
@@ -22,7 +24,7 @@ export default async function run({server,assert,test}){
       // Fixture de dos coches del mismo equipo, copias aisladas.
       other.driver.teamId=car.driver.teamId;other.team=structuredClone(car.team);
       other.pitStop.waitingForBox=true;other.pitStop.boxWaitTimer=1.2;
-      const html=renderToStaticMarkup(createElement(BoxControls,{car,simulation:sim,teamCars:sim.cars}));
+      const html=renderToStaticMarkup(createElement(BoxControls,wallProps(sim,car,sim.cars)));
       assert(html.includes(`Compuesto para ${car.driver.code}`)&&html.includes(`Compuesto para ${other.driver.code}`),'Q11 UI: controles independientes para ambos pilotos');
       assert(html.includes('ESPERANDO')&&html.includes('1.2'),'Q11 UI: muestra cola y tiempo real del segundo piloto');
     });

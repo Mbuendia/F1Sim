@@ -7,6 +7,7 @@
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { raceFactory } from '../support/race.mjs';
+import { viewsFactory } from '../support/views.mjs';
 
 // Paleta visual del contrato UI para los 5 compuestos Pirelli
 const PIRELLI_COLORS = {
@@ -28,6 +29,7 @@ const COMPOUND_NAMES = {
 const ALL_COMPOUNDS = ['soft', 'medium', 'hard', 'intermediate', 'wet'];
 
 export default async function run({ server, assert, test }) {
+  const wallProps = await viewsFactory(server); // [N3] el muro se monta con las vistas del motor
   const make = await raceFactory(server);
 
   // ── CompoundBadge: Badge circular Pirelli ──
@@ -168,9 +170,7 @@ export default async function run({ server, assert, test }) {
     const sim = make('barcelona', 1);
     const car = sim.cars[0];
 
-    const html = renderToStaticMarkup(createElement(BoxControls, {
-      car, simulation: sim
-    }));
+    const html = renderToStaticMarkup(createElement(BoxControls, wallProps(sim, car)));
 
     // Los selectores de compuesto deben usar badge visual
     assert(html.includes('compound-badge') || html.includes('CompoundBadge') ||
@@ -189,9 +189,7 @@ export default async function run({ server, assert, test }) {
 
     sim.issueBoxOrder(car1.id, 'wet');
 
-    const html = renderToStaticMarkup(createElement(BoxControls, {
-      car: car1, simulation: sim, teamCars: sim.cars
-    }));
+    const html = renderToStaticMarkup(createElement(BoxControls, wallProps(sim, car1, sim.cars)));
 
     assert(html.includes('data-compound="soft"'), 'BoxControls: muestra badge de goma montada del piloto 1 (soft)');
     assert(html.includes('data-compound="medium"'), 'BoxControls: muestra badge de goma montada del piloto 2 (medium)');
@@ -277,7 +275,7 @@ export default async function run({ server, assert, test }) {
     const [car1, car2] = sim.cars;
     car2.driver.teamId = car1.driver.teamId;
     car2.team = structuredClone(car1.team);
-    const html = renderToStaticMarkup(createElement(BoxControls, { car: car1, simulation: sim, teamCars: sim.cars }));
+    const html = renderToStaticMarkup(createElement(BoxControls, wallProps(sim, car1, sim.cars)));
     for (const car of [car1, car2]) {
       assert(html.includes(`aria-label="Compuesto para ${car.driver.code}"`),
         `BoxControls: selector con nombre accesible para ${car.driver.code}`);

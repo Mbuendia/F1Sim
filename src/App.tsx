@@ -22,6 +22,18 @@ const AUTO_RACE_CHUNK_MS = 40;
 const AUTO_RACE_HIDDEN_CHUNK_MS = 800;
 import type { RaceTab } from './components/RaceTabs';
 import { RaceSimulation } from './simulation/RaceSimulation';
+// [N3] La carrera corre detrás de un enlace (Worker) y la pantalla lee sus vistas de los almacenes.
+import { raceStore, useRace } from './state/raceStore';
+import { roomStore } from './state/roomStore';
+import { linkStore } from './state/linkStore';
+import { RaceSession, rosterOf as raceRosterOf } from './engine/RaceSession';
+import { LocalLink, WorkerLink } from './engine/LocalLink';
+import { carViews } from './engine/raceCars';
+import type { EngineOrder } from './engine/EngineHost';
+import type { RaceConfig } from './engine/engineCore';
+import type { FastView } from './engine/RaceView';
+import type { RainForecast } from './simulation/WeatherForecast';
+import type { WallProposal } from './simulation/Wall';
 import { Camera } from './renderer/Camera';
 import { RaceCanvas } from './components/RaceCanvas';
 import { SpeedControls } from './components/SpeedControls';
@@ -102,7 +114,7 @@ import { lineupOf, offerContract, pairOf, rosterOf } from './simulation/Contract
 import { agreePromotion, setStandIn, signReserve, standInDrivers } from './simulation/Academy';
 import type { Driver } from './types/f1';
 import { TEAMS } from './data/teams';
-import { RaceResultHistory, StartLightState, CarState, RaceFlagState, SafetyCarState, DnfNotification, D20LuckEvent, TrackWeatherState } from './types/f1';
+import { RaceResultHistory, StartLightState, CarState, RaceFlagState, SafetyCarState, DnfNotification, D20LuckEvent, TrackWeatherState, RejoinEstimate } from './types/f1';
 import { RotateCw, ArrowLeft, Camera as CameraIcon, Maximize2, ListOrdered, PanelRight, ZoomIn, ZoomOut } from 'lucide-react';
 import { WallPanel } from './components/WallPanel';
 import { nextAlerts, wallAlerts } from './simulation/Wall';
@@ -130,6 +142,8 @@ const FLAG_NOTICES: Record<RaceFlagState, [RaceNoticeTone, string, string]> = {
 const NOTICE_MS = 8000;
 // [R48] Autoguardado de la carrera en curso (ms reales) y semilla propia de cada carrera.
 const AUTOSAVE_MS = 30000;
+/** [N3] Cada cuánto se pone al día la copia de la carrera en la pestaña con la del motor (ms reales). */
+const MIRROR_SYNC_MS = 5000;
 const SAVE_NAME_KEY = 'f1_save_name';
 /** [T4.19] En la carrera libre el paddock no enseña nada de la partida: solo piloto, circuito, formato y tiempo. */
 const FREE_RACE_PADDOCK: Partial<React.ComponentProps<typeof HomeScreen>> = {
@@ -389,7 +403,7 @@ export const App: React.FC = () => {
   const [isPaused, setIsPaused] = useState<boolean>(simulation.isPaused);
   const [leaderLap, setLeaderLap] = useState<number>(0);
   const [raceTimeSec, setRaceTimeSec] = useState<number>(0);
-  const [cars, setCars] = useState<CarState[]>(simulation.cars);
+
   const [fastestLapDriver, setFastestLapDriver] = useState<string | null>(null);
   const [isFinished, setIsFinished] = useState<boolean>(false);
   const [podiumCars, setPodiumCars] = useState<CarState[]>([]);
@@ -422,50 +436,95 @@ export const App: React.FC = () => {
   const [activeLuckEvent, setActiveLuckEvent] = useState<D20LuckEvent | null>(null);
   const [weather, setWeather] = useState<TrackWeatherState>(simulation.weather);
 
+  // ── [N3] El motor corre en un Worker (o, sin Worker, en la propia pestaña) y la pantalla de carrera lee sus vistas
+  // del almacén. `simulation` queda como copia en la pestaña: con ella se prepara la carrera (su snapshot arranca el
+  // motor) y se cierra la ronda; se pone al día con el motor cada pocos segundos, al guardar y al terminar.
+  const sessionRef = useRef<RaceSession | null>(null);
+  const [engineEpoch, setEngineEpoch] = useState(0);
+  /** Vuelve a arrancar el motor desde la copia de la pestaña (antes de la salida, tras cambiar algo en ella). */
+  const restartEngine = useCallback(() => setEngineEpoch(n => n + 1), []);
+  const raceConfig = useCallback((): RaceConfig => ({
+    fixedStepSec: RACE_STEP_SEC, autoStartTyres: simulation.autoStartTyres, seededPreparation: simulation.seededPreparation,
+    autoTeamOrders: simulation.autoTeamOrders, luckVariantEnabled: simulation.luckVariantEnabled,
+    upgradeTradeoffs: { ...(simulation as unknown as { upgradeTradeoffs: Record<string, number> }).upgradeTradeoffs },
+  }), [simulation]);
+  /** Manda una orden al motor de la carrera en curso; se resuelve con su acuse. */
+  const sendOrder = useCallback((order: EngineOrder) => sessionRef.current?.order(order) ?? Promise.resolve({ ok: false, reason: 'Sin carrera en marcha' }), []);
+  /** Pone la copia de la pestaña al día con el motor (para guardar o cerrar la ronda). */
+  const syncFromEngine = useCallback(async () => {
+    const session = sessionRef.current;
+    if (!session) return;
+    const snapshot = await session.save();
+    if (snapshot && sessionRef.current === session) restoreSnapshot(simulation, snapshot);
+  }, [simulation]);
+  const syncFromEngineRef = useRef(syncFromEngine);
+  useEffect(() => { syncFromEngineRef.current = syncFromEngine; }, [syncFromEngine]);
+
+  // Lo que llega del motor: la vista lenta y las de los equipos al momento; la rápida, como mucho 10 veces por segundo
+  // (la pista la lee aparte, a su ritmo).
+  const slowView = useRace(state => state.slow);
+  const teamViews = useRace(state => state.teams);
+  const raceRoster = useRace(state => state.roster);
+  const [fastSample, setFastSample] = useState<FastView | null>(null);
   useEffect(() => {
-    const interval = setInterval(() => {
-      setLightState(simulation.lightState);
-      setSpeedMultiplier(simulation.speedMultiplier);
-      setIsPaused(simulation.isPaused);
-      setLeaderLap(simulation.leaderLap);
-      setRaceTimeSec(simulation.raceTimeSec);
-      setCars([...simulation.cars]);
-      setIsFinished(simulation.isFinished);
-      setBestS1(simulation.overallBestS1);
-      setBestS2(simulation.overallBestS2);
-      setBestS3(simulation.overallBestS3);
-      setCameraMode(camera.currentMode);
-      setRaceFlagState(simulation.raceFlagState);
-      setSectorFlags([...simulation.sectorFlags]);
-      setSafetyCar(simulation.safetyCar.isDeployed ? { ...simulation.safetyCar } : null);
-      setActiveDnf(simulation.latestDnf ? { ...simulation.latestDnf } : null);
-      setActiveLuckEvent(simulation.activeLuckEvent ? { ...simulation.activeLuckEvent } : null);
-      // [T4.14] Órdenes de equipo cumplidas (las propias y las de los rivales): cada una, un aviso.
-      if (simulation.teamOrderNotices.length) {
-        for (const notice of simulation.teamOrderNotices) noticeRef.current('info', 'Órdenes', notice.text);
-        simulation.teamOrderNotices = [];
-      }
-      setWeather({ ...simulation.weather });
-      // [T4.16] Lo que ha cambiado desde la lectura anterior, en sonidos (solo los coches del jugador dan radio y pistola).
-      const mine = simulation.cars.filter(car => simulation.isPlayerCar(car.driver.id));
-      const heard: AudioSnapshot = {
-        lightState: simulation.lightState, flag: simulation.raceFlagState, finished: simulation.isFinished,
-        wallMessages: mine.reduce((sum, car) => sum + (car.wallProposals?.length ?? 0), 0),
-        servicing: mine.filter(car => car.pitStop.isPitting && car.pitStop.currentStopTimer > 0 && car.pitStop.currentStopTimer < car.pitStop.stopDuration).length,
-      };
-      for (const sound of soundsBetween(audioSeen.current, heard)) audio.play(sound);
-      audioSeen.current = heard;
+    let last = 0;
+    return raceStore.subscribe(state => {
+      const now = performance.now();
+      if (state.fast && state.fast !== fastSample && now - last >= 100) { last = now; setFastSample(state.fast); }
+    });
+  }, []);
+  const viewCars = useMemo(() => carViews({ roster: raceRoster, fast: fastSample, slow: slowView, teams: teamViews }), [raceRoster, fastSample, slowView, teamViews]);
+  // Hasta que llega la primera vista se enseña la copia de la pestaña (la parrilla preparada).
+  const cars = viewCars.length && slowView ? viewCars : simulation.cars;
+  const ownView = useCallback((carId: number) => Object.values(teamViews).flatMap(team => team.cars).find(car => car.id === carId), [teamViews]);
+  const dismissedDnf = useRef<string | null>(null);
+  const dismissedLuck = useRef<string | null>(null);
+  const podiumIdsRef = useRef('');
 
-      if (simulation.isFinished) {
-        setPodiumCars(simulation.podiumCars);
-      }
-      if (simulation.fastestLap) {
-        setFastestLapDriver(simulation.fastestLap.driverName);
-      }
-    }, 66);
-
-    return () => clearInterval(interval);
-  }, [simulation, camera]);
+  useEffect(() => {
+    const slow = slowView;
+    if (!slow) return;
+    setLightState(slow.light as StartLightState);
+    setSpeedMultiplier(slow.speed);
+    setIsPaused(slow.paused);
+    setLeaderLap(slow.lap);
+    setRaceTimeSec(slow.t);
+    setIsFinished(slow.finished);
+    setBestS1(slow.bestSectors[0]);
+    setBestS2(slow.bestSectors[1]);
+    setBestS3(slow.bestSectors[2]);
+    setCameraMode(camera.currentMode);
+    setRaceFlagState(slow.flag as RaceFlagState);
+    setSectorFlags(slow.sectorFlags as [RaceFlagState, RaceFlagState, RaceFlagState]);
+    setSafetyCar(slow.safetyCar.isDeployed ? {
+      isDeployed: true, mode: slow.safetyCar.mode as SafetyCarState['mode'], phase: (slow.safetyCar.phase ?? undefined) as SafetyCarState['phase'],
+      lapCount: slow.safetyCar.lapCount, targetLaps: slow.safetyCar.targetLaps, triggerReason: slow.safetyCar.reason,
+      progress: 0, trackT: 0, currentSpeedKmh: 0, deployedAtRaceTime: 0,
+    } : null);
+    setActiveDnf(slow.dnf && slow.dnf.id !== dismissedDnf.current ? slow.dnf : null);
+    const luck = slow.luck as D20LuckEvent | null;
+    setActiveLuckEvent(luck && luck.id !== dismissedLuck.current ? luck : null);
+    // [T4.14] Órdenes de equipo cumplidas (las propias y las de los rivales): cada una, un aviso.
+    for (const text of raceStore.getState().takeNotices()) noticeRef.current('info', 'Órdenes', text);
+    if (slow.weatherState) setWeather(slow.weatherState as TrackWeatherState);
+    // [T4.16] Lo que ha cambiado desde la lectura anterior, en sonidos (solo los coches del jugador dan radio y pistola).
+    const mine = Object.values(raceStore.getState().teams).flatMap(team => team.cars);
+    const heard: AudioSnapshot = {
+      lightState: slow.light as StartLightState, flag: slow.flag as RaceFlagState, finished: slow.finished,
+      wallMessages: mine.reduce((sum, car) => sum + (car.proposals?.length ?? 0), 0),
+      servicing: mine.filter(car => car.pit.isPitting && car.pit.currentStopTimer > 0 && car.pit.currentStopTimer < car.pit.stopDuration).length,
+    };
+    for (const sound of soundsBetween(audioSeen.current, heard)) audio.play(sound);
+    audioSeen.current = heard;
+    // El podio solo se repone si cambia (repintarlo cada segundo reiniciaría su animación).
+    if (slow.finished && slow.podiumIds.join(',') !== podiumIdsRef.current) {
+      podiumIdsRef.current = slow.podiumIds.join(',');
+      const state = raceStore.getState();
+      const built = carViews({ roster: state.roster, fast: state.fast, slow, teams: state.teams });
+      setPodiumCars(slow.podiumIds.map(id => built.find(car => car.id === id)).filter((car): car is CarState => Boolean(car)));
+    }
+    if (slow.fastestLap) setFastestLapDriver(slow.fastestLap.driverName);
+  }, [slowView, camera, audio]);
 
   const handleSelectCar = useCallback((carId: number | null) => {
     setSelectedCarId(carId);
@@ -481,49 +540,39 @@ export const App: React.FC = () => {
 
   // R32: herramientas de prueba (menú de carrera). Conservan su efecto anterior.
   const handleSafetyCarTest = useCallback(() => {
-    if (!simulation.safetyCar.isDeployed) {
-      // [Q14] Sale de su garaje en el pit lane, como en carrera.
-      simulation.deploySafetyCar('PRUEBA MANUAL (DEV)', { targetLaps: 999 });
-    } else {
-      // Forzar que el SC se vaya por el pit lane
-      simulation.recallSafetyCar();
-      // Limpiamos los incidentes artificialmente si los hay
-      simulation.incidents = [];
-    }
-  }, [simulation]);
+    // [Q14] Sale de su garaje en el pit lane, como en carrera; si ya está fuera, se retira por el pit lane.
+    void sendOrder({ kind: 'devSafetyCar' });
+  }, [sendOrder]);
 
   const handleRedFlagTest = useCallback(() => {
     // Escoger coche al azar
-    const runningCars = simulation.cars.filter(c => c.status === 'running');
+    const runningCars = (raceStore.getState().slow?.cars ?? []).filter(c => c.status === 'running');
     if (runningCars.length === 0) return;
     const randomCar = runningCars[Math.floor(Math.random() * runningCars.length)];
-    randomCar.status = 'out';
     const failureTypes = ['💥 ACCIDENTE GRAVE', '🔥 INCENDIO MOTOR', '💥 CHOQUE MÚLTIPLE'];
-    randomCar.dnfReason = failureTypes[Math.floor(Math.random() * failureTypes.length)];
-    randomCar.isRetiredVisible = true;
-    randomCar.smokeOpacity = 1.0;
-    randomCar.retireTimer = 60;
-
-    // [R26] Bandera roja por el procedimiento real de R12 (sin marcar paradas a mano).
-    simulation.startRedFlag('PRUEBA MANUAL (DEV)');
-    simulation.triggerD20LuckRoll('red');
-  }, [simulation]);
+    // [R26] Bandera roja por el procedimiento real de R12 (sin marcar paradas a mano). [N3] Lo hace el motor.
+    void sendOrder({ kind: 'devRedFlag', crashCarId: randomCar.id, reason: failureTypes[Math.floor(Math.random() * failureTypes.length)] });
+  }, [sendOrder]);
 
   const handleSpeedChange = useCallback((speed: number) => {
-    simulation.setSpeed(speed);
-    setSpeedMultiplier(simulation.speedMultiplier);
-    setIsPaused(simulation.isPaused);
-  }, [simulation]);
+    // [N3] La velocidad la cambia el motor; el botón responde al momento y la vista lenta lo confirma.
+    void sendOrder(speed === 0 ? { kind: 'pause', paused: true } : { kind: 'speed', value: speed });
+    if (speed === 0) setIsPaused(true);
+    else { setSpeedMultiplier(speed); setIsPaused(false); }
+  }, [sendOrder]);
 
   // [Q18] Callbacks estables del modal D20; aplicar es idempotente en el motor por ID de evento.
   const handleApplyLuckReward = useCallback((eventId: string) => {
-    simulation.applyLuckEventReward(eventId);
-  }, [simulation]);
+    void sendOrder({ kind: 'luckReward', eventId });
+  }, [sendOrder]);
   // [R26] Variante D20: preferencia guardada en el navegador.
   const [luckVariantEnabled, setLuckVariantEnabled] = useState<boolean>(() => {
     try { return localStorage.getItem('f1_d20_variant') !== 'off'; } catch { return true; }
   });
-  useEffect(() => { simulation.luckVariantEnabled = luckVariantEnabled; }, [simulation, luckVariantEnabled]);
+  useEffect(() => {
+    simulation.luckVariantEnabled = luckVariantEnabled;
+    void sendOrder({ kind: 'luckVariant', enabled: luckVariantEnabled });
+  }, [simulation, luckVariantEnabled, sendOrder]);
   const handleToggleLuckVariant = useCallback(() => {
     setLuckVariantEnabled(value => {
       try { localStorage.setItem('f1_d20_variant', value ? 'off' : 'on'); } catch (e) { console.error(e); }
@@ -532,9 +581,10 @@ export const App: React.FC = () => {
   }, []);
 
   const handleDismissLuckEvent = useCallback(() => {
-    simulation.activeLuckEvent = null;
+    dismissedLuck.current = activeLuckEventRef.current?.id ?? null;
+    void sendOrder({ kind: 'luckClear' });
     setActiveLuckEvent(null);
-  }, [simulation]);
+  }, [sendOrder]);
 
   const handleResetRace = useCallback(() => {
     // [R48] Carrera nueva, semilla nueva: reiniciar no repite la anterior.
@@ -547,7 +597,9 @@ export const App: React.FC = () => {
     setLightState('idle');
     setIsFinished(false);
     simulation.startRaceSequence();
-  }, [simulation, camera]);
+    // [N3] Carrera nueva: el motor arranca otra vez desde la copia preparada.
+    restartEngine();
+  }, [simulation, camera, restartEngine]);
 
   // [R52] El sprint solo se ofrece donde lo hay: en una carrera libre de un circuito sprint o en la ronda sprint de la
   // temporada mientras su sprint no se haya corrido.
@@ -644,7 +696,9 @@ export const App: React.FC = () => {
     setIsFinished(false);
     setCurrentView('race');
     if (gate === 'directo') simulation.startRaceSequence();
-  }, [simulation, camera, selectedCircuitId, weatherScenarioId, development, raceFormat, components, saveComponents, selectedDriverId, program, saveProgram, championship, constructorsPosition, saveStore, playerSetups, season, saveSeason, effectiveFormat, management, saveManagement, mode, roster]);
+    // [N3] El motor arranca con la carrera ya preparada.
+    restartEngine();
+  }, [restartEngine, simulation, camera, selectedCircuitId, weatherScenarioId, development, raceFormat, components, saveComponents, selectedDriverId, program, saveProgram, championship, constructorsPosition, saveStore, playerSetups, season, saveSeason, effectiveFormat, management, saveManagement, mode, roster]);
 
   /**
    * [T4.13] Entrenamientos libres de la ronda que toca: se resuelven sin pista con las vueltas de referencia del motor en
@@ -690,7 +744,9 @@ export const App: React.FC = () => {
   const handleContinueFromPenalties = useCallback(() => {
     setPenaltyNotice([]);
     simulation.startRaceSequence();
-  }, [simulation]);
+    // [N3] Antes de la salida el motor no ha avanzado: arranca otra vez desde la copia con la salida dada.
+    if (sessionRef.current) restartEngine();
+  }, [simulation, restartEngine]);
 
   /** [R51] Guarda la carrera profesional tras una carrera o un salto; si la temporada se ha cerrado, lo enseña. */
   const applyCareer = useCallback((settled: SettledCareer) => {
@@ -726,12 +782,8 @@ export const App: React.FC = () => {
   }, [applyCareer, championship, components, program, season, seasonArchive, management, playerCodes, development, saveDevelopment]);
 
   const handleStartFormationLap = useCallback(() => {
-    if (simulation.lightState === 'grid-ready') {
-      simulation.confirmRaceStart();
-    } else {
-      simulation.startRaceSequence();
-    }
-  }, [simulation]);
+    void sendOrder({ kind: lightState === 'grid-ready' ? 'confirmStart' : 'startSequence' });
+  }, [sendOrder, lightState]);
 
   const formatRaceTime = (totalSec: number): string => {
     const hrs = Math.floor(totalSec / 3600);
@@ -740,7 +792,9 @@ export const App: React.FC = () => {
     return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const handleGoHome = useCallback(() => {
+  // [N3] Antes de cerrar la ronda, la copia de la pestaña se pone al día con el motor: el cierre lee de ella.
+  const handleGoHome = useCallback(() => { void syncFromEngineRef.current().then(() => goHomeRef.current()); }, []);
+  const goHomeNow = useCallback(() => {
     let report: RoundReport | null = null;
     // [T4.19] El resultado de una carrera libre no se anota en ninguna parte.
     if (mode === 'career' && simulation.podiumCars.length >= 3) {
@@ -855,7 +909,12 @@ export const App: React.FC = () => {
   }, [currentView, handleSelectCar, handleSpeedChange, isPaused, handleCycleCameraMode]);
 
 
-  const favoriteCar = simulation.cars.find(c => c.driver.id === selectedDriverId) || simulation.cars[0];
+  const goHomeRef = useRef(goHomeNow);
+  useEffect(() => { goHomeRef.current = goHomeNow; }, [goHomeNow]);
+  const activeLuckEventRef = useRef(activeLuckEvent);
+  useEffect(() => { activeLuckEventRef.current = activeLuckEvent; }, [activeLuckEvent]);
+
+  const favoriteCar = cars.find(c => c.driver.id === selectedDriverId) || cars[0];
   // [Q11] Resolve both team pilots for dual-panel BoxControls
   const teamCars = useMemo(() => {
     if (!roster[selectedDriverId]) return [favoriteCar];
@@ -897,10 +956,10 @@ export const App: React.FC = () => {
     if (!activeLuckEvent || ownLuckEvent || rivalLuckId.current === activeLuckEvent.id) return;
     rivalLuckId.current = activeLuckEvent.id;
     pushNotice('info', 'Suerte', `${activeLuckEvent.luckyDriverName} (dado ${activeLuckEvent.rollValue}): ${activeLuckEvent.rewardTitle}`);
-    simulation.applyLuckEventReward(activeLuckEvent.id);
-    simulation.activeLuckEvent = null;
+    dismissedLuck.current = activeLuckEvent.id;
+    void sendOrder({ kind: 'luckReward', eventId: activeLuckEvent.id }).then(() => sendOrder({ kind: 'luckClear' }));
     setActiveLuckEvent(null);
-  }, [activeLuckEvent, ownLuckEvent, pushNotice, simulation]);
+  }, [activeLuckEvent, ownLuckEvent, pushNotice, sendOrder]);
 
   const clearNotices = useCallback(() => {
     setNotices([]);
@@ -916,20 +975,24 @@ export const App: React.FC = () => {
   useEffect(() => {
     if (currentView !== 'race') { wallActive.current = new Set(); wallProposed.current = new Set(); return; }
     const timer = window.setInterval(() => {
-      if (simulation.isFinished) return;
-      const team = (roster[selectedDriverId] ?? Object.values(roster)[0]).teamId;
-      const racing = simulation.lightState === 'racing';
+      // [N3] Lo leen de las vistas del motor: la lenta (estado de cada coche) y la del equipo (muro y propuestas).
+      const state = raceStore.getState();
+      const slow = state.slow;
+      if (!slow || slow.finished) return;
+      const racing = slow.light === 'racing';
+      const running = new Set(slow.cars.filter(car => car.status === 'running').map(car => car.id));
+      const ownCars = Object.values(state.teams).flatMap(team => team.cars);
       if (racing) {
-        const readings = simulation.cars.filter(car => roster[car.driver.id]?.teamId === team && car.status === 'running')
-          .map(car => simulation.getWallReading(car.id)).filter((reading): reading is WallReading => reading !== null);
+        const readings = ownCars.filter(car => running.has(car.id))
+          .map(car => car.reading as WallReading | null).filter((reading): reading is WallReading => reading !== null);
         const next = nextAlerts(wallAlerts(readings), wallActive.current);
         wallActive.current = next.active;
         for (const alert of next.show) pushNotice(alert.tone, 'Muro', alert.text);
       }
       // [R54] Una propuesta de parada nueva se avisa una vez; las de ritmo, que hay casi cada vuelta, solo se ven en el muro.
-      for (const car of simulation.cars) {
-        if (roster[car.driver.id]?.teamId !== team) continue;
-        for (const proposal of simulation.getWallProposals(car.id)) {
+      for (const own of ownCars) {
+        const car = { driver: { code: own.code } };
+        for (const proposal of own.proposals as WallProposal[]) {
           const seen = `${proposal.id}@${proposal.timeSec}`;
           // [T4.12] La de salida llega en la parrilla, antes del semáforo; las de parada, en carrera.
           if (proposal.kind === 'ritmo' || (proposal.kind === 'parada' && !racing) || wallProposed.current.has(seen)) continue;
@@ -941,7 +1004,7 @@ export const App: React.FC = () => {
       }
     }, 1000);
     return () => window.clearInterval(timer);
-  }, [currentView, simulation, selectedDriverId, pushNotice, roster]);
+  }, [currentView, pushNotice]);
 
   // ── [R48] Partidas: ranuras con nombre, autoguardado y carga ──
   const refreshSlots = useCallback(() => setSlots(saveStore ? saveStore.list() : []), [saveStore]);
@@ -954,7 +1017,9 @@ export const App: React.FC = () => {
     race: raceLive ? createSnapshot(simulation) : null,
   }), [setups, championship, development, components, program, seasonArchive, raceHistory, selectedDriverId, selectedCircuitId, raceFormat, weatherScenarioId, luckVariantEnabled, raceLive, simulation, season, management, raceCounts]);
 
-  const handleSaveGame = useCallback((name: string) => {
+  // [N3] Guardar durante la carrera pide antes el estado al motor.
+  const handleSaveGame = useCallback((name: string) => { void syncFromEngineRef.current().then(() => saveGameRef.current(name)); }, []);
+  const saveGameNow = useCallback((name: string) => {
     if (!saveStore) { setSaveMessage({ tone: 'error', text: 'Este navegador no permite guardar partidas' }); return; }
     const save = buildSave(name);
     const outcome = saveStore.save(save);
@@ -967,6 +1032,8 @@ export const App: React.FC = () => {
     setSaveMessage({ tone: outcome.ok ? 'ok' : 'error', text });
     if (currentView === 'race') pushNotice(outcome.ok ? 'ok' : 'danger', 'Partida', text);
   }, [saveStore, buildSave, refreshSlots, currentView, pushNotice]);
+  const saveGameRef = useRef(saveGameNow);
+  useEffect(() => { saveGameRef.current = saveGameNow; }, [saveGameNow]);
 
   /** Sustituye la partida actual por `save`. Si lleva carrera, se carga primero: si falla, no se toca nada. */
   const applySave = useCallback((save: SaveGame): string | null => {
@@ -1016,8 +1083,10 @@ export const App: React.FC = () => {
     setRaceLive(Boolean(save.race));
     autosaveWarned.current = false;
     setCurrentView(save.race ? 'race' : 'home');
+    // [N3] La carrera cargada arranca en el motor (si ya se estaba en carrera, se sustituye).
+    if (save.race) restartEngine();
     return null;
-  }, [simulation, camera, saveChampionship, saveDevelopment, saveComponents, saveProgram, saveManagement, clearNotices, saveSetups]);
+  }, [restartEngine, simulation, camera, saveChampionship, saveDevelopment, saveComponents, saveProgram, saveManagement, clearNotices, saveSetups]);
 
   const handleLoadGame = useCallback((id: string) => {
     if (!saveStore) return;
@@ -1072,6 +1141,7 @@ export const App: React.FC = () => {
   }, [saveStore, refreshSlots]);
 
   // Autoguardado: cada 30 s reales en carrera, al volver al paddock y al cerrar, recargar u ocultar la página.
+  // [N3] Guarda la copia de la pestaña, que se pone al día con el motor cada pocos segundos (al cerrar no da tiempo a pedirlo).
   const autosave = useCallback(() => {
     if (!saveStore || !raceLive) return;
     const outcome = saveStore.save(buildSave(AUTOSAVE_LABEL), { auto: true });
@@ -1089,7 +1159,7 @@ export const App: React.FC = () => {
     const onVisibility = () => { if (document.visibilityState === 'hidden') autosaveRef.current(); };
     window.addEventListener('pagehide', onPageHide);
     document.addEventListener('visibilitychange', onVisibility);
-    const timer = currentView === 'race' ? window.setInterval(() => autosaveRef.current(), AUTOSAVE_MS) : undefined;
+    const timer = currentView === 'race' ? window.setInterval(() => { void syncFromEngineRef.current().then(() => autosaveRef.current()); }, AUTOSAVE_MS) : undefined;
     return () => {
       window.removeEventListener('pagehide', onPageHide);
       document.removeEventListener('visibilitychange', onVisibility);
@@ -1112,12 +1182,14 @@ export const App: React.FC = () => {
   }, [setups, saveSetups]);
 
   const handleContinueFromQualifying = useCallback(() => {
+    // [N3] Antes de la salida el motor no ha avanzado: los cambios de parc fermé van en la copia y el motor arranca de ella.
     simulation.setCarSetups({ ...(raceCounts ? practiceFor(season, nextRound(championship, season)?.round)?.rivalSetups : undefined), ...playerSetups });
     if (parcFermeStarts.length) simulation.setPitLaneStarters(parcFermeStarts.map(start => start.driverId));
     setQualifying(null);
     for (const start of parcFermeStarts) pushNotice('warning', 'Salida', `${DRIVERS[start.driverId]?.code ?? start.driverId} sale desde el pit lane: ${start.reason.toLowerCase()}`);
     simulation.startRaceSequence();
-  }, [simulation, playerSetups, parcFermeStarts, pushNotice, raceCounts, season, championship]);
+    if (sessionRef.current) restartEngine();
+  }, [restartEngine, simulation, playerSetups, parcFermeStarts, pushNotice, raceCounts, season, championship]);
 
   // [V8] Simular el Gran Premio que toca: se prepara como una carrera normal y el motor la corre sin pintarla, a
   // trozos para no bloquear la página, con el estratega al mando de los coches del jugador. Al acabar se liquida por el
@@ -1125,6 +1197,29 @@ export const App: React.FC = () => {
   const [autoRace, setAutoRace] = useState<{ lap: number; total: number } | null>(null);
   const autoRequested = useRef(false);
   const autoLatest = useRef({ goHome: () => {}, fromQualifying: () => {}, fromPenalties: () => {}, qualifying: false, penalties: false, playerIds: [] as string[] });
+  // [N3] Motor de la carrera: arranca al entrar en carrera (y al recargar o reiniciar) con el snapshot de la copia de la
+  // pestaña y se para al salir. Simular el Gran Premio (V8) corre en la propia pestaña, sin motor aparte.
+  useEffect(() => {
+    if (currentView !== 'race' || autoRace || autoRequested.current) return;
+    const link = typeof Worker !== 'undefined' ? new WorkerLink() : (() => { const local = new LocalLink(); local.run(); return local; })();
+    const session = new RaceSession({ link, store: raceStore, linkStore });
+    sessionRef.current = session;
+    const teams = [...new Set(playerDriverIds(roster, selectedDriverId).map(id => roster[id]?.teamId).filter((id): id is string => Boolean(id)))];
+    roomStore.getState().setTeams(teams);
+    setFastSample(null);
+    podiumIdsRef.current = '';
+    void session.start({ snapshot: createSnapshot(simulation), config: raceConfig(), teams, roster: raceRosterOf(simulation) })
+      .then(outcome => { if (!outcome.ok) noticeRef.current('danger', 'Motor', `No se pudo arrancar la carrera: ${outcome.errors.slice(0, 2).join(' · ')}`); });
+    const sync = window.setInterval(() => { void syncFromEngineRef.current(); }, MIRROR_SYNC_MS);
+    return () => {
+      window.clearInterval(sync);
+      if (sessionRef.current === session) sessionRef.current = null;
+      session.stop();
+    };
+    // Solo al entrar o salir de la carrera, al rearrancarla y al empezar o acabar la simulación del Gran Premio.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentView, engineEpoch, autoRace]);
+
   const handleSimulateRound = useCallback(() => {
     autoRequested.current = true;
     handleStartRaceFromHome();
@@ -1162,8 +1257,10 @@ export const App: React.FC = () => {
   }, [teamCars, currentView, pushNotice]);
 
   const handleLeaveRace = useCallback(() => {
-    autosaveRef.current();
-    setCurrentView('home');
+    void syncFromEngineRef.current().then(() => {
+      autosaveRef.current();
+      setCurrentView('home');
+    });
   }, []);
 
   useEffect(() => {
@@ -1177,14 +1274,15 @@ export const App: React.FC = () => {
     if (currentView !== 'race') return;
     for (const car of teamCars) {
       const was = lastPitLane.current.get(car.id);
-      const now = car.isInPitLane;
+      // [N3] Entrada y salida con el mismo instante que las gomas (la vista del equipo), para no anunciar las de antes.
+      const now = Boolean((ownView(car.id)?.state as { isInPitLane?: boolean } | undefined)?.isInPitLane ?? car.isInPitLane);
       if (was === now) continue;
       lastPitLane.current.set(car.id, now);
       if (was === undefined) continue;
       if (now) pushNotice('info', 'Box', `${car.driver.code} entra en boxes`);
       else pushNotice('ok', 'Box', `${car.driver.code} sale de boxes con ${TYRE_WORDS[car.tires.compound] ?? car.tires.compound}`);
     }
-  }, [teamCars, currentView, pushNotice]);
+  }, [teamCars, currentView, pushNotice, ownView]);
 
   // [T3.1] Un coche del jugador se sale por una escapatoria de asfalto: pierde unos segundos y sigue.
   const lastOffTrack = useRef(new Map<number, boolean>());
@@ -1203,9 +1301,12 @@ export const App: React.FC = () => {
     pushNotice('danger', 'DNF', `${activeDnf.driverCode}: ${activeDnf.reason}`);
   }, [activeDnf, pushNotice]);
 
-  const selectedCar = selectedCarId !== null ? simulation.getCarById(selectedCarId) || null : null;
-  // [Q13] Reincorporación estimada del piloto objetivo (el mismo que muestra el dock); se recalcula en cada refresco.
-  const rejoinEstimate = simulation.getRejoinEstimate((selectedCar || favoriteCar).id);
+  const selectedCar = selectedCarId !== null ? cars.find(car => car.id === selectedCarId) || null : null;
+  // [Q13] Reincorporación estimada del piloto objetivo (el mismo que muestra el dock). [N3] Solo de los coches propios:
+  // la de un rival no se sabe.
+  const rejoinTarget = (selectedCar || favoriteCar).id;
+  const rejoinEstimate = (ownView(rejoinTarget)?.rejoin as RejoinEstimate | undefined)
+    ?? { available: false as const, carId: rejoinTarget, reason: 'solo de tus coches' };
   const activeCircuitSpec = OFFICIAL_CIRCUITS[selectedCircuitId] || OFFICIAL_CIRCUITS['barcelona'];
 
   // ── [T4.19] Partida en curso, menú de partidas y menú «Partida» ──
@@ -1252,7 +1353,7 @@ export const App: React.FC = () => {
     <GameMenu savedAt={savedAt} now={clock} name={careerName}
       onSave={() => handleSaveGame(careerName)} onSaveAs={handleSaveGame}
       onExport={() => { handleSaveGame(careerName); handleExportGame(SaveStore.slotId(careerName)); }}
-      onExit={() => { autosaveRef.current(); setCurrentView('menu'); }} />
+      onExit={() => { void syncFromEngineRef.current().then(() => { autosaveRef.current(); setCurrentView('menu'); }); }} />
   );
 
   // ── [T4.3] Centro de gestión de la carrera profesional ──
@@ -1576,7 +1677,7 @@ export const App: React.FC = () => {
           </button>
           {mode === 'career' && <span className={styles.gameSlot}>{gameMenu}</span>}
           <RaceMenu
-            safetyCarDeployed={simulation.safetyCar.isDeployed}
+            safetyCarDeployed={safetyCar !== null}
             onToggleSafetyCarTest={handleSafetyCarTest}
             onRedFlagTest={handleRedFlagTest}
             luckVariantEnabled={luckVariantEnabled}
@@ -1605,11 +1706,14 @@ export const App: React.FC = () => {
         <main className={styles.centerArea}>
           <div className={styles.canvasArea} data-formation={lightState === 'formation-lap' ? 'true' : undefined}>
             <RaceCanvas
-              simulation={simulation}
+              track={simulation.activeTrack}
+              circuitId={simulation.circuitId}
+              roster={raceRoster}
               camera={camera}
               selectedCarId={selectedCarId}
               onSelectCar={handleSelectCar}
               weatherTest={mode === 'free'}
+              onWeatherTest={index => { void sendOrder({ kind: 'weatherTest', index }); }}
             />
 
             {/* HUD de Banderas y Safety Car en Directo */}
@@ -1617,7 +1721,7 @@ export const App: React.FC = () => {
               raceFlagState={raceFlagState}
               sectorFlags={sectorFlags}
               safetyCar={safetyCar}
-              onEndRace={() => { simulation.endRaceSuspended(); }}
+              onEndRace={() => { void sendOrder({ kind: 'endSuspended' }); }}
             />
 
             <RaceNotices notices={notices} />
@@ -1634,7 +1738,7 @@ export const App: React.FC = () => {
               cars={cars}
               favoriteCarId={favoriteCar.id}
               onSelectFavoriteCar={(id) => {
-                const c = simulation.getCarById(id);
+                const c = cars.find(car => car.id === id);
                 if (c) setSelectedDriverId(c.driver.id);
               }}
               onStartClick={handleStartFormationLap}
@@ -1667,11 +1771,11 @@ export const App: React.FC = () => {
             {isFinished && podiumCars.length >= 3 && (
               <PodiumModal
                 podiumCars={podiumCars}
-                result={simulation.getRaceResult()}
-                onConfirmResult={() => { simulation.confirmResult(); setPodiumCars([...simulation.podiumCars]); }}
+                result={(slowView?.result as RaceResult | null) ?? undefined}
+                onConfirmResult={() => { void sendOrder({ kind: 'confirmResult' }); }}
                 homeLabel={podiumHomeLabel(simulation.raceFormat, raceCounts)}
-                progress={!raceCounts || simulation.raceFormat === 'sprint' ? [] : (() => {
-                  const after = developmentAfter(simulation.getRaceResult());
+                progress={!raceCounts || simulation.raceFormat === 'sprint' || !slowView?.result ? [] : (() => {
+                  const after = developmentAfter(slowView.result as RaceResult);
                   return teamCars.map(c => roster[c.driver.id]).filter(Boolean).map(driver => ({
                     driver, attributes: attributesOf(after, driver), gains: after.lastGains[driver.id] ?? {}, focus: development.focus[driver.id] ?? 'equilibrado',
                   }));
@@ -1685,7 +1789,8 @@ export const App: React.FC = () => {
             <DnfNotificationModal
               notification={activeDnf}
               onDismiss={() => {
-                simulation.latestDnf = null;
+                dismissedDnf.current = activeDnf?.id ?? null;
+                void sendOrder({ kind: 'dnfClear' });
                 setActiveDnf(null);
               }}
             />
@@ -1702,7 +1807,8 @@ export const App: React.FC = () => {
           </div>
 
           <section className={`${styles.wallArea} ${showWall ? '' : styles.isHidden}`}>
-            <BoxControls key={teamCars.map(c => c.id).join(':') + ':' + selectedCircuitId} car={favoriteCar} simulation={simulation} teamCars={teamCars} />
+            <BoxControls key={teamCars.map(c => c.id).join(':') + ':' + selectedCircuitId} car={favoriteCar} teamCars={teamCars}
+              team={teamViews[favoriteCar.team.id]} race={{ lightState, isFinished, raceFlagState }} send={sendOrder} />
           </section>
         </main>
 
@@ -1727,7 +1833,7 @@ export const App: React.FC = () => {
           {/* [V4] La estrategia en una línea: tandas, vuelta actual y ventana de parada. */}
           <StintTimeline stints={detailCar.pitStop.stints ?? []} currentLap={detailCar.currentLap} totalLaps={simulation.totalLaps} />
           {/* [R24] Lectura del muro del coche en detalle. */}
-          <WallPanel reading={detailCar ? simulation.getWallReading(detailCar.id) : null} />
+          <WallPanel reading={detailCar ? ((ownView(detailCar.id)?.reading as WallReading | null | undefined) ?? null) : null} />
           <div className={styles.detailStats}>
             <RightStatsPanel
               car={selectedCar}
@@ -1738,7 +1844,7 @@ export const App: React.FC = () => {
               overallBestS3={bestS3}
               weather={weather}
               circuit={activeCircuitSpec}
-              rainForecast={simulation.getRainForecast()}
+              rainForecast={(slowView?.forecast as RainForecast | null | undefined) ?? null}
             />
           </div>
         </aside>

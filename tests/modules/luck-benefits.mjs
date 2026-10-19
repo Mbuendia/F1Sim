@@ -9,8 +9,10 @@
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { raceFactory, fixedRandom } from '../support/race.mjs';
+import { viewsFactory } from '../support/views.mjs';
 
 export default async function run({ server, assert, test }) {
+  const wallProps = await viewsFactory(server); // [N3] el muro se monta con las vistas del motor
   const make = await raceFactory(server);
   const rollWith = (sim, roll, carId) => {
     const original = Math.random;
@@ -121,7 +123,7 @@ export default async function run({ server, assert, test }) {
       assert(!car.pitStop.crewBenefit, 'Q17: aceptar "sin ventaja" no concede nada');
       sim.activeLuckEvent = event; event.applied = false;
       sim.applyLuckEventReward(event.id);
-      const wall = renderToStaticMarkup(createElement(BoxControls, { car, simulation: sim }));
+      const wall = renderToStaticMarkup(createElement(BoxControls, wallProps(sim, car)));
       assert(wall.includes(`data-crew-benefit="${event.id}"`) && wall.includes(`hasta V${car.currentLap + 3}`), 'Q17: el muro de boxes muestra el beneficio pendiente y su validez');
     });
 

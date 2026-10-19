@@ -226,7 +226,7 @@ export default async function run({ server, assert, test }) {
     assert(/Llueve/.test(raining) && /para en unos \d+ min/.test(raining), 'R53: con lluvia, dice cuándo se espera que pare');
     assert(/sigue más de 20 min/.test(render(radar.radarForecast(scenario(cell({ startSec: 0, endSec: 9000 })), 75, 5))), 'R53: o que sigue más allá de lo que ve el radar');
     assert(render(null) === '', 'R53: sin previsión no se pinta nada');
-    assert(/RainForecastPanel/.test(source('src/components/RightStatsPanel.tsx')) && /getRainForecast\(\)/.test(source('src/App.tsx')), 'R53: el panel de meteorología enseña la previsión del radar');
+    assert(/RainForecastPanel/.test(source('src/components/RightStatsPanel.tsx')) && /getRainForecast\(\)/.test(source('src/engine/RaceView.ts')) && /slowView\?\.forecast/.test(source('src/App.tsx')), 'R53: el panel de meteorología enseña la previsión del radar');
 
     const original = Math.random;
     Math.random = () => 0.5;
