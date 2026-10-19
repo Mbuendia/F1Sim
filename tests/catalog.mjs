@@ -568,5 +568,6 @@ export const modules = [
   { "id": "race-session-n3", "tasks": ["N3"], "sprint": "5", "kind": "contract" },
   { "id": "rooms-n4", "tasks": ["N4"], "sprint": "5", "kind": "contract" },
   { "id": "rooms-rules-n4", "tasks": ["N4"], "sprint": "5", "kind": "contract" },
+  { "id": "transport-n5", "tasks": ["N5"], "sprint": "5", "kind": "contract" },
   { "id": "viewport-movil", "tasks": [], "sprint": null, "kind": "regression" }
 ];

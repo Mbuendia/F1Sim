@@ -18,6 +18,8 @@ export interface RoomDb {
   onValue(path: string, cb: (value: any) => void): () => void;
   onDisconnectRemove(path: string): Promise<void>;
   cancelOnDisconnect(path: string): Promise<void>;
+  /** [N5] Opcional: avisa de si hay conexión con la base (el respaldo); sin él se da por conectada. */
+  onConnection?(cb: (up: boolean) => void): () => void;
 }
 
 export const ROOM_PATHS = { rooms: 'rooms' } as const;

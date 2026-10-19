@@ -46,5 +46,7 @@ export async function connectFirebase(options: ConnectOptions = {}): Promise<Roo
     },
     async onDisconnectRemove(path) { await onDisconnect(at(path)).remove(); },
     async cancelOnDisconnect(path) { await onDisconnect(at(path)).cancel(); },
+    // [N5] Estado de la conexión con la base: es lo que decide si el respaldo está disponible.
+    onConnection(cb) { return onValue(at('.info/connected'), snap => cb(snap.val() === true)); },
   };
 }

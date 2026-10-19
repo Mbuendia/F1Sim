@@ -7,7 +7,9 @@ export interface LinkState {
   status: 'idle' | 'connecting' | 'ready' | 'closed' | 'error';
   lastMessageAt: number;
   error: string | null;
-  set(partial: Partial<Pick<LinkState, 'transport' | 'status' | 'lastMessageAt' | 'error'>>): void;
+  /** [N5] Enlace con el anfitrión en una partida compartida: directo (WebRTC), por el respaldo o caído. */
+  peer: 'none' | 'connecting' | 'direct' | 'fallback' | 'down';
+  set(partial: Partial<Pick<LinkState, 'transport' | 'status' | 'lastMessageAt' | 'error' | 'peer'>>): void;
 }
 
 export function createLinkStore() {
@@ -16,6 +18,7 @@ export function createLinkStore() {
     status: 'idle',
     lastMessageAt: 0,
     error: null,
+    peer: 'none',
     set(partial) { set(partial); },
   }));
 }

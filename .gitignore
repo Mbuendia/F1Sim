@@ -31,3 +31,7 @@ scratch/g-tumftm/
 scratch/g11/
 scratch/g7-line-shifts.json
 assets3d/circuits/*.blend
+
+# N4: registro del emulador de Firebase
+database-debug.log
+firebase-debug.log
