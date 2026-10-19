@@ -11,6 +11,20 @@ import { roomPaths } from './RoomService';
 import { MULTIPLAYER_LIMITS } from '../engine/limits';
 import type { RaceFormatId } from '../components/RaceFormatSelect';
 import type { RosterEntry } from '../engine/raceCars';
+import type { QualifyingResult } from '../simulation/Qualifying';
+import { joinRoom } from './RoomService';
+import type { JoinResult } from './RoomService';
+
+/** [N8/N9] La carrera publicada en la sala: circuito, tiempo, formato, en qué punto va y, con clasificación, su resultado. */
+export interface SharedRaceRecord {
+  circuitId: string;
+  weather: string;
+  format: 'directo' | 'clasificacion';
+  /** Clasificación en marcha (cada uno la ve a su ritmo) o carrera en pista. */
+  stage: 'clasificacion' | 'carrera';
+  roster: RosterEntry[];
+  qualifying?: QualifyingResult | null;
+}
 
 export type SeatWant = { teamId: string; at?: number } | { spectator: true; at?: number };
 export interface Seats {
@@ -31,7 +45,7 @@ export interface LobbyState {
   seats: Seats | null;
   settings: LobbySettings | null;
   /** [N8] La carrera que ha publicado el anfitrión al empezar (circuito, tiempo, formato y lista de salida). */
-  race: { circuitId: string; weather: string; format: 'directo'; roster: RosterEntry[] } | null;
+  race: SharedRaceRecord | null;
 }
 
 export const DEFAULT_SETTINGS: LobbySettings = { circuitId: 'barcelona', format: 'directo', weather: 'seco' };
@@ -149,6 +163,26 @@ export function resolveSeats({ hostUid, teamIds, lobby }: ResolveSeatsInput): Se
 export function freeTeams(lobby: Pick<LobbyState, 'seats'> | null, teamIds: string[]): string[] {
   const taken = lobby?.seats?.teams ?? {};
   return teamIds.filter(id => taken[id] === undefined);
+}
+
+/** [N9] Otra carrera en la misma sala: vuelve a la fase de sala, sin carrera publicada; cada uno conserva su equipo. */
+export async function returnToLobby(db: RoomDb, code: string) {
+  await db.update(metaPath(code), { status: 'lobby', phase: 'sala', race: null });
+}
+
+/**
+ * [N9] Entrar (o volver) a una sala. En la sala, como cualquiera; con la sala en carrera, solo quien tenía sitio en el
+ * reparto (un jugador que se ha caído o ha recargado la página, con la misma sesión).
+ */
+export async function rejoinRoom(db: RoomDb, code: string, { name }: { name: string }): Promise<JoinResult> {
+  const meta = await db.get(metaPath(code));
+  if (!meta || meta.status !== 'race') return joinRoom(db, code, { name });
+  const seats = readSeats(meta.seats);
+  if (!seats || !seatOf({ seats }, db.uid)) return { ok: false, reason: 'en-carrera' };
+  const at = `${presencePath(code)}/${db.uid}`;
+  await db.onDisconnectRemove(at);
+  await db.set(at, { name: String(name ?? '').trim().slice(0, 24) || 'Jugador', role: meta.host === db.uid ? 'host' : 'guest', joinedAt: Date.now() });
+  return { ok: true, code };
 }
 
 /** El asiento que tiene alguien en el reparto. */

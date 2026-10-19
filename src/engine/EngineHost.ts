@@ -267,6 +267,12 @@ export class EngineHost {
         return [ack];
       }
       if (msg.type === 'save') return [{ type: 'saved', seq: seq ?? -1, snapshot: createSnapshot(this.sim) }];
+      // [N9] La sala avisa de que un jugador se ha caído o ha vuelto (lo decide la presencia, no el jugador).
+      if (msg.type === 'owners' && typeof msg.uid === 'string') {
+        if (msg.op === 'dropped') this.dropped(msg.uid);
+        else if (msg.op === 'returned') this.returned(msg.uid);
+        return [];
+      }
       if (msg.type === 'load') {
         const outcome = restoreSnapshot(this.sim, msg.snapshot);
         if (outcome.ok) this.lastSlowKey = '';

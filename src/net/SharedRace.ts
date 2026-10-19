@@ -16,6 +16,9 @@ import type { LinkStore } from '../state/linkStore';
 import type { RoomDb } from './RoomService';
 import { roomPaths, setRoomStatus } from './RoomService';
 import type { Clock, GuestTransport, HostTransport, OrderResult } from './transport/Transport';
+import { watchLobby } from './Lobby';
+import type { LobbyState } from './Lobby';
+import type { QualifyingResult } from '../simulation/Qualifying';
 
 /** Pedir pausa: avisa al anfitrión, que decide. No se repite antes de este tiempo. */
 export const PAUSE_REQUEST_COOLDOWN_MS = 10000;
@@ -24,13 +27,25 @@ const PAUSE_KIND = 'pedirPausa';
 const GUEST_SEQ_BASE = 1_000_000_000;
 const realClock: Clock = { now: () => (globalThis.performance?.now?.() ?? Date.now()) };
 
-export interface SharedRaceInfo { circuitId: string; weather: string; format: 'directo'; roster: RosterEntry[] }
+export type SharedFormat = 'directo' | 'clasificacion';
 export interface PauseRequest { uid: string; name: string; at: number }
 
-/** Publica la carrera en la sala (como datos planos: Firebase no admite valores sin definir) y la pone en carrera. */
-export async function startSharedRace(db: RoomDb, code: string, race: { circuitId: string; weather: string; roster: RosterEntry[] }) {
-  const info: SharedRaceInfo = { circuitId: race.circuitId, weather: race.weather, format: 'directo', roster: JSON.parse(JSON.stringify(race.roster)) };
-  await db.set(`${roomPaths.room(code)}/meta/race`, info);
+const plain = <T>(value: T): T => JSON.parse(JSON.stringify(value));
+const racePath = (code: string) => `${roomPaths.room(code)}/meta/race`;
+
+/**
+ * Publica la carrera en la sala (como datos planos: Firebase no admite valores sin definir), ya en pista, y pone la sala
+ * en carrera. [N9] Con clasificación, la que se publicó antes se conserva.
+ */
+export async function startSharedRace(db: RoomDb, code: string, race: { circuitId: string; weather: string; roster: RosterEntry[]; format?: SharedFormat }) {
+  const format = race.format ?? 'directo';
+  await db.update(racePath(code), { circuitId: race.circuitId, weather: race.weather, format, stage: 'carrera', roster: plain(race.roster), ...(format === 'directo' ? { qualifying: null } : {}) });
+  await setRoomStatus(db, code, 'race');
+}
+
+/** [N9] El anfitrión publica la clasificación ya calculada: todos la ven igual (cada uno a su ritmo) antes de salir. */
+export async function publishQualifying(db: RoomDb, code: string, race: { result: QualifyingResult; circuitId: string; weather: string; roster: RosterEntry[] }) {
+  await db.set(racePath(code), { circuitId: race.circuitId, weather: race.weather, format: 'clasificacion', stage: 'clasificacion', roster: plain(race.roster), qualifying: plain(race.result) });
   await setRoomStatus(db, code, 'race');
 }
 
@@ -100,6 +115,11 @@ export class SharedRaceHost {
   private names: Record<string, string>;
   private lastPause = new Map<string, number>();
   private onPauseRequest?: (uid: string, name: string) => void;
+  /** [N9] Jugadores de la carrera y quién se ha caído (según la presencia de la sala). */
+  private playerUids = new Set<string>();
+  private dropped = new Set<string>();
+  private offPresence: () => void = () => {};
+  get droppedPlayers(): string[] { return [...this.dropped]; }
 
   constructor({ link, transport, store, linkStore, clock, names = {}, onPauseRequest }: {
     link: EngineLink; transport: HostTransport; store: RaceStore; linkStore?: LinkStore; clock?: Clock;
@@ -133,15 +153,37 @@ export class SharedRaceHost {
    * Arranca la carrera compartida: el motor (en modo compartido con los equipos elegidos) y, a la vez, la publica en la
    * sala. El motor recibe el arranque antes de la primera espera, como en la partida de un jugador.
    */
-  async start({ db, code, snapshot, config, roster, circuitId, weather, hostUid, hostTeamId, players }: {
+  async start({ db, code, snapshot, config, roster, circuitId, weather, format = 'directo', publish = true, hostUid, hostTeamId, players }: {
     db: RoomDb; code: string; snapshot: unknown; config: RaceConfig; roster: RosterEntry[]; circuitId: string; weather: string;
+    format?: SharedFormat;
+    /** [N9] Anunciar ya la salida a pista (no mientras el anfitrión ve la clasificación: el motor arranca antes). */
+    publish?: boolean;
     hostUid: string; hostTeamId: string; players: SharedInit['players'];
   }): Promise<StartOutcome> {
     this.tee.shared = { hostUid, hostTeamId, players };
     for (const p of players) this.transport.setTeam(p.uid, 'teamId' in p ? p.teamId : '');
     const engine = this.session.start({ snapshot, config, roster, fastHz: 60 });
-    await startSharedRace(db, code, { circuitId, weather, roster });
+    // [N9] Caídas y vueltas: la presencia de la sala dice quién falta; el motor pasa su equipo al estratega y se lo devuelve.
+    this.playerUids = new Set(players.filter(p => 'teamId' in p).map(p => p.uid));
+    this.dropped.clear();
+    this.offPresence();
+    this.offPresence = watchLobby(db, code, lobby => this.presence(lobby));
+    if (publish) await startSharedRace(db, code, { circuitId, weather, roster, format });
     return engine;
+  }
+
+  /** [N9] Publica la clasificación calculada (antes de salir a pista). */
+  publishQualifying({ db, code, result, roster, circuitId, weather }: { db: RoomDb; code: string; result: QualifyingResult; roster: RosterEntry[]; circuitId: string; weather: string }) {
+    return publishQualifying(db, code, { result, roster, circuitId, weather });
+  }
+
+  private presence(lobby: LobbyState) {
+    if (lobby.closed) return;
+    const here = new Set(lobby.members.map(m => m.uid));
+    for (const uid of this.playerUids) {
+      if (!here.has(uid) && !this.dropped.has(uid)) { this.dropped.add(uid); this.tee.post({ type: 'owners', op: 'dropped', uid }); }
+      else if (here.has(uid) && this.dropped.has(uid)) { this.dropped.delete(uid); this.tee.post({ type: 'owners', op: 'returned', uid }); }
+    }
   }
 
   /** Orden de la pantalla del anfitrión. */
@@ -153,7 +195,7 @@ export class SharedRaceHost {
     if (i >= 0) this.pauseRequests.splice(i, 1);
   }
 
-  stop() { this.session.stop(); }
+  stop() { this.offPresence(); this.offPresence = () => {}; this.session.stop(); }
 }
 
 /** Enlace del invitado: la sesión de N3 habla con el anfitrión por la red como si fuera el motor. */

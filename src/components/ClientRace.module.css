@@ -29,3 +29,10 @@
   .wall { grid-template-columns: 1fr 1fr; }
   .wall > :first-child { grid-column: 1 / -1; }
 }
+
+/* [N9] Final y sala cerrada */
+.primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 8px 20px; border-radius: var(--radio-s); border: 1px solid var(--accion); background: var(--accion); color: #fff; font-family: var(--font-ui); font-size: 16px; font-weight: 600; cursor: pointer; }
+.result { display: flex; flex-direction: column; gap: 8px; padding: 10px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radio-m); min-width: 0; overflow-x: auto; }
+.end { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 8px; }
+.ended { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 24px 16px; text-align: center; }
+.endTitle { font-family: var(--font-marca); font-size: 22px; font-weight: 700; margin: 0; }

@@ -109,16 +109,18 @@ export function HostLobby({ code, link, qr, settings, players, onSettings, onOpe
             <div className={s.pickerList}>
               {Object.values(OFFICIAL_CIRCUITS).map(c => (
                 <button key={c.id} type="button" className={s.choice} aria-pressed={c.id === settings.circuitId}
-                  onClick={() => onSettings({ ...settings, circuitId: c.id, format: 'directo' })}>
+                  onClick={() => onSettings({ ...settings, circuitId: c.id })}>
                   {c.name}
                 </button>
               ))}
             </div>
           </details>
-          {/* [N8] En la sala se corre GP directo (decisión del usuario del 19/10/2026); la clasificación compartida es N9. */}
+          {/* [N9] En la sala: GP directo o con clasificación (decisión del usuario del 19/10/2026); el sprint no. */}
           <div className={s.inputRow}>
             <span className={s.label}>Formato</span>
-            <span><b>GP directo</b> <span className={s.dim}>· parrilla prefijada</span></span>
+            <Segmented wrap label="Formato" name="sala-formato" value={settings.format === 'clasificacion' ? 'clasificacion' : 'directo'}
+              options={[{ value: 'directo', label: 'GP directo', title: 'Parrilla prefijada' }, { value: 'clasificacion', label: 'Con clasificación', title: 'Q1, Q2 y Q3 antes de salir' }]}
+              onChange={format => onSettings({ ...settings, format })} />
           </div>
           <div className={s.inputRow}>
             <span className={s.label}>Tiempo</span>

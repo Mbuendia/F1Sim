@@ -3,7 +3,9 @@
 // enlace. Sin herramientas, control de velocidad ni pausa: eso es del anfitrión. El espectador ve pista y tiempos.
 // No sabe nada de la red: recibe lo que hay en el almacén de la carrera y devuelve las órdenes.
 import type { ReactNode } from 'react';
-import { Hand, LogOut } from 'lucide-react';
+import { Hand, LogOut, Play, X } from 'lucide-react';
+import { ResultsTable } from './ResultsTable';
+import type { RaceResult } from '../simulation/RaceResult';
 import { carViews } from '../engine/raceCars';
 import type { RosterEntry } from '../engine/raceCars';
 import type { FastView, SlowView, TeamView } from '../engine/RaceView';
@@ -18,7 +20,7 @@ import s from './ClientRace.module.css';
 
 const LINK_TEXT: Record<LinkLabel, string> = { none: 'Sin enlace', connecting: 'Conectando', direct: 'Directo', fallback: 'Respaldo', down: 'Caído' };
 
-export function ClientRaceScreen({ role, myTeamId, roster, fast, slow, teams, link, pauseRequested, track, onOrder, onRequestPause, onLeave }: {
+export function ClientRaceScreen({ role, myTeamId, roster, fast, slow, teams, link, pauseRequested, closed = false, track, onOrder, onRequestPause, onLeave }: {
   role: 'player' | 'spectator';
   myTeamId: string | null;
   roster: RosterEntry[];
@@ -28,12 +30,25 @@ export function ClientRaceScreen({ role, myTeamId, roster, fast, slow, teams, li
   link: LinkLabel;
   /** Ya ha pedido pausa y aún no puede volver a pedirla. */
   pauseRequested: boolean;
+  /** [N9] El anfitrión ha cerrado la sala (o se ha caído y la sala se ha borrado). */
+  closed?: boolean;
   /** La pista (un lienzo en la aplicación; nada en los tests). */
   track?: ReactNode;
   onOrder: (order: EngineOrder) => Promise<Ack>;
   onRequestPause: () => void;
   onLeave: () => void;
 }) {
+  if (closed) {
+    return (
+      <div className={s.screen}>
+        <main className={s.ended}>
+          <p className={s.endTitle}>El anfitrión ha cerrado la sala</p>
+          <p className={s.dim}>La carrera compartida ha terminado para todos.</p>
+          <button type="button" className={s.primary} onClick={onLeave}>Volver al menú</button>
+        </main>
+      </div>
+    );
+  }
   const cars = carViews({ roster, fast, slow, teams });
   const team = myTeamId ? teams[myTeamId] : undefined;
   const own = role === 'player' && myTeamId ? cars.filter(car => car.team.id === myTeamId) : [];
@@ -54,6 +69,12 @@ export function ClientRaceScreen({ role, myTeamId, roster, fast, slow, teams, li
         <button type="button" className={s.ghost} onClick={onLeave} aria-label="Salir de la sala"><LogOut size={18} aria-hidden="true" /></button>
       </header>
       <main className={s.body}>
+        {slow?.finished && Boolean(slow.result) && (
+          <section className={s.result} aria-label="Resultado">
+            <ResultsTable result={slow.result as RaceResult} />
+            <SharedRaceEnd isHost={false} onAnother={() => {}} onClose={() => {}} onLeave={onLeave} />
+          </section>
+        )}
         <section className={s.track}>{track}</section>
         <section className={s.timing} data-timing>
           <Leaderboard cars={cars} selectedCarId={null} onSelectCar={() => {}} fastestLapDriverName={slow?.fastestLap?.driverName ?? null} leaderLap={slow?.lap ?? 0} />
@@ -79,6 +100,25 @@ export function ClientRaceScreen({ role, myTeamId, roster, fast, slow, teams, li
           </section>
         )}
       </main>
+    </div>
+  );
+}
+
+/** [N9] Final de la carrera compartida: el anfitrión elige otra carrera en la misma sala o cerrarla; el invitado espera. */
+export function SharedRaceEnd({ isHost, onAnother, onClose, onLeave }: { isHost: boolean; onAnother: () => void; onClose: () => void; onLeave: () => void }) {
+  return (
+    <div className={s.end} role="group" aria-label="Final de la carrera">
+      {isHost ? (
+        <>
+          <button type="button" className={s.primary} onClick={onAnother}><Play size={16} fill="#fff" aria-hidden="true" />Otra carrera</button>
+          <button type="button" className={s.ghost} onClick={onClose}><X size={16} aria-hidden="true" />Cerrar sala</button>
+        </>
+      ) : (
+        <>
+          <span className={s.dim}>Esperando al anfitrión: otra carrera o cerrar la sala.</span>
+          <button type="button" className={s.ghost} onClick={onLeave}><LogOut size={16} aria-hidden="true" />Salir</button>
+        </>
+      )}
     </div>
   );
 }
