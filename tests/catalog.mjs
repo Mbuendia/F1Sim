@@ -566,5 +566,7 @@ export const modules = [
   { "id": "hosting-n11", "tasks": ["N11"], "sprint": "5", "kind": "contract" },
   { "id": "engine-host-n2", "tasks": ["N2"], "sprint": "5", "kind": "contract" },
   { "id": "race-session-n3", "tasks": ["N3"], "sprint": "5", "kind": "contract" },
+  { "id": "rooms-n4", "tasks": ["N4"], "sprint": "5", "kind": "contract" },
+  { "id": "rooms-rules-n4", "tasks": ["N4"], "sprint": "5", "kind": "contract" },
   { "id": "viewport-movil", "tasks": [], "sprint": null, "kind": "regression" }
 ];
