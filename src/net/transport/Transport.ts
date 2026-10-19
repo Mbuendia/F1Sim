@@ -84,8 +84,11 @@ export class HostTransport {
   private stateDirty = false;
   private latest: { fast?: unknown; slow?: unknown; slowSeq: number } = { slowSeq: 0 };
 
+  private onOrder: HostTransportOptions['onOrder'];
+
   constructor(private readonly opts: HostTransportOptions) {
     this.clock = opts.clock ?? realClock;
+    this.onOrder = opts.onOrder;
   }
 
   async start() {
@@ -108,6 +111,17 @@ export class HostTransport {
       if (typeof value?.session === 'string') this.session(uid, value.session);
       for (const [key, order] of Object.entries(value?.orders ?? {})) this.fromGuest(uid, { t: 'order', seq: Number(key), order }, 'fallback');
     });
+  }
+
+  /** [N8] Cambia el equipo de un invitado (a quién va la vista de qué equipo) sin cortar su conexión. */
+  setTeam(uid: string, teamId: string) {
+    const guest = this.guests.get(uid);
+    if (guest) { guest.teamId = teamId; guest.pendingTeam = undefined; }
+  }
+
+  /** [N8] Quién aplica las órdenes de los invitados (en la sala, nadie; en carrera, el motor). */
+  setOrderHandler(onOrder: HostTransportOptions['onOrder']) {
+    this.onOrder = onOrder;
   }
 
   removeGuest(uid: string) {
@@ -155,7 +169,7 @@ export class HostTransport {
       if (Number.isInteger(seq) && seq > 0) this.ack(uid, seq, guest.results.get(seq) ?? { ok: true, duplicate: true }, via);
       return;
     }
-    Promise.resolve(this.opts.onOrder(uid, order, seq)).then(result => {
+    Promise.resolve(this.onOrder(uid, order, seq)).then(result => {
       const r: OrderResult = result ?? { ok: true };
       guest.results.set(seq, r);
       if (guest.results.size > 64) guest.results.delete(guest.results.keys().next().value as number);

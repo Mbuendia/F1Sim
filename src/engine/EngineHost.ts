@@ -86,6 +86,8 @@ export class EngineHost {
   private fastClock = Infinity;
   private slowClock = Infinity;
   private lastSlowKey = '';
+  /** [N8] Equipos con una orden aceptada desde la última vista: su vista sale en el paso siguiente, sin esperar al segundo. */
+  private dirtyTeams = new Set<string>();
   private readonly hostUid: string | null;
   private members = new Map<string, Member>();
   /** [N6] Órdenes rechazadas por permisos: quién, qué y por qué. */
@@ -229,8 +231,23 @@ export class EngineHost {
         out.push({ type: 'slow', view: slowView(this.sim, raw.map(notice => notice.text)) });
         for (const teamId of this.teams) out.push({ type: 'team', teamId, view: this.teamView(teamId) });
       }
+      this.dirtyTeams.clear();
+    } else if (this.dirtyTeams.size) {
+      for (const teamId of this.teams) if (this.dirtyTeams.has(teamId)) {
+        out.push({ type: 'team', teamId, view: this.isShared ? teamView(this.sim, teamId, { notices: [] }) : this.teamView(teamId) });
+      }
+      this.dirtyTeams.clear();
     }
     return out;
+  }
+
+  /** El equipo al que afecta una orden (para mandar su vista al momento). */
+  private teamOfOrder(raw: unknown): string | null {
+    const o = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
+    if (typeof o.teamId === 'string') return o.teamId;
+    if (isId(o.carId)) return this.sim.getCarById(o.carId)?.team.id ?? null;
+    if (LUCK_ORDERS.includes(String(o.kind)) && this.sim.activeLuckEvent) return this.sim.getCarById(this.sim.activeLuckEvent.luckyCarId)?.team.id ?? null;
+    return null;
   }
 
   /** Lo que, al cambiar, merece una vista lenta inmediata: bandera, semáforo, Safety Car, pausa y final. */
@@ -244,11 +261,17 @@ export class EngineHost {
     const msg = (message && typeof message === 'object' ? message : {}) as Record<string, unknown>;
     const seq = isId(msg.seq) ? msg.seq : null;
     try {
-      if (msg.type === 'order') return [this.order(seq ?? -1, msg.order, from ?? this.hostUid)];
+      if (msg.type === 'order') {
+        const ack = this.order(seq ?? -1, msg.order, from ?? this.hostUid);
+        if (ack.type === 'ack' && ack.ok) { const team = this.teamOfOrder(msg.order); if (team) this.dirtyTeams.add(team); }
+        return [ack];
+      }
       if (msg.type === 'save') return [{ type: 'saved', seq: seq ?? -1, snapshot: createSnapshot(this.sim) }];
       if (msg.type === 'load') {
         const outcome = restoreSnapshot(this.sim, msg.snapshot);
         if (outcome.ok) this.lastSlowKey = '';
+        // [N8] La foto trae sus propios coches del jugador: en una partida compartida mandan los dueños.
+        if (outcome.ok && this.isShared) this.syncPlayers();
         return [{ type: 'loaded', seq: seq ?? -1, ok: outcome.ok, errors: outcome.errors, diagnostics: outcome.diagnostics }];
       }
       return [{ type: 'error', seq, reason: `Mensaje desconocido: ${String(msg.type)}` }];

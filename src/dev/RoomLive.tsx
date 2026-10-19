@@ -1,14 +1,60 @@
-// [N7] Sala en vivo sin Firebase: anfitrión e invitado lado a lado (`?revision=sala&pantalla=vivo`), con la base y la
-// red simuladas de los tests y dentro de StrictMode, como la aplicación en desarrollo. Solo en desarrollo.
-import { StrictMode, useEffect, useState } from 'react';
+// [N7/N8] Sala en vivo sin Firebase: anfitrión e invitado lado a lado (`?revision=sala&pantalla=vivo`), con la base y
+// la red simuladas de los tests y dentro de StrictMode, como la aplicación en desarrollo. Solo en desarrollo.
+// Al pulsar «Empezar», el anfitrión arranca una carrera mínima (motor en la propia pestaña, sin la preparación de la
+// aplicación) con el anfitrión que la reparte (N8), y el invitado entra en su pantalla de carrera.
+import { StrictMode, useEffect, useMemo, useState } from 'react';
+import { useStore } from 'zustand';
 import { RoomFlow } from '../components/RoomFlow';
-import type { RoomBackend } from '../components/RoomFlow';
+import type { HostStart, RoomBackend } from '../components/RoomFlow';
+import { PauseRequestBanner } from '../components/ClientRace';
+import { RaceSimulation } from '../simulation/RaceSimulation';
+import { createSnapshot } from '../simulation/Snapshot';
+import { buildWeatherScenario } from '../data/weatherScenarios';
+import { LocalLink } from '../engine/LocalLink';
+import { rosterOf } from '../engine/RaceSession';
+import { createRaceStore } from '../state/raceStore';
+import { SharedRaceHost } from '../net/SharedRace';
+import type { PauseRequest } from '../net/SharedRace';
 
 type Fakes = { fake: any; net: any };
+const CONFIG = { fixedStepSec: 0.02, autoStartTyres: true, seededPreparation: true, autoTeamOrders: true, upgradeTradeoffs: {}, luckVariantEnabled: false };
+
+/** El anfitrión en carrera (versión mínima de lo que hace App): vuelta, peticiones de pausa y su pausa. */
+function HostRace({ start }: { start: HostStart }) {
+  const store = useMemo(() => createRaceStore(), []);
+  const [host, setHost] = useState<SharedRaceHost | null>(null);
+  const [pauses, setPauses] = useState<PauseRequest[]>([]);
+  const slow = useStore(store, state => state.slow);
+  useEffect(() => {
+    const sim = new RaceSimulation(start.circuitId);
+    sim.setWeatherScenario(buildWeatherScenario(start.weather, sim.totalLaps * 90));
+    sim.lightState = 'racing';
+    const link = new LocalLink();
+    link.run();
+    const shared = new SharedRaceHost({ link, transport: start.transport, store, names: start.names, onPauseRequest: () => setPauses([...shared.pauseRequests]) });
+    void shared.start({ db: start.db, code: start.code, snapshot: createSnapshot(sim), config: CONFIG, roster: rosterOf(sim), circuitId: start.circuitId,
+      weather: start.weather, hostUid: start.hostUid, hostTeamId: start.hostTeamId, players: start.players });
+    setHost(shared);
+    (window as any).__roomLiveHost = shared;
+    return () => shared.stop();
+  }, [start, store]);
+  return (
+    <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12, color: 'var(--text)', background: 'var(--bg)' }} data-host-race>
+      <h2 style={{ margin: 0 }}>Anfitrión en carrera</h2>
+      <p style={{ margin: 0 }}>Vuelta {slow?.lap ?? '–'} · velocidad x{slow?.speed ?? '–'} · {slow?.paused ? 'en pausa' : 'en marcha'}</p>
+      <PauseRequestBanner requests={pauses} onDismiss={uid => { host?.dismissPause(uid); setPauses([...(host?.pauseRequests ?? [])]); }} />
+      <div style={{ display: 'flex', gap: 8 }}>
+        <button type="button" onClick={() => { void host?.order({ kind: 'pause', paused: !slow?.paused }); }}>{slow?.paused ? 'Seguir' : 'Parar'}</button>
+        <button type="button" onClick={() => { void host?.order({ kind: 'speed', value: 8 }); }}>Pedir x8</button>
+      </div>
+    </div>
+  );
+}
 
 export default function RoomLive() {
   const [fakes, setFakes] = useState<Fakes | null>(null);
   const [round, setRound] = useState(0);
+  const [hostStart, setHostStart] = useState<HostStart | null>(null);
   useEffect(() => {
     const base = import.meta.env.BASE_URL;
     const db = `${base}tests/support/fakeDb.mjs`, direct = `${base}tests/support/fakeDirect.mjs`;
@@ -19,7 +65,7 @@ export default function RoomLive() {
     });
   }, []);
   // La red simulada no entrega nada hasta flush().
-  useEffect(() => { const id = setInterval(() => fakes?.net.flush(), 100); return () => clearInterval(id); }, [fakes]);
+  useEffect(() => { const id = setInterval(() => fakes?.net.flush(), 50); return () => clearInterval(id); }, [fakes]);
   if (!fakes) return <p>Cargando…</p>;
   const backend = (uid: string): RoomBackend => ({
     // Como Firebase: cada conexión tarda lo suyo (y StrictMode conecta dos veces).
@@ -32,7 +78,10 @@ export default function RoomLive() {
     <StrictMode>
       <style>{'[data-half] > div { width: 100% !important; height: 100% !important; }'}</style>
       <div style={{ display: 'flex', width: '100vw' }} key={round}>
-        <div style={half} data-half="anfitrion"><RoomFlow intent="create" backend={backend('host')} onExit={() => setRound(r => r + 1)} /></div>
+        <div style={half} data-half="anfitrion">
+          {hostStart ? <HostRace start={hostStart} />
+            : <RoomFlow intent="create" backend={backend('host')} onExit={() => setRound(r => r + 1)} onHostStart={setHostStart} />}
+        </div>
         <div style={half} data-half="invitado"><RoomFlow intent="join" backend={backend('g1')} onExit={() => setRound(r => r + 1)} /></div>
       </div>
     </StrictMode>

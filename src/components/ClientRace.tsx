@@ -1,0 +1,99 @@
+// [N8] Pantalla de carrera del invitado (decisión del usuario del 19/10/2026: una pantalla nueva, más sencilla que la
+// del anfitrión). Pista, tiempos y, si juega, el muro de su equipo con sus órdenes; «Pedir pausa» y el estado del
+// enlace. Sin herramientas, control de velocidad ni pausa: eso es del anfitrión. El espectador ve pista y tiempos.
+// No sabe nada de la red: recibe lo que hay en el almacén de la carrera y devuelve las órdenes.
+import type { ReactNode } from 'react';
+import { Hand, LogOut } from 'lucide-react';
+import { carViews } from '../engine/raceCars';
+import type { RosterEntry } from '../engine/raceCars';
+import type { FastView, SlowView, TeamView } from '../engine/RaceView';
+import type { EngineOrder } from '../engine/EngineHost';
+import type { Ack } from '../engine/RaceSession';
+import { Leaderboard } from './Leaderboard';
+import { BoxControls } from './BoxControls';
+import { PaceControls } from './PaceControls';
+import type { PaceStatus } from './PaceControls';
+import type { LinkLabel } from './RoomScreens';
+import s from './ClientRace.module.css';
+
+const LINK_TEXT: Record<LinkLabel, string> = { none: 'Sin enlace', connecting: 'Conectando', direct: 'Directo', fallback: 'Respaldo', down: 'Caído' };
+
+export function ClientRaceScreen({ role, myTeamId, roster, fast, slow, teams, link, pauseRequested, track, onOrder, onRequestPause, onLeave }: {
+  role: 'player' | 'spectator';
+  myTeamId: string | null;
+  roster: RosterEntry[];
+  fast: FastView | null;
+  slow: SlowView | null;
+  teams: Record<string, TeamView>;
+  link: LinkLabel;
+  /** Ya ha pedido pausa y aún no puede volver a pedirla. */
+  pauseRequested: boolean;
+  /** La pista (un lienzo en la aplicación; nada en los tests). */
+  track?: ReactNode;
+  onOrder: (order: EngineOrder) => Promise<Ack>;
+  onRequestPause: () => void;
+  onLeave: () => void;
+}) {
+  const cars = carViews({ roster, fast, slow, teams });
+  const team = myTeamId ? teams[myTeamId] : undefined;
+  const own = role === 'player' && myTeamId ? cars.filter(car => car.team.id === myTeamId) : [];
+  const race = { lightState: slow?.light ?? 'off', isFinished: Boolean(slow?.finished), raceFlagState: slow?.flag ?? 'green' };
+  return (
+    <div className={s.screen}>
+      <header className={s.head}>
+        <div className={s.title}>
+          <b>{slow ? `Vuelta ${Math.min(slow.lap, slow.totalLaps)} / ${slow.totalLaps}` : 'Esperando la carrera…'}</b>
+          {role === 'spectator' && <span className={s.tag}>Mirando</span>}
+        </div>
+        <span className={s.link} data-link={link}>{LINK_TEXT[link]}</span>
+        {role === 'player' && (
+          <button type="button" className={s.button} onClick={onRequestPause} disabled={pauseRequested}>
+            <Hand size={16} aria-hidden="true" />{pauseRequested ? 'Pausa pedida' : 'Pedir pausa'}
+          </button>
+        )}
+        <button type="button" className={s.ghost} onClick={onLeave} aria-label="Salir de la sala"><LogOut size={18} aria-hidden="true" /></button>
+      </header>
+      <main className={s.body}>
+        <section className={s.track}>{track}</section>
+        <section className={s.timing} data-timing>
+          <Leaderboard cars={cars} selectedCarId={null} onSelectCar={() => {}} fastestLapDriverName={slow?.fastestLap?.driverName ?? null} leaderLap={slow?.lap ?? 0} />
+        </section>
+        {role === 'player' && (
+          <section className={s.wall} data-wall aria-label="Muro de tu equipo">
+            {/* Las paradas, para los dos pilotos a la vez (BoxControls ya los pinta juntos); el ritmo, por coche. */}
+            {own.length > 0 && (
+              <div className={s.car} style={{ ['--c' as string]: own[0].team.color }}>
+                <BoxControls car={own[0]} teamCars={own} team={team} race={race} send={onOrder} />
+              </div>
+            )}
+            {own.map(car => {
+              const teamCar = team?.cars.find(c => c.id === car.id);
+              return (
+                <div key={car.id} className={s.car} style={{ ['--c' as string]: car.team.color }}>
+                  <div className={s.carHead}><b>{car.driver.code}</b><span>P{car.currentPosition || '–'}</span></div>
+                  <PaceControls car={car} pace={(teamCar?.paceStatus ?? null) as PaceStatus | null} send={onOrder} />
+                </div>
+              );
+            })}
+            {!own.length && <p className={s.dim}>Esperando el muro de tu equipo…</p>}
+          </section>
+        )}
+      </main>
+    </div>
+  );
+}
+
+/** Aviso al anfitrión: quién pide pausa. Él decide si pausa. */
+export function PauseRequestBanner({ requests, onDismiss }: { requests: { uid: string; name: string; at: number }[]; onDismiss: (uid: string) => void }) {
+  if (!requests.length) return null;
+  return (
+    <div className={s.banner} role="status">
+      {requests.map(r => (
+        <div key={r.uid} className={s.bannerRow}>
+          <Hand size={16} aria-hidden="true" /><span>{r.name} pide pausa</span>
+          <button type="button" className={s.ghost} onClick={() => onDismiss(r.uid)}>Vale</button>
+        </div>
+      ))}
+    </div>
+  );
+}

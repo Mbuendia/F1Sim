@@ -157,7 +157,9 @@ export default async function run({ server, assert, test }) {
       settings, teams, players, onSettings: noop, onOpenTeams: noop, onClose: noop,
     });
     assert(out.includes('ABC234') && out.includes('https://f1sim-d5085.web.app/?sala=ABC234') && out.includes('<svg'), 'N7: el anfitrión ve código, enlace y QR');
-    assert(/Mónaco|Monaco/.test(out) && out.includes('Tormenta') && /clasificaci/i.test(out), 'N7: y elige circuito, formato y tiempo');
+    assert(/Mónaco|Monaco/.test(out) && out.includes('Tormenta'), 'N7: y elige circuito y tiempo');
+    // [N8] Decisión del usuario del 19/10/2026: en la sala solo se corre GP directo hasta la clasificación compartida (N9).
+    assert(out.includes('GP directo') && !/Con clasificación|Sprint/.test(out), 'N8: el formato es GP directo: la sala no ofrece clasificación ni sprint');
     for (const p of ['Ana', 'Bea', 'Carla', 'Dani', 'Eva']) assert(out.includes(p), `N7: ve conectarse a ${p}`);
     assert(out.includes('Directo') && out.includes('Respaldo') && out.includes('Conectando') && out.includes('Caído'), 'N7: con el estado de su enlace');
     assert(out.includes('Elegir equipos') && out.includes('Cerrar sala') && !out.includes('data-team='), 'N7: en la sala no se eligen equipos: el anfitrión abre la elección');

@@ -35,5 +35,6 @@ self.onmessage = (event: MessageEvent) => {
   }
   if (msg && msg.type === 'stop') { host = null; if (timer !== null) clearTimeout(timer); timer = null; return; }
   if (!host) { post({ type: 'error', seq: null, reason: 'El motor aún no está iniciado' }); return; }
-  for (const reply of host.handle(msg)) post(reply);
+  // [N8] En una partida compartida, quién manda la orden (sin él, el anfitrión).
+  for (const reply of host.handle(msg, typeof msg?.from === 'string' ? msg.from : undefined)) post(reply);
 };

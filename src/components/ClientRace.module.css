@@ -1,0 +1,31 @@
+/* [N8] Pantalla de carrera del invitado. Primero el móvil: la pista arriba, tiempos y muro debajo. */
+.screen { width: 100vw; height: 100vh; height: 100dvh; display: flex; flex-direction: column; background: var(--bg); color: var(--text); font-family: var(--font-ui); font-size: 16px; overflow: hidden; }
+.head { flex: none; display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-bottom: 1px solid var(--line); background: var(--panel); }
+.title { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; font-family: var(--font-marca); }
+.tag { font-size: 14px; padding: 2px 8px; border-radius: 99px; border: 1px solid var(--line-strong); color: var(--text-2); }
+.link { font-size: 14px; padding: 2px 8px; border-radius: 99px; border: 1px solid var(--line-strong); color: var(--text-2); white-space: nowrap; }
+.link[data-link="direct"] { border-color: var(--ok, #3fb950); color: var(--ok, #3fb950); }
+.link[data-link="fallback"] { border-color: var(--aviso); color: var(--aviso); }
+.link[data-link="down"] { border-color: var(--peligro, #f85149); color: var(--peligro, #f85149); }
+.button, .ghost { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; min-width: 44px; padding: 6px 12px; border-radius: var(--radio-s); font-family: var(--font-ui); font-size: 15px; font-weight: 600; cursor: pointer; flex: none; color: var(--text); border: 1px solid var(--line-strong); }
+.button { background: var(--panel-2); }
+.button:disabled { opacity: 0.6; cursor: not-allowed; }
+.ghost { background: transparent; }
+
+.body { flex: 1; min-height: 0; overflow-y: auto; display: grid; grid-template-columns: 1fr; grid-auto-rows: min-content; gap: 8px; padding: 8px; }
+.track { position: relative; height: 42vh; min-height: 220px; border-radius: var(--radio-m); overflow: hidden; background: var(--panel); }
+.timing { min-width: 0; }
+.wall { display: grid; grid-template-columns: 1fr; gap: 8px; }
+.car { display: flex; flex-direction: column; gap: 8px; padding: 10px; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--c); border-radius: var(--radio-m); min-width: 0; }
+.carHead { display: flex; justify-content: space-between; font-family: var(--font-marca); }
+.dim { color: var(--text-3); font-size: 14px; margin: 0; }
+
+.banner { position: fixed; top: 64px; left: 50%; transform: translateX(-50%); z-index: 50; display: flex; flex-direction: column; gap: 6px; }
+.bannerRow { display: flex; align-items: center; gap: 10px; padding: 6px 6px 6px 14px; background: var(--panel); border: 1px solid var(--aviso); border-radius: var(--radio-m); color: var(--text); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4); }
+
+@media (min-width: 900px) {
+  .body { grid-template-columns: minmax(0, 1.4fr) minmax(320px, 1fr); }
+  .track { grid-column: 1; grid-row: 1 / span 2; height: auto; min-height: 60vh; }
+  .wall { grid-template-columns: 1fr 1fr; }
+  .wall > :first-child { grid-column: 1 / -1; }
+}

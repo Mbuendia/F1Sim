@@ -2,6 +2,17 @@
 // la sala (quién se conecta y los ajustes) y la elección de equipos, que abre el anfitrión. Conecta las pantallas de
 // RoomScreens con la sala de N4 (Lobby) y el transporte de N5, que ya da el estado del enlace de cada jugador. Firebase se carga aquí, con import(), solo cuando se abre el modo compartido. La carrera compartida es N8.
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useStore } from 'zustand';
+import { RaceSimulation } from '../simulation/RaceSimulation';
+import { Camera } from '../renderer/Camera';
+import { RaceSession } from '../engine/RaceSession';
+import type { RaceConfig } from '../engine/engineCore';
+import type { RosterEntry } from '../engine/raceCars';
+import { raceStore, useRace } from '../state/raceStore';
+import type { LinkStore } from '../state/linkStore';
+import { PAUSE_REQUEST_COOLDOWN_MS, RemoteLink, requestPause } from '../net/SharedRace';
+import { ClientRaceScreen } from './ClientRace';
+import { RaceCanvas } from './RaceCanvas';
 import { TEAMS } from '../data/teams';
 import { createRoom, joinRoom, leaveRoom, roomPaths, setRoomStatus } from '../net/RoomService';
 import type { RoomDb } from '../net/RoomService';
@@ -46,6 +57,67 @@ function Waiting({ text, onBack }: { text: string; onBack: () => void }) {
   );
 }
 
+/** [N8] Lo que el anfitrión entrega a la aplicación al pulsar «Empezar»: la sala, su transporte y quién juega. */
+export interface HostStart {
+  db: RoomDb;
+  code: string;
+  transport: HostTransport;
+  hostUid: string;
+  hostTeamId: string;
+  players: ({ uid: string; teamId: string } | { uid: string; spectator: true })[];
+  names: Record<string, string>;
+  circuitId: string;
+  weather: string;
+}
+
+/** El invitado no arranca motor: esta configuración no se usa, solo la pide la sesión. */
+const GUEST_CONFIG: RaceConfig = { fixedStepSec: 0.02, autoStartTyres: false, seededPreparation: false, autoTeamOrders: false, upgradeTradeoffs: {}, luckVariantEnabled: false };
+
+/** [N8] Carrera en el dispositivo del invitado: la sesión de N3 sobre el enlace remoto, en el almacén de la aplicación. */
+function GuestRace({ transport, race, lobby, myUid, linkStore, onLeave }: {
+  transport: GuestTransport;
+  race: { circuitId: string; roster: RosterEntry[] };
+  lobby: LobbyState;
+  myUid: string;
+  linkStore: LinkStore;
+  onLeave: () => void;
+}) {
+  const sessionRef = useRef<RaceSession | null>(null);
+  const [selected, setSelected] = useState<number | null>(null);
+  const [pauseRequested, setPauseRequested] = useState(false);
+  const track = useMemo(() => new RaceSimulation(race.circuitId).activeTrack, [race.circuitId]);
+  const camera = useMemo(() => new Camera(), []);
+  const slow = useRace(state => state.slow);
+  const teams = useRace(state => state.teams);
+  const peer = useStore(linkStore, state => state.peer);
+  // La sala se vuelve a leer con cada cambio (y trae un objeto nuevo): la carrera solo se rearranca si es otra.
+  const raceKey = `${race.circuitId}:${race.roster.map(entry => entry.id).join(',')}`;
+  const rosterRef = useRef(race.roster);
+  rosterRef.current = race.roster;
+  useEffect(() => {
+    const session = new RaceSession({ link: new RemoteLink(transport), store: raceStore, linkStore });
+    sessionRef.current = session;
+    camera.resetToFullTrack();
+    void session.start({ snapshot: null, config: GUEST_CONFIG, roster: rosterRef.current });
+    return () => { if (sessionRef.current === session) sessionRef.current = null; session.stop(); };
+  }, [transport, raceKey, linkStore, camera]);
+  useEffect(() => {
+    if (!pauseRequested) return;
+    const id = setTimeout(() => setPauseRequested(false), PAUSE_REQUEST_COOLDOWN_MS);
+    return () => clearTimeout(id);
+  }, [pauseRequested]);
+  const seat = seatOf(lobby, myUid);
+  const myTeamId = seat && 'teamId' in seat ? seat.teamId : null;
+  return (
+    <ClientRaceScreen role={myTeamId ? 'player' : 'spectator'} myTeamId={myTeamId} roster={race.roster} fast={null} slow={slow} teams={teams}
+      link={peer === 'none' ? 'none' : peer} pauseRequested={pauseRequested}
+      track={<RaceCanvas track={track} circuitId={race.circuitId} roster={race.roster} camera={camera} selectedCarId={selected} onSelectCar={setSelected} />}
+      onOrder={order => sessionRef.current?.order(order) ?? Promise.resolve({ ok: false, reason: 'Sin carrera' })}
+      onRequestPause={() => { const session = sessionRef.current; if (!session) return; setPauseRequested(true); void requestPause(session); }}
+      onLeave={onLeave} />
+  );
+}
+
 /** Lo que viene de fuera: Firebase y WebRTC en la aplicación; una base y una red simuladas en la página de revisión. */
 export interface RoomBackend {
   connect: () => Promise<RoomDb>;
@@ -58,7 +130,12 @@ const FIREBASE: RoomBackend = {
   connector: createWebRtcConnector,
 };
 
-export function RoomFlow({ intent, initialCode, onExit, backend = FIREBASE }: { intent: 'create' | 'join'; initialCode?: string; onExit: () => void; backend?: RoomBackend }) {
+export function RoomFlow({ intent, initialCode, onExit, onHostStart, backend = FIREBASE }: {
+  intent: 'create' | 'join'; initialCode?: string; onExit: () => void;
+  /** [N8] El anfitrión empieza: la aplicación arranca su carrera compartida (sin esto, solo se marca la sala en carrera). */
+  onHostStart?: (start: HostStart) => void;
+  backend?: RoomBackend;
+}) {
   const [db, setDb] = useState<RoomDb | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
   const [code, setCode] = useState<string | null>(null);
@@ -170,10 +247,27 @@ export function RoomFlow({ intent, initialCode, onExit, backend = FIREBASE }: { 
 
   const status: RoomStatusView = lobby?.closed ? 'closed' : lobby?.status === 'race' ? 'race' : 'lobby';
   const pick = (want: { teamId: string } | { spectator: true }) => { if (code) requestSeat(db, code, want).catch(() => {}); };
+  /** [N8] El anfitrión empieza: entrega la sala y su transporte a la aplicación (que publica la carrera y la arranca). */
+  const startRace = () => {
+    if (!code || !lobby) return;
+    const transport = hostTransport.current;
+    const seats = lobby.seats;
+    const hostTeamId = seats ? Object.entries(seats.teams).find(([, uid]) => uid === db.uid)?.[0] : undefined;
+    if (!onHostStart || !transport || !seats || !hostTeamId) { setRoomStatus(db, code, 'race').catch(() => {}); return; }
+    const players: HostStart['players'] = [
+      ...Object.entries(seats.teams).filter(([, uid]) => uid !== db.uid).map(([teamId, uid]) => ({ uid, teamId })),
+      ...seats.spectators.map(uid => ({ uid, spectator: true as const })),
+    ];
+    const settings = lobby.settings ?? DEFAULT_SETTINGS;
+    // El transporte y la sala pasan a la aplicación: al desmontar esta pantalla no se cierran.
+    hostTransport.current = null;
+    unwatch.current(); unwatch.current = () => {};
+    onHostStart({ db, code, transport, hostUid: db.uid, hostTeamId, players, names: Object.fromEntries(lobby.members.map(m => [m.uid, m.name])), circuitId: settings.circuitId, weather: settings.weather });
+  };
   const selection = (isHost: boolean) => lobby && code && (
     <TeamSelection code={code} myUid={db.uid} isHost={isHost} teams={TEAM_LIST} players={playersOf(lobby, links)} seats={lobby.seats}
       settings={lobby.settings} wants={lobby.members.find(m => m.uid === db.uid)?.wants ?? null} status={status}
-      onPick={pick} onStart={() => { setRoomStatus(db, code, 'race').catch(() => {}); }} onLeave={exit} />
+      onPick={pick} onStart={startRace} onLeave={exit} />
   );
 
   if (intent === 'create') {
@@ -189,6 +283,9 @@ export function RoomFlow({ intent, initialCode, onExit, backend = FIREBASE }: { 
 
   if (!code || !lobby) {
     return <JoinRoomScreen initialCode={initialCode ?? ''} error={joinError} busy={busy} onJoin={join} onBack={onExit} />;
+  }
+  if (status === 'race' && lobby.race && guestTransport.current) {
+    return <GuestRace transport={guestTransport.current} race={lobby.race} lobby={lobby} myUid={db.uid} linkStore={linkStore} onLeave={exit} />;
   }
   if (lobby.phase === 'equipos') return selection(false);
   return <GuestWaiting code={code} players={playersOf(lobby, links)} settings={lobby.settings} status={status} onLeave={exit} />;

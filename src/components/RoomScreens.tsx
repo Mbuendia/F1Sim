@@ -7,8 +7,6 @@ import { animate, stagger } from 'animejs';
 import { Check, Copy, Eye, LogOut, Play, Users, X } from 'lucide-react';
 import { OFFICIAL_CIRCUITS } from '../data/circuits';
 import { WEATHER_SCENARIOS } from '../data/weatherScenarios';
-import { isSprintVenue } from '../simulation/Weekend';
-import { RaceFormatSelect } from './RaceFormatSelect';
 import type { RaceFormatId } from './RaceFormatSelect';
 import { Segmented } from './ui/Segmented';
 import type { LobbySettings, Seats, SeatWant } from '../net/Lobby';
@@ -111,13 +109,17 @@ export function HostLobby({ code, link, qr, settings, players, onSettings, onOpe
             <div className={s.pickerList}>
               {Object.values(OFFICIAL_CIRCUITS).map(c => (
                 <button key={c.id} type="button" className={s.choice} aria-pressed={c.id === settings.circuitId}
-                  onClick={() => onSettings({ ...settings, circuitId: c.id, format: settings.format === 'sprint' && !isSprintVenue(c.id) ? 'clasificacion' : settings.format })}>
+                  onClick={() => onSettings({ ...settings, circuitId: c.id, format: 'directo' })}>
                   {c.name}
                 </button>
               ))}
             </div>
           </details>
-          <RaceFormatSelect value={settings.format} sprintAvailable={isSprintVenue(settings.circuitId)} onChange={format => onSettings({ ...settings, format })} />
+          {/* [N8] En la sala se corre GP directo (decisión del usuario del 19/10/2026); la clasificación compartida es N9. */}
+          <div className={s.inputRow}>
+            <span className={s.label}>Formato</span>
+            <span><b>GP directo</b> <span className={s.dim}>· parrilla prefijada</span></span>
+          </div>
           <div className={s.inputRow}>
             <span className={s.label}>Tiempo</span>
             <Segmented wrap label="Tiempo" name="sala-tiempo" value={settings.weather}

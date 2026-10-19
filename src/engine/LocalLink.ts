@@ -8,7 +8,7 @@ import type { EngineInit } from './engineCore';
 import type { EngineHost } from './EngineHost';
 
 export interface EngineLink {
-  readonly transport: 'local' | 'worker';
+  readonly transport: 'local' | 'worker' | 'remote';
   post(message: unknown): void;
   onMessage(listener: (message: unknown) => void): () => void;
   close(): void;
@@ -42,7 +42,8 @@ export class LocalLink implements EngineLink {
         } else if (msg?.type === 'stop') {
           this.host = null;
         } else if (this.host) {
-          this.outbox.push(...this.host.handle(msg));
+          // [N8] En una partida compartida, quién manda la orden (sin él, el anfitrión).
+          this.outbox.push(...this.host.handle(msg, typeof msg?.from === 'string' ? msg.from : undefined));
         } else {
           this.outbox.push({ type: 'error', seq: null, reason: 'El motor aún no está iniciado' });
         }

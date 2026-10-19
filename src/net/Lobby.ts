@@ -10,6 +10,7 @@ import type { RoomDb, RoomStatus } from './RoomService';
 import { roomPaths } from './RoomService';
 import { MULTIPLAYER_LIMITS } from '../engine/limits';
 import type { RaceFormatId } from '../components/RaceFormatSelect';
+import type { RosterEntry } from '../engine/raceCars';
 
 export type SeatWant = { teamId: string; at?: number } | { spectator: true; at?: number };
 export interface Seats {
@@ -29,6 +30,8 @@ export interface LobbyState {
   members: LobbyMember[];
   seats: Seats | null;
   settings: LobbySettings | null;
+  /** [N8] La carrera que ha publicado el anfitrión al empezar (circuito, tiempo, formato y lista de salida). */
+  race: { circuitId: string; weather: string; format: 'directo'; roster: RosterEntry[] } | null;
 }
 
 export const DEFAULT_SETTINGS: LobbySettings = { circuitId: 'barcelona', format: 'directo', weather: 'seco' };
@@ -64,6 +67,7 @@ export function watchLobby(db: RoomDb, code: string, cb: (state: LobbyState) => 
       members,
       seats: readSeats(meta?.seats),
       settings: meta?.settings ? { ...DEFAULT_SETTINGS, ...meta.settings } : null,
+      race: meta?.race && typeof meta.race.circuitId === 'string' ? { ...meta.race, roster: Array.isArray(meta.race.roster) ? meta.race.roster : Object.values(meta.race.roster ?? {}) } : null,
     });
   };
   const offMeta = db.onValue(metaPath(code), value => { meta = value ?? null; if (value) seenMeta = true; emit(); });
