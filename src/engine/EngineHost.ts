@@ -2,7 +2,10 @@
 // cargar), hace avanzar RaceSimulation y devuelve mensajes (acuses y vistas). El Worker (engine.worker.ts) solo lo
 // conecta a postMessage, y los tests lo usan directamente.
 // Cada orden envuelve una llamada que el motor ya tiene y deja la carrera igual que esa llamada: con la misma semilla y
-// las mismas órdenes, la carrera es idéntica a la de la pestaña. Quién puede mandar sobre qué coche llega con N6.
+// las mismas órdenes, la carrera es idéntica a la de la pestaña.
+// [N6] En una partida compartida cada equipo tiene dueño (la sesión anónima del jugador) y cada orden llega con quién
+// la manda: un jugador solo manda sobre su equipo, lo general es del anfitrión y un espectador no manda nada. Sin
+// partida compartida no hay dueños y todo sigue como en la partida de un jugador.
 import type { RaceSimulation } from '../simulation/RaceSimulation';
 import type { TeamOrderMode } from '../simulation/RaceSimulation';
 import type { TireCompound } from '../types/f1';
@@ -30,8 +33,11 @@ export type EngineRequest =
   | { type: 'save'; seq: number }
   | { type: 'load'; seq: number; snapshot: unknown };
 
+/** [N6] Por qué se rechaza una orden por permisos (y no por el estado de la carrera). */
+export type PermissionCode = 'equipo-ajeno' | 'solo-anfitrion' | 'espectador' | 'fuera-de-sala';
+
 export type EngineMessage =
-  | { type: 'ack'; seq: number; ok: boolean; reason?: string }
+  | { type: 'ack'; seq: number; ok: boolean; reason?: string; code?: PermissionCode }
   | { type: 'saved'; seq: number; snapshot: unknown }
   | { type: 'loaded'; seq: number; ok: boolean; errors: string[]; diagnostics: string[] }
   | { type: 'error'; seq: number | null; reason: string }
@@ -44,14 +50,33 @@ export interface EngineHostOptions {
   fastHz?: number;
   /** Vistas lentas y de equipo por segundo real. */
   slowHz?: number;
-  /** Equipos que reciben su vista privada (el del jugador y, con N6, los de los invitados). */
+  /** Equipos que reciben su vista privada (el del jugador; en una partida compartida, los que tienen dueño). */
   teams?: string[];
+  /** [N6] Partida compartida: quién es el anfitrión y qué equipo lleva. */
+  shared?: { hostUid: string; hostTeamId: string };
+}
+
+/** [N6] Valores por defecto del multijugador, confirmados por el usuario el 19/10/2026. */
+export const MULTIPLAYER_LIMITS = { players: 10, spectators: 10, guestSpeedCap: 4 } as const;
+
+export type JoinResult = { ok: true } | { ok: false; reason: 'ya-dentro' | 'sala-llena' | 'equipo-ocupado' | 'equipo-desconocido' | 'sin-sala' };
+
+interface Member {
+  role: 'player' | 'spectator';
+  teamId: string | null;
+  /** Caído: su equipo lo lleva el estratega y queda reservado hasta que vuelva. */
+  dropped: boolean;
+  /** Delegación de cada coche antes de caerse, para devolvérsela al volver. */
+  delegation: Map<number, boolean>;
 }
 
 const COMPOUNDS = ['soft', 'medium', 'hard', 'intermediate', 'wet'];
 const PACES = ['push', 'balanced', 'save'];
 const TEAM_ORDERS = ['libre', 'mantener', 'dejar-pasar'];
 const isId = (v: unknown): v is number => typeof v === 'number' && Number.isInteger(v);
+/** Órdenes sobre un coche, sobre un equipo o sobre la tirada de suerte (las demás son generales, del anfitrión). */
+const CAR_ORDERS = ['box', 'cancelBox', 'pace', 'acceptProposal', 'discardProposal', 'delegate'];
+const LUCK_ORDERS = ['luckReward', 'luckClear'];
 
 export class EngineHost {
   readonly sim: RaceSimulation;
@@ -61,12 +86,113 @@ export class EngineHost {
   private fastClock = Infinity;
   private slowClock = Infinity;
   private lastSlowKey = '';
+  private readonly hostUid: string | null;
+  private members = new Map<string, Member>();
+  /** [N6] Órdenes rechazadas por permisos: quién, qué y por qué. */
+  readonly rejections: { uid: string; kind: string; code: PermissionCode; reason: string; t: number }[] = [];
 
   constructor(sim: RaceSimulation, options: EngineHostOptions = {}) {
     this.sim = sim;
     this.fastPeriod = 1 / (options.fastHz ?? 15);
     this.slowPeriod = 1 / (options.slowHz ?? 1);
     this.teams = [...(options.teams ?? [])];
+    this.hostUid = options.shared?.hostUid ?? null;
+    if (options.shared) {
+      this.members.set(options.shared.hostUid, { role: 'player', teamId: options.shared.hostTeamId, dropped: false, delegation: new Map() });
+      this.syncPlayers();
+    }
+  }
+
+  // ───────────── [N6] Dueños de los equipos ─────────────
+
+  private get isShared() { return this.hostUid !== null; }
+  private teamCars(teamId: string) { return this.sim.cars.filter(car => car.team.id === teamId); }
+  private players() { return [...this.members.values()].filter(m => m.role === 'player'); }
+
+  /** El motor trata como del jugador los coches de los equipos con dueño (caídos incluidos: los lleva el estratega). */
+  private syncPlayers() {
+    const owned = new Set(this.players().map(m => m.teamId));
+    this.sim.setPlayerCars(this.sim.cars.filter(car => owned.has(car.team.id)).map(car => car.driver.id));
+    this.teams = this.players().filter(m => !m.dropped && m.teamId).map(m => m.teamId!);
+  }
+
+  private hasGuests() { return this.members.size > 1; }
+
+  private capSpeed() {
+    if (this.hasGuests() && this.sim.speedMultiplier > MULTIPLAYER_LIMITS.guestSpeedCap) this.sim.setSpeed(MULTIPLAYER_LIMITS.guestSpeedCap);
+  }
+
+  /** Entra en la partida: tomando un equipo libre (también uno que lleve la IA a mitad de carrera) o como espectador. */
+  join(uid: string, as: { teamId: string } | { spectator: true }): JoinResult {
+    if (!this.isShared) return { ok: false, reason: 'sin-sala' };
+    if (this.members.has(uid)) return { ok: false, reason: 'ya-dentro' };
+    if ('spectator' in as) {
+      const spectators = [...this.members.values()].filter(m => m.role === 'spectator').length;
+      if (spectators >= MULTIPLAYER_LIMITS.spectators) return { ok: false, reason: 'sala-llena' };
+      this.members.set(uid, { role: 'spectator', teamId: null, dropped: false, delegation: new Map() });
+    } else {
+      if (!this.teamCars(as.teamId).length) return { ok: false, reason: 'equipo-desconocido' };
+      if (this.ownerOf(as.teamId) !== null) return { ok: false, reason: 'equipo-ocupado' };
+      if (this.players().length >= MULTIPLAYER_LIMITS.players) return { ok: false, reason: 'sala-llena' };
+      this.members.set(uid, { role: 'player', teamId: as.teamId, dropped: false, delegation: new Map() });
+    }
+    this.syncPlayers();
+    this.capSpeed();
+    return { ok: true };
+  }
+
+  /** Se va del todo: su equipo vuelve a la IA. */
+  leave(uid: string) {
+    if (uid === this.hostUid || !this.members.delete(uid)) return;
+    this.syncPlayers();
+  }
+
+  /** Se ha caído: su equipo pasa al estratega y queda reservado. */
+  dropped(uid: string) {
+    const m = this.members.get(uid);
+    if (!m || m.role !== 'player' || m.dropped || !m.teamId) return;
+    m.dropped = true;
+    m.delegation = new Map(this.teamCars(m.teamId).map(car => [car.id, Boolean(car.wallDelegated)]));
+    for (const car of this.teamCars(m.teamId)) this.sim.setWallDelegation(car.id, true);
+    this.syncPlayers();
+  }
+
+  /** Vuelve con la misma sesión: recupera su equipo con la delegación que tenía cada coche. */
+  returned(uid: string): { ok: boolean } {
+    const m = this.members.get(uid);
+    if (!m || !m.dropped || !m.teamId) return { ok: false };
+    for (const car of this.teamCars(m.teamId)) this.sim.setWallDelegation(car.id, m.delegation.get(car.id) ?? false);
+    m.dropped = false;
+    m.delegation = new Map();
+    this.syncPlayers();
+    return { ok: true };
+  }
+
+  teamOf(uid: string): string | null { return this.members.get(uid)?.teamId ?? null; }
+  roleOf(uid: string): 'player' | 'spectator' | null { return this.members.get(uid)?.role ?? null; }
+  ownerOf(teamId: string): string | null {
+    for (const [uid, m] of this.members) if (m.role === 'player' && m.teamId === teamId) return uid;
+    return null;
+  }
+
+  /** Quién puede dar esta orden; null si puede. */
+  private permission(uid: string, o: Record<string, unknown>): { code: PermissionCode; reason: string } | null {
+    const m = this.members.get(uid);
+    if (!m) return { code: 'fuera-de-sala', reason: 'No estás en la partida' };
+    if (m.role === 'spectator') return { code: 'espectador', reason: 'Los espectadores no dan órdenes' };
+    const kind = String(o.kind);
+    const foreign = { code: 'equipo-ajeno' as const, reason: 'Ese equipo no es tuyo' };
+    if (CAR_ORDERS.includes(kind)) {
+      const car = isId(o.carId) ? this.sim.getCarById(o.carId) : undefined;
+      return car && car.team.id !== m.teamId ? foreign : null;
+    }
+    if (kind === 'teamOrder') return o.teamId !== m.teamId ? foreign : null;
+    if (LUCK_ORDERS.includes(kind)) {
+      const event = this.sim.activeLuckEvent;
+      const lucky = event ? this.sim.getCarById(event.luckyCarId)?.team.id : undefined;
+      return event && lucky !== m.teamId ? foreign : null;
+    }
+    return uid === this.hostUid ? null : { code: 'solo-anfitrion', reason: 'Solo el anfitrión puede hacer eso' };
   }
 
   fastView(): FastView { return fastView(this.sim); }
@@ -90,10 +216,19 @@ export class EngineHost {
       this.slowClock = this.slowClock >= 2 * this.slowPeriod || urgent ? 0 : this.slowClock - this.slowPeriod;
       this.lastSlowKey = key;
       // [N3] Los avisos de órdenes de equipo cumplidas salen una sola vez: se vacían en el motor al mandarlos.
-      const notices = this.sim.teamOrderNotices.map(notice => notice.text);
+      const raw = this.sim.teamOrderNotices;
       if (pending) this.sim.teamOrderNotices = [];
-      out.push({ type: 'slow', view: slowView(this.sim, notices) });
-      for (const teamId of this.teams) out.push({ type: 'team', teamId, view: this.teamView(teamId) });
+      if (this.isShared) {
+        // [N6] Cada aviso y la tirada van solo en la vista de su equipo; los de la IA no van a nadie.
+        out.push({ type: 'slow', view: slowView(this.sim, [], { privateTeams: true }) });
+        for (const teamId of this.teams) {
+          const notices = raw.filter(notice => notice.teamId === teamId).map(notice => notice.text);
+          out.push({ type: 'team', teamId, view: teamView(this.sim, teamId, { notices }) });
+        }
+      } else {
+        out.push({ type: 'slow', view: slowView(this.sim, raw.map(notice => notice.text)) });
+        for (const teamId of this.teams) out.push({ type: 'team', teamId, view: this.teamView(teamId) });
+      }
     }
     return out;
   }
@@ -104,11 +239,12 @@ export class EngineHost {
     return [s.raceFlagState, s.lightState, s.safetyCar.mode, s.isPaused, s.isFinished, s.latestDnf?.id ?? '', s.activeLuckEvent?.id ?? '', s.speedMultiplier].join('|');
   }
 
-  handle(message: unknown): EngineMessage[] {
+  /** Atiende un mensaje. [N6] En una partida compartida, `from` es quién lo manda (sin él, el anfitrión). */
+  handle(message: unknown, from?: string): EngineMessage[] {
     const msg = (message && typeof message === 'object' ? message : {}) as Record<string, unknown>;
     const seq = isId(msg.seq) ? msg.seq : null;
     try {
-      if (msg.type === 'order') return [this.order(seq ?? -1, msg.order)];
+      if (msg.type === 'order') return [this.order(seq ?? -1, msg.order, from ?? this.hostUid)];
       if (msg.type === 'save') return [{ type: 'saved', seq: seq ?? -1, snapshot: createSnapshot(this.sim) }];
       if (msg.type === 'load') {
         const outcome = restoreSnapshot(this.sim, msg.snapshot);
@@ -121,14 +257,20 @@ export class EngineHost {
     }
   }
 
-  private order(seq: number, raw: unknown): EngineMessage {
+  private order(seq: number, raw: unknown, uid: string | null = null): EngineMessage {
     const reject = (reason: string): EngineMessage => ({ type: 'ack', seq, ok: false, reason });
     if (!raw || typeof raw !== 'object') return reject('Orden vacía');
     const o = raw as Record<string, unknown>;
     const sim = this.sim;
+    if (this.isShared && uid !== null) {
+      const denied = this.permission(uid, o);
+      if (denied) {
+        this.rejections.push({ uid, kind: String(o.kind), code: denied.code, reason: denied.reason, t: sim.raceTimeSec });
+        return { type: 'ack', seq, ok: false, reason: denied.reason, code: denied.code };
+      }
+    }
     const car = isId(o.carId) ? sim.getCarById(o.carId) : undefined;
-    const needCar = ['box', 'cancelBox', 'pace', 'acceptProposal', 'discardProposal', 'delegate'];
-    if (needCar.includes(String(o.kind)) && !car) return reject('Coche inexistente');
+    if (CAR_ORDERS.includes(String(o.kind)) && !car) return reject('Coche inexistente');
     const done = (ok: boolean, why: string): EngineMessage => (ok ? { type: 'ack', seq, ok: true } : reject(why));
     switch (o.kind) {
       case 'box': {
@@ -154,7 +296,8 @@ export class EngineHost {
       }
       case 'speed':
         if (typeof o.value !== 'number' || !Number.isFinite(o.value) || o.value <= 0) return reject('Velocidad no válida');
-        sim.setSpeed(o.value);
+        // [N6] Con invitados, la carrera no pasa de x4.
+        sim.setSpeed(this.isShared && this.hasGuests() ? Math.min(o.value, MULTIPLAYER_LIMITS.guestSpeedCap) : o.value);
         return done(true, '');
       case 'pause':
         if (typeof o.paused !== 'boolean') return reject('Falta si se pausa o no');

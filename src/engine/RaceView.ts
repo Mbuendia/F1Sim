@@ -96,7 +96,8 @@ export interface SlowView {
 const plain = <T>(value: T): T => (value === undefined || value === null ? (null as T) : JSON.parse(JSON.stringify(value)));
 const rounded = (values: readonly number[]) => values.map(v => round(v, 2));
 
-export function slowView(sim: RaceSimulation, notices: string[] = []): SlowView {
+/** [N6] En una partida compartida (privateTeams) la tirada de suerte no va en la foto común: va en la del equipo afortunado. */
+export function slowView(sim: RaceSimulation, notices: string[] = [], { privateTeams = false } = {}): SlowView {
   const sc = sim.safetyCar;
   const w = sim.weather;
   const model = sim.weatherModel;
@@ -114,7 +115,7 @@ export function slowView(sim: RaceSimulation, notices: string[] = []): SlowView 
     },
     fastestLap: sim.fastestLap ? { driverName: sim.fastestLap.driverName, timeSec: sim.fastestLap.timeSec, lap: sim.fastestLap.lap } : null,
     dnf: plain(sim.latestDnf),
-    luck: plain(sim.activeLuckEvent),
+    luck: privateTeams ? null : plain(sim.activeLuckEvent),
     notices,
     podiumIds: sim.podiumCars.map(car => car.id),
     result: sim.isFinished ? plain(sim.getRaceResult()) : null,
@@ -155,11 +156,17 @@ const HEAVY = new Set(['driver', 'team', 'positionLog', 'lapCrossTimes', 'strate
 function carState(car: CarState): Record<string, unknown> {
   return JSON.parse(JSON.stringify(car, (key, value) => (HEAVY.has(key) ? undefined : value)));
 }
-export interface TeamView { teamId: string; teamOrder: unknown; cars: TeamCarView[] }
+export interface TeamView {
+  teamId: string; teamOrder: unknown; cars: TeamCarView[];
+  /** [N6] En una partida compartida: avisos de órdenes cumplidas y tirada de suerte de este equipo. */
+  notices?: string[]; luck?: unknown;
+}
 
-export function teamView(sim: RaceSimulation, teamId: string): TeamView {
+export function teamView(sim: RaceSimulation, teamId: string, shared?: { notices: string[] }): TeamView {
+  const lucky = sim.activeLuckEvent ? sim.getCarById(sim.activeLuckEvent.luckyCarId)?.team.id : undefined;
   return {
     teamId,
+    ...(shared ? { notices: shared.notices, luck: lucky === teamId ? plain(sim.activeLuckEvent) : null } : {}),
     teamOrder: plain(sim.getTeamOrder(teamId)),
     cars: sim.cars.filter(car => car.team.id === teamId).map(car => {
       const reading = sim.getWallReading(car.id);
