@@ -47,6 +47,8 @@ import { PodiumModal } from './components/PodiumModal';
 import { HomeScreen } from './components/HomeScreen';
 import { LandingPage } from './components/LandingPage';
 import { GameMenuScreen } from './components/GameMenuScreen';
+import { RoomFlow } from './components/RoomFlow';
+import { codeFromLink } from './net/roomCode';
 import { SavesScreen } from './components/SavesScreen';
 import { NewCareerScreen } from './components/NewCareerScreen';
 import { GameMenu } from './components/GameMenu';
@@ -186,7 +188,10 @@ export const App: React.FC = () => {
 
   // Vista actual: 'landing', 'home' o 'race'
   // [T4.19] Tras la portada va el menú de partidas; de él salen la carrera profesional y la carrera libre.
-  const [currentView, setCurrentView] = useState<'landing' | 'menu' | 'saves' | 'new' | 'home' | 'race' | 'report'>('landing');
+  // [N7] Un enlace de invitación (?sala=CÓDIGO) abre directamente la pantalla de unirse a esa sala.
+  const [linkedRoom, setLinkedRoom] = useState<string | null>(() => (typeof location === 'undefined' ? null : codeFromLink(location.href)));
+  const [currentView, setCurrentView] = useState<'landing' | 'menu' | 'saves' | 'new' | 'home' | 'race' | 'report' | 'room'>(() => (linkedRoom ? 'room' : 'landing'));
+  const [roomIntent, setRoomIntent] = useState<'create' | 'join'>('join');
   // [T4.20] Informe de la última ronda: se guarda hasta que se pulsa «Continuar», así que al reabrir se ve de nuevo.
   const [roundReport, setRoundReport] = useState<RoundReport | null>(() => { try { return parseRoundReport(localStorage.getItem(ROUND_REPORT_KEY)); } catch { return null; } });
   const showRoundReport = useCallback((report: RoundReport | null) => {
@@ -1413,8 +1418,15 @@ export const App: React.FC = () => {
     return (
       <GameMenuScreen current={currentSummary} slots={namedSlots}
         onContinue={handleContinueCareer} onNew={() => setCurrentView('new')} onLoad={() => { setSaveMessage(null); setCurrentView('saves'); }}
-        onFree={() => { setMode('free'); setCurrentView('home'); }} />
+        onFree={() => { setMode('free'); setCurrentView('home'); }}
+        onCreateRoom={() => { setRoomIntent('create'); setCurrentView('room'); }}
+        onJoinRoom={() => { setRoomIntent('join'); setCurrentView('room'); }} />
     );
+  }
+  // [N7] Salas: crear (anfitrión) o unirse (invitado). La carrera compartida llega con N8.
+  if (currentView === 'room') {
+    return <RoomFlow intent={linkedRoom ? 'join' : roomIntent} initialCode={linkedRoom ?? undefined}
+      onExit={() => { if (linkedRoom) { history.replaceState(null, '', location.pathname); setLinkedRoom(null); } setCurrentView('menu'); }} />;
   }
   if (currentView === 'saves') {
     return (

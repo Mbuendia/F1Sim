@@ -1,0 +1,60 @@
+/* [N7] Pantallas de sala. Primero el móvil: una columna, controles de 44 px y textos de 14 px o más. */
+.screen { width: 100vw; height: 100vh; height: 100dvh; display: flex; flex-direction: column; background: var(--bg); color: var(--text); font-family: var(--font-ui); font-size: 16px; font-weight: 500; overflow: hidden; }
+.head { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 16px; border-bottom: 1px solid var(--line); background: var(--panel); }
+.head h1 { font-family: var(--font-marca); font-size: 18px; letter-spacing: 0.06em; text-transform: uppercase; margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.body { flex: 1; min-height: 0; overflow-y: auto; padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 720px; margin: 0 auto; box-sizing: border-box; }
+.foot { flex: none; display: flex; justify-content: flex-end; padding: 10px 16px; border-top: 1px solid var(--line); background: var(--panel); }
+
+.card { display: flex; flex-direction: column; gap: 10px; padding: 14px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radio-l); min-width: 0; }
+.title { font-family: var(--font-marca); font-size: 16px; letter-spacing: 0.04em; text-transform: uppercase; margin: 0; }
+.label { font-size: 14px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-3); font-weight: 600; }
+.dim { color: var(--text-3); font-size: 14px; }
+.big { font-family: var(--font-marca); font-size: 18px; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.notice { padding: 10px 12px; border-radius: var(--radio-s); background: var(--panel-2); color: var(--text-2); margin: 0; }
+.summary { margin: 0; color: var(--text-2); overflow-wrap: anywhere; }
+.summary b { color: var(--text); }
+
+.codeRow { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.code { font-family: var(--font-datos, var(--font-marca)); font-size: 34px; font-weight: 800; letter-spacing: 0.18em; }
+.qr { width: 120px; height: 120px; flex: none; background: #fff; border-radius: var(--radio-s); padding: 4px; box-sizing: border-box; }
+.qr svg { width: 100%; height: 100%; display: block; }
+.linkRow { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.linkText { flex: 1; min-width: 0; color: var(--text-2); font-size: 14px; overflow-wrap: anywhere; }
+
+.primary, .button, .ghost, .choice, .teamButton { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; min-width: 44px; padding: 8px 16px; border-radius: var(--radio-s); font-family: var(--font-ui); font-size: 16px; font-weight: 600; cursor: pointer; box-sizing: border-box; }
+.primary { border: 1px solid var(--accion); background: var(--accion); color: #fff; padding: 8px 22px; }
+.primary:hover:not(:disabled) { background: var(--accion-hover); }
+.primary:disabled { opacity: 0.5; cursor: not-allowed; }
+.button { border: 1px solid var(--line-strong); background: var(--panel-2); color: var(--text); flex: none; }
+.ghost { border: 1px solid var(--line-strong); background: transparent; color: var(--text); flex: none; }
+.button:hover, .ghost:hover { border-color: var(--text-3); }
+
+.picker { border: 1px solid var(--line); border-radius: var(--radio-s); }
+.pickerHead { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 44px; padding: 0 12px; cursor: pointer; list-style-position: inside; }
+.pickerHead b { min-width: 0; overflow-wrap: anywhere; text-align: right; }
+.pickerList { display: flex; flex-direction: column; gap: 4px; max-height: 260px; overflow-y: auto; padding: 6px; }
+.choice { justify-content: flex-start; text-align: left; border: 1px solid transparent; background: transparent; color: var(--text); border-left: 4px solid var(--c, transparent); }
+.choice[aria-pressed="true"] { background: var(--panel-2); border-color: var(--foco); }
+
+.players { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.player { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; padding: 8px 10px; border-left: 4px solid var(--c); background: var(--panel-2); border-radius: var(--radio-s); }
+.playerName { font-weight: 700; overflow-wrap: anywhere; }
+.playerTeam { grid-column: 1; color: var(--text-2); font-size: 14px; }
+.link { grid-column: 2; grid-row: 1 / span 2; align-self: center; font-size: 14px; padding: 2px 8px; border-radius: 99px; border: 1px solid var(--line-strong); color: var(--text-2); white-space: nowrap; }
+.link[data-link="direct"] { border-color: var(--ok, #3fb950); color: var(--ok, #3fb950); }
+.link[data-link="fallback"] { border-color: var(--aviso); color: var(--aviso); }
+.link[data-link="down"] { border-color: var(--peligro, #f85149); color: var(--peligro, #f85149); }
+
+.teams { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+.teamButton { border: 1px solid var(--line); border-top: 4px solid var(--c); background: var(--panel-2); color: var(--text); text-align: center; }
+.teamButton[aria-pressed="true"] { outline: 2px solid var(--foco); outline-offset: 1px; }
+.teamMark { width: 12px; height: 12px; border-radius: 50%; background: var(--c); flex: none; }
+
+.inputRow { display: flex; flex-direction: column; gap: 6px; }
+.input { min-height: 44px; padding: 0 12px; background: var(--bg); border: 1px solid var(--line-strong); border-radius: var(--radio-s); color: var(--text); font-family: var(--font-ui); font-size: 18px; width: 100%; box-sizing: border-box; }
+.error { margin: 0; padding: 8px 12px; border-radius: var(--radio-s); border: 1px solid var(--aviso); color: var(--aviso); }
+
+@media (min-width: 768px) {
+  .head, .foot { padding-left: 24px; padding-right: 24px; }
+  .qr { width: 150px; height: 150px; }
+}

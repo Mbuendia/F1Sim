@@ -56,8 +56,8 @@ export interface EngineHostOptions {
   shared?: { hostUid: string; hostTeamId: string };
 }
 
-/** [N6] Valores por defecto del multijugador, confirmados por el usuario el 19/10/2026. */
-export const MULTIPLAYER_LIMITS = { players: 10, spectators: 10, guestSpeedCap: 4 } as const;
+import { MULTIPLAYER_LIMITS } from './limits';
+export { MULTIPLAYER_LIMITS };
 
 export type JoinResult = { ok: true } | { ok: false; reason: 'ya-dentro' | 'sala-llena' | 'equipo-ocupado' | 'equipo-desconocido' | 'sin-sala' };
 
