@@ -22,6 +22,7 @@ const seats = { teams: { [ids[0]]: 'host', [ids[1]]: 'g1', [ids[2]]: 'g2' }, spe
 const link = 'https://f1sim-d5085.web.app/?sala=ABC234';
 
 const RoomLive = lazy(() => import('./RoomLive'));
+const ClientRaceReview = lazy(() => import('./ClientRaceReview'));
 
 function Screens({ screen }: { screen: string }) {
   const [settings, setSettings] = useState<LobbySettings>({ ...DEFAULT_SETTINGS, circuitId: 'monaco' });
@@ -39,5 +40,6 @@ function Screens({ screen }: { screen: string }) {
 export default function RoomReview() {
   const screen = new URLSearchParams(location.search).get('pantalla') ?? 'anfitrion';
   if (screen === 'vivo') return <Suspense fallback={null}><RoomLive /></Suspense>;
+  if (screen === 'carrera') return <Suspense fallback={null}><ClientRaceReview /></Suspense>;
   return <Screens screen={screen} />;
 }

@@ -511,13 +511,14 @@ export const App: React.FC = () => {
     setLeaderLap(slow.lap);
     setRaceTimeSec(slow.t);
     setIsFinished(slow.finished);
-    setBestS1(slow.bestSectors[0]);
-    setBestS2(slow.bestSectors[1]);
-    setBestS3(slow.bestSectors[2]);
+    // [N10] Tolerante a fotos incompletas (por el respaldo llegaban sin los campos vacíos y esto tiraba la aplicación).
+    setBestS1(slow.bestSectors?.[0] ?? null);
+    setBestS2(slow.bestSectors?.[1] ?? null);
+    setBestS3(slow.bestSectors?.[2] ?? null);
     setCameraMode(camera.currentMode);
     setRaceFlagState(slow.flag as RaceFlagState);
-    setSectorFlags(slow.sectorFlags as [RaceFlagState, RaceFlagState, RaceFlagState]);
-    setSafetyCar(slow.safetyCar.isDeployed ? {
+    if (Array.isArray(slow.sectorFlags)) setSectorFlags(slow.sectorFlags as [RaceFlagState, RaceFlagState, RaceFlagState]);
+    setSafetyCar(slow.safetyCar?.isDeployed ? {
       isDeployed: true, mode: slow.safetyCar.mode as SafetyCarState['mode'], phase: (slow.safetyCar.phase ?? undefined) as SafetyCarState['phase'],
       lapCount: slow.safetyCar.lapCount, targetLaps: slow.safetyCar.targetLaps, triggerReason: slow.safetyCar.reason,
       progress: 0, trackT: 0, currentSpeedKmh: 0, deployedAtRaceTime: 0,
@@ -538,11 +539,12 @@ export const App: React.FC = () => {
     for (const sound of soundsBetween(audioSeen.current, heard)) audio.play(sound);
     audioSeen.current = heard;
     // El podio solo se repone si cambia (repintarlo cada segundo reiniciaría su animación).
-    if (slow.finished && slow.podiumIds.join(',') !== podiumIdsRef.current) {
-      podiumIdsRef.current = slow.podiumIds.join(',');
+    const podiumIds = slow.podiumIds ?? [];
+    if (slow.finished && podiumIds.join(',') !== podiumIdsRef.current) {
+      podiumIdsRef.current = podiumIds.join(',');
       const state = raceStore.getState();
       const built = carViews({ roster: state.roster, fast: state.fast, slow, teams: state.teams });
-      setPodiumCars(slow.podiumIds.map(id => built.find(car => car.id === id)).filter((car): car is CarState => Boolean(car)));
+      setPodiumCars(podiumIds.map(id => built.find(car => car.id === id)).filter((car): car is CarState => Boolean(car)));
     }
     if (slow.fastestLap) setFastestLapDriver(slow.fastestLap.driverName);
   }, [slowView, camera, audio]);

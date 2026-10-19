@@ -12,6 +12,7 @@ import { roomPaths } from '../RoomService';
 import { LinkMachine, LINK_TIMING } from './LinkMachine';
 import type { LinkAction, LinkMode } from './LinkMachine';
 import { OrderInbox, OrderOutbox } from './orders';
+import { fromDb, toDb } from '../dbSafe';
 
 export const SEND_RATES = {
   direct: { fast: 15 },
@@ -220,19 +221,19 @@ export class HostTransport {
       if (guest.channel?.isOpen) { guest.pendingTeam = undefined; continue; }
       anyFallback = true;
       if (guest.pendingTeam !== undefined && now - guest.lastTeamWrite >= 1000 / SEND_RATES.fallback.team - 1) {
-        db.set(teamPath(code, uid), { at: now, data: guest.pendingTeam }).catch(ignore);
+        db.set(teamPath(code, uid), { at: now, data: toDb(guest.pendingTeam) }).catch(ignore);
         guest.pendingTeam = undefined;
         guest.lastTeamWrite = now;
       }
     }
     // [N10] La foto rápida (2/s) y la lenta aparte y solo cuando cambia (1/s como mucho): la lenta pesa mucho más.
     if (anyFallback && this.stateDirty && this.latest.fast !== undefined && now - this.lastStateWrite >= 1000 / SEND_RATES.fallback.state - 1) {
-      db.update(roomPaths.state(code), { at: now, fast: this.latest.fast }).catch(ignore);
+      db.update(roomPaths.state(code), { at: now, fast: toDb(this.latest.fast) }).catch(ignore);
       this.stateDirty = false;
       this.lastStateWrite = now;
     }
     if (anyFallback && this.slowDirty && this.latest.slow !== undefined && now - this.lastSlowWrite >= 1000 / SEND_RATES.fallback.slow - 1) {
-      db.set(slowPath(code), { seq: this.latest.slowSeq, view: this.latest.slow }).catch(ignore);
+      db.set(slowPath(code), { seq: this.latest.slowSeq, view: toDb(this.latest.slow) }).catch(ignore);
       this.slowDirty = false;
       this.lastSlowWrite = now;
     }
@@ -400,12 +401,12 @@ export class GuestTransport {
   private fromFast(value: any) {
     if (value === null || value === undefined || this.machine.mode === 'direct') return;
     const key = JSON.stringify(value);
-    if (key !== this.lastFastKey) { this.lastFastKey = key; this.emit('fast', value, 'fallback'); }
+    if (key !== this.lastFastKey) { this.lastFastKey = key; this.emit('fast', fromDb(value), 'fallback'); }
   }
 
   private fromSlow(value: any) {
     if (!value || value.view === undefined || this.machine.mode === 'direct') return;
-    if (value.seq !== this.lastSlowSeq) { this.lastSlowSeq = value.seq; this.emit('slow', value.view, 'fallback'); }
+    if (value.seq !== this.lastSlowSeq) { this.lastSlowSeq = value.seq; this.emit('slow', fromDb(value.view), 'fallback'); }
   }
 
   private fromOutbox(value: any) {
@@ -415,6 +416,6 @@ export class GuestTransport {
       if (ack?.sid === this.sid) this.acked(Number(key), ack.result as OrderResult);
     }
     const team = value.team;
-    if (team && team.at !== this.lastTeamAt) { this.lastTeamAt = team.at; this.emit('team', team.data, 'fallback'); }
+    if (team && team.at !== this.lastTeamAt) { this.lastTeamAt = team.at; this.emit('team', fromDb(team.data), 'fallback'); }
   }
 }

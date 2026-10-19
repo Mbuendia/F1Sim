@@ -19,6 +19,7 @@ import type { RoomDb } from './RoomService';
 import { roomPaths, setRoomStatus } from './RoomService';
 import type { Clock, GuestTransport, HostTransport, OrderResult } from './transport/Transport';
 import { watchLobby } from './Lobby';
+import { toDb } from './dbSafe';
 import type { LobbyState } from './Lobby';
 import type { QualifyingResult } from '../simulation/Qualifying';
 
@@ -41,13 +42,14 @@ const racePath = (code: string) => `${roomPaths.room(code)}/meta/race`;
  */
 export async function startSharedRace(db: RoomDb, code: string, race: { circuitId: string; weather: string; roster: RosterEntry[]; format?: SharedFormat }) {
   const format = race.format ?? 'directo';
-  await db.update(racePath(code), { circuitId: race.circuitId, weather: race.weather, format, stage: 'carrera', roster: plain(race.roster), ...(format === 'directo' ? { qualifying: null } : {}) });
+  // [N10] Lista de salida y clasificación, codificadas: Firebase se come los null y lo vacío (ver dbSafe).
+  await db.update(racePath(code), { circuitId: race.circuitId, weather: race.weather, format, stage: 'carrera', roster: toDb(plain(race.roster)), ...(format === 'directo' ? { qualifying: null } : {}) });
   await setRoomStatus(db, code, 'race');
 }
 
 /** [N9] El anfitrión publica la clasificación ya calculada: todos la ven igual (cada uno a su ritmo) antes de salir. */
 export async function publishQualifying(db: RoomDb, code: string, race: { result: QualifyingResult; circuitId: string; weather: string; roster: RosterEntry[] }) {
-  await db.set(racePath(code), { circuitId: race.circuitId, weather: race.weather, format: 'clasificacion', stage: 'clasificacion', roster: plain(race.roster), qualifying: plain(race.result) });
+  await db.set(racePath(code), { circuitId: race.circuitId, weather: race.weather, format: 'clasificacion', stage: 'clasificacion', roster: toDb(plain(race.roster)), qualifying: toDb(plain(race.result)) });
   await setRoomStatus(db, code, 'race');
 }
 

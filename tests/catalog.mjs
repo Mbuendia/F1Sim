@@ -575,5 +575,6 @@ export const modules = [
   { "id": "room-end-n9", "tasks": ["N9"], "sprint": "5", "kind": "contract" },
   { "id": "rules-n10", "tasks": ["N10"], "sprint": "5", "kind": "contract" },
   { "id": "light-views-n10", "tasks": ["N10"], "sprint": "5", "kind": "contract" },
+  { "id": "guest-n10", "tasks": ["N10"], "sprint": "5", "kind": "contract" },
   { "id": "viewport-movil", "tasks": [], "sprint": null, "kind": "regression" }
 ];

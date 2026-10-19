@@ -1,38 +1,51 @@
-/* [N8] Pantalla de carrera del invitado. Primero el móvil: la pista arriba, tiempos y muro debajo. */
+/* [N8/N10] Pantalla de carrera del invitado. Primero el móvil: la pista arriba, fija, y debajo las pestañas «Muro» y
+   «Tiempos» con su propio desplazamiento (el muro, siempre a mano). En pantalla ancha, la pista a la izquierda. */
 .screen { width: 100vw; height: 100vh; height: 100dvh; display: flex; flex-direction: column; background: var(--bg); color: var(--text); font-family: var(--font-ui); font-size: 16px; overflow: hidden; }
-.head { flex: none; display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-bottom: 1px solid var(--line); background: var(--panel); }
+.head { flex: none; display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-bottom: 1px solid var(--line); background: var(--panel); }
 .title { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; font-family: var(--font-marca); }
+.lap { white-space: nowrap; }
 .tag { font-size: 14px; padding: 2px 8px; border-radius: 99px; border: 1px solid var(--line-strong); color: var(--text-2); }
 .link { font-size: 14px; padding: 2px 8px; border-radius: 99px; border: 1px solid var(--line-strong); color: var(--text-2); white-space: nowrap; }
 .link[data-link="direct"] { border-color: var(--ok, #3fb950); color: var(--ok, #3fb950); }
 .link[data-link="fallback"] { border-color: var(--aviso); color: var(--aviso); }
 .link[data-link="down"] { border-color: var(--peligro, #f85149); color: var(--peligro, #f85149); }
-.button, .ghost { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; min-width: 44px; padding: 6px 12px; border-radius: var(--radio-s); font-family: var(--font-ui); font-size: 15px; font-weight: 600; cursor: pointer; flex: none; color: var(--text); border: 1px solid var(--line-strong); }
+.button, .ghost { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; min-width: 44px; padding: 6px 10px; border-radius: var(--radio-s); font-family: var(--font-ui); font-size: 15px; font-weight: 600; cursor: pointer; flex: none; color: var(--text); border: 1px solid var(--line-strong); }
 .button { background: var(--panel-2); }
 .button:disabled { opacity: 0.6; cursor: not-allowed; }
 .ghost { background: transparent; }
-
-.body { flex: 1; min-height: 0; overflow-y: auto; display: grid; grid-template-columns: 1fr; grid-auto-rows: min-content; gap: 8px; padding: 8px; }
-.track { position: relative; height: 42vh; min-height: 220px; border-radius: var(--radio-m); overflow: hidden; background: var(--panel); }
-.timing { min-width: 0; }
-.wall { display: grid; grid-template-columns: 1fr; gap: 8px; }
-.car { display: flex; flex-direction: column; gap: 8px; padding: 10px; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--c); border-radius: var(--radio-m); min-width: 0; }
-.carHead { display: flex; justify-content: space-between; font-family: var(--font-marca); }
+.primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 8px 20px; border-radius: var(--radio-s); border: 1px solid var(--accion); background: var(--accion); color: #fff; font-family: var(--font-ui); font-size: 16px; font-weight: 600; cursor: pointer; }
 .dim { color: var(--text-3); font-size: 14px; margin: 0; }
+
+.layout { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.track { position: relative; flex: none; height: 36vh; min-height: 200px; overflow: hidden; background: #14181f; border-bottom: 1px solid var(--line); }
+.panels { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 0 8px 12px; }
+.tabs { position: sticky; top: 0; z-index: 2; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 8px 0; background: var(--bg); }
+.tab { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; border-radius: var(--radio-s); border: 1px solid var(--line-strong); background: var(--panel); color: var(--text-2); font-family: var(--font-ui); font-size: 16px; font-weight: 700; cursor: pointer; }
+.tab[aria-selected="true"] { background: var(--panel-2); color: var(--text); border-color: var(--foco); }
+.timing { min-width: 0; }
+.timing[hidden], .wall[hidden] { display: none; }
+.wall { display: flex; flex-direction: column; gap: 8px; }
+.car { display: flex; flex-direction: column; gap: 8px; padding: 10px; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--c); border-radius: var(--radio-m); min-width: 0; }
+/* En el dedo, ningún control del muro por debajo de 44 px (el bloque de paradas es el de la pantalla del anfitrión). */
+.wall :global(button), .wall :global(label) { min-height: 44px; min-width: 44px; }
+
+/* Avisos de la salida, encima de la pista */
+.start { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); display: flex; align-items: center; gap: 10px; padding: 8px 14px; border-radius: 99px; background: rgba(13, 17, 23, 0.88); border: 1px solid var(--line-strong); font-weight: 700; white-space: nowrap; }
+.lamps { display: inline-flex; gap: 4px; }
+.lamps span { width: 14px; height: 14px; border-radius: 50%; background: #3a1f1f; border: 1px solid #5a2a2a; }
+.lamps span[data-on="true"] { background: #e10600; border-color: #ff4d4d; box-shadow: 0 0 8px #e10600; }
 
 .banner { position: fixed; top: 64px; left: 50%; transform: translateX(-50%); z-index: 50; display: flex; flex-direction: column; gap: 6px; }
 .bannerRow { display: flex; align-items: center; gap: 10px; padding: 6px 6px 6px 14px; background: var(--panel); border: 1px solid var(--aviso); border-radius: var(--radio-m); color: var(--text); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4); }
 
-@media (min-width: 900px) {
-  .body { grid-template-columns: minmax(0, 1.4fr) minmax(320px, 1fr); }
-  .track { grid-column: 1; grid-row: 1 / span 2; height: auto; min-height: 60vh; }
-  .wall { grid-template-columns: 1fr 1fr; }
-  .wall > :first-child { grid-column: 1 / -1; }
-}
-
 /* [N9] Final y sala cerrada */
-.primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 8px 20px; border-radius: var(--radio-s); border: 1px solid var(--accion); background: var(--accion); color: #fff; font-family: var(--font-ui); font-size: 16px; font-weight: 600; cursor: pointer; }
-.result { display: flex; flex-direction: column; gap: 8px; padding: 10px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radio-m); min-width: 0; overflow-x: auto; }
+.result { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; padding: 10px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radio-m); min-width: 0; overflow-x: auto; }
 .end { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 8px; }
 .ended { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 24px 16px; text-align: center; }
 .endTitle { font-family: var(--font-marca); font-size: 22px; font-weight: 700; margin: 0; }
+
+@media (min-width: 900px) {
+  .layout { flex-direction: row; }
+  .track { flex: 1.4; height: auto; border-bottom: 0; border-right: 1px solid var(--line); }
+  .panels { flex: 1; min-width: 360px; max-width: 520px; }
+}

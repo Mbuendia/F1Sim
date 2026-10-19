@@ -13,6 +13,7 @@ import type { RaceFormatId } from '../components/RaceFormatSelect';
 import type { RosterEntry } from '../engine/raceCars';
 import type { QualifyingResult } from '../simulation/Qualifying';
 import { joinRoom } from './RoomService';
+import { fromDb } from './dbSafe';
 import type { JoinResult } from './RoomService';
 
 /** [N8/N9] La carrera publicada en la sala: circuito, tiempo, formato, en qué punto va y, con clasificación, su resultado. */
@@ -63,6 +64,13 @@ function readSeats(value: any): Seats | null {
   };
 }
 
+/** [N10] La carrera publicada, con la lista de salida y la clasificación decodificadas (ver dbSafe). */
+function readRace(raw: any): SharedRaceRecord {
+  const roster = fromDb(raw.roster);
+  const list = Array.isArray(roster) ? roster : Object.values((roster ?? {}) as Record<string, unknown>);
+  return { ...raw, roster: list as RosterEntry[], qualifying: raw.qualifying ? (fromDb(raw.qualifying) as QualifyingResult) : null };
+}
+
 /** Escucha la sala entera tal como la necesitan las pantallas. Devuelve la función para dejar de escuchar. */
 export function watchLobby(db: RoomDb, code: string, cb: (state: LobbyState) => void): () => void {
   let meta: any = undefined;
@@ -81,7 +89,7 @@ export function watchLobby(db: RoomDb, code: string, cb: (state: LobbyState) => 
       members,
       seats: readSeats(meta?.seats),
       settings: meta?.settings ? { ...DEFAULT_SETTINGS, ...meta.settings } : null,
-      race: meta?.race && typeof meta.race.circuitId === 'string' ? { ...meta.race, roster: Array.isArray(meta.race.roster) ? meta.race.roster : Object.values(meta.race.roster ?? {}) } : null,
+      race: meta?.race && typeof meta.race.circuitId === 'string' ? readRace(meta.race) : null,
     });
   };
   const offMeta = db.onValue(metaPath(code), value => { meta = value ?? null; if (value) seenMeta = true; emit(); });
