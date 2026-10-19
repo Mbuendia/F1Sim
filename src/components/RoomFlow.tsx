@@ -26,6 +26,7 @@ import { DEFAULT_SETTINGS, requestSeat, resolveSeats, saveSeats, saveSettings, s
 import type { LobbySettings, LobbyState, Seats } from '../net/Lobby';
 import { GuestTransport, HostTransport } from '../net/transport/Transport';
 import { createWebRtcConnector, createWebRtcListener } from '../net/transport/webrtc';
+import { blockedConnector, blockedListener, forceFallback, measured } from '../net/usage';
 import type { DirectConnector, DirectListener } from '../net/transport/Transport';
 import { createLinkStore } from '../state/linkStore';
 import { qrSvg } from '../net/roomQr';
@@ -146,10 +147,11 @@ export interface RoomBackend {
   listener: (db: RoomDb, code: string) => DirectListener;
   connector: (db: RoomDb, code: string) => DirectConnector;
 }
+// [N10] Firebase se mide siempre (el medidor se ve con `?medir`); con `?respaldo`, sin conexión directa.
 const FIREBASE: RoomBackend = {
-  connect: () => import('../net/firebaseDb').then(m => m.connectFirebase()),
-  listener: createWebRtcListener,
-  connector: createWebRtcConnector,
+  connect: () => import('../net/firebaseDb').then(m => m.connectFirebase()).then(measured),
+  listener: (db, code) => (forceFallback() ? blockedListener : createWebRtcListener(db, code)),
+  connector: (db, code) => (forceFallback() ? blockedConnector : createWebRtcConnector(db, code)),
 };
 
 export function RoomFlow({ intent, initialCode, onExit, onHostStart, resume, backend = FIREBASE }: {

@@ -12,6 +12,8 @@ import type { EngineOrder } from '../engine/EngineHost';
 import type { RaceConfig, SharedInit } from '../engine/engineCore';
 import type { RosterEntry } from '../engine/raceCars';
 import type { RaceStore } from '../state/raceStore';
+import { guestSlowView, guestTeamView } from '../engine/RaceView';
+import type { SlowView, TeamView } from '../engine/RaceView';
 import type { LinkStore } from '../state/linkStore';
 import type { RoomDb } from './RoomService';
 import { roomPaths, setRoomStatus } from './RoomService';
@@ -78,9 +80,10 @@ class TeeLink implements EngineLink {
       resolve?.(msg);
       return;
     }
+    // [N10] A los invitados, la foto ligera (historial recortado); la pantalla del anfitrión recibe la entera.
     if (msg.type === 'fast') this.hostTransport.publish({ fast: msg.view });
-    else if (msg.type === 'slow') this.hostTransport.publish({ slow: msg.view });
-    else if (msg.type === 'team' && typeof msg.teamId === 'string') this.hostTransport.publish({ teams: { [msg.teamId]: msg.view } });
+    else if (msg.type === 'slow') this.hostTransport.publish({ slow: guestSlowView(msg.view as SlowView) });
+    else if (msg.type === 'team' && typeof msg.teamId === 'string') this.hostTransport.publish({ teams: { [msg.teamId]: guestTeamView(msg.view as TeamView) } });
     for (const listener of this.listeners) listener(msg);
   }
 

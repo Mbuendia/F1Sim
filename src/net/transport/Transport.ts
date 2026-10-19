@@ -15,8 +15,11 @@ import { OrderInbox, OrderOutbox } from './orders';
 
 export const SEND_RATES = {
   direct: { fast: 15 },
-  fallback: { state: 2, team: 1 },
+  /** [N10] Por el respaldo: la foto rápida (state), la lenta aparte (slow) y la de equipo. */
+  fallback: { state: 2, slow: 1, team: 1 },
 } as const;
+const slowPath = (code: string) => `${roomPaths.state(code)}/slow`;
+const fastPath = (code: string) => `${roomPaths.state(code)}/fast`;
 
 /** Canal directo ya conectado (o intentándolo) con el otro extremo. */
 export interface DirectChannel {
@@ -82,6 +85,8 @@ export class HostTransport {
   private clock: Clock;
   private lastStateWrite = -Infinity;
   private stateDirty = false;
+  private lastSlowWrite = -Infinity;
+  private slowDirty = false;
   private latest: { fast?: unknown; slow?: unknown; slowSeq: number } = { slowSeq: 0 };
 
   private onOrder: HostTransportOptions['onOrder'];
@@ -188,7 +193,7 @@ export class HostTransport {
   publish(views: { fast?: unknown; slow?: unknown; teams?: Record<string, unknown> }) {
     const now = this.clock.now();
     if (views.fast !== undefined) { this.latest.fast = views.fast; this.stateDirty = true; }
-    if (views.slow !== undefined) { this.latest.slow = views.slow; this.latest.slowSeq++; this.stateDirty = true; }
+    if (views.slow !== undefined) { this.latest.slow = views.slow; this.latest.slowSeq++; this.slowDirty = true; }
     for (const guest of this.guests.values()) {
       const team = views.teams?.[guest.teamId];
       if (guest.channel?.isOpen) {
@@ -220,13 +225,16 @@ export class HostTransport {
         guest.lastTeamWrite = now;
       }
     }
-    if (anyFallback && this.stateDirty && now - this.lastStateWrite >= 1000 / SEND_RATES.fallback.state - 1) {
-      const state: Record<string, unknown> = { at: now, slowSeq: this.latest.slowSeq };
-      if (this.latest.fast !== undefined) state.fast = this.latest.fast;
-      if (this.latest.slow !== undefined) state.slow = this.latest.slow;
-      db.set(roomPaths.state(code), state).catch(ignore);
+    // [N10] La foto rápida (2/s) y la lenta aparte y solo cuando cambia (1/s como mucho): la lenta pesa mucho más.
+    if (anyFallback && this.stateDirty && this.latest.fast !== undefined && now - this.lastStateWrite >= 1000 / SEND_RATES.fallback.state - 1) {
+      db.update(roomPaths.state(code), { at: now, fast: this.latest.fast }).catch(ignore);
       this.stateDirty = false;
       this.lastStateWrite = now;
+    }
+    if (anyFallback && this.slowDirty && this.latest.slow !== undefined && now - this.lastSlowWrite >= 1000 / SEND_RATES.fallback.slow - 1) {
+      db.set(slowPath(code), { seq: this.latest.slowSeq, view: this.latest.slow }).catch(ignore);
+      this.slowDirty = false;
+      this.lastSlowWrite = now;
     }
   }
 }
@@ -259,7 +267,7 @@ export class GuestTransport {
   private lastMode: LinkMode | null = null;
   private offState: (() => void) | null = null;
   private offs: (() => void)[] = [];
-  private lastStateAt: number | null = null;
+  private lastFastKey: string | null = null;
   private lastSlowSeq: number | null = null;
   private lastTeamAt: number | null = null;
 
@@ -363,7 +371,10 @@ export class GuestTransport {
       // En directo no hace falta descargar la foto del respaldo (cuota de Firebase).
       this.offState?.(); this.offState = null;
     } else if (!this.offState) {
-      this.offState = db.onValue(roomPaths.state(code), value => this.fromState(value));
+      // [N10] La rápida y la lenta por separado: cada una se descarga solo cuando cambia.
+      const offFast = db.onValue(fastPath(code), value => this.fromFast(value));
+      const offSlow = db.onValue(slowPath(code), value => this.fromSlow(value));
+      this.offState = () => { offFast(); offSlow(); };
     }
     // Lo que no tiene acuse sale otra vez por el camino nuevo; el anfitrión descarta los repetidos.
     if (mode === 'direct' || mode === 'fallback') for (const { seq, order } of this.outbox.pending()) this.route(seq, order);
@@ -386,10 +397,15 @@ export class GuestTransport {
     for (const cb of this.ackListeners) cb(seq, result);
   }
 
-  private fromState(value: any) {
-    if (!value || this.machine.mode === 'direct') return;
-    if (value.at !== this.lastStateAt && value.fast !== undefined) { this.lastStateAt = value.at; this.emit('fast', value.fast, 'fallback'); }
-    if (value.slow !== undefined && value.slowSeq !== this.lastSlowSeq) { this.lastSlowSeq = value.slowSeq; this.emit('slow', value.slow, 'fallback'); }
+  private fromFast(value: any) {
+    if (value === null || value === undefined || this.machine.mode === 'direct') return;
+    const key = JSON.stringify(value);
+    if (key !== this.lastFastKey) { this.lastFastKey = key; this.emit('fast', value, 'fallback'); }
+  }
+
+  private fromSlow(value: any) {
+    if (!value || value.view === undefined || this.machine.mode === 'direct') return;
+    if (value.seq !== this.lastSlowSeq) { this.lastSlowSeq = value.seq; this.emit('slow', value.view, 'fallback'); }
   }
 
   private fromOutbox(value: any) {

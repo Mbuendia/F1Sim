@@ -156,6 +156,30 @@ const HEAVY = new Set(['driver', 'team', 'positionLog', 'lapCrossTimes', 'strate
 function carState(car: CarState): Record<string, unknown> {
   return JSON.parse(JSON.stringify(car, (key, value) => (HEAVY.has(key) ? undefined : value)));
 }
+/** [N10] Vueltas del historial de cada coche que viajan a los invitados (la pantalla del anfitrión las tiene todas). */
+export const GUEST_LAPS = 3;
+
+/** [N10] Foto lenta para un invitado: igual, con el historial de vueltas recortado a las últimas GUEST_LAPS. */
+export function guestSlowView(view: SlowView): SlowView {
+  return { ...view, cars: view.cars.map(car => ({ ...car, laps: Array.isArray(car.laps) ? car.laps.slice(-GUEST_LAPS) : car.laps })) };
+}
+
+/** [N10] Lo que la pantalla del invitado no usa del estado de sus coches (sí lo usa el detalle del anfitrión). */
+const GUEST_UNUSED_STATE = ['tireInventory', 'telemetry', 'stats', 'technical', 'moves'];
+
+/** [N10] Vista de equipo para su dueño invitado: igual, con el historial de sus coches recortado y sin lo que no usa. */
+export function guestTeamView(view: TeamView): TeamView {
+  return {
+    ...view,
+    cars: view.cars.map(car => {
+      const state: Record<string, unknown> = { ...car.state };
+      for (const key of GUEST_UNUSED_STATE) delete state[key];
+      if (Array.isArray(state.lapHistory)) state.lapHistory = state.lapHistory.slice(-GUEST_LAPS);
+      return { ...car, state };
+    }),
+  };
+}
+
 export interface TeamView {
   teamId: string; teamOrder: unknown; cars: TeamCarView[];
   /** [N6] En una partida compartida: avisos de órdenes cumplidas y tirada de suerte de este equipo. */
