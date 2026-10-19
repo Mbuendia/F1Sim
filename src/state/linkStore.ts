@@ -3,7 +3,7 @@
 import { createStore, useStore } from 'zustand';
 
 export interface LinkState {
-  transport: 'none' | 'local' | 'worker';
+  transport: 'none' | 'local' | 'worker' | 'remote';
   status: 'idle' | 'connecting' | 'ready' | 'closed' | 'error';
   lastMessageAt: number;
   error: string | null;

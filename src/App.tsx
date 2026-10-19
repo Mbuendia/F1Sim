@@ -47,6 +47,14 @@ import { PodiumModal } from './components/PodiumModal';
 import { HomeScreen } from './components/HomeScreen';
 import { LandingPage } from './components/LandingPage';
 import { GameMenuScreen } from './components/GameMenuScreen';
+import { RoomFlow } from './components/RoomFlow';
+import type { HostStart } from './components/RoomFlow';
+import { PauseRequestBanner, SharedRaceEnd } from './components/ClientRace';
+import { publishQualifying, SharedRaceHost } from './net/SharedRace';
+import { returnToLobby } from './net/Lobby';
+import type { PauseRequest } from './net/SharedRace';
+import { leaveRoom } from './net/RoomService';
+import { codeFromLink } from './net/roomCode';
 import { SavesScreen } from './components/SavesScreen';
 import { NewCareerScreen } from './components/NewCareerScreen';
 import { GameMenu } from './components/GameMenu';
@@ -186,7 +194,17 @@ export const App: React.FC = () => {
 
   // Vista actual: 'landing', 'home' o 'race'
   // [T4.19] Tras la portada va el menú de partidas; de él salen la carrera profesional y la carrera libre.
-  const [currentView, setCurrentView] = useState<'landing' | 'menu' | 'saves' | 'new' | 'home' | 'race' | 'report'>('landing');
+  // [N7] Un enlace de invitación (?sala=CÓDIGO) abre directamente la pantalla de unirse a esa sala.
+  const [linkedRoom, setLinkedRoom] = useState<string | null>(() => (typeof location === 'undefined' ? null : codeFromLink(location.href)));
+  const [currentView, setCurrentView] = useState<'landing' | 'menu' | 'saves' | 'new' | 'home' | 'race' | 'report' | 'room'>(() => (linkedRoom ? 'room' : 'landing'));
+  const [roomIntent, setRoomIntent] = useState<'create' | 'join'>('join');
+  // [N8] Carrera compartida del anfitrión: la sala y su transporte (desde «Empezar» hasta salir de la carrera).
+  const sharedRef = useRef<HostStart | null>(null);
+  const sharedHostRef = useRef<SharedRaceHost | null>(null);
+  const [sharedPending, setSharedPending] = useState<HostStart | null>(null);
+  const [pauseRequests, setPauseRequests] = useState<PauseRequest[]>([]);
+  /** [N9] «Otra carrera»: la sala abierta a la que vuelve el anfitrión. */
+  const [resumeRoom, setResumeRoom] = useState<HostStart | null>(null);
   // [T4.20] Informe de la última ronda: se guarda hasta que se pulsa «Continuar», así que al reabrir se ve de nuevo.
   const [roundReport, setRoundReport] = useState<RoundReport | null>(() => { try { return parseRoundReport(localStorage.getItem(ROUND_REPORT_KEY)); } catch { return null; } });
   const showRoundReport = useCallback((report: RoundReport | null) => {
@@ -382,6 +400,9 @@ export const App: React.FC = () => {
     } catch { return 'directo'; }
   });
   const [qualifying, setQualifying] = useState<QualifyingResult | null>(null);
+  /** [N9] En una carrera compartida, la salida a pista se anuncia al acabar la clasificación (el motor arranca antes). */
+  const qualifyingRef = useRef(qualifying);
+  qualifyingRef.current = qualifying;
   // [V7] La clasificación recién corrida se ve primero en directo; después (o al saltarla), la tabla de siempre.
   const [qualifyingLive, setQualifyingLive] = useState(false);
 
@@ -490,13 +511,14 @@ export const App: React.FC = () => {
     setLeaderLap(slow.lap);
     setRaceTimeSec(slow.t);
     setIsFinished(slow.finished);
-    setBestS1(slow.bestSectors[0]);
-    setBestS2(slow.bestSectors[1]);
-    setBestS3(slow.bestSectors[2]);
+    // [N10] Tolerante a fotos incompletas (por el respaldo llegaban sin los campos vacíos y esto tiraba la aplicación).
+    setBestS1(slow.bestSectors?.[0] ?? null);
+    setBestS2(slow.bestSectors?.[1] ?? null);
+    setBestS3(slow.bestSectors?.[2] ?? null);
     setCameraMode(camera.currentMode);
     setRaceFlagState(slow.flag as RaceFlagState);
-    setSectorFlags(slow.sectorFlags as [RaceFlagState, RaceFlagState, RaceFlagState]);
-    setSafetyCar(slow.safetyCar.isDeployed ? {
+    if (Array.isArray(slow.sectorFlags)) setSectorFlags(slow.sectorFlags as [RaceFlagState, RaceFlagState, RaceFlagState]);
+    setSafetyCar(slow.safetyCar?.isDeployed ? {
       isDeployed: true, mode: slow.safetyCar.mode as SafetyCarState['mode'], phase: (slow.safetyCar.phase ?? undefined) as SafetyCarState['phase'],
       lapCount: slow.safetyCar.lapCount, targetLaps: slow.safetyCar.targetLaps, triggerReason: slow.safetyCar.reason,
       progress: 0, trackT: 0, currentSpeedKmh: 0, deployedAtRaceTime: 0,
@@ -517,11 +539,12 @@ export const App: React.FC = () => {
     for (const sound of soundsBetween(audioSeen.current, heard)) audio.play(sound);
     audioSeen.current = heard;
     // El podio solo se repone si cambia (repintarlo cada segundo reiniciaría su animación).
-    if (slow.finished && slow.podiumIds.join(',') !== podiumIdsRef.current) {
-      podiumIdsRef.current = slow.podiumIds.join(',');
+    const podiumIds = slow.podiumIds ?? [];
+    if (slow.finished && podiumIds.join(',') !== podiumIdsRef.current) {
+      podiumIdsRef.current = podiumIds.join(',');
       const state = raceStore.getState();
       const built = carViews({ roster: state.roster, fast: state.fast, slow, teams: state.teams });
-      setPodiumCars(slow.podiumIds.map(id => built.find(car => car.id === id)).filter((car): car is CarState => Boolean(car)));
+      setPodiumCars(podiumIds.map(id => built.find(car => car.id === id)).filter((car): car is CarState => Boolean(car)));
     }
     if (slow.fastestLap) setFastestLapDriver(slow.fastestLap.driverName);
   }, [slowView, camera, audio]);
@@ -680,6 +703,9 @@ export const App: React.FC = () => {
       ? gridPenaltyLines(penalized.moved, started.penalties, id => DRIVERS[id] && { name: `${DRIVERS[id].firstName} ${DRIVERS[id].lastName}`, code: DRIVERS[id].code })
       : []);
     setQualifying(quali);
+    // [N9] Carrera compartida con clasificación: todos ven la misma, que calcula el anfitrión.
+    const sharedNow = sharedRef.current;
+    if (quali && sharedNow) void publishQualifying(sharedNow.db, sharedNow.code, { result: quali, roster: raceRosterOf(simulation), circuitId: simulation.circuitId, weather: sharedNow.weather }).catch(() => {});
     setQualifyingLive(Boolean(quali));
     // [R44] Meteorología ajustada a la duración prevista de la carrera. [T4.12] En una carrera de temporada se sortea
     // con la probabilidad de lluvia del circuito y la semilla de la temporada (la misma ronda da siempre el mismo
@@ -1202,23 +1228,51 @@ export const App: React.FC = () => {
   useEffect(() => {
     if (currentView !== 'race' || autoRace || autoRequested.current) return;
     const link = typeof Worker !== 'undefined' ? new WorkerLink() : (() => { const local = new LocalLink(); local.run(); return local; })();
-    const session = new RaceSession({ link, store: raceStore, linkStore });
+    // [N8] En una carrera compartida, la pantalla habla con el motor a través del anfitrión que la reparte.
+    const shared = sharedRef.current;
+    const sharedHost = shared ? new SharedRaceHost({ link, transport: shared.transport, store: raceStore, linkStore, names: shared.names,
+      onPauseRequest: () => setPauseRequests([...(sharedHostRef.current?.pauseRequests ?? [])]) }) : null;
+    sharedHostRef.current = sharedHost;
+    const session = sharedHost ? sharedHost.session : new RaceSession({ link, store: raceStore, linkStore });
     sessionRef.current = session;
     const teams = [...new Set(playerDriverIds(roster, selectedDriverId).map(id => roster[id]?.teamId).filter((id): id is string => Boolean(id)))];
-    roomStore.getState().setTeams(teams);
+    roomStore.getState().setTeams(shared ? [shared.hostTeamId] : teams);
     setFastSample(null);
     podiumIdsRef.current = '';
-    void session.start({ snapshot: createSnapshot(simulation), config: raceConfig(), teams, roster: raceRosterOf(simulation) })
+    void (sharedHost && shared
+      ? sharedHost.start({ db: shared.db, code: shared.code, snapshot: createSnapshot(simulation), config: raceConfig(), roster: raceRosterOf(simulation),
+        circuitId: simulation.circuitId, weather: shared.weather, format: shared.format, publish: !qualifyingRef.current,
+        hostUid: shared.hostUid, hostTeamId: shared.hostTeamId, players: shared.players })
+      : session.start({ snapshot: createSnapshot(simulation), config: raceConfig(), teams, roster: raceRosterOf(simulation) }))
       .then(outcome => { if (!outcome.ok) noticeRef.current('danger', 'Motor', `No se pudo arrancar la carrera: ${outcome.errors.slice(0, 2).join(' · ')}`); });
     const sync = window.setInterval(() => { void syncFromEngineRef.current(); }, MIRROR_SYNC_MS);
     return () => {
       window.clearInterval(sync);
       if (sessionRef.current === session) sessionRef.current = null;
-      session.stop();
+      if (sharedHost) sharedHost.stop(); else session.stop();
     };
     // Solo al entrar o salir de la carrera, al rearrancarla y al empezar o acabar la simulación del Gran Premio.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentView, engineEpoch, autoRace]);
+
+  // [N8] «Empezar» en la sala: carrera libre con el circuito y el tiempo de la sala y el equipo del anfitrión; se arranca
+  // cuando los ajustes ya están puestos (un render después).
+  useEffect(() => {
+    if (!sharedPending || mode !== 'free' || selectedCircuitId !== sharedPending.circuitId || weatherScenarioId !== sharedPending.weather) return;
+    setSharedPending(null);
+    handleStartRaceFromHome();
+  }, [sharedPending, mode, selectedCircuitId, weatherScenarioId, handleStartRaceFromHome]);
+  // Al salir de la carrera compartida, la sala se cierra (la siguiente carrera en la misma sala es N9).
+  useEffect(() => {
+    if (currentView === 'race' || currentView === 'room' || sharedPending) return;
+    const shared = sharedRef.current;
+    if (!shared) return;
+    sharedRef.current = null;
+    sharedHostRef.current = null;
+    setPauseRequests([]);
+    shared.transport.stop();
+    void leaveRoom(shared.db, shared.code).catch(() => {});
+  }, [currentView, sharedPending]);
 
   const handleSimulateRound = useCallback(() => {
     autoRequested.current = true;
@@ -1413,8 +1467,28 @@ export const App: React.FC = () => {
     return (
       <GameMenuScreen current={currentSummary} slots={namedSlots}
         onContinue={handleContinueCareer} onNew={() => setCurrentView('new')} onLoad={() => { setSaveMessage(null); setCurrentView('saves'); }}
-        onFree={() => { setMode('free'); setCurrentView('home'); }} />
+        onFree={() => { setMode('free'); setCurrentView('home'); }}
+        onCreateRoom={() => { setRoomIntent('create'); setCurrentView('room'); }}
+        onJoinRoom={() => { setRoomIntent('join'); setCurrentView('room'); }} />
     );
+  }
+  // [N7] Salas: crear (anfitrión) o unirse (invitado). La carrera compartida llega con N8.
+  if (currentView === 'room') {
+    return <RoomFlow intent={linkedRoom ? 'join' : roomIntent} initialCode={linkedRoom ?? undefined}
+      onHostStart={start => {
+        sharedRef.current = start;
+        setMode('free');
+        setSelectedCircuitId(start.circuitId);
+        setWeatherScenarioId(start.weather);
+        setRaceFormat('directo');
+        const driver = Object.keys(DRIVERS).find(id => DRIVERS[id]?.teamId === start.hostTeamId);
+        if (driver) setSelectedDriverId(driver);
+        setRaceFormat(start.format);
+        setResumeRoom(null);
+        setSharedPending(start);
+      }}
+      resume={roomIntent === 'create' ? resumeRoom : null}
+      onExit={() => { if (linkedRoom) { history.replaceState(null, '', location.pathname); setLinkedRoom(null); } setResumeRoom(null); setCurrentView('menu'); }} />;
   }
   if (currentView === 'saves') {
     return (
@@ -1725,6 +1799,23 @@ export const App: React.FC = () => {
             />
 
             <RaceNotices notices={notices} />
+            {/* [N9] Final de la carrera compartida: otra carrera en la misma sala o cerrarla. */}
+            {isFinished && sharedRef.current && (
+              <div style={{ position: 'fixed', left: '50%', bottom: 16, transform: 'translateX(-50%)', zIndex: 60, padding: 8, background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 12 }}>
+                <SharedRaceEnd isHost onLeave={() => setCurrentView('menu')} onClose={() => setCurrentView('menu')}
+                  onAnother={() => {
+                    const room = sharedRef.current;
+                    if (!room) return;
+                    sharedRef.current = null;
+                    setPauseRequests([]);
+                    void returnToLobby(room.db, room.code).catch(() => {});
+                    setResumeRoom(room);
+                    setRoomIntent('create');
+                    setCurrentView('room');
+                  }} />
+              </div>
+            )}
+            <PauseRequestBanner requests={pauseRequests} onDismiss={uid => { sharedHostRef.current?.dismissPause(uid); setPauseRequests([...(sharedHostRef.current?.pauseRequests ?? [])]); }} />
 
             {lightState === 'formation-lap' && (
               <div className={styles.formationBanner}>

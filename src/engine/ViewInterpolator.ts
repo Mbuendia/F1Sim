@@ -12,6 +12,9 @@ export interface PaintFrame { raceTimeSec: number; cars: PaintedCar[]; safetyCar
 
 /** Ventana (ms reales) para medir a qué ritmo corre la carrera respecto al reloj. */
 const RATE_WINDOW_MS = 1000;
+/** [N8] El umbral de recolocación vale para este hueco entre vistas; con vistas más espaciadas (el respaldo, 2/s) crece
+ *  en proporción: 30 m en un cuarto de segundo de carrera son unos 430 km/h, más de lo que corre un coche. */
+const TELEPORT_SPAN_SEC = 0.25;
 const MAX_SAMPLES = 90;
 
 export class ViewInterpolator {
@@ -72,14 +75,15 @@ export class ViewInterpolator {
     }
     const span = b.t - a.t;
     const alpha = span > 0 ? (t - a.t) / span : 1;
+    const teleport = this.teleport * Math.max(1, span / TELEPORT_SPAN_SEC);
     const cars: PaintedCar[] = [];
     for (const [id, curr] of b.cars) {
       const prev = a.cars.get(id);
       if (!prev || alpha === 1) { cars.push({ ...curr }); continue; }
-      const jump = Math.hypot(curr.worldX - prev.worldX, curr.worldY - prev.worldY) > this.teleport;
+      const jump = Math.hypot(curr.worldX - prev.worldX, curr.worldY - prev.worldY) > teleport;
       const pose = jump ? curr : alpha > 1
         ? { worldX: curr.worldX + (curr.worldX - prev.worldX) * (alpha - 1), worldY: curr.worldY + (curr.worldY - prev.worldY) * (alpha - 1), worldAngle: curr.worldAngle }
-        : interpolatePose(prev, curr, alpha, this.teleport);
+        : interpolatePose(prev, curr, alpha, teleport);
       const progress = jump ? curr.progress : prev.progress + (curr.progress - prev.progress) * alpha;
       cars.push({ ...curr, worldX: pose.worldX, worldY: pose.worldY, worldAngle: pose.worldAngle, progress, trackT: ((progress % 1) + 1) % 1 });
     }

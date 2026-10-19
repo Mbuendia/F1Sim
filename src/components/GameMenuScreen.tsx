@@ -1,4 +1,4 @@
-import { Flag, FolderOpen, Play, PlusCircle } from 'lucide-react';
+import { Flag, FolderOpen, LogIn, Play, PlusCircle, Users } from 'lucide-react';
 import { TEAMS } from '../data/teams';
 import { menuOptions } from '../simulation/Career';
 import { formatMoney } from '../simulation/Finance';
@@ -18,15 +18,17 @@ export function slotStatus(slot: SlotSummary): string {
 /**
  * [T4.19] Menú de partidas, tras la portada: continuar la partida en curso (con su estado), empezar una carrera
  * profesional, cargar una partida guardada o correr una carrera libre. Sin partida en curso ni guardadas, «Continuar»
- * y «Cargar partida» no aparecen.
+ * y «Cargar partida» no aparecen. [N7] Con onCreateRoom y onJoinRoom, también crear una sala o unirse a una.
  */
-export function GameMenuScreen({ current, slots, onContinue, onNew, onLoad, onFree }: {
-  current: SlotSummary | null;
-  slots: SlotSummary[];
+export function GameMenuScreen({ current = null, slots = [], onContinue, onNew, onLoad, onFree, onCreateRoom, onJoinRoom }: {
+  current?: SlotSummary | null;
+  slots?: SlotSummary[];
   onContinue: () => void;
   onNew: () => void;
   onLoad: () => void;
   onFree: () => void;
+  onCreateRoom?: () => void;
+  onJoinRoom?: () => void;
 }) {
   const options = menuOptions(current, slots);
   return (
@@ -51,6 +53,8 @@ export function GameMenuScreen({ current, slots, onContinue, onNew, onLoad, onFr
               <button type="button" className={s.option} onClick={onLoad}><span><FolderOpen size={18} aria-hidden="true" />Cargar partida</span><small>{slots.length} {slots.length === 1 ? 'guardada' : 'guardadas'}</small></button>
             )}
             <button type="button" className={s.option} onClick={onFree}><span><Flag size={18} aria-hidden="true" />Carrera libre</span><small>no cuenta para ninguna partida</small></button>
+            {onCreateRoom && <button type="button" className={s.option} onClick={onCreateRoom}><span><Users size={18} aria-hidden="true" />Crear sala</span><small>carrera con amigos</small></button>}
+            {onJoinRoom && <button type="button" className={s.option} onClick={onJoinRoom}><span><LogIn size={18} aria-hidden="true" />Unirse a una sala</span><small>con el código</small></button>}
           </div>
         </div>
       </div>

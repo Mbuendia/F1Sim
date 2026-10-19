@@ -570,5 +570,11 @@ export const modules = [
   { "id": "rooms-rules-n4", "tasks": ["N4"], "sprint": "5", "kind": "contract" },
   { "id": "transport-n5", "tasks": ["N5"], "sprint": "5", "kind": "contract" },
   { "id": "owners-n6", "tasks": ["N6"], "sprint": "5", "kind": "contract" },
+  { "id": "lobby-n7", "tasks": ["N7"], "sprint": "5", "kind": "contract" },
+  { "id": "client-race-n8", "tasks": ["N8"], "sprint": "5", "kind": "contract" },
+  { "id": "room-end-n9", "tasks": ["N9"], "sprint": "5", "kind": "contract" },
+  { "id": "rules-n10", "tasks": ["N10"], "sprint": "5", "kind": "contract" },
+  { "id": "light-views-n10", "tasks": ["N10"], "sprint": "5", "kind": "contract" },
+  { "id": "guest-n10", "tasks": ["N10"], "sprint": "5", "kind": "contract" },
   { "id": "viewport-movil", "tasks": [], "sprint": null, "kind": "regression" }
 ];
