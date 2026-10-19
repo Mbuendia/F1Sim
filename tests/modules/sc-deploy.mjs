@@ -142,7 +142,10 @@ export default async function run({ server, assert, test }) {
       const assigns = model.match(/sc\.progress\s*=(?!=)/g) || [];
       assert(assigns.length === 1 && /static deploy[\s\S]*?sc\.progress\s*=(?!=)[\s\S]*?\n  \}/.test(model),
         'Q14: SafetyCarModel solo fija la posición al aparcar el SC en su garaje al desplegarlo', `${assigns.length} asignaciones`);
-      assert(!/safetyCar\.progress\s*=(?!=)/.test(app) && /deploySafetyCar\(/.test(app) && /recallSafetyCar\(/.test(app),
+      // [N3] Corrección autorizada el 19/10/2026: el botón DEV manda una orden y quien despliega y retira es el motor (EngineHost).
+      const host = readFileSync(new URL('../../src/engine/EngineHost.ts', import.meta.url), 'utf8');
+      assert(!/safetyCar\.progress\s*=(?!=)/.test(app) && !/safetyCar\.progress\s*=(?!=)/.test(host) && /devSafetyCar/.test(app)
+        && /deploySafetyCar\(/.test(host) && /recallSafetyCar\(/.test(host),
         'Q14: el botón DEV usa el despliegue y la retirada del motor');
     });
   });

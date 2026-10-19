@@ -12,8 +12,10 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { readFileSync } from 'node:fs';
 import { raceFactory, fixedRandom } from '../support/race.mjs';
+import { viewsFactory } from '../support/views.mjs';
 
 export default async function run({ server, assert, test }) {
+  const wallProps = await viewsFactory(server); // [N3] el muro se monta con las vistas del motor
   const make = await raceFactory(server);
   const snap = await server.ssrLoadModule('/src/simulation/Snapshot.ts');
   const { RaceSimulation } = await server.ssrLoadModule('/src/simulation/RaceSimulation.ts');
@@ -116,16 +118,18 @@ export default async function run({ server, assert, test }) {
       const { BoxControls } = await server.ssrLoadModule('/src/components/BoxControls.tsx');
       const sim = make('barcelona', 2), [car, other] = sim.cars;
       other.driver.teamId = car.driver.teamId; other.team = structuredClone(car.team);
-      const render = () => renderToStaticMarkup(createElement(BoxControls, { car, simulation: sim, teamCars: sim.cars }));
+      const render = () => renderToStaticMarkup(createElement(BoxControls, wallProps(sim, car, sim.cars)));
       const html = render();
       assert(/<fieldset[^>]*aria-label="Órdenes de equipo"/.test(html) && ['Lucha libre', 'Mantener posiciones', `Dejar pasar a ${car.driver.code}`, `Dejar pasar a ${other.driver.code}`].every(label => html.includes(`aria-label="${label}"`))
         && /<input[^>]*checked=""[^>]*value="libre"/.test(html), 'T4.14: el muro ofrece lucha libre, mantener y dejar pasar a cada piloto, con la orden vigente marcada');
       sim.setTeamOrder(car.driver.teamId, 'dejar-pasar', other.id);
       assert(new RegExp(`<input[^>]*checked=""[^>]*value="${other.id}"`).test(render()), 'T4.14: y enseña a quién se está dejando pasar');
-      const single = renderToStaticMarkup(createElement(BoxControls, { car, simulation: sim }));
+      const single = renderToStaticMarkup(createElement(BoxControls, wallProps(sim, car)));
       assert(!/Órdenes de equipo/.test(single), 'T4.14: con un solo coche no hay órdenes que dar');
       const app = readFileSync(new URL('../../src/App.tsx', import.meta.url), 'utf8');
-      assert(/sim\.autoTeamOrders = true/.test(app) && /simulation\.teamOrderNotices/.test(app), 'T4.14: la aplicación enciende las órdenes de los rivales y avisa de las que se cumplen');
+      assert(/sim\.autoTeamOrders = true/.test(app) && /takeNotices\(\)/.test(app)
+        // [N3] Corrección autorizada el 19/10/2026: los avisos los vacía el motor (EngineHost) y la pantalla los recibe.
+        && /teamOrderNotices/.test(readFileSync(new URL('../../src/engine/EngineHost.ts', import.meta.url), 'utf8')), 'T4.14: la aplicación enciende las órdenes de los rivales y avisa de las que se cumplen');
     });
   });
 }

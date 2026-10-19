@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>N1 — prueba de viabilidad</title>
+  <style>
+    body { font: 13px/1.4 system-ui, sans-serif; margin: 16px; background: #111; color: #eee; }
+    table { border-collapse: collapse; font-variant-numeric: tabular-nums; }
+    th, td { border: 1px solid #333; padding: 2px 6px; text-align: right; }
+    pre { background: #1b1b1b; padding: 8px; max-height: 320px; overflow: auto; }
+    textarea { width: 100%; height: 80px; background: #1b1b1b; color: #eee; }
+    details { margin: 8px 0; }
+  </style>
+</head>
+<body>
+  <h1>N1 — <span id="role"></span></h1>
+  <p id="status">Arrancando…</p>
+  <p>Respaldo Firebase: <span id="fbstate">—</span></p>
+  <details>
+    <summary>Configuración de Firebase (pegar el objeto firebaseConfig en JSON)</summary>
+    <textarea id="fbcfg" placeholder='{"apiKey":"…","authDomain":"…","databaseURL":"…","projectId":"…","appId":"…"}'></textarea>
+    <button id="fbsave">Guardar y recargar</button>
+  </details>
+  <h2>Resumen (visible / oculta)</h2>
+  <pre id="summary"></pre>
+  <h2>Últimos segundos</h2>
+  <table><thead id="head"></thead><tbody id="rows"></tbody></table>
+  <script type="module" src="./main.ts"></script>
+</body>
+</html>

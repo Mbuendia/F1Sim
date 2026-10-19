@@ -50,6 +50,9 @@ export const BottomTelemetryDock: React.FC<BottomTelemetryDockProps> = ({
   }
 
   const { driver, team, telemetry, tires, currentPosition, aheadInfo, behindInfo } = car;
+  // [N3] De un rival solo se ve lo que da la tele (velocidad, vueltas por minuto, compuesto y vueltas con él): su
+  // desgaste, su modo de motor y su batería solo los ve su equipo.
+  const known = typeof tires.health === 'number' && telemetry.batterySoc !== undefined;
   const rpmPercent = Math.min(100, Math.max(0, ((telemetry.rpm - 8000) / (13500 - 8000)) * 100));
 
   return (
@@ -108,7 +111,7 @@ export const BottomTelemetryDock: React.FC<BottomTelemetryDockProps> = ({
           </div>
           <div className={styles.gearPill}>
             <span className={styles.gearLabel}>GEAR</span>
-            <span className={styles.gearVal}>{telemetry.gear}</span>
+            <span className={styles.gearVal}>{telemetry.gear ?? '–'}</span>
           </div>
           <div className={styles.rpmBar}>
             <div className={styles.rpmProgress} style={{ width: `${rpmPercent}%` }} />
@@ -126,10 +129,13 @@ export const BottomTelemetryDock: React.FC<BottomTelemetryDockProps> = ({
                 detail={`${tires.lapsOnTire} vueltas`} />
               <span>({tires.lapsOnTire} VUELTAS)</span>
             </div>
+            {known && (
             <div className={styles.tireHealthText} style={{ color: tires.health < 25 ? '#ef4444' : '#22c55e' }}>
               {Math.round(tires.health)}% VIDA
             </div>
+            )}
           </div>
+          {known && (
           <div className={styles.wheelsWithChassis}>
             <CarChassisSvg
               tireHealthFL={telemetry.tireHealthFL} tireHealthFR={telemetry.tireHealthFR}
@@ -143,6 +149,7 @@ export const BottomTelemetryDock: React.FC<BottomTelemetryDockProps> = ({
               <span style={{ color: tireHealthColor(telemetry.tireHealthRR) }}>RR:{Math.round(telemetry.tireHealthRR)}%</span>
             </div>
           </div>
+          )}
         </div>
 
         {/* Estado / DRS / Motor */}
@@ -151,6 +158,7 @@ export const BottomTelemetryDock: React.FC<BottomTelemetryDockProps> = ({
             {/* [R04] Estado del DRS con su motivo, el hueco medido en la detección y los usos. */}
             <DrsStatusBadge status={car.drsStatus} uses={car.drsUses ?? 0} />
           </div>
+          {known && (<>
           <div className={styles.statItem}>
             <Gauge size={13} color="#38bdf8" />
             <span>MODO: {telemetry.engineMode.toUpperCase()}</span>
@@ -169,6 +177,7 @@ export const BottomTelemetryDock: React.FC<BottomTelemetryDockProps> = ({
             <span>{Math.round(telemetry.batterySoc)}%</span>
             {telemetry.ersDeploying && <span className={styles.ersDeploy}>DESPLIEGUE</span>}
           </div>
+          </>)}
         </div>
       </div>
 

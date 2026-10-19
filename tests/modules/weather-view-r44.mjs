@@ -4,8 +4,10 @@
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { raceFactory } from '../support/race.mjs';
+import { viewsFactory } from '../support/views.mjs';
 
 export default async function run({ server, assert, test }) {
+  const wallProps = await viewsFactory(server); // [N3] el muro se monta con las vistas del motor
   const make = await raceFactory(server);
   const { WEATHER_SCENARIOS, buildWeatherScenario } = await server.ssrLoadModule('/src/data/weatherScenarios.ts');
   const { WeatherModel, SEGMENTS, tyreCrossover } = await server.ssrLoadModule('/src/simulation/WeatherModel.ts');
@@ -83,7 +85,7 @@ export default async function run({ server, assert, test }) {
       `${tyreCrossover(0)} ${tyreCrossover(1.5)} ${tyreCrossover(4.5)}`);
     const { BoxControls } = await server.ssrLoadModule('/src/components/BoxControls.tsx');
     const sim = make('barcelona', 1), car = sim.cars[0];
-    const wall = () => renderToStaticMarkup(createElement(BoxControls, { car, simulation: sim }));
+    const wall = () => renderToStaticMarkup(createElement(BoxControls, wallProps(sim, car)));
     assert(!wall().includes('data-weather-crossover'), 'R44: en seco con slicks no hay aviso');
     sim.setWeatherScenario({ id: 'prueba', cells: [], initialWaterMm: 1.5 });
     const advice = sim.getTyreCrossover(car.id);
