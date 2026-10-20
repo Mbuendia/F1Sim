@@ -115,7 +115,8 @@ function createSidewallDecalTexture(compound: TireCompound): THREE.CanvasTexture
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
-  const textPirelli = compound === 'inter' || compound === 'wet' ? 'CINTURATO' : 'PIRELLI';
+  // Marcas de parodia (20/10/2026): el proveedor de neumáticos es Pirulí.
+  const textPirelli = (compound === 'inter' || compound === 'wet' ? 'Cinturita' : 'Pirulí').toUpperCase();
   const textRadius = size * 0.418;
   ctx.font = '900 46px "Orbitron", "Montserrat", sans-serif';
   ctx.fillStyle = '#ffffff';

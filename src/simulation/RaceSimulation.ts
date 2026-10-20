@@ -135,7 +135,7 @@ export class RaceSimulation {
   private luckEventSeq = 0;
   /** [R26] El D20 es una variante opcional del juego; el perfil FIA 2025 nunca la usa. */
   luckVariantEnabled = true;
-  static readonly LUCK_VARIANT_LABEL = 'D20 — variante del juego (no es reglamento FIA)';
+  static readonly LUCK_VARIANT_LABEL = 'D20 — variante del juego (no es reglamento FAI)';
   /** [R26] Registro de tiradas: causa, beneficio, alcance y si se aceptó. */
   luckLog: { eventId: string; time: number; lap: number; trigger: 'sc' | 'vsc' | 'red'; roll: number; carId: number; kind: D20BenefitKind; category: D20BenefitCategory; scope: string; applied: boolean }[] = [];
 

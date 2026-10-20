@@ -48,7 +48,7 @@ const BARCELONA_FIA_EXACT_POINTS: { x: number; y: number; speedLimit?: number; c
   { x: 160, y: 640, speedLimit: 0.50 },
   { x: 180, y: 580, speedLimit: 0.55, corner: 'T2' },
   { x: 160, y: 530, speedLimit: 0.65 },
-  { x: 110, y: 470, speedLimit: 0.75, corner: 'T3 - Renault' },
+  { x: 110, y: 470, speedLimit: 0.75, corner: 'T3 - Renol' },
   { x: 80, y: 390, speedLimit: 0.82 },
   { x: 75, y: 310, speedLimit: 0.86 },
   { x: 100, y: 230, speedLimit: 0.88 },
@@ -146,7 +146,7 @@ export const BARCELONA_CIRCUIT: TrackDefinition = {
   corners: [
     { number: 1, name: 'Elf', t: 0.08, gear: 3, apexSpeedKmh: 145 },
     { number: 2, name: 'Curva 2', t: 0.11, gear: 3, apexSpeedKmh: 160 },
-    { number: 3, name: 'Renault', t: 0.18, gear: 5, apexSpeedKmh: 240 },
+    { number: 3, name: 'Renol', t: 0.18, gear: 5, apexSpeedKmh: 240 },
     { number: 4, name: 'Repsol', t: 0.26, gear: 3, apexSpeedKmh: 135 },
     { number: 5, name: 'Seat', t: 0.34, gear: 2, apexSpeedKmh: 85 },
     { number: 6, name: 'Curva 6', t: 0.42, gear: 4, apexSpeedKmh: 190 },

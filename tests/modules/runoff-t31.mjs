@@ -184,7 +184,7 @@ export default async function run({ server, assert, test }) {
     const afterFirst = fia.safetyCar.targetLaps;
     run(fia, 1);
     fia.reportIncident(fia.cars[3], 'crash');
-    assert(fia.raceFlagState === 'sc' && afterFirst === 0 && fia.safetyCar.targetLaps === 0 && /FIA/.test(fia.safetyCar.durationLog[0].text), 'T3.1: con el perfil FIA 2025 no hay mínimo de vueltas', `${afterFirst}, ${fia.safetyCar.targetLaps}`);
+    assert(fia.raceFlagState === 'sc' && afterFirst === 0 && fia.safetyCar.targetLaps === 0 && /FAI/.test(fia.safetyCar.durationLog[0].text), 'T3.1: con el perfil FIA 2025 no hay mínimo de vueltas', `${afterFirst}, ${fia.safetyCar.targetLaps}`);
   });
 
   await test('T3.1: motivo registrado, guardar y cargar', () => {

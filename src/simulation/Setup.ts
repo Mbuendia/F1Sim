@@ -39,7 +39,7 @@ export const SETUP_EFFECT = {
   GEAR_REV_LIMIT: [null, 0.975, 0.95] as (number | null)[],
 };
 
-export const GEARING_NOTE = 'Relación de cambio: diseño del juego (en la F1 real las relaciones son fijas toda la temporada).';
+export const GEARING_NOTE = 'Relación de cambio: diseño del juego (en la competición real las relaciones son fijas toda la temporada).';
 
 const clamp = (value: unknown, min: number, max: number) => Math.min(max, Math.max(min, Math.round(Number(value) || 0))) + 0;
 

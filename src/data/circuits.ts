@@ -301,7 +301,7 @@ export const OFFICIAL_CIRCUITS: Record<string, CircuitSpec> = {
   spielberg: {
     id: 'spielberg',
     trackWidthMeters: 11,   // medido (TUMFTM racetrack-database)
-    name: 'Red Bull Ring',
+    name: 'Red Bulla Ring',
       trackType: 'permanent',
     pitEntryT: 0.8853,
       pitExitT: 0.1332,

@@ -151,7 +151,7 @@ export default async function run({ server, assert, test }) {
       'T4.11: paso 2, la junta: objetivo, si se cumplió, lo que paga o recorta y, si hay destitución, el equipo nuevo', JSON.stringify(report.board));
     const rosterBefore = c.rosterOf(settledBefore.contracts), rosterAfter = c.rosterOf(after.contracts);
     const moved = Object.keys(rosterAfter).filter(id => rosterBefore[id] && rosterBefore[id].teamId !== rosterAfter[id].teamId);
-    assert(report.market.retired.some(line => line.name.includes('Hülkenberg') || line.name.includes('Hulkenberg')) && report.market.retired.every(line => Number.isInteger(line.age)) && report.market.moves.length === moved.length && report.market.moves.every(move => move.from !== move.to && move.name.length > 0)
+    assert(report.market.retired.some(line => line.name.includes('Hulksmash')) && report.market.retired.every(line => Number.isInteger(line.age)) && report.market.moves.length === moved.length && report.market.moves.every(move => move.from !== move.to && move.name.length > 0)
       && report.market.promoted.length === Object.keys(rosterAfter).filter(id => !rosterBefore[id]).length && report.market.left.length === Object.keys(rosterBefore).filter(id => !rosterAfter[id]).length - report.market.retired.length,
       'T4.11: paso 3, el mercado: quién se retira, quién cambia de equipo, quién sube de la cantera y quién se queda sin asiento', JSON.stringify(report.market));
     assert(report.grid.length === 10 && report.grid.every(row => row.drivers.length === 2 && row.drivers.every(driver => driver.name.length > 0 && Number.isInteger(driver.age))) && report.grid.filter(row => row.player).length === 1 && report.grid.find(row => row.player).teamName === TEAMS[after.playerTeamId].shortName,

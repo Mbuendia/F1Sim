@@ -296,10 +296,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       {!hub && (
       <header className={styles.header}>
         <div className={styles.brandGroup}>
-          <div className={styles.f1Logo}>F1</div>
+          <div className={styles.f1Logo}>F-UNO</div>
           <F1WheelSvg style={{ width: '28px', height: '28px', flexShrink: 0 }} />
           <div className={styles.headerTitles}>
-            <h1>F1 RACE MANAGER</h1>
+            <h1>F-UNO RACE MANAGER</h1>
             <p>{mode === 'free' ? 'Carrera libre · no cuenta para ninguna partida' : 'Paddock · gestiona tu equipo y entra a pista desde «Correr»'}</p>
           </div>
         </div>
@@ -559,7 +559,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                     <span>{inspectedDriver.firstName} {inspectedDriver.lastName}</span>
                   </div>
                   <div className={styles.detailSubtitle}>
-                    {inspectedTeam.name} · Piloto Oficial F1 2026
+                    {inspectedTeam.name} · Piloto Oficial F-Uno 2026
                   </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -646,7 +646,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                       </div>
 
                       <div className={styles.specItem}>
-                        <span className={styles.specItemLabel}><CircleDot size={14} aria-hidden="true" /> Límite RPM FIA</span>
+                        <span className={styles.specItemLabel}><CircleDot size={14} aria-hidden="true" /> Límite RPM FAI</span>
                         <span className={styles.specItemVal}>15.000 RPM</span>
                       </div>
                     </div>
@@ -809,7 +809,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                   <div className={styles.detailCardBox}>
                     <div className={styles.detailCardTitle}>
                       <Award size={14} color="#ffd700" />
-                      <span>PALMARÉS HISTÓRICO FIA F1</span>
+                      <span>PALMARÉS HISTÓRICO FAI F-UNO</span>
                     </div>
                     <div className={styles.specs2ColGrid}>
                       <div className={styles.specItem}>
@@ -846,7 +846,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                         <span className={styles.specItemVal} style={{ color: '#ffd700' }}>{inspectedTeam.engineManufacturer}</span>
                       </div>
                       <div className={styles.specItem}>
-                        <span className={styles.specItemLabel}><BarChart3 size={14} aria-hidden="true" /> Puntuación Rating FIA</span>
+                        <span className={styles.specItemLabel}><BarChart3 size={14} aria-hidden="true" /> Puntuación Rating FAI</span>
                         <span className={styles.specItemVal} style={{ color: '#38bdf8' }}>{Math.round((inspectedDriver.talentRating + inspectedDriver.consistency + inspectedDriver.tireManagement) / 3 * 100)} / 100</span>
                       </div>
                       <div className={styles.specItem}>
@@ -1092,7 +1092,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                         ))
                       ) : (
                         <div style={{ color: '#94a3b8', fontStyle: 'italic', fontSize: '11px', padding: '8px' }}>
-                          {inspectedCircuit.drsZones} Zonas de DRS activas autorizadas por la FIA.
+                          {inspectedCircuit.drsZones} Zonas de DRS activas autorizadas por la FAI.
                         </div>
                       )}
                     </div>

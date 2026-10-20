@@ -36,7 +36,7 @@ export const D20LuckResult: React.FC<{ event: D20LuckEvent }> = ({ event }) => (
 
     {/* [R26] La tirada es una variante del juego: se identifica y declara su alcance. */}
     <p className={styles.rewardDesc} data-d20-variant="true">
-      <strong>Variante del juego, no es reglamento FIA.</strong>{event.cause ? ` ${event.cause}.` : ''}{event.scope ? ` Alcance: ${event.scope}` : ''}
+      <strong>Variante del juego, no es reglamento FAI.</strong>{event.cause ? ` ${event.cause}.` : ''}{event.scope ? ` Alcance: ${event.scope}` : ''}
     </p>
 
     <div className={styles.benefitRow} data-d20-benefit={event.benefit.kind} data-d20-category={event.benefit.category ?? 'ninguna'}>

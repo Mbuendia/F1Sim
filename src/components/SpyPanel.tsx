@@ -54,7 +54,7 @@ export function SpyPanel({ round, teams, reports, available, canAfford, driverCo
           {report.exact
             ? <Chip tone="ok" icon={<ShieldCheck size={14} aria-hidden="true" />}>Informe exacto</Chip>
             : <Chip tone="warn">Puede traer un ajuste desviado un punto</Chip>}
-          {report.detected && <Chip tone="bad" icon={<AlertTriangle size={14} aria-hidden="true" />}>Descubierto por la FIA: multa de {formatMoney(report.fine)} y la junta pierde confianza</Chip>}
+          {report.detected && <Chip tone="bad" icon={<AlertTriangle size={14} aria-hidden="true" />}>Descubierto por la FAI: multa de {formatMoney(report.fine)} y la junta pierde confianza</Chip>}
         </div>
       ))}
     </section>

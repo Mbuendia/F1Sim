@@ -18,7 +18,7 @@ export default async function run({ server, assert, test }) {
   await test('R26: variante opcional; el perfil FIA no tira el dado', () => {
     const on = make('barcelona', 2);
     const event = rollWith(on, 15);
-    assert(event && on.activeLuckEvent === event && /variante del juego/i.test(event.variant) && /FIA/.test(event.variant), 'R26: activada por defecto e identificada como variante', event?.variant);
+    assert(event && on.activeLuckEvent === event && /variante del juego/i.test(event.variant) && /FAI/.test(event.variant), 'R26: activada por defecto e identificada como variante', event?.variant);
     const off = make('barcelona', 2);
     off.luckVariantEnabled = false;
     assert(rollWith(off, 15) === null && off.activeLuckEvent === null && off.luckLog.length === 0, 'R26: desactivada no hay tirada ni evento');
@@ -83,7 +83,7 @@ export default async function run({ server, assert, test }) {
     const { RaceMenu } = await server.ssrLoadModule('/src/components/RaceMenu.tsx');
     const sim = make('barcelona', 2);
     const modal = renderToStaticMarkup(createElement(D20LuckResult, { event: rollWith(sim, 15) }));
-    assert(/variante del juego/i.test(modal) && /no es reglamento FIA/i.test(modal) && modal.includes('data-d20-category="riesgo"'), 'R26 UI: el modal identifica la variante y la categoría');
+    assert(/variante del juego/i.test(modal) && /no es reglamento FAI/i.test(modal) && modal.includes('data-d20-category="riesgo"'), 'R26 UI: el modal identifica la variante y la categoría');
     const menu = on => renderToStaticMarkup(createElement(RaceMenu, {
       safetyCarDeployed: false, onToggleSafetyCarTest: () => {}, onRedFlagTest: () => {}, defaultOpen: true, luckVariantEnabled: on, onToggleLuckVariant: () => {},
     }));

@@ -35,7 +35,7 @@ export const EVENT_DATA_IDS = ['barcelona', 'monaco'];
 const UNIT = 'fraccion-vuelta' as const;
 
 export function buildEventData(spec: CircuitSpec, track: TrackDefinition): EventData {
-  const fiaPlan = `Plano DRS FIA 2025 · ${spec.officialGpName}`;
+  const fiaPlan = `Plano DRS FAI 2025 · ${spec.officialGpName}`;
   const calibrated = 'Calibrado sobre el trazado SVG del juego';
   const lines: EventLine[] = [
     { id: 'meta', kind: 'meta', unit: UNIT, t: 0, provenance: 'calibrado', source: `${calibrated} (startOffsetT ${spec.startOffsetT ?? 0})` },
@@ -43,7 +43,7 @@ export function buildEventData(spec: CircuitSpec, track: TrackDefinition): Event
     { id: 'S2', kind: 'sector', unit: UNIT, t: track.sector2EndT, provenance: 'provisional', source: 'Reparto fijo del juego, no sectores oficiales' },
     { id: 'pit-entrada', kind: 'pit-entrada', unit: UNIT, t: track.pitEntryT, provenance: 'calibrado', source: calibrated },
     { id: 'pit-salida', kind: 'pit-salida', unit: UNIT, t: track.pitExitT, provenance: 'calibrado', source: calibrated },
-    { id: 'pit-compromiso', kind: 'pit-compromiso', unit: UNIT, t: track.pitCommitmentT ?? track.pitEntryT, provenance: 'calibrado', source: 'Línea táctica del juego, no dato FIA' },
+    { id: 'pit-compromiso', kind: 'pit-compromiso', unit: UNIT, t: track.pitCommitmentT ?? track.pitEntryT, provenance: 'calibrado', source: 'Línea táctica del juego, no dato FAI' },
   ];
   // Zonas: la activación es oficial cuando la ficha lo indica (Q19); el fin de zona se calibra en la frenada.
   const detections = spec.drsDetections ?? [];
