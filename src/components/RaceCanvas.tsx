@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useMemo, useState } from 'react';
 import styles from './RaceCanvas.module.css';
 import { Camera } from '../renderer/Camera';
 import { TrackRenderer } from '../renderer/TrackRenderer';
@@ -15,6 +15,9 @@ import { buildCarDraws, buildSafetyCarDraw } from '../renderer/carDraws';
 import { bridgePaintOrder, bridgeSide, overpassFor } from '../renderer/overpass';
 import { renderBridge } from '../renderer/BridgeRenderer';
 import { sunAt } from '../renderer/lighting';
+import type { RaceScene3D } from '../scene3d/RaceScene3D';
+import { CameraDirector3D, drawLabels3D } from '../scene3d/director3d';
+import { CAMERA_LABELS, CAMERA_MODES, type CameraMode3D } from '../scene3d/cameras';
 import { WEATHER_TESTS } from '../data/weatherScenarios';
 import type { TrackDefinition } from '../data/barcelonaTrack';
 import type { CarState, RejoinEstimate, SafetyCarState, TrackWeatherState } from '../types/f1';
@@ -38,6 +41,8 @@ interface RaceCanvasProps {
   weatherTest?: boolean;
   /** [G9][N3] Pide al motor el tiempo de prueba elegido. */
   onWeatherTest?: (index: number) => void;
+  /** Vista 3D (22/10/2026): modo de cámara con el que empieza. */
+  initialCameraMode?: CameraMode3D;
 }
 
 /** [N3] Lo que pinta un fotograma, montado con las vistas: coches con su pose interpolada, Safety Car y tiempo. */
@@ -63,6 +68,7 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
   onSelectCar,
   weatherTest = false,
   onWeatherTest,
+  initialCameraMode,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const trackLayerRef = useRef<TrackLayerGL | null>(null);
@@ -84,6 +90,49 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
   const dragStartPosRef = useRef({ x: 0, y: 0 });
   const totalDragDistanceRef = useRef(0);
   const [currentRotationDeg, setCurrentRotationDeg] = useState(0);
+
+  // ── Vista 3D (22/10/2026): pintor three.js con escenario, sombras y seis modos de cámara. Sin WebGL (o con `?2d`)
+  // se queda la vista cenital de siempre.
+  const scene3dRef = useRef<RaceScene3D | null>(null);
+  const [view3d, setView3d] = useState(false);
+  const director = useMemo(() => {
+    const d = new CameraDirector3D(track, circuitId);
+    d.mode = initialCameraMode ?? (selectedCarId !== null ? 'persecucion' : 'vista');
+    return d;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [track, circuitId]);
+  const [mode3d, setMode3dState] = useState<CameraMode3D>(director.mode);
+  const setMode3d = (mode: CameraMode3D) => {
+    if (mode === 'libre') director.toFree(); else director.mode = mode;
+    setMode3dState(mode);
+  };
+  useEffect(() => {
+    // En desarrollo, las capturas de revisión colocan la cámara desde fuera.
+    if (!import.meta.env.DEV) return;
+    const w = window as unknown as { __camera3d?: unknown };
+    w.__camera3d = { director, setMode: setMode3d };
+    return () => { delete w.__camera3d; };
+  });
+  useEffect(() => {
+    // Al elegir un coche desde la vista general, la cámara se va con él.
+    if (selectedCarId !== null && director.mode === 'vista') { director.mode = 'persecucion'; setMode3dState('persecucion'); }
+  }, [selectedCarId, director]);
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (!supportsWebGL() || params.has('2d') || params.has('canvas')) return;
+    let cancelled = false;
+    let created: RaceScene3D | null = null;
+    import('../scene3d/RaceScene3D')
+      .then(async module => {
+        created = module.RaceScene3D.create();
+        if (!created || cancelled) { created?.destroy(); created = null; return; }
+        scene3dRef.current = created;
+        setView3d(true);
+        await created.load(track, circuitId, import.meta.env.BASE_URL);
+      })
+      .catch(error => { console.error('Vista 3D no disponible', error); scene3dRef.current = null; setView3d(false); });
+    return () => { cancelled = true; scene3dRef.current = null; setView3d(false); created?.destroy(); };
+  }, [track, circuitId]);
 
   // Sincronizar el seguimiento de la cámara cuando cambia selectedCarId
   useEffect(() => {
@@ -235,6 +284,37 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
       ctx.fillStyle = '#14181f';
       ctx.fillRect(0, 0, camera.screenWidth, camera.screenHeight);
 
+      // ── Vista 3D: pista, escenario y coches en three.js; encima, etiquetas, nubes, gotas y minimapa. ──
+      const scene3d = scene3dRef.current;
+      if (scene3d) {
+        const w = camera.screenWidth, h = camera.screenHeight;
+        const sun3 = sunAt({ circuitId, raceTimeSec: frame.raceTimeSec, cloudCover: frame.cloudCover });
+        const shot = director.view(frame.cars, selectedCarId, frame.raceTimeSec, dtRaw, w / h, car => scene3d.carHeight(car));
+        const image = scene3d.render({ cars: frame.cars, safetyCar: frame.safetyCar, view: shot.view, sun: sun3, shadowRadius: shot.shadowRadius }, w, h, Math.min(dpr, 1.5));
+        ctx.drawImage(image, 0, 0, w, h);
+        const eye = shot.view.position;
+        drawLabels3D(ctx, frame.cars, selectedCarId, director.mode === 'vista', car => {
+          const z = scene3d.carHeight(car) + 1.8;
+          const p = scene3d.project(car.worldX, car.worldY, z, w, h);
+          return { ...p, distance: Math.hypot(car.worldX - eye.x, car.worldY - eye.y, z - eye.z) };
+        }, w, h);
+        const rendered = performance.now();
+        WeatherRenderer.renderClouds(ctx, camera, skyCover(frame.cloudCover, frame.rain));
+        if (frame.layers) WeatherRenderer.renderDrops(ctx, track, camera, frame.rain, frame.raceTimeSec);
+        if (camera.followingCarId !== null) {
+          const followed = camera.followingCarId;
+          const ownCar = Object.values(raceStore.getState().teams).flatMap(team => team.cars).find(car => car.id === followed);
+          renderLeftMinimap(ctx, { activeTrack: track, cars: frame.cars }, camera, (ownCar?.rejoin as RejoinEstimate | null | undefined) ?? null, frame.layers);
+        }
+        ctx.restore();
+        const frameEnd = performance.now();
+        frameCost.simScale = 1; frameCost.gpu = true;
+        recordStage('simulacion', simulated - frameStart); recordStage('pista', rendered - simulated); recordStage('clima', 0);
+        recordStage('coches', 0); recordStage('resto', frameEnd - rendered); recordStage('total', frameEnd - frameStart);
+        frameCost.frames++;
+        return;
+      }
+
       // [G8] Pista fija desde la GPU; si el contexto WebGL se pierde, se vuelve al Canvas.
       let gpu = false;
       const trackLayer = trackLayerRef.current;
@@ -343,7 +423,7 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
       resizeObserver.disconnect();
       window.removeEventListener('resize', handleResize);
     };
-  }, [track, roster, camera, circuitId, selectedCarId]);
+  }, [track, roster, camera, circuitId, selectedCarId, director]);
 
   // ── MANEJADORES DE RATÓN: ROTACIÓN 360°, PAN Y ZOOM ──
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -361,6 +441,20 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
     totalDragDistanceRef.current += Math.hypot(dx, dy);
     dragStartPosRef.current = { x: e.clientX, y: e.clientY };
 
+    if (scene3dRef.current) {
+      // 3D: arrastrar pasa al modo libre; izquierdo gira alrededor, derecho desplaza.
+      if (director.mode !== 'libre') { director.toFree(); setMode3dState('libre'); }
+      const o = director.orbit;
+      if (dragButtonRef.current === 0) {
+        o.azimuth -= dx * 0.008;
+        o.elevation = Math.max(0.12, Math.min(1.5, o.elevation + dy * 0.006));
+      } else {
+        const fx = -Math.cos(o.azimuth), fy = -Math.sin(o.azimuth), k = o.distance * 0.0016;
+        o.x += (fy * dx + fx * dy) * k;
+        o.y += (-fx * dx + fy * dy) * k;
+      }
+      return;
+    }
     if (dragButtonRef.current === 0) {
       // Click izquierdo: Rotar 360° la pista
       camera.rotateBy(dx * 0.008);
@@ -384,7 +478,20 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
       const clickX = e.clientX - rect.left;
       const clickY = e.clientY - rect.top;
 
-      const clickedCarId = CarRenderer.pickCarAtScreen(paintedRef.current, camera, clickX, clickY);
+      const scene3d = scene3dRef.current;
+      let clickedCarId: number | null;
+      if (scene3d) {
+        // 3D: el coche más cercano al clic en pantalla (a menos de 28 px).
+        let best: number | null = null, bestD = 28;
+        for (const car of paintedRef.current) {
+          const p = scene3d.project(car.worldX, car.worldY, scene3d.carHeight(car) + 0.6, rect.width, rect.height);
+          const d = Math.hypot(p.x - clickX, p.y - clickY);
+          if (p.visible && d < bestD) { bestD = d; best = car.id; }
+        }
+        clickedCarId = best;
+      } else {
+        clickedCarId = CarRenderer.pickCarAtScreen(paintedRef.current, camera, clickX, clickY);
+      }
 
       if (clickedCarId !== null) {
         onSelectCar(clickedCarId);
@@ -396,10 +503,16 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
   const handleWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
     e.preventDefault();
     const factor = e.deltaY < 0 ? 1.15 : 0.87;
+    if (scene3dRef.current) {
+      if (director.mode !== 'libre') { director.toFree(); setMode3dState('libre'); }
+      director.orbit.distance = Math.max(12, Math.min(6000, director.orbit.distance / factor));
+      return;
+    }
     camera.zoomBy(factor);
   };
 
   const handleDoubleClick = () => {
+    if (scene3dRef.current) setMode3d('vista');
     camera.resetToFullTrack(track);
     setCurrentRotationDeg(0);
     onSelectCar(null);
@@ -433,15 +546,27 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
         </div>
       )}
 
-      {/* ── BRÚJULA & INDICADOR DE ROTACIÓN 360° ── */}
-      <div className={styles.orbitBadge} onClick={handleDoubleClick} title="Haz doble click para resetear vista">
-        <Compass size={13} style={{ transform: `rotate(${-currentRotationDeg}deg)`, transition: 'transform 0.1s' }} />
-        <span>{currentRotationDeg}° {currentRotationDeg !== 0 ? '(Click para reset)' : 'NORTE'}</span>
-      </div>
+      {view3d ? (
+        // ── Vista 3D: modos de cámara ──
+        <div className={styles.cameraModes} role="group" aria-label="Cámara">
+          {CAMERA_MODES.map(mode => (
+            <button key={mode} type="button" aria-pressed={mode3d === mode} data-camera-mode={mode}
+              className={mode3d === mode ? styles.cameraModeOn : styles.cameraMode} onClick={() => setMode3d(mode)}>
+              {CAMERA_LABELS[mode]}
+            </button>
+          ))}
+        </div>
+      ) : (
+        /* ── BRÚJULA & INDICADOR DE ROTACIÓN 360° ── */
+        <div className={styles.orbitBadge} onClick={handleDoubleClick} title="Haz doble click para resetear vista">
+          <Compass size={13} style={{ transform: `rotate(${-currentRotationDeg}deg)`, transition: 'transform 0.1s' }} />
+          <span>{currentRotationDeg}° {currentRotationDeg !== 0 ? '(Click para reset)' : 'NORTE'}</span>
+        </div>
+      )}
 
       {/* ── HINT DE CONTROLES DE CÁMARA & PISTA ── */}
-      <div className={styles.cameraHint}>
-        <strong>Arrastrar:</strong> girar · <strong>Botón derecho:</strong> mover · <strong>Rueda:</strong> zoom · <strong>Doble clic:</strong> restablecer
+      <div className={styles.cameraHint} style={view3d ? { top: 60 } : undefined}>
+        <strong>Arrastrar:</strong> girar · <strong>Botón derecho:</strong> mover · <strong>Rueda:</strong> zoom · <strong>Doble clic:</strong> {view3d ? 'vista general' : 'restablecer'}
       </div>
     </div>
   );

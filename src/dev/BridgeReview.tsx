@@ -10,6 +10,7 @@ import { Camera } from '../renderer/Camera';
 import { raceStore } from '../state/raceStore';
 import { bridgeSide, findCrossings, overpassFor } from '../renderer/overpass';
 import { START_HOUR, sunAt } from '../renderer/lighting';
+import type { CameraMode3D } from '../scene3d/cameras';
 
 const q = new URLSearchParams(location.search);
 const circuitId = q.get('circuito') ?? 'suzuka';
@@ -17,6 +18,7 @@ const raceTimeSec = Number(q.get('hora') ?? 0);
 const clouds = Number(q.get('nubes') ?? 0);
 const zoom = Number(q.get('zoom') ?? 4);
 const rotation = Number(q.get('rot') ?? 0) * Math.PI / 180;
+const cameraMode = (q.get('camara') ?? undefined) as CameraMode3D | undefined;
 
 export default function BridgeReview() {
   const data = useMemo(() => {
@@ -69,7 +71,7 @@ export default function BridgeReview() {
   const hour = (START_HOUR[circuitId] ?? 15) + raceTimeSec / 3600;
   return (
     <div style={{ position: 'fixed', inset: 0, background: '#14181f' }}>
-      <RaceCanvas track={data.sim.activeTrack} circuitId={circuitId} roster={data.roster} camera={camera} selectedCarId={null} onSelectCar={() => {}} />
+      <RaceCanvas track={data.sim.activeTrack} circuitId={circuitId} roster={data.roster} camera={camera} selectedCarId={null} onSelectCar={() => {}} initialCameraMode={cameraMode} />
       <div data-bridge-review style={{ position: 'absolute', left: 12, bottom: 12, padding: '6px 10px', background: 'rgba(0,0,0,0.6)', color: '#fff', font: '13px system-ui', borderRadius: 6 }}>
         {circuitId} · {Math.floor(hour)}:{String(Math.round((hour % 1) * 60)).padStart(2, '0')} · nubes {Math.round(clouds * 100)} % · {sun.mode} · sombra ×{sun.length.toFixed(2)} · {data.sides.map(c => `${c.code} ${c.side === 'under' ? 'abajo' : 'arriba'}`).join(', ')}
       </div>

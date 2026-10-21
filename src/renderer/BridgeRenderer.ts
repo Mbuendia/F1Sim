@@ -9,15 +9,22 @@ import { shadowOffset, type Sun } from './lighting';
 import { ASPHALT_DRY, ASPHALT_WET } from './trackLayers';
 
 /** Media longitud del tablero a cada lado del cruce (m): cubre el tramo de abajo con sus pianos y escapatorias. */
-const DECK_HALF_M = 30;
+export const DECK_HALF_M = 30;
 /** Altura del tablero sobre el tramo de abajo (m), para su sombra. */
-const DECK_HEIGHT_M = 7;
+export const DECK_HEIGHT_M = 7;
 /** Largo de cada rampa de acceso al tablero (m), donde no cae la sombra del puente. */
-const RAMP_M = 60;
+export const RAMP_M = 60;
 /** Ancho de cada lado de hormigón con su pretil (m). */
-const SIDE_M = 1.6;
+export const SIDE_M = 1.6;
 
 type Pt = { x: number; y: number };
+
+/** Altura de la carretera de arriba (m) en la fracción `t`: el tablero entero, y subiendo o bajando por las rampas. */
+export function bridgeRoadHeight(o: Overpass, t: number, lapLengthM: number): number {
+  const d = Math.abs(((t - o.upperT + 1.5) % 1) - 0.5) * lapLengthM;
+  if (d <= DECK_HALF_M) return DECK_HEIGHT_M;
+  return Math.max(0, DECK_HEIGHT_M * (1 - (d - DECK_HALF_M) / RAMP_M));
+}
 
 export function renderBridge(ctx: CanvasRenderingContext2D, track: TrackDefinition, camera: Camera, o: Overpass, sun: Sun, wet: boolean) {
   const points = track.points;
