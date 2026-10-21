@@ -19,6 +19,7 @@ const clouds = Number(q.get('nubes') ?? 0);
 const zoom = Number(q.get('zoom') ?? 4);
 const rotation = Number(q.get('rot') ?? 0) * Math.PI / 180;
 const cameraMode = (q.get('camara') ?? undefined) as CameraMode3D | undefined;
+const finished = q.get('fin') === '1';
 
 export default function BridgeReview() {
   const data = useMemo(() => {
@@ -60,7 +61,7 @@ export default function BridgeReview() {
     raceStore.getState().reset(data.roster);
     const fast = { ...data.host.fastView(), t: raceTimeSec };
     const base = data.host.slowView();
-    const slow = { ...base, t: raceTimeSec, weatherScene: { ...base.weatherScene, cloudCover: clouds } };
+    const slow = { ...base, t: raceTimeSec, finished: finished || base.finished, weatherScene: { ...base.weatherScene, cloudCover: clouds } };
     const now = performance.now();
     raceStore.getState().receive({ type: 'slow', view: slow }, now);
     raceStore.getState().receive({ type: 'fast', view: fast }, now - 100);

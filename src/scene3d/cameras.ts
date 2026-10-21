@@ -1,6 +1,8 @@
 /**
  * Cámaras de la vista 3D (22/10/2026). Cada modo se comporta distinto:
  * - vista: el circuito entero, inclinado.
+ * - cenital: desde arriba, siguiendo al coche elegido con el norte arriba (la vista de siempre).
+ * - cenital-giro: desde arriba, girando con el coche para que se vea siempre en horizontal.
  * - persecucion: detrás del coche, algo elevada, girando con él.
  * - tv: cámaras fijas junto a la pista; la realización corta a la más cercana sin planos de menos de 3 s.
  * - helicoptero: alto y adelantándose al coche por el trazado.
@@ -11,15 +13,16 @@
 import type { TrackDefinition } from '../data/barcelonaTrack';
 import { axisDistance, besideTrack, frameAt } from './trackSpace';
 
-export const CAMERA_MODES = ['vista', 'persecucion', 'tv', 'helicoptero', 'a-bordo', 'libre'] as const;
+export const CAMERA_MODES = ['vista', 'cenital', 'cenital-giro', 'persecucion', 'tv', 'helicoptero', 'a-bordo', 'libre'] as const;
 export type CameraMode3D = typeof CAMERA_MODES[number];
 
 export const CAMERA_LABELS: Record<CameraMode3D, string> = {
-  vista: 'Vista general', persecucion: 'Persecución', tv: 'TV', helicoptero: 'Helicóptero', 'a-bordo': 'A bordo', libre: 'Libre',
+  vista: 'Vista general', cenital: 'Cenital', 'cenital-giro': 'Cenital que gira', persecucion: 'Persecución', tv: 'TV', helicoptero: 'Helicóptero', 'a-bordo': 'A bordo', libre: 'Libre',
 };
 
 export interface V3 { x: number; y: number; z: number }
-export interface CameraView { position: V3; target: V3; fov: number }
+/** `up`: hacia dónde queda la parte de arriba de la pantalla (solo hace falta mirando en vertical). */
+export interface CameraView { position: V3; target: V3; fov: number; up?: V3 }
 export interface CarPose { x: number; y: number; heading: number; t: number; speedMs?: number; z?: number }
 
 export const CHASE_DISTANCE = 12;
@@ -30,6 +33,22 @@ export const HELICOPTER_HEIGHT = 60;
 export const TV_MIN_SHOT_SEC = 3;
 /** Metros que debe ganar otra cámara para cortar a ella. */
 const TV_HYSTERESIS_M = 30;
+
+/** Altura de las cenitales a zoom 1 (m). */
+export const CENITAL_HEIGHT = 120;
+
+/** Desde arriba, justo encima del coche, con el norte arriba. */
+export function cenitalView(car: CarPose, zoom = 1): CameraView {
+  const z = (car.z ?? 0) + CENITAL_HEIGHT / Math.max(0.2, zoom);
+  return { position: { x: car.x, y: car.y, z }, target: { x: car.x, y: car.y, z: car.z ?? 0 }, fov: 45, up: { x: 0, y: -1, z: 0 } };
+}
+
+/** Desde arriba girando con el coche: arriba de la pantalla, perpendicular a su marcha (el coche, en horizontal). */
+export function cenitalGiroView(car: CarPose, zoom = 1): CameraView {
+  const view = cenitalView(car, zoom);
+  view.up = { x: Math.sin(car.heading), y: -Math.cos(car.heading), z: 0 };
+  return view;
+}
 
 export function chaseView(car: CarPose): CameraView {
   const c = Math.cos(car.heading), s = Math.sin(car.heading), z = car.z ?? 0;

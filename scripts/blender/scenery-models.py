@@ -279,31 +279,60 @@ def casino():
 
 # ───────────────────────────── Spielberg ─────────────────────────────
 
+def limb(p0, p1, r0, r1, m, seg=8):
+    """Tronco de cono de p0 a p1 (patas, cuello, cuernos, cola)."""
+    import mathutils
+    a, b = mathutils.Vector(p0), mathutils.Vector(p1)
+    d = b - a
+    bpy.ops.mesh.primitive_cone_add(vertices=seg, radius1=r0, radius2=r1, depth=d.length, location=(a + b) / 2)
+    o = bpy.context.active_object
+    o.rotation_euler = d.to_track_quat('Z', 'Y').to_euler()
+    return _link(o, m)
+
+
 def red_bull():
-    """El toro de Spielberg: toro de acero corten saltando sobre un arco, ~17 m en total."""
-    corten = mat("tint", "#8a4b2a", 0.5, 0.6)
-    horn = mat("horn", "#d8cfb8")
-    # Arco de acero.
-    R, seg = 6.5, 14
+    """El toro de Spielberg (referencia del usuario, 22/10/2026): arco de acero alto y fino y, debajo, el toro de acero
+    corten encabritado: cuartos traseros apoyados, lomo que sube hacia unos hombros altos, patas delanteras recogidas,
+    cabeza baja embistiendo y cuernos dorados hacia delante. Largo del toro en +X; el arco en el plano XZ."""
+    steel, rust, corten, gold, plinth = (mat("steel", "#8d9299", 0.7, 0.35), mat("arch_rust", "#9a5a30", 0.5, 0.6),
+                                         mat("tint", "#9a4a25", 0.5, 0.65), mat("horn", "#d9b13a", 0.8, 0.3), mat("plinth", "#9da1a6"))
+    # Arco parabólico que se afina hacia arriba; los pies, oxidados.
+    span, top, seg = 28.0, 30.0, 24
+    pts = [(-span / 2 + span * i / seg, top * (1 - (2 * i / seg - 1) ** 2)) for i in range(seg + 1)]
     for i in range(seg):
-        a0, a1 = math.pi * i / seg, math.pi * (i + 1) / seg
-        am = (a0 + a1) / 2
-        x, z = math.cos(am) * R, math.sin(am) * R
-        o = box(x, 0, z - 0.6, 2 * R * math.sin((a1 - a0) / 2) + 0.2, 2.2, 1.2, corten)
-        o.rotation_euler = (0, -(am - math.pi / 2), 0)
-    box(0, 0, 0, 16, 4, 0.6, mat("plinth", "#8c8f94"))
-    # Toro (largo en +X), encabritado sobre el arco: cuerpo inclinado hacia arriba.
-    lift = math.radians(18)
-    cz = R + 3.4
-    blob(0.5, 0, cz, 4.6, 1.9, 2.1, corten, 12, 8, rot=(0, -lift, 0))
-    blob(3.3, 0, cz + 1.4, 2.3, 2.1, 2.4, corten, 10, 6, rot=(0, -lift, 0))      # morrillo
-    blob(5.8, 0, cz + 1.0, 1.6, 1.1, 1.2, corten, 10, 6, rot=(0, math.radians(35), 0))  # cabeza baja
+        (x0, z0), (x1, z1) = pts[i], pts[i + 1]
+        mid = 1 - abs(2 * (i + 0.5) / seg - 1)
+        thick = 1.7 - 1.0 * mid
+        length = math.hypot(x1 - x0, z1 - z0) + 0.35
+        o = box((x0 + x1) / 2, 0, (z0 + z1) / 2 - thick / 2, length, thick * 0.8, thick, rust if mid < 0.2 else steel)
+        o.rotation_euler = (0, -math.atan2(z1 - z0, x1 - x0), 0)
+    box(0, 0, 0, 32, 10, 0.5, plinth)
+    S = 1.55
+    P = lambda x, y, z: (x * S, y * S, z * S)
+    # Cuerpo: grupa, tronco que sube hacia delante, hombros altos (morrillo).
+    blob(*P(-3.6, 0, 6.4), 3.0 * S, 2.0 * S, 2.4 * S, corten, 14, 8)
+    blob(*P(-0.6, 0, 7.7), 4.0 * S, 2.3 * S, 2.6 * S, corten, 14, 8, rot=(0, math.radians(-22), 0))
+    blob(*P(2.4, 0, 9.2), 2.8 * S, 2.6 * S, 3.0 * S, corten, 14, 8, rot=(0, math.radians(-15), 0))
+    # Cuello hacia abajo y cabeza baja.
+    limb(P(3.4, 0, 9.0), P(4.6, 0, 6.6), 2.0 * S, 1.3 * S, corten, 10)
+    blob(*P(4.9, 0, 5.8), 1.3 * S, 1.15 * S, 1.8 * S, corten, 10, 8, rot=(0, math.radians(20), 0))
+    blob(*P(5.2, 0, 4.4), 0.8 * S, 0.85 * S, 0.7 * S, corten, 8, 6)
     for sy in (-1, 1):
-        cyl(6.4, sy * 1.3, cz + 1.6, 0.35, 2.4, horn, 6, r2=0.05, rot=(math.radians(-sy * 70), math.radians(-20), 0))
-        # Patas delanteras recogidas y traseras estiradas.
-        cyl(3.6, sy * 1.0, cz - 3.2, 0.45, 3.2, corten, 6, r2=0.3, rot=(0, math.radians(-40), 0))
-        cyl(-3.4, sy * 1.0, cz - 3.6, 0.55, 3.8, corten, 6, r2=0.3, rot=(0, math.radians(30), 0))
-    cyl(-4.6, 0, cz + 0.6, 0.18, 3.2, corten, 6, rot=(0, math.radians(-60), 0))  # cola
+        # Cuernos dorados: salen hacia fuera y apuntan hacia delante y arriba.
+        limb(P(4.6, sy * 0.9, 7.0), P(5.4, sy * 2.2, 7.4), 0.38 * S, 0.24 * S, gold)
+        limb(P(5.4, sy * 2.2, 7.4), P(7.0, sy * 2.6, 8.4), 0.24 * S, 0.02 * S, gold)
+        # Patas traseras apoyadas.
+        limb(P(-4.0, sy * 1.1, 6.0), P(-4.6, sy * 1.2, 3.0), 0.9 * S, 0.45 * S, corten)
+        limb(P(-4.6, sy * 1.2, 3.0), P(-5.3, sy * 1.2, 0.35 / S), 0.45 * S, 0.3 * S, corten)
+        blob(*P(-5.3, sy * 1.2, 0.3), 0.5 * S, 0.45 * S, 0.35 * S, corten, 8, 4)
+    # Patas delanteras recogidas (una más alta que la otra), con las pezuñas colgando.
+    for sy, knee, hoof in ((1, (4.0, 1.3, 5.0), (3.2, 1.3, 3.3)), (-1, (4.6, -1.3, 6.4), (3.6, -1.3, 5.0))):
+        limb(P(2.6, sy * 1.3, 7.6), P(*knee), 0.75 * S, 0.4 * S, corten)
+        limb(P(*knee), P(*hoof), 0.4 * S, 0.3 * S, corten)
+        blob(*P(*hoof), 0.45 * S, 0.4 * S, 0.35 * S, corten, 8, 4)
+    # Cola que cae y se enrosca.
+    limb(P(-5.8, 0, 7.4), P(-6.6, 0, 4.4), 0.25 * S, 0.12 * S, corten, 6)
+    blob(*P(-6.6, 0, 4.2), 0.35 * S, 0.3 * S, 0.6 * S, corten, 8, 4)
 
 
 # ───────────────────────────── Shanghái ─────────────────────────────
@@ -335,10 +364,51 @@ def pavilion():
     box(0, 0, 8.1, 10, 10, 0.9, white)
 
 
+# ───────────────────────────── Noche y Abu Dabi ─────────────────────────────
+
+def floodlight():
+    """Torre de luz: mástil con el cabezal de focos (cara luminosa "lamp" hacia +Y, la pista)."""
+    steel, lamp, frame = mat("steel", "#8d9299", 0.7, 0.35), mat("lamp", "#fffbe8", 0, 0.2, emission="#fffbe8"), mat("frame", "#3b3f45", 0.5, 0.5)
+    cyl(0, 0, 0, 0.45, 24, steel, 8, r2=0.25)
+    head = box(0, 0.4, 23.5, 4.2, 0.7, 2.6, frame)
+    head.rotation_euler = (math.radians(-25), 0, 0)
+    face = box(0, 0.8, 23.65, 3.8, 0.12, 2.2, lamp)
+    face.rotation_euler = (math.radians(-25), 0, 0)
+
+
+def yas_hotel():
+    """Hotel de Yas Marina: dos edificios a cada lado de la pista unidos por un puente (altura libre 10 m) y la gran
+    cubierta ondulada de luces ("led", que el juego colorea). Largo en X cruzando la pista."""
+    white, glass, led = mat("tint", "#e9ecef"), mat("glass", "#33475e", 0.3, 0.15), mat("led", "#8a3cff", 0.1, 0.4, emission="#8a3cff")
+    for sx in (-1, 1):
+        cx = sx * 57
+        box(cx, 0, 0, 52, 40, 8, white)
+        box(cx, 0, 8, 50, 36, 14, glass)
+        box(cx, 0, 22, 52, 38, 1.0, white)
+        o = blob(cx, 0, 24, 34, 26, 9, led, 18, 8)
+        o.rotation_euler = (0, math.radians(sx * -5), 0)
+    box(0, 0, 10, 66, 14, 1.2, white)           # puente sobre la pista
+    box(0, 0, 11.2, 64, 12, 4.0, glass)
+    box(0, 0, 15.2, 66, 14, 0.8, white)
+    blob(0, 0, 18, 40, 12, 4.5, led, 16, 6)     # la cubierta sigue por encima del puente
+
+
+def yas_tower():
+    """Torre de control de Yas Marina: base en celosía blanca que se estrecha, cuerpo de cristal que se abre y tejado
+    cónico (forma de reloj de arena)."""
+    lattice, glass, roof = mat("tint", "#eef1f4"), mat("glass", "#1f2a36", 0.4, 0.15), mat("roof", "#d9dde2", 0.3, 0.4)
+    cyl(0, 0, 0, 8, 24, lattice, 12, r2=4.5)
+    cyl(0, 0, 24, 4.5, 12, glass, 12, r2=8.5)
+    cyl(0, 0, 36, 8.6, 0.8, lattice, 12)
+    cyl(0, 0, 36.8, 9.5, 7.5, roof, 12, r2=0.6)
+    cyl(0, 0, 44.3, 0.2, 2.5, mat("steel", "#8d9299", 0.7, 0.35), 6)
+
+
 MODELS = {
     "grandstand": grandstand, "vip-lounge": vip_lounge, "paddock": paddock, "tree": tree, "building": building,
     "yacht": yacht, "yacht-large": yacht_large, "casino": casino, "red-bull": red_bull,
     "shanghai-bridge": shanghai_bridge, "pavilion": pavilion,
+    "floodlight": floodlight, "yas-hotel": yas_hotel, "yas-tower": yas_tower,
 }
 
 
@@ -351,3 +421,38 @@ def build_all(repo):
         fn()
         report.append(finish(name, out))
     return report
+
+
+# ───────────────────────────── Coche ligero (de lejos) ─────────────────────────────
+
+def build_car_lod(repo, target_tris=6000):
+    """Versión ligera del monoplaza del juego (public/models/f1-car.glb) para los coches lejanos: el mismo modelo con
+    menos polígonos (Decimate), sus materiales de librea y sin animación. Se guarda en public/models/f1-car-lod.glb."""
+    clear()
+    src = os.path.join(repo, "public", "models", "f1-car.glb")
+    bpy.ops.import_scene.gltf(filepath=src)
+    sc = scene()
+    meshes = [o for o in sc.objects if o.type == "MESH"]
+    total = sum(sum(len(p.vertices) - 2 for p in o.data.polygons) for o in meshes)
+    # Reparto por piezas: la carrocería se lleva casi todo; las ruedas, unos 500 cada una (antes se aplanan las caras
+    # coplanarias para que sigan siendo cilindros y no bolas); rótulos y bandas, lo justo.
+    budget = {"body": target_tris, "wheel": 500, "decal": 220, "band": 60}
+    for o in meshes:
+        tris = sum(len(p.vertices) - 2 for p in o.data.polygons)
+        kind = next((k for k in budget if o.name.startswith(k)), "body")
+        bpy.context.view_layer.objects.active = o
+        if kind == "wheel":
+            flat = o.modifiers.new("flat", "DECIMATE")
+            flat.decimate_type = "DISSOLVE"
+            flat.angle_limit = math.radians(4)
+            bpy.ops.object.modifier_apply(modifier=flat.name)
+            tris = sum(len(p.vertices) - 2 for p in o.data.polygons)
+        mod = o.modifiers.new("lod", "DECIMATE")
+        mod.ratio = max(0.01, min(1.0, budget[kind] / max(1, tris)))
+        bpy.ops.object.modifier_apply(modifier=mod.name)
+    bpy.ops.object.select_all(action="SELECT")
+    path = os.path.join(repo, "public", "models", "f1-car-lod.glb")
+    bpy.ops.export_scene.gltf(filepath=path, export_format="GLB", use_selection=True, export_apply=True, export_yup=True,
+                              use_active_scene=True, export_animations=False)
+    after = sum(sum(len(p.vertices) - 2 for p in o.data.polygons) for o in sc.objects if o.type == "MESH")
+    return {"before": total, "after": after, "bytes": os.path.getsize(path)}

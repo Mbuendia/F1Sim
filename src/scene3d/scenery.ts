@@ -8,8 +8,21 @@ import type { TrackDefinition } from '../data/barcelonaTrack';
 import { findCrossings } from '../renderer/overpass';
 import { getPitLaneGeometry, FAST_LANE_WIDTH } from '../utils/pitLaneGeometry';
 import { axisDistance, besideTrack, distanceTo, frameAt, pointInPoly, polyArea, rngFor, type Poly, type Pt } from './trackSpace';
+import { getScenario } from '../data/scenarioRegistry';
+import { buildScenarioGeometry } from '../utils/scenarioGeometry';
+import { NIGHT_RACES } from '../renderer/lighting';
+import { SPONSORS, type Sponsor } from './sponsors';
 
-export type SceneKind = 'grandstand' | 'vip' | 'paddock' | 'tree' | 'building' | 'yacht' | 'landmark' | 'bridge';
+export type SceneKind = 'grandstand' | 'vip' | 'paddock' | 'tree' | 'building' | 'yacht' | 'landmark' | 'bridge' | 'floodlight';
+
+/** Muros, guardarraíles y barreras TecPro (estas, con su patrocinador). */
+export interface SceneBarrier {
+  kind: 'armco' | 'concrete' | 'tecpro';
+  points: Pt[];
+  width: number;
+  color: string;
+  sponsor?: Sponsor;
+}
 
 export interface SceneItem {
   id?: string;
@@ -34,6 +47,7 @@ export interface Scenery {
   /** Mar, lagos y puertos. */
   water: Poly[];
   items: SceneItem[];
+  barriers: SceneBarrier[];
   /** Circuito urbano: suelo de ciudad en vez de hierba. */
   street: boolean;
 }
@@ -83,12 +97,17 @@ function build(track: TrackDefinition, circuitId: string): Scenery {
   const infield = loops.map(loop => loop.filter((_, i) => i % 3 === 0)).filter(poly => poly.length >= 3 && polyArea(poly) > 1000);
   const inInfield = (p: Pt) => infield.some(poly => pointInPoly(p, poly));
 
+  // ── Muros del escenario y barreras TecPro con patrocinador en el exterior de las curvas. ──
+  const barriers = buildBarriers(track, circuitId, half, lap, pitPts, street);
+  const tecproPts = barriers.filter(b => b.kind === 'tecpro').flatMap(b => b.points);
+
   // ── Comprobación de hueco: lejos del asfalto, del pit lane, del agua (salvo barcos) y de lo ya puesto. ──
   const fits = (item: SceneItem, opts: { onWater?: boolean } = {}) => {
     const reachTrack = half + MARGIN + 1;
     for (const p of footprintOf(item)) {
       if (axisDistance(track, p, reachTrack) < half + MARGIN) return false;
       if (pitPts.length && distanceTo(pitPts, pitPts, p, FAST_LANE_WIDTH + 6) < FAST_LANE_WIDTH / 2 + 4) return false;
+      if (tecproPts.length && distanceTo(tecproPts, tecproPts, p, 4) < 2.5) return false;
       const wet = water.some(poly => pointInPoly(p, poly));
       if (opts.onWater ? !wet : wet) return false;
     }
@@ -119,6 +138,7 @@ function build(track: TrackDefinition, circuitId: string): Scenery {
   // ── Iconos que van antes que el kit (ocupan su sitio). ──
   if (circuitId === 'shanghai') shanghai(track, items, water, half, pitSide, dt);
   if (circuitId === 'monaco') monaco(track, items, water, half, dt, inInfield, fits);
+  if (circuitId === 'yas-marina') yasMarina(track, items, water, half, pitSide, fits, inInfield);
 
   // ── Kit común: gradas en la meta, zona VIP y paddock junto al pit lane. ──
   const stand = (t: number) => placeBeside({ kind: 'grandstand', model: 'grandstand', length: 60, width: 14, height: 12 }, t, -pitSide, half + MARGIN + 8, half + 90);
@@ -147,7 +167,18 @@ function build(track: TrackDefinition, circuitId: string): Scenery {
   // ── Iconos que van en el interior (después del kit, que ya ocupa la zona de boxes). ──
   if (circuitId === 'spielberg') {
     const spot = deepestPoint(track, infield);
-    if (spot) items.push({ id: 'toro', kind: 'landmark', model: 'red-bull', x: spot.x, y: spot.y, heading: -Math.PI / 4, length: 20, width: 8, height: 17.2, tint: '#8a4b2a' });
+    if (spot) items.push({ id: 'toro', kind: 'landmark', model: 'red-bull', x: spot.x, y: spot.y, heading: -Math.PI / 4, length: 18, width: 5.6, height: 17.2, tint: '#8a4b2a' });
+  }
+
+  // ── Torres de luz: en las carreras de noche y en Abu Dabi (que acaba de noche). ──
+  if (NIGHT_RACES.has(circuitId) || circuitId === 'yas-marina') {
+    const count = Math.max(48, Math.round(lap / 90));
+    for (let k = 0; k < count; k++) {
+      const t = (k + 0.5) / count, side = k % 2 ? 1 : -1;
+      for (const sd of [side, -side]) {
+        if (placeBeside({ kind: 'floodlight', model: 'floodlight', length: 3, width: 3, height: 26 }, t, sd, half + 9, half + 45, 3)) break;
+      }
+    }
   }
 
   // ── Árboles (pocos en los urbanos) y edificios de ciudad en los urbanos. ──
@@ -166,7 +197,7 @@ function build(track: TrackDefinition, circuitId: string): Scenery {
       if (placeBeside({ kind: 'building', model: 'building', length: w, width: 16 + rand() * 10, height: h, tint: '#9aa3ad' }, t, side, half + MARGIN + 14, half + 60, 8)) placed++;
     }
   }
-  return { infield, water, items, street };
+  return { infield, water, items, street, barriers };
 }
 
 type Box = Pick<SceneItem, 'x' | 'y' | 'heading' | 'length' | 'width'>;
@@ -226,7 +257,7 @@ function monaco(track: TrackDefinition, items: SceneItem[], water: Poly[], half:
   };
   // Borde del muelle junto a la pista y, mar adentro, el mismo borde desplazado en una sola dirección (la normal media
   // hacia fuera): así el polígono no se cruza aunque la pista haga curvas.
-  const t0 = 0.62, t1 = 0.80, side = outside((t0 + t1) / 2);
+  const t0 = 0.60, t1 = 0.82, side = outside((t0 + t1) / 2);
   const quay: Pt[] = [];
   let ox = 0, oy = 0;
   for (let t = t0; t <= t1 + 1e-9; t += 0.005) {
@@ -234,13 +265,13 @@ function monaco(track: TrackDefinition, items: SceneItem[], water: Poly[], half:
     quay.push({ x: p.x, y: p.y }); ox += f.nx * side; oy += f.ny * side;
   }
   const on = Math.hypot(ox, oy) || 1;
-  const sea = quay.map(p => ({ x: p.x + ox / on * 220, y: p.y + oy / on * 220 })).reverse();
+  const sea = quay.map(p => ({ x: p.x + ox / on * 520, y: p.y + oy / on * 520 })).reverse();
   const harbour = [...quay, ...sea];
   water.push(harbour);
   // Barcos amarrados en el agua.
   let yachts = 0;
-  for (let k = 0; k < 60 && yachts < 14; k++) {
-    const t = t0 + (t1 - t0) * ((k * 0.37) % 1), d = half + 30 + (k % 5) * 38;
+  for (let k = 0; k < 240 && yachts < 30; k++) {
+    const t = t0 + (t1 - t0) * ((k * 0.37) % 1), d = half + 30 + (k % 9) * 40;
     const p = besideTrack(track, t, side, d);
     const big = k % 4 === 0;
     const yacht: SceneItem = { kind: 'yacht', model: big ? 'yacht-large' : 'yacht', x: p.x, y: p.y, heading: p.angle + Math.PI / 2,
@@ -267,4 +298,76 @@ function monaco(track: TrackDefinition, items: SceneItem[], water: Poly[], half:
     }
   }
   void dt;
+}
+
+/** Muros del escenario y barreras TecPro en el exterior de las curvas, cada una con un patrocinador de parodia. */
+function buildBarriers(track: TrackDefinition, circuitId: string, half: number, lap: number, pitPts: Pt[], street: boolean): SceneBarrier[] {
+  const geo = buildScenarioGeometry(track, getScenario(circuitId));
+  const barriers: SceneBarrier[] = geo.barrierLines.map(b => ({ kind: b.type, points: b.points, width: b.width, color: b.color }));
+  let seed = 0;
+  for (const ch of circuitId) seed = (seed * 7 + ch.charCodeAt(0)) % SPONSORS.length;
+  let k = 0;
+  for (const b of barriers) if (b.kind === 'tecpro') b.sponsor = SPONSORS[(seed + k++) % SPONSORS.length];
+  const offsets = (street ? [2.5, 4, 7] : [16, 11, 7, 4]).map(o => half + o);
+  for (const corner of track.corners) {
+    if (barriers.filter(b => b.kind === 'tecpro').length >= 12) break;
+    const before = frameAt(track, corner.t - 15 / lap), after = frameAt(track, corner.t + 15 / lap);
+    let turn = after.angle - before.angle;
+    turn = Math.atan2(Math.sin(turn), Math.cos(turn));
+    if (Math.abs(turn) < 0.35) continue;
+    const outside = turn > 0 ? -1 : 1;
+    for (const off of offsets) {
+      const points: Pt[] = [];
+      for (let m = -30; m <= 15; m += 3) { const p = besideTrack(track, corner.t + m / lap, outside, off); points.push({ x: p.x, y: p.y }); }
+      const clear = points.every(p => axisDistance(track, p, off) >= Math.min(off - 0.5, half + 3)
+        && (!pitPts.length || distanceTo(pitPts, pitPts, p, 8) >= 6));
+      if (!clear) continue;
+      barriers.push({ kind: 'tecpro', points, width: 1.2, color: '#1f5fbf', sponsor: SPONSORS[(seed + k++) % SPONSORS.length] });
+      break;
+    }
+  }
+  return barriers;
+}
+
+/** Abu Dabi: el puerto deportivo dentro del último sector, el hotel sobre la pista y la torre de control junto a la meta. */
+function yasMarina(track: TrackDefinition, items: SceneItem[], water: Poly[], half: number, pitSide: number,
+  fits: (item: SceneItem, opts?: { onWater?: boolean }) => boolean, inInfield: (p: Pt) => boolean) {
+  // Puerto: una dársena redondeada en el hueco libre más grande del interior, a menos de 300 m del hotel.
+  const h = frameAt(track, 0.885);
+  let best: Pt | null = null, bestD = 0;
+  for (let x = h.x - 300; x <= h.x + 300; x += 6) for (let y = h.y - 300; y <= h.y + 300; y += 6) {
+    const q = { x, y };
+    if (Math.hypot(x - h.x, y - h.y) > 300 || !inInfield(q)) continue;
+    const d = axisDistance(track, q, 300);
+    if (d > bestD) { bestD = d; best = q; }
+  }
+  const radius = bestD - (half + 10);
+  const marina: Pt[] = best && radius > 25
+    ? Array.from({ length: 28 }, (_, k) => ({ x: best!.x + Math.cos(k / 28 * Math.PI * 2) * radius, y: best!.y + Math.sin(k / 28 * Math.PI * 2) * radius * 0.8 }))
+    : [];
+  if (marina.length && polyArea(marina) > 2000) water.push(marina);
+  // Hotel sobre la pista, entre las curvas 14 y 15.
+  const f = frameAt(track, 0.885);
+  items.push({ id: 'yas-hotel', kind: 'bridge', model: 'yas-hotel', x: f.x, y: f.y, heading: f.angle + Math.PI / 2,
+    length: 2 * half + 150, width: 70, height: 34, clearance: 10, t: 0.885 });
+  // Torre de control junto a la meta, del lado de los boxes.
+  for (const t of [0.012, 0.02, 0.005, 0.03]) {
+    let done = false;
+    for (let d = half + 30; d <= half + 160 && !done; d += 6) {
+      const p = besideTrack(track, t, pitSide, d);
+      const tower: SceneItem = { id: 'torre-yas', kind: 'landmark', model: 'yas-tower', x: p.x, y: p.y, heading: p.angle, length: 16, width: 16, height: 45, t };
+      if (fits(tower)) { items.push(tower); done = true; }
+    }
+    if (done) break;
+  }
+  // Barcos en el puerto.
+  if (!water.length) return;
+  const xs = marina.map(p => p.x), ys = marina.map(p => p.y);
+  const rand = rngFor('yas-barcos');
+  for (let k = 0, placed = 0; k < 400 && placed < 14; k++) {
+    const x = Math.min(...xs) + rand() * (Math.max(...xs) - Math.min(...xs)), y = Math.min(...ys) + rand() * (Math.max(...ys) - Math.min(...ys));
+    const big = k % 3 === 0;
+    const yacht: SceneItem = { kind: 'yacht', model: big ? 'yacht-large' : 'yacht', x, y, heading: rand() * Math.PI, length: big ? 40 : 20, width: big ? 8 : 5.5, height: big ? 9 : 5, tint: '#f4f4f2' };
+    if (fits(yacht, { onWater: true })) { items.push(yacht); placed++; }
+  }
 }

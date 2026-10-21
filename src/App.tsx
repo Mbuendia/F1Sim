@@ -127,6 +127,7 @@ import { RotateCw, ArrowLeft, Camera as CameraIcon, Maximize2, ListOrdered, Pane
 import { WallPanel } from './components/WallPanel';
 import { nextAlerts, wallAlerts } from './simulation/Wall';
 import type { WallReading } from './simulation/Wall';
+import { CAMERA_LABELS as CAMERA_LABELS_3D } from './scene3d/cameras';
 
 // R32: estado de carrera siempre visible en la barra.
 const FLAG_CHIPS: Record<RaceFlagState, { label: string; className: string }> = {
@@ -168,7 +169,9 @@ const playerDriverIds = (roster: Record<string, Driver>, driverId: string): stri
   return Object.keys(roster).filter(id => roster[id].teamId === teamId);
 };
 
+// Vista 3D (22/10/2026): sus modos van en el mismo botón (las claves no coinciden con las de la vista 2D).
 const CAMERA_LABELS: Record<string, string> = {
+  ...CAMERA_LABELS_3D,
   overview: 'General',
   follow: 'Seguimiento',
   cinematic: 'Cinemática',
@@ -515,7 +518,7 @@ export const App: React.FC = () => {
     setBestS1(slow.bestSectors?.[0] ?? null);
     setBestS2(slow.bestSectors?.[1] ?? null);
     setBestS3(slow.bestSectors?.[2] ?? null);
-    setCameraMode(camera.currentMode);
+    setCameraMode(camera.view3d ? camera.mode3d : camera.currentMode);
     setRaceFlagState(slow.flag as RaceFlagState);
     if (Array.isArray(slow.sectorFlags)) setSectorFlags(slow.sectorFlags as [RaceFlagState, RaceFlagState, RaceFlagState]);
     setSafetyCar(slow.safetyCar?.isDeployed ? {
@@ -900,7 +903,7 @@ export const App: React.FC = () => {
 
   const handleCycleCameraMode = useCallback(() => {
     camera.cycleMode();
-    setCameraMode(camera.currentMode);
+    setCameraMode(camera.view3d ? camera.mode3d : camera.currentMode);
   }, [camera]);
 
   useEffect(() => {

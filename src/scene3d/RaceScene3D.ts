@@ -19,13 +19,19 @@ import { disposeModel, dressCar, dressSafetyCar, loadModel } from '../renderer/m
 import { liveryFor } from '../data/liveries';
 import { compoundStyle } from '../utils/compounds';
 import { calculateCarWorldPosition, isCarVisible } from '../utils/carPosition';
-import { sceneryFor, type SceneItem } from './scenery';
+import { sceneryFor, type SceneBarrier, type SceneItem } from './scenery';
+import { SPONSOR_COLORS, type Sponsor } from './sponsors';
+import { fireworkBursts, yasHotelColor } from './effects';
 import { sunLightVector } from './sunLight';
 import type { CameraView } from './cameras';
 
 const W = (x: number, y: number, z = 0) => new THREE.Vector3(x, z, y);
-/** A partir de esta distancia a la cámara, cada coche es una caja de su color (el modelo completo pesa mucho). */
-const CAR_LOD_M = 160;
+/** A partir de esta distancia a la cámara, cada coche pasa a su versión ligera (el modelo completo pesa mucho). */
+const CAR_LOD_M = 90;
+const LOD_FILE = 'models/f1-car-lod.glb';
+/** Partículas de cada explosión de fuegos artificiales y explosiones a la vez como mucho. */
+const SPARKS = 70;
+const MAX_BURSTS = 12;
 
 export interface Frame3D {
   cars: CarState[];
@@ -34,9 +40,11 @@ export interface Frame3D {
   sun: Sun;
   /** Radio (m) que deben cubrir las sombras alrededor de lo que mira la cámara. */
   shadowRadius: number;
+  /** Segundos desde la bandera a cuadros (null: la carrera sigue); para los fuegos artificiales. */
+  fireworksSec?: number | null;
 }
 
-interface CarSlot { full: THREE.Object3D | null; proxy: THREE.Mesh; release: (() => void) | null; key: string }
+interface CarSlot { full: THREE.Object3D | null; lod: THREE.Object3D | null; proxy: THREE.Mesh; release: (() => void) | null; key: string }
 
 export class RaceScene3D {
   readonly renderer: THREE.WebGLRenderer;
@@ -47,6 +55,11 @@ export class RaceScene3D {
   private readonly world = new THREE.Group();
   private readonly cars = new Map<number, CarSlot>();
   private carModel: GLTF | null = null;
+  private lodModel: GLTF | null = null;
+  /** Materiales que se animan: luces del hotel de Abu Dabi y cabezales de las torres de luz. */
+  private ledMaterials: THREE.MeshStandardMaterial[] = [];
+  private lampMaterials: THREE.MeshStandardMaterial[] = [];
+  private fireworks: THREE.Points | null = null;
   private safetyModel: GLTF | null = null;
   private safetyRoot: THREE.Object3D | null = null;
   private track: TrackDefinition | null = null;
@@ -83,16 +96,30 @@ export class RaceScene3D {
     this.world.clear();
     const scenery = sceneryFor(track, circuitId);
     this.world.add(buildGround(track, circuitId, scenery.infield, scenery.water, scenery.street));
-    this.world.add(buildWalls(track, circuitId));
+    this.world.add(buildWalls(track, circuitId, scenery.barriers));
     const o = overpassFor(circuitId);
     if (o) this.world.add(buildElevatedRoad(track, o));
-    const [items, car] = await Promise.all([
+    const [items, car, lod] = await Promise.all([
       buildScenery(scenery.items, track, base).catch(() => null),
       loadModel(modelUrl(base, CAR_MODEL.file)).catch(() => null),
+      loadModel(modelUrl(base, LOD_FILE)).catch(() => null),
     ]);
     if (this.disposed) { if (items) disposeModel(items); return; }
-    if (items) this.world.add(items);
+    if (items) {
+      this.world.add(items);
+      const seen = new Set<THREE.Material>();
+      items.traverse(o => {
+        const mesh = o as THREE.Mesh;
+        if (!mesh.isMesh) return;
+        const mat = mesh.material as THREE.MeshStandardMaterial;
+        if (seen.has(mat)) return;
+        seen.add(mat);
+        if (mat.name === 'led') this.ledMaterials.push(mat);
+        if (mat.name === 'lamp') this.lampMaterials.push(mat);
+      });
+    }
     this.carModel = car;
+    this.lodModel = lod;
   }
 
   render(frame: Frame3D, width: number, height: number, pixelRatio: number): HTMLCanvasElement {
@@ -104,7 +131,7 @@ export class RaceScene3D {
     this.camera.fov = view.fov;
     this.camera.aspect = width / height;
     this.camera.position.copy(W(view.position.x, view.position.y, view.position.z));
-    this.camera.up.set(0, 1, 0);
+    if (view.up) this.camera.up.set(view.up.x, view.up.z, view.up.y); else this.camera.up.set(0, 1, 0);
     this.camera.lookAt(W(view.target.x, view.target.y, view.target.z));
     const height0 = Math.max(10, view.position.z);
     this.camera.near = Math.max(0.2, height0 / 400);
@@ -127,6 +154,16 @@ export class RaceScene3D {
     const sc = this.sunLight.shadow.camera;
     sc.left = -r; sc.right = r; sc.top = r; sc.bottom = -r; sc.near = 1; sc.far = r * 4 + 600;
     sc.updateProjectionMatrix();
+
+    // Luces del hotel (de rojo a azul, con el reloj de verdad para que vaya suave a cualquier velocidad de carrera) y
+    // cabezales de las torres de luz, encendidos de noche.
+    if (this.ledMaterials.length) {
+      const c = yasHotelColor(performance.now() / 1000);
+      // Color base apagado y la luz en la emisión: así se ve el tono (rojo, morado o azul) y no un blanco quemado.
+      for (const m of this.ledMaterials) { m.color.setRGB(c.r * 0.2, c.g * 0.2, c.b * 0.2); m.emissive.setRGB(c.r, c.g, c.b); m.emissiveIntensity = night ? 0.95 : 0.45; }
+    }
+    for (const m of this.lampMaterials) m.emissiveIntensity = night ? 2.5 : 0;
+    this.placeFireworks(frame.fireworksSec ?? null);
 
     this.placeCars(frame.cars);
     this.placeSafetyCar(frame.safetyCar);
@@ -171,7 +208,7 @@ export class RaceScene3D {
         const holder = new THREE.Group();
         holder.add(proxy);
         this.world.add(holder);
-        slot = { full: null, proxy, release: null, key: `${car.team.id}-${car.driver.number}` };
+        slot = { full: null, lod: null, proxy, release: null, key: `${car.team.id}-${car.driver.number}` };
         (slot as CarSlot & { holder: THREE.Group }).holder = holder;
         this.cars.set(car.id, slot);
       }
@@ -188,15 +225,60 @@ export class RaceScene3D {
         slot.full = root;
         holder.add(root);
       }
+      if (!slot.lod && this.lodModel) {
+        const root = this.lodModel.scene.clone(true);
+        root.traverse(o => {
+          const mesh = o as THREE.Mesh;
+          if (!mesh.isMesh) return;
+          mesh.material = Array.isArray(mesh.material) ? mesh.material.map(m => m.clone()) : mesh.material.clone();
+          mesh.castShadow = true;
+        });
+        dressCar(root, liveryFor(car.team.id), car.driver.number, compoundStyle(car.tires.compound).color);
+        slot.lod = root;
+        holder.add(root);
+      }
       const z = this.carHeight(car);
       holder.position.copy(W(car.worldX, car.worldY, z));
       holder.rotation.y = -car.worldAngle;
       const far = cam.distanceTo(holder.position) > CAR_LOD_M;
-      if (slot.full) slot.full.visible = !far;
-      slot.proxy.visible = far || !slot.full;
+      // De cerca, el modelo completo; de lejos, el ligero (sacado del mismo modelo); la caja, solo mientras cargan.
+      if (slot.full) slot.full.visible = !far || !slot.lod;
+      if (slot.lod) slot.lod.visible = far || !slot.full;
+      slot.proxy.visible = !slot.full && !slot.lod;
       holder.visible = true;
     }
     for (const [id, slot] of this.cars) if (!seen.has(id)) (slot as CarSlot & { holder: THREE.Group }).holder.visible = false;
+  }
+
+  /** Fuegos artificiales: un único conjunto de puntos que se rellena con las explosiones vivas. */
+  private placeFireworks(seconds: number | null): void {
+    const bursts = this.track ? fireworkBursts(this.circuitId, this.track, seconds).slice(-MAX_BURSTS) : [];
+    if (!bursts.length) { if (this.fireworks) this.fireworks.visible = false; return; }
+    if (!this.fireworks) {
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(SPARKS * MAX_BURSTS * 3), 3));
+      g.setAttribute('color', new THREE.Float32BufferAttribute(new Float32Array(SPARKS * MAX_BURSTS * 3), 3));
+      this.fireworks = new THREE.Points(g, new THREE.PointsMaterial({ size: 2.2, vertexColors: true, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false }));
+      this.fireworks.frustumCulled = false;
+      this.world.add(this.fireworks);
+    }
+    const pos = this.fireworks.geometry.getAttribute('position') as THREE.BufferAttribute;
+    const colors = this.fireworks.geometry.getAttribute('color') as THREE.BufferAttribute;
+    let i = 0;
+    const c = new THREE.Color();
+    for (const b of bursts) {
+      c.set(b.color).multiplyScalar(Math.max(0, 1 - b.age / 2.6));
+      for (let k = 0; k < SPARKS; k++, i++) {
+        // Direcciones repartidas en una esfera (espiral de Fibonacci) y una caída que crece con la edad.
+        const y = 1 - (2 * k + 1) / SPARKS, r = Math.sqrt(1 - y * y), a = k * 2.39996;
+        const p = W(b.x + Math.cos(a) * r * b.radius, b.y + Math.sin(a) * r * b.radius, b.z + y * b.radius - 3 * b.age * b.age);
+        pos.setXYZ(i, p.x, p.y, p.z);
+        colors.setXYZ(i, c.r, c.g, c.b);
+      }
+    }
+    this.fireworks.geometry.setDrawRange(0, i);
+    pos.needsUpdate = true; colors.needsUpdate = true;
+    this.fireworks.visible = true;
   }
 
   private placeSafetyCar(sc: SafetyCarState | null): void {
@@ -227,6 +309,7 @@ export class RaceScene3D {
     this.disposed = true;
     for (const slot of this.cars.values()) { slot.release?.(); if (slot.full) disposeModel(slot.full); }
     if (this.carModel) disposeModel(this.carModel.scene);
+    if (this.lodModel) disposeModel(this.lodModel.scene);
     if (this.safetyModel) disposeModel(this.safetyModel.scene);
     this.world.traverse(o => { const m = o as THREE.Mesh; if (m.isMesh) { m.geometry.dispose(); (Array.isArray(m.material) ? m.material : [m.material]).forEach(x => x.dispose()); } });
     this.renderer.dispose();
@@ -292,6 +375,22 @@ function buildGround(track: TrackDefinition, circuitId: string, infield: { x: nu
     if (s.kind === 'fill') flat.fill(s.points, col(s.color, s.alpha ?? 1));
     else flat.ribbon(s.points, Math.max(s.width, s.hairline ? 0.2 : 0), col(s.color, s.alpha ?? 1), s.closed);
   });
+  const o = overpassFor(circuitId);
+  if (o) {
+    // Bajo el tablero solo debe verse la carretera de abajo: la huella de la de arriba se tapa con el terreno y se
+    // repinta encima el tramo de abajo con sus líneas.
+    const deck = deckSpan(track, o.upperT);
+    const outer = layers.trackWidthM / 2 + SIDE_M + 0.6;
+    const edge = (d: number) => deck.map(p => ({ x: p.x + Math.cos(p.angle + Math.PI / 2) * d, y: p.y + Math.sin(p.angle + Math.PI / 2) * d }));
+    const terrain = shapes[0]?.color ?? outside;
+    flat.fill([...edge(-outer), ...edge(outer).reverse()], col(terrain));
+    const lower = deckSpan(track, o.lowerT, DECK_HALF_M + 15);
+    flat.ribbon(lower, layers.trackWidthM, col(ASPHALT_DRY));
+    for (const sd of [-1, 1]) {
+      const line = lower.map(p => ({ x: p.x + Math.cos(p.angle + Math.PI / 2) * sd * (layers.trackWidthM / 2 - 0.2), y: p.y + Math.sin(p.angle + Math.PI / 2) * sd * (layers.trackWidthM / 2 - 0.2) }));
+      flat.ribbon(line, 0.25, col('#ffffff', 0.75));
+    }
+  }
   const mesh = flat.mesh(new THREE.MeshLambertMaterial({ vertexColors: true, depthTest: false, depthWrite: false, side: THREE.DoubleSide }));
   mesh.renderOrder = -10;
   mesh.receiveShadow = true;
@@ -299,16 +398,84 @@ function buildGround(track: TrackDefinition, circuitId: string, infield: { x: nu
 }
 
 /** Muros, guardarraíles y muro del pit como paredes de verdad (proyectan sombra). */
-function buildWalls(track: TrackDefinition, circuitId: string): THREE.Mesh {
-  const geo = buildScenarioGeometry(track, getScenario(circuitId));
+/** Puntos del eje a ±`halfM` metros de la fracción `t` (por defecto, el tablero del puente). */
+function deckSpan(track: TrackDefinition, t: number, halfM = DECK_HALF_M) {
+  const pts = track.points, n = pts.length, spacing = (track.lapLengthMeters || n) / n;
+  const center = Math.round(t * n), half = Math.round(halfM / spacing);
+  return Array.from({ length: 2 * half + 1 }, (_, k) => pts[((center - half + k) % n + n) % n]);
+}
+
+const sponsorTextures = new Map<Sponsor, THREE.CanvasTexture>();
+/** Panel del patrocinador para las TecPro: su nombre sobre su color, que se repite a lo largo de la barrera. */
+function sponsorTexture(name: Sponsor): THREE.CanvasTexture {
+  let tex = sponsorTextures.get(name);
+  if (tex) return tex;
+  const canvas = document.createElement('canvas');
+  canvas.width = 512; canvas.height = 96;
+  const ctx = canvas.getContext('2d')!;
+  const { bg, fg } = SPONSOR_COLORS[name];
+  ctx.fillStyle = bg; ctx.fillRect(0, 0, 512, 96);
+  ctx.fillStyle = 'rgba(255,255,255,0.18)'; ctx.fillRect(0, 0, 512, 6); ctx.fillRect(0, 90, 512, 6);
+  ctx.fillStyle = fg; ctx.font = "800 58px 'Rajdhani', 'Arial Black', sans-serif"; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(name.toUpperCase(), 256, 52, 480);
+  tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = THREE.RepeatWrapping;
+  tex.colorSpace = THREE.SRGBColorSpace;
+  sponsorTextures.set(name, tex);
+  return tex;
+}
+
+/** Barrera TecPro: bloques de 1,2 m de alto con el panel del patrocinador por las dos caras. */
+function buildTecpro(b: SceneBarrier): THREE.Mesh {
+  const h = 1.2, thick = b.width || 1.2, panel = 6;
+  const pos: number[] = [], uv: number[] = [];
+  let run = 0;
+  for (let i = 0; i + 1 < b.points.length; i++) {
+    const a = b.points[i], c = b.points[i + 1], len = Math.hypot(c.x - a.x, c.y - a.y);
+    if (len < 1e-3) continue;
+    const nx = -(c.y - a.y) / len * thick / 2, ny = (c.x - a.x) / len * thick / 2;
+    const u0 = run / panel, u1 = (run + len) / panel;
+    run += len;
+    for (const sd of [1, -1]) {
+      const p0 = W(a.x + nx * sd, a.y + ny * sd, 0), p1 = W(c.x + nx * sd, c.y + ny * sd, 0);
+      const q0 = p0.clone().setY(h), q1 = p1.clone().setY(h);
+      // Por la otra cara el panel se lee al revés si no se invierte el sentido de la textura.
+      const a0 = sd > 0 ? u0 : -u0, a1 = sd > 0 ? u1 : -u1;
+      for (const [p, u, v] of [[p0, a0, 0], [p1, a1, 0], [q1, a1, 1], [p0, a0, 0], [q1, a1, 1], [q0, a0, 1]] as const) { pos.push(p.x, p.y, p.z); uv.push(u, v); }
+    }
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  g.computeVertexNormals();
+  const mesh = new THREE.Mesh(g, new THREE.MeshLambertMaterial({ map: sponsorTexture(b.sponsor ?? 'Pirulí'), side: THREE.DoubleSide }));
+  mesh.castShadow = true; mesh.receiveShadow = true;
+  return mesh;
+}
+
+function buildWalls(track: TrackDefinition, circuitId: string, barriers: SceneBarrier[]): THREE.Group {
   const pit = getPitLaneGeometry(track);
   const positions: number[] = [], colors: number[] = [];
+  // Bajo el tablero de un puente, los muros de la carretera de arriba no van a ras de suelo (ya los lleva el puente).
+  const o = overpassFor(circuitId);
+  const deck = o ? deckSpan(track, o.upperT, DECK_HALF_M + 4) : [];
+  const reach = (track.trackWidthMeters || 12) / 2 + SIDE_M + 3;
+  const underDeck = (a: { x: number; y: number }, b: { x: number; y: number }, len: number) => {
+    if (!deck.length) return false;
+    const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+    for (const p of deck) {
+      if (Math.hypot(p.x - mx, p.y - my) > reach) continue;
+      const along = Math.abs(((b.x - a.x) * Math.cos(p.angle) + (b.y - a.y) * Math.sin(p.angle)) / len);
+      if (along > 0.8) return true;
+    }
+    return false;
+  };
   const wall = (pts: { x: number; y: number }[], h: number, thick: number, color: string) => {
     const c = new THREE.Color(color);
     for (let i = 0; i + 1 < pts.length; i++) {
       const a = pts[i], b = pts[i + 1];
       const len = Math.hypot(b.x - a.x, b.y - a.y);
-      if (len < 1e-3) continue;
+      if (len < 1e-3 || underDeck(a, b, len)) continue;
       const nx = -(b.y - a.y) / len * thick / 2, ny = (b.x - a.x) / len * thick / 2;
       const q = [W(a.x + nx, a.y + ny), W(b.x + nx, b.y + ny), W(b.x - nx, b.y - ny), W(a.x - nx, a.y - ny)];
       const up = q.map(p => p.clone().setY(h));
@@ -316,7 +483,7 @@ function buildWalls(track: TrackDefinition, circuitId: string): THREE.Mesh {
       for (const [p0, p1, p2, p3] of quads) for (const p of [p0, p1, p2, p0, p2, p3]) { positions.push(p.x, p.y, p.z); colors.push(c.r, c.g, c.b); }
     }
   };
-  for (const barrier of geo.barrierLines) wall(barrier.points, barrier.type === 'armco' ? 0.8 : 1.1, Math.max(0.4, barrier.width), barrier.color);
+  for (const barrier of barriers) if (barrier.kind !== 'tecpro') wall(barrier.points, barrier.kind === 'armco' ? 0.8 : 1.1, Math.max(0.4, barrier.width), barrier.color);
   for (const w of pit.walls) wall(w, 1.0, pit.wallWidth, '#aeb9c8');
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
@@ -324,7 +491,10 @@ function buildWalls(track: TrackDefinition, circuitId: string): THREE.Mesh {
   g.computeVertexNormals();
   const mesh = new THREE.Mesh(g, new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide }));
   mesh.castShadow = true; mesh.receiveShadow = true;
-  return mesh;
+  const group = new THREE.Group();
+  group.add(mesh);
+  for (const b of barriers) if (b.kind === 'tecpro') group.add(buildTecpro(b));
+  return group;
 }
 
 /** Suzuka: la carretera de arriba como rampa maciza, tablero sobre la de abajo, pretiles y pilas. */
@@ -377,7 +547,7 @@ function buildElevatedRoad(track: TrackDefinition, o: { upperT: number }): THREE
 
 // ───────────────────────────── Escenario ─────────────────────────────
 
-const FACE_TRACK = new Set(['grandstand', 'vip', 'building', 'landmark']);
+const FACE_TRACK = new Set(['grandstand', 'vip', 'building', 'landmark', 'floodlight']);
 
 async function buildScenery(items: SceneItem[], track: TrackDefinition, base: string): Promise<THREE.Group> {
   const group = new THREE.Group();

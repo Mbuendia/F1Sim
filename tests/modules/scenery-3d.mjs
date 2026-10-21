@@ -126,7 +126,8 @@ export default async function run({ server, assert, test }) {
   });
 
   await test('Cámaras: cada modo se comporta distinto', () => {
-    assert(['vista', 'persecucion', 'tv', 'helicoptero', 'a-bordo', 'libre'].every(m => CAMERA_MODES.includes(m)) && CAMERA_MODES.length === 6, 'Cámaras: seis modos', CAMERA_MODES.join(', '));
+    // Cambiado con autorización del usuario (22/10/2026): ocho modos, con las dos cenitales de scenery-3d-2.
+    assert(['vista', 'persecucion', 'tv', 'helicoptero', 'a-bordo', 'libre'].every(m => CAMERA_MODES.includes(m)) && CAMERA_MODES.length === 8, 'Cámaras: ocho modos', CAMERA_MODES.join(', '));
     const track = tracks.suzuka, n = track.points.length;
     const at = t => { const p = track.points[Math.floor(t * n) % n]; return { x: p.x, y: p.y, heading: p.angle, t, speedMs: 70 }; };
     const car = at(0.3), fwd = { x: Math.cos(car.heading), y: Math.sin(car.heading) };

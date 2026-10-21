@@ -1,3 +1,4 @@
+import { CAMERA_MODES, type CameraMode3D } from '../scene3d/cameras';
 import { TrackDefinition } from '../data/barcelonaTrack';
 import { CarState } from '../types/f1';
 import { isCarVisible } from '../utils/carPosition';
@@ -23,6 +24,11 @@ export class Camera {
   screenHeight: number = 800;
 
   followingCarId: number | null = null;
+  /** Vista 3D (22/10/2026): si está activa, el botón de cámara recorre sus modos y no los de la vista cenital 2D. */
+  view3d = false;
+  mode3d: CameraMode3D = 'vista';
+  /** Zoom de las cenitales 3D (botones de la barra y rueda). */
+  zoom3d = 1;
   currentMode: CameraMode = 'overview';
   lastTrack: TrackDefinition | null = null;
   
@@ -60,6 +66,10 @@ export class Camera {
   }
 
   cycleMode() {
+    if (this.view3d) {
+      this.mode3d = CAMERA_MODES[(CAMERA_MODES.indexOf(this.mode3d) + 1) % CAMERA_MODES.length];
+      return;
+    }
     const modes: CameraMode[] = ['overview', 'follow', 'cinematic', 'onboard', 'helicopter'];
     const currentIndex = modes.indexOf(this.currentMode);
     const nextIndex = (currentIndex + 1) % modes.length;
@@ -118,6 +128,7 @@ export class Camera {
   }
 
   zoomBy(factor: number) {
+    if (this.view3d) { this.zoom3d = Math.max(0.3, Math.min(6, this.zoom3d * factor)); return; }
     if (this.currentMode === 'free') {
       this.targetZoom = Math.max(0.1, Math.min(16.0, this.targetZoom * factor));
       return;

@@ -5,19 +5,27 @@
 import type { TrackDefinition } from '../data/barcelonaTrack';
 import type { CarState } from '../types/f1';
 import { isCarVisible } from '../utils/carPosition';
-import { TvDirector, chaseView, helicopterView, onboardView, overviewView, type CameraMode3D, type CameraView, type CarPose, type V3 } from './cameras';
+import { TvDirector, cenitalGiroView, cenitalView, chaseView, helicopterView, onboardView, overviewView, type CameraMode3D, type CameraView, type CarPose, type V3 } from './cameras';
 
 export interface Orbit { x: number; y: number; distance: number; azimuth: number; elevation: number }
 
 export class CameraDirector3D {
-  mode: CameraMode3D = 'vista';
   orbit: Orbit = { x: 0, y: 0, distance: 400, azimuth: Math.PI / 2, elevation: 0.9 };
   private tv: TvDirector | null = null;
   private smooth: CameraView | null = null;
   private lastShot = -1;
   private lastMode: CameraMode3D | null = null;
 
-  constructor(private readonly track: TrackDefinition, private readonly circuitId: string) {}
+  /** El modo vive en la cámara compartida, para que el botón de la barra de arriba sea el único que lo cambia. */
+  constructor(private readonly track: TrackDefinition, private readonly circuitId: string,
+    private readonly holder: { mode3d: CameraMode3D; zoom3d?: number } = { mode3d: 'vista' }) {}
+
+  /** Zoom de las cenitales (rueda del ratón y botones de la barra de arriba). */
+  get zoom(): number { return this.holder.zoom3d ?? 1; }
+  set zoom(value: number) { this.holder.zoom3d = value; }
+
+  get mode(): CameraMode3D { return this.holder.mode3d; }
+  set mode(mode: CameraMode3D) { this.holder.mode3d = mode; }
 
   /** Coche que se sigue: el elegido o, si no hay, el líder. */
   focusCar(cars: CarState[], selectedId: number | null): CarState | null {
@@ -44,6 +52,8 @@ export class CameraDirector3D {
     let radius = 120;
     let cut = this.mode !== this.lastMode;
     switch (this.mode) {
+      case 'cenital': wanted = pose ? cenitalView(pose, this.zoom) : overviewView(this.track, aspect); radius = 110 / this.zoom; break;
+      case 'cenital-giro': wanted = pose ? cenitalGiroView(pose, this.zoom) : overviewView(this.track, aspect); radius = 110 / this.zoom; break;
       case 'persecucion': wanted = pose ? chaseView(pose) : overviewView(this.track, aspect); radius = 90; break;
       case 'a-bordo': wanted = pose ? onboardView(pose) : overviewView(this.track, aspect); radius = 120; cut = true; break;
       case 'helicoptero': wanted = pose ? helicopterView(pose, this.track) : overviewView(this.track, aspect); radius = 160; break;
@@ -80,12 +90,15 @@ export class CameraDirector3D {
       lerp(this.smooth.position, wanted.position, kp);
       lerp(this.smooth.target, wanted.target, kt);
       this.smooth.fov += (wanted.fov - this.smooth.fov) * kt;
+      this.smooth.up = wanted.up ? { ...wanted.up } : undefined;
+      // Las cenitales van clavadas al coche (como la vista de siempre): sin retraso.
+      if (this.mode === 'cenital' || this.mode === 'cenital-giro') this.smooth = clone(wanted);
     }
     return { view: clone(this.smooth), shadowRadius: radius };
   }
 }
 
-const clone = (v: CameraView): CameraView => ({ position: { ...v.position }, target: { ...v.target }, fov: v.fov });
+const clone = (v: CameraView): CameraView => ({ position: { ...v.position }, target: { ...v.target }, fov: v.fov, up: v.up ? { ...v.up } : undefined });
 const lerp = (a: V3, b: V3, k: number) => { a.x += (b.x - a.x) * k; a.y += (b.y - a.y) * k; a.z += (b.z - a.z) * k; };
 
 /** Etiquetas de los coches en la vista 3D: de lejos, la posición; de cerca, «COD · Pn» de los cercanos y el elegido. */
