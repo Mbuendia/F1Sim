@@ -5,6 +5,7 @@ import { Application, Container, Graphics, Sprite, Texture } from 'pixi.js';
 import type { TrackDefinition } from '../data/barcelonaTrack';
 import type { Camera } from './Camera';
 import { ASPHALT_DRY, ASPHALT_WET, getTrackLayers, type StrokeShape, type TrackShape } from './trackLayers';
+import { CAR_SHADOW_HEIGHT, type Sun } from './lighting';
 import type { CarDraw, SafetyCarDraw } from './carDraws';
 import type { TopSprite } from './carSprites';
 import { DRS_SLOT_COLOR, SIGNALS } from './signals';
@@ -102,12 +103,16 @@ export class TrackLayerGL {
    * [G9] Pinta spray, coches y Safety Car con la cámara dada y devuelve el lienzo para componerlo sobre la pista y el
    * agua. Las medidas son metros del mundo; lo que debe medir píxeles fijos (puntos de lejos, aros) se divide por el zoom.
    */
-  renderCars(camera: Camera, dpr: number, cars: CarDraw[], safetyCar: SafetyCarDraw | null, spray: SpraySystem | null, timeSec: number): HTMLCanvasElement {
+  renderCars(camera: Camera, dpr: number, cars: CarDraw[], safetyCar: SafetyCarDraw | null, spray: SpraySystem | null, timeSec: number, sun?: Sun): HTMLCanvasElement {
     const { scale } = this.placeCamera(this.overlayWorld, camera, dpr);
     const px = 1 / camera.zoom;   // un píxel de pantalla, en metros del mundo
-    // Desplazamiento fijo en pantalla de la sombra (2 px a la derecha y 3 hacia abajo por unidad), llevado al mundo.
+    // Sombra: con sol, hacia donde cae en el mundo y tan larga como diga su altura (21/10/2026); sin sol, el
+    // desplazamiento fijo en pantalla de siempre (2 px a la derecha y 3 hacia abajo por unidad), llevado al mundo.
     const cos = Math.cos(-camera.rotation), sin = Math.sin(-camera.rotation);
-    const shadowOffset = (unit: number) => ({ x: (2 * cos - 3 * sin) * unit, y: (2 * sin + 3 * cos) * unit });
+    const shadowOffset = (unit: number, lengthM: number) => sun
+      ? { x: sun.dx * sun.length * CAR_SHADOW_HEIGHT * lengthM, y: sun.dy * sun.length * CAR_SHADOW_HEIGHT * lengthM }
+      : { x: (2 * cos - 3 * sin) * unit, y: (2 * sin + 3 * cos) * unit };
+    const shadowAlpha = sun ? sun.alpha / 0.45 : 1;
 
     // Spray: un punto blando por partícula viva, más grande y más tenue cuanto más vieja.
     let used = 0;
@@ -144,11 +149,11 @@ export class TrackLayerGL {
       }
       root.rotation = draw.angle;
       const sprite = draw.sprite, perMeter = draw.lengthM / sprite.lengthM, unit = draw.unit;
-      const offset = shadowOffset(unit);
+      const offset = shadowOffset(unit, draw.lengthM);
       // La sombra va en el sistema del coche: se deshace su giro para que caiga siempre hacia el mismo lado de la pantalla.
       const c = Math.cos(-draw.angle), sn = Math.sin(-draw.angle);
       shadow.visible = true; shadow.position.set(offset.x * c - offset.y * sn, offset.x * sn + offset.y * c);
-      shadow.scale.set(draw.lengthM, draw.widthM);
+      shadow.scale.set(draw.lengthM, draw.widthM); shadow.alpha = shadowAlpha;
       body.visible = true; body.texture = this.textureOf(sprite); body.width = draw.lengthM; body.height = draw.widthM;
       if (draw.showTyres && sprite.wheels && sprite.tyre) {
         const tyreLength = sprite.tyre.lengthM * perMeter, tyreWidth = sprite.tyre.widthM * perMeter;
@@ -180,7 +185,11 @@ export class TrackLayerGL {
       const { root, shadow, body, marks } = node;
       root.visible = true; root.zIndex = 1000; root.alpha = 1;
       root.position.set(safetyCar.x, safetyCar.y); root.rotation = safetyCar.angle;
-      shadow.visible = true; shadow.position.set(px, 2 * px); shadow.scale.set(safetyCar.lengthM * 1.08, safetyCar.widthM);
+      if (sun) {
+        const o = shadowOffset(0, safetyCar.lengthM), c = Math.cos(-safetyCar.angle), sn = Math.sin(-safetyCar.angle);
+        shadow.position.set(o.x * c - o.y * sn, o.x * sn + o.y * c);
+      } else shadow.position.set(px, 2 * px);
+      shadow.visible = true; shadow.alpha = shadowAlpha; shadow.scale.set(safetyCar.lengthM * 1.08, safetyCar.widthM);
       body.visible = true; body.texture = this.textureOf(safetyCar.sprite); body.width = safetyCar.lengthM; body.height = safetyCar.widthM;
       marks.clear();
       const bar = safetyCar.sprite.lightbar;

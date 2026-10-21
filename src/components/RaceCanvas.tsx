@@ -12,6 +12,9 @@ import { supportsWebGL } from './CarShowcase';
 import type { TrackLayerGL } from '../renderer/TrackLayerGL';
 import { frameCost, recordStage } from '../renderer/frameCost';
 import { buildCarDraws, buildSafetyCarDraw } from '../renderer/carDraws';
+import { bridgePaintOrder, bridgeSide, overpassFor } from '../renderer/overpass';
+import { renderBridge } from '../renderer/BridgeRenderer';
+import { sunAt } from '../renderer/lighting';
 import { WEATHER_TESTS } from '../data/weatherScenarios';
 import type { TrackDefinition } from '../data/barcelonaTrack';
 import type { CarState, RejoinEstimate, SafetyCarState, TrackWeatherState } from '../types/f1';
@@ -251,6 +254,9 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
       TrackRenderer.renderTrack(ctx, track, camera, dpr, frame.weather as TrackWeatherState, circuitId, gpu);
       // [R04] Puntos de detección y tramos de activación del DRS.
       TrackRenderer.renderDrsMarkers(ctx, track, camera);
+      // Sol de la carrera (21/10/2026): dirección y largo de las sombras según la hora y las nubes.
+      const sun = sunAt({ circuitId, raceTimeSec: frame.raceTimeSec, cloudCover: frame.cloudCover });
+      TrackRenderer.renderBarrierShadows(ctx, track, camera, circuitId, sun);
       const trackDone = performance.now();
 
       // [R44] Pista mojada por tramo, radar de lluvia y spray (antes de los coches y sus etiquetas).
@@ -270,23 +276,40 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
 
       const circuitSpec = OFFICIAL_CIRCUITS[circuitId];
       const trackWidthCarsCapacity = circuitSpec?.trackWidthCars ?? 3;
-      const carEffects = { depthAt: frame.depthAt, timeSec: frame.raceTimeSec };
+      const carEffects = { depthAt: frame.depthAt, timeSec: frame.raceTimeSec, sun };
+      // Puente (21/10/2026): primero los coches de abajo (y todos los demás), luego el tablero, luego los de arriba.
+      const overpass = overpassFor(circuitId);
+      const layers = bridgePaintOrder(frame.cars, overpass);
+      const safetyCarOver = overpass !== null && frame.safetyCar != null
+        && bridgeSide(overpass, ((frame.safetyCar.progress % 1) + 1) % 1, Boolean(frame.safetyCar.isInPitLane)) === 'over';
       // [G9] Spray, coches y Safety Car desde la GPU, compuestos sobre la pista y el agua; el Canvas pone encima humo,
       // etiquetas y rótulos, y pinta entero cualquier coche que todavía no tenga su imagen.
-      let onGpu: { cars: ReadonlySet<number>; safetyCar: boolean } | undefined;
-      if (gpu && trackLayerRef.current) {
-        try {
-          const draws = buildCarDraws(frame.cars, camera, selectedCarId, track, trackWidthCarsCapacity, carEffects);
-          const safetyCarDraw = buildSafetyCarDraw(frame.safetyCar, track, camera, performance.now());
-          const view = trackLayerRef.current.renderCars(camera, dpr, draws, safetyCarDraw, spray.current, frame.raceTimeSec);
-          ctx.drawImage(view, 0, 0, camera.screenWidth, camera.screenHeight);
-          onGpu = { cars: new Set(draws.map(draw => draw.id)), safetyCar: safetyCarDraw !== null };
-        } catch {
-          trackLayerRef.current = null;
-          setCanvasFallback(true);
+      const paintCars = (cars: CarState[], withSafetyCar: boolean, withSpray: boolean) => {
+        let onGpu: { cars: ReadonlySet<number>; safetyCar: boolean } | undefined;
+        if (gpu && trackLayerRef.current && (cars.length > 0 || withSafetyCar || withSpray)) {
+          try {
+            const draws = buildCarDraws(cars, camera, selectedCarId, track, trackWidthCarsCapacity, carEffects);
+            const safetyCarDraw = withSafetyCar ? buildSafetyCarDraw(frame.safetyCar, track, camera, performance.now()) : null;
+            const view = trackLayerRef.current.renderCars(camera, dpr, draws, safetyCarDraw, withSpray ? spray.current : null, frame.raceTimeSec, sun);
+            ctx.drawImage(view, 0, 0, camera.screenWidth, camera.screenHeight);
+            onGpu = { cars: new Set(draws.map(draw => draw.id)), safetyCar: safetyCarDraw !== null };
+          } catch {
+            trackLayerRef.current = null;
+            setCanvasFallback(true);
+          }
         }
+        return onGpu;
+      };
+      if (!overpass) {
+        CarRenderer.renderCars(ctx, frame.cars, camera, selectedCarId, track, trackWidthCarsCapacity, frame.safetyCar, carEffects, paintCars(frame.cars, true, true));
+      } else {
+        const below = paintCars(layers.below, !safetyCarOver, true);
+        CarRenderer.renderCars(ctx, layers.below, camera, selectedCarId, track, trackWidthCarsCapacity, safetyCarOver ? null : frame.safetyCar, carEffects, below, { labelCars: [] });
+        renderBridge(ctx, track, camera, overpass, sun, (frame.weather?.waterPercentage || 0) > 10);
+        const above = paintCars(layers.above, safetyCarOver, false);
+        // Las etiquetas de todos, encima del puente.
+        CarRenderer.renderCars(ctx, layers.above, camera, selectedCarId, track, trackWidthCarsCapacity, safetyCarOver ? frame.safetyCar : null, carEffects, above, { labelCars: frame.cars });
       }
-      CarRenderer.renderCars(ctx, frame.cars, camera, selectedCarId, track, trackWidthCarsCapacity, frame.safetyCar, carEffects, onGpu);
       const carsDone = performance.now();
 
       // [R53] Gotas en pantalla según la lluvia de la zona visible (por encima de pista y coches).

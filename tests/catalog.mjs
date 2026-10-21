@@ -577,5 +577,6 @@ export const modules = [
   { "id": "light-views-n10", "tasks": ["N10"], "sprint": "5", "kind": "contract" },
   { "id": "guest-n10", "tasks": ["N10"], "sprint": "5", "kind": "contract" },
   { "id": "parody-names", "tasks": [], "sprint": null, "kind": "contract" },
+  { "id": "bridge-shadows", "tasks": [], "sprint": null, "kind": "contract" },
   { "id": "viewport-movil", "tasks": [], "sprint": null, "kind": "regression" }
 ];
