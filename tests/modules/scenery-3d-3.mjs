@@ -111,8 +111,12 @@ export default async function run({ server, assert, test }) {
       if (pit.length >= 2) {
         let laneLength = 0;
         for (let i = 1; i < pit.length; i++) laneLength += Math.hypot(pit[i].x - pit[i - 1].x, pit[i].y - pit[i - 1].y);
-        const boxes = items.filter(it => it.kind === 'pit-building' && pit.some(p => Math.hypot(p.x - it.x, p.y - it.y) <= 60));
-        if (boxes.reduce((s, b) => s + b.length, 0) < 0.5 * laneLength) missing.push(`${id}: edificio de boxes`);
+        // Cambiado con autorización del usuario (23/10/2026): el edificio de boxes es ahora una pieza continua
+        // (scenery-3d-4), no bloques sueltos; se mide el largo de esa pieza junto al pit lane.
+        const pb = scenes[id].pitBuilding;
+        let built = 0;
+        if (pb) for (let i = 1; i < pb.points.length; i++) if (pit.some(p => Math.hypot(p.x - pb.points[i].x, p.y - pb.points[i].y) <= 60)) built += Math.hypot(pb.points[i].x - pb.points[i - 1].x, pb.points[i].y - pb.points[i - 1].y);
+        if (built < 0.5 * laneLength) missing.push(`${id}: edificio de boxes`);
       }
       const gantry = items.find(it => it.kind === 'bridge' && it.id === 'portico-salida');
       if (!gantry || Math.hypot(gantry.x - start.x, gantry.y - start.y) > 40 || !(gantry.clearance >= 6)) missing.push(`${id}: pórtico de salida`);

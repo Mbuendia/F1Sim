@@ -17,6 +17,16 @@ export function nearestFloodlights<T extends { x: number; y: number }>(lights: T
   return [...lights].sort((a, b) => Math.hypot(a.x - x, a.y - y) - Math.hypot(b.x - x, b.y - y)).slice(0, n);
 }
 
+/** Punto de la pista al que apunta una torre de luz: el del eje más cercano a ella (su haz cae sobre el asfalto). */
+export function lampAim(light: { x: number; y: number }, track: { points: { x: number; y: number }[] }): { x: number; y: number } {
+  let best = track.points[0], bestD = Infinity;
+  for (let i = 0; i < track.points.length; i += 2) {
+    const p = track.points[i], d = (p.x - light.x) ** 2 + (p.y - light.y) ** 2;
+    if (d < bestD) { bestD = d; best = p; }
+  }
+  return { x: best.x, y: best.y };
+}
+
 /** Vector unitario hacia el sol: del lado contrario a la sombra y con la altura que marca su largo. */
 export function sunLightVector(sun: Sun): { x: number; y: number; z: number } {
   const z = 1 / Math.max(1e-3, sun.length);

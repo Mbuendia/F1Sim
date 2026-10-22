@@ -14,7 +14,7 @@ import { NIGHT_RACES } from '../renderer/lighting';
 import { SPONSORS, type Sponsor } from './sponsors';
 
 export type SceneKind = 'grandstand' | 'vip' | 'paddock' | 'tree' | 'building' | 'yacht' | 'landmark' | 'bridge' | 'floodlight'
-  | 'pit-building' | 'billboard';
+  | 'pit-building' | 'billboard' | 'dune' | 'wall';
 
 /** Muros, guardarraíles y barreras TecPro (estas, con su patrocinador). */
 export interface SceneBarrier {
@@ -44,6 +44,9 @@ export interface SceneItem {
   sponsor?: Sponsor;
 }
 
+/** Edificio de boxes continuo: eje de su planta, fondo, alto y lado del eje que mira al pit lane (+1, la normal). */
+export interface PitBuilding { points: Pt[]; depth: number; height: number; front: number }
+
 export interface Scenery {
   /** Zona interior del circuito (hierba, o ciudad en los urbanos). */
   infield: Poly[];
@@ -51,6 +54,7 @@ export interface Scenery {
   water: Poly[];
   items: SceneItem[];
   barriers: SceneBarrier[];
+  pitBuilding: PitBuilding | null;
   /** Circuito urbano: suelo de ciudad en vez de hierba. */
   street: boolean;
 }
@@ -107,6 +111,8 @@ function build(track: TrackDefinition, circuitId: string): Scenery {
   // ── Muros del escenario y barreras TecPro con patrocinador en el exterior de las curvas. ──
   const barriers = buildBarriers(track, circuitId, half, lap, pitPts, street);
   const tecproPts = barriers.filter(b => b.kind === 'tecpro').flatMap(b => b.points);
+  let pitBuilding: PitBuilding | null = null;
+  let pbPts: Pt[] = [];
 
   // ── Comprobación de hueco: lejos del asfalto, del pit lane, del agua (salvo barcos) y de lo ya puesto. ──
   const fits = (item: SceneItem, opts: { onWater?: boolean } = {}) => {
@@ -115,6 +121,7 @@ function build(track: TrackDefinition, circuitId: string): Scenery {
       if (axisDistance(track, p, reachTrack) < half + MARGIN) return false;
       if (pitPts.length && distanceTo(pitPts, pitPts, p, FAST_LANE_WIDTH + 6) < FAST_LANE_WIDTH / 2 + 4) return false;
       if (tecproPts.length && distanceTo(tecproPts, tecproPts, p, 4) < 2.5) return false;
+      if (pbPts.length && distanceTo(pbPts, pbPts, p, 12) < 9) return false;
       const wet = water.some(poly => pointInPoly(p, poly));
       if (opts.onWater ? !wet : wet) return false;
     }
@@ -142,13 +149,16 @@ function build(track: TrackDefinition, circuitId: string): Scenery {
   const pitOffset = half + 1 + FAST_LANE_WIDTH + 7;
   const dt = (m: number) => m / lap;
 
+  // ── Edificio de boxes antes que nada: los iconos y la ciudad (Mónaco) lo esquivan. ──
+  pitBuilding = buildPitBuilding(track, pit.fastLane, half, pitPts, water, items);
+  pbPts = pitBuilding?.points ?? [];
+
   // ── Iconos que van antes que el kit (ocupan su sitio). ──
   if (circuitId === 'shanghai') shanghai(track, items, water, half, pitSide, dt);
   if (circuitId === 'monaco') monaco(track, items, water, half, dt, inInfield, fits);
   if (circuitId === 'yas-marina') yasMarina(track, items, water, half, pitSide, fits, inInfield);
 
   // ── Edificio de boxes a lo largo del pit lane (del lado contrario a la pista) y pórtico de salida sobre la meta. ──
-  placePitBuildings(track, pit.fastLane, half, items, fits);
   {
     const f = frameAt(track, 0);
     items.push({ id: 'portico-salida', kind: 'bridge', model: 'start-gantry', x: f.x, y: f.y, heading: f.angle + Math.PI / 2,
@@ -179,6 +189,9 @@ function build(track: TrackDefinition, circuitId: string): Scenery {
   for (const k of [0, 30, -30, 70, -70, 120, -120]) if (placeBeside(vipBase, pitMidT + dt(k), pitSide, pitOffset + 30, pitOffset + 150)) break;
 
 
+  // ── Mar, lagos y canales de cada circuito (antes del kit, para que nada se coloque encima). ──
+  detailWater(track, circuitId, half, water, inInfield, infield);
+
   // ── Kit común: gradas en la meta, zona VIP y paddock junto al pit lane. ──
   const stand = (t: number) => placeBeside({ kind: 'grandstand', model: 'grandstand', length: 60, width: 14, height: 12 }, t, -pitSide, half + MARGIN + 8, half + 90);
   let stands = 0;
@@ -196,6 +209,9 @@ function build(track: TrackDefinition, circuitId: string): Scenery {
     const spot = deepestPoint(track, infield);
     if (spot) items.push({ id: 'toro', kind: 'landmark', model: 'red-bull', x: spot.x, y: spot.y, heading: -Math.PI / 4, length: 18, width: 5.6, height: 17.2, tint: '#8a4b2a' });
   }
+
+  // ── Iconos de cada circuito (lista aprobada el 23/10/2026). ──
+  detailIcons({ track, circuitId, half, lap, pitSide, items, water, infield, inInfield, fits, placeBeside, rand });
 
   // ── Torres de luz: en las carreras de noche y en Abu Dabi (que acaba de noche). ──
   if (NIGHT_RACES.has(circuitId) || circuitId === 'yas-marina') {
@@ -222,9 +238,9 @@ function build(track: TrackDefinition, circuitId: string): Scenery {
   }
 
   // ── Árboles (pocos en los urbanos) y edificios de ciudad en los urbanos. ──
-  const trees = street ? 12 : 60;
-  for (let k = 0, placed = 0; k < trees * 6 && placed < trees; k++) {
-    const t = rand(), side = rand() < 0.5 ? -1 : 1, d = half + 20 + rand() * 70;
+  const trees = street ? 12 : (circuitId === 'spa' || circuitId === 'hungaroring') ? 170 : 60;
+  for (let k = 0, placed = 0; k < trees * 8 && placed < trees; k++) {
+    const t = rand(), side = rand() < 0.5 ? -1 : 1, d = half + 20 + rand() * (trees > 100 ? 160 : 70);
     const p = besideTrack(track, t, side, d);
     const size = 6 + rand() * 6;
     const model = HOT.has(circuitId) ? 'palm' : MOUNTAIN.has(circuitId) ? 'pine' : 'tree';
@@ -239,7 +255,7 @@ function build(track: TrackDefinition, circuitId: string): Scenery {
       if (placeBeside({ kind: 'building', model: 'building', length: w, width: 16 + rand() * 10, height: h, tint: '#9aa3ad' }, t, side, half + MARGIN + 14, half + 60, 8)) placed++;
     }
   }
-  return { infield, water, items, street, barriers };
+  return { infield, water, items, street, barriers, pitBuilding };
 }
 
 type Box = Pick<SceneItem, 'x' | 'y' | 'heading' | 'length' | 'width'>;
@@ -442,7 +458,7 @@ export function barrierOffset(track: TrackDefinition, circuitId: string, half: n
     const raw = Array.from({ length: n }, (_, i) => {
       const tt = i / n;
       let off = base;
-      for (const z of scenario.runoffZones) {
+      for (const z of runoffZones3d(track, circuitId)) {
         const matches = z.side === 'both' || (z.side === 'left') === (side > 0);
         if (matches && inRange(tt, z.startT, z.endT)) off = Math.max(off, half + RUNOFF_BASE_M * z.widthMultiplier + 3);
       }
@@ -510,5 +526,274 @@ function placePitBuildings(track: TrackDefinition, lane: Pt[], half: number, ite
         length: BLOCK + 2, width: w, height: 11, tint: '#dfe3e8' };
       if (fits(item)) { items.push(item); break; }
     }
+  }
+}
+
+/**
+ * Edificio de boxes continuo (23/10/2026): una sola pieza que sigue al carril rápido por el lado contrario a la pista.
+ * Donde no cabe pegado (curvas de entrada y salida), se retrasa poco a poco; se queda con el tramo continuo más largo.
+ */
+function buildPitBuilding(track: TrackDefinition, lane: Pt[], half: number, pitPts: Pt[], water: Poly[], items: SceneItem[]): PitBuilding | null {
+  // En los boxes apretados (Mónaco) el edificio normal no cabe a lo largo de medio carril: se prueba uno menos profundo.
+  let laneLength = 0;
+  for (let i = 1; i < lane.length; i++) laneLength += Math.hypot(lane[i].x - lane[i - 1].x, lane[i].y - lane[i - 1].y);
+  const len = (pb: PitBuilding | null) => pb ? pb.points.reduce((s, p, i) => i ? s + Math.hypot(p.x - pb.points[i - 1].x, p.y - pb.points[i - 1].y) : 0, 0) : 0;
+  // Se prueban los dos lados del carril (en algunos pasa entre dos partes de la pista) y se queda el más largo.
+  // Lado preferido: el que se aleja de la pista en la mayoría del carril; el otro, solo si sale mucho más largo.
+  let votes = 0;
+  for (let i = 1; i < lane.length; i += 3) {
+    const a = lane[i - 1], b = lane[i], l = Math.hypot(b.x - a.x, b.y - a.y) || 1, nx = -(b.y - a.y) / l, ny = (b.x - a.x) / l;
+    votes += axisDistance(track, { x: b.x + nx * 10, y: b.y + ny * 10 }, half + 40) > axisDistance(track, { x: b.x - nx * 10, y: b.y - ny * 10 }, half + 40) ? 1 : -1;
+  }
+  const preferred = votes >= 0 ? 1 : -1;
+  const longest = (depth: number) => {
+    const main = pitBuildingOf(track, lane, half, pitPts, water, items, depth, preferred);
+    const other = pitBuildingOf(track, lane, half, pitPts, water, items, depth, -preferred);
+    return len(other) > 1.5 * len(main) ? other : main;
+  };
+  const deep = longest(14);
+  if (len(deep) >= 0.55 * laneLength) return deep;
+  const shallow = longest(10);
+  return len(shallow) > len(deep) ? shallow : deep;
+}
+
+function pitBuildingOf(track: TrackDefinition, lane: Pt[], half: number, pitPts: Pt[], water: Poly[], items: SceneItem[], DEPTH: number, side: number): PitBuilding | null {
+  if (lane.length < 2) return null;
+  const HEIGHT = 11, STEP = 3;
+  // Carril remuestreado cada 3 m, con su normal.
+  const samples: { x: number; y: number; nx: number; ny: number }[] = [];
+  let carry = 0;
+  for (let i = 1; i < lane.length; i++) {
+    const a = lane[i - 1], b = lane[i], len = Math.hypot(b.x - a.x, b.y - a.y);
+    if (len < 1e-6) continue;
+    const nx = -(b.y - a.y) / len, ny = (b.x - a.x) / len;
+    for (let d = carry; d < len; d += STEP) samples.push({ x: a.x + (b.x - a.x) * d / len, y: a.y + (b.y - a.y) * d / len, nx, ny });
+    carry = (carry - len) % STEP;
+    if (carry < 0) carry += STEP;
+  }
+  if (samples.length < 4) return null;
+  const awayOf = (s: { x: number; y: number; nx: number; ny: number }) =>
+    axisDistance(track, { x: s.x + s.nx * 10, y: s.y + s.ny * 10 }, half + 40) > axisDistance(track, { x: s.x - s.nx * 10, y: s.y - s.ny * 10 }, half + 40) ? 1 : -1;
+  const blocked = items.filter(it => it.kind !== 'bridge').flatMap(it => footprintOf(it));
+  const valid = (q: Pt) => axisDistance(track, q, half + 3 + DEPTH / 2 + 2) >= half + 3 + DEPTH / 2 + 0.5
+    && distanceTo(lane, lane, q, DEPTH / 2 + 8) >= DEPTH / 2 + 6.5
+    && (!pitPts.length || distanceTo(pitPts, pitPts, q, DEPTH / 2 + 3) >= DEPTH / 2 + 1)
+    && !water.some(poly => pointInPoly(q, poly))
+    && !blocked.some(b => Math.hypot(b.x - q.x, b.y - q.y) < DEPTH / 2 + 2);
+  // Un solo lado para todo el carril (el que dice la mayoría): si el pit lane pasa entre dos partes de la pista, el
+  // lado de cada punto suelto cambia a mitad y partiría el edificio en dos.
+  void awayOf;
+  const away = samples.map(() => side);
+  const at = (i: number, d: number) => ({ x: samples[i].x + samples[i].nx * away[i] * d, y: samples[i].y + samples[i].ny * away[i] * d });
+  // Distancia mínima que cabe en cada punto; luego suavizada (máximo y media en ventana) para que no dé saltos.
+  const raw = samples.map((_, i) => { for (let d = DEPTH / 2 + 7; d <= 60; d += 2) if (valid(at(i, d))) return d; return NaN; });
+  const W = 5;
+  const maxed = raw.map((_, i) => { let m = -Infinity; for (let k = -W; k <= W; k++) { const v = raw[i + k]; if (v !== undefined && !Number.isNaN(v)) m = Math.max(m, v); } return Number.isFinite(m) ? m : NaN; });
+  const smooth = maxed.map((v, i) => { if (Number.isNaN(raw[i])) return NaN; let sum = 0, c = 0; for (let k = -W; k <= W; k++) { const u = maxed[i + k]; if (u !== undefined && !Number.isNaN(u)) { sum += u; c++; } } return c ? sum / c : v; });
+  // Tramo continuo más largo (puntos válidos, sin cambio de lado y sin saltos de más de 6 m).
+  let best: Pt[] = [], run: Pt[] = [];
+  let bestFront = 1, runFront = 1;
+  for (let i = 0; i < samples.length; i++) {
+    const d = smooth[i];
+    const q = Number.isNaN(d) ? null : at(i, d);
+    const ok = q !== null && valid(q) && (run.length === 0 || (Math.hypot(q.x - run[run.length - 1].x, q.y - run[run.length - 1].y) <= 6 && away[i] === away[i - 1]));
+    if (ok) { if (!run.length) runFront = -away[i]; run.push(q!); }
+    if (!ok || i === samples.length - 1) {
+      if (run.length > best.length) { best = run; bestFront = runFront; }
+      run = q && !ok && valid(q) ? [q] : [];
+      runFront = -away[i];
+    }
+  }
+  if (best.length < 4) return null;
+  // El frente del edificio mira al carril: lado del eje del edificio hacia el que queda el pit lane.
+  return { points: best, depth: DEPTH, height: HEIGHT, front: bestFront };
+}
+
+// ───────────────────────────── Escapatorias en cada curva y detalle de cada circuito (23/10/2026) ─────────────────────────────
+
+type Zone = { startT: number; endT: number; side: 'left' | 'right' | 'both'; widthMultiplier: number };
+const zonesCache = new WeakMap<TrackDefinition, Map<string, Zone[]>>();
+
+/**
+ * Zonas de escapatoria de la vista 3D: las del escenario y, en los permanentes y mixtos, una por fuera de cada curva real
+ * que no tenga la suya (las del escenario son aproximadas y no caían en todas: Spielberg, 4 de 10; Spa, sin La Source).
+ */
+export function runoffZones3d(track: TrackDefinition, circuitId: string): Zone[] {
+  let byId = zonesCache.get(track);
+  if (!byId) { byId = new Map(); zonesCache.set(track, byId); }
+  const hit = byId.get(circuitId);
+  if (hit) return hit;
+  const scenario = getScenario(circuitId);
+  const zones: Zone[] = scenario.runoffZones.map(z => ({ startT: z.startT, endT: z.endT, side: z.side as Zone['side'], widthMultiplier: z.widthMultiplier }));
+  if (scenario.trackType !== 'street') {
+    const lap = track.lapLengthMeters || track.points.length * 2;
+    const widths = zones.map(z => z.widthMultiplier).sort((a, b) => a - b);
+    const width = widths.length ? widths[Math.floor(widths.length / 2)] : 1.5;
+    const wrap = (t: number) => ((t % 1) + 1) % 1;
+    const inZone = (t: number) => zones.some(z => (z.startT <= z.endT ? t >= z.startT && t <= z.endT : t >= z.startT || t <= z.endT));
+    for (const corner of track.corners) {
+      if (inZone(corner.t)) continue;
+      const before = frameAt(track, corner.t - 15 / lap), after = frameAt(track, corner.t + 15 / lap);
+      const turn = Math.atan2(Math.sin(after.angle - before.angle), Math.cos(after.angle - before.angle));
+      // Por fuera de la curva (en las casi rectas, a los dos lados).
+      const side: Zone['side'] = Math.abs(turn) < 0.2 ? 'both' : turn > 0 ? 'right' : 'left';
+      zones.push({ startT: wrap(corner.t - 70 / lap), endT: wrap(corner.t + 90 / lap), side, widthMultiplier: width });
+    }
+  }
+  byId.set(circuitId, zones);
+  return zones;
+}
+
+/** Lado de fuera del circuito en la fracción `t` (+1, la normal; −1, el otro). */
+function outsideAt(track: TrackDefinition, t: number, inInfield: (p: Pt) => boolean): number {
+  const f = frameAt(track, t);
+  return inInfield({ x: f.x + f.nx * 40, y: f.y + f.ny * 40 }) ? -1 : 1;
+}
+
+/** Mar a lo largo de un tramo: muelle a `from` m de la pista y mar adentro en una sola dirección (no se cruza). */
+function seaAlong(track: TrackDefinition, t0: number, t1: number, side: number, from: number, depth: number): Poly {
+  const quay: Pt[] = [];
+  let ox = 0, oy = 0;
+  const span = ((t1 - t0) + 1) % 1 || 1;
+  for (let k = 0; k <= 40; k++) {
+    const t = t0 + span * k / 40, p = besideTrack(track, t, side, from), f = frameAt(track, t);
+    quay.push({ x: p.x, y: p.y }); ox += f.nx * side; oy += f.ny * side;
+  }
+  const on = Math.hypot(ox, oy) || 1;
+  return [...quay, ...quay.map(p => ({ x: p.x + ox / on * depth, y: p.y + oy / on * depth })).reverse()];
+}
+
+/** Lago redondeado en el hueco más grande del interior (o null si no cabe). */
+function lakeInside(track: TrackDefinition, infield: Poly[], half: number, maxRadius: number, squash = 0.75): Poly | null {
+  let best: Pt | null = null, bestD = 0;
+  const b = track.bounds;
+  for (let x = b.minX; x <= b.maxX; x += 12) for (let y = b.minY; y <= b.maxY; y += 12) {
+    const q = { x, y };
+    if (!infield.some(poly => pointInPoly(q, poly))) continue;
+    const d = axisDistance(track, q, 400);
+    if (d > bestD) { bestD = d; best = q; }
+  }
+  const r = Math.min(maxRadius, bestD - (half + 18));
+  if (!best || r < 30) return null;
+  return Array.from({ length: 32 }, (_, k) => ({ x: best!.x + Math.cos(k / 32 * Math.PI * 2) * r, y: best!.y + Math.sin(k / 32 * Math.PI * 2) * r * squash }));
+}
+
+function detailWater(track: TrackDefinition, circuitId: string, half: number, water: Poly[], inInfield: (p: Pt) => boolean, infield: Poly[]) {
+  const sea = (t0: number, t1: number, from: number, depth: number) => water.push(seaAlong(track, t0, t1, outsideAt(track, (t0 + t1) / 2, inInfield), from, depth));
+  const lake = (radius: number, squash?: number) => { const l = lakeInside(track, infield, half, radius, squash); if (l) water.push(l); };
+  switch (circuitId) {
+    case 'zandvoort': sea(0.55, 0.85, half + 260, 700); break;        // el mar del Norte, tras las dunas
+    case 'baku': sea(0.82, 0.98, half + 40, 600); break;              // el Caspio, junto a la recta del paseo marítimo
+    case 'jeddah': sea(0.30, 0.70, half + 45, 700); break;            // el mar Rojo, junto a la cornisa
+    case 'marina-bay': sea(0.45, 0.65, half + 40, 500); break;        // la bahía
+    case 'interlagos': lake(150); break;                              // los lagos de Interlagos
+    case 'melbourne': lake(260, 0.6); break;                          // el lago de Albert Park
+    case 'miami': lake(110); break;                                   // el puerto falso
+    case 'montreal': water.push(seaAlong(track, 0.25, 0.55, outsideAt(track, 0.4, inInfield), half + 60, 70)); break; // canal de remo
+  }
+}
+
+interface IconCtx {
+  track: TrackDefinition; circuitId: string; half: number; lap: number; pitSide: number; items: SceneItem[]; water: Poly[];
+  infield: Poly[]; inInfield: (p: Pt) => boolean; fits: (item: SceneItem, opts?: { onWater?: boolean }) => boolean;
+  placeBeside: (base: Omit<SceneItem, 'x' | 'y' | 'heading'>, t: number, side: number, from: number, to?: number, step?: number, turn?: number) => SceneItem | null;
+  rand: () => number;
+}
+
+function detailIcons(c: IconCtx) {
+  const { track, circuitId, half, lap, pitSide, items, water, inInfield, fits, placeBeside, rand } = c;
+  const dt = (m: number) => m / lap;
+  const corner = (n: number) => track.corners.find(k => k.number === n)?.t ?? 0;
+  const out = (t: number) => outsideAt(track, t, inInfield);
+  /** Prueba varias fracciones y los dos lados hasta que el icono cabe. */
+  const icon = (base: Omit<SceneItem, 'x' | 'y' | 'heading'>, ts: number[], from: number, to: number, sides?: number[]) => {
+    for (const t of ts) for (const side of sides ?? [out(t), -out(t)]) { const it = placeBeside({ ...base, t }, t, side, from, to, 6); if (it) return it; }
+    return null;
+  };
+  const many = (n: number, make: (k: number) => Omit<SceneItem, 'x' | 'y' | 'heading'>, t0: number, t1: number, from: number, to: number, side?: number) => {
+    let placed = 0;
+    for (let k = 0; k < n * 8 && placed < n; k++) {
+      const t = t0 + (((t1 - t0) + 1) % 1 || 1) * rand();
+      if (placeBeside(make(placed), t, side ?? out(t), from + rand() * (to - from) * 0.5, to, 8)) placed++;
+    }
+  };
+  const tall = (k: number, min: number, tint = '#9fb0c0') => ({ kind: 'building' as const, model: 'building', length: 28, width: 26, height: min + (k % 4) * 25, tint });
+  const inWater = (base: Omit<SceneItem, 'x' | 'y' | 'heading'>, tries = 300) => {
+    const poly = water[water.length - 1];
+    if (!poly) return null;
+    const xs = poly.map(p => p.x), ys = poly.map(p => p.y);
+    for (let k = 0; k < tries; k++) {
+      const it: SceneItem = { ...base, x: Math.min(...xs) + rand() * (Math.max(...xs) - Math.min(...xs)), y: Math.min(...ys) + rand() * (Math.max(...ys) - Math.min(...ys)), heading: rand() * Math.PI };
+      if (fits(it, { onWater: true })) { items.push(it); return it; }
+    }
+    return null;
+  };
+  switch (circuitId) {
+    case 'suzuka':
+      icon({ id: 'noria', kind: 'landmark', model: 'noria', length: 70, width: 14, height: 75 }, [0.04, 0.08, 0.95], half + 80, half + 320);
+      break;
+    case 'monza': {
+      const f = frameAt(track, dt(160));
+      items.push({ id: 'podio-monza', kind: 'bridge', model: 'podio-monza', x: f.x, y: f.y, heading: f.angle + Math.PI / 2, length: 2 * half + 40, width: 14, height: 18, clearance: 9, t: dt(160) });
+      icon({ id: 'peralte', kind: 'landmark', model: 'peralte', length: 260, width: 26, height: 9 }, [0.12, 0.18, 0.9, 0.6], half + 70, half + 320);
+      break;
+    }
+    case 'silverstone':
+      icon({ id: 'the-wing', kind: 'landmark', model: 'the-wing', length: 200, width: 40, height: 22, tint: '#e9edf1' }, [dt(-200), dt(250), dt(400)], half + 30, half + 200, [-pitSide, pitSide]);
+      break;
+    case 'spa':
+      icon({ id: 'tribuna-eau-rouge', kind: 'landmark', model: 'grandstand', length: 90, width: 18, height: 16 }, [corner(2), corner(3), corner(2) + dt(60)], half + 25, half + 160);
+      break;
+    case 'interlagos': {
+      icon({ id: 'rascacielos-sp', ...tall(0, 110) }, [0.3, 0.5, 0.7], half + 150, half + 450);
+      many(8, k => tall(k, 60), 0, 1, half + 120, half + 420);
+      break;
+    }
+    case 'zandvoort':
+      many(10, () => ({ kind: 'dune', model: 'dune', length: 70 + rand() * 50, width: 40, height: 10 }), 0, 1, half + 40, half + 240);
+      break;
+    case 'las-vegas':
+      icon({ id: 'esfera', kind: 'landmark', model: 'esfera', length: 160, width: 160, height: 112 }, [0.1, 0.3, 0.5, 0.7, 0.9], half + 30, half + 320);
+      icon({ id: 'torre-eiffel', kind: 'landmark', model: 'torre-eiffel', length: 40, width: 40, height: 140 }, [0.55, 0.45, 0.65, 0.25], half + 30, half + 320);
+      many(8, k => tall(k, 90, ['#c9b48a', '#d8d2c4', '#b8c6d4', '#e4c070'][k % 4]), 0, 1, half + 40, half + 360);
+      break;
+    case 'bahrain':
+      icon({ id: 'torre-sakhir', kind: 'landmark', model: 'torre-sakhir', length: 30, width: 30, height: 60 }, [dt(150), dt(-150), dt(300)], half + 40, half + 260);
+      many(10, () => ({ kind: 'dune', model: 'dune', length: 60 + rand() * 40, width: 34, height: 7, tint: '#d2b483' }), 0, 1, half + 60, half + 300);
+      break;
+    case 'baku':
+      icon({ id: 'torre-doncella', kind: 'landmark', model: 'torre-doncella', length: 16, width: 16, height: 29 }, [0.3, 0.35, 0.25, 0.4], half + 20, half + 160);
+      icon({ id: 'flame-towers', kind: 'landmark', model: 'flame-towers', length: 90, width: 60, height: 180 }, [0.45, 0.5, 0.6, 0.2], half + 80, half + 380);
+      many(4, () => ({ kind: 'wall', model: 'city-wall', length: 50, width: 6, height: 10, tint: '#c9a56a' }), 0.28, 0.4, half + 10, half + 40);
+      break;
+    case 'melbourne':
+      many(8, k => tall(k, 70), 0, 1, half + 220, half + 520);
+      break;
+    case 'miami':
+      icon({ id: 'estadio-miami', kind: 'landmark', model: 'estadio', length: 230, width: 190, height: 40 }, [0.5, 0.3, 0.7, 0.1], half + 60, half + 360);
+      for (let k = 0; k < 8; k++) inWater({ kind: 'yacht', model: k % 3 ? 'yacht' : 'yacht-large', length: k % 3 ? 20 : 38, width: k % 3 ? 5.5 : 8, height: k % 3 ? 5 : 9, tint: '#f4f4f2' });
+      break;
+    case 'jeddah':
+      inWater({ id: 'fuente-fahd', kind: 'landmark', model: 'fuente', length: 24, width: 24, height: 160 }, 600);
+      break;
+    case 'marina-bay':
+      icon({ id: 'marina-bay-sands', kind: 'landmark', model: 'marina-bay-sands', length: 340, width: 60, height: 200 }, [0.55, 0.5, 0.6, 0.4], half + 60, half + 420);
+      icon({ id: 'noria-singapur', kind: 'landmark', model: 'noria', length: 150, width: 24, height: 165 }, [0.7, 0.75, 0.8, 0.35], half + 40, half + 360);
+      break;
+    case 'lusail':
+      many(10, () => ({ kind: 'dune', model: 'dune', length: 60 + rand() * 40, width: 34, height: 7, tint: '#d8bd8c' }), 0, 1, half + 60, half + 300);
+      break;
+    case 'mexico-city':
+      icon({ id: 'foro-sol', kind: 'landmark', model: 'foro-sol', length: 160, width: 120, height: 26 }, [0.85, 0.88, 0.8, 0.92], half + 15, half + 200);
+      break;
+    case 'montreal':
+      icon({ id: 'biosfera', kind: 'landmark', model: 'biosfera', length: 76, width: 76, height: 62 }, [0.15, 0.1, 0.2, 0.7], half + 60, half + 320);
+      break;
+    case 'austin':
+      icon({ id: 'torre-cota', kind: 'landmark', model: 'torre-cota', length: 24, width: 24, height: 77 }, [dt(250), dt(400), dt(-200)], half + 50, half + 260);
+      break;
+    case 'barcelona':
+      icon({ id: 'torre-control', kind: 'landmark', model: 'torre-control', length: 18, width: 18, height: 40 }, [dt(80), dt(-80), dt(200)], half + 40, half + 220);
+      break;
   }
 }

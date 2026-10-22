@@ -581,5 +581,7 @@ export const modules = [
   { "id": "scenery-3d", "tasks": [], "sprint": null, "kind": "contract" },
   { "id": "scenery-3d-2", "tasks": [], "sprint": null, "kind": "contract" },
   { "id": "scenery-3d-3", "tasks": [], "sprint": null, "kind": "contract" },
+  { "id": "scenery-3d-4", "tasks": [], "sprint": null, "kind": "contract" },
+  { "id": "scenery-3d-5", "tasks": [], "sprint": null, "kind": "contract" },
   { "id": "viewport-movil", "tasks": [], "sprint": null, "kind": "regression" }
 ];

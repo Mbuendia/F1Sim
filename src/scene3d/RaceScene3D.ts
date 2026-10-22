@@ -19,10 +19,12 @@ import { disposeModel, dressCar, dressSafetyCar, loadModel } from '../renderer/m
 import { liveryFor } from '../data/liveries';
 import { compoundStyle } from '../utils/compounds';
 import { calculateCarWorldPosition, isCarVisible } from '../utils/carPosition';
-import { sceneryFor, type SceneBarrier, type SceneItem } from './scenery';
+import { runoffZones3d, sceneryFor, type PitBuilding, type SceneBarrier, type SceneItem } from './scenery';
+import { RUNOFF_LOOK, runoffColor } from './runoff';
+import { KERB_WIDTH } from '../utils/scenarioGeometry';
 import { SPONSOR_COLORS, type Sponsor } from './sponsors';
 import { fireworkBursts, yasHotelColor } from './effects';
-import { nearestFloodlights, nightLook, sunLightVector } from './sunLight';
+import { lampAim, nearestFloodlights, nightLook, sunLightVector } from './sunLight';
 import type { CameraView } from './cameras';
 
 const W = (x: number, y: number, z = 0) => new THREE.Vector3(x, z, y);
@@ -63,6 +65,8 @@ export class RaceScene3D {
   /** Torres de luz del circuito y las luces de verdad que se encienden en las ocho más cercanas (de noche). */
   private floodlights: SceneItem[] = [];
   private readonly lampLights: THREE.PointLight[] = [];
+  /** Halos y conos de luz de las torres (solo de noche). */
+  private lampFx: THREE.Group | null = null;
   private safetyModel: GLTF | null = null;
   private safetyRoot: THREE.Object3D | null = null;
   private track: TrackDefinition | null = null;
@@ -101,6 +105,8 @@ export class RaceScene3D {
     this.floodlights = scenery.items.filter(it => it.kind === 'floodlight');
     this.world.add(buildGround(track, circuitId, scenery.infield, scenery.water, scenery.street));
     this.world.add(buildWalls(track, circuitId, scenery.barriers));
+    if (scenery.pitBuilding) this.world.add(buildPitBuildingMesh(scenery.pitBuilding));
+    if (this.floodlights.length) { this.lampFx = buildLampFx(this.floodlights, track); this.world.add(this.lampFx); }
     const o = overpassFor(circuitId);
     if (o) this.world.add(buildElevatedRoad(track, o));
     const [items, car, lod] = await Promise.all([
@@ -181,6 +187,7 @@ export class RaceScene3D {
       for (const m of this.ledMaterials) { m.color.setRGB(c.r * 0.2, c.g * 0.2, c.b * 0.2); m.emissive.setRGB(c.r, c.g, c.b); m.emissiveIntensity = night ? 0.95 : 0.45; }
     }
     for (const m of this.lampMaterials) m.emissiveIntensity = night ? 2.5 : 0;
+    if (this.lampFx) this.lampFx.visible = night;
     this.placeFireworks(frame.fireworksSec ?? null);
 
     this.placeCars(frame.cars);
@@ -390,8 +397,17 @@ function buildGround(track: TrackDefinition, circuitId: string, infield: { x: nu
   const shapes: TrackShape[] = layers.shapes;
   // El agua va encima de las bandas anchas de terreno de la pista y debajo de escapatorias, pianos y asfalto.
   const bands = shapes.findIndex(s => !(s.kind === 'stroke' && s.width >= layers.trackWidthM + 10));
+  // Escapatorias (23/10/2026): las del escenario 2D se cambian por las de las referencias (grava, asfalto, mixtas o
+  // pintadas) y la banda de grava de toda la vuelta desaparece: la grava solo va en las curvas.
+  const scenario = getScenario(circuitId);
+  const runoffFills = buildScenarioGeometry(track, scenario).runoffPolygons.length;
   shapes.forEach((s, i) => {
-    if (i === bands) for (const poly of water) flat.fill(poly, col('#2b6f9e'));
+    if (i === bands) {
+      for (const poly of water) flat.fill(poly, col('#2b6f9e'));
+      paintRunoffs(flat, track, circuitId, runoffZones3d(track, circuitId));
+    }
+    if (bands >= 0 && i >= bands && i < bands + runoffFills) return;
+    if (s.kind === 'stroke' && s.color === '#5a4f3a' && s.width >= layers.trackWidthM + 10) return;
     if (s.kind === 'fill') flat.fill(s.points, col(s.color, s.alpha ?? 1));
     else flat.ribbon(s.points, Math.max(s.width, s.hairline ? 0.2 : 0), col(s.color, s.alpha ?? 1), s.closed);
   });
@@ -622,4 +638,130 @@ function nearestAxis(track: TrackDefinition, p: { x: number; y: number }) {
     if (d < bestD) { bestD = d; best = q; }
   }
   return best;
+}
+
+// ───────────────────────────── Escapatorias, boxes y focos (23/10/2026) ─────────────────────────────
+
+/** Escapatorias de cada zona del escenario con su superficie real: tiras del borde del piano al final de la zona. */
+function paintRunoffs(flat: FlatBuilder, track: TrackDefinition, circuitId: string,
+  zones: { startT: number; endT: number; side: string; widthMultiplier: number }[]) {
+  if (RUNOFF_LOOK[circuitId]?.kind === 'ninguna') return;
+  const pts = track.points, n = pts.length, lap = track.lapLengthMeters || n * 2, half = (track.trackWidthMeters || 12) / 2;
+  const inner = half + KERB_WIDTH;
+  for (const zone of zones) {
+    const span = ((zone.endT - zone.startT) + 1) % 1 || 1;
+    const steps = Math.max(2, Math.round(span * lap / 3));
+    const outer = half + 18 * zone.widthMultiplier;
+    const sides = zone.side === 'both' ? [1, -1] : [zone.side === 'left' ? 1 : -1];
+    for (const side of sides) {
+      const edge = (k: number, d: number) => {
+        const p = pts[Math.floor((((zone.startT + span * k / steps) % 1) + 1) % 1 * n) % n];
+        return { x: p.x + Math.cos(p.angle + Math.PI / 2) * d * side, y: p.y + Math.sin(p.angle + Math.PI / 2) * d * side };
+      };
+      for (let k = 0; k < steps; k++) {
+        const color = runoffColor(circuitId, (k + 0.5) / steps, Math.floor(k * 3 / 6));
+        if (!color) continue;
+        flat.fill([edge(k, inner), edge(k + 1, inner), edge(k + 1, outer), edge(k, outer)], col(color));
+      }
+    }
+  }
+}
+
+let garageTexture: THREE.CanvasTexture | null = null;
+/** Portones de los garajes con la franja de color de cada equipo; diez garajes por cada repetición. */
+function garageTextureOf(): THREE.CanvasTexture {
+  if (garageTexture) return garageTexture;
+  const team = ['#ff8000', '#1e41ff', '#e8002d', '#27f4d2', '#229971', '#64c4ff', '#6692ff', '#b6babd', '#0093cc', '#52e252'];
+  const canvas = document.createElement('canvas');
+  canvas.width = 1280; canvas.height = 96;
+  const ctx = canvas.getContext('2d')!;
+  ctx.fillStyle = '#e4e7eb'; ctx.fillRect(0, 0, 1280, 96);
+  for (let k = 0; k < 10; k++) {
+    const x = k * 128;
+    ctx.fillStyle = '#2a2e35'; ctx.fillRect(x + 12, 22, 104, 74);
+    ctx.fillStyle = 'rgba(255,255,255,0.08)'; for (let y = 30; y < 96; y += 8) ctx.fillRect(x + 12, y, 104, 1);
+    ctx.fillStyle = team[k]; ctx.fillRect(x + 12, 8, 104, 10);
+  }
+  garageTexture = new THREE.CanvasTexture(canvas);
+  garageTexture.wrapS = THREE.RepeatWrapping;
+  garageTexture.colorSpace = THREE.SRGBColorSpace;
+  return garageTexture;
+}
+
+/** Edificio de boxes continuo: garajes abajo, planta acristalada encima, cubierta que vuela hacia el carril. */
+function buildPitBuildingMesh(pb: PitBuilding): THREE.Group {
+  const group = new THREE.Group();
+  const pts = pb.points, n = pts.length, half = pb.depth / 2, f = pb.front;
+  const normals = pts.map((p, i) => {
+    const a = pts[Math.max(0, i - 1)], b = pts[Math.min(n - 1, i + 1)], l = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+    return { x: -(b.y - a.y) / l, y: (b.x - a.x) / l };
+  });
+  const off = (i: number, d: number, z: number) => W(pts[i].x + normals[i].x * d * f, pts[i].y + normals[i].y * d * f, z);
+  const run: number[] = [0];
+  for (let i = 1; i < n; i++) run.push(run[i - 1] + Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y));
+  const make = (build: (pos: number[], uv: number[]) => void, material: THREE.Material) => {
+    const pos: number[] = [], uv: number[] = [];
+    build(pos, uv);
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    if (uv.length) g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+    g.computeVertexNormals();
+    const mesh = new THREE.Mesh(g, material);
+    mesh.castShadow = true; mesh.receiveShadow = true;
+    group.add(mesh);
+  };
+  const quad = (pos: number[], uv: number[], a: THREE.Vector3, b: THREE.Vector3, c: THREE.Vector3, d: THREE.Vector3, u0 = 0, u1 = 0, v0 = 0, v1 = 0) => {
+    for (const [p, u, v] of [[a, u0, v0], [b, u1, v0], [c, u1, v1], [a, u0, v0], [c, u1, v1], [d, u0, v1]] as const) { pos.push(p.x, p.y, p.z); uv.push(u, v); }
+  };
+  const GARAGE = 6, H = pb.height, REPEAT = 80;
+  // Frente de los garajes (con textura).
+  make((pos, uv) => { for (let i = 0; i + 1 < n; i++) quad(pos, uv, off(i, half, 0), off(i + 1, half, 0), off(i + 1, half, GARAGE), off(i, half, GARAGE), run[i] / REPEAT, run[i + 1] / REPEAT, 0, 1); },
+    new THREE.MeshLambertMaterial({ map: garageTextureOf(), side: THREE.DoubleSide }));
+  // Planta alta acristalada (un poco retranqueada).
+  make((pos, uv) => { for (let i = 0; i + 1 < n; i++) quad(pos, uv, off(i, half - 1, GARAGE), off(i + 1, half - 1, GARAGE), off(i + 1, half - 1, H - 0.6), off(i, half - 1, H - 0.6)); },
+    new THREE.MeshLambertMaterial({ color: '#2f455c', side: THREE.DoubleSide }));
+  // Muro trasero, losa entre plantas, cubierta que vuela y testeros.
+  make((pos, uv) => {
+    for (let i = 0; i + 1 < n; i++) {
+      quad(pos, uv, off(i, -half, 0), off(i + 1, -half, 0), off(i + 1, -half, H), off(i, -half, H));
+      quad(pos, uv, off(i, -half, H), off(i + 1, -half, H), off(i + 1, half + 2.5, H), off(i, half + 2.5, H));
+      quad(pos, uv, off(i, half - 1, GARAGE), off(i + 1, half - 1, GARAGE), off(i + 1, half, GARAGE), off(i, half, GARAGE));
+    }
+    for (const i of [0, n - 1]) quad(pos, uv, off(i, -half, 0), off(i, half, 0), off(i, half, H), off(i, -half, H));
+  }, new THREE.MeshLambertMaterial({ color: '#e4e7eb', side: THREE.DoubleSide }));
+  return group;
+}
+
+/** De noche, cada torre de luz con su halo en el cabezal y un cono de luz suave hasta la pista. */
+function buildLampFx(lights: SceneItem[], track: TrackDefinition): THREE.Group {
+  const group = new THREE.Group();
+  group.visible = false;
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = 64;
+  const ctx = canvas.getContext('2d')!;
+  const grad = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+  grad.addColorStop(0, 'rgba(255,250,235,1)'); grad.addColorStop(0.25, 'rgba(255,240,200,0.6)'); grad.addColorStop(1, 'rgba(255,230,180,0)');
+  ctx.fillStyle = grad; ctx.fillRect(0, 0, 64, 64);
+  const haloMat = new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(canvas), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, fog: false });
+  const beamMat = new THREE.MeshBasicMaterial({ color: '#fff1d0', transparent: true, opacity: 0.07, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false });
+  const down = new THREE.Vector3(0, -1, 0);
+  for (const light of lights) {
+    const head = W(light.x, light.y, light.height - 2);
+    const halo = new THREE.Sprite(haloMat);
+    halo.position.copy(head);
+    halo.scale.set(9, 9, 1);
+    group.add(halo);
+    const aim = lampAim(light, track);
+    const target = W(aim.x, aim.y, 0);
+    const dir = target.clone().sub(head);
+    const length = dir.length();
+    const cone = new THREE.ConeGeometry(Math.max(8, length * 0.35), length, 18, 1, true);
+    cone.translate(0, -length / 2, 0);
+    const beam = new THREE.Mesh(cone, beamMat);
+    beam.position.copy(head);
+    beam.quaternion.setFromUnitVectors(down, dir.normalize());
+    beam.renderOrder = 5;
+    group.add(beam);
+  }
+  return group;
 }

@@ -482,12 +482,237 @@ def palm():
         limb(mid, tip, 0.35, 0.05, leaves, 4)
 
 
+# ───────────────────────────── Iconos del resto de circuitos (23/10/2026) ─────────────────────────────
+
+def wire(o, thickness):
+    """Convierte un objeto en celosía de barras (Wireframe)."""
+    bpy.ops.object.select_all(action="DESELECT")
+    o.select_set(True)
+    bpy.context.view_layer.objects.active = o
+    bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+    m = o.modifiers.new("celosia", "WIREFRAME")
+    m.thickness = thickness
+    m.use_even_offset = True
+    m.use_replace = True
+    bpy.ops.object.modifier_apply(modifier=m.name)
+    return o
+
+
+def noria():
+    """Noria (Suzuka, Singapur): aro en el plano XZ con radios, cabinas de colores y dos patas en A."""
+    steel, white = mat("steel", "#c9ced6", 0.6, 0.35), mat("tint", "#f2f3f5")
+    R, cz = 32.0, 40.0
+    bpy.ops.mesh.primitive_torus_add(major_radius=R, minor_radius=0.7, major_segments=48, minor_segments=6, location=(0, 0, cz), rotation=(math.pi / 2, 0, 0))
+    _link(bpy.context.active_object, white)
+    bpy.ops.mesh.primitive_torus_add(major_radius=R * 0.35, minor_radius=0.5, major_segments=24, minor_segments=6, location=(0, 0, cz), rotation=(math.pi / 2, 0, 0))
+    _link(bpy.context.active_object, white)
+    colors = ["#e8002d", "#ffd23f", "#1e88e5", "#43a047", "#ff7f00", "#8e44ad"]
+    for k in range(24):
+        a = 2 * math.pi * k / 24
+        x, z = math.cos(a) * R, cz + math.sin(a) * R
+        limb((0, 0, cz), (x, 0, z), 0.25, 0.2, steel, 4)
+        box(x, 0, z - 3.2, 2.6, 2.4, 2.6, mat(f"cabin{k % 6}", colors[k % 6], 0.1, 0.4))
+    for sy in (-1, 1):
+        limb((-14, sy * 6, 0), (0, sy * 1.2, cz), 0.9, 0.6, steel, 6)
+        limb((14, sy * 6, 0), (0, sy * 1.2, cz), 0.9, 0.6, steel, 6)
+    box(0, 0, 0, 34, 16, 1.0, mat("plinth", "#9da1a6"))
+
+
+def podio_monza():
+    """Podio de Monza: plataforma que vuela sobre la recta de meta (altura libre 9 m) con balcón y marquesina."""
+    white, glass, red = mat("tint", "#eef0f2"), mat("glass", "#2f455c", 0.3, 0.15), mat("red", "#c8102e", 0.1, 0.4)
+    L = 52.0
+    for sx in (-1, 1):
+        box(sx * (L / 2 - 3), 0, 0, 6, 10, 13, white)
+    box(0, 0, 9, L, 12, 1.4, white)
+    box(0, 4.5, 10.4, L - 8, 0.3, 1.2, glass)
+    box(0, -2, 10.4, 16, 6, 0.8, red)
+    box(0, 0, 16, L + 2, 14, 0.6, white)
+    for x in (-18, 0, 18):
+        cyl(x, -5, 10.4, 0.3, 5.6, white, 6)
+
+
+def peralte():
+    """Peralte del antiguo óvalo de Monza: curva de hormigón muy inclinada sobre pilares (largo en X)."""
+    concrete, pillar = mat("tint", "#b9b6ae"), mat("pillar", "#8f8c86")
+    L, n = 260.0, 26
+    for k in range(n):
+        x = -L / 2 + L * (k + 0.5) / n
+        y = 0.0009 * x * x - 15
+        ang = math.atan2(0.0018 * x, 1)
+        o = box(x, y, 3, L / n + 0.6, 20, 0.8, concrete)
+        o.rotation_euler = (math.radians(32), 0, ang)
+        for sy in (-6, 6):
+            cyl(x, y + sy, 0, 0.6, 3 + (sy + 6) / 12 * 10, pillar, 6)
+
+
+def the_wing():
+    """The Wing de Silverstone: edificio largo acristalado con una cubierta ondulada en forma de ala."""
+    white, glass = mat("tint", "#e9edf1"), mat("glass", "#2f455c", 0.3, 0.15)
+    box(0, 0, 0, 200, 34, 6, white)
+    box(0, 0, 6, 196, 32, 8, glass)
+    for k in range(20):
+        x = -95 + k * 10
+        z = 14 + 4 * math.sin(k / 19 * math.pi) + 2 * k / 19
+        o = box(x, 0, z, 10.4, 40, 0.8, white)
+        o.rotation_euler = (math.radians(4), math.radians(-6 if k < 10 else 6), 0)
+
+
+def dune():
+    """Duna de arena: montículo bajo y alargado."""
+    sand = mat("tint", "#d9c79b", 0, 0.95)
+    blob(0, 0, 0, 30, 18, 9, sand, 16, 8)
+    blob(8, 4, 0, 18, 12, 7, sand, 12, 6)
+
+
+def esfera():
+    """La Esfera de Las Vegas: bola de luces (material "led", que el juego anima) sobre un zócalo."""
+    led, base = mat("led", "#ffb347", 0.1, 0.4, emission="#ffb347"), mat("base", "#3a3f46")
+    bpy.ops.mesh.primitive_uv_sphere_add(segments=32, ring_count=16, radius=56, location=(0, 0, 56))
+    _link(bpy.context.active_object, led)
+    cyl(0, 0, 0, 40, 4, base, 24)
+
+
+def torre_eiffel():
+    """Réplica de la torre Eiffel: pirámide curva de celosía con dos plataformas y la aguja."""
+    bronze = mat("tint", "#7a5c3e", 0.5, 0.6)
+    bpy.ops.mesh.primitive_cone_add(vertices=4, radius1=28, radius2=3, depth=110, location=(0, 0, 55), rotation=(0, 0, math.pi / 4))
+    o = _link(bpy.context.active_object, bronze)
+    sub = o.modifiers.new("sub", "SUBDIVIDE") if False else None
+    bpy.ops.object.mode_set(mode="EDIT")
+    bpy.ops.mesh.subdivide(number_cuts=6)
+    bpy.ops.object.mode_set(mode="OBJECT")
+    wire(o, 0.8)
+    for z, s in ((28, 34), (60, 16)):
+        box(0, 0, z, s, s, 1.6, bronze)
+    limb((0, 0, 110), (0, 0, 138), 1.2, 0.2, bronze, 6)
+
+
+def torre_sakhir():
+    """Torre de Sakhir (Baréin): fuste claro y remate escalonado de varios pisos que se abren hacia arriba."""
+    sand, glass = mat("tint", "#e8dcc4"), mat("glass", "#2f455c", 0.3, 0.15)
+    cyl(0, 0, 0, 7, 40, sand, 16)
+    for k, (r, z) in enumerate(((9, 40), (11, 45), (13, 50))):
+        cyl(0, 0, z, r, 3.2, glass, 16)
+        cyl(0, 0, z + 3.2, r + 0.6, 1.0, sand, 16)
+    cyl(0, 0, 55, 6, 5, sand, 16, r2=0.5)
+
+
+def torre_doncella():
+    """Torre de la Doncella (Bakú): torre cilíndrica de piedra con su contrafuerte."""
+    stone = mat("tint", "#c9a56a", 0, 0.9)
+    cyl(0, 0, 0, 8, 29, stone, 20)
+    box(0, 8, 0, 6, 8, 27, stone)
+    for k in range(10):
+        a = 2 * math.pi * k / 10
+        box(math.cos(a) * 7.6, math.sin(a) * 7.6, 29, 2, 2, 1.4, stone)
+
+
+def flame_towers():
+    """Flame Towers (Bakú): tres torres con forma de llama, cristal azul y llamas encendidas."""
+    glass, flame = mat("glass", "#2a5a8a", 0.4, 0.2), mat("flame", "#ff7a1a", 0, 0.4, emission="#ff7a1a")
+    for (x, y, h) in ((-28, 0, 170), (0, 14, 180), (28, -4, 160)):
+        loft([(0, [(-10, 0), (10, 0), (10, 0.1), (-10, 0.1)])], glass) if False else None
+        blob(x, y, h * 0.45, 13, 11, h * 0.5, glass, 16, 10)
+        blob(x + 2, y, h * 0.92, 4, 4, h * 0.08, flame, 10, 6)
+
+
+def city_wall():
+    """Muralla de la ciudad vieja (Bakú): lienzo de piedra con almenas."""
+    stone = mat("tint", "#c9a56a", 0, 0.9)
+    box(0, 0, 0, 50, 4, 9, stone)
+    for k in range(12):
+        box(-23 + k * 4.2, 0, 9, 2, 4, 1.6, stone)
+
+
+def estadio():
+    """Estadio (Miami): cuenco ovalado de gradas con el campo dentro y una marquesina."""
+    seats, field, roof = mat("tint", "#e66a2c"), mat("field", "#3f8a3a", 0, 0.9), mat("roof", "#e9ecef", 0.2, 0.4)
+    blob(0, 0, 0, 70, 52, 1.0, field, 24, 4)
+    for k in range(36):
+        a = 2 * math.pi * k / 36
+        x, y = math.cos(a) * 95, math.sin(a) * 75
+        o = box(x, y, 0, 18, 22, 28, seats)
+        o.rotation_euler = (0, 0, a + math.pi / 2)
+        r = box(math.cos(a) * 88, math.sin(a) * 68, 34, 20, 26, 1.2, roof)
+        r.rotation_euler = (0, 0, a + math.pi / 2)
+
+
+def fuente():
+    """Fuente del rey Fahd (Yeda): chorro de agua de más de 100 m con la nube de espuma arriba."""
+    water, spray = mat("tint", "#e8f4ff", 0, 0.3), mat("spray", "#ffffff", 0, 0.6)
+    cyl(0, 0, 0, 3.0, 150, water, 12, r2=1.0)
+    blob(0, 0, 150, 10, 10, 9, spray, 12, 8)
+    blob(3, 2, 140, 7, 7, 8, spray, 10, 6)
+
+
+def marina_bay_sands():
+    """Marina Bay Sands (Singapur): tres torres inclinadas unidas arriba por la terraza con forma de barco."""
+    tower, glass, park = mat("tint", "#e9edf1"), mat("glass", "#3d5a78", 0.3, 0.15), mat("park", "#5d8a4a")
+    for x in (-110, 0, 110):
+        for sy in (-1, 1):
+            o = box(x, sy * 9, 0, 36, 14, 190, tower)
+            o.rotation_euler = (math.radians(sy * 4), 0, 0)
+            box(x, sy * 15.5, 4, 34, 0.3, 180, glass)
+    loft([(-170, [(-10, 190), (10, 190), (12, 196), (-12, 196)]), (150, [(-14, 190), (14, 190), (16, 196), (-16, 196)]),
+          (185, [(-3, 192), (3, 192), (4, 196), (-4, 196)])], tower, "skypark")
+    box(0, 0, 196, 280, 22, 0.6, park)
+
+
+def foro_sol():
+    """Foro Sol (México): herradura de gradas alrededor de un tramo de la pista, abierta por un lado."""
+    seats, roof = mat("tint", "#2e6f40"), mat("roof", "#e9ecef", 0.2, 0.4)
+    for k in range(22):
+        a = math.pi * 0.1 + math.pi * 0.8 * k / 21 + math.pi
+        x, y = math.cos(a) * 70, math.sin(a) * 50 + 30
+        o = box(x, y, 0, 14, 20, 22, seats)
+        o.rotation_euler = (0, 0, a + math.pi / 2)
+        r = box(math.cos(a) * 64, math.sin(a) * 45 + 30, 26, 16, 22, 1.0, roof)
+        r.rotation_euler = (0, 0, a + math.pi / 2)
+
+
+def biosfera():
+    """Biosfera de Montreal: cúpula geodésica de celosía blanca."""
+    white = mat("tint", "#f2f3f5", 0.3, 0.4)
+    bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=3, radius=38, location=(0, 0, 24))
+    o = _link(bpy.context.active_object, white)
+    wire(o, 0.6)
+    box(0, 0, 0, 60, 60, 0.5, mat("plinth", "#9da1a6"))
+
+
+def torre_cota():
+    """Torre de observación de COTA: fuste blanco con el velo rojo de cables y el mirador arriba."""
+    white, red = mat("steel", "#e9ecef", 0.4, 0.4), mat("tint", "#c8102e", 0.2, 0.5)
+    cyl(0, 0, 0, 2.5, 70, white, 12)
+    cyl(0, 0, 66, 9, 3, white, 16)
+    cyl(0, 0, 69, 9.5, 1.0, white, 16)
+    bpy.ops.mesh.primitive_cone_add(vertices=28, radius1=18, radius2=8, depth=64, location=(0, 0, 33))
+    o = _link(bpy.context.active_object, red)
+    bpy.ops.object.mode_set(mode="EDIT")
+    bpy.ops.mesh.subdivide(number_cuts=2)
+    bpy.ops.object.mode_set(mode="OBJECT")
+    wire(o, 0.35)
+
+
+def torre_control():
+    """Torre de control (Barcelona): fuste con la cabina acristalada arriba."""
+    white, glass = mat("tint", "#e9ecef"), mat("glass", "#2f455c", 0.3, 0.15)
+    box(0, 0, 0, 8, 8, 32, white)
+    cyl(0, 0, 32, 8, 5, glass, 12, r2=9)
+    cyl(0, 0, 37, 9.5, 1.2, white, 12)
+    cyl(0, 0, 38.2, 0.2, 3, white, 6)
+
+
 MODELS = {
     "grandstand": grandstand, "vip-lounge": vip_lounge, "paddock": paddock, "tree": tree, "building": building,
     "yacht": yacht, "yacht-large": yacht_large, "casino": casino, "red-bull": red_bull,
     "shanghai-bridge": shanghai_bridge, "pavilion": pavilion,
     "floodlight": floodlight, "yas-hotel": yas_hotel, "yas-tower": yas_tower,
     "pit-building": pit_building, "start-gantry": start_gantry, "billboard": billboard, "pine": pine, "palm": palm,
+    "noria": noria, "podio-monza": podio_monza, "peralte": peralte, "the-wing": the_wing, "dune": dune, "esfera": esfera,
+    "torre-eiffel": torre_eiffel, "torre-sakhir": torre_sakhir, "torre-doncella": torre_doncella, "flame-towers": flame_towers,
+    "city-wall": city_wall, "estadio": estadio, "fuente": fuente, "marina-bay-sands": marina_bay_sands, "foro-sol": foro_sol,
+    "biosfera": biosfera, "torre-cota": torre_cota, "torre-control": torre_control,
 }
 
 
