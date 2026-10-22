@@ -29,6 +29,7 @@
 .close:hover { color: #fff; background: rgba(255, 255, 255, 0.08); }
 .log { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; max-height: 210px; overflow-y: auto; font-size: 15px; }
 .hint { color: var(--text-2, #aeb9c8); font-size: 14px; }
+.notice { margin: 0; padding: 4px 8px; border-radius: 6px; background: rgba(250, 204, 21, 0.1); color: #facc15; font-size: 13px; }
 .wall, .driver { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; padding: 4px 8px; border-radius: 6px; }
 .wall { background: rgba(56, 189, 248, 0.1); }
 .driver { background: rgba(255, 255, 255, 0.05); }

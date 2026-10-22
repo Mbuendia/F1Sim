@@ -21,6 +21,10 @@ export interface RadioMessage {
 export interface RadioState {
   mode: 'basica' | 'ia';
   aiStatus: 'apagada' | 'descargando' | 'conectando' | 'lista' | 'basica';
+  /** [IA4] Por qué se usa la radio básica aunque se eligió la IA, y si se ofrece descargar el modelo. */
+  aiReason?: string;
+  offerDownload: boolean;
+  setAi(patch: Partial<Pick<RadioState, 'mode' | 'aiStatus' | 'aiReason' | 'offerDownload'>>): void;
   conversations: Record<number, RadioMessage[]>;
   voiceQueue: { carId: number; text: string }[];
   add(carId: number, message: Omit<RadioMessage, 'id'>): string;
@@ -37,6 +41,8 @@ export function createRadioStore() {
     aiStatus: 'basica',
     conversations: {},
     voiceQueue: [],
+    offerDownload: false,
+    setAi(patch) { set(patch); },
     add(carId, message) {
       const id = `radio-${++nextId}`;
       const list = [...(get().conversations[carId] ?? []), { ...message, id }].slice(-KEEP);

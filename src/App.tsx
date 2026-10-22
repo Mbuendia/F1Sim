@@ -1771,6 +1771,7 @@ export const App: React.FC = () => {
             onSaveGame={saveStore ? handleSaveGame : undefined}
             saveName={saveName}
             audio={{ level: audioLevel, labels: AUDIO_LEVEL_LABEL, onLevel: setAudioLevel, credits: soundCredits() }}
+            radioSettings
           />
         </div>
       </header>

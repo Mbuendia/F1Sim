@@ -41,6 +41,8 @@ export function RadioPanel({ cars, team, ordersAvailable, send, carId, onClose, 
   const [text, setText] = useState('');
   const input = useRef<HTMLInputElement>(null);
   const messages = useRadio(state => state.conversations[selected]) ?? [];
+  const aiReason = useRadio(state => state.aiReason);
+  const offerDownload = useRadio(state => state.offerDownload);
   const visible = useMemo(() => messages.slice(-VISIBLE), [messages]);
 
   useEffect(() => { setSelected(carId); input.current?.focus(); }, [carId]);
@@ -74,6 +76,7 @@ export function RadioPanel({ cars, team, ordersAvailable, send, carId, onClose, 
         </div>
         <button type="button" className={styles.close} onClick={onClose} aria-label="Cerrar la radio"><X size={16} aria-hidden="true" /></button>
       </header>
+      {aiReason && <p className={styles.notice}>{aiReason}{offerDownload ? '. Descárgalo en Menú › Radio del muro.' : '.'}</p>}
       <ol className={styles.log} aria-live="polite">
         {visible.length === 0 && <li className={styles.hint}>Prueba «box, duros», «ataca», «deja pasar a {cars.find(c => c.id !== selected)?.driver.firstName ?? 'tu compañero'}» o «decide tú».</li>}
         {visible.map(m => (
@@ -147,6 +150,21 @@ export function useDriverCalls(cars: CarState[], team: TeamView | null | undefin
         requestedAt: call.timeSec, now: slow.t, lap: call.lap, running: true, priority: call.priority });
     }
   }, [slow]);
+}
+
+/**
+ * [IA4] Al entrar en carrera: con la radio con IA elegida, comprueba que el modelo sigue en el dispositivo; si el
+ * navegador lo ha borrado, radio básica con su motivo y la oferta de descargarlo. El código del modelo llega con import().
+ */
+export function useRadioModeCheck() {
+  useEffect(() => {
+    let alive = true;
+    void Promise.all([import('../radio/model/storage'), import('../radio/model/download'), import('../radio/model/ModelStore')])
+      .then(([storage, download, models]) => download.resolveRadioMode({ preferred: storage.readRadioMode(storage.browserStorage()), store: models.unavailableModelStore }))
+      .then(result => { if (alive) radioStore.getState().setAi({ mode: result.mode, aiStatus: result.aiStatus, aiReason: result.reason, offerDownload: result.offerDownload }); })
+      .catch(() => { if (alive) radioStore.getState().setAi({ mode: 'basica', aiStatus: 'basica' }); });
+    return () => { alive = false; };
+  }, []);
 }
 
 /** Tecla R: abre la radio si no se está escribiendo en otro campo. */

@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { ArrowUpDown, CloudRain, Dices, Fuel, Gauge, Hourglass, Lock, Radio, Swords, Wrench, Zap } from 'lucide-react';
-import { RadioPanel, useDriverCalls, useRadioHotkey } from './RadioPanel';
+import { RadioPanel, useDriverCalls, useRadioHotkey, useRadioModeCheck } from './RadioPanel';
 import type { SlowView } from '../engine/RaceView';
 import type { CarState, TireCompound } from '../types/f1';
 import type { EngineOrder } from '../engine/EngineHost';
@@ -56,6 +56,7 @@ export function BoxControls({ car, teamCars, team, race, send, slow }: {
   const closeRadio = useCallback(() => setRadioCar(null), []);
   useRadioHotkey(openRadio);
   useDriverCalls(pilots, team, slow ?? null);
+  useRadioModeCheck();
   // [T4.14] Orden de equipo vigente entre los dos coches.
   const teamId = pilots[0].driver.teamId;
   const teamOrder = (team?.teamOrder as { mode: string; favouredCarId?: number } | null) ?? { mode: 'libre' };
