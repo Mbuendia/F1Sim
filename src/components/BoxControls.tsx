@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { ArrowUpDown, CloudRain, Dices, Fuel, Gauge, Hourglass, Lock, Swords, Wrench, Zap } from 'lucide-react';
+import { useCallback, useState } from 'react';
+import { ArrowUpDown, CloudRain, Dices, Fuel, Gauge, Hourglass, Lock, Radio, Swords, Wrench, Zap } from 'lucide-react';
+import { RadioPanel, useRadioHotkey } from './RadioPanel';
 import type { CarState, TireCompound } from '../types/f1';
 import type { EngineOrder } from '../engine/EngineHost';
 import type { TeamView } from '../engine/RaceView';
@@ -46,6 +47,11 @@ export function BoxControls({ car, teamCars, team, race, send }: {
   const pilots = teamCars && teamCars.length === 2 ? teamCars : [car];
 
   const shown = pilots.some(p => p.id === shownId) ? shownId! : pilots[0].id;
+  // [IA1] Radio del muro: coche con el que se habla (null: panel cerrado). La tecla R la abre con el piloto a la vista.
+  const [radioCar, setRadioCar] = useState<number | null>(null);
+  const openRadio = useCallback(() => setRadioCar(current => current ?? shown), [shown]);
+  const closeRadio = useCallback(() => setRadioCar(null), []);
+  useRadioHotkey(openRadio);
   // [T4.14] Orden de equipo vigente entre los dos coches.
   const teamId = pilots[0].driver.teamId;
   const teamOrder = (team?.teamOrder as { mode: string; favouredCarId?: number } | null) ?? { mode: 'libre' };
@@ -61,6 +67,9 @@ export function BoxControls({ car, teamCars, team, race, send }: {
 
   return (
     <section className={styles.controls} aria-label="Órdenes de boxes del equipo">
+      {radioCar !== null && (
+        <RadioPanel cars={pilots} team={team} ordersAvailable={race.lightState === 'racing' && !race.isFinished} send={send} carId={radioCar} onClose={closeRadio} />
+      )}
       <div className={styles.teamHeader}>
         <strong>MURO · {car.team.shortName.toUpperCase()}</strong>
       </div>
@@ -121,6 +130,10 @@ export function BoxControls({ car, teamCars, team, race, send }: {
                 <span className={styles.pilotCode}>{p.driver.code} #{p.driver.number}</span>
                 <span className={styles.pilotPos}>P{p.currentPosition}</span>
                 {statusBadge && <span className={`${styles.badge} ${statusClass}`}>{statusBadge}</span>}
+                <button type="button" data-radio className={styles.radioButton} onClick={() => setRadioCar(p.id)} title="Hablar por radio con el piloto (tecla R)"
+                  aria-label={`Radio con ${p.driver.code}`} aria-pressed={radioCar === p.id}>
+                  <Radio size={14} aria-hidden="true" /><span>Radio</span>
+                </button>
               </div>
               <div className={styles.gauges}>
                 <Meter label="Neumático" percent={health} text={`${health}%`} tone={meterTone(health, 50, 25)}

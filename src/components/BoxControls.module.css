@@ -8,6 +8,12 @@
 .pilotCard { display:grid; grid-template-columns:minmax(0, auto) minmax(0, 1fr); grid-template-rows:30px 46px 28px 52px; column-gap:12px; row-gap:6px; align-items:center; padding:8px 12px; border:1px solid var(--line); border-radius:var(--radio-l); background:var(--panel-2); min-width:0; }
 /* Referencia de posición del interruptor del estratega cuando sube a la cabecera (WallProposals). */
 .pilotCard { position:relative; }
+/* [IA1] Botón de radio en la fila del piloto: cabe en su alto fijo, así el muro no cambia de tamaño. */
+.radioButton { display:inline-flex; align-items:center; gap:4px; height:26px; padding:0 8px; border-radius:6px; cursor:pointer;
+  border:1px solid rgba(56, 189, 248, 0.45); background:transparent; color:#38bdf8; font:700 12px var(--font-ui, inherit); }
+.radioButton:hover, .radioButton[aria-pressed='true'] { background:rgba(56, 189, 248, 0.16); color:#fff; }
+/* En pantallas estrechas el interruptor del estratega ocupa el final de la fila: solo el icono, pegado a la etiqueta. */
+@media (max-width:1023px) { .radioButton span { display:none; } .radioButton { padding:0 6px; } }
 .pilotIdentity { grid-column:1; display:flex; align-items:center; gap:8px; min-width:0; white-space:nowrap; }
 .pilotCode { font-size:18px; font-weight:700; color:var(--text); }
 .pilotPos { color:var(--text); font-size:16px; font-weight:700; }
