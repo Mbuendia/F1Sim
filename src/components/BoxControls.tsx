@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import { ArrowUpDown, CloudRain, Dices, Fuel, Gauge, Hourglass, Lock, Radio, Swords, Wrench, Zap } from 'lucide-react';
-import { RadioPanel, useRadioHotkey } from './RadioPanel';
+import { RadioPanel, useDriverCalls, useRadioHotkey } from './RadioPanel';
+import type { SlowView } from '../engine/RaceView';
 import type { CarState, TireCompound } from '../types/f1';
 import type { EngineOrder } from '../engine/EngineHost';
 import type { TeamView } from '../engine/RaceView';
@@ -24,7 +25,7 @@ const decimal = (value: number) => value.toFixed(1).replace('.', ',');
 // [Q11] Panel dual de pilotos del equipo — controles independientes de boxes para ambos coches.
 // [V3] Sin desplegables: el ritmo y el compuesto son controles segmentados, el estado del coche son medidores y los
 // avisos, fichas en una sola línea. Cada tarjeta mide siempre lo mismo, así que el muro no le cambia el alto al circuito.
-export function BoxControls({ car, teamCars, team, race, send }: {
+export function BoxControls({ car, teamCars, team, race, send, slow }: {
   car: CarState;
   teamCars?: CarState[];
   /** [N3] Vista privada del equipo (muro, propuestas, órdenes, ritmo y cruce de compuestos) que manda el motor. */
@@ -33,6 +34,8 @@ export function BoxControls({ car, teamCars, team, race, send }: {
   race: { lightState: string; isFinished: boolean; raceFlagState: string };
   /** [N3] Manda una orden al motor; se resuelve con su acuse. */
   send: (order: EngineOrder) => Promise<Ack>;
+  /** [IA2] Última vista lenta de la carrera: hora, vuelta, tiempo y avisos para las llamadas de los pilotos. */
+  slow?: SlowView | null;
 }) {
   const own = (carId: number) => team?.cars.find(c => c.id === carId);
   // State is keyed per car id so toggling between pilots doesn't lose compound selection
@@ -52,6 +55,7 @@ export function BoxControls({ car, teamCars, team, race, send }: {
   const openRadio = useCallback(() => setRadioCar(current => current ?? shown), [shown]);
   const closeRadio = useCallback(() => setRadioCar(null), []);
   useRadioHotkey(openRadio);
+  useDriverCalls(pilots, team, slow ?? null);
   // [T4.14] Orden de equipo vigente entre los dos coches.
   const teamId = pilots[0].driver.teamId;
   const teamOrder = (team?.teamOrder as { mode: string; favouredCarId?: number } | null) ?? { mode: 'libre' };
@@ -68,7 +72,7 @@ export function BoxControls({ car, teamCars, team, race, send }: {
   return (
     <section className={styles.controls} aria-label="Órdenes de boxes del equipo">
       {radioCar !== null && (
-        <RadioPanel cars={pilots} team={team} ordersAvailable={race.lightState === 'racing' && !race.isFinished} send={send} carId={radioCar} onClose={closeRadio} />
+        <RadioPanel cars={pilots} team={team} ordersAvailable={race.lightState === 'racing' && !race.isFinished} send={send} carId={radioCar} onClose={closeRadio} slow={slow ?? null} />
       )}
       <div className={styles.teamHeader}>
         <strong>MURO · {car.team.shortName.toUpperCase()}</strong>

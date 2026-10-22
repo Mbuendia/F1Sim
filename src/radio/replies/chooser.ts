@@ -1,0 +1,60 @@
+/**
+ * [IA2] Elige qué variante dice el piloto: al azar (inyectado; en los tests con semilla, nunca el azar del motor) y sin
+ * repetir la misma variante dos veces seguidas para el mismo piloto y resultado.
+ */
+import type { Temperament } from '../../data/driverRadio';
+import type { RadioParse } from '../types';
+import { TEMPLATES, type LineKind, type ReplyKind } from './templates';
+
+export type TemplateVars = Partial<Record<'compuesto' | 'companero' | 'vuelta' | 'motivo', string | number>>;
+
+/** Azar reproducible (mulberry32). */
+export function seededRandom(seed: number): () => number {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/** Rellena los huecos; uno sin valor se quita con su espacio, para no dejar nunca llaves en pantalla. */
+export function fillTemplate(template: string, vars: TemplateVars): string {
+  return template
+    .replace(/\s?\{(\w+)\}/g, (match, key: string) => {
+      const value = vars[key as keyof TemplateVars];
+      return value === undefined || value === '' ? '' : match.replace(`{${key}}`, String(value));
+    })
+    .replace(/\s+([.,!?])/g, '$1')
+    .replace(/:\s*\./g, '.');
+}
+
+export interface Chooser {
+  pick(driverId: string, temperament: Temperament, kind: LineKind, vars: TemplateVars): { text: string; variant: number; kind: LineKind };
+}
+
+export function createChooser(random: () => number = Math.random): Chooser {
+  const last = new Map<string, number>();
+  return {
+    pick(driverId, temperament, kind, vars) {
+      const list = TEMPLATES[temperament]?.[kind] ?? TEMPLATES.frio[kind];
+      const key = `${driverId}|${kind}`;
+      const previous = last.get(key);
+      let variant = Math.floor(random() * list.length);
+      if (list.length > 1 && variant === previous) variant = (variant + 1 + Math.floor(random() * (list.length - 1))) % list.length;
+      last.set(key, variant);
+      return { text: fillTemplate(list[variant], vars), variant, kind };
+    },
+  };
+}
+
+/** Qué tipo de respuesta toca a un resultado del intérprete (antes de saber el acuse del motor). */
+export function replyKindOf(parse: RadioParse): ReplyKind {
+  switch (parse.status) {
+    case 'ok': return `ok-${parse.intent!.kind}` as ReplyKind;
+    case 'ambigua': return 'repetir';
+    default: return parse.status;
+  }
+}

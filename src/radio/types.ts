@@ -36,6 +36,8 @@ export interface RadioProposal { id: string; kind: 'parada' | 'ritmo' | 'salida'
 export interface RadioCar {
   id: number;
   driverId: string;
+  /** [IA2] Nombre de pila, para las respuestas («{companero}»). */
+  displayName?: string;
   /** Formas de llamarlo, ya normalizadas (nombre, apellido de parodia, siglas, dorsal y apodos). */
   names: string[];
   position: number;

@@ -8,6 +8,7 @@ import { SpyPanel } from './components/SpyPanel';
 import { AUDIO_LEVELS, AUDIO_LEVEL_LABEL, AUDIO_STORAGE_KEY, AudioEngine, parseAudioLevel } from './audio/AudioEngine';
 import { soundCredits, soundsBetween } from './audio/sounds';
 import type { AudioSnapshot } from './audio/sounds';
+import { connectRadioAudio } from './radio/voice/runtime';
 import { engineerPoint, hireStaff, staffEffects } from './simulation/Staff';
 import { canSpy, runSpy, settleSpy } from './simulation/Spy';
 import type { SpyLevel } from './simulation/Spy';
@@ -441,8 +442,13 @@ export const App: React.FC = () => {
   const audio = useMemo(() => new AudioEngine(undefined, undefined, import.meta.env.BASE_URL), []);
   const [audioLevel, setAudioLevel] = useState(() => { try { return parseAudioLevel(localStorage.getItem(AUDIO_STORAGE_KEY)); } catch { return 0; } });
   const audioSeen = useRef<AudioSnapshot | null>(null);
+  // [IA2] La voz de los pilotos sigue el nivel de sonido y calla cuando calla el audio (pausa, página oculta, fuera de carrera).
+  const radioLevel = useRef(0);
+  const radioQuiet = useRef(true);
+  useEffect(() => connectRadioAudio(id => { audio.play(id); }, () => (radioQuiet.current ? 0 : radioLevel.current)), [audio]);
   useEffect(() => {
     audio.setVolume(AUDIO_LEVELS[audioLevel]);
+    radioLevel.current = AUDIO_LEVELS[audioLevel];
     try { localStorage.setItem(AUDIO_STORAGE_KEY, String(audioLevel)); } catch { /* sin almacenamiento */ }
   }, [audio, audioLevel]);
   useEffect(() => {
@@ -971,7 +977,10 @@ export const App: React.FC = () => {
   noticeRef.current = pushNotice;
   // [T4.16] El audio se calla fuera de la carrera, en pausa y con la página oculta; al salir de la carrera se libera.
   useEffect(() => {
-    const sync = () => audio.setPaused(document.hidden || isPaused || currentView !== 'race');
+    const sync = () => {
+      radioQuiet.current = document.hidden || isPaused || currentView !== 'race';
+      audio.setPaused(document.hidden || isPaused || currentView !== 'race');
+    };
     sync();
     if (currentView !== 'race') { audio.dispose(); audioSeen.current = null; }
     document.addEventListener('visibilitychange', sync);
@@ -1902,7 +1911,7 @@ export const App: React.FC = () => {
 
           <section className={`${styles.wallArea} ${showWall ? '' : styles.isHidden}`}>
             <BoxControls key={teamCars.map(c => c.id).join(':') + ':' + selectedCircuitId} car={favoriteCar} teamCars={teamCars}
-              team={teamViews[favoriteCar.team.id]} race={{ lightState, isFinished, raceFlagState }} send={sendOrder} />
+              team={teamViews[favoriteCar.team.id]} race={{ lightState, isFinished, raceFlagState }} send={sendOrder} slow={slowView} />
           </section>
         </main>
 

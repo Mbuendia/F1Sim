@@ -584,5 +584,6 @@ export const modules = [
   { "id": "scenery-3d-4", "tasks": [], "sprint": null, "kind": "contract" },
   { "id": "scenery-3d-5", "tasks": [], "sprint": null, "kind": "contract" },
   { "id": "radio-ia1", "tasks": ["IA1"], "sprint": "6", "kind": "contract" },
+  { "id": "radio-replies-ia2", "tasks": ["IA2"], "sprint": "6", "kind": "contract" },
   { "id": "viewport-movil", "tasks": [], "sprint": null, "kind": "regression" }
 ];

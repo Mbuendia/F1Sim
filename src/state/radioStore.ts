@@ -14,6 +14,8 @@ export interface RadioMessage {
   timeSec?: number;
   status?: RadioMessageStatus;
   reason?: string;
+  /** [IA2] Tipo de respuesta o llamada del piloto (plantilla usada). */
+  kind?: string;
 }
 
 export interface RadioState {
