@@ -53,7 +53,7 @@ export function safetyCarLaps(surface: RunoffSurface, street: boolean, rng: () =
 
 /** Texto del registro cuando el perfil de reglas no fija un mínimo de vueltas. */
 export function noMinimumText(surface: RunoffSurface): string {
-  return `${SURFACE_TEXT[surface]}: perfil FIA, sin mínimo de vueltas`;
+  return `${SURFACE_TEXT[surface]}: perfil FAI, sin mínimo de vueltas`;
 }
 
 /** Tiempo que pierde un coche que se sale por una escapatoria de asfalto (s). */

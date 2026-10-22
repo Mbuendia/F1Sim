@@ -36,7 +36,7 @@ export function GameMenuScreen({ current = null, slots = [], onContinue, onNew, 
       <div className={s.entry}>
         <F1WheelSvg className={s.wheel} />
         <div className={s.front}>
-          <div className={s.brand}>F1 <em>RACE</em> MANAGER</div>
+          <div className={s.brand}>F-UNO <em>RACE</em> MANAGER</div>
           {current && options.includes('continuar') && (
             <div className={s.continue} style={{ ['--c' as string]: TEAMS[current.team?.id ?? '']?.color }}>
               <button type="button" className={s.primary} onClick={onContinue}><Play size={16} fill="#fff" aria-hidden="true" />Continuar</button>

@@ -45,6 +45,41 @@
   transform: translateY(-1px);
 }
 
+/* Vista 3D (22/10/2026): botones de los modos de cámara, arriba a la izquierda; en móvil se desplazan en horizontal. */
+.cameraModes {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  z-index: 20;
+  pointer-events: none;
+}
+.cameraModes::-webkit-scrollbar { display: none; }
+.cameraMode, .cameraModeOn {
+  pointer-events: auto;
+  flex: 0 0 auto;
+  min-height: 36px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  background: rgba(11, 15, 25, 0.86);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  color: #cfe9f7;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+}
+.cameraMode:hover { border-color: #38bdf8; color: #ffffff; }
+.cameraModeOn { background: #38bdf8; border-color: #38bdf8; color: #0b0f19; }
+@media (pointer: coarse) {
+  .cameraMode, .cameraModeOn { min-height: 44px; }
+}
+
 .cameraHint {
   position: absolute;
   top: 14px;

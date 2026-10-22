@@ -54,7 +54,7 @@ export default async function run({ server, assert, test }) {
       && fined.management.board.confidence === management.board.confidence - spy.SPY.CONFIDENCE_HIT && /Espionaje/.test(fined.management.board.history.at(-1).reason),
       'V9: descubierto, además la multa y la junta pierde confianza');
     const ledger = ledgerOf(fined.management.finance, TEAM).slice(-2).map(entry => entry.label).join(' | ');
-    assert(/Informe de espionaje: Ferrari/.test(ledger) && /Multa de la FIA/.test(ledger), 'V9: los dos movimientos quedan en el libro con su concepto', ledger);
+    assert(/Informe de espionaje: Ferrari/.test(ledger) && /Multa de la FAI/.test(ledger), 'V9: los dos movimientos quedan en el libro con su concepto', ledger);
     const broke = spy.settleSpy(management, { ...clean, cost: 10_000_000 }, 'Ferrari');
     assert(!broke.ok && broke.management === management && /límite de deuda/.test(broke.reason), 'V9: si el gasto pasa del límite de deuda no se encarga y nada cambia', broke.reason);
   });
@@ -74,7 +74,7 @@ export default async function run({ server, assert, test }) {
     assert(/Ferrari/.test(open) && /McLaren/.test(open) && /Informe básico/.test(open) && /Informe a fondo/.test(open) && /riesgo 10 %/.test(open) && /multa/.test(open) && /<button[^>]*>Encargar el informe/.test(open) && !/<select/.test(open),
       'V9: se elige equipo y nivel, con el coste, el riesgo y la multa a la vista antes de pagar');
     const done = renderToStaticMarkup(createElement(SpyPanel, { ...props, available: true, reports: [{ ...ask('basico'), detected: true, fine: spy.SPY.FINE }] }));
-    assert(/data-spy="ferrari"/.test(done) && /LEC/.test(done) && /HAM/.test(done) && /Puede traer un ajuste desviado/.test(done) && /Descubierto por la FIA/.test(done) && /<button[^>]*disabled[^>]*>Encargar el informe/.test(done),
+    assert(/data-spy="ferrari"/.test(done) && /LEC/.test(done) && /HAM/.test(done) && /Puede traer un ajuste desviado/.test(done) && /Descubierto por la FAI/.test(done) && /<button[^>]*disabled[^>]*>Encargar el informe/.test(done),
       'V9: el informe enseña el setup de cada piloto, avisa de que puede no ser exacto y de si lo han descubierto');
     const app = readFileSync(new URL('../../src/App.tsx', import.meta.url), 'utf8');
     assert(/<SpyPanel/.test(app) && /settleSpy\(management, report/.test(app) && /practice\.rivalSetups\[driver\.id\]/.test(app), 'V9: la aplicación espía los setups que los rivales fijaron en sus libres y cobra el informe');

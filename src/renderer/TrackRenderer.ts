@@ -8,6 +8,7 @@ import { getScenario } from '../data/scenarioRegistry';
 import { buildScenarioGeometry, ScenarioGeometry } from '../utils/scenarioGeometry';
 import type { Point2D } from '../utils/spline';
 import { calculateCarWorldPosition } from '../utils/carPosition';
+import { shadowOffset, type Sun } from './lighting';
 import { KERB_WIDTH } from '../utils/scenarioGeometry';
 import { ASPHALT_DRY, ASPHALT_WET, FINISH_LINE_M, gridBrackets } from './trackLayers';
 
@@ -272,6 +273,36 @@ export class TrackRenderer {
    * Renderiza barreras/muros de contención (armco, hormigón, tecpro).
    * Se pintan encima del asfalto para que sean visibles.
    */
+  /**
+   * Sombras de muros y guardarraíles según el sol (21/10/2026): la franja que va del pie del muro a donde cae su sombra.
+   * Se pinta sobre la pista y antes que los coches.
+   */
+  static renderBarrierShadows(ctx: CanvasRenderingContext2D, track: TrackDefinition, camera: Camera, circuitId: string, sun: Sun) {
+    if (sun.alpha <= 0.01) return;
+    const geo = this.scenarioFor(track, circuitId);
+    if (geo.barrierLines.length === 0) return;
+    const zoom = camera.zoom;
+    ctx.save();
+    ctx.fillStyle = `rgba(0, 0, 0, ${(sun.alpha * 0.85).toFixed(3)})`;
+    for (const barrier of geo.barrierLines) {
+      if (barrier.points.length < 2) continue;
+      const off = shadowOffset(sun, barrier.type === 'armco' ? 0.9 : 1.2);
+      const len = Math.hypot(off.x, off.y);
+      if (len * zoom < 0.8) continue;
+      // Desde el borde del muro (no desde su eje), para no oscurecer el propio muro.
+      const base = { x: off.x / len * barrier.width / 2, y: off.y / len * barrier.width / 2 };
+      const near = barrier.points.map(p => camera.worldToScreen(p.x + base.x, p.y + base.y));
+      const far = barrier.points.map(p => camera.worldToScreen(p.x + base.x + off.x, p.y + base.y + off.y));
+      ctx.beginPath();
+      ctx.moveTo(near[0].x, near[0].y);
+      for (const q of near) ctx.lineTo(q.x, q.y);
+      for (let i = far.length - 1; i >= 0; i--) ctx.lineTo(far[i].x, far[i].y);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
   private static renderBarriers(
     ctx: CanvasRenderingContext2D,
     scenarioGeo: ScenarioGeometry,

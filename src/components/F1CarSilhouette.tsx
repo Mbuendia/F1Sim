@@ -14,7 +14,7 @@ interface F1CarSilhouetteProps {
  * pontón, fondo plano macizo entre ejes, alerón delantero bajo y ruedas de doble anillo.
  * El trazo y el fondo usan el color del equipo.
  */
-export function F1CarSilhouette({ teamColor, width = 96, label = 'Monoplaza F1', className }: F1CarSilhouetteProps) {
+export function F1CarSilhouette({ teamColor, width = 96, label = 'Monoplaza', className }: F1CarSilhouetteProps) {
   const height = Math.round(width * 90 / 430);
   // Colores de equipo muy oscuros: contorno claro sutil para que la silueta se lea sobre fondos oscuros.
   const rgb = /^#([0-9a-f]{6})$/i.exec(teamColor)?.[1];

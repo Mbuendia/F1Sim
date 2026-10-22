@@ -43,13 +43,13 @@ export interface RuleSet {
   values: Partial<Record<RuleKey, RuleValue>>;
 }
 
-const SPORTING_2025 = 'FIA Formula 1 Sporting Regulations 2025';
-const TECHNICAL_2025 = 'FIA Formula 1 Technical Regulations 2025';
+const SPORTING_2025 = 'FAI F-Uno Sporting Regulations 2025';
+const TECHNICAL_2025 = 'FAI F-Uno Technical Regulations 2025';
 
 const FIA_2025_VALUES: Record<RegulationKey, RuleValue> = {
   drsGapSec: {
     value: 1, unit: 's', origin: 'fia', source: `${SPORTING_2025}, Art. 22.1 (S22.1)`,
-    note: 'Menos de 1 s en el punto de detección predeterminado; la FIA puede modificar el umbral.',
+    note: 'Menos de 1 s en el punto de detección predeterminado; la FAI puede modificar el umbral.',
   },
   drsLapsAfterSafetyCar: {
     value: 2, unit: 'cruces de línea del líder', origin: 'fia', source: `${SPORTING_2025}, Art. 22.1 (S22.1)`,
@@ -94,13 +94,13 @@ const GAME_2025_VALUES: Record<GameKey, RuleValue> = {
 export const RULE_SETS: Record<string, RuleSet> = {
   'fia-2025': {
     id: 'fia-2025',
-    label: 'FIA 2025 (reglas oficiales)',
+    label: 'FAI 2025 (reglas oficiales)',
     edition: 2025,
     values: { ...FIA_2025_VALUES },
   },
   'personalizado-2025': {
     id: 'personalizado-2025',
-    label: 'Perfil personalizado (base FIA 2025)',
+    label: 'Perfil personalizado (base FAI 2025)',
     edition: 2025,
     values: { ...FIA_2025_VALUES, ...GAME_2025_VALUES },
   },
@@ -129,8 +129,8 @@ export function validateRuleSet(set: RuleSet): string[] {
     if (!rule.unit) errors.push(`${who}: ${key} sin unidad`);
     if (!ORIGINS.includes(rule.origin)) errors.push(`${who}: ${key} con origen desconocido «${rule.origin}»`);
     if (!rule.source) errors.push(`${who}: ${key} sin fuente`);
-    if (rule.origin === 'fia' && !ARTICLE.test(rule.source)) errors.push(`${who}: ${key} es FIA pero no cita artículo`);
-    if (set.id.startsWith('fia-') && rule.origin === 'juego') errors.push(`${who}: ${key} es un ajuste del juego dentro de un perfil FIA`);
+    if (rule.origin === 'fia' && !ARTICLE.test(rule.source)) errors.push(`${who}: ${key} es FAI pero no cita artículo`);
+    if (set.id.startsWith('fia-') && rule.origin === 'juego') errors.push(`${who}: ${key} es un ajuste del juego dentro de un perfil FAI`);
   }
   return errors;
 }

@@ -163,7 +163,7 @@ export default async function run({ server, assert, test }) {
     const summary = closed.summary;
 
     assert(closed.archive.length === 2 && closed.archive[0] === legacy && closed.archive[1] === summary && summary.season === 2 && summary.races === 24, 'R51: el resumen se añade al historial');
-    assert(summary.champion === 'ALO' && summary.championName === 'Fernando Alonso' && summary.championPoints === standings[0].points, 'R51: campeón de pilotos con sus puntos');
+    assert(summary.champion === 'ALO' && summary.championName === 'Fernando Alonsoplán' && summary.championPoints === standings[0].points, 'R51: campeón de pilotos con sus puntos');
     assert(summary.constructorsChampion === teams[0].teamName && summary.constructorsPoints === teams[0].points, 'R51: campeón de constructores con sus puntos');
     assert(summary.drivers.length === standings.length && summary.drivers.slice(0, 3).map(d => d.driverCode).join() === standings.slice(0, 3).map(d => d.driverCode).join()
       && summary.drivers[1].points === standings[1].points, 'R51: clasificación final con el podio del campeonato');
@@ -210,7 +210,7 @@ export default async function run({ server, assert, test }) {
 
     const driverOf = id => DRIVERS[id] && { name: `${DRIVERS[id].firstName} ${DRIVERS[id].lastName}`, code: DRIVERS[id].code };
     const lines = comps.gridPenaltyLines(moved, penalties, driverOf);
-    assert(lines.length === 1 && lines[0].driverId === 'alonso' && lines[0].name === 'Fernando Alonso' && lines[0].places === 10 && lines[0].from === 1 && lines[0].to === 11 && !lines[0].backOfGrid,
+    assert(lines.length === 1 && lines[0].driverId === 'alonso' && lines[0].name === 'Fernando Alonsoplán' && lines[0].places === 10 && lines[0].from === 1 && lines[0].to === 11 && !lines[0].backOfGrid,
       'R51: el aviso dice quién pierde puestos, cuántos y de dónde a dónde', JSON.stringify(lines));
     assert(lines[0].reasons.length === 1 && lines[0].reasons[0].includes(comps.COMPONENT_LABEL.ICE) && /5/.test(lines[0].reasons[0]), 'R51: y por qué componente', lines[0].reasons.join());
 

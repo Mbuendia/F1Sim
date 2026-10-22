@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useMemo, useState } from 'react';
 import styles from './RaceCanvas.module.css';
 import { Camera } from '../renderer/Camera';
 import { TrackRenderer } from '../renderer/TrackRenderer';
@@ -12,6 +12,12 @@ import { supportsWebGL } from './CarShowcase';
 import type { TrackLayerGL } from '../renderer/TrackLayerGL';
 import { frameCost, recordStage } from '../renderer/frameCost';
 import { buildCarDraws, buildSafetyCarDraw } from '../renderer/carDraws';
+import { bridgePaintOrder, bridgeSide, overpassFor } from '../renderer/overpass';
+import { renderBridge } from '../renderer/BridgeRenderer';
+import { sunAt } from '../renderer/lighting';
+import type { RaceScene3D } from '../scene3d/RaceScene3D';
+import { CameraDirector3D, drawLabels3D } from '../scene3d/director3d';
+import type { CameraMode3D } from '../scene3d/cameras';
 import { WEATHER_TESTS } from '../data/weatherScenarios';
 import type { TrackDefinition } from '../data/barcelonaTrack';
 import type { CarState, RejoinEstimate, SafetyCarState, TrackWeatherState } from '../types/f1';
@@ -35,6 +41,8 @@ interface RaceCanvasProps {
   weatherTest?: boolean;
   /** [G9][N3] Pide al motor el tiempo de prueba elegido. */
   onWeatherTest?: (index: number) => void;
+  /** Vista 3D (22/10/2026): modo de cámara con el que empieza. */
+  initialCameraMode?: CameraMode3D;
 }
 
 /** [N3] Lo que pinta un fotograma, montado con las vistas: coches con su pose interpolada, Safety Car y tiempo. */
@@ -60,6 +68,7 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
   onSelectCar,
   weatherTest = false,
   onWeatherTest,
+  initialCameraMode,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const trackLayerRef = useRef<TrackLayerGL | null>(null);
@@ -81,6 +90,49 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
   const dragStartPosRef = useRef({ x: 0, y: 0 });
   const totalDragDistanceRef = useRef(0);
   const [currentRotationDeg, setCurrentRotationDeg] = useState(0);
+
+  // ── Vista 3D (22/10/2026): pintor three.js con escenario, sombras y seis modos de cámara. Sin WebGL (o con `?2d`)
+  // se queda la vista cenital de siempre.
+  const scene3dRef = useRef<RaceScene3D | null>(null);
+  const [view3d, setView3d] = useState(false);
+  // El modo de la cámara 3D vive en `camera` (la compartida con la barra de arriba, cuyo botón lo cambia).
+  const director = useMemo(() => {
+    const d = new CameraDirector3D(track, circuitId, camera);
+    d.mode = initialCameraMode ?? (selectedCarId !== null ? 'persecucion' : 'vista');
+    return d;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [track, circuitId, camera]);
+  const setMode3d = (mode: CameraMode3D) => {
+    if (mode === 'libre') director.toFree(); else director.mode = mode;
+  };
+  useEffect(() => {
+    // En desarrollo, las capturas de revisión colocan la cámara desde fuera.
+    if (!import.meta.env.DEV) return;
+    const w = window as unknown as { __camera3d?: unknown };
+    w.__camera3d = { director, setMode: setMode3d };
+    return () => { delete w.__camera3d; };
+  });
+  useEffect(() => {
+    // Al elegir un coche desde la vista general, la cámara se va con él.
+    if (selectedCarId !== null && director.mode === 'vista') director.mode = 'persecucion';
+  }, [selectedCarId, director]);
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (!supportsWebGL() || params.has('2d') || params.has('canvas')) return;
+    let cancelled = false;
+    let created: RaceScene3D | null = null;
+    import('../scene3d/RaceScene3D')
+      .then(async module => {
+        created = module.RaceScene3D.create();
+        if (!created || cancelled) { created?.destroy(); created = null; return; }
+        scene3dRef.current = created;
+        camera.view3d = true;
+        setView3d(true);
+        await created.load(track, circuitId, import.meta.env.BASE_URL);
+      })
+      .catch(error => { console.error('Vista 3D no disponible', error); scene3dRef.current = null; setView3d(false); });
+    return () => { cancelled = true; scene3dRef.current = null; camera.view3d = false; setView3d(false); created?.destroy(); };
+  }, [track, circuitId, camera]);
 
   // Sincronizar el seguimiento de la cámara cuando cambia selectedCarId
   useEffect(() => {
@@ -131,6 +183,8 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
 
     let animationFrameId: number;
     let lastTime = performance.now();
+    // Momento (reloj de verdad) en que se vio la bandera a cuadros: los fuegos artificiales de Abu Dabi cuentan desde ahí.
+    let finishedAt: number | null = null;
 
     const handleResize = () => {
       const parent = canvas.parentElement;
@@ -232,6 +286,41 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
       ctx.fillStyle = '#14181f';
       ctx.fillRect(0, 0, camera.screenWidth, camera.screenHeight);
 
+      // ── Vista 3D: pista, escenario y coches en three.js; encima, etiquetas, nubes, gotas y minimapa. ──
+      const scene3d = scene3dRef.current;
+      if (scene3d) {
+        const w = camera.screenWidth, h = camera.screenHeight;
+        const sun3 = sunAt({ circuitId, raceTimeSec: frame.raceTimeSec, cloudCover: frame.cloudCover });
+        const shot = director.view(frame.cars, selectedCarId, frame.raceTimeSec, dtRaw, w / h, car => scene3d.carHeight(car));
+        const finished = Boolean(raceStore.getState().slow?.finished);
+        if (finished && finishedAt === null) finishedAt = performance.now();
+        if (!finished) finishedAt = null;
+        const fireworksSec = finishedAt === null ? null : (performance.now() - finishedAt) / 1000;
+        const image = scene3d.render({ cars: frame.cars, safetyCar: frame.safetyCar, view: shot.view, sun: sun3, shadowRadius: shot.shadowRadius, fireworksSec }, w, h, Math.min(dpr, 1.5));
+        ctx.drawImage(image, 0, 0, w, h);
+        const eye = shot.view.position;
+        drawLabels3D(ctx, frame.cars, selectedCarId, director.mode === 'vista', car => {
+          const z = scene3d.carHeight(car) + 1.8;
+          const p = scene3d.project(car.worldX, car.worldY, z, w, h);
+          return { ...p, distance: Math.hypot(car.worldX - eye.x, car.worldY - eye.y, z - eye.z) };
+        }, w, h);
+        const rendered = performance.now();
+        WeatherRenderer.renderClouds(ctx, camera, skyCover(frame.cloudCover, frame.rain));
+        if (frame.layers) WeatherRenderer.renderDrops(ctx, track, camera, frame.rain, frame.raceTimeSec);
+        if (camera.followingCarId !== null) {
+          const followed = camera.followingCarId;
+          const ownCar = Object.values(raceStore.getState().teams).flatMap(team => team.cars).find(car => car.id === followed);
+          renderLeftMinimap(ctx, { activeTrack: track, cars: frame.cars }, camera, (ownCar?.rejoin as RejoinEstimate | null | undefined) ?? null, frame.layers);
+        }
+        ctx.restore();
+        const frameEnd = performance.now();
+        frameCost.simScale = 1; frameCost.gpu = true;
+        recordStage('simulacion', simulated - frameStart); recordStage('pista', rendered - simulated); recordStage('clima', 0);
+        recordStage('coches', 0); recordStage('resto', frameEnd - rendered); recordStage('total', frameEnd - frameStart);
+        frameCost.frames++;
+        return;
+      }
+
       // [G8] Pista fija desde la GPU; si el contexto WebGL se pierde, se vuelve al Canvas.
       let gpu = false;
       const trackLayer = trackLayerRef.current;
@@ -251,6 +340,9 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
       TrackRenderer.renderTrack(ctx, track, camera, dpr, frame.weather as TrackWeatherState, circuitId, gpu);
       // [R04] Puntos de detección y tramos de activación del DRS.
       TrackRenderer.renderDrsMarkers(ctx, track, camera);
+      // Sol de la carrera (21/10/2026): dirección y largo de las sombras según la hora y las nubes.
+      const sun = sunAt({ circuitId, raceTimeSec: frame.raceTimeSec, cloudCover: frame.cloudCover });
+      TrackRenderer.renderBarrierShadows(ctx, track, camera, circuitId, sun);
       const trackDone = performance.now();
 
       // [R44] Pista mojada por tramo, radar de lluvia y spray (antes de los coches y sus etiquetas).
@@ -270,23 +362,40 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
 
       const circuitSpec = OFFICIAL_CIRCUITS[circuitId];
       const trackWidthCarsCapacity = circuitSpec?.trackWidthCars ?? 3;
-      const carEffects = { depthAt: frame.depthAt, timeSec: frame.raceTimeSec };
+      const carEffects = { depthAt: frame.depthAt, timeSec: frame.raceTimeSec, sun };
+      // Puente (21/10/2026): primero los coches de abajo (y todos los demás), luego el tablero, luego los de arriba.
+      const overpass = overpassFor(circuitId);
+      const layers = bridgePaintOrder(frame.cars, overpass);
+      const safetyCarOver = overpass !== null && frame.safetyCar != null
+        && bridgeSide(overpass, ((frame.safetyCar.progress % 1) + 1) % 1, Boolean(frame.safetyCar.isInPitLane)) === 'over';
       // [G9] Spray, coches y Safety Car desde la GPU, compuestos sobre la pista y el agua; el Canvas pone encima humo,
       // etiquetas y rótulos, y pinta entero cualquier coche que todavía no tenga su imagen.
-      let onGpu: { cars: ReadonlySet<number>; safetyCar: boolean } | undefined;
-      if (gpu && trackLayerRef.current) {
-        try {
-          const draws = buildCarDraws(frame.cars, camera, selectedCarId, track, trackWidthCarsCapacity, carEffects);
-          const safetyCarDraw = buildSafetyCarDraw(frame.safetyCar, track, camera, performance.now());
-          const view = trackLayerRef.current.renderCars(camera, dpr, draws, safetyCarDraw, spray.current, frame.raceTimeSec);
-          ctx.drawImage(view, 0, 0, camera.screenWidth, camera.screenHeight);
-          onGpu = { cars: new Set(draws.map(draw => draw.id)), safetyCar: safetyCarDraw !== null };
-        } catch {
-          trackLayerRef.current = null;
-          setCanvasFallback(true);
+      const paintCars = (cars: CarState[], withSafetyCar: boolean, withSpray: boolean) => {
+        let onGpu: { cars: ReadonlySet<number>; safetyCar: boolean } | undefined;
+        if (gpu && trackLayerRef.current && (cars.length > 0 || withSafetyCar || withSpray)) {
+          try {
+            const draws = buildCarDraws(cars, camera, selectedCarId, track, trackWidthCarsCapacity, carEffects);
+            const safetyCarDraw = withSafetyCar ? buildSafetyCarDraw(frame.safetyCar, track, camera, performance.now()) : null;
+            const view = trackLayerRef.current.renderCars(camera, dpr, draws, safetyCarDraw, withSpray ? spray.current : null, frame.raceTimeSec, sun);
+            ctx.drawImage(view, 0, 0, camera.screenWidth, camera.screenHeight);
+            onGpu = { cars: new Set(draws.map(draw => draw.id)), safetyCar: safetyCarDraw !== null };
+          } catch {
+            trackLayerRef.current = null;
+            setCanvasFallback(true);
+          }
         }
+        return onGpu;
+      };
+      if (!overpass) {
+        CarRenderer.renderCars(ctx, frame.cars, camera, selectedCarId, track, trackWidthCarsCapacity, frame.safetyCar, carEffects, paintCars(frame.cars, true, true));
+      } else {
+        const below = paintCars(layers.below, !safetyCarOver, true);
+        CarRenderer.renderCars(ctx, layers.below, camera, selectedCarId, track, trackWidthCarsCapacity, safetyCarOver ? null : frame.safetyCar, carEffects, below, { labelCars: [] });
+        renderBridge(ctx, track, camera, overpass, sun, (frame.weather?.waterPercentage || 0) > 10);
+        const above = paintCars(layers.above, safetyCarOver, false);
+        // Las etiquetas de todos, encima del puente.
+        CarRenderer.renderCars(ctx, layers.above, camera, selectedCarId, track, trackWidthCarsCapacity, safetyCarOver ? frame.safetyCar : null, carEffects, above, { labelCars: frame.cars });
       }
-      CarRenderer.renderCars(ctx, frame.cars, camera, selectedCarId, track, trackWidthCarsCapacity, frame.safetyCar, carEffects, onGpu);
       const carsDone = performance.now();
 
       // [R53] Gotas en pantalla según la lluvia de la zona visible (por encima de pista y coches).
@@ -320,7 +429,7 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
       resizeObserver.disconnect();
       window.removeEventListener('resize', handleResize);
     };
-  }, [track, roster, camera, circuitId, selectedCarId]);
+  }, [track, roster, camera, circuitId, selectedCarId, director]);
 
   // ── MANEJADORES DE RATÓN: ROTACIÓN 360°, PAN Y ZOOM ──
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -338,6 +447,20 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
     totalDragDistanceRef.current += Math.hypot(dx, dy);
     dragStartPosRef.current = { x: e.clientX, y: e.clientY };
 
+    if (scene3dRef.current) {
+      // 3D: arrastrar pasa al modo libre; izquierdo gira alrededor, derecho desplaza.
+      if (director.mode !== 'libre') director.toFree();
+      const o = director.orbit;
+      if (dragButtonRef.current === 0) {
+        o.azimuth -= dx * 0.008;
+        o.elevation = Math.max(0.12, Math.min(1.5, o.elevation + dy * 0.006));
+      } else {
+        const fx = -Math.cos(o.azimuth), fy = -Math.sin(o.azimuth), k = o.distance * 0.0016;
+        o.x += (fy * dx + fx * dy) * k;
+        o.y += (-fx * dx + fy * dy) * k;
+      }
+      return;
+    }
     if (dragButtonRef.current === 0) {
       // Click izquierdo: Rotar 360° la pista
       camera.rotateBy(dx * 0.008);
@@ -361,7 +484,20 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
       const clickX = e.clientX - rect.left;
       const clickY = e.clientY - rect.top;
 
-      const clickedCarId = CarRenderer.pickCarAtScreen(paintedRef.current, camera, clickX, clickY);
+      const scene3d = scene3dRef.current;
+      let clickedCarId: number | null;
+      if (scene3d) {
+        // 3D: el coche más cercano al clic en pantalla (a menos de 28 px).
+        let best: number | null = null, bestD = 28;
+        for (const car of paintedRef.current) {
+          const p = scene3d.project(car.worldX, car.worldY, scene3d.carHeight(car) + 0.6, rect.width, rect.height);
+          const d = Math.hypot(p.x - clickX, p.y - clickY);
+          if (p.visible && d < bestD) { bestD = d; best = car.id; }
+        }
+        clickedCarId = best;
+      } else {
+        clickedCarId = CarRenderer.pickCarAtScreen(paintedRef.current, camera, clickX, clickY);
+      }
 
       if (clickedCarId !== null) {
         onSelectCar(clickedCarId);
@@ -373,10 +509,18 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
   const handleWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
     e.preventDefault();
     const factor = e.deltaY < 0 ? 1.15 : 0.87;
+    if (scene3dRef.current) {
+      // En las cenitales la rueda acerca o aleja (como siempre); en el resto pasa al modo libre.
+      if (director.mode === 'cenital' || director.mode === 'cenital-giro') { director.zoom = Math.max(0.3, Math.min(6, director.zoom * factor)); return; }
+      if (director.mode !== 'libre') director.toFree();
+      director.orbit.distance = Math.max(12, Math.min(6000, director.orbit.distance / factor));
+      return;
+    }
     camera.zoomBy(factor);
   };
 
   const handleDoubleClick = () => {
+    if (scene3dRef.current) setMode3d('vista');
     camera.resetToFullTrack(track);
     setCurrentRotationDeg(0);
     onSelectCar(null);
@@ -410,15 +554,18 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
         </div>
       )}
 
-      {/* ── BRÚJULA & INDICADOR DE ROTACIÓN 360° ── */}
-      <div className={styles.orbitBadge} onClick={handleDoubleClick} title="Haz doble click para resetear vista">
-        <Compass size={13} style={{ transform: `rotate(${-currentRotationDeg}deg)`, transition: 'transform 0.1s' }} />
-        <span>{currentRotationDeg}° {currentRotationDeg !== 0 ? '(Click para reset)' : 'NORTE'}</span>
-      </div>
+      {/* En 3D los modos de cámara se cambian con el botón de la barra de arriba. */}
+      {!view3d && (
+        /* ── BRÚJULA & INDICADOR DE ROTACIÓN 360° ── */
+        <div className={styles.orbitBadge} onClick={handleDoubleClick} title="Haz doble click para resetear vista">
+          <Compass size={13} style={{ transform: `rotate(${-currentRotationDeg}deg)`, transition: 'transform 0.1s' }} />
+          <span>{currentRotationDeg}° {currentRotationDeg !== 0 ? '(Click para reset)' : 'NORTE'}</span>
+        </div>
+      )}
 
       {/* ── HINT DE CONTROLES DE CÁMARA & PISTA ── */}
       <div className={styles.cameraHint}>
-        <strong>Arrastrar:</strong> girar · <strong>Botón derecho:</strong> mover · <strong>Rueda:</strong> zoom · <strong>Doble clic:</strong> restablecer
+        <strong>Arrastrar:</strong> girar · <strong>Botón derecho:</strong> mover · <strong>Rueda:</strong> zoom · <strong>Doble clic:</strong> {view3d ? 'vista general' : 'restablecer'}
       </div>
     </div>
   );

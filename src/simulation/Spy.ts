@@ -82,10 +82,10 @@ export function settleSpy(management: ManagementState, report: SpyReport, teamNa
     ok: true, reason: null,
     management: {
       ...management,
-      finance: charge(paid.state, management.playerTeamId, { round: report.round, kind: 'operacion', label: 'Multa de la FIA por espionaje', amount: report.fine }),
+      finance: charge(paid.state, management.playerTeamId, { round: report.round, kind: 'operacion', label: 'Multa de la FAI por espionaje', amount: report.fine }),
       board: {
         ...management.board, confidence: Math.max(0, management.board.confidence - SPY.CONFIDENCE_HIT),
-        history: [...management.board.history, { round: report.round, delta: -SPY.CONFIDENCE_HIT, reason: 'Espionaje descubierto por la FIA' }],
+        history: [...management.board.history, { round: report.round, delta: -SPY.CONFIDENCE_HIT, reason: 'Espionaje descubierto por la FAI' }],
       },
     },
   };

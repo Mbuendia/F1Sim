@@ -188,7 +188,7 @@ export default async function run({ server, assert, test }) {
     assert(a.freeJuniors(start.academy).every(junior => html.includes(junior.driver.lastName)) && /Fichar como reserva/.test(html), 'T4.8: y la lista de jóvenes libres para cambiar de reserva');
     const chosen = a.setStandIn(start.academy, start.contracts, PLAYER, 'stroll').state;
     const waiting = await render('/src/components/ReservePanel.tsx', 'ReservePanel', { ...props, academy: chosen });
-    assert(/Sustituye a Stroll en la próxima ronda/.test(waiting) && /Deshacer/.test(waiting) && !/Sustituir a Alonso/.test(waiting), 'T4.8: con la sustitución decidida lo dice y deja deshacerla');
+    assert(/Sustituye a Strollercoaster en la próxima ronda/.test(waiting) && /Deshacer/.test(waiting) && !/Sustituir a Alonsoplán/.test(waiting), 'T4.8: con la sustitución decidida lo dice y deja deshacerla');
     const late = await render('/src/components/ReservePanel.tsx', 'ReservePanel', { ...props, round: K.NEGOTIATION_ROUND, contracts: { ...start.contracts, contracts: { ...start.contracts.contracts, stroll: { ...start.contracts.contracts.stroll, until: 1 }, alonso: { ...start.contracts.contracts.alonso, until: 1 } } } });
     assert(/Subir a titular/.test(late), 'T4.8: con la negociación abierta y un asiento libre se le puede subir a titular');
   });

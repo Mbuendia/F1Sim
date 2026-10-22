@@ -52,7 +52,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
       <main className={styles.brandGroup}>
         <div className={styles.kicker}>Temporada 2026 · Escritorio</div>
         <h1 className={styles.brandTitle}>
-          <span className={styles.f1LogoBig}>F1</span>
+          <span className={styles.f1LogoBig}>F-UNO</span>
           <span className={styles.titleText}>Race Manager</span>
         </h1>
         <p className={styles.subtitleText}>
@@ -67,7 +67,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
         </div>
       </main>
 
-      <div className={styles.versionBadge}>F1 2026 · simulador de estrategia</div>
+      <div className={styles.versionBadge}>F-UNO 2026 · simulador de estrategia</div>
     </div>
   );
 };

@@ -127,7 +127,7 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
   return (
     <div ref={containerRef} className={styles.towerContainer}>
       <div className={styles.header}>
-        <div className={styles.f1Brand}>F1 TIMING</div>
+        <div className={styles.f1Brand}>F-UNO TIMING</div>
         <span className={styles.headerTitle}>POSICIONES</span>
       </div>
 

@@ -13,6 +13,7 @@ const detail = new Map([...markdown.matchAll(/^\* \*\*(\S+) — (.+?):\*\* `\[([
 const sprintOf = id => {
   if (/^V\d/.test(id)) return 'Sprint 3.7';
   if (/^N\d/.test(id)) return 'Sprint 5';
+  if (/^IA\d/.test(id)) return 'Sprint 6';
   if (/^G\d/.test(id)) return 'Sprint 4.5';
   if (/^T4\./.test(id)) return 'Sprint 4';
   if (/^T3\./.test(id)) return 'Sprint 3';

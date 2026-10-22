@@ -8,16 +8,37 @@ import { TopSprite, carPixelsPerMeter, carSpriteKey, carSpriteSize, getCarSprite
 import { compoundStyle } from '../utils/compounds';
 import { getTrackHalfWidth, getLateralDisplacement, isCarVisible, calculateCarWorldPosition } from '../utils/carPosition';
 import { OVERVIEW_ZOOM, renderCarLabels } from './CarLabels';
+import { CAR_SHADOW_HEIGHT, type Sun } from './lighting';
 
 export interface CarEffects {
   depthAt?: (trackT: number) => number;
   timeSec?: number;
+  /** Sol de la carrera para las sombras (21/10/2026); sin él, la sombra fija de siempre. */
+  sun?: Sun;
+}
+
+/** Sombra de un coche en pantalla: desplazamiento por píxel de largo del coche y opacidad. */
+interface CarShadow { x: number; y: number; alpha: number }
+
+function carShadow(sun: Sun | undefined, camera: Camera): CarShadow | null {
+  if (!sun) return null;
+  const cos = Math.cos(camera.rotation), sin = Math.sin(camera.rotation);
+  const wx = sun.dx * sun.length * CAR_SHADOW_HEIGHT, wy = sun.dy * sun.length * CAR_SHADOW_HEIGHT;
+  return { x: wx * cos - wy * sin, y: wx * sin + wy * cos, alpha: sun.alpha };
 }
 
 const NOTHING_ON_GPU: { cars: ReadonlySet<number>; safetyCar: boolean } = { cars: new Set<number>(), safetyCar: false };
 
 export class CarRenderer {
   static readonly BASE_CAR_LEN = 14;
+  /** Sombra del fotograma en curso (la pone `renderCars`). */
+  private static shadow: CarShadow | null = null;
+
+  /** Centro y opacidad de la sombra de un coche de `length` píxeles: con sol, según su dirección; si no, la fija de siempre. */
+  private static shadowAt(x: number, y: number, length: number, scale: number): { x: number; y: number; alpha: number } {
+    const sh = this.shadow;
+    return sh ? { x: x + sh.x * length, y: y + sh.y * length, alpha: sh.alpha } : { x: x + 2 * scale, y: y + 3 * scale, alpha: 0.45 };
+  }
   static readonly BASE_CAR_WID = 6;
   /** [G2] Ancho de la huella del coche, de rueda a rueda (m). */
   static readonly CAR_FOOTPRINT_M = 2.2;
@@ -88,9 +109,12 @@ export class CarRenderer {
     /** [R46] Datos para el detalle del coche: agua del tramo y hora de carrera (luz trasera). */
     effects: CarEffects = {},
     /** [G9] Coches (y Safety Car) cuyo cuerpo ya ha pintado la GPU: aquí solo van humo, etiquetas y rótulos. */
-    onGpu: { cars: ReadonlySet<number>; safetyCar: boolean } = NOTHING_ON_GPU
+    onGpu: { cars: ReadonlySet<number>; safetyCar: boolean } = NOTHING_ON_GPU,
+    /** Puente (21/10/2026): coches de los que se ponen las etiquetas (por defecto, los mismos que se pintan). */
+    opts: { labelCars?: CarState[] } = {}
   ) {
     const activeCars = cars.filter(isCarVisible);
+    this.shadow = carShadow(effects.sun, camera);
 
     const sorted = [...activeCars].sort((a, b) => {
       if (a.id === selectedCarId) return 1;
@@ -151,7 +175,8 @@ export class CarRenderer {
       }
     }
 
-    renderCarLabels(ctx, activeCars, camera, selectedCarId, defaultDimensions.length);
+    const labelCars = opts.labelCars ? opts.labelCars.filter(isCarVisible) : activeCars;
+    if (labelCars.length > 0) renderCarLabels(ctx, labelCars, camera, selectedCarId, defaultDimensions.length);
 
     // ── RENDERIZADO DEL SAFETY CAR FÍSICO ──
     if (safetyCar && safetyCar.isDeployed && safetyCar.mode !== 'idle' && safetyCar.mode !== 'in') {
@@ -208,10 +233,14 @@ export class CarRenderer {
     // [G9] Con el coche ya pintado por la GPU, aquí solo queda su rótulo.
     if (labelOnly) ctx.globalAlpha = 0;
 
-    // Sombra del Safety Car
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+    // Sombra del Safety Car (en el sistema del coche: se deshace su giro).
+    const sh = this.shadow;
+    const turn = -(angle + camera.rotation);
+    const sx = sh ? (sh.x * Math.cos(turn) - sh.y * Math.sin(turn)) * length : 1;
+    const sy = sh ? (sh.x * Math.sin(turn) + sh.y * Math.cos(turn)) * length : 2;
+    ctx.fillStyle = `rgba(0, 0, 0, ${(sh ? sh.alpha : 0.5).toFixed(3)})`;
     ctx.beginPath();
-    ctx.ellipse(1, 2, length * 0.54, width * 0.5, 0, 0, Math.PI * 2);
+    ctx.ellipse(sx, sy, length * 0.54, width * 0.5, 0, 0, Math.PI * 2);
     ctx.fill();
 
     if (sprite) {
@@ -292,10 +321,11 @@ export class CarRenderer {
 
     const { scale, length: carLen, width: carWid } = dimensions;
 
-    // Sombra fija en pantalla (cae siempre hacia abajo y derecha: +2px, +3px)
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+    // Sombra fija en pantalla (antes de girar el coche): hacia donde diga el sol de la carrera, o abajo a la derecha sin sol.
+    const sh = this.shadowAt(x, y, carLen, scale);
+    ctx.fillStyle = `rgba(0, 0, 0, ${sh.alpha.toFixed(3)})`;
     ctx.beginPath();
-    ctx.ellipse(x + 2 * scale, y + 3 * scale, carLen * 0.52, carWid * 0.48, angle, 0, Math.PI * 2);
+    ctx.ellipse(sh.x, sh.y, carLen * 0.52, carWid * 0.48, angle, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.translate(x, y);
@@ -450,10 +480,11 @@ export class CarRenderer {
     ctx.save();
     ctx.globalAlpha = opacity;
 
-    // Sombra fija en pantalla, como la del dibujo vectorial.
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+    // Sombra, como la del dibujo vectorial.
+    const sh = this.shadowAt(x, y, size.length, scale);
+    ctx.fillStyle = `rgba(0, 0, 0, ${sh.alpha.toFixed(3)})`;
     ctx.beginPath();
-    ctx.ellipse(x + 2 * scale, y + 3 * scale, size.length * 0.5, size.width * 0.5, angle, 0, Math.PI * 2);
+    ctx.ellipse(sh.x, sh.y, size.length * 0.5, size.width * 0.5, angle, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.translate(x, y);

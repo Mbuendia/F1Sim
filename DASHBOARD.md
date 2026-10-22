@@ -22,7 +22,7 @@
 
 ## 🧭 2. ROADMAP Y ESTADO GLOBAL DE SPRINTS
 
-**Orden vigente:** Sprint **5** · Tarea actual **N11** · Siguiente **N12** (el 20/10/2026 el usuario supera la prueba entre redes y da por buenas N8, N9 y N10; del Sprint 5 solo quedan por revisar N11 y N12, que esperan al usuario; el 19/10/2026 se entrega N9 con su contrato acordado y en verde; el 19/10/2026 se entrega N8 con su contrato acordado y en verde; el 19/10/2026 el usuario da por buena N7 tras probarla con dos ventanas, ya en dos páginas (sala y elección de equipos) y con respuesta animada al elegir equipo; antes, el 19/10/2026 se entrega N7, en la rama `sprint/5-n7` que sale de main tras fusionar N1 a N6, con su contrato acordado y en verde; antes, el 19/10/2026 se entrega N6 con su contrato acordado y en verde, tras confirmar el usuario los valores por defecto del multijugador; antes, el 19/10/2026 se entrega N5 con su contrato revisado por el usuario y ampliado con cuatro casos, en verde; antes, el 19/10/2026 se entrega N4 con sus dos módulos de tests en verde y el usuario sube las reglas al proyecto real; antes, el 19/10/2026 el usuario da por buena N3 tras probar la carrera con el motor en el Worker; N11 ya está entregada y espera su revisión; antes, ese mismo día, da por buena N2 tras probar el Worker en el navegador y pide seguir con N3 sin commit; antes, ese mismo día, da por buena N1, la prueba de viabilidad: el plan vale con los ajustes de `docs/n1-viabilidad.md`, y N2 empieza por su contrato de tests; antes: el 13/10/2026 el usuario da por válidos el Sprint 3.7 y el Sprint 4 enteros, ya fusionados en main, y deja el Sprint 5 como el siguiente; está planificado y sin empezar: cada tarea requiere su contrato de tests y autorización, y N1 necesita antes el proyecto de Firebase que crea el usuario (lista de tareas del usuario en 7.5). Antes: el 13/10/2026 el usuario da por válido todo lo pendiente de revisión y pide ejecutar seguido, en una rama nueva `sprint/3.7` que sale de main y sin fusionar nada, el Sprint 3.7 (antes «4.6»), el resto del Sprint 4 y el 4.5, asumiendo la opción recomendada en cada decisión abierta; queda todo entregado ese día: no hay tareas sin empezar. Las dos que se señalan son las que esperan una decisión suya: T4.16, las grabaciones de audio, y T4.24, el seguimiento remoto descartado. Antes: el 13/10/2026 el Sprint 4.5 se da por terminado y se fusiona en main junto con lo entregado del Sprint 4, por decisión del usuario; la rama sprint/4.5 se elimina y el trabajo sigue en sprint/4, que ya lo contiene; antes de T4.13 van, con prioridad alta, T4.21 a T4.24; antes: Sprint 4.5 terminado el 13/10/2026: las once tareas entregadas, G10 revisada por el usuario y el resto en revisión local; al fusionarlo, el orden vuelve al Sprint 4 con T4.13 y T4.5; G10 revisada por el usuario el 13/10/2026 y suite completa en verde; G1, G5, G7 y G8 entregadas y G2, G3, G4 y G6 con la geometría entregada el 13/10/2026; el 13/10/2026 se entrega G1 y la geometría de G2 a G7, con tests anteriores aún en rojo: ver «Estado al cierre» en 7.3; Sprint 4.5 planificado el 13/10/2026 a petición del usuario: sprint intermedio para rehacer la geometría de los 23 circuitos a escala real y pasar el pintado a WebGL, con orden y alcance en 7.3; ninguna tarea implementada ni con contrato de tests; el Sprint 4 queda en pausa con T4.13 como tarea actual y T4.5 como siguiente; antes: Sprint 4 planificado el 09/10/2026 a petición del usuario, «cubre todo lo posible»: 20 tareas, T4.1 a T4.20, con orden y alcance en 7.2, refinado ese día en dos entrevistas de cinco rondas, una funcional y otra de diseño visual (`docs/design/grill-sprint4-visual.md`), cuyas decisiones constan en cada ficha; T4.12, la salida en mojado, va primero por decisión del usuario y después la maqueta navegable, T4.18; ninguna está implementada ni tiene todavía contrato de tests; antes, Sprint 3 con T3.4 como tarea actual: T3.3 y T3.4, las dos últimas del Sprint 3, se entregan el 08/10/2026 con su contrato de tests y quedan en revisión; no hay más tareas con ficha. **Por indicación del usuario del 08/10/2026 no se continúa con el Sprint 4: hace falta planificarlo antes** (sección 7.1); todo el Sprint 3 está en main y su rama se ha eliminado; el punto de reanudación para una conversación nueva está al final de `AGENTS.md`; antes: el 08/10/2026, por indicación del usuario, se fusionan en main como sprints separados el Sprint 2.11 entero y lo entregado del Sprint 3, T3.1 y T3.2; T3.3 tiene el contrato de tests aprobado ese día —el agua enfría los neumáticos, intermedios y lluvia se destrozan en seco, aquaplaning según T3.1— y está sin implementar; en T3.4 el usuario pidió mejorar el spray con partículas y falta acordar su contrato; el usuario da por revisadas y aprobadas ese mismo día todas las tareas fusionadas, incluida R58, la portada sin WebGL; R47, R48, R49, R50, R55, R56, R51 y R04 entregadas y en revisión el 07/10/2026 y R52, R24, R23, R53, R54 y R57 el 08/10/2026; R55 y R56 añadidas el 07/10/2026 a petición del usuario; R57 es la corrección de maquetación del muro vista en la revisión en navegador del 08/10/2026 y añadida ese día con el visto bueno del usuario; Sprint 2.10 aprobado y fusionado en main el 03/10/2026; Sprint 2.11 planificado el mismo día en la rama sprint/2.11, orden y alcance en 6.11; cada tarea sigue requiriendo contrato de tests y autorización expresa).
+**Orden vigente:** Sprint **6** · Tarea actual **IA1** · Siguiente **IA2** (el 22/10/2026 el usuario da por buena la planificación de la radio del muro con IA y pide dejarla lista para implementar: Sprint 6 en la sección 7.7, sin contratos de tests todavía; N11 y N12 siguen en revisión a la espera del usuario; antes: el 20/10/2026 el usuario supera la prueba entre redes y da por buenas N8, N9 y N10; del Sprint 5 solo quedan por revisar N11 y N12, que esperan al usuario; el 19/10/2026 se entrega N9 con su contrato acordado y en verde; el 19/10/2026 se entrega N8 con su contrato acordado y en verde; el 19/10/2026 el usuario da por buena N7 tras probarla con dos ventanas, ya en dos páginas (sala y elección de equipos) y con respuesta animada al elegir equipo; antes, el 19/10/2026 se entrega N7, en la rama `sprint/5-n7` que sale de main tras fusionar N1 a N6, con su contrato acordado y en verde; antes, el 19/10/2026 se entrega N6 con su contrato acordado y en verde, tras confirmar el usuario los valores por defecto del multijugador; antes, el 19/10/2026 se entrega N5 con su contrato revisado por el usuario y ampliado con cuatro casos, en verde; antes, el 19/10/2026 se entrega N4 con sus dos módulos de tests en verde y el usuario sube las reglas al proyecto real; antes, el 19/10/2026 el usuario da por buena N3 tras probar la carrera con el motor en el Worker; N11 ya está entregada y espera su revisión; antes, ese mismo día, da por buena N2 tras probar el Worker en el navegador y pide seguir con N3 sin commit; antes, ese mismo día, da por buena N1, la prueba de viabilidad: el plan vale con los ajustes de `docs/n1-viabilidad.md`, y N2 empieza por su contrato de tests; antes: el 13/10/2026 el usuario da por válidos el Sprint 3.7 y el Sprint 4 enteros, ya fusionados en main, y deja el Sprint 5 como el siguiente; está planificado y sin empezar: cada tarea requiere su contrato de tests y autorización, y N1 necesita antes el proyecto de Firebase que crea el usuario (lista de tareas del usuario en 7.5). Antes: el 13/10/2026 el usuario da por válido todo lo pendiente de revisión y pide ejecutar seguido, en una rama nueva `sprint/3.7` que sale de main y sin fusionar nada, el Sprint 3.7 (antes «4.6»), el resto del Sprint 4 y el 4.5, asumiendo la opción recomendada en cada decisión abierta; queda todo entregado ese día: no hay tareas sin empezar. Las dos que se señalan son las que esperan una decisión suya: T4.16, las grabaciones de audio, y T4.24, el seguimiento remoto descartado. Antes: el 13/10/2026 el Sprint 4.5 se da por terminado y se fusiona en main junto con lo entregado del Sprint 4, por decisión del usuario; la rama sprint/4.5 se elimina y el trabajo sigue en sprint/4, que ya lo contiene; antes de T4.13 van, con prioridad alta, T4.21 a T4.24; antes: Sprint 4.5 terminado el 13/10/2026: las once tareas entregadas, G10 revisada por el usuario y el resto en revisión local; al fusionarlo, el orden vuelve al Sprint 4 con T4.13 y T4.5; G10 revisada por el usuario el 13/10/2026 y suite completa en verde; G1, G5, G7 y G8 entregadas y G2, G3, G4 y G6 con la geometría entregada el 13/10/2026; el 13/10/2026 se entrega G1 y la geometría de G2 a G7, con tests anteriores aún en rojo: ver «Estado al cierre» en 7.3; Sprint 4.5 planificado el 13/10/2026 a petición del usuario: sprint intermedio para rehacer la geometría de los 23 circuitos a escala real y pasar el pintado a WebGL, con orden y alcance en 7.3; ninguna tarea implementada ni con contrato de tests; el Sprint 4 queda en pausa con T4.13 como tarea actual y T4.5 como siguiente; antes: Sprint 4 planificado el 09/10/2026 a petición del usuario, «cubre todo lo posible»: 20 tareas, T4.1 a T4.20, con orden y alcance en 7.2, refinado ese día en dos entrevistas de cinco rondas, una funcional y otra de diseño visual (`docs/design/grill-sprint4-visual.md`), cuyas decisiones constan en cada ficha; T4.12, la salida en mojado, va primero por decisión del usuario y después la maqueta navegable, T4.18; ninguna está implementada ni tiene todavía contrato de tests; antes, Sprint 3 con T3.4 como tarea actual: T3.3 y T3.4, las dos últimas del Sprint 3, se entregan el 08/10/2026 con su contrato de tests y quedan en revisión; no hay más tareas con ficha. **Por indicación del usuario del 08/10/2026 no se continúa con el Sprint 4: hace falta planificarlo antes** (sección 7.1); todo el Sprint 3 está en main y su rama se ha eliminado; el punto de reanudación para una conversación nueva está al final de `AGENTS.md`; antes: el 08/10/2026, por indicación del usuario, se fusionan en main como sprints separados el Sprint 2.11 entero y lo entregado del Sprint 3, T3.1 y T3.2; T3.3 tiene el contrato de tests aprobado ese día —el agua enfría los neumáticos, intermedios y lluvia se destrozan en seco, aquaplaning según T3.1— y está sin implementar; en T3.4 el usuario pidió mejorar el spray con partículas y falta acordar su contrato; el usuario da por revisadas y aprobadas ese mismo día todas las tareas fusionadas, incluida R58, la portada sin WebGL; R47, R48, R49, R50, R55, R56, R51 y R04 entregadas y en revisión el 07/10/2026 y R52, R24, R23, R53, R54 y R57 el 08/10/2026; R55 y R56 añadidas el 07/10/2026 a petición del usuario; R57 es la corrección de maquetación del muro vista en la revisión en navegador del 08/10/2026 y añadida ese día con el visto bueno del usuario; Sprint 2.10 aprobado y fusionado en main el 03/10/2026; Sprint 2.11 planificado el mismo día en la rama sprint/2.11, orden y alcance en 6.11; cada tarea sigue requiriendo contrato de tests y autorización expresa).
 
 **Prioridad acordada tras la auditoría (30/09/2026, `docs/reviews/auditoria-q12-q19.md`):** Q19 → Q16 → Q13 → Q17 → Q12 → Q18/Q14/Q15. Decisiones del usuario: detecciones DRS desde las notas oficiales FIA; el Safety Car debe salir del pit lane (Q14); tests estructurales sin dependencias nuevas para Q18; tolerancias de calibración Q12 propuestas.
 
@@ -58,6 +58,7 @@ Leyenda de Estado:
 | **Sprint 4.5** | **Circuitos a escala real y pintado en WebGL: banco de medidas y página de revisión, un metro por unidad, eje suave, bordes sin pliegues, trazada fluida, boxes fuera de la pista, meta y parrilla, pista y coches en WebGL y repaso de los 23 circuitos (G1-G10)** | ✅ **COMPLETADO — entregado y fusionado en main el 13/10/2026; las once tareas (G1 a G11) dadas por válidas por el usuario ese día. No queda trabajo abierto: las mejoras opcionales (circuitos en 3D con relieve, apilar los lienzos WebGL) no tienen ficha** |
 | **Sprint 3.7** | **Rediseño visual y adaptación a móvil y tableta: base visual, carrera en móvil y tableta, muro sin desplegables y de altura estable, estrategia en imagen, paddock y centro de gestión adaptables, accesibilidad, clasificación en directo, simular un Gran Premio, espía de setups y recogida del Safety Car (V1-V10)** | ✅ **COMPLETADO — entregado el 13/10/2026, fusionado en main (PR 16) y dado por válido por el usuario ese día (V1 a V10)** |
 | **Sprint 5** | **Carrera compartida y nueva casa del juego: el escritorio como servidor por WebRTC (motor en un Web Worker, foto ligera del estado, almacenes con Zustand, salas y respaldo en Firebase Realtime Database, equipos con dueño, pantallas de sala y carrera en modo cliente), el juego desplegado en Firebase Hosting y GitHub Pages como landing de presentación con vídeo ligado al scroll (N1-N12)** | 🟡 **SIGUIENTE — planificado el 13/10/2026; ninguna tarea implementada ni con contrato de tests. La liga queda fuera** |
+| **Sprint 6** | **Radio del muro con IA: órdenes por radio con tus palabras, intérprete por palabras clave siempre disponible, respuestas y voz de los pilotos con filtro de radio, obediencia según carácter, modelo pequeño en el navegador con WebLLM descargado a petición, voces Piper y micro, y modelo ajustado a la radio del juego (IA1-IA7)** | 🟡 **SIGUIENTE — planificado el 22/10/2026; ninguna tarea implementada ni con contrato de tests. Jugar sin internet (PWA) queda en 7.6** |
 
 ---
 
@@ -1965,6 +1966,245 @@ Lo que el usuario dejó aparcado el 13/10/2026, con las opciones que se le prese
 - **Secreto `FIREBASE_PROJECT_ID` de GitHub:** no se usa (el identificador va escrito en el repositorio); se puede borrar.
 - **Cuentas de servicio sobrantes:** el primer intento fallido del asistente de Firebase pudo dejar una cuenta `github-action-...` sin usar; se borra desde la consola de Google Cloud, «IAM y administración» → «Cuentas de servicio».
 - **Revisión pendiente:** N11 y N12 siguen «en revisión local» hasta que el usuario las dé por válidas.
+
+**Jugar sin internet (anotado el 22/10/2026 al planificar el Sprint 6).** Hoy el juego no abre sin conexión: no tiene service worker. Convertirlo en PWA (guardar el juego y la librería de IA en el navegador, e instalarlo en la pantalla de inicio, lo que además evita que Safari borre el modelo a los 7 días) afecta a todo el juego. El usuario decide dejarlo para después del Sprint 6.
+
+### 7.7 Sprint 6 — Radio del muro con IA (planificado el 22/10/2026)
+
+**Origen:** el 22/10/2026 el usuario pide planificar voces para los pilotos con un modelo de IA ligero: el jugador hace de ingeniero de pista, da órdenes por radio con sus palabras y los pilotos las interpretan y contestan. Se valoró recortar un modelo gratuito tipo DeepSeek y se descartó: sus modelos útiles son enormes y sus versiones pequeñas razonan en voz alta (lentas y verbosas). Lo viable es especializar un modelo pequeño abierto. El plan y su refinamiento (carga, almacenamiento, sin internet) se acordaron ese día y el usuario dio por buenas las cuatro decisiones recomendadas. **Estado: planificado. Ninguna tarea está implementada; cada ficha trae su contrato de tests propuesto, que el usuario puede aprobar de una vez (ver «Modo de trabajo del sprint»).**
+
+**Principio que no se negocia:** la IA solo traduce la frase del jugador a una orden que el juego ya tiene (ritmo, boxes con compuesto, órdenes de equipo, propuestas, delegar) y redacta la respuesta del piloto. **Nunca decide nada de la carrera**: la orden pasa por el `send()` de siempre con su acuse y el motor resuelve con su semilla. Así el multijugador y los tests siguen siendo deterministas. La orden se aplica antes de que el piloto conteste; la IA solo retrasa la voz.
+
+**Decisiones del usuario (22/10/2026):**
+
+| Tema | Decisión |
+|---|---|
+| Dónde corre | En el navegador de cada jugador, sin servidor ni API de pago. Una API en la nube obligaría a esconder la clave tras un servidor (Firebase Functions exige plan de pago). |
+| Motor de IA | **Solo WebLLM con WebGPU**, en un worker propio (distinto de `engine.worker`), con salida JSON forzada al catálogo de órdenes. Sin WebGPU o si falla: radio básica. Descartado ejecutar la IA en el procesador (Transformers.js/WASM): lento y sin JSON forzado. |
+| Respaldo | La **radio básica** (intérprete por palabras clave y plantillas) existe siempre y no descarga nada. Ante una frase ambigua o una orden inválida, el piloto pide repetir; nunca se aplica una orden dudosa. |
+| Modelo | Pequeño y abierto (Gemma 3 270M o Qwen2.5 0.5B, comprimido, 200–400 MB); el definitivo, ajustado con LoRA a la radio del juego (IA7). Revisar la licencia del elegido. |
+| Alojamiento del modelo | **Hugging Face** con la revisión fijada (commit). Descartados GitHub Pages (1 GB por sitio, 100 MB por archivo, ~100 GB/mes) y Firebase Hosting gratis (~360 MB/día). |
+| Móvil | IA **apagada por defecto**; se ofrece solo si el dispositivo pasa la comprobación. |
+| Jugar sin internet (PWA) | **Fuera de este sprint**, aparcado en 7.6: afecta a todo el juego, no solo a la radio. |
+
+**Presupuesto de descarga (aproximado, se mide en cada tarea):** radio básica 0 MB; librería WebLLM 5–10 MB; modelo 200–400 MB; voz Piper es_ES 20–60 MB por voz (1–2 voces base con tono y velocidad por piloto); Whisper tiny ~40 MB. El juego pesa hoy unos 3 MB de JavaScript: nada de esto se descarga sin que el jugador lo pida.
+
+**Dónde se guarda:** en el almacenamiento del navegador del sitio (Cache API de WebLLM), descargado por trozos. Se pide `navigator.storage.persist()` tras descargar, se muestra el espacio con `navigator.storage.estimate()` y hay botón para borrarlo. Safari borra los datos de un sitio tras 7 días sin visitarlo salvo instalado en la pantalla de inicio; en incógnito no se ofrece la IA.
+
+**Sin internet:** con el modelo descargado y el juego abierto, la radio con IA sigue funcionando entera (modelo, Piper y Whisper son locales). Una descarga cortada continúa desde el último trozo completo. Sin modelo, radio básica sin errores. El micro con Web Speech necesita internet (el audio va a Google): sin red pasa a Whisper local o a escribir. En multijugador, si se cae la red la orden espera al acuse del anfitrión y el piloto dice que no recibe bien. **Hoy el juego no abre sin internet** (no tiene service worker); eso queda en 7.6.
+
+**Carga del juego:** abrir el juego no carga nada de IA. Al entrar en «Correr» con la IA activada, el modelo se lee del disco, se sube a la tarjeta gráfica y se calienta en segundo plano (3–10 s la primera vez, 2–5 s después) mientras dura la parrilla; al salir de la carrera se libera. Riesgos: la tarjeta gráfica se comparte con el 3D (three.js), la pestaña gana 0,5–1 GB de memoria y el driver gráfico puede reiniciarse; se mitigan con respuestas cortas (≤ 40 tokens), una generación a la vez, medición de FPS y vuelta a la radio básica.
+
+**Fuera de este sprint:** jugar sin internet (PWA); IA en el procesador; API en la nube; que los rivales oigan tu radio; chat de voz entre jugadores.
+
+**Requisitos del usuario:** antes de IA7, una cuenta de Google para Colab (o Kaggle) y una de Hugging Face donde publicar el modelo ajustado; instalar dependencias y probar en dispositivos reales le corresponde a él, con los pasos listos para ejecutar.
+
+**Cómo se sabrá que está hecho:** en una carrera, el jugador escribe o dice «Carlos, deja pasar a Fer», la orden se aplica en el acto y el piloto contesta con su carácter y voz de radio en 1–3 s; con la red cortada sigue funcionando; en un navegador sin WebGPU funciona la radio básica; la pista mantiene su fluidez mientras el piloto habla.
+
+#### Modo de trabajo del sprint (para no pedir órdenes tarea a tarea)
+
+* **Una sola aprobación:** las reglas de AGENTS.md siguen: no se implementa sin contrato de tests acordado. Para no ir tarea a tarea, el usuario puede aprobar de una vez los contratos propuestos en cada ficha (por ejemplo, «apruebo los contratos del Sprint 6»). Con esa aprobación el agente, en el orden propuesto: escribe el módulo de tests de la tarea, comprueba que falla por la causa esperada, implementa hasta verde, ejecuta los módulos relacionados que indica la ficha, hace la revisión en navegador y deja la tarea `EN REVISIÓN LOCAL` con su nota de entrega antes de pasar a la siguiente.
+* **Solo se detiene en:** (1) un paso del usuario (lista al final de esta sección); (2) un test acordado que resulte defectuoso o un requisito que cambie (regla 2: explicar el caso y pedir autorización); (3) una decisión no prevista en las fichas que cambie lo que ve el jugador; (4) el commit y el push, que siguen requiriendo su orden.
+* **Lo no previsto se resuelve** con la opción más conservadora que respete el principio de esta sección (la IA no decide la carrera, todo se degrada a la radio básica) y se anota en la nota de entrega.
+* **Ramas:** se trabaja en `sprint/6`, que sale de main cuando el usuario lo indique; hasta entonces, en la rama activa sin mezclar archivos de otras sesiones (se añade cada archivo por su nombre).
+* **Validación por tarea:** el módulo propio, más los que lista cada ficha, más `tsc -b`. La suite completa solo al cerrar el sprint.
+
+#### Organización del código y datos comunes
+
+* `src/radio/` es la carpeta nueva y no la importa nada del motor (`src/simulation/` y `src/engine/` no conocen la radio, salvo IA3).
+  * `types.ts`: `RadioIntent`, `RadioParse`, `RadioInterpreter` (`interpret(texto, contexto) → Promise<RadioParse>`) y `RadioContext` (coches del jugador, coche seleccionado, compañeros, compuestos disponibles, propuestas pendientes, órdenes disponibles, vuelta y hora de carrera).
+  * `catalog.ts`: catálogo de intenciones con `CATALOG_VERSION = 1`. `mapper.ts`: la única función que convierte una intención en `EngineOrder` (la usan el intérprete por palabras clave y la IA, así la validación vive en un sitio).
+  * `keywordInterpreter.ts` (IA1), `replies/` (IA2), `voice/` y `stt/` (IA2 e IA6), `model/` (IA4), `llm/` (IA5).
+* `src/data/driverRadio.ts`: ficha de radio de los 20 pilotos (y de los del mercado, con valor por defecto): `temperament` (`'frio' | 'competitivo' | 'quejica' | 'bromista'`), `obedience` (0–1), `nicknames` (formas de llamarlo: nombre, apellido de parodia, código, número y apodos) y `voice` (`pitch` 0,9–1,1, `rate` 0,95–1,1). Valores iniciales propuestos por el agente a partir de `raceCraft`, `consistency` y la agresividad del coche; nunca nombres reales.
+* `src/state/radioStore.ts` (Zustand, como los almacenes de N3): modo (`'basica' | 'ia'`), estado de la IA (`'apagada' | 'descargando' | 'conectando' | 'lista' | 'basica'` con motivo), conversación por coche (últimos 20 mensajes con autor, texto, vuelta y hora) y cola de voz.
+* `src/components/RadioPanel.tsx` (+ `.module.css`): panel del muro y `RadioSettings.tsx` en el menú donde ya está el volumen (`RaceMenu`).
+* Preferencias en `localStorage` como el audio (`f1_radio_mode`, `f1_radio_voice`), leídas con try/catch.
+* Tests nuevos en `tests/modules/` dados de alta en `tests/catalog.mjs` con `"sprint": "6"` y la tarea. Frases de prueba compartidas en `tests/fixtures/radio-phrases.json` (`{ texto, contexto, esperado }`), que también usa la evaluación de IA5.
+* Multijugador: el invitado interpreta en su dispositivo y solo para los coches que son suyos (N6). Por la red viaja la `EngineOrder` de siempre; los textos de radio no salen del dispositivo.
+
+#### Bloque A — Radio básica
+
+* **IA1 — Catálogo de órdenes de radio e intérprete por palabras clave:** `[ ] PENDIENTE — PLANIFICADA 22/10/2026; CONTRATO DE TESTS PROPUESTO, SIN APROBAR`
+  * *Prioridad/dependencias:* P0; ninguna. Reutiliza `EngineOrder` (`src/engine/EngineHost.ts`), las órdenes de equipo de T4.14 y las propuestas de R54.
+  * *Archivos:* nuevos `src/radio/{types,catalog,mapper,normalize,keywordInterpreter}.ts`, `src/data/driverRadio.ts`, `src/state/radioStore.ts`, `src/components/RadioPanel.tsx` y su CSS, `tests/fixtures/radio-phrases.json`, `tests/modules/radio-ia1.mjs`; se tocan `BoxControls.tsx` (botón «Radio»), `App.tsx` (pasarle `send`), `tests/catalog.mjs`.
+  * *Catálogo (intención → orden del motor):*
+    | Intención | Palabras de ejemplo (sin tildes, en minúsculas) | Orden |
+    |---|---|---|
+    | `boxes` | box, entra, para, a boxes, esta vuelta | `box` con el compuesto dicho |
+    | `anular-boxes` | no entres, cancela, quedate fuera, aborta | `cancelBox` |
+    | `ritmo` | ataca, aprieta, a tope, push → `push`; normal, ritmo, estandar → `balanced`; ahorra, cuida, gestiona, levanta → `save` | `pace` |
+    | `orden-equipo` | deja pasar, cambio de posiciones, swap → `dejar-pasar`; mantened, manten posicion, no os peleeis → `mantener`; libres, podeis pelear → `libre` | `teamOrder` |
+    | `propuesta` | de acuerdo, hazlo, acepto → aceptar; no, descartala → descartar (la última propuesta pendiente de ese coche) | `acceptProposal` / `discardProposal` |
+    | `delegar` | decide tu, en manos del estratega → `true`; yo decido, lo llevo yo → `false` | `delegate` |
+    Compuestos: blando, rojo, soft; medio, amarillo; duro, blanco; intermedio, verde; lluvia, extremo, wet, azul.
+  * *Decisiones tomadas:*
+    * **Normalización:** minúsculas, sin tildes ni signos, números en letra a cifra, y errores de una letra en nombres y compuestos (distancia de edición 1 en palabras de 5 o más letras).
+    * **Destinatario:** el piloto nombrado (cualquier `nickname`). «Los dos», «chicos» o «ambos» se refieren a los dos coches, solo en ritmo. Si no se nombra a nadie, el coche seleccionado en el muro. Un piloto que no es tuyo responde `no-es-tuyo`.
+    * **Negación:** «no» delante del verbo invierte boxes (→ anular) y deja ambiguas las demás.
+    * **Boxes sin compuesto:** usa el de la propuesta de parada pendiente; si no hay, responde `sin-compuesto` («¿qué goma?») sin aplicar nada.
+    * **Una orden por mensaje.** Dos intenciones distintas responden `ambigua`. Excepción: «box, duros» o «entra y pon medios» son una sola.
+    * **Dejar pasar** solo en el coche que va delante. «Deja pasar a X» dicho al de detrás también vale: el favorecido es X.
+    * **Validación:** contra el contexto (órdenes disponibles, compuestos en inventario, coche en carrera y no comprometido en boxes); si no vale, `no-disponible` con su motivo. Después, el motor valida con su acuse; un rechazo del motor llega como `rechazada` con el motivo del motor.
+    * **Orden antes que respuesta:** la orden se envía al interpretar, no al responder.
+    * **Panel:** botón «Radio» en el muro de cada coche, panel plegable con la conversación (últimos 6 mensajes visibles), campo de texto y envío con Intro. La tecla R enfoca el campo si no se está escribiendo en otro. En móvil, el mismo panel a ancho completo. Mientras no exista IA2, el piloto responde con un acuse neutro.
+  * *Aceptación:* las frases del contrato producen la orden esperada; ninguna frase ambigua aplica nada; anfitrión e invitado usan el mismo camino; el panel no cambia la altura del muro (regla de V3).
+  * *Contrato de tests propuesto (`radio-ia1`):*
+    1. Las 120 frases de `radio-phrases.json` marcadas para IA1 (20 por intención, con variantes, errores de una letra y apodos) dan la intención, el coche y la orden esperados.
+    2. Sin destinatario se usa el coche seleccionado; «los dos» genera una orden de ritmo por coche; un piloto rival → `no-es-tuyo`.
+    3. «No entres» → `cancelBox`; «no ataques» → `ambigua`.
+    4. Boxes sin compuesto con propuesta pendiente usa su compuesto; sin propuesta → `sin-compuesto` y ninguna orden.
+    5. Dos intenciones → `ambigua`; «box, duros» → una orden.
+    6. Compuesto sin juegos, coche retirado o boxes ya comprometidos → `no-disponible` con motivo y ninguna orden.
+    7. `mapper` produce exactamente las formas de `EngineOrder` y rechaza cualquier intención fuera del catálogo.
+    8. El panel envía por el `send` recibido (espía) antes de añadir la respuesta, y un rechazo del acuse se muestra como `rechazada`.
+    9. `src/radio/` no importa `RaceSimulation` ni nada de `src/simulation/`.
+  * *Módulos relacionados a ejecutar:* `box-orders`, `box-ui`, `team-orders-t414`, `engine-host-n2`, `race-session-n3`, `client-race-n8`.
+  * *Revisión en navegador:* carrera libre; dar por radio una parada, un cambio de ritmo y un «deja pasar», y comprobar que el muro refleja cada orden; panel en escritorio y a 375 px.
+
+* **IA2 — Respuestas de los pilotos y voz:** `[ ] PENDIENTE — PLANIFICADA 22/10/2026; CONTRATO DE TESTS PROPUESTO, SIN APROBAR`
+  * *Prioridad/dependencias:* P0; IA1. Reutiliza el motor de audio de T4.16 (`src/audio/AudioEngine.ts`, sonido `radio`) y los avisos de equipo (`teamOrderNotices`).
+  * *Archivos:* nuevos `src/radio/replies/{templates,chooser,driverCalls}.ts`, `src/radio/voice/{systemVoice,voiceQueue}.ts`, `tests/modules/radio-replies-ia2.mjs`; se tocan `RadioPanel.tsx`, `radioStore.ts`, `App.tsx` (sucesos para las llamadas).
+  * *Decisiones tomadas:*
+    * **Plantillas:** por temperamento × resultado (`ok` por tipo de orden, `protesta`, `repetir`, `sin-compuesto`, `no-disponible`, `no-es-tuyo`, `rechazada`, `sin-senal`), con al menos 3 variantes cada una y huecos `{compuesto}`, `{companero}`, `{vuelta}`. Sin repetir la misma variante dos veces seguidas por piloto. El azar se inyecta (en tests, con semilla); no usa el azar del motor.
+    * **Llamadas del piloto:** desgaste ≥ 70 % (una vez por juego de gomas), pinchazo o goma destrozada (siempre), empieza a llover o deja de llover en su posición, Safety Car o VSC, orden de equipo cumplida (del aviso existente) y adelantamiento hecho o sufrido (como mucho una vez cada 2 vueltas). Máximo una llamada por coche cada 30 s de carrera, salvo el pinchazo.
+    * **Caducidad:** cada respuesta guarda la hora de carrera de la petición. Si al ir a decirla han pasado más de 8 s de carrera, o el coche se ha retirado, se escribe pero no se dice.
+    * **Voz del sistema (Web Speech):** se prefiere la voz `es-ES` y, si no hay, cualquier `es-*`. `pitch` y `rate` según la ficha del piloto. Cola de una voz a la vez, con prioridad para el pinchazo.
+    * **Efecto de radio:** la voz del sistema no se puede pasar por WebAudio (el navegador no lo permite), así que en IA2 el efecto es el sonido `radio` antes y después de cada frase. El filtro de verdad llega con Piper en IA6.
+    * **Volumen:** sigue el nivel de audio; con «Sonido apagado» solo texto. Sin voces en el sistema, solo texto y sin errores.
+    * **Sin señal:** si el acuse no llega en 3 s (invitado sin red), el piloto dice «no te recibo bien» y la orden queda pendiente de su acuse.
+  * *Aceptación:* cada resultado de IA1 tiene respuesta escrita y, con sonido, hablada; las llamadas suenan con su límite; las caducadas no suenan; sin red se usan voces locales.
+  * *Contrato de tests propuesto (`radio-replies-ia2`):*
+    1. Cada temperamento × resultado tiene al menos 3 variantes, sin huecos sin rellenar.
+    2. Con semilla fija, la elección es reproducible y nunca repite la misma variante seguida para un piloto.
+    3. Cada suceso genera su llamada una vez; el límite de 30 s se cumple y el pinchazo se lo salta.
+    4. Respuesta de más de 8 s de carrera o de coche retirado: se escribe y no se encola en la voz.
+    5. Con nivel 0 o sin voces (síntesis simulada), nada se dice y no hay excepciones.
+    6. Elección de voz `es-ES` > `es-*` > ninguna, y `pitch` y `rate` de la ficha.
+    7. Sin acuse en 3 s → `sin-senal`; el acuse posterior cambia el estado de la orden en el panel.
+    8. Ninguna plantilla contiene apellidos reales de pilotos (lista en el test, igual que `parody-names`).
+  * *Módulos relacionados a ejecutar:* `radio-ia1`, `audio-t416`, `team-orders-t414`, `parody-names`.
+  * *Revisión en navegador:* una carrera con lluvia y una parada; escuchar acuses y llamadas, y comprobar que a x16 no se acumulan voces viejas.
+
+* **IA3 — Obediencia del piloto según su carácter:** `[ ] PENDIENTE — PLANIFICADA 22/10/2026; CONTRATO DE TESTS PROPUESTO, SIN APROBAR`
+  * *Prioridad/dependencias:* P1; IA1 e IA2. **Toca el motor:** `RaceSimulation.setTeamOrder` y `updateTeamOrders`, y el acuse de `EngineHost`.
+  * *Archivos:* nuevo `src/simulation/TeamRadio.ts` (decisión pura, sin React), `tests/modules/team-obedience-ia3.mjs`; se tocan `RaceSimulation.ts`, `EngineHost.ts` (el acuse y la vista privada llevan el desenlace), `RaceView.ts`, `replies/templates.ts` y `src/data/driverRadio.ts` (lo lee el motor).
+  * *Decisiones tomadas:*
+    * **Solo órdenes del jugador** `dejar-pasar` y `mantener`, y solo para el piloto perjudicado (el que cede o el que no puede atacar). Boxes, ritmo, propuestas y delegar se obedecen siempre. Las órdenes automáticas de la IA de los rivales no cambian.
+    * **Desenlaces y probabilidad base según `obedience`:** `obedece` (como hoy); `tarde` (la orden empieza a contar 1–2 vueltas después); `protesta` (cumple como hoy pero responde protestando); `desobedece` (la orden no se aplica y queda `libre`). Con `obedience` 1: 90/5/5/0 %. Con 0,5: 60/15/15/10 %. Con 0: 35/20/20/25 %. Interpolación lineal entre esos puntos.
+    * **Situación:** en las 3 últimas vueltas, o si el perjudicado perdería un puesto de puntos, la probabilidad de desobedecer se multiplica por 1,5 (máximo 40 %).
+    * **Insistir:** repetir la misma orden en las 2 vueltas siguientes a una desobediencia la cumple siempre, con respuesta de mala gana. Solo una desobediencia por piloto y carrera.
+    * **Azar:** flujo propio con `streamSeed` (`'team-radio'`), para no alterar el resto de tiradas de la carrera.
+    * **Desenlace visible:** el acuse de la orden lleva `compliance`, la vista privada del equipo lo refleja y la respuesta de IA2 usa la plantilla que toca. En multijugador decide el motor del anfitrión.
+  * *Aceptación:* misma semilla y mismas órdenes, mismo desenlace; la conducta en pista coincide con la respuesta; ninguna otra tirada de la carrera cambia por haber dado la orden.
+  * *Contrato de tests propuesto (`team-obedience-ia3`):*
+    1. Tabla de probabilidades en `obedience` 0, 0,5 y 1 (frecuencias sobre 10.000 tiradas con semilla, ±2 %).
+    2. Recargo en las 3 últimas vueltas y en un puesto de puntos, con el tope del 40 %.
+    3. Determinismo: dos carreras con la misma semilla y órdenes dan el mismo desenlace y el mismo resultado final.
+    4. Aislamiento: dar una orden no cambia las tiradas de incidentes ni de clima respecto a la misma carrera sin radio.
+    5. Efecto en pista: `tarde` no intercambia antes de su vuelta; `desobedece` deja la orden en `libre`; insistir la cumple.
+    6. Boxes y ritmo nunca desobedecen; las órdenes automáticas de los rivales siguen como en `team-orders-t414`.
+    7. El acuse y la vista privada llevan `compliance`, y la vista de otro equipo no.
+  * *Módulos relacionados a ejecutar:* `team-orders-t414`, `engine-host-n2`, `race-session-n3`, `light-views-n10`, `radio-replies-ia2`.
+  * *Revisión en navegador:* forzar con la semilla de la página de revisión una desobediencia y una insistencia, y verlas en pista.
+
+#### Bloque B — IA en el navegador
+
+* **IA4 — Ajustes de la radio y gestión del modelo:** `[ ] PENDIENTE — PLANIFICADA 22/10/2026; CONTRATO DE TESTS PROPUESTO, SIN APROBAR`
+  * *Prioridad/dependencias:* P0; IA1. No añade dependencias: la descarga real con WebLLM se conecta en IA5 a través de la interfaz `ModelStore`.
+  * *Archivos:* nuevos `src/radio/model/{deviceCheck,ModelStore,manifest,storage}.ts`, `src/components/RadioSettings.tsx` y su CSS, `tests/modules/radio-model-ia4.mjs`; se tocan `RaceMenu.tsx` y `radioStore.ts`.
+  * *Decisiones tomadas:*
+    * **Interfaz `ModelStore`:** `has()`, `download(onProgress, signal)`, `remove()`, `bytesOnDisk()`. En IA4 hay una implementación falsa para tests y la página de revisión.
+    * **`manifest.ts`:** `modelId`, `revision` (commit), `bytes`, `catalogVersion` y la URL de Hugging Face.
+    * **Clasificación del dispositivo (`deviceCheck`):** `completo` si hay `navigator.gpu` con adaptador, `maxBufferSize` ≥ 256 MB y `maxStorageBufferBindingSize` ≥ 128 MB, no es móvil y la cuota del sitio ≥ 1 GB. `movil` si cumple pero es móvil (se ofrece con aviso de memoria y batería). `no-apto` en otro caso, con motivo: «Tu navegador no permite IA local (sin WebGPU)», «Tu tarjeta gráfica no tiene memoria suficiente», «Ventana privada o poco espacio: no se puede guardar el modelo». La prueba corta de velocidad (≥ 15 tokens/s) se añade en IA5.
+    * **Ajustes en el menú de la carrera, junto al volumen:** «Radio básica — sin descargas» o «Radio con IA — ≈ N MB», más «Voz de los pilotos» (sistema; Piper en IA6). Elegir IA sin modelo abre la descarga: tamaño, aviso si `navigator.connection.saveData`, botón «Descargar», barra con MB y porcentaje, «Cancelar». Al terminar se pide `persist()`. Con modelo: espacio usado y «Borrar modelo (libera N MB)».
+    * **Espacio:** antes de descargar se comprueba que `estimate()` deje libre el tamaño del modelo más un 20 %; si no, se avisa de cuánto falta. Un error de cuota a mitad cancela y deja la radio básica.
+    * **Corte:** cancelar o cortarse la red conserva lo descargado; volver a pulsar continúa.
+    * **Modelo borrado por el navegador:** al entrar en carrera se comprueba `has()`; si falta, radio básica y el ajuste ofrece descargar otra vez.
+    * **Página de revisión** `?revision=radio` (como `?revision=puente`) con la tienda falsa en todos sus estados.
+  * *Aceptación:* nada se descarga sin pulsar; cortar y reanudar continúa; con disco lleno se avisa y sigue la básica; borrar libera lo indicado; en un navegador sin WebGPU el motivo se lee claro.
+  * *Contrato de tests propuesto (`radio-model-ia4`):*
+    1. Clasificación con adaptadores, cuotas y agentes simulados: `completo`, `movil`, `no-apto` con cada motivo.
+    2. Máquina de estados de la descarga (`inactiva → descargando → completa`, `cancelada`, `error-cuota`, `error-red`, reanudar desde el porcentaje anterior) con la tienda falsa.
+    3. Sin espacio suficiente no empieza y el mensaje dice cuántos MB faltan.
+    4. `persist()` solo tras una descarga completa; `remove()` deja `has()` en falso y `bytesOnDisk()` en 0.
+    5. Modo `ia` sin modelo al entrar en carrera → estado `basica` con motivo y oferta de descarga.
+    6. La preferencia se guarda y se lee de `localStorage` y sobrevive a un `localStorage` que lanza excepción.
+    7. Ningún archivo de `src/radio/model/` se importa al arrancar el juego (solo desde Ajustes o la carrera).
+  * *Módulos relacionados a ejecutar:* `radio-ia1`, `audio-t416`, `viewport-movil`.
+  * *Revisión en navegador:* `?revision=radio` en escritorio y a 375 px, con todos los estados.
+
+* **IA5 — Modelo de IA en el navegador con WebLLM:** `[ ] PENDIENTE — PLANIFICADA 22/10/2026; CONTRATO DE TESTS PROPUESTO, SIN APROBAR`
+  * *Prioridad/dependencias:* P0; IA1, IA2 e IA4. Dependencia nueva `@mlc-ai/web-llm` (la última versión estable con al menos dos semanas, fijada en `package.json`).
+  * *Archivos:* nuevos `src/radio/llm/{radio.worker,LlmEngine,LlmInterpreter,prompt,schema,replyFilter}.ts`, `src/radio/model/webllmStore.ts` (`ModelStore` real), `src/dev/RadioEval.tsx` (`?revision=radio-eval`), `tests/modules/radio-llm-ia5.mjs`; se tocan `radioStore.ts`, `RaceCanvas.tsx` o la sesión de carrera (cargar al entrar y liberar al salir), `manifest.ts` y `main.tsx` (ruta de revisión).
+  * *Decisiones tomadas:*
+    * **Modelo inicial:** `Qwen2.5-0.5B-Instruct-q4f16_1-MLC`, de la lista oficial de WebLLM, que no necesita compilar nada. Si no llega al 95 % se prueban, en este orden, `Qwen2.5-1.5B-Instruct-q4f16_1-MLC` y `Llama-3.2-1B-Instruct-q4f16_1-MLC` (comprobar los identificadores en la lista de la versión instalada). Gemma 3 270M se valora en IA7 como base del ajuste.
+    * **Worker propio** con `WebWorkerMLCEngine`; `import()` solo al entrar en carrera con modo `ia` y modelo descargado. Calentamiento con una frase de prueba durante la parrilla. `unload()` y cierre del worker al salir de la carrera.
+    * **Interpretar:** primero palabras clave (IA1). Si devuelve `ambigua`, o no reconoce nada en una frase de más de 3 palabras, se pregunta al modelo con `response_format` de esquema JSON: `{ intent, target, compound?, favoured?, paceMode?, confianza: 'alta' | 'baja' }`, con los enums sacados del catálogo y de los códigos de los pilotos de la carrera. `confianza: 'baja'` → `repetir`. Todo pasa por `mapper`. Temperatura 0, máximo 60 tokens, tiempo límite 2,5 s (si se pasa, `repetir`).
+    * **Prompt:** corto y fijo (catálogo compacto, 8 ejemplos y contexto: coches, compuestos, propuesta pendiente). Sin historial de conversación.
+    * **Responder:** una segunda llamada en texto libre con la ficha del piloto (nombre de parodia, temperamento), el resultado y la situación. Temperatura 0,8, máximo 40 tokens, límite 4 s. El filtro `replyFilter` corta a 2 frases, quita comillas y emojis, y si aparece un apellido real, una marca real o algo de la lista de palabras vetadas, usa la plantilla de IA2. Las llamadas del piloto (IA2) pueden reescribirse con el modelo con el mismo filtro.
+    * **Una generación a la vez:** si llega otra, la de respuesta pendiente se descarta en favor de la plantilla.
+    * **Fallos** (WebGPU que se pierde, error al cargar, memoria): estado `basica` con motivo, aviso discreto y un solo reintento en la carrera siguiente.
+    * **Indicador** en el panel de radio: «IA conectando», «IA lista» o «Radio básica (motivo)».
+    * **Evaluación (`?revision=radio-eval`):** carga el modelo, pasa las 500 frases de `radio-phrases.json` y muestra aciertos por intención, latencia p50/p95 de interpretar y de responder, y los FPS mínimos con una carrera de fondo a x1. Lo ejecuta el usuario (descarga el modelo en su navegador) y pega el resumen, o el agente con Chrome sin ventana si el usuario autoriza la descarga.
+  * *Aceptación:* ≥ 95 % de aciertos en la evaluación; interpretar en ≤ 1 s (p95) en el escritorio del usuario; FPS mínimos durante la generación ≥ 80 % de los de sin generar; arrancar el juego no carga WebLLM (comprobado en la red del navegador); cualquier fallo deja la radio básica.
+  * *Contrato de tests propuesto (`radio-llm-ia5`, con un motor falso que simula WebLLM):*
+    1. Las palabras clave tienen prioridad: una frase clara no llama al modelo.
+    2. Una respuesta JSON válida se convierte en la orden esperada por `mapper`; un JSON roto, una intención fuera del catálogo o `confianza: 'baja'` → `repetir` sin orden.
+    3. Tiempo límite de interpretar y de responder: `repetir` y plantilla, respectivamente.
+    4. `replyFilter`: dos frases como máximo, sin emojis, y la plantilla si aparece un apellido real o una palabra vetada.
+    5. Una sola generación a la vez; la segunda petición de respuesta usa la plantilla.
+    6. Error de carga o pérdida del dispositivo → estado `basica` con motivo; un solo reintento en la carrera siguiente.
+    7. Ciclo de vida: carga al entrar en carrera, `unload` y cierre del worker al salir, ninguna carga con modo `basica`.
+    8. El paquete principal no contiene `web-llm` (búsqueda en `dist/` tras `vite build`, como hacen los tests de Firebase de N4).
+  * *Módulos relacionados a ejecutar:* `radio-ia1`, `radio-replies-ia2`, `radio-model-ia4`, `race-session-n3`, `client-race-n8`.
+  * *Revisión en navegador:* una carrera con la IA activa: frases libres («Carlos, cuando puedas dale caña»), el indicador de estado, los FPS y el panel de rendimiento durante una respuesta.
+
+* **IA6 — Voces Piper y órdenes por micro:** `[ ] PENDIENTE — PLANIFICADA 22/10/2026; CONTRATO DE TESTS PROPUESTO, SIN APROBAR`
+  * *Prioridad/dependencias:* P1; IA2 e IA4. Dependencias nuevas: un motor Piper para navegador sobre onnxruntime-web y, para el micro sin red, Whisper tiny con Transformers.js (solo para el micro; el texto sigue siendo WebLLM).
+  * *Archivos:* nuevos `src/radio/voice/{piperVoice,radioFilter}.ts`, `src/radio/stt/{webSpeechStt,whisperStt,sttChooser}.ts`, `tests/modules/radio-voice-ia6.mjs`; se tocan `RadioSettings.tsx`, `RadioPanel.tsx` y `voiceQueue.ts`.
+  * *Decisiones tomadas:*
+    * **Voces:** una o dos voces Piper `es_ES`. Candidatas: `es_ES-davefx-medium` y `es_ES-sharvard-medium`, que trae dos voces en un modelo; se elige por tamaño y calidad al empezar la tarea y se anotan tamaño y licencia. Por piloto cambian la velocidad (`length_scale` 0,9–1,1) y el tono (reproducción a 0,94–1,06). Se descargan desde Ajustes como el modelo (IA4).
+    * **Filtro de radio (WebAudio):** paso alto a 300 Hz, paso bajo a 3.400 Hz, saturación suave, ruido de fondo al 2 % y chasquido de apertura y cierre. Solo se aplica a la voz Piper (la del sistema no se puede filtrar).
+    * **Micro:** botón «Mantén para hablar» en el panel (y la tecla T mantenida). Con red, Web Speech `es-ES`. Sin red o sin soporte, Whisper tiny local si está descargado (≈ 40 MB, desde Ajustes). Si no hay ninguno, el botón se oculta. El texto reconocido aparece en el campo antes de enviarse, y se envía al soltar.
+    * **Privacidad:** en Ajustes, «El micro de Chrome envía tu voz a Google para reconocerla; la opción local no envía nada». El permiso del micro lo concede el usuario en su navegador.
+  * *Aceptación:* cada piloto suena distinto y con efecto de radio; el micro funciona con y sin red según lo descargado; sin nada descargado, la radio sigue con texto y voz del sistema.
+  * *Contrato de tests propuesto (`radio-voice-ia6`):*
+    1. Elección de voz: Piper si está descargado y hay sonido; si no, la del sistema; si no, solo texto.
+    2. Ajustes de voz por piloto estables y distintos entre compañeros de equipo.
+    3. Cadena del filtro con los nodos y frecuencias acordados (contexto de audio simulado, como en `audio-t416`).
+    4. Elección de reconocimiento: Web Speech con red, Whisper sin red si está descargado, botón oculto si no hay ninguno.
+    5. Soltar envía el texto reconocido por el mismo camino de IA1; un reconocimiento vacío no envía nada.
+    6. Ni Piper ni Whisper se importan al arrancar el juego.
+  * *Módulos relacionados a ejecutar:* `radio-replies-ia2`, `radio-model-ia4`, `audio-t416`.
+  * *Revisión en navegador:* escuchar a los dos pilotos de un equipo, el micro con y sin red (modo avión del navegador) y en Chrome de Android (lo prueba el usuario).
+
+#### Bloque C — Modelo a medida
+
+* **IA7 — Modelo ajustado a la radio del juego:** `[ ] PENDIENTE — PLANIFICADA 22/10/2026; CONTRATO DE TESTS PROPUESTO, SIN APROBAR`
+  * *Prioridad/dependencias:* P2; IA5 (necesita su evaluación como punto de comparación). Requiere los pasos 3 a 5 del usuario.
+  * *Archivos:* nuevos `scripts/radio-model/build-dataset.mjs`, `scripts/radio-model/dataset/{train,val}.jsonl` (fuera del paquete del juego), `scripts/radio-model/finetune.ipynb`, `scripts/radio-model/README.md` con los pasos, `tests/modules/radio-model-ia7.mjs`; se tocan `manifest.ts` y `webllmStore.ts` (cambio de versión).
+  * *Decisiones tomadas:*
+    * **Datos:** de 5.000 a 10.000 ejemplos sintéticos en español generados por el agente a partir del catálogo, las fichas de los pilotos y paráfrasis escritas a mano. Incluyen las dos tareas: frase → JSON de intención, y situación → respuesta del piloto. Llevan `catalogVersion` y nunca nombres reales. Las 500 frases de evaluación quedan fuera del entrenamiento.
+    * **Base:** la mejor de IA5 en relación aciertos/tamaño, comparada con Gemma 3 270M. Con resultados parecidos se prefiere Qwen, por su licencia Apache 2.0 (la de Gemma tiene condiciones de uso que habría que trasladar).
+    * **Ajuste:** LoRA (rango 16, 2–3 pasadas) en Colab o Kaggle con GPU gratuita, fusión, compresión `q4f16_1` y compilación WebGPU con las herramientas de MLC dentro del mismo cuaderno.
+    * **Publicación:** repositorio de Hugging Face del usuario (`<usuario>/f1sim-radio`); se fija el commit en `manifest.ts`.
+    * **Cambio de versión:** el modelo nuevo se descarga entero y solo entonces se borra el viejo. Si `catalogVersion` del modelo es menor que la del juego, las intenciones nuevas las resuelve la radio básica.
+  * *Aceptación:* en la evaluación de IA5 supera al modelo genérico en aciertos o en latencia sin empeorar lo otro, pesa menos o igual, y sustituye al anterior sin tocar más código que el manifiesto.
+  * *Contrato de tests propuesto (`radio-model-ia7`):*
+    1. El conjunto de datos cubre todas las intenciones y temperamentos, no contiene frases de evaluación ni apellidos reales y lleva la `catalogVersion` actual.
+    2. Cambio de versión: la vieja sigue en uso hasta que la nueva está completa; después se borra; un corte a mitad deja la vieja.
+    3. Con un modelo de `catalogVersion` menor, una intención nueva cae en la radio básica.
+  * *Módulos relacionados a ejecutar:* `radio-llm-ia5`, `radio-model-ia4`.
+
+#### Pasos del usuario
+
+1. **Aprobar los contratos** del sprint (una vez, o tarea a tarea si lo prefiere).
+2. **Probar en su navegador** cuando lo pida la tarea: la descarga del modelo en IA5 (≈ 300 MB), la evaluación `?revision=radio-eval`, el permiso del micro y Chrome de Android en IA6.
+3. **Antes de IA7:** tener sesión en Google Colab (o en Kaggle) con la cuenta de Google.
+4. **Antes de IA7:** crear una cuenta gratuita de Hugging Face y un repositorio de modelo `f1sim-radio`, y pasar al agente solo el nombre del repositorio. El token de escritura se guarda en los secretos de Colab y nunca se comparte en el chat.
+5. **En IA7:** abrir `scripts/radio-model/finetune.ipynb` en Colab, elegir GPU T4 y ejecutar todo (1–3 h). Al terminar, pegar el resumen de la última celda.
+
+**Orden propuesto:** IA1 → IA2 → IA4 → IA5 → IA3 → IA6 → IA7. Las fases 1 a 4 del plan acordado corresponden a IA1–IA3 (radio básica), IA4–IA5 (modelo existente), IA6 (voz y micro) e IA7 (modelo a medida). IA3 va después de IA5 porque toca el motor y no bloquea a las demás.
 
 ---
 
