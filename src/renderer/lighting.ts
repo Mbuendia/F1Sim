@@ -13,7 +13,8 @@ export const START_HOUR: Record<string, number> = {
 };
 
 /** Carreras de noche, con focos. */
-export const NIGHT_RACES = new Set(['las-vegas', 'bahrain', 'jeddah', 'marina-bay', 'lusail']);
+/** Abu Dabi sale con el sol poniéndose y se corre casi entera de noche: se trata como carrera de noche (23/10/2026). */
+export const NIGHT_RACES = new Set(['las-vegas', 'bahrain', 'jeddah', 'marina-bay', 'lusail', 'yas-marina']);
 
 export interface Sun {
   mode: 'sol' | 'focos';

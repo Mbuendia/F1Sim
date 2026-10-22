@@ -22,7 +22,7 @@ import { calculateCarWorldPosition, isCarVisible } from '../utils/carPosition';
 import { sceneryFor, type SceneBarrier, type SceneItem } from './scenery';
 import { SPONSOR_COLORS, type Sponsor } from './sponsors';
 import { fireworkBursts, yasHotelColor } from './effects';
-import { sunLightVector } from './sunLight';
+import { nearestFloodlights, nightLook, sunLightVector } from './sunLight';
 import type { CameraView } from './cameras';
 
 const W = (x: number, y: number, z = 0) => new THREE.Vector3(x, z, y);
@@ -60,6 +60,9 @@ export class RaceScene3D {
   private ledMaterials: THREE.MeshStandardMaterial[] = [];
   private lampMaterials: THREE.MeshStandardMaterial[] = [];
   private fireworks: THREE.Points | null = null;
+  /** Torres de luz del circuito y las luces de verdad que se encienden en las ocho más cercanas (de noche). */
+  private floodlights: SceneItem[] = [];
+  private readonly lampLights: THREE.PointLight[] = [];
   private safetyModel: GLTF | null = null;
   private safetyRoot: THREE.Object3D | null = null;
   private track: TrackDefinition | null = null;
@@ -95,12 +98,13 @@ export class RaceScene3D {
     this.track = track; this.circuitId = circuitId; this.lap = track.lapLengthMeters || 5000;
     this.world.clear();
     const scenery = sceneryFor(track, circuitId);
+    this.floodlights = scenery.items.filter(it => it.kind === 'floodlight');
     this.world.add(buildGround(track, circuitId, scenery.infield, scenery.water, scenery.street));
     this.world.add(buildWalls(track, circuitId, scenery.barriers));
     const o = overpassFor(circuitId);
     if (o) this.world.add(buildElevatedRoad(track, o));
     const [items, car, lod] = await Promise.all([
-      buildScenery(scenery.items, track, base).catch(() => null),
+      buildScenery(scenery.items, track, base).catch(error => { console.error('Escenario 3D', error); return null; }),
       loadModel(modelUrl(base, CAR_MODEL.file)).catch(() => null),
       loadModel(modelUrl(base, LOD_FILE)).catch(() => null),
     ]);
@@ -140,7 +144,8 @@ export class RaceScene3D {
 
     // Cielo, luz y sombras del sol (o de los focos de noche).
     const night = sun.mode === 'focos';
-    const sky = new THREE.Color(night ? '#0b1224' : '#9cc4e6');
+    const look = nightLook(sun);
+    const sky = new THREE.Color(look.sky.r, look.sky.g, look.sky.b);
     this.scene.background = sky;
     this.scene.fog = new THREE.Fog(sky, this.camera.far * 0.35, this.camera.far * 0.95);
     const v = sunLightVector(sun);
@@ -148,9 +153,22 @@ export class RaceScene3D {
     const r = frame.shadowRadius;
     this.sunLight.target.position.copy(target);
     this.sunLight.position.copy(target).add(new THREE.Vector3(v.x, v.z, v.y).multiplyScalar(r * 2 + 200));
-    this.sunLight.intensity = night ? 1.0 : 0.6 + 4 * sun.alpha;
+    this.sunLight.intensity = look.sun;
     this.sunLight.color.set(night ? '#dfe8ff' : '#fff4e0');
-    this.hemi.intensity = night ? 0.7 : 1.6 - sun.alpha;
+    this.hemi.intensity = look.hemi;
+    this.hemi.groundColor.set(night ? '#101418' : '#40503a');
+    // De noche se encienden luces de verdad en las ocho torres más cercanas a lo que mira la cámara.
+    const lit = look.floodlights ? nearestFloodlights(this.floodlights, view.target.x, view.target.y, 8) : [];
+    while (this.lampLights.length < lit.length) {
+      const light = new THREE.PointLight('#fff6e0', 0, 140, 2);
+      this.lampLights.push(light);
+      this.scene.add(light);
+    }
+    this.lampLights.forEach((light, i) => {
+      const f = lit[i];
+      light.intensity = f ? 450 : 0;
+      if (f) light.position.copy(W(f.x, f.y, f.height - 2));
+    });
     const sc = this.sunLight.shadow.camera;
     sc.left = -r; sc.right = r; sc.top = r; sc.bottom = -r; sc.near = 1; sc.far = r * 4 + 600;
     sc.updateProjectionMatrix();
@@ -240,7 +258,9 @@ export class RaceScene3D {
       const z = this.carHeight(car);
       holder.position.copy(W(car.worldX, car.worldY, z));
       holder.rotation.y = -car.worldAngle;
-      const far = cam.distanceTo(holder.position) > CAR_LOD_M;
+      // En desarrollo, `window.__forceLod = true` enseña el coche ligero de cerca (para revisarlo).
+      const forceLod = import.meta.env.DEV && (globalThis as { __forceLod?: boolean }).__forceLod === true;
+      const far = forceLod || cam.distanceTo(holder.position) > CAR_LOD_M;
       // De cerca, el modelo completo; de lejos, el ligero (sacado del mismo modelo); la caja, solo mientras cargan.
       if (slot.full) slot.full.visible = !far || !slot.lod;
       if (slot.lod) slot.lod.visible = far || !slot.full;
@@ -547,7 +567,7 @@ function buildElevatedRoad(track: TrackDefinition, o: { upperT: number }): THREE
 
 // ───────────────────────────── Escenario ─────────────────────────────
 
-const FACE_TRACK = new Set(['grandstand', 'vip', 'building', 'landmark', 'floodlight']);
+const FACE_TRACK = new Set(['grandstand', 'vip', 'building', 'landmark', 'floodlight', 'pit-building', 'billboard']);
 
 async function buildScenery(items: SceneItem[], track: TrackDefinition, base: string): Promise<THREE.Group> {
   const group = new THREE.Group();
@@ -570,7 +590,11 @@ async function buildScenery(items: SceneItem[], track: TrackDefinition, base: st
       if (!mesh.isMesh) return;
       mesh.castShadow = it.kind !== 'tree' || true; mesh.receiveShadow = true;
       const mat = mesh.material as THREE.MeshStandardMaterial;
-      if (it.tint && mat.name === 'tint') {
+      if (it.sponsor && mat.name === 'panel') {
+        const key = `panel|${it.sponsor}`;
+        if (!tinted.has(key)) tinted.set(key, new THREE.MeshLambertMaterial({ map: sponsorTexture(it.sponsor) }));
+        mesh.material = tinted.get(key)!;
+      } else if (it.tint && mat.name === 'tint') {
         const key = `${it.model}|${it.tint}`;
         if (!tinted.has(key)) { const m = mat.clone(); m.color.set(it.tint); tinted.set(key, m); }
         mesh.material = tinted.get(key)!;

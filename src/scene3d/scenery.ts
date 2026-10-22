@@ -13,7 +13,8 @@ import { buildScenarioGeometry } from '../utils/scenarioGeometry';
 import { NIGHT_RACES } from '../renderer/lighting';
 import { SPONSORS, type Sponsor } from './sponsors';
 
-export type SceneKind = 'grandstand' | 'vip' | 'paddock' | 'tree' | 'building' | 'yacht' | 'landmark' | 'bridge' | 'floodlight';
+export type SceneKind = 'grandstand' | 'vip' | 'paddock' | 'tree' | 'building' | 'yacht' | 'landmark' | 'bridge' | 'floodlight'
+  | 'pit-building' | 'billboard';
 
 /** Muros, guardarraíles y barreras TecPro (estas, con su patrocinador). */
 export interface SceneBarrier {
@@ -39,6 +40,8 @@ export interface SceneItem {
   clearance?: number;
   /** Color dominante (para teñir los modelos genéricos). */
   tint?: string;
+  /** Vallas publicitarias: el patrocinador (de parodia) del panel. */
+  sponsor?: Sponsor;
 }
 
 export interface Scenery {
@@ -51,6 +54,10 @@ export interface Scenery {
   /** Circuito urbano: suelo de ciudad en vez de hierba. */
   street: boolean;
 }
+
+/** Circuitos de calor (palmeras) y de montaña (coníferas). */
+const HOT = new Set(['bahrain', 'jeddah', 'yas-marina', 'lusail', 'miami', 'marina-bay', 'las-vegas']);
+const MOUNTAIN = new Set(['spielberg', 'spa', 'hungaroring', 'montreal']);
 
 const STREET = new Set(['monaco', 'baku', 'marina-bay', 'las-vegas', 'jeddah', 'miami', 'melbourne', 'montreal']);
 /** Separación mínima entre un objeto y el borde del asfalto (m). */
@@ -140,6 +147,38 @@ function build(track: TrackDefinition, circuitId: string): Scenery {
   if (circuitId === 'monaco') monaco(track, items, water, half, dt, inInfield, fits);
   if (circuitId === 'yas-marina') yasMarina(track, items, water, half, pitSide, fits, inInfield);
 
+  // ── Edificio de boxes a lo largo del pit lane (del lado contrario a la pista) y pórtico de salida sobre la meta. ──
+  placePitBuildings(track, pit.fastLane, half, items, fits);
+  {
+    const f = frameAt(track, 0);
+    items.push({ id: 'portico-salida', kind: 'bridge', model: 'start-gantry', x: f.x, y: f.y, heading: f.angle + Math.PI / 2,
+      length: 2 * half + 6, width: 3, height: 9.5, clearance: 6.5, t: 0 });
+  }
+
+  // ── Paddock y zona VIP detrás del edificio de boxes. ──
+  const pitAt = (k: number) => pit.fastLane[Math.floor(k * (pit.fastLane.length - 1))];
+  const nearestT = (p: Pt) => {
+    let best = 0, bestD = Infinity;
+    for (let i = 0; i < n; i += 2) { const d = Math.hypot(track.points[i].x - p.x, track.points[i].y - p.y); if (d < bestD) { bestD = d; best = i; } }
+    return best / n;
+  };
+  const pitMidT = pit.fastLane.length ? nearestT(pitAt(0.5)) : pitT;
+  const vipBase = { kind: 'vip' as const, model: 'vip-lounge', length: 50, width: 16, height: 10, tint: '#e8e8ea' };
+  const paddockBase = { kind: 'paddock' as const, model: 'paddock', length: 80, width: 24, height: 7, tint: '#c9ccd2' };
+
+  for (const k of [-40, 40, 0, 90, -90, 150, -150, 220, -220]) if (placeBeside(paddockBase, pitMidT + dt(k), pitSide, pitOffset + 30, pitOffset + 115)) break;
+  if (!items.some(it => it.kind === 'paddock')) {
+    // Sin hueco para el grande (boxes, lagos): uno más pequeño.
+    const small = { ...paddockBase, length: 50, width: 18 };
+    for (const k of [-40, 40, 0, 90, -90, 150, -150]) if (placeBeside(small, pitMidT + dt(k), pitSide, pitOffset + 20, pitOffset + 115)) break;
+  }
+  if (!items.some(it => it.kind === 'paddock')) {
+    // Sin sitio detrás de los boxes (lagos, edificios): al otro lado de la pista, frente al pit lane.
+    for (const k of [0, 60, -60, 120, -120]) if (placeBeside(paddockBase, pitMidT + dt(k), -pitSide, half + MARGIN + 6, half + 120)) break;
+  }
+  for (const k of [0, 30, -30, 70, -70, 120, -120]) if (placeBeside(vipBase, pitMidT + dt(k), pitSide, pitOffset + 30, pitOffset + 150)) break;
+
+
   // ── Kit común: gradas en la meta, zona VIP y paddock junto al pit lane. ──
   const stand = (t: number) => placeBeside({ kind: 'grandstand', model: 'grandstand', length: 60, width: 14, height: 12 }, t, -pitSide, half + MARGIN + 8, half + 90);
   let stands = 0;
@@ -152,18 +191,6 @@ function build(track: TrackDefinition, circuitId: string): Scenery {
     if (stands >= 2) break;
     if (placeBeside({ kind: 'grandstand', model: 'grandstand', length: 50, width: 12, height: 12 }, dt(m), pitSide, pitOffset + 10, pitOffset + 120)) stands++;
   }
-  const pitAt = (k: number) => pit.fastLane[Math.floor(k * (pit.fastLane.length - 1))];
-  const nearestT = (p: Pt) => {
-    let best = 0, bestD = Infinity;
-    for (let i = 0; i < n; i += 2) { const d = Math.hypot(track.points[i].x - p.x, track.points[i].y - p.y); if (d < bestD) { bestD = d; best = i; } }
-    return best / n;
-  };
-  const pitMidT = pit.fastLane.length ? nearestT(pitAt(0.5)) : pitT;
-  const vipBase = { kind: 'vip' as const, model: 'vip-lounge', length: 50, width: 16, height: 10, tint: '#e8e8ea' };
-  const paddockBase = { kind: 'paddock' as const, model: 'paddock', length: 80, width: 24, height: 7, tint: '#c9ccd2' };
-  for (const k of [0, 30, -30, 70, -70]) if (placeBeside(vipBase, pitMidT + dt(k), pitSide, pitOffset + 6, pitOffset + 150)) break;
-  for (const k of [-40, 40, 0, 90, -90]) if (placeBeside(paddockBase, pitMidT + dt(k), pitSide, pitOffset + 30, pitOffset + 170)) break;
-
   // ── Iconos que van en el interior (después del kit, que ya ocupa la zona de boxes). ──
   if (circuitId === 'spielberg') {
     const spot = deepestPoint(track, infield);
@@ -181,13 +208,28 @@ function build(track: TrackDefinition, circuitId: string): Scenery {
     }
   }
 
+  // ── Vallas publicitarias con patrocinadores de parodia, detrás de las barreras. ──
+  {
+    let boards = 0, k = 0;
+    for (let i = 0; i < 40 && boards < 10; i++) {
+      const t = (i * 0.137 + 0.05) % 1, side = i % 2 ? 1 : -1;
+      const off = barrierOffset(track, circuitId, half, t, side);
+      const board = placeBeside({ kind: 'billboard', model: 'billboard', length: 12, width: 1.2, height: 4.5, sponsor: SPONSORS[(k + boards) % SPONSORS.length] },
+        t, side, off + 3, off + 25, 3);
+      if (board) boards++;
+      k += 3;
+    }
+  }
+
   // ── Árboles (pocos en los urbanos) y edificios de ciudad en los urbanos. ──
   const trees = street ? 12 : 60;
   for (let k = 0, placed = 0; k < trees * 6 && placed < trees; k++) {
     const t = rand(), side = rand() < 0.5 ? -1 : 1, d = half + 20 + rand() * 70;
     const p = besideTrack(track, t, side, d);
     const size = 6 + rand() * 6;
-    const item: SceneItem = { kind: 'tree', model: 'tree', x: p.x, y: p.y, heading: rand() * Math.PI, length: size, width: size, height: size * 1.4, t };
+    const model = HOT.has(circuitId) ? 'palm' : MOUNTAIN.has(circuitId) ? 'pine' : 'tree';
+    const tall = model === 'tree' ? 1.4 : 2.2;
+    const item: SceneItem = { kind: 'tree', model, x: p.x, y: p.y, heading: rand() * Math.PI, length: size, width: size, height: size * tall, t };
     if (fits(item)) { items.push(item); placed++; }
   }
   if (street && circuitId !== 'monaco') {
@@ -236,7 +278,7 @@ function shanghai(track: TrackDefinition, items: SceneItem[], water: Poly[], hal
   items.push({ id: 'puente-meta', kind: 'bridge', model: 'shanghai-bridge', x: f.x, y: f.y, heading: f.angle + Math.PI / 2,
     length: 2 * half + 80, width: 22, height: 22, clearance: 9, t, tint: '#dfe3e8' });
   // Lago detrás de los boxes, con los pabellones de los equipos encima.
-  const from = half + 75, to = half + 140;
+  const from = half + 95, to = half + 160;
   const lake: Pt[] = [];
   for (let m = -120; m <= 220; m += 20) { const p = besideTrack(track, dt(m), pitSide, from); lake.push({ x: p.x, y: p.y }); }
   for (let m = 220; m >= -120; m -= 20) { const p = besideTrack(track, dt(m), pitSide, to); lake.push({ x: p.x, y: p.y }); }
@@ -302,13 +344,12 @@ function monaco(track: TrackDefinition, items: SceneItem[], water: Poly[], half:
 
 /** Muros del escenario y barreras TecPro en el exterior de las curvas, cada una con un patrocinador de parodia. */
 function buildBarriers(track: TrackDefinition, circuitId: string, half: number, lap: number, pitPts: Pt[], street: boolean): SceneBarrier[] {
-  const geo = buildScenarioGeometry(track, getScenario(circuitId));
-  const barriers: SceneBarrier[] = geo.barrierLines.map(b => ({ kind: b.type, points: b.points, width: b.width, color: b.color }));
+  const barriers = wallsFromZones(track, circuitId, half);
   let seed = 0;
   for (const ch of circuitId) seed = (seed * 7 + ch.charCodeAt(0)) % SPONSORS.length;
   let k = 0;
   for (const b of barriers) if (b.kind === 'tecpro') b.sponsor = SPONSORS[(seed + k++) % SPONSORS.length];
-  const offsets = (street ? [2.5, 4, 7] : [16, 11, 7, 4]).map(o => half + o);
+  void street;
   for (const corner of track.corners) {
     if (barriers.filter(b => b.kind === 'tecpro').length >= 12) break;
     const before = frameAt(track, corner.t - 15 / lap), after = frameAt(track, corner.t + 15 / lap);
@@ -316,7 +357,9 @@ function buildBarriers(track: TrackDefinition, circuitId: string, half: number, 
     turn = Math.atan2(Math.sin(turn), Math.cos(turn));
     if (Math.abs(turn) < 0.35) continue;
     const outside = turn > 0 ? -1 : 1;
-    for (const off of offsets) {
+    // La TecPro va delante del muro, al final de la escapatoria.
+    const wall = barrierOffset(track, circuitId, half, corner.t, outside);
+    for (const off of [wall - 1.5, wall - 4, half + 4].filter(o => o >= half + 3)) {
       const points: Pt[] = [];
       for (let m = -30; m <= 15; m += 3) { const p = besideTrack(track, corner.t + m / lap, outside, off); points.push({ x: p.x, y: p.y }); }
       const clear = points.every(p => axisDistance(track, p, off) >= Math.min(off - 0.5, half + 3)
@@ -369,5 +412,103 @@ function yasMarina(track: TrackDefinition, items: SceneItem[], water: Poly[], ha
     const big = k % 3 === 0;
     const yacht: SceneItem = { kind: 'yacht', model: big ? 'yacht-large' : 'yacht', x, y, heading: rand() * Math.PI, length: big ? 40 : 20, width: big ? 8 : 5.5, height: big ? 9 : 5, tint: '#f4f4f2' };
     if (fits(yacht, { onWater: true })) { items.push(yacht); placed++; }
+  }
+}
+
+/** Ancho base de escapatoria del escenario (m), por su factor de cada zona. */
+const RUNOFF_BASE_M = 18;
+/** Espacio libre junto a la pista donde no hay escapatoria: permanentes (verde) y urbanos (muro casi pegado). */
+const VERGE_PERMANENT_M = 12;
+const VERGE_STREET_M = 3.4;
+
+const offsetCache = new WeakMap<TrackDefinition, Map<string, number[]>>();
+const inRange = (t: number, a: number, b: number) => (a <= b ? t >= a && t <= b : t >= a || t <= b);
+
+/**
+ * Distancia al eje (m) a la que va el muro en la fracción \`t\` y el lado \`side\` (+1, la normal; −1, el otro): al final
+ * de la escapatoria si la hay (23/10/2026, petición del usuario: las vallas iban dentro de ella); si no, tras el verde
+ * en los permanentes y pegado en los urbanos. Suavizado para que el muro no dé saltos al entrar o salir de una zona.
+ */
+export function barrierOffset(track: TrackDefinition, circuitId: string, half: number, t: number, side: number): number {
+  let byId = offsetCache.get(track);
+  if (!byId) { byId = new Map(); offsetCache.set(track, byId); }
+  const key = `${circuitId}|${side > 0 ? 1 : -1}`;
+  let table = byId.get(key);
+  if (!table) {
+    const scenario = getScenario(circuitId);
+    const base = half + (scenario.trackType === 'street' ? VERGE_STREET_M : VERGE_PERMANENT_M);
+    const lap = track.lapLengthMeters || track.points.length * 2;
+    const n = Math.max(64, Math.round(lap / 3));
+    const raw = Array.from({ length: n }, (_, i) => {
+      const tt = i / n;
+      let off = base;
+      for (const z of scenario.runoffZones) {
+        const matches = z.side === 'both' || (z.side === 'left') === (side > 0);
+        if (matches && inRange(tt, z.startT, z.endT)) off = Math.max(off, half + RUNOFF_BASE_M * z.widthMultiplier + 3);
+      }
+      return off;
+    });
+    // Máximo en una ventana (que el muro nunca entre en la escapatoria) y luego media (transición suave).
+    const w = 6;
+    const maxed = raw.map((_, i) => { let m = 0; for (let k = -w; k <= w; k++) m = Math.max(m, raw[(i + k + n) % n]); return m; });
+    table = maxed.map((_, i) => { let s = 0; for (let k = -w; k <= w; k++) s += maxed[(i + k + n) % n]; return s / (2 * w + 1); });
+    table = table.map((v, i) => Math.max(v, raw[i]));
+    byId.set(key, table);
+  }
+  const i = Math.floor((((t % 1) + 1) % 1) * table.length) % table.length;
+  return table[i];
+}
+
+/** Muros del escenario rehechos a su distancia: cada zona de barrera, a cada lado, cortada donde pisaría otra parte de
+ *  la pista o una escapatoria. */
+function wallsFromZones(track: TrackDefinition, circuitId: string, half: number): SceneBarrier[] {
+  const scenario = getScenario(circuitId);
+  const runoffs = buildScenarioGeometry(track, scenario).runoffPolygons.map(r => r.points);
+  const lap = track.lapLengthMeters || track.points.length * 2;
+  const out: SceneBarrier[] = [];
+  for (const zone of scenario.barriers) {
+    const sides = zone.side === 'both' ? [1, -1] : [zone.side === 'left' ? 1 : -1];
+    const span = ((zone.endT - zone.startT) + 1) % 1 || 1;
+    const steps = Math.max(2, Math.round(span * lap / 3));
+    for (const side of sides) {
+      let run: Pt[] = [];
+      const flush = () => { if (run.length >= 2) out.push({ kind: zone.type, points: run, width: zone.type === 'armco' ? 0.4 : 0.8, color: zone.color }); run = []; };
+      for (let k = 0; k <= steps; k++) {
+        const t = zone.startT + span * k / steps;
+        const off = barrierOffset(track, circuitId, half, t, side);
+        const p = besideTrack(track, t, side, off);
+        const ok = axisDistance(track, p, half + 4) >= half + 3.2 && !runoffs.some(poly => pointInPoly(p, poly));
+        if (ok) run.push({ x: p.x, y: p.y }); else flush();
+      }
+      flush();
+    }
+  }
+  return out;
+}
+
+/** Edificio de boxes: bloques a lo largo del carril rápido, del lado contrario a la pista, tras la zona de trabajo. */
+function placePitBuildings(track: TrackDefinition, lane: Pt[], half: number, items: SceneItem[],
+  fits: (item: SceneItem) => boolean) {
+  if (lane.length < 2) return;
+  const BLOCK = 24;
+  let carried = 0;
+  for (let i = 1; i < lane.length; i++) {
+    const a = lane[i - 1], b = lane[i], len = Math.hypot(b.x - a.x, b.y - a.y);
+    if (len < 1e-6) continue;
+    carried += len;
+    if (carried < BLOCK) continue;
+    carried = 0;
+    const heading = Math.atan2(b.y - a.y, b.x - a.x);
+    const nx = -(b.y - a.y) / len, ny = (b.x - a.x) / len;
+    // Del lado del carril que se aleja de la pista.
+    const probe = { x: b.x + nx * 10, y: b.y + ny * 10 };
+    const away = axisDistance(track, probe, half + 40) > axisDistance(track, b, half + 40) ? 1 : -1;
+    // Una sola fila con el frente alineado: si no cabe el bloque normal, uno más estrecho en la misma línea.
+    // Fila alineada a lo largo de la recta; solo en las curvas de entrada y salida, si no cabe, un poco más atrás.
+    for (const [d, w] of [[26, 16], [24, 12], [22.5, 9], [34, 16], [42, 14], [50, 12], [18, 7]]) {
+      const item: SceneItem = { kind: 'pit-building', model: 'pit-building', x: b.x + nx * away * d, y: b.y + ny * away * d, heading,
+        length: BLOCK + 2, width: w, height: 11, tint: '#dfe3e8' };
+      if (fits(item)) { items.push(item); break; }
+    }
   }
 }

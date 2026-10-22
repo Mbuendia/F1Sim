@@ -580,5 +580,6 @@ export const modules = [
   { "id": "bridge-shadows", "tasks": [], "sprint": null, "kind": "contract" },
   { "id": "scenery-3d", "tasks": [], "sprint": null, "kind": "contract" },
   { "id": "scenery-3d-2", "tasks": [], "sprint": null, "kind": "contract" },
+  { "id": "scenery-3d-3", "tasks": [], "sprint": null, "kind": "contract" },
   { "id": "viewport-movil", "tasks": [], "sprint": null, "kind": "regression" }
 ];

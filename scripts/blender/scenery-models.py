@@ -291,48 +291,60 @@ def limb(p0, p1, r0, r1, m, seg=8):
 
 
 def red_bull():
-    """El toro de Spielberg (referencia del usuario, 22/10/2026): arco de acero alto y fino y, debajo, el toro de acero
-    corten encabritado: cuartos traseros apoyados, lomo que sube hacia unos hombros altos, patas delanteras recogidas,
-    cabeza baja embistiendo y cuernos dorados hacia delante. Largo del toro en +X; el arco en el plano XZ."""
-    steel, rust, corten, gold, plinth = (mat("steel", "#8d9299", 0.7, 0.35), mat("arch_rust", "#9a5a30", 0.5, 0.6),
-                                         mat("tint", "#9a4a25", 0.5, 0.65), mat("horn", "#d9b13a", 0.8, 0.3), mat("plinth", "#9da1a6"))
-    # Arco parabólico que se afina hacia arriba; los pies, oxidados.
-    span, top, seg = 28.0, 30.0, 24
+    """El toro de Spielberg (referencia del usuario, 23/10/2026: «Cartoon Race Track Spielberg» de RCC Design): arco
+    blanco y liso por encima y el toro encabritado casi en vertical sobre las patas traseras, con las delanteras al aire,
+    la cabeza alta y los cuernos grandes; el cuerpo, una celosía de acero naranja (se ve a través). Largo en +X."""
+    arch, corten, gold, plinth = (mat("arch", "#eceef0", 0.1, 0.35), mat("tint", "#c8541e", 0.45, 0.5),
+                                  mat("horn", "#e2b84a", 0.7, 0.3), mat("plinth", "#9da1a6"))
+    # Arco parabólico blanco y liso, algo más grueso abajo.
+    span, top, seg = 28.0, 30.0, 32
     pts = [(-span / 2 + span * i / seg, top * (1 - (2 * i / seg - 1) ** 2)) for i in range(seg + 1)]
     for i in range(seg):
         (x0, z0), (x1, z1) = pts[i], pts[i + 1]
         mid = 1 - abs(2 * (i + 0.5) / seg - 1)
-        thick = 1.7 - 1.0 * mid
-        length = math.hypot(x1 - x0, z1 - z0) + 0.35
-        o = box((x0 + x1) / 2, 0, (z0 + z1) / 2 - thick / 2, length, thick * 0.8, thick, rust if mid < 0.2 else steel)
+        thick = 2.0 - 0.8 * mid
+        length = math.hypot(x1 - x0, z1 - z0) + 0.3
+        o = box((x0 + x1) / 2, 0, (z0 + z1) / 2 - thick / 2, length, thick * 0.9, thick, arch)
         o.rotation_euler = (0, -math.atan2(z1 - z0, x1 - x0), 0)
     box(0, 0, 0, 32, 10, 0.5, plinth)
     S = 1.55
     P = lambda x, y, z: (x * S, y * S, z * S)
-    # Cuerpo: grupa, tronco que sube hacia delante, hombros altos (morrillo).
-    blob(*P(-3.6, 0, 6.4), 3.0 * S, 2.0 * S, 2.4 * S, corten, 14, 8)
-    blob(*P(-0.6, 0, 7.7), 4.0 * S, 2.3 * S, 2.6 * S, corten, 14, 8, rot=(0, math.radians(-22), 0))
-    blob(*P(2.4, 0, 9.2), 2.8 * S, 2.6 * S, 3.0 * S, corten, 14, 8, rot=(0, math.radians(-15), 0))
-    # Cuello hacia abajo y cabeza baja.
-    limb(P(3.4, 0, 9.0), P(4.6, 0, 6.6), 2.0 * S, 1.3 * S, corten, 10)
-    blob(*P(4.9, 0, 5.8), 1.3 * S, 1.15 * S, 1.8 * S, corten, 10, 8, rot=(0, math.radians(20), 0))
-    blob(*P(5.2, 0, 4.4), 0.8 * S, 0.85 * S, 0.7 * S, corten, 8, 6)
+    body = []
+    # Cuartos traseros, tronco y pecho subiendo casi en vertical.
+    body.append(blob(*P(-2.6, 0, 5.8), 2.4 * S, 2.0 * S, 2.6 * S, corten, 12, 8, rot=(0, math.radians(-55), 0)))
+    body.append(blob(*P(-1.1, 0, 8.2), 3.6 * S, 2.2 * S, 2.5 * S, corten, 12, 8, rot=(0, math.radians(-55), 0)))
+    body.append(blob(*P(0.5, 0, 10.6), 2.6 * S, 2.5 * S, 2.8 * S, corten, 12, 8, rot=(0, math.radians(-40), 0)))
+    # Cuello y cabeza alta, con el hocico hacia delante.
+    body.append(limb(P(1.0, 0, 11.4), P(2.4, 0, 12.4), 1.7 * S, 1.2 * S, corten, 10))
+    body.append(blob(*P(2.9, 0, 12.5), 1.6 * S, 1.1 * S, 1.2 * S, corten, 10, 6, rot=(0, math.radians(15), 0)))
+    body.append(blob(*P(4.1, 0, 12.1), 0.7 * S, 0.8 * S, 0.6 * S, corten, 8, 6))
     for sy in (-1, 1):
-        # Cuernos dorados: salen hacia fuera y apuntan hacia delante y arriba.
-        limb(P(4.6, sy * 0.9, 7.0), P(5.4, sy * 2.2, 7.4), 0.38 * S, 0.24 * S, gold)
-        limb(P(5.4, sy * 2.2, 7.4), P(7.0, sy * 2.6, 8.4), 0.24 * S, 0.02 * S, gold)
         # Patas traseras apoyadas.
-        limb(P(-4.0, sy * 1.1, 6.0), P(-4.6, sy * 1.2, 3.0), 0.9 * S, 0.45 * S, corten)
-        limb(P(-4.6, sy * 1.2, 3.0), P(-5.3, sy * 1.2, 0.35 / S), 0.45 * S, 0.3 * S, corten)
-        blob(*P(-5.3, sy * 1.2, 0.3), 0.5 * S, 0.45 * S, 0.35 * S, corten, 8, 4)
-    # Patas delanteras recogidas (una más alta que la otra), con las pezuñas colgando.
-    for sy, knee, hoof in ((1, (4.0, 1.3, 5.0), (3.2, 1.3, 3.3)), (-1, (4.6, -1.3, 6.4), (3.6, -1.3, 5.0))):
-        limb(P(2.6, sy * 1.3, 7.6), P(*knee), 0.75 * S, 0.4 * S, corten)
-        limb(P(*knee), P(*hoof), 0.4 * S, 0.3 * S, corten)
-        blob(*P(*hoof), 0.45 * S, 0.4 * S, 0.35 * S, corten, 8, 4)
-    # Cola que cae y se enrosca.
-    limb(P(-5.8, 0, 7.4), P(-6.6, 0, 4.4), 0.25 * S, 0.12 * S, corten, 6)
-    blob(*P(-6.6, 0, 4.2), 0.35 * S, 0.3 * S, 0.6 * S, corten, 8, 4)
+        body.append(limb(P(-2.8, sy * 1.0, 4.8), P(-2.0, sy * 1.1, 2.4), 0.9 * S, 0.5 * S, corten))
+        body.append(limb(P(-2.0, sy * 1.1, 2.4), P(-2.5, sy * 1.0, 0.3), 0.5 * S, 0.35 * S, corten))
+        # Patas delanteras al aire, dobladas.
+        body.append(limb(P(1.2, sy * 1.1, 9.6), P(2.8, sy * 1.2, 9.0), 0.75 * S, 0.45 * S, corten))
+        body.append(limb(P(2.8, sy * 1.2, 9.0), P(2.4, sy * 1.2, 7.2), 0.45 * S, 0.3 * S, corten))
+    body.append(limb(P(-3.6, 0, 5.4), P(-4.4, 0, 2.8), 0.25 * S, 0.12 * S, corten, 6))
+    # Celosía: el cuerpo unido, convertido en una malla de barras (Wireframe).
+    bpy.ops.object.select_all(action="DESELECT")
+    for o in body:
+        o.select_set(True)
+    bpy.context.view_layer.objects.active = body[0]
+    bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+    bpy.ops.object.join()
+    lattice = bpy.context.active_object
+    wf = lattice.modifiers.new("celosia", "WIREFRAME")
+    wf.thickness = 0.32
+    wf.use_even_offset = True
+    wf.use_replace = True
+    bpy.ops.object.modifier_apply(modifier=wf.name)
+    # Cuernos dorados, macizos, abiertos hacia fuera y arriba; pezuñas.
+    for sy in (-1, 1):
+        limb(P(2.6, sy * 0.8, 13.0), P(2.9, sy * 2.3, 13.5), 0.42 * S, 0.3 * S, gold)
+        limb(P(2.9, sy * 2.3, 13.5), P(3.7, sy * 3.0, 15.2), 0.3 * S, 0.03 * S, gold)
+        blob(*P(-2.5, sy * 1.0, 0.25), 0.5 * S, 0.45 * S, 0.3 * S, corten, 8, 4)
+        blob(*P(2.4, sy * 1.2, 7.1), 0.45 * S, 0.4 * S, 0.35 * S, corten, 8, 4)
 
 
 # ───────────────────────────── Shanghái ─────────────────────────────
@@ -404,11 +416,78 @@ def yas_tower():
     cyl(0, 0, 44.3, 0.2, 2.5, mat("steel", "#8d9299", 0.7, 0.35), 6)
 
 
+# ───────────────────────────── Componentes del circuito (23/10/2026) ─────────────────────────────
+
+def pit_building():
+    """Edificio de boxes: bloque blanco con los portones de los garajes (con franjas de colores de equipo) mirando al
+    pit lane (+Y), planta alta acristalada y cubierta que vuela."""
+    white, glass, door, steel = mat("tint", "#e4e7eb"), mat("glass", "#2f455c", 0.3, 0.15), mat("door", "#2a2e35"), mat("steel", "#8d9299", 0.6, 0.4)
+    team = ["#ff8000", "#1e41ff", "#e8002d", "#27f4d2", "#229971", "#64c4ff", "#6692ff", "#b6babd", "#0093cc", "#52e252"]
+    L, W = 40, 16
+    box(0, 0, 0, L, W, 6, white)
+    for k in range(5):
+        x = -L / 2 + 4 + k * 8
+        box(x, W / 2 + 0.05, 0, 6.4, 0.15, 4.4, door)
+        box(x, W / 2 + 0.1, 4.5, 6.4, 0.15, 0.6, mat(f"team{k}", team[k], 0.1, 0.4))
+    box(0, 0, 6, L, W - 1, 4, glass)
+    box(0, 1.5, 10, L + 1, W + 4, 0.6, white)
+    for x in (-L / 2 + 1, 0, L / 2 - 1):
+        cyl(x, W / 2 + 2.6, 6, 0.15, 4, steel, 6)
+
+
+def start_gantry():
+    """Pórtico de salida: dos pilares fuera de la pista, viga por encima (altura libre 6,5 m) con los semáforos de salida
+    y un panel. Largo en X, cruzando la pista."""
+    white, dark, lights = mat("tint", "#e9ecef"), mat("frame", "#24282e", 0.4, 0.5), mat("lights", "#ff2020", 0, 0.3, emission="#ff2020")
+    L = 18.0
+    for sx in (-1, 1):
+        box(sx * (L / 2 - 0.6), 0, 0, 1.2, 1.6, 9.5, white)
+    box(0, 0, 6.5, L, 1.8, 3.0, white)
+    box(0, 1.0, 7.0, 6.5, 0.4, 1.6, dark)
+    for k in range(5):
+        x = -2.6 + k * 1.3
+        for z in (7.3, 8.0):
+            cyl(x, 1.25, z, 0.22, 0.12, lights, 10, rot=(math.pi / 2, 0, 0)).location = (x, 1.25, z)
+
+
+def billboard():
+    """Valla publicitaria: panel de 12 x 4,5 m sobre dos patas; la cara "panel" (+Y) lleva el patrocinador."""
+    panel, back, steel = mat("panel", "#ffffff", 0, 0.5), mat("back", "#3a3f46"), mat("steel", "#8d9299", 0.6, 0.4)
+    for x in (-4.5, 4.5):
+        box(x, -0.2, 0, 0.3, 0.3, 2.0, steel)
+    box(0, -0.2, 2.0, 12, 0.35, 2.5, back)
+    box(0, 0.0, 2.05, 11.8, 0.05, 2.4, panel)
+
+
+def pine():
+    """Conífera: tronco y tres conos superpuestos."""
+    trunk, leaves = mat("trunk", "#5b4632"), mat("tint", "#1f4d2c", 0, 0.9)
+    cyl(0, 0, 0, 0.3, 3, trunk, 6)
+    for k, (r, h, z) in enumerate(((3.2, 4.5, 2.2), (2.5, 4.0, 4.6), (1.7, 3.6, 6.9))):
+        cyl(0, 0, z, r, h, leaves, 8, r2=0.1)
+
+
+def palm():
+    """Palmera: tronco curvo por tramos y siete hojas largas que caen."""
+    trunk, leaves = mat("trunk", "#8a6a45"), mat("tint", "#3f7a2e", 0, 0.8)
+    pts = [(0, 0), (0.3, 3), (0.8, 6), (1.4, 8.6)]
+    for (x0, z0), (x1, z1) in zip(pts, pts[1:]):
+        limb((x0, 0, z0), (x1, 0, z1), 0.32, 0.26, trunk, 6)
+    top = (1.4, 0, 8.6)
+    for k in range(7):
+        a = 2 * math.pi * k / 7
+        tip = (top[0] + math.cos(a) * 3.6, math.sin(a) * 3.6, top[2] - 1.6)
+        mid = (top[0] + math.cos(a) * 1.8, math.sin(a) * 1.8, top[2] + 0.4)
+        limb(top, mid, 0.5, 0.35, leaves, 4)
+        limb(mid, tip, 0.35, 0.05, leaves, 4)
+
+
 MODELS = {
     "grandstand": grandstand, "vip-lounge": vip_lounge, "paddock": paddock, "tree": tree, "building": building,
     "yacht": yacht, "yacht-large": yacht_large, "casino": casino, "red-bull": red_bull,
     "shanghai-bridge": shanghai_bridge, "pavilion": pavilion,
     "floodlight": floodlight, "yas-hotel": yas_hotel, "yas-tower": yas_tower,
+    "pit-building": pit_building, "start-gantry": start_gantry, "billboard": billboard, "pine": pine, "palm": palm,
 }
 
 
@@ -433,6 +512,16 @@ def build_car_lod(repo, target_tris=6000):
     bpy.ops.import_scene.gltf(filepath=src)
     sc = scene()
     meshes = [o for o in sc.objects if o.type == "MESH"]
+    # El juego pinta el coche por el nombre de cada material: sin «.001» ni parecidos.
+    import re
+    for o in meshes:
+        for m in o.data.materials:
+            base = re.sub(r"\.\d{3}$", "", m.name)
+            if base != m.name:
+                old = bpy.data.materials.get(base)
+                if old is not None:
+                    old.name = base + "_previo"
+                m.name = base
     total = sum(sum(len(p.vertices) - 2 for p in o.data.polygons) for o in meshes)
     # Reparto por piezas: la carrocería se lleva casi todo; las ruedas, unos 500 cada una (antes se aplanan las caras
     # coplanarias para que sigan siendo cilindros y no bolas); rótulos y bandas, lo justo.
