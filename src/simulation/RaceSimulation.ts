@@ -71,6 +71,8 @@ import type { TyreClass } from './WeatherModel';
 import { chooseCompound, STRATEGY, StrategyState } from './Strategist';
 import { AERO, CAR_DRY_MASS_KG, TRACTION_GRIP, cornerMassFactor, dirtyAirLevel, holdThrottle, longitudinalAccel, slipstreamLevel, topSpeedKmh } from './AeroModel';
 import { mulberry32, random, Rng, rngState, streamSeed, useRng } from './Random';
+import { complianceOdds, decideCompliance, INSIST_LAPS, LAST_LAPS, withoutDisobey, type Compliance } from './TeamRadio';
+import { driverRadio } from '../data/driverRadio';
 import type { RaceSnapshot } from './Snapshot';
 import { overtakingZonesOf, zoneAt } from './OvertakingZones';
 import type { OvertakingZone } from './OvertakingZones';
@@ -80,6 +82,8 @@ const PIT_APPROACH_METERS = 250;
 
 /** [T4.14] Orden de equipo entre los dos coches de un equipo. */
 export type TeamOrderMode = 'libre' | 'mantener' | 'dejar-pasar';
+/** [IA3] Desenlace de la última orden de equipo del jugador (vista privada del equipo). */
+export interface TeamComplianceView { mode: TeamOrderMode; outcome: Compliance; carId: number; lap: number; fromLap?: number }
 export interface TeamOrder { mode: TeamOrderMode; favouredCarId?: number }
 
 export class RaceSimulation {
@@ -314,8 +318,94 @@ export class RaceSimulation {
     return this.teamOrders[teamId] ?? { mode: 'libre' };
   }
 
+  // ── [IA3] Obediencia a las órdenes de equipo del jugador ──
+  /** Último desenlace de cada equipo (lo enseña su vista privada). */
+  teamCompliance: Record<string, TeamComplianceView> = {};
+  /** Órdenes que llegan tarde: empiezan a contar cuando el perjudicado empieza esa vuelta. */
+  private lateTeamOrders: Record<string, { mode: TeamOrderMode; favouredCarId?: number; carId: number; fromLap: number }> = {};
+  /** Tras una desobediencia, repetir la misma orden hasta esa vuelta la cumple siempre. */
+  private teamInsist: Record<string, { mode: TeamOrderMode; favouredCarId?: number; carId: number; untilLap: number }> = {};
+  /** Pilotos que ya han desobedecido esta carrera (una vez como mucho). */
+  private teamDisobeyed = new Set<string>();
+  private teamRadioFallback: Rng | null = null;
+
+  /** El perjudicado de una orden: el que cede con «dejar pasar»; con «mantener», el de detrás. */
+  private affectedByOrder(teamId: string, mode: TeamOrderMode, favouredCarId?: number): CarState | undefined {
+    const cars = this.cars.filter(car => car.driver.teamId === teamId);
+    if (cars.length < 2) return undefined;
+    if (mode === 'dejar-pasar') return cars.find(car => car.id !== favouredCarId);
+    if (mode === 'mantener') { const order = this.getSortedCars(); return [...cars].sort((x, y) => order.indexOf(y) - order.indexOf(x))[0]; }
+    return undefined;
+  }
+
+  /** [IA3] Las 3 últimas vueltas, o cumplir le cuesta los puntos (de P10 a P11, o se queda fuera detrás de su compañero en P10). */
+  teamRadioSituation(teamId: string, mode: TeamOrderMode, favouredCarId?: number): { lastLaps: boolean; losesPoints: boolean } {
+    const car = this.affectedByOrder(teamId, mode, favouredCarId);
+    if (!car) return { lastLaps: false, losesPoints: false };
+    const lastLaps = this.totalLaps - car.currentLap < LAST_LAPS;
+    const order = this.getSortedCars(), pos = (c?: CarState) => (c ? order.indexOf(c) + 1 : 0);
+    const mate = this.cars.find(c => c.driver.teamId === teamId && c.id !== car.id);
+    const points = 10;
+    const losesPoints = mode === 'dejar-pasar' ? pos(car) === points && pos(mate) > points
+      : mode === 'mantener' ? pos(car) === points + 1 && pos(mate) === points : false;
+    return { lastLaps, losesPoints };
+  }
+
+  /**
+   * [IA3] Orden de equipo del jugador: con «dejar pasar» o «mantener», el perjudicado puede obedecer, llegar tarde,
+   * protestar o desobedecer según su carácter. Los equipos que no son del jugador, la lucha libre y las órdenes
+   * automáticas (`setTeamOrder`) se cumplen siempre. El azar sale del flujo «team-radio».
+   */
+  playerTeamOrder(teamId: string, mode: TeamOrderMode, favouredCarId?: number): { ok: boolean; compliance: Compliance; carId?: number; fromLap?: number } {
+    const car = this.affectedByOrder(teamId, mode, favouredCarId);
+    const apply = () => this.setTeamOrder(teamId, mode, favouredCarId);
+    if (mode === 'libre' || !car || !this.isPlayerCar(car.driver.id)) {
+      delete this.lateTeamOrders[teamId];
+      return { ok: apply(), compliance: 'obedece' };
+    }
+    if (mode === 'dejar-pasar' && !this.cars.some(c => c.id === favouredCarId && c.driver.teamId === teamId)) return { ok: false, compliance: 'obedece' };
+    const record = (outcome: Compliance, extra: { fromLap?: number } = {}) => {
+      this.teamCompliance = { ...this.teamCompliance, [teamId]: { mode, outcome, carId: car.id, lap: car.currentLap, ...extra } };
+      return { ok: true, compliance: outcome, carId: car.id, ...extra };
+    };
+    delete this.lateTeamOrders[teamId];
+    const insist = this.teamInsist[teamId];
+    if (insist && insist.mode === mode && insist.favouredCarId === favouredCarId && insist.carId === car.id && car.currentLap <= insist.untilLap) {
+      delete this.teamInsist[teamId];
+      apply();
+      return record('protesta');
+    }
+    const rng = this.stream('team-radio') ?? (this.teamRadioFallback ??= () => Math.random());
+    let odds = complianceOdds(driverRadio(car.driver.id).obedience, this.teamRadioSituation(teamId, mode, favouredCarId));
+    if (this.teamDisobeyed.has(car.driver.id)) odds = withoutDisobey(odds);
+    const outcome = decideCompliance(rng, odds);
+    if (outcome === 'tarde') {
+      const fromLap = car.currentLap + (rng() < 0.5 ? 1 : 2);
+      this.lateTeamOrders = { ...this.lateTeamOrders, [teamId]: { mode, favouredCarId, carId: car.id, fromLap } };
+      return record('tarde', { fromLap });
+    }
+    if (outcome === 'desobedece') {
+      this.teamDisobeyed.add(car.driver.id);
+      this.setTeamOrder(teamId, 'libre');
+      this.teamInsist = { ...this.teamInsist, [teamId]: { mode, favouredCarId, carId: car.id, untilLap: car.currentLap + INSIST_LAPS } };
+      return record('desobedece');
+    }
+    apply();
+    return record(outcome);
+  }
+
+  /** [IA3] Las órdenes que llegan tarde empiezan cuando el perjudicado empieza su vuelta. */
+  private updateLateTeamOrders() {
+    for (const [teamId, late] of Object.entries(this.lateTeamOrders)) {
+      const car = this.cars.find(c => c.id === late.carId);
+      if (!car || car.status !== 'running') { delete this.lateTeamOrders[teamId]; continue; }
+      if (car.currentLap >= late.fromLap) { delete this.lateTeamOrders[teamId]; this.setTeamOrder(teamId, late.mode, late.favouredCarId); }
+    }
+  }
+
   /** Órdenes cumplidas y, si están encendidas, las de los equipos rivales. */
   private updateTeamOrders(dt: number, lapDistanceMeters: number) {
+    this.updateLateTeamOrders();
     // Cumplimiento: el favorecido ya va delante de su compañero.
     for (const [teamId, order] of Object.entries(this.teamOrders)) {
       if (order.mode !== 'dejar-pasar') continue;
@@ -818,6 +908,8 @@ export class RaceSimulation {
     this.teamOrderNotices = [];
     this.teamOrderClock = 0;
     this.teamOrderPace.clear(); this.teamOrderStreak.clear(); this.teamOrderSwapped.clear();
+    // [IA3] Y sin desenlaces de la radio.
+    this.teamCompliance = {}; this.lateTeamOrders = {}; this.teamInsist = {}; this.teamDisobeyed.clear();
     IncidentModel.reset();
     this.activeLuckEvent = null;
     this.luckLog = [];
@@ -1304,7 +1396,7 @@ export class RaceSimulation {
       const onTrack = this.cars.map(car => car.status === 'running' && !car.isInPitLane && !car.pitStop.isPitting);
       const racing = this.lightState === 'racing' && !this.isPaused && !this.isFinished;
       // [T4.14] Órdenes de equipo: solo hay algo que hacer si hay alguna dada o los rivales pueden darlas.
-      if (racing && (this.autoTeamOrders || Object.keys(this.teamOrders).length > 0)) this.updateTeamOrders(dt, this.activeTrack.lapLengthMeters);
+      if (racing && (this.autoTeamOrders || Object.keys(this.teamOrders).length > 0 || Object.keys(this.lateTeamOrders).length > 0)) this.updateTeamOrders(dt, this.activeTrack.lapLengthMeters);
       this.advanceSimulation(dt);
       if (racing) {
         this.drsPermissions.record(this.cars.map((car, i) => ({

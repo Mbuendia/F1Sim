@@ -37,7 +37,7 @@ export type EngineRequest =
 export type PermissionCode = 'equipo-ajeno' | 'solo-anfitrion' | 'espectador' | 'fuera-de-sala';
 
 export type EngineMessage =
-  | { type: 'ack'; seq: number; ok: boolean; reason?: string; code?: PermissionCode }
+  | { type: 'ack'; seq: number; ok: boolean; reason?: string; code?: PermissionCode; compliance?: Compliance }
   | { type: 'saved'; seq: number; snapshot: unknown }
   | { type: 'loaded'; seq: number; ok: boolean; errors: string[]; diagnostics: string[] }
   | { type: 'error'; seq: number | null; reason: string }
@@ -73,6 +73,7 @@ interface Member {
 const COMPOUNDS = ['soft', 'medium', 'hard', 'intermediate', 'wet'];
 const PACES = ['push', 'balanced', 'save'];
 const TEAM_ORDERS = ['libre', 'mantener', 'dejar-pasar'];
+type Compliance = import('../simulation/TeamRadio').Compliance;
 const isId = (v: unknown): v is number => typeof v === 'number' && Number.isInteger(v);
 /** Órdenes sobre un coche, sobre un equipo o sobre la tirada de suerte (las demás son generales, del anfitrión). */
 const CAR_ORDERS = ['box', 'cancelBox', 'pace', 'acceptProposal', 'discardProposal', 'delegate'];
@@ -321,7 +322,10 @@ export class EngineHost {
       case 'teamOrder': {
         if (typeof o.teamId !== 'string' || !TEAM_ORDERS.includes(String(o.mode))) return reject('Orden de equipo desconocida');
         const favoured = isId(o.favouredCarId) ? o.favouredCarId : undefined;
-        return done(sim.setTeamOrder(o.teamId, o.mode as TeamOrderMode, favoured), 'La orden de equipo no se puede dar ahora');
+        // [IA3] Del jugador: el perjudicado obedece o no según su carácter; el acuse lleva el desenlace.
+        const result = sim.playerTeamOrder(o.teamId, o.mode as TeamOrderMode, favoured);
+        if (!result.ok) return reject('La orden de equipo no se puede dar ahora');
+        return o.mode === 'libre' || result.carId === undefined ? { type: 'ack', seq, ok: true } : { type: 'ack', seq, ok: true, compliance: result.compliance };
       }
       case 'speed':
         if (typeof o.value !== 'number' || !Number.isFinite(o.value) || o.value <= 0) return reject('Velocidad no válida');

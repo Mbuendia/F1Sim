@@ -586,6 +586,7 @@ export const modules = [
   { "id": "radio-ia1", "tasks": ["IA1"], "sprint": "6", "kind": "contract" },
   { "id": "radio-replies-ia2", "tasks": ["IA2"], "sprint": "6", "kind": "contract" },
   { "id": "radio-replies-ia9", "tasks": ["IA9"], "sprint": "6", "kind": "contract" },
+  { "id": "team-obedience-ia3", "tasks": ["IA3"], "sprint": "6", "kind": "contract" },
   { "id": "radio-voice-ia6", "tasks": ["IA6"], "sprint": "6", "kind": "contract" },
   { "id": "radio-learning-ia7", "tasks": ["IA7"], "sprint": "6", "kind": "contract" },
   { "id": "radio-model-ia4", "tasks": ["IA4"], "sprint": "6", "kind": "contract" },

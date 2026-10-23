@@ -184,6 +184,8 @@ export interface TeamView {
   teamId: string; teamOrder: unknown; cars: TeamCarView[];
   /** [N6] En una partida compartida: avisos de órdenes cumplidas y tirada de suerte de este equipo. */
   notices?: string[]; luck?: unknown;
+  /** [IA3] Desenlace de la última orden de equipo del jugador (solo en la vista de su equipo). */
+  compliance?: unknown;
 }
 
 export function teamView(sim: RaceSimulation, teamId: string, shared?: { notices: string[] }): TeamView {
@@ -192,6 +194,7 @@ export function teamView(sim: RaceSimulation, teamId: string, shared?: { notices
     teamId,
     ...(shared ? { notices: shared.notices, luck: lucky === teamId ? plain(sim.activeLuckEvent) : null } : {}),
     teamOrder: plain(sim.getTeamOrder(teamId)),
+    ...(sim.teamCompliance?.[teamId] ? { compliance: plain(sim.teamCompliance[teamId]) } : {}),
     cars: sim.cars.filter(car => car.team.id === teamId).map(car => {
       const reading = sim.getWallReading(car.id);
       return {

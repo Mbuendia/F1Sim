@@ -11,10 +11,10 @@
     <script id="project-task-index" type="application/json">
 {
   "source": "DASHBOARD.md",
-  "sha256": "90c4386d789e24c545d8314150139c18dd4d6674702daf406c6c5626a0070782",
+  "sha256": "9c7b6878e47e730a8a059c388d322981bc6061f1220ec9b011015375f81477cd",
   "activeSprint": "6",
-  "currentTask": "IA4",
-  "nextTask": "IA5",
+  "currentTask": "IA7",
+  "nextTask": "IA1",
   "sprints": [
     {
       "name": "Sprint 1",
@@ -83,8 +83,8 @@
     },
     {
       "name": "Sprint 6",
-      "scope": "Radio del muro con IA: órdenes por radio con tus palabras, intérprete por palabras clave siempre disponible, respuestas y voz de los pilotos con filtro de radio, obediencia según carácter, modelo pequeño en el navegador con WebLLM descargado a petición, voces Piper y micro, y modelo ajustado a la radio del juego (IA1-IA7)",
-      "status": "🟡 EN CURSO — planificado el 22/10/2026; IA1, IA2 e IA4 entregadas y en revisión ese día. Jugar sin internet (PWA) queda en 7.6"
+      "scope": "Radio del muro con IA: órdenes por radio con tus palabras, intérprete por palabras clave siempre disponible, respuestas y voz de los pilotos con filtro de radio, obediencia según carácter, modelo pequeño en el navegador con WebLLM descargado a petición, voces Piper y micro, y modelo ajustado a la radio del juego ; tras evaluar los modelos de WebLLM, clasificador por ejemplos y banco de respuestas escrito por un agente ; modelo propio ajustado por el usuario en WebLLM con versión según el dispositivo (IA1-IA10)",
+      "status": "🟡 EN CURSO — planificado el 22/10/2026; IA1, IA2, IA4 e IA5 entregadas y en revisión ese día; en IA5 ningún modelo de la lista llega al objetivo y la mejora depende de IA7. Jugar sin internet (PWA) queda en 7.6"
     }
   ],
   "tasks": [
@@ -1011,7 +1011,7 @@
     {
       "id": "IA3",
       "title": "Obediencia del piloto según su carácter",
-      "status": "pending"
+      "status": "review"
     },
     {
       "id": "IA4",
@@ -1021,17 +1021,32 @@
     {
       "id": "IA5",
       "title": "Modelo de IA en el navegador con WebLLM",
-      "status": "pending"
+      "status": "review"
     },
     {
       "id": "IA6",
       "title": "Voces Piper y órdenes por micro",
-      "status": "pending"
+      "status": "review"
+    },
+    {
+      "id": "IA8",
+      "title": "Clasificador por ejemplos para entender la radio",
+      "status": "review"
+    },
+    {
+      "id": "IA9",
+      "title": "Banco de respuestas escrito por un agente",
+      "status": "review"
+    },
+    {
+      "id": "IA10",
+      "title": "Radio con el modelo propio ajustado (WebLLM), con versión según el dispositivo y respaldo siempre",
+      "status": "review"
     },
     {
       "id": "IA7",
-      "title": "Modelo ajustado a la radio del juego",
-      "status": "pending"
+      "title": "Entorno de aprendizaje de la radio y ajuste fino condicional",
+      "status": "review"
     }
   ]
 }

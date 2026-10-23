@@ -93,7 +93,7 @@ class TeeLink implements EngineLink {
   guestOrder(uid: string, order: unknown): Promise<OrderResult> {
     const seq = ++this.guestSeq;
     return new Promise(resolve => {
-      this.guestPending.set(seq, reply => resolve({ ok: Boolean(reply.ok), ...(reply.reason ? { reason: String(reply.reason) } : {}), ...(reply.code ? { code: String(reply.code) } : {}) }));
+      this.guestPending.set(seq, reply => resolve({ ok: Boolean(reply.ok), ...(reply.reason ? { reason: String(reply.reason) } : {}), ...(reply.code ? { code: String(reply.code) } : {}), ...(reply.compliance ? { compliance: String(reply.compliance) } : {}) }));
       this.inner.post({ type: 'order', seq, order, from: uid });
     });
   }
@@ -219,7 +219,7 @@ export class RemoteLink implements EngineLink {
       const seq = this.seqOf.get(transportSeq);
       if (seq === undefined) return;
       this.seqOf.delete(transportSeq);
-      this.emit({ type: 'ack', seq, ok: Boolean(result?.ok), ...(result?.reason ? { reason: result.reason } : {}), ...(result?.code ? { code: result.code } : {}) });
+      this.emit({ type: 'ack', seq, ok: Boolean(result?.ok), ...(result?.reason ? { reason: result.reason } : {}), ...(result?.code ? { code: result.code } : {}), ...(result?.compliance ? { compliance: result.compliance } : {}) });
     }));
   }
 
