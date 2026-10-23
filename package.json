@@ -13,6 +13,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@diffusionstudio/piper-wasm": "1.0.0",
+    "@diffusionstudio/vits-web": "1.0.3",
+    "@huggingface/transformers": "4.3.1",
+    "@mlc-ai/web-llm": "0.2.85",
     "@types/animejs": "^3.1.13",
     "@types/three": "^0.185.4",
     "animejs": "^4.5.0",

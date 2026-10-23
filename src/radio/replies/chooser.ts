@@ -1,6 +1,8 @@
 /**
  * [IA2] Elige qué variante dice el piloto: al azar (inyectado; en los tests con semilla, nunca el azar del motor) y sin
  * repetir la misma variante dos veces seguidas para el mismo piloto y resultado.
+ * [IA9] Con el banco de respuestas cargado (bankLoader, con import() al entrar en carrera) se elige de sus 30 variantes
+ * y, además, sin repetir ninguna de las 10 últimas del mismo piloto y tipo. Sin banco, las plantillas de IA2, igual que antes.
  */
 import type { Temperament } from '../../data/driverRadio';
 import type { RadioParse } from '../types';
@@ -31,19 +33,37 @@ export function fillTemplate(template: string, vars: TemplateVars): string {
     .replace(/:\s*\./g, '.');
 }
 
+/** [IA9] El banco de respuestas: carácter → tipo → variantes. */
+export type ReplyBank = Record<Temperament, Record<LineKind, string[]>>;
+let bank: ReplyBank | null = null;
+export function setReplyBank(next: ReplyBank | null): void { bank = next; }
+export function activeBank(): ReplyBank | null { return bank; }
+/** Cuántas de las últimas variantes del mismo piloto y tipo no se repiten con el banco. */
+export const RECENT_WINDOW = 10;
+
 export interface Chooser {
   pick(driverId: string, temperament: Temperament, kind: LineKind, vars: TemplateVars): { text: string; variant: number; kind: LineKind };
 }
 
 export function createChooser(random: () => number = Math.random): Chooser {
   const last = new Map<string, number>();
+  const recent = new Map<string, number[]>();
   return {
     pick(driverId, temperament, kind, vars) {
-      const list = TEMPLATES[temperament]?.[kind] ?? TEMPLATES.frio[kind];
+      const fromBank = bank?.[temperament]?.[kind];
+      const list = fromBank?.length ? fromBank : TEMPLATES[temperament]?.[kind] ?? TEMPLATES.frio[kind];
       const key = `${driverId}|${kind}`;
       const previous = last.get(key);
-      let variant = Math.floor(random() * list.length);
-      if (list.length > 1 && variant === previous) variant = (variant + 1 + Math.floor(random() * (list.length - 1))) % list.length;
+      let variant: number;
+      if (fromBank?.length) {
+        const avoid = new Set((recent.get(key) ?? []).slice(-Math.min(RECENT_WINDOW, list.length - 1)));
+        const free = list.map((_, i) => i).filter(i => !avoid.has(i));
+        variant = free[Math.floor(random() * free.length)];
+        recent.set(key, [...(recent.get(key) ?? []), variant].slice(-RECENT_WINDOW));
+      } else {
+        variant = Math.floor(random() * list.length);
+        if (list.length > 1 && variant === previous) variant = (variant + 1 + Math.floor(random() * (list.length - 1))) % list.length;
+      }
       last.set(key, variant);
       return { text: fillTemplate(list[variant], vars), variant, kind };
     },

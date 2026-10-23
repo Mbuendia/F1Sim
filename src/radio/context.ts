@@ -28,7 +28,7 @@ export interface RadioContextSpec {
 
 export function contextFromSpec(spec: RadioContextSpec): RadioContext {
   const cars: RadioCar[] = spec.coches.map(c => ({
-    id: c.id, driverId: c.piloto, displayName: DRIVERS[c.piloto]?.firstName, names: radioNamesById(c.piloto), position: c.posicion, status: c.estado,
+    id: c.id, driverId: c.piloto, displayName: DRIVERS[c.piloto]?.firstName, code: DRIVERS[c.piloto]?.code, names: radioNamesById(c.piloto), position: c.posicion, status: c.estado,
     inBoxes: Boolean(c.enBoxes), compounds: c.compuestos,
     proposals: (c.propuestas ?? []).map(p => ({ id: p.id, kind: p.tipo, compound: p.compuesto })),
   }));
@@ -46,7 +46,7 @@ export function contextFromRace(args: {
     const order = own?.boxOrder as { status?: string } | null | undefined;
     const proposals = (own?.proposals as { id: string; kind: RadioProposal['kind']; compound?: TireCompound }[] | undefined) ?? [];
     return {
-      id: car.id, driverId: car.driver.id, displayName: car.driver.firstName, names: radioNames(car.driver), position: car.currentPosition, status: car.status,
+      id: car.id, driverId: car.driver.id, displayName: car.driver.firstName, code: car.driver.code, names: radioNames(car.driver), position: car.currentPosition, status: car.status,
       inBoxes: Boolean(pit?.isPitting || pit?.waitingForBox || order?.status === 'committed'),
       proposals: proposals.map(p => ({ id: p.id, kind: p.kind, compound: p.compound })),
     };

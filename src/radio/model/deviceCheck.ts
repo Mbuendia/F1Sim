@@ -32,6 +32,17 @@ export async function classifyDevice(env: DeviceEnv): Promise<DeviceResult> {
   return env.mobile ? { kind: 'movil', reason: DEVICE_REASONS.movil } : { kind: 'completo' };
 }
 
+/**
+ * [IA8] El clasificador por ejemplos no necesita WebGPU (va en WASM): solo sitio para guardar el modelo (≈ 130 MB,
+ * se pide 1 GB de cuota como en IA4). En el móvil se ofrece con el aviso de memoria y batería.
+ */
+export async function classifyClassifierDevice(env: DeviceEnv): Promise<DeviceResult> {
+  let quota = 0;
+  try { quota = env.estimate ? (await env.estimate()).quota ?? 0 : 0; } catch { quota = 0; }
+  if (quota < MIN_QUOTA) return { kind: 'no-apto', reason: DEVICE_REASONS.sinEspacio };
+  return env.mobile ? { kind: 'movil', reason: DEVICE_REASONS.movil } : { kind: 'completo' };
+}
+
 /** El entorno del navegador (sin nada en el servidor o en los tests). */
 export function browserDeviceEnv(): DeviceEnv {
   const nav = (globalThis as unknown as { navigator?: Navigator & { gpu?: GpuLike; userAgentData?: { mobile?: boolean } } }).navigator;

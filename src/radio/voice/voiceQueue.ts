@@ -7,7 +7,7 @@ import type { Speaker } from './systemVoice';
 
 export const MAX_REPLY_AGE_SEC = 8;
 
-export interface VoiceItem { carId: number; text: string; requestedAt: number; pitch: number; rate: number; priority?: boolean }
+export interface VoiceItem { carId: number; text: string; requestedAt: number; pitch: number; rate: number; priority?: boolean; /** [IA6] Quién habla. */ driverId?: string }
 
 export function createVoiceQueue(deps: {
   speaker: Speaker;
@@ -31,7 +31,7 @@ export function createVoiceQueue(deps: {
       const item = items.shift()!;
       if (silent() || !fresh(item)) continue;
       sound();
-      await deps.speaker.speak(item.text, { pitch: item.pitch, rate: item.rate, volume: Math.min(1, deps.level()) });
+      await deps.speaker.speak(item.text, { pitch: item.pitch, rate: item.rate, volume: Math.min(1, deps.level()), driverId: item.driverId });
       sound();
     }
     busy = false;

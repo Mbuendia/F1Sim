@@ -17,7 +17,8 @@ export function pickVoice<V extends VoiceLike>(voices: readonly V[]): V | null {
 export interface Speaker {
   /** Hay síntesis y alguna voz en español. */
   available(): boolean;
-  speak(text: string, opts: { pitch: number; rate: number; volume?: number }): Promise<void>;
+  /** [IA6] `driverId`: quién habla (la voz Piper elige su voz y su velocidad; la del sistema usa pitch y rate). */
+  speak(text: string, opts: { pitch: number; rate: number; volume?: number; driverId?: string }): Promise<void>;
   cancel(): void;
 }
 

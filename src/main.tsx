@@ -21,9 +21,15 @@ if (import.meta.env.DEV && new URLSearchParams(location.search).get('revision') 
 } else if (import.meta.env.DEV && new URLSearchParams(location.search).get('revision') === 'sala') {
   // [N7] Pantallas de sala con datos simulados (`?revision=sala&pantalla=anfitrion|unirse|invitado|equipo`).
   import('./dev/RoomReview').then(({ default: RoomReview }) => root.render(<RoomReview />))
+} else if (import.meta.env.DEV && new URLSearchParams(location.search).get('revision') === 'radio-eval') {
+  // [IA5] Evaluación del modelo de la radio: carga WebLLM al pulsar (`?revision=radio-eval`).
+  import('./dev/RadioEval').then(({ default: RadioEval }) => root.render(<RadioEval />))
 } else if (import.meta.env.DEV && new URLSearchParams(location.search).get('revision') === 'radio') {
   // [IA4] Ajustes de la radio con la tienda falsa en todos sus estados (`?revision=radio`).
   import('./dev/RadioReview').then(({ default: RadioReview }) => root.render(<RadioReview />))
+} else if (import.meta.env.DEV && new URLSearchParams(location.search).get('revision') === 'respuestas') {
+  // [IA9] Muestra del banco de respuestas para marcar las malas (`?revision=respuestas`).
+  import('./dev/RepliesReview').then(({ default: RepliesReview }) => root.render(<RepliesReview />))
 } else if (import.meta.env.DEV && new URLSearchParams(location.search).get('revision') === 'puente') {
   // Puente de Suzuka y sombras con coches colocados en el cruce (`?revision=puente&hora=0&nubes=0`).
   import('./dev/BridgeReview').then(({ default: BridgeReview }) => root.render(<BridgeReview />))

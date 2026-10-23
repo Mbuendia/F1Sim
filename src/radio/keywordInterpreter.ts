@@ -36,7 +36,8 @@ function findHits(words: string[], used: boolean[], fuzzy: boolean): Hit[] {
       }
       if (!ok) continue;
       for (let j = 0; j < n; j++) used[at + j] = true;
-      hits.push({ kind, value: k.value, at, length: n, negated: k.words[0] !== 'no' && words[at - 1] === 'no', weak: Boolean(k.weak), words: k.words });
+      // [IA5] Un «no» que ya es parte de otra frase («eso no, déjalo») no niega a la siguiente.
+      hits.push({ kind, value: k.value, at, length: n, negated: k.words[0] !== 'no' && words[at - 1] === 'no' && !used[at - 1], weak: Boolean(k.weak), words: k.words });
       break;
     }
   }
@@ -69,7 +70,11 @@ function findMentions(words: string[], context: RadioContext, used: boolean[]): 
 const fail = (status: RadioParse['status'], carIds: number[], reason?: string): RadioParse => ({ status, orders: [], carIds, ...(reason ? { reason } : {}) });
 const COMPOUND_NAME: Record<TireCompound, string> = { soft: 'blandos', medium: 'medios', hard: 'duros', intermediate: 'intermedios', wet: 'de lluvia' };
 
-export function interpretSync(text: string, context: RadioContext): RadioParse {
+/**
+ * [IA8] `forced`: la intención (y su valor) ya la ha decidido el clasificador por ejemplos; aquí solo se sacan los huecos
+ * con las reglas de siempre (destinatario, compuesto, favorecido, propuesta) y se valida con `mapper`.
+ */
+export function interpretSync(text: string, context: RadioContext, forced?: { kind: Kind; value: unknown }): RadioParse {
   const words = tokens(text);
   const used = words.map(() => false);
   // Primero las palabras exactas del catálogo; luego los nombres con lo que queda; al final, compuestos con una errata.
@@ -88,7 +93,7 @@ export function interpretSync(text: string, context: RadioContext): RadioParse {
   if (!hits.length && rest.length === 1 && rest[0] === 'no') hits.push({ kind: 'propuesta', value: false, at: words.indexOf('no'), length: 1, negated: false, weak: false, words: ['no'] });
 
   // «No» delante de una orden: invierte la parada y deja ambiguas las demás.
-  for (const h of hits) {
+  for (const h of forced ? [] : hits) {
     if (!h.negated) continue;
     if (h.kind === 'boxes') { h.kind = 'anular-boxes'; h.negated = false; } else if (h.kind !== 'compuesto') return fail('ambigua', carIds);
   }
@@ -96,9 +101,14 @@ export function interpretSync(text: string, context: RadioContext): RadioParse {
   let kinds = [...new Set(hits.filter(h => h.kind !== 'compuesto' && !h.weak).map(h => h.kind as Kind))];
   if (kinds.includes('anular-boxes')) kinds = kinds.filter(k => k !== 'boxes');
   if (!kinds.length && (hits.some(h => h.kind === 'boxes') || compounds.length)) kinds = ['boxes'];
+  if (forced) kinds = [forced.kind];
   if (kinds.length !== 1 || compounds.length > 1) return fail('ambigua', carIds);
+  // [IA5] La misma intención con valores distintos («ataca y ahorra») también es ambigua.
+  if (!forced && new Set(hits.filter(h => h.kind === kinds[0] && !h.weak).map(h => JSON.stringify(h.value))).size > 1) return fail('ambigua', carIds);
   const kind = kinds[0];
-  const hit = hits.find(h => h.kind === kind)!;
+  const hit: Hit = forced
+    ? { kind, value: forced.value, at: -1, length: 0, negated: false, weak: false, words: [] }
+    : hits.find(h => h.kind === kind)!;
   if (!context.ordersAvailable) return fail('no-disponible', carIds, 'La carrera no admite órdenes ahora');
 
   const running = (c: RadioCar) => c.status !== 'out' && c.status !== 'finished';
@@ -132,6 +142,13 @@ export function interpretSync(text: string, context: RadioContext): RadioParse {
       if (context.cars.length !== 2 || !context.cars.every(running)) return fail('no-disponible', carIds, 'Hacen falta los dos coches en pista');
       if (mode !== 'dejar-pasar') { intent = { kind, mode }; break; }
       const [ahead, behind] = [...context.cars].sort((a, b) => a.position - b.position);
+      if (forced) {
+        // [IA8] Sin la palabra clave no hay «antes» ni «después»: el favorecido es el nombrado tras «a» o, si no, el de detrás.
+        const favouredCar = own.find(m => words[m.at - 1] === 'a')?.car ?? behind;
+        teamAddressee = context.cars.find(c => c.id !== favouredCar.id)!.id;
+        intent = { kind, mode, favouredCarId: favouredCar.id };
+        break;
+      }
       const after = own.find(m => m.at > hit.at)?.car;
       const before = own.find(m => m.at < hit.at)?.car ?? fallback;
       let favoured: RadioCar;

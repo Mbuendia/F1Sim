@@ -6,10 +6,10 @@ import type { Temperament } from '../../data/driverRadio';
 
 export const TEMPERAMENTS: Temperament[] = ['frio', 'competitivo', 'quejica', 'bromista'];
 
-/** Resultados de una orden del muro. `protesta` la usará IA3 (obediencia). */
+/** Resultados de una orden del muro. `protesta`, `tarde` y `desobedece`: desenlaces de una orden de equipo (IA3). */
 export const REPLY_KINDS = [
   'ok-boxes', 'ok-anular-boxes', 'ok-ritmo', 'ok-orden-equipo', 'ok-propuesta', 'ok-delegar',
-  'protesta', 'repetir', 'sin-compuesto', 'no-disponible', 'no-es-tuyo', 'rechazada', 'sin-senal',
+  'protesta', 'tarde', 'desobedece', 'repetir', 'sin-compuesto', 'no-disponible', 'no-es-tuyo', 'rechazada', 'sin-senal',
 ] as const;
 /** Llamadas que hace el piloto sin que se le pregunte. */
 export const CALL_KINDS = [
@@ -28,6 +28,8 @@ export const TEMPLATES: Record<Temperament, Record<LineKind, string[]>> = {
     'ok-propuesta': ['Copiado.', 'Entendido, así lo hacemos.', 'Recibido.'],
     'ok-delegar': ['Copiado.', 'Entendido, como digáis.', 'Recibido, sin problema.'],
     protesta: ['No es lo mejor, pero vale.', 'No lo veo claro.', 'Prefiero no hacerlo.'],
+    tarde: ['Copiado, en un par de vueltas.', 'Entendido, lo hago más adelante.', 'Recibido, cuando pueda.'],
+    desobedece: ['Negativo, no lo voy a hacer.', 'No, seguimos como estamos.', 'Prefiero no hacerlo, sigo así.'],
     repetir: ['Repite, no te he entendido.', 'No te copio, otra vez.', '¿Puedes repetir?'],
     'sin-compuesto': ['¿Qué goma pongo?', '¿Con qué compuesto?', 'Dime el compuesto.'],
     'no-disponible': ['Ahora no se puede: {motivo}.', 'Negativo: {motivo}.', 'No es posible: {motivo}.'],
@@ -52,6 +54,8 @@ export const TEMPLATES: Record<Temperament, Record<LineKind, string[]>> = {
     'ok-propuesta': ['¡Vamos con eso!', 'Hecho, a ganar tiempo.', 'Buena idea, adelante.'],
     'ok-delegar': ['Vale, pero que sea para ganar.', 'Hecho, decidid rápido.', 'De acuerdo, confío en vosotros.'],
     protesta: ['¿En serio? Voy más rápido.', 'Esto nos cuesta la carrera.', 'No me gusta nada, pero vale.'],
+    tarde: ['Dadme un par de vueltas, voy rápido.', 'Ahora no, luego lo hago.', 'Espera, que estoy apretando.'],
+    desobedece: ['¡Ni hablar! Voy más rápido.', '¡No! Esta posición es mía.', 'No pienso hacerlo.'],
     repetir: ['¿Qué? ¡Repite!', 'No te he oído, ¡otra vez!', 'Repite, rápido.'],
     'sin-compuesto': ['¿Qué goma? ¡Rápido!', 'Dime el compuesto, ya.', '¿Con cuál entro?'],
     'no-disponible': ['¡No se puede! {motivo}.', 'Imposible: {motivo}.', 'Ahora no: {motivo}.'],
@@ -76,6 +80,8 @@ export const TEMPLATES: Record<Temperament, Record<LineKind, string[]>> = {
     'ok-propuesta': ['Vale, si lo decís vosotros.', 'Bueno, hagámoslo.', 'Hecho, a ver qué sale.'],
     'ok-delegar': ['Vale, decidid vosotros.', 'Bueno, vosotros sabréis.', 'De acuerdo, pero luego no os quejéis.'],
     protesta: ['¿Otra vez yo?', 'Esto no tiene sentido.', 'No estoy de acuerdo.'],
+    tarde: ['Vale... pero luego, ahora no.', 'Ya lo haré, dadme un poco.', 'Bueno, más adelante.'],
+    desobedece: ['No, otra vez yo no.', 'Esto no lo hago, lo siento.', 'Me niego, no es justo.'],
     repetir: ['No se entiende nada, repite.', 'La radio va fatal, ¿qué?', '¿Qué dices? Repite.'],
     'sin-compuesto': ['¿Y qué goma pongo?', 'No me habéis dicho el compuesto.', '¿Con qué entro?'],
     'no-disponible': ['No se puede: {motivo}. Típico.', 'Pues no: {motivo}.', 'Imposible, {motivo}.'],
@@ -100,6 +106,8 @@ export const TEMPLATES: Record<Temperament, Record<LineKind, string[]>> = {
     'ok-propuesta': ['¡Me gusta el plan!', 'Hecho, jefe.', 'Venga, a ver qué tal sale.'],
     'ok-delegar': ['Vale, vosotros al volante... digo, al muro.', 'Hecho, yo solo conduzco.', 'De acuerdo, sorprendedme.'],
     protesta: ['¿De verdad? Me estáis vacilando.', 'Mmm, no sé yo.', 'Eso no me lo creo ni yo.'],
+    tarde: ['Vale, pero después del café.', 'Luego, jefe, que ahora estoy liado.', 'Apuntado para dentro de un rato.'],
+    desobedece: ['Va a ser que no, jefe.', 'Uy, no te he oído... no lo hago.', 'Esa me la salto, lo siento.'],
     repetir: ['¿Cómo? Que se me ha metido una mosca.', 'Repite, que iba cantando.', '¿Eh? Otra vez, despacito.'],
     'sin-compuesto': ['¿Qué goma? ¿La de borrar?', '¿Qué compuesto, jefe?', 'Dime cuál, que tengo muchas.'],
     'no-disponible': ['Va a ser que no: {motivo}.', 'Ni con magia: {motivo}.', 'No hay manera: {motivo}.'],

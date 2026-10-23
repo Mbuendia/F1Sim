@@ -4,10 +4,13 @@ import { useMemo } from 'react';
 import RadioSettings, { type RadioSettingsProps } from '../components/RadioSettings';
 import { createFakeModelStore, unavailableModelStore } from '../radio/model/ModelStore';
 import { DEVICE_REASONS } from '../radio/model/deviceCheck';
-import { MODEL_MANIFEST } from '../radio/model/manifest';
+import { VARIANT_REASONS } from '../radio/model/variants';
+import { RADIO_MODELS } from '../radio/model/manifest';
 
 const MB = 1024 * 1024;
-const total = MODEL_MANIFEST.bytes;
+// [IA10] La versión completa del modelo propio; en el móvil, la ligera.
+const total = RADIO_MODELS.q0f16.bytes;
+const small = RADIO_MODELS.q4.bytes;
 const roomy = async () => ({ quota: 8192 * MB, usage: 0 });
 const fake = (extra: Partial<Parameters<typeof createFakeModelStore>[0]> = {}) => createFakeModelStore({ totalBytes: total, chunkBytes: 6 * MB, stepMs: 120, ...extra });
 
@@ -15,7 +18,9 @@ const CASES: { title: string; props: () => RadioSettingsProps }[] = [
   { title: 'Sin WebGPU', props: () => ({ device: { kind: 'no-apto', reason: DEVICE_REASONS.sinWebgpu }, initialMode: 'basica', store: fake() }) },
   { title: 'Gráfica sin memoria', props: () => ({ device: { kind: 'no-apto', reason: DEVICE_REASONS.sinMemoria }, initialMode: 'basica', store: fake() }) },
   { title: 'Ventana privada o poco espacio', props: () => ({ device: { kind: 'no-apto', reason: DEVICE_REASONS.sinEspacio }, initialMode: 'basica', store: fake() }) },
-  { title: 'Móvil, sin modelo', props: () => ({ device: { kind: 'movil', reason: DEVICE_REASONS.movil }, initialMode: 'ia', store: fake(), estimate: roomy }) },
+  { title: 'Móvil, sin modelo', props: () => ({ choice: { variant: 'q4', options: ['q4'], mobile: true, reason: VARIANT_REASONS.movil }, initialMode: 'ia', store: fake({ totalBytes: small, chunkBytes: 2 * MB }), estimate: roomy }) },
+  { title: 'Móvil con ahorro de datos (pulsa Descargar)', props: () => ({ choice: { variant: 'q4', options: ['q4'], mobile: true, reason: VARIANT_REASONS.movil }, initialMode: 'ia', store: fake({ totalBytes: small, chunkBytes: 2 * MB }), estimate: roomy, saveData: true }) },
+  { title: 'Portátil con poca memoria: solo la ligera', props: () => ({ choice: { variant: 'q4', options: ['q4'], mobile: false, reason: VARIANT_REASONS.ligera }, initialMode: 'ia', store: fake({ totalBytes: small, chunkBytes: 2 * MB }), estimate: roomy }) },
   { title: 'Escritorio, sin modelo (pulsa Descargar)', props: () => ({ device: { kind: 'completo' }, initialMode: 'ia', store: fake(), estimate: roomy }) },
   { title: 'Ahorro de datos activado', props: () => ({ device: { kind: 'completo' }, initialMode: 'ia', store: fake(), estimate: roomy, saveData: true }) },
   { title: 'Descarga a medias (cancelada)', props: () => ({ device: { kind: 'completo' }, initialMode: 'ia', store: fake({ initialBytes: Math.round(total * 0.42) }), estimate: roomy }) },
@@ -23,7 +28,7 @@ const CASES: { title: string; props: () => RadioSettingsProps }[] = [
   { title: 'Disco lleno a mitad (pulsa Descargar)', props: () => ({ device: { kind: 'completo' }, initialMode: 'ia', store: fake({ failOnce: { atBytes: Math.round(total * 0.5), code: 'cuota' } }), estimate: roomy }) },
   { title: 'Sin espacio antes de empezar (pulsa Descargar)', props: () => ({ device: { kind: 'completo' }, initialMode: 'ia', store: fake(), estimate: async () => ({ quota: 1200 * MB, usage: 1000 * MB }) }) },
   { title: 'Modelo descargado', props: () => ({ device: { kind: 'completo' }, initialMode: 'ia', store: fake({ preloaded: true }), estimate: roomy }) },
-  { title: 'En el juego hasta IA5 (pulsa Descargar)', props: () => ({ device: { kind: 'completo' }, initialMode: 'ia', store: unavailableModelStore, estimate: roomy }) },
+  { title: 'Tienda sin modelo que descargar (pulsa Descargar)', props: () => ({ device: { kind: 'completo' }, initialMode: 'ia', store: unavailableModelStore, estimate: roomy }) },
 ];
 
 function Card({ title, make }: { title: string; make: () => RadioSettingsProps }) {

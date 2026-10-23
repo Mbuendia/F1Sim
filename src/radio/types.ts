@@ -38,6 +38,8 @@ export interface RadioCar {
   driverId: string;
   /** [IA2] Nombre de pila, para las respuestas («{companero}»). */
   displayName?: string;
+  /** [IA5] Siglas del piloto (ALO, STR…), para hablar con el modelo. */
+  code?: string;
   /** Formas de llamarlo, ya normalizadas (nombre, apellido de parodia, siglas, dorsal y apodos). */
   names: string[];
   position: number;

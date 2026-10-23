@@ -4,7 +4,7 @@
  */
 export type ModelErrorCode = 'cancelada' | 'red' | 'cuota' | 'no-disponible';
 export class ModelError extends Error {
-  constructor(public code: ModelErrorCode, message = code) { super(message); }
+  constructor(public code: ModelErrorCode, message: string = code) { super(message); }
 }
 
 export interface ModelStore {
