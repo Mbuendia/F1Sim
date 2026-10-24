@@ -37,6 +37,9 @@
   border-radius: var(--radio-l);
   background: var(--panel-2);
   z-index: 80;
+  /* [IA4] Con los ajustes de la radio el menú crece: si no cabe, se desplaza por dentro. */
+  max-height: calc(100dvh - 90px);
+  overflow-y: auto;
 }
 
 .section {

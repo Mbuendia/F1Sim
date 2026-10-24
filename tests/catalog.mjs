@@ -583,5 +583,15 @@ export const modules = [
   { "id": "scenery-3d-3", "tasks": [], "sprint": null, "kind": "contract" },
   { "id": "scenery-3d-4", "tasks": [], "sprint": null, "kind": "contract" },
   { "id": "scenery-3d-5", "tasks": [], "sprint": null, "kind": "contract" },
+  { "id": "radio-ia1", "tasks": ["IA1"], "sprint": "6", "kind": "contract" },
+  { "id": "radio-replies-ia2", "tasks": ["IA2"], "sprint": "6", "kind": "contract" },
+  { "id": "radio-replies-ia9", "tasks": ["IA9"], "sprint": "6", "kind": "contract" },
+  { "id": "team-obedience-ia3", "tasks": ["IA3"], "sprint": "6", "kind": "contract" },
+  { "id": "radio-voice-ia6", "tasks": ["IA6"], "sprint": "6", "kind": "contract" },
+  { "id": "radio-learning-ia7", "tasks": ["IA7"], "sprint": "6", "kind": "contract" },
+  { "id": "radio-model-ia4", "tasks": ["IA4"], "sprint": "6", "kind": "contract" },
+  { "id": "radio-llm-ia5", "tasks": ["IA5"], "sprint": "6", "kind": "contract" },
+  { "id": "radio-classifier-ia8", "tasks": ["IA8"], "sprint": "6", "kind": "contract" },
+  { "id": "radio-finetuned-ia10", "tasks": ["IA10"], "sprint": "6", "kind": "contract" },
   { "id": "viewport-movil", "tasks": [], "sprint": null, "kind": "regression" }
 ];

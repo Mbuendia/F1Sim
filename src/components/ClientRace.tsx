@@ -117,7 +117,7 @@ export function ClientRaceScreen({ role, myTeamId, roster, fast, slow, teams, li
             <section className={s.wall} data-wall aria-label="Muro de tu equipo" hidden={!showWall}>
               {/* Paradas, ritmo, órdenes de equipo y propuestas de los dos pilotos, en el bloque de siempre. */}
               {own.length > 0
-                ? <div className={s.car} style={{ ['--c' as string]: own[0].team.color }}><BoxControls car={own[0]} teamCars={own} team={team} race={race} send={onOrder} /></div>
+                ? <div className={s.car} style={{ ['--c' as string]: own[0].team.color }}><BoxControls car={own[0]} teamCars={own} team={team} race={race} send={onOrder} slow={slow} /></div>
                 : <p className={s.dim}>Esperando el muro de tu equipo…</p>}
             </section>
           )}

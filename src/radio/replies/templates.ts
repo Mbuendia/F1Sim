@@ -1,0 +1,127 @@
+/**
+ * [IA2] Lo que contesta cada piloto por radio, según su carácter: una lista de variantes por resultado de la orden y
+ * por llamada suya (sucesos de carrera). Huecos: {compuesto}, {companero}, {vuelta} y {motivo}. Nunca nombres reales.
+ */
+import type { Temperament } from '../../data/driverRadio';
+
+export const TEMPERAMENTS: Temperament[] = ['frio', 'competitivo', 'quejica', 'bromista'];
+
+/** Resultados de una orden del muro. `protesta`, `tarde` y `desobedece`: desenlaces de una orden de equipo (IA3). */
+export const REPLY_KINDS = [
+  'ok-boxes', 'ok-anular-boxes', 'ok-ritmo', 'ok-orden-equipo', 'ok-propuesta', 'ok-delegar',
+  'protesta', 'tarde', 'desobedece', 'repetir', 'sin-compuesto', 'no-disponible', 'no-es-tuyo', 'rechazada', 'sin-senal',
+] as const;
+/** Llamadas que hace el piloto sin que se le pregunte. */
+export const CALL_KINDS = [
+  'desgaste', 'pinchazo', 'lluvia-empieza', 'lluvia-para', 'safety-car', 'vsc', 'orden-cumplida', 'adelanta', 'adelantado',
+] as const;
+export type ReplyKind = (typeof REPLY_KINDS)[number];
+export type CallKind = (typeof CALL_KINDS)[number];
+export type LineKind = ReplyKind | CallKind;
+
+export const TEMPLATES: Record<Temperament, Record<LineKind, string[]>> = {
+  frio: {
+    'ok-boxes': ['Copiado. Entro, {compuesto}.', 'Entendido, box esta vuelta con {compuesto}.', 'Recibido. {compuesto}.'],
+    'ok-anular-boxes': ['Copiado, me quedo fuera.', 'Entendido, no entro.', 'Recibido, sigo en pista.'],
+    'ok-ritmo': ['Copiado, cambio el ritmo.', 'Entendido.', 'Recibido, ajusto.'],
+    'ok-orden-equipo': ['Copiado.', 'Entendido, hecho con {companero}.', 'Recibido, de acuerdo.'],
+    'ok-propuesta': ['Copiado.', 'Entendido, así lo hacemos.', 'Recibido.'],
+    'ok-delegar': ['Copiado.', 'Entendido, como digáis.', 'Recibido, sin problema.'],
+    protesta: ['No es lo mejor, pero vale.', 'No lo veo claro.', 'Prefiero no hacerlo.'],
+    tarde: ['Copiado, en un par de vueltas.', 'Entendido, lo hago más adelante.', 'Recibido, cuando pueda.'],
+    desobedece: ['Negativo, no lo voy a hacer.', 'No, seguimos como estamos.', 'Prefiero no hacerlo, sigo así.'],
+    repetir: ['Repite, no te he entendido.', 'No te copio, otra vez.', '¿Puedes repetir?'],
+    'sin-compuesto': ['¿Qué goma pongo?', '¿Con qué compuesto?', 'Dime el compuesto.'],
+    'no-disponible': ['Ahora no se puede: {motivo}.', 'Negativo: {motivo}.', 'No es posible: {motivo}.'],
+    'no-es-tuyo': ['Ese no es de nuestro equipo.', 'Ese no es nuestro coche.', 'No es de los nuestros.'],
+    rechazada: ['No ha entrado: {motivo}.', 'Negativo, {motivo}.', 'No se puede: {motivo}.'],
+    'sin-senal': ['No te recibo bien.', 'Se corta la radio, no te recibo.', 'Radio mala, no te copio.'],
+    desgaste: ['Las gomas empiezan a caer.', 'Se nota el desgaste, vuelta {vuelta}.', 'Neumáticos al límite pronto.'],
+    pinchazo: ['¡Pinchazo! Tengo un pinchazo.', 'Pinchazo, entro despacio.', 'He perdido una rueda, pinchazo.'],
+    'lluvia-empieza': ['Empieza a llover aquí.', 'Gotas en la visera.', 'Llueve en este sector.'],
+    'lluvia-para': ['Ha parado de llover.', 'Ya no llueve.', 'La pista empieza a secarse.'],
+    'safety-car': ['Safety Car, copiado.', 'Safety Car en pista.', 'Bandera de Safety Car.'],
+    vsc: ['Virtual, copiado.', 'VSC, respeto el delta.', 'Safety Car virtual.'],
+    'orden-cumplida': ['Hecho, {companero} ha pasado.', 'Posiciones cambiadas.', 'Orden cumplida.'],
+    adelanta: ['Pasado.', 'Uno menos.', 'Adelantamiento hecho.'],
+    adelantado: ['Me han pasado.', 'He perdido una posición.', 'Me ha pasado, no podía cubrir.'],
+  },
+  competitivo: {
+    'ok-boxes': ['¡Vamos! Entro, {compuesto}.', 'Box, box, {compuesto}. ¡A por ellos!', 'Perfecto, {compuesto} y a atacar.'],
+    'ok-anular-boxes': ['Mejor, me quedo fuera y aprieto.', 'Bien, sigo, que voy rápido.', '¡Me quedo! Esto aguanta.'],
+    'ok-ritmo': ['¡Vamos allá!', 'Entendido, dame lo que tengas.', 'Hecho, a por ello.'],
+    'ok-orden-equipo': ['Vale, por el equipo.', 'Hecho, que {companero} lo aproveche.', 'De acuerdo, pero luego me lo devolvéis.'],
+    'ok-propuesta': ['¡Vamos con eso!', 'Hecho, a ganar tiempo.', 'Buena idea, adelante.'],
+    'ok-delegar': ['Vale, pero que sea para ganar.', 'Hecho, decidid rápido.', 'De acuerdo, confío en vosotros.'],
+    protesta: ['¿En serio? Voy más rápido.', 'Esto nos cuesta la carrera.', 'No me gusta nada, pero vale.'],
+    tarde: ['Dadme un par de vueltas, voy rápido.', 'Ahora no, luego lo hago.', 'Espera, que estoy apretando.'],
+    desobedece: ['¡Ni hablar! Voy más rápido.', '¡No! Esta posición es mía.', 'No pienso hacerlo.'],
+    repetir: ['¿Qué? ¡Repite!', 'No te he oído, ¡otra vez!', 'Repite, rápido.'],
+    'sin-compuesto': ['¿Qué goma? ¡Rápido!', 'Dime el compuesto, ya.', '¿Con cuál entro?'],
+    'no-disponible': ['¡No se puede! {motivo}.', 'Imposible: {motivo}.', 'Ahora no: {motivo}.'],
+    'no-es-tuyo': ['¿Ese? Ese es un rival.', 'Ese no es de los nuestros, ¡es a quien hay que pasar!', 'No es nuestro, es un rival.'],
+    rechazada: ['¡No ha entrado! {motivo}.', 'Rechazada: {motivo}.', 'Mal, {motivo}.'],
+    'sin-senal': ['¡No te recibo!', 'Radio cortada, repite.', 'No te oigo bien.'],
+    desgaste: ['Estas gomas ya no dan más.', 'Pierdo agarre, vuelta {vuelta}.', 'Las ruedas se acaban, pensad algo.'],
+    pinchazo: ['¡Pinchazo! ¡Maldita sea!', '¡Pinchazo, pinchazo!', '¡He pinchado, preparad todo!'],
+    'lluvia-empieza': ['¡Empieza a llover!', 'Lluvia, cuidado con la estrategia.', 'Está cayendo agua.'],
+    'lluvia-para': ['Para la lluvia, ¡a por las de seco!', 'Ya no llueve.', 'Se seca, hay que moverse.'],
+    'safety-car': ['¡Safety Car! ¿Entramos?', 'Safety Car, pensad rápido.', 'Safety Car, oportunidad.'],
+    vsc: ['VSC, ¿hacemos algo?', 'Virtual, ¿parada barata?', 'VSC en pista.'],
+    'orden-cumplida': ['Hecho, aunque me duele.', 'Ya ha pasado {companero}.', 'Cumplido. Me lo debéis.'],
+    adelanta: ['¡Fuera! ¡Pasado!', '¡Vamos! Uno más.', '¡Toma! A por el siguiente.'],
+    adelantado: ['¡Me ha cerrado la puerta!', '¡Me han pasado, maldita sea!', 'Lo recupero, tranquilos.'],
+  },
+  quejica: {
+    'ok-boxes': ['Vale, entro... {compuesto}, espero que funcione.', 'Box con {compuesto}. Ojalá no perdamos tiempo.', 'Bueno, {compuesto}. Ya veremos.'],
+    'ok-anular-boxes': ['Vale, me quedo fuera, pero las gomas están fatal.', 'Sigo, aunque no sé cuánto aguantan.', 'Bueno, no entro...'],
+    'ok-ritmo': ['Vale, aunque el coche no va.', 'Bueno, lo intento.', 'Hecho, pero no prometo nada.'],
+    'ok-orden-equipo': ['Vale... como siempre.', 'Bueno, lo que digáis con {companero}.', 'Hecho, aunque no me hace gracia.'],
+    'ok-propuesta': ['Vale, si lo decís vosotros.', 'Bueno, hagámoslo.', 'Hecho, a ver qué sale.'],
+    'ok-delegar': ['Vale, decidid vosotros.', 'Bueno, vosotros sabréis.', 'De acuerdo, pero luego no os quejéis.'],
+    protesta: ['¿Otra vez yo?', 'Esto no tiene sentido.', 'No estoy de acuerdo.'],
+    tarde: ['Vale... pero luego, ahora no.', 'Ya lo haré, dadme un poco.', 'Bueno, más adelante.'],
+    desobedece: ['No, otra vez yo no.', 'Esto no lo hago, lo siento.', 'Me niego, no es justo.'],
+    repetir: ['No se entiende nada, repite.', 'La radio va fatal, ¿qué?', '¿Qué dices? Repite.'],
+    'sin-compuesto': ['¿Y qué goma pongo?', 'No me habéis dicho el compuesto.', '¿Con qué entro?'],
+    'no-disponible': ['No se puede: {motivo}. Típico.', 'Pues no: {motivo}.', 'Imposible, {motivo}.'],
+    'no-es-tuyo': ['Ese no es de los nuestros...', 'Ese es de otro equipo.', 'No es nuestro coche.'],
+    rechazada: ['Rechazada: {motivo}. Genial.', 'No ha valido: {motivo}.', 'Pues no, {motivo}.'],
+    'sin-senal': ['No te recibo, la radio va fatal.', 'No se oye nada.', 'Se corta todo, no te recibo.'],
+    desgaste: ['Las gomas están muertas.', 'No tengo agarre, vuelta {vuelta}.', 'Esto patina por todas partes.'],
+    pinchazo: ['¡Pinchazo! ¿Por qué a mí?', '¡Pinchazo, otra vez!', '¡He pinchado! Increíble.'],
+    'lluvia-empieza': ['Lo que faltaba, llueve.', 'Empieza a llover, no veo nada.', 'Lluvia. Genial.'],
+    'lluvia-para': ['Ya no llueve, pero esto sigue mojado.', 'Ha parado, por fin.', 'Deja de llover.'],
+    'safety-car': ['Safety Car, justo ahora.', 'Safety Car, perdemos la ventaja.', 'Safety Car en pista.'],
+    vsc: ['VSC, qué lento.', 'Virtual... vale.', 'VSC, otra vez.'],
+    'orden-cumplida': ['Hecho, ya ha pasado {companero}.', 'Ya está, contentos.', 'Cumplido, como siempre.'],
+    adelanta: ['Pasado, por fin.', 'Uno menos, costó.', 'Ya está, pasado.'],
+    adelantado: ['Me han pasado, no tengo velocidad.', 'Otro que me pasa.', 'Con este coche no puedo defenderme.'],
+  },
+  bromista: {
+    'ok-boxes': ['¡Marchando unos {compuesto}!', 'Box, box. Que estén calentitos esos {compuesto}.', 'Voy, poned la mesa: {compuesto}.'],
+    'ok-anular-boxes': ['Vale, el café para luego.', 'Me quedo fuera, que se está bien.', 'Nada de boxes, sigo de paseo.'],
+    'ok-ritmo': ['¡Marchando!', 'Hecho, cambio de marcha... y de humor.', 'Recibido, jefe.'],
+    'ok-orden-equipo': ['Hecho, que {companero} me invite a cenar.', 'Vale, pero me debéis una.', 'De acuerdo, soy un sol.'],
+    'ok-propuesta': ['¡Me gusta el plan!', 'Hecho, jefe.', 'Venga, a ver qué tal sale.'],
+    'ok-delegar': ['Vale, vosotros al volante... digo, al muro.', 'Hecho, yo solo conduzco.', 'De acuerdo, sorprendedme.'],
+    protesta: ['¿De verdad? Me estáis vacilando.', 'Mmm, no sé yo.', 'Eso no me lo creo ni yo.'],
+    tarde: ['Vale, pero después del café.', 'Luego, jefe, que ahora estoy liado.', 'Apuntado para dentro de un rato.'],
+    desobedece: ['Va a ser que no, jefe.', 'Uy, no te he oído... no lo hago.', 'Esa me la salto, lo siento.'],
+    repetir: ['¿Cómo? Que se me ha metido una mosca.', 'Repite, que iba cantando.', '¿Eh? Otra vez, despacito.'],
+    'sin-compuesto': ['¿Qué goma? ¿La de borrar?', '¿Qué compuesto, jefe?', 'Dime cuál, que tengo muchas.'],
+    'no-disponible': ['Va a ser que no: {motivo}.', 'Ni con magia: {motivo}.', 'No hay manera: {motivo}.'],
+    'no-es-tuyo': ['Ese no es de casa, ¿eh?', 'Que ese es de otro equipo, jefe.', 'Ese no es nuestro, no me liéis.'],
+    rechazada: ['Ups, no coló: {motivo}.', 'Rechazada: {motivo}.', 'Pues va a ser que no, {motivo}.'],
+    'sin-senal': ['No te recibo, ¿me llamas luego?', 'Se corta... ¿hola?', 'Radio de juguete, no te recibo.'],
+    desgaste: ['Estas gomas están para tirarlas.', 'Las ruedas piden jubilación, vuelta {vuelta}.', 'Esto ya es una pista de patinaje.'],
+    pinchazo: ['¡Pinchazo! Y sin rueda de repuesto.', '¡Pinchazo! Preparad el parche.', '¡Pinchazo, pinchazo, que no es broma!'],
+    'lluvia-empieza': ['Empieza a llover, ¿alguien trae paraguas?', 'Lluvia, me he dejado la toalla.', 'Gotas. Hoy toca bañarse.'],
+    'lluvia-para': ['Ha parado de llover, ¡sale el sol!', 'Ya no llueve, a secarse.', 'Se acabó el chaparrón.'],
+    'safety-car': ['Safety Car, paseíto turístico.', 'Safety Car, tiempo de un bocadillo.', 'Llega el Safety Car, ¡qué elegante!'],
+    vsc: ['VSC, todos en fila.', 'Virtual, a pasear.', 'VSC, a cámara lenta.'],
+    'orden-cumplida': ['Hecho, {companero} ya ha pasado. De nada.', 'Cumplido, me merezco un premio.', 'Ya está, qué generoso soy.'],
+    adelanta: ['¡Adiós, adiós!', '¡Pasado! Ni lo ha visto.', '¡Uno menos, saludad!'],
+    adelantado: ['Me han pasado, iba mirando el paisaje.', 'Vaya, se me ha escapado uno.', 'Me pasan, pero vuelvo.'],
+  },
+};

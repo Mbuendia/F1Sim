@@ -1,0 +1,69 @@
+/* [IA1] Panel de radio: flota abajo a la derecha sobre la pantalla de carrera; en móvil, a todo el ancho abajo. */
+.panel {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 60;
+  width: min(380px, calc(100vw - 32px));
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--line, rgba(255, 255, 255, 0.14));
+  border-radius: 10px;
+  background: #0b0f19;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55);
+  color: var(--text, #e8edf3);
+  font-family: 'Rajdhani', sans-serif;
+}
+.head { display: flex; align-items: center; gap: 8px; color: #38bdf8; }
+.head strong { font-family: var(--font-ui, inherit); letter-spacing: 0.06em; font-size: 14px; }
+.cars { display: flex; gap: 4px; margin-left: auto; }
+.car, .carOn {
+  min-height: 32px; padding: 2px 10px; border-radius: 6px; cursor: pointer; font: 700 13px var(--font-ui, inherit);
+  border: 1px solid var(--line, rgba(255, 255, 255, 0.14)); background: transparent; color: var(--text-2, #aeb9c8);
+  border-left: 3px solid var(--c, #38bdf8);
+}
+.carOn { background: rgba(56, 189, 248, 0.16); color: #fff; }
+.close { min-width: 32px; min-height: 32px; display: grid; place-items: center; border: 0; border-radius: 6px; background: transparent; color: var(--text-2, #aeb9c8); cursor: pointer; }
+.close:hover { color: #fff; background: rgba(255, 255, 255, 0.08); }
+.log { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; max-height: 210px; overflow-y: auto; font-size: 15px; }
+.hint { color: var(--text-2, #aeb9c8); font-size: 14px; }
+.aiChip { padding: 1px 8px; border-radius: 999px; font: 700 11px var(--font-ui, inherit); letter-spacing: 0.04em; border: 1px solid currentColor; color: #aeb9c8; }
+.aiChip[data-ai='lista'] { color: #4ade80; }
+.aiChip[data-ai='conectando'] { color: #facc15; }
+.notice { margin: 0; padding: 4px 8px; border-radius: 6px; background: rgba(250, 204, 21, 0.1); color: #facc15; font-size: 13px; }
+.wall, .driver { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; padding: 4px 8px; border-radius: 6px; }
+.wall { background: rgba(56, 189, 248, 0.1); }
+.driver { background: rgba(255, 255, 255, 0.05); }
+.who { font: 700 12px var(--font-ui, inherit); color: var(--text-2, #aeb9c8); }
+.text { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+.status { font-size: 12px; color: var(--text-2, #aeb9c8); }
+.status[data-status='aceptada'] { color: #4ade80; }
+.status[data-status='rechazada'], .status[data-status='no-disponible'], .status[data-status='no-es-tuyo'] { color: #f87171; }
+.status[data-status='ambigua'], .status[data-status='sin-compuesto'] { color: #facc15; }
+.form { display: flex; gap: 6px; }
+.input {
+  flex: 1 1 auto; min-width: 0; min-height: 40px; padding: 6px 10px; border-radius: 6px; font: 600 16px 'Rajdhani', sans-serif;
+  border: 1px solid var(--line, rgba(255, 255, 255, 0.18)); background: rgba(255, 255, 255, 0.06); color: #fff;
+}
+.input:focus { outline: 2px solid #38bdf8; outline-offset: 1px; }
+.send { min-width: 44px; min-height: 40px; display: grid; place-items: center; border: 0; border-radius: 6px; background: #38bdf8; color: #0b0f19; cursor: pointer; }
+.send:disabled { opacity: 0.4; cursor: default; }
+/* [IA6] Mantén para hablar: rojo mientras escucha, ámbar mientras reconoce. */
+.mic { min-width: 44px; min-height: 40px; display: grid; place-items: center; border: 1px solid #38bdf8; border-radius: 6px; background: transparent; color: #e8edf3; cursor: pointer; touch-action: none; user-select: none; -webkit-user-select: none; }
+.mic[data-state='escuchando'] { background: #dc2626; border-color: #dc2626; color: #fff; }
+.mic[data-state='reconociendo'] { border-color: #fbbf24; color: #fbbf24; }
+
+@media (max-width: 600px) {
+  .panel { left: 0; right: 0; bottom: 0; width: auto; border-radius: 10px 10px 0 0; }
+  .car, .carOn, .close { min-height: 44px; }
+  .send, .input, .mic { min-height: 44px; }
+}
+
+/* [IA7] «¿Era esto?»: las órdenes posibles tras una frase no entendida. */
+.correct { display: flex; flex-wrap: wrap; gap: 6px; padding: 6px 10px; border-top: 1px solid rgba(255, 255, 255, 0.08); }
+.correctTitle { width: 100%; font-size: 13px; font-weight: 700; color: #fbbf24; }
+.correctOption { min-height: 36px; padding: 0 10px; border: 1px solid rgba(56, 189, 248, 0.6); border-radius: 999px; background: transparent; color: #e8edf3; font-size: 13px; cursor: pointer; }
+.correctOption:hover { background: rgba(56, 189, 248, 0.15); }
+@media (max-width: 600px) { .correctOption { min-height: 44px; } }

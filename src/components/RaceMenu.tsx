@@ -1,6 +1,9 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { Suspense, lazy, useEffect, useRef, useState } from 'react';
 import { Menu } from 'lucide-react';
 import styles from './RaceMenu.module.css';
+
+// [IA4] Los ajustes de la radio (y con ellos el código del modelo) se cargan al abrir el menú, no al arrancar el juego.
+const RadioSettings = lazy(() => import('./RadioSettings'));
 
 interface RaceMenuProps {
   safetyCarDeployed: boolean;
@@ -16,6 +19,8 @@ interface RaceMenuProps {
   saveName?: string;
   /** [T4.16] Sonido: nivel elegido (índice), sus nombres, cómo cambiarlo y la atribución de cada sonido. */
   audio?: { level: number; labels: string[]; onLevel: (level: number) => void; credits: { id: string; label: string; text: string }[] };
+  /** [IA4] Mostrar los ajustes de la radio (radio básica o con IA y la descarga del modelo). */
+  radioSettings?: boolean;
 }
 
 // R32: menú secundario de carrera. Las herramientas de prueba (Safety Car y bandera roja) viven aquí, cerradas por
@@ -30,6 +35,7 @@ export const RaceMenu: React.FC<RaceMenuProps> = ({
   onSaveGame,
   saveName,
   audio,
+  radioSettings = false,
 }) => {
   const [open, setOpen] = useState(defaultOpen);
   const [name, setName] = useState(saveName || 'Mi partida');
@@ -103,6 +109,7 @@ export const RaceMenu: React.FC<RaceMenuProps> = ({
               </details>
             </>
           )}
+          {radioSettings && <Suspense fallback={null}><RadioSettings /></Suspense>}
           <div className={styles.section}>Herramientas de desarrollo</div>
           <button type="button" role="menuitem" className={`${styles.item} ${styles.itemSc}`} onClick={run(onToggleSafetyCarTest)}>
             {safetyCarDeployed ? 'Prueba: retirar Safety Car' : 'Prueba: desplegar Safety Car'}

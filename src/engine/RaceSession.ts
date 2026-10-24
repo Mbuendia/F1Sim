@@ -9,7 +9,7 @@ import type { RosterEntry } from './raceCars';
 import type { RaceStore } from '../state/raceStore';
 import type { LinkStore } from '../state/linkStore';
 
-export interface Ack { ok: boolean; reason?: string }
+export interface Ack { ok: boolean; reason?: string; /** [IA3] Desenlace de una orden de equipo. */ compliance?: string }
 export interface StartOutcome { ok: boolean; errors: string[] }
 
 /** La lista de salida que necesita la pantalla: piloto y equipo de cada coche (no cambian en carrera). */
@@ -78,7 +78,7 @@ export class RaceSession {
   async order(order: EngineOrder): Promise<Ack> {
     const reply = await this.request(seq => ({ type: 'order', seq, order }));
     if (!reply) return { ok: false, reason: 'Sin conexión con el motor' };
-    return reply.ok ? { ok: true } : { ok: false, reason: String(reply.reason ?? 'Rechazada') };
+    return reply.ok ? { ok: true, ...(typeof reply.compliance === 'string' ? { compliance: reply.compliance } : {}) } : { ok: false, reason: String(reply.reason ?? 'Rechazada') };
   }
 
   /** Snapshot de la carrera del motor (para guardar o para el cierre de la ronda). */
