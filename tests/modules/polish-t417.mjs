@@ -3,8 +3,8 @@
 // pieza y revisión en el navegador (acuerdo de tests proporcionados).
 //  1. Las gotas del spray se pintan redondas, no como cuadrados.
 //  2. Con la ventana pequeña, las propuestas del muro se pliegan y dejan a la vista cuántas hay.
-// La retirada de `WeatherRenderer.renderSpray` y de `TelemetryPanel.tsx` no entra aquí: los usan tests acordados
-// (R23, R53, Q23 y la interfaz de carrera) y quitarlos exige autorización para cambiarlos.
+// La retirada de `WeatherRenderer.renderSpray` no entra aquí: la usan tests acordados (R23, R53) y quitarla exige
+// autorización para cambiarlos. `TelemetryPanel.tsx` se retiró en UX7 (24/10/2026) con la autorización del usuario.
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 

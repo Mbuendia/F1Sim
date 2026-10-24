@@ -7,7 +7,6 @@ import { FlagIcon } from './FlagIcon';
 import { CompoundBadge } from './CompoundBadge';
 import { CarChassisSvg } from './CarChassisSvg';
 import { tireHealthColor } from '../utils/tireHealth';
-import { useTweenedNumber } from '../utils/useTweenedNumber';
 import { DrsStatusBadge } from './DrsStatusBadge';
 
 export interface BottomTelemetryDockProps {
@@ -24,9 +23,6 @@ export const BottomTelemetryDock: React.FC<BottomTelemetryDockProps> = ({
 }) => {
   const dockRef = useRef<HTMLDivElement>(null);
   const prevCarIdRef = useRef<number | null>(null);
-  // Q23: odómetros (antes del retorno anticipado: los hooks no pueden ser condicionales).
-  const speedShown = Math.round(useTweenedNumber(car?.telemetry.speedKmh ?? 0));
-  const rpmShown = Math.round(useTweenedNumber(car?.telemetry.rpm ?? 0));
 
   useEffect(() => {
     if (car && car.id !== prevCarIdRef.current && dockRef.current) {
@@ -53,7 +49,6 @@ export const BottomTelemetryDock: React.FC<BottomTelemetryDockProps> = ({
   // [N3] De un rival solo se ve lo que da la tele (velocidad, vueltas por minuto, compuesto y vueltas con él): su
   // desgaste, su modo de motor y su batería solo los ve su equipo.
   const known = typeof tires.health === 'number' && telemetry.batterySoc !== undefined;
-  const rpmPercent = Math.min(100, Math.max(0, ((telemetry.rpm - 8000) / (13500 - 8000)) * 100));
 
   return (
     <div ref={dockRef} className={`${styles.dockContainer} ${compact ? styles.dockCompact : ''}`} data-animate="slide-in">
@@ -104,23 +99,7 @@ export const BottomTelemetryDock: React.FC<BottomTelemetryDockProps> = ({
           </div>
         </div>
 
-        {/* Velocidad y Tacómetro */}
-        <div className={styles.speedCluster}>
-          <div className={styles.speedDigits} data-odometer="speed">
-            {speedShown} <span className={styles.kmhUnit}>KM/H</span>
-          </div>
-          <div className={styles.gearPill}>
-            <span className={styles.gearLabel}>GEAR</span>
-            <span className={styles.gearVal}>{telemetry.gear ?? '–'}</span>
-          </div>
-          <div className={styles.rpmBar}>
-            <div className={styles.rpmProgress} style={{ width: `${rpmPercent}%` }} />
-          </div>
-          <span data-odometer="rpm" style={{ fontSize: '9px', color: '#94a3b8', marginTop: '2px', fontFamily: 'Orbitron' }}>
-            {rpmShown.toLocaleString()} RPM
-          </span>
-        </div>
-
+        {/* [UX7] La velocidad, la marcha y las RPM están en el muro: es el único velocímetro de la carrera. */}
         {/* Neumáticos */}
         <div className={styles.tireCluster}>
           <div className={styles.tireTopRow}>

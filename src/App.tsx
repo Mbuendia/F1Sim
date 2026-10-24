@@ -1912,7 +1912,7 @@ export const App: React.FC = () => {
 
           <section className={`${styles.wallArea} ${showWall ? '' : styles.isHidden}`}>
             <BoxControls key={teamCars.map(c => c.id).join(':') + ':' + selectedCircuitId} car={favoriteCar} teamCars={teamCars}
-              team={teamViews[favoriteCar.team.id]} race={{ lightState, isFinished, raceFlagState }} send={sendOrder} slow={slowView} />
+              team={teamViews[favoriteCar.team.id]} race={{ lightState, isFinished, raceFlagState }} send={sendOrder} slow={slowView} focusId={selectedCarId} />
           </section>
         </main>
 

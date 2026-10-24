@@ -51,6 +51,16 @@
 /* El selector lleva la rejilla delante para ganar al relleno estrecho de los controles compactos. */
 .pilotsGrid .teamOrders > fieldset > label { flex:0 0 auto; justify-content:flex-start; padding:0 12px; font-size:14px; }
 .pilotSwitch { display:none; }
+/* [UX7] Fila superior de alto fijo: el velocímetro (el único de la carrera) y, en pantallas estrechas, el conmutador. */
+.wallTop { display:flex; align-items:center; gap:10px; min-height:var(--toque, 44px); min-width:0; }
+.speedometer { display:flex; align-items:baseline; gap:10px; padding:2px 12px; border:1px solid var(--line); border-radius:var(--radio-m); background:var(--panel-2); white-space:nowrap; flex:0 0 auto; }
+.speedCode { font-size:14px; font-weight:700; color:var(--text-2); }
+.speedDigits { font:700 26px/1.1 'Orbitron', var(--font-ui); color:var(--text); font-variant-numeric:tabular-nums; min-width:3ch; text-align:right; }
+.speedDigits small { margin-left:4px; font:600 12px var(--font-ui); color:var(--text-2); }
+.speedGear { font:700 18px 'Orbitron', var(--font-ui); color:#38bdf8; }
+.speedRpm { font:600 12px 'Orbitron', var(--font-ui); color:var(--text-2); font-variant-numeric:tabular-nums; }
+@media (max-width:767px) { .speedRpm { display:none; } .speedDigits { font-size:22px; } }
+.wallTop > .pilotSwitch { flex:1; min-width:0; }
 /* La composición de cada tarjeta depende del ancho del muro, no del de la ventana: con el detalle abierto el muro se
    estrecha aunque la ventana sea ancha. Tres composiciones, las tres de altura fija. */
 .controls { container-type:inline-size; }

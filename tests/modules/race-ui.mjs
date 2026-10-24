@@ -18,8 +18,10 @@ export default async function run({server,assert,test}){
     assert(sim.cars.every((c,i)=>c.id===order[i]),'Clasificación: render no muta orden de coches');
   });
   await test('Telemetría',async()=>{
-    const {TelemetryPanel}=await server.ssrLoadModule('/src/components/TelemetryPanel.tsx');
-    const html=renderToStaticMarkup(createElement(TelemetryPanel,{car:sim.cars[0],onClose:()=>{}}));
+    // [UX7] TelemetryPanel se borró con permiso del usuario (24/10/2026): la telemetría se ve en el velocímetro del muro y en el detalle.
+    const {WallSpeedometer}=await server.ssrLoadModule('/src/components/BoxControls.tsx');
+    const {BottomTelemetryDock}=await server.ssrLoadModule('/src/components/BottomTelemetryDock.tsx');
+    const html=renderToStaticMarkup(createElement(WallSpeedometer,{car:sim.cars[0]}))+renderToStaticMarkup(createElement(BottomTelemetryDock,{car:sim.cars[0],onSelectCar:()=>{}}));
     assert(!html.includes('NaN')&&!html.includes('undefined'),'Telemetría: valores iniciales legibles');
   });
 }
