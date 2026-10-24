@@ -11,10 +11,10 @@
     <script id="project-task-index" type="application/json">
 {
   "source": "DASHBOARD.md",
-  "sha256": "9c7b6878e47e730a8a059c388d322981bc6061f1220ec9b011015375f81477cd",
-  "activeSprint": "6",
-  "currentTask": "IA7",
-  "nextTask": "IA1",
+  "sha256": "919f3c4f3e6324795e20d6dc305e49d0717c038d3c0ddd2d95f6acc9ab7a0a03",
+  "activeSprint": "7",
+  "currentTask": "UX7",
+  "nextTask": "UX4",
   "sprints": [
     {
       "name": "Sprint 1",
@@ -79,12 +79,52 @@
     {
       "name": "Sprint 5",
       "scope": "Carrera compartida y nueva casa del juego: el escritorio como servidor por WebRTC (motor en un Web Worker, foto ligera del estado, almacenes con Zustand, salas y respaldo en Firebase Realtime Database, equipos con dueño, pantallas de sala y carrera en modo cliente), el juego desplegado en Firebase Hosting y GitHub Pages como landing de presentación con vídeo ligado al scroll (N1-N12)",
-      "status": "🟡 SIGUIENTE — planificado el 13/10/2026; ninguna tarea implementada ni con contrato de tests. La liga queda fuera"
+      "status": "🟡 ENTREGADO Y EN MAIN — N1 a N12 implementadas; N4, N5, N6, N11 y N12 siguen en revisión local a la espera del usuario"
     },
     {
       "name": "Sprint 6",
       "scope": "Radio del muro con IA: órdenes por radio con tus palabras, intérprete por palabras clave siempre disponible, respuestas y voz de los pilotos con filtro de radio, obediencia según carácter, modelo pequeño en el navegador con WebLLM descargado a petición, voces Piper y micro, y modelo ajustado a la radio del juego ; tras evaluar los modelos de WebLLM, clasificador por ejemplos y banco de respuestas escrito por un agente ; modelo propio ajustado por el usuario en WebLLM con versión según el dispositivo (IA1-IA10)",
-      "status": "🟡 EN CURSO — planificado el 22/10/2026; IA1, IA2, IA4 e IA5 entregadas y en revisión ese día; en IA5 ningún modelo de la lista llega al objetivo y la mejora depende de IA7. Jugar sin internet (PWA) queda en 7.6"
+      "status": "🟡 ENTREGADO Y EN MAIN el 24/10/2026 (PR #29) — IA1 a IA10 en revisión local a la espera de las pruebas del usuario. Jugar sin internet pasa al Sprint 13"
+    },
+    {
+      "name": "Sprint 7",
+      "scope": "Inicio, ajustes, móvil y temporada: pantalla de inicio con opciones, ajustes fuera de carrera con las descargas de la radio antes de correr, modo desarrollador oculto, descargas que no se repiten, carrera en el móvil a pantalla completa con la franja de la vuelta, cámaras según el dispositivo, velocímetro sin fallos, IA de la radio siempre visible y centro de temporada que enseña la decisión en 3D (UX1-UX11)",
+      "status": "⏳ SIGUIENTE — planificado el 24/10/2026; sin contratos de tests todavía"
+    },
+    {
+      "name": "Sprint 8",
+      "scope": "Rendimiento y deuda técnica: medición base, renderizado 3D más ligero, modelos y texturas comprimidos, calidad según el dispositivo, motor de carrera partido en módulos, limpieza, pruebas más rápidas y presupuesto vigilado (PF1-PF8)",
+      "status": "⏳ PLANIFICADO el 24/10/2026"
+    },
+    {
+      "name": "Sprint 9",
+      "scope": "Coche de 2025 y ruedas propias: licencias y marcas de los assets del usuario, coche de 2025 reducido y por piezas, ruedas Pirulí con los cinco compuestos en todo el juego y cambio de ruedas en 3D según la parada (CA1-CA6)",
+      "status": "⏳ PLANIFICADO el 24/10/2026"
+    },
+    {
+      "name": "Sprint 10",
+      "scope": "Circuitos: kit común y relieve: análisis del modelo de Shanghái, kit de piezas de circuito, kit en los 23 circuitos, Shanghái de referencia, relieve punto a punto y pendientes en el motor (CK1-CK6)",
+      "status": "⏳ PLANIFICADO el 24/10/2026"
+    },
+    {
+      "name": "Sprint 11",
+      "scope": "Identidad visual: sistema visual y menús, ambiente de los circuitos, temperatura de pista en agarre y desgaste, velocímetro y telemetría rediseñados (VS1-VS4)",
+      "status": "⏳ PLANIFICADO el 24/10/2026"
+    },
+    {
+      "name": "Sprint 12",
+      "scope": "Temporadas largas: carrera de varios años desde 2023, rivales con coches de cada época, libreas por año, piezas del coche propio que cambian a la vista, librea propia y presentación de temporada (TL1-TL6)",
+      "status": "⏳ PLANIFICADO el 24/10/2026"
+    },
+    {
+      "name": "Sprint 13",
+      "scope": "Jugar sin internet y paradas programadas: juego instalable (PWA), datos persistentes, avisos de versión y paradas programadas en el motor (OF1-OF4)",
+      "status": "⏳ PLANIFICADO el 24/10/2026"
+    },
+    {
+      "name": "Sprint 14",
+      "scope": "Unity: decisión con datos y prueba de viabilidad, solo si tras el Sprint 13 sigue haciendo falta (UN1-UN2)",
+      "status": "⏳ PLANIFICADO el 24/10/2026, CONDICIONAL"
     }
   ],
   "tasks": [
@@ -1047,6 +1087,241 @@
       "id": "IA7",
       "title": "Entorno de aprendizaje de la radio y ajuste fino condicional",
       "status": "review"
+    },
+    {
+      "id": "UX1",
+      "title": "Pantalla de inicio con opciones",
+      "status": "pending"
+    },
+    {
+      "id": "UX2",
+      "title": "Ajustes fuera de carrera",
+      "status": "pending"
+    },
+    {
+      "id": "UX3",
+      "title": "Modo desarrollador oculto",
+      "status": "pending"
+    },
+    {
+      "id": "UX4",
+      "title": "Descargas que no se repiten",
+      "status": "pending"
+    },
+    {
+      "id": "UX5",
+      "title": "Carrera en el móvil: pantallas completas y franja de la vuelta",
+      "status": "pending"
+    },
+    {
+      "id": "UX6",
+      "title": "Cámaras según el dispositivo",
+      "status": "pending"
+    },
+    {
+      "id": "UX7",
+      "title": "Velocímetro sin fallos",
+      "status": "pending"
+    },
+    {
+      "id": "UX8",
+      "title": "La IA de la radio, siempre visible",
+      "status": "pending"
+    },
+    {
+      "id": "UX9",
+      "title": "Centro de temporada que enseña la decisión",
+      "status": "pending"
+    },
+    {
+      "id": "UX10",
+      "title": "Imágenes 3D de lo que se cambia",
+      "status": "pending"
+    },
+    {
+      "id": "UX11",
+      "title": "Prueba en dispositivos reales",
+      "status": "pending"
+    },
+    {
+      "id": "PF1",
+      "title": "Medición base y contador de rendimiento",
+      "status": "pending"
+    },
+    {
+      "id": "PF2",
+      "title": "Renderizado 3D más ligero",
+      "status": "pending"
+    },
+    {
+      "id": "PF3",
+      "title": "Modelos y texturas comprimidos",
+      "status": "pending"
+    },
+    {
+      "id": "PF4",
+      "title": "Calidad automática según el dispositivo",
+      "status": "pending"
+    },
+    {
+      "id": "PF5",
+      "title": "Partir el motor de carrera",
+      "status": "pending"
+    },
+    {
+      "id": "PF6",
+      "title": "Limpieza de código sobrante",
+      "status": "pending"
+    },
+    {
+      "id": "PF7",
+      "title": "Batería de pruebas más rápida",
+      "status": "pending"
+    },
+    {
+      "id": "PF8",
+      "title": "Presupuesto vigilado",
+      "status": "pending"
+    },
+    {
+      "id": "CA1",
+      "title": "Licencias y marcas de los assets",
+      "status": "pending"
+    },
+    {
+      "id": "CA2",
+      "title": "Coche de 2025 en el juego",
+      "status": "pending"
+    },
+    {
+      "id": "CA3",
+      "title": "Ruedas propias con los cinco compuestos",
+      "status": "pending"
+    },
+    {
+      "id": "CA4",
+      "title": "Las ruedas en todo el juego",
+      "status": "pending"
+    },
+    {
+      "id": "CA5",
+      "title": "Cambio de ruedas en 3D",
+      "status": "pending"
+    },
+    {
+      "id": "CA6",
+      "title": "Que la parada influya y se entienda",
+      "status": "pending"
+    },
+    {
+      "id": "CK1",
+      "title": "Análisis del modelo de Shanghái",
+      "status": "pending"
+    },
+    {
+      "id": "CK2",
+      "title": "Kit común de piezas de circuito",
+      "status": "pending"
+    },
+    {
+      "id": "CK3",
+      "title": "El kit en los 23 circuitos",
+      "status": "pending"
+    },
+    {
+      "id": "CK4",
+      "title": "Shanghái, circuito de referencia",
+      "status": "pending"
+    },
+    {
+      "id": "CK5",
+      "title": "Relieve de los circuitos",
+      "status": "pending"
+    },
+    {
+      "id": "CK6",
+      "title": "Pendientes en el motor",
+      "status": "pending"
+    },
+    {
+      "id": "VS1",
+      "title": "Sistema visual y menús rediseñados",
+      "status": "pending"
+    },
+    {
+      "id": "VS2",
+      "title": "Ambiente de los circuitos",
+      "status": "pending"
+    },
+    {
+      "id": "VS3",
+      "title": "Temperatura de pista en el agarre y el desgaste",
+      "status": "pending"
+    },
+    {
+      "id": "VS4",
+      "title": "Velocímetro y telemetría rediseñados",
+      "status": "pending"
+    },
+    {
+      "id": "TL1",
+      "title": "Carrera de varias temporadas",
+      "status": "pending"
+    },
+    {
+      "id": "TL2",
+      "title": "Los rivales evolucionan",
+      "status": "pending"
+    },
+    {
+      "id": "TL3",
+      "title": "Libreas por año",
+      "status": "pending"
+    },
+    {
+      "id": "TL4",
+      "title": "Tu coche mejora a la vista",
+      "status": "pending"
+    },
+    {
+      "id": "TL5",
+      "title": "Tu librea",
+      "status": "pending"
+    },
+    {
+      "id": "TL6",
+      "title": "Presentación de la temporada",
+      "status": "pending"
+    },
+    {
+      "id": "OF1",
+      "title": "Juego instalable y sin conexión (PWA)",
+      "status": "pending"
+    },
+    {
+      "id": "OF2",
+      "title": "Datos que no se borran",
+      "status": "pending"
+    },
+    {
+      "id": "OF3",
+      "title": "Avisos de versión nueva",
+      "status": "pending"
+    },
+    {
+      "id": "OF4",
+      "title": "Paradas programadas en el motor",
+      "status": "pending"
+    },
+    {
+      "id": "UN1",
+      "title": "Decidir si hace falta",
+      "status": "pending"
+    },
+    {
+      "id": "UN2",
+      "title": "Prueba de viabilidad",
+      "status": "pending"
     }
   ]
 }

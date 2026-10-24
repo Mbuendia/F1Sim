@@ -22,7 +22,7 @@
 
 ## 🧭 2. ROADMAP Y ESTADO GLOBAL DE SPRINTS
 
-**Orden vigente:** Sprint **6** · Tarea actual **IA7** · Siguiente **IA1** (sin tareas pendientes en el Sprint 6: lo siguiente es que el usuario revise las entregadas, empezando por IA1; el 23/10/2026 se entrega IA7, replanteada con el usuario como el ciclo de mejora del modelo propio, con su contrato acordado y en verde (25 PASS); todo el Sprint 6 queda en revisión local, sin commits desde IA4; antes: el 23/10/2026 se entrega IA6 con su contrato acordado y en verde (29 PASS): voz Piper con ejecutor propio (opción B elegida por el usuario) y filtro de radio, y micro con Web Speech o Whisper; falta escucharlo y probar el micro, con descargas pendientes de permiso; antes: el 23/10/2026 se entrega IA3 con su contrato acordado y en verde (39 PASS): los pilotos obedecen, llegan tarde, protestan o desobedecen las órdenes de equipo según su carácter, con dos tipos de frase nuevos; falta verlo en una carrera; antes: el 23/10/2026 se entrega IA9 con su contrato acordado y en verde (25 PASS): 2.640 frases, a falta de que el usuario revise la muestra; IA10 evaluada en Chrome: completa 94,1 % y ligera 87,1 % en la reserva v3, tras quitar la confianza del modelo como filtro; los repositorios se renombran a `Radio-Muro-…`; antes: el 23/10/2026 se entrega IA10 con su contrato acordado y en verde (64 PASS); el usuario sube sus dos modelos a Hugging Face y quedan fijados; falta la evaluación en el navegador y la prueba en un móvil real; antes: el 23/10/2026 el usuario ajusta su propio modelo (v3: 91,1 % en una reserva limpia; en WebLLM 92,1 % sin cuantizar y 84,2 % en 4 bits) y pide integrarlo con versión según el dispositivo y respaldo siempre: se planifica IA10, sin implementar; antes: el 22/10/2026 se entrega IA8 con su contrato acordado y en verde, a falta de la evaluación con el modelo real y de las frases del usuario; antes: el 22/10/2026 el usuario pide seguir la recomendación del informe de modelos: se planifican IA8, clasificador por ejemplos, e IA9, banco de respuestas, y se replantea IA7 como entorno de aprendizaje; nada implementado ni con contrato aprobado; IA5 sigue sin commit; antes: el 22/10/2026 se entrega IA5 con su contrato acordado y en verde; en la evaluación real ni el 0.5B (49 % con frases de reserva), ni el 1.5B (56 %, p95 1,78 s), ni Llama 1B (47 %, se inventa órdenes) llegan al objetivo; antes: el 22/10/2026 se entrega IA4 con su contrato acordado y en verde, y queda en revisión; antes: el 22/10/2026 se entrega IA2 con su contrato acordado y en verde, y queda en revisión; antes: el 22/10/2026 se entrega IA1 con su contrato acordado y en verde, en la rama `sprint/6`, y queda en revisión; antes: el 22/10/2026 el usuario da por buena la planificación de la radio del muro con IA y pide dejarla lista para implementar: Sprint 6 en la sección 7.7, sin contratos de tests todavía; N11 y N12 siguen en revisión a la espera del usuario; antes: el 20/10/2026 el usuario supera la prueba entre redes y da por buenas N8, N9 y N10; del Sprint 5 solo quedan por revisar N11 y N12, que esperan al usuario; el 19/10/2026 se entrega N9 con su contrato acordado y en verde; el 19/10/2026 se entrega N8 con su contrato acordado y en verde; el 19/10/2026 el usuario da por buena N7 tras probarla con dos ventanas, ya en dos páginas (sala y elección de equipos) y con respuesta animada al elegir equipo; antes, el 19/10/2026 se entrega N7, en la rama `sprint/5-n7` que sale de main tras fusionar N1 a N6, con su contrato acordado y en verde; antes, el 19/10/2026 se entrega N6 con su contrato acordado y en verde, tras confirmar el usuario los valores por defecto del multijugador; antes, el 19/10/2026 se entrega N5 con su contrato revisado por el usuario y ampliado con cuatro casos, en verde; antes, el 19/10/2026 se entrega N4 con sus dos módulos de tests en verde y el usuario sube las reglas al proyecto real; antes, el 19/10/2026 el usuario da por buena N3 tras probar la carrera con el motor en el Worker; N11 ya está entregada y espera su revisión; antes, ese mismo día, da por buena N2 tras probar el Worker en el navegador y pide seguir con N3 sin commit; antes, ese mismo día, da por buena N1, la prueba de viabilidad: el plan vale con los ajustes de `docs/n1-viabilidad.md`, y N2 empieza por su contrato de tests; antes: el 13/10/2026 el usuario da por válidos el Sprint 3.7 y el Sprint 4 enteros, ya fusionados en main, y deja el Sprint 5 como el siguiente; está planificado y sin empezar: cada tarea requiere su contrato de tests y autorización, y N1 necesita antes el proyecto de Firebase que crea el usuario (lista de tareas del usuario en 7.5). Antes: el 13/10/2026 el usuario da por válido todo lo pendiente de revisión y pide ejecutar seguido, en una rama nueva `sprint/3.7` que sale de main y sin fusionar nada, el Sprint 3.7 (antes «4.6»), el resto del Sprint 4 y el 4.5, asumiendo la opción recomendada en cada decisión abierta; queda todo entregado ese día: no hay tareas sin empezar. Las dos que se señalan son las que esperan una decisión suya: T4.16, las grabaciones de audio, y T4.24, el seguimiento remoto descartado. Antes: el 13/10/2026 el Sprint 4.5 se da por terminado y se fusiona en main junto con lo entregado del Sprint 4, por decisión del usuario; la rama sprint/4.5 se elimina y el trabajo sigue en sprint/4, que ya lo contiene; antes de T4.13 van, con prioridad alta, T4.21 a T4.24; antes: Sprint 4.5 terminado el 13/10/2026: las once tareas entregadas, G10 revisada por el usuario y el resto en revisión local; al fusionarlo, el orden vuelve al Sprint 4 con T4.13 y T4.5; G10 revisada por el usuario el 13/10/2026 y suite completa en verde; G1, G5, G7 y G8 entregadas y G2, G3, G4 y G6 con la geometría entregada el 13/10/2026; el 13/10/2026 se entrega G1 y la geometría de G2 a G7, con tests anteriores aún en rojo: ver «Estado al cierre» en 7.3; Sprint 4.5 planificado el 13/10/2026 a petición del usuario: sprint intermedio para rehacer la geometría de los 23 circuitos a escala real y pasar el pintado a WebGL, con orden y alcance en 7.3; ninguna tarea implementada ni con contrato de tests; el Sprint 4 queda en pausa con T4.13 como tarea actual y T4.5 como siguiente; antes: Sprint 4 planificado el 09/10/2026 a petición del usuario, «cubre todo lo posible»: 20 tareas, T4.1 a T4.20, con orden y alcance en 7.2, refinado ese día en dos entrevistas de cinco rondas, una funcional y otra de diseño visual (`docs/design/grill-sprint4-visual.md`), cuyas decisiones constan en cada ficha; T4.12, la salida en mojado, va primero por decisión del usuario y después la maqueta navegable, T4.18; ninguna está implementada ni tiene todavía contrato de tests; antes, Sprint 3 con T3.4 como tarea actual: T3.3 y T3.4, las dos últimas del Sprint 3, se entregan el 08/10/2026 con su contrato de tests y quedan en revisión; no hay más tareas con ficha. **Por indicación del usuario del 08/10/2026 no se continúa con el Sprint 4: hace falta planificarlo antes** (sección 7.1); todo el Sprint 3 está en main y su rama se ha eliminado; el punto de reanudación para una conversación nueva está al final de `AGENTS.md`; antes: el 08/10/2026, por indicación del usuario, se fusionan en main como sprints separados el Sprint 2.11 entero y lo entregado del Sprint 3, T3.1 y T3.2; T3.3 tiene el contrato de tests aprobado ese día —el agua enfría los neumáticos, intermedios y lluvia se destrozan en seco, aquaplaning según T3.1— y está sin implementar; en T3.4 el usuario pidió mejorar el spray con partículas y falta acordar su contrato; el usuario da por revisadas y aprobadas ese mismo día todas las tareas fusionadas, incluida R58, la portada sin WebGL; R47, R48, R49, R50, R55, R56, R51 y R04 entregadas y en revisión el 07/10/2026 y R52, R24, R23, R53, R54 y R57 el 08/10/2026; R55 y R56 añadidas el 07/10/2026 a petición del usuario; R57 es la corrección de maquetación del muro vista en la revisión en navegador del 08/10/2026 y añadida ese día con el visto bueno del usuario; Sprint 2.10 aprobado y fusionado en main el 03/10/2026; Sprint 2.11 planificado el mismo día en la rama sprint/2.11, orden y alcance en 6.11; cada tarea sigue requiriendo contrato de tests y autorización expresa).
+**Orden vigente:** Sprint **7** · Tarea actual **UX7** · Siguiente **UX4** (el 24/10/2026 el usuario integra el Sprint 6 en main (PR #29) y planifica los Sprints 7 a 14 en 7.8–7.16, con el orden que decide: inicio, ajustes, móvil y temporada (7), rendimiento (8), coche de 2025 y ruedas propias (9), kit de circuitos y relieve (10), identidad visual (11), temporadas largas (12), jugar sin internet y paradas programadas (13) y Unity solo si sigue haciendo falta (14), con los assets que pasa ese día analizados en 7.8; nada implementado ni con contrato; el Sprint 7 empieza por los dos fallos (velocímetro y descargas); antes: sin tareas pendientes en el Sprint 6: lo siguiente es que el usuario revise las entregadas, empezando por IA1; el 23/10/2026 se entrega IA7, replanteada con el usuario como el ciclo de mejora del modelo propio, con su contrato acordado y en verde (25 PASS); todo el Sprint 6 queda en revisión local, sin commits desde IA4; antes: el 23/10/2026 se entrega IA6 con su contrato acordado y en verde (29 PASS): voz Piper con ejecutor propio (opción B elegida por el usuario) y filtro de radio, y micro con Web Speech o Whisper; falta escucharlo y probar el micro, con descargas pendientes de permiso; antes: el 23/10/2026 se entrega IA3 con su contrato acordado y en verde (39 PASS): los pilotos obedecen, llegan tarde, protestan o desobedecen las órdenes de equipo según su carácter, con dos tipos de frase nuevos; falta verlo en una carrera; antes: el 23/10/2026 se entrega IA9 con su contrato acordado y en verde (25 PASS): 2.640 frases, a falta de que el usuario revise la muestra; IA10 evaluada en Chrome: completa 94,1 % y ligera 87,1 % en la reserva v3, tras quitar la confianza del modelo como filtro; los repositorios se renombran a `Radio-Muro-…`; antes: el 23/10/2026 se entrega IA10 con su contrato acordado y en verde (64 PASS); el usuario sube sus dos modelos a Hugging Face y quedan fijados; falta la evaluación en el navegador y la prueba en un móvil real; antes: el 23/10/2026 el usuario ajusta su propio modelo (v3: 91,1 % en una reserva limpia; en WebLLM 92,1 % sin cuantizar y 84,2 % en 4 bits) y pide integrarlo con versión según el dispositivo y respaldo siempre: se planifica IA10, sin implementar; antes: el 22/10/2026 se entrega IA8 con su contrato acordado y en verde, a falta de la evaluación con el modelo real y de las frases del usuario; antes: el 22/10/2026 el usuario pide seguir la recomendación del informe de modelos: se planifican IA8, clasificador por ejemplos, e IA9, banco de respuestas, y se replantea IA7 como entorno de aprendizaje; nada implementado ni con contrato aprobado; IA5 sigue sin commit; antes: el 22/10/2026 se entrega IA5 con su contrato acordado y en verde; en la evaluación real ni el 0.5B (49 % con frases de reserva), ni el 1.5B (56 %, p95 1,78 s), ni Llama 1B (47 %, se inventa órdenes) llegan al objetivo; antes: el 22/10/2026 se entrega IA4 con su contrato acordado y en verde, y queda en revisión; antes: el 22/10/2026 se entrega IA2 con su contrato acordado y en verde, y queda en revisión; antes: el 22/10/2026 se entrega IA1 con su contrato acordado y en verde, en la rama `sprint/6`, y queda en revisión; antes: el 22/10/2026 el usuario da por buena la planificación de la radio del muro con IA y pide dejarla lista para implementar: Sprint 6 en la sección 7.7, sin contratos de tests todavía; N11 y N12 siguen en revisión a la espera del usuario; antes: el 20/10/2026 el usuario supera la prueba entre redes y da por buenas N8, N9 y N10; del Sprint 5 solo quedan por revisar N11 y N12, que esperan al usuario; el 19/10/2026 se entrega N9 con su contrato acordado y en verde; el 19/10/2026 se entrega N8 con su contrato acordado y en verde; el 19/10/2026 el usuario da por buena N7 tras probarla con dos ventanas, ya en dos páginas (sala y elección de equipos) y con respuesta animada al elegir equipo; antes, el 19/10/2026 se entrega N7, en la rama `sprint/5-n7` que sale de main tras fusionar N1 a N6, con su contrato acordado y en verde; antes, el 19/10/2026 se entrega N6 con su contrato acordado y en verde, tras confirmar el usuario los valores por defecto del multijugador; antes, el 19/10/2026 se entrega N5 con su contrato revisado por el usuario y ampliado con cuatro casos, en verde; antes, el 19/10/2026 se entrega N4 con sus dos módulos de tests en verde y el usuario sube las reglas al proyecto real; antes, el 19/10/2026 el usuario da por buena N3 tras probar la carrera con el motor en el Worker; N11 ya está entregada y espera su revisión; antes, ese mismo día, da por buena N2 tras probar el Worker en el navegador y pide seguir con N3 sin commit; antes, ese mismo día, da por buena N1, la prueba de viabilidad: el plan vale con los ajustes de `docs/n1-viabilidad.md`, y N2 empieza por su contrato de tests; antes: el 13/10/2026 el usuario da por válidos el Sprint 3.7 y el Sprint 4 enteros, ya fusionados en main, y deja el Sprint 5 como el siguiente; está planificado y sin empezar: cada tarea requiere su contrato de tests y autorización, y N1 necesita antes el proyecto de Firebase que crea el usuario (lista de tareas del usuario en 7.5). Antes: el 13/10/2026 el usuario da por válido todo lo pendiente de revisión y pide ejecutar seguido, en una rama nueva `sprint/3.7` que sale de main y sin fusionar nada, el Sprint 3.7 (antes «4.6»), el resto del Sprint 4 y el 4.5, asumiendo la opción recomendada en cada decisión abierta; queda todo entregado ese día: no hay tareas sin empezar. Las dos que se señalan son las que esperan una decisión suya: T4.16, las grabaciones de audio, y T4.24, el seguimiento remoto descartado. Antes: el 13/10/2026 el Sprint 4.5 se da por terminado y se fusiona en main junto con lo entregado del Sprint 4, por decisión del usuario; la rama sprint/4.5 se elimina y el trabajo sigue en sprint/4, que ya lo contiene; antes de T4.13 van, con prioridad alta, T4.21 a T4.24; antes: Sprint 4.5 terminado el 13/10/2026: las once tareas entregadas, G10 revisada por el usuario y el resto en revisión local; al fusionarlo, el orden vuelve al Sprint 4 con T4.13 y T4.5; G10 revisada por el usuario el 13/10/2026 y suite completa en verde; G1, G5, G7 y G8 entregadas y G2, G3, G4 y G6 con la geometría entregada el 13/10/2026; el 13/10/2026 se entrega G1 y la geometría de G2 a G7, con tests anteriores aún en rojo: ver «Estado al cierre» en 7.3; Sprint 4.5 planificado el 13/10/2026 a petición del usuario: sprint intermedio para rehacer la geometría de los 23 circuitos a escala real y pasar el pintado a WebGL, con orden y alcance en 7.3; ninguna tarea implementada ni con contrato de tests; el Sprint 4 queda en pausa con T4.13 como tarea actual y T4.5 como siguiente; antes: Sprint 4 planificado el 09/10/2026 a petición del usuario, «cubre todo lo posible»: 20 tareas, T4.1 a T4.20, con orden y alcance en 7.2, refinado ese día en dos entrevistas de cinco rondas, una funcional y otra de diseño visual (`docs/design/grill-sprint4-visual.md`), cuyas decisiones constan en cada ficha; T4.12, la salida en mojado, va primero por decisión del usuario y después la maqueta navegable, T4.18; ninguna está implementada ni tiene todavía contrato de tests; antes, Sprint 3 con T3.4 como tarea actual: T3.3 y T3.4, las dos últimas del Sprint 3, se entregan el 08/10/2026 con su contrato de tests y quedan en revisión; no hay más tareas con ficha. **Por indicación del usuario del 08/10/2026 no se continúa con el Sprint 4: hace falta planificarlo antes** (sección 7.1); todo el Sprint 3 está en main y su rama se ha eliminado; el punto de reanudación para una conversación nueva está al final de `AGENTS.md`; antes: el 08/10/2026, por indicación del usuario, se fusionan en main como sprints separados el Sprint 2.11 entero y lo entregado del Sprint 3, T3.1 y T3.2; T3.3 tiene el contrato de tests aprobado ese día —el agua enfría los neumáticos, intermedios y lluvia se destrozan en seco, aquaplaning según T3.1— y está sin implementar; en T3.4 el usuario pidió mejorar el spray con partículas y falta acordar su contrato; el usuario da por revisadas y aprobadas ese mismo día todas las tareas fusionadas, incluida R58, la portada sin WebGL; R47, R48, R49, R50, R55, R56, R51 y R04 entregadas y en revisión el 07/10/2026 y R52, R24, R23, R53, R54 y R57 el 08/10/2026; R55 y R56 añadidas el 07/10/2026 a petición del usuario; R57 es la corrección de maquetación del muro vista en la revisión en navegador del 08/10/2026 y añadida ese día con el visto bueno del usuario; Sprint 2.10 aprobado y fusionado en main el 03/10/2026; Sprint 2.11 planificado el mismo día en la rama sprint/2.11, orden y alcance en 6.11; cada tarea sigue requiriendo contrato de tests y autorización expresa).
 
 **Prioridad acordada tras la auditoría (30/09/2026, `docs/reviews/auditoria-q12-q19.md`):** Q19 → Q16 → Q13 → Q17 → Q12 → Q18/Q14/Q15. Decisiones del usuario: detecciones DRS desde las notas oficiales FIA; el Safety Car debe salir del pit lane (Q14); tests estructurales sin dependencias nuevas para Q18; tolerancias de calibración Q12 propuestas.
 
@@ -57,8 +57,16 @@ Leyenda de Estado:
 | **Sprint 4** | **Director de equipo: economía, fábrica, personal, pilotos, patrocinio, junta y cambio de temporada, más tiempo por circuito, entrenamientos libres, órdenes de equipo, telemetría de decisión, audio y pulido, con menú de partidas, centro de gestión por pestañas, informe de la ronda e invierno por pasos (T4.1-T4.24; T4.21 a T4.24 son los pendientes de sprints anteriores, añadidos el 13/10/2026 con prioridad alta)** | ✅ **COMPLETADO — las 24 tareas dadas por válidas por el usuario el 13/10/2026 y fusionadas en main; T4.24 se cierra sustituida por el Sprint 5. Elegir grabaciones de audio y las sesiones jugables en pista quedan «para valorar más adelante» (sección 7.6)** |
 | **Sprint 4.5** | **Circuitos a escala real y pintado en WebGL: banco de medidas y página de revisión, un metro por unidad, eje suave, bordes sin pliegues, trazada fluida, boxes fuera de la pista, meta y parrilla, pista y coches en WebGL y repaso de los 23 circuitos (G1-G10)** | ✅ **COMPLETADO — entregado y fusionado en main el 13/10/2026; las once tareas (G1 a G11) dadas por válidas por el usuario ese día. No queda trabajo abierto: las mejoras opcionales (circuitos en 3D con relieve, apilar los lienzos WebGL) no tienen ficha** |
 | **Sprint 3.7** | **Rediseño visual y adaptación a móvil y tableta: base visual, carrera en móvil y tableta, muro sin desplegables y de altura estable, estrategia en imagen, paddock y centro de gestión adaptables, accesibilidad, clasificación en directo, simular un Gran Premio, espía de setups y recogida del Safety Car (V1-V10)** | ✅ **COMPLETADO — entregado el 13/10/2026, fusionado en main (PR 16) y dado por válido por el usuario ese día (V1 a V10)** |
-| **Sprint 5** | **Carrera compartida y nueva casa del juego: el escritorio como servidor por WebRTC (motor en un Web Worker, foto ligera del estado, almacenes con Zustand, salas y respaldo en Firebase Realtime Database, equipos con dueño, pantallas de sala y carrera en modo cliente), el juego desplegado en Firebase Hosting y GitHub Pages como landing de presentación con vídeo ligado al scroll (N1-N12)** | 🟡 **SIGUIENTE — planificado el 13/10/2026; ninguna tarea implementada ni con contrato de tests. La liga queda fuera** |
-| **Sprint 6** | **Radio del muro con IA: órdenes por radio con tus palabras, intérprete por palabras clave siempre disponible, respuestas y voz de los pilotos con filtro de radio, obediencia según carácter, modelo pequeño en el navegador con WebLLM descargado a petición, voces Piper y micro, y modelo ajustado a la radio del juego ; tras evaluar los modelos de WebLLM, clasificador por ejemplos y banco de respuestas escrito por un agente ; modelo propio ajustado por el usuario en WebLLM con versión según el dispositivo (IA1-IA10)** | 🟡 **EN CURSO — planificado el 22/10/2026; IA1, IA2, IA4 e IA5 entregadas y en revisión ese día; en IA5 ningún modelo de la lista llega al objetivo y la mejora depende de IA7. Jugar sin internet (PWA) queda en 7.6** |
+| **Sprint 5** | **Carrera compartida y nueva casa del juego: el escritorio como servidor por WebRTC (motor en un Web Worker, foto ligera del estado, almacenes con Zustand, salas y respaldo en Firebase Realtime Database, equipos con dueño, pantallas de sala y carrera en modo cliente), el juego desplegado en Firebase Hosting y GitHub Pages como landing de presentación con vídeo ligado al scroll (N1-N12)** | 🟡 **ENTREGADO Y EN MAIN — N1 a N12 implementadas; N4, N5, N6, N11 y N12 siguen en revisión local a la espera del usuario** |
+| **Sprint 6** | **Radio del muro con IA: órdenes por radio con tus palabras, intérprete por palabras clave siempre disponible, respuestas y voz de los pilotos con filtro de radio, obediencia según carácter, modelo pequeño en el navegador con WebLLM descargado a petición, voces Piper y micro, y modelo ajustado a la radio del juego ; tras evaluar los modelos de WebLLM, clasificador por ejemplos y banco de respuestas escrito por un agente ; modelo propio ajustado por el usuario en WebLLM con versión según el dispositivo (IA1-IA10)** | 🟡 **ENTREGADO Y EN MAIN el 24/10/2026 (PR #29) — IA1 a IA10 en revisión local a la espera de las pruebas del usuario. Jugar sin internet pasa al Sprint 13** |
+| **Sprint 7** | **Inicio, ajustes, móvil y temporada: pantalla de inicio con opciones, ajustes fuera de carrera con las descargas de la radio antes de correr, modo desarrollador oculto, descargas que no se repiten, carrera en el móvil a pantalla completa con la franja de la vuelta, cámaras según el dispositivo, velocímetro sin fallos, IA de la radio siempre visible y centro de temporada que enseña la decisión en 3D (UX1-UX11)** | ⏳ **SIGUIENTE — planificado el 24/10/2026; sin contratos de tests todavía** |
+| **Sprint 8** | **Rendimiento y deuda técnica: medición base, renderizado 3D más ligero, modelos y texturas comprimidos, calidad según el dispositivo, motor de carrera partido en módulos, limpieza, pruebas más rápidas y presupuesto vigilado (PF1-PF8)** | ⏳ **PLANIFICADO el 24/10/2026** |
+| **Sprint 9** | **Coche de 2025 y ruedas propias: licencias y marcas de los assets del usuario, coche de 2025 reducido y por piezas, ruedas Pirulí con los cinco compuestos en todo el juego y cambio de ruedas en 3D según la parada (CA1-CA6)** | ⏳ **PLANIFICADO el 24/10/2026** |
+| **Sprint 10** | **Circuitos: kit común y relieve: análisis del modelo de Shanghái, kit de piezas de circuito, kit en los 23 circuitos, Shanghái de referencia, relieve punto a punto y pendientes en el motor (CK1-CK6)** | ⏳ **PLANIFICADO el 24/10/2026** |
+| **Sprint 11** | **Identidad visual: sistema visual y menús, ambiente de los circuitos, temperatura de pista en agarre y desgaste, velocímetro y telemetría rediseñados (VS1-VS4)** | ⏳ **PLANIFICADO el 24/10/2026** |
+| **Sprint 12** | **Temporadas largas: carrera de varios años desde 2023, rivales con coches de cada época, libreas por año, piezas del coche propio que cambian a la vista, librea propia y presentación de temporada (TL1-TL6)** | ⏳ **PLANIFICADO el 24/10/2026** |
+| **Sprint 13** | **Jugar sin internet y paradas programadas: juego instalable (PWA), datos persistentes, avisos de versión y paradas programadas en el motor (OF1-OF4)** | ⏳ **PLANIFICADO el 24/10/2026** |
+| **Sprint 14** | **Unity: decisión con datos y prueba de viabilidad, solo si tras el Sprint 13 sigue haciendo falta (UN1-UN2)** | ⏳ **PLANIFICADO el 24/10/2026, CONDICIONAL** |
 
 ---
 
@@ -1967,7 +1975,7 @@ Lo que el usuario dejó aparcado el 13/10/2026, con las opciones que se le prese
 - **Cuentas de servicio sobrantes:** el primer intento fallido del asistente de Firebase pudo dejar una cuenta `github-action-...` sin usar; se borra desde la consola de Google Cloud, «IAM y administración» → «Cuentas de servicio».
 - **Revisión pendiente:** N11 y N12 siguen «en revisión local» hasta que el usuario las dé por válidas.
 
-**Jugar sin internet (anotado el 22/10/2026 al planificar el Sprint 6).** Hoy el juego no abre sin conexión: no tiene service worker. Convertirlo en PWA (guardar el juego y la librería de IA en el navegador, e instalarlo en la pantalla de inicio, lo que además evita que Safari borre el modelo a los 7 días) afecta a todo el juego. El usuario decide dejarlo para después del Sprint 6.
+**Jugar sin internet (anotado el 22/10/2026 al planificar el Sprint 6).** Hoy el juego no abre sin conexión: no tiene service worker. Convertirlo en PWA (guardar el juego y la librería de IA en el navegador, e instalarlo en la pantalla de inicio, lo que además evita que Safari borre el modelo a los 7 días) afecta a todo el juego. El usuario decide dejarlo para después del Sprint 6. **Planificado el 24/10/2026 en el Sprint 13 (OF1–OF3, sección 7.15).**
 
 ### 7.7 Sprint 6 — Radio del muro con IA (planificado el 22/10/2026)
 
@@ -2414,6 +2422,265 @@ Lo que el usuario dejó aparcado el 13/10/2026, con las opciones que se le prese
 7. **Solo si IA7 necesita ajuste fino:** abrir `scripts/radio-model/finetune.ipynb` en Colab, elegir GPU T4 y ejecutar todo (1–3 h). Al terminar, pegar el resumen de la última celda.
 
 **Orden propuesto:** IA1 → IA2 → IA4 → IA5 → IA8 → IA10 → IA9 → IA3 → IA6 → IA7 (IA10 añadida el 23/10/2026: el modelo propio del usuario sustituye al clasificador y al modelo genérico en el modo IA; replanificado el 22/10/2026 tras la evaluación de IA5, a petición del usuario: IA8 sustituye al modelo generativo para entender, IA9 escribe las respuestas e IA7 pasa a ser el entorno de aprendizaje, con ajuste fino solo si IA8 no llega). IA9 va antes de IA3 para que la obediencia tenga ya sus protestas variadas. IA3 sigue después de la IA porque toca el motor y no bloquea a las demás.
+
+---
+
+### 7.8 Plan de los Sprints 7 a 14 (planificado el 24/10/2026)
+
+**Origen:** el 24/10/2026, con el Sprint 6 en main, el usuario pide planificar lo que quiere mejorar: el menú de inicio y unos ajustes fuera de carrera con modo desarrollador oculto; las descargas de los modelos antes de correr y sin el fallo de la barra; la pantalla de carrera y las cámaras en el móvil; que se vea que la voz es con IA; que el menú de temporada enseñe qué decisión se toma, con imágenes 3D; rendimiento y deuda técnica; mejoras visuales; jugar sin internet y paradas programadas; y llevar el juego a Unity. Ese mismo día añade una carpeta de assets (`C:\Users\Usuario\Downloads\assets f1 sim news`) y pide tres sprints más: el coche de 2025 y unas ruedas propias que se usen en todo el juego, también en el cambio de ruedas en boxes en 3D; un kit común de assets de circuito sacado del modelo de Shanghái para el resto de circuitos; y temporadas largas desde 2023, con los coches y las libreas evolucionando y las piezas del coche propio cambiando a la vista.
+
+**Orden decidido por el usuario (24/10/2026):** primero lo que se nota al jugar (7), después rendimiento (8), porque los assets nuevos no entran en la web sin reducirlos; luego los assets (9 y 10), la identidad visual (11) y las temporadas largas (12), que aprovechan el coche por piezas. Al final, jugar sin internet (13). Con el juego instalable y sin conexión, puede que Unity (14) ya no tenga sentido: se decide entonces.
+
+| Sprint | Tema | Tareas |
+|---|---|---|
+| 7 | Inicio, ajustes, móvil y temporada | UX1–UX11 |
+| 8 | Rendimiento y deuda técnica | PF1–PF8 |
+| 9 | Coche de 2025 y ruedas propias | CA1–CA6 |
+| 10 | Circuitos: kit común y relieve | CK1–CK6 |
+| 11 | Identidad visual | VS1–VS4 |
+| 12 | Temporadas largas | TL1–TL6 |
+| 13 | Jugar sin internet y paradas programadas | OF1–OF4 |
+| 14 | Unity: decisión y prueba de viabilidad | UN1–UN2 |
+
+**Los assets del usuario (analizados el 24/10/2026, leyendo solo la cabecera de cada archivo):**
+
+| Archivo | Qué es | Peso | Detalle | Licencia declarada | Observaciones |
+|---|---|---|---|---|---|
+| `2025_f1_car.glb` | Coche de 2025 | 85 MB | 3,1 M triángulos, 143 mallas, 8 materiales | CC BY 4.0, Abu Saif (Sketchfab) | Hay que reducirlo unas 30 veces (el coche actual pesa 3,2 MB) |
+| `mercedes_f1_w14_free.glb` | Coche de 2023 | 8,8 MB | 232 k triángulos, 54 materiales | CC BY 4.0, 3dblenderlol | Lleva marcas reales (Pirelli, equipo) |
+| `amr24.glb` | Coche de 2024 | 20 MB | 275 k triángulos, 34 materiales | CC BY 4.0, Abu Saif | **Origen dudoso:** materiales `force_india_*`, como los de los juegos oficiales |
+| `f1_tyres_pack_2022_…glb` | Ruedas blandas, medias y duras | 9,4 MB | 279 k triángulos, llanta y frenos | CC BY 4.0, zordew | Marca Pirelli; faltan intermedias y de lluvia |
+| `shanghai_international_circuit_2018_layout.glb` | Circuito de Shanghái | 93 MB | 1,37 M triángulos, 100 materiales, 93 texturas | CC BY 4.0, Dave Love | **Origen dudoso:** pieza `frd_shanghai`; unos 90 carteles con publicidad real |
+
+**Reglas para estos assets:** CC BY 4.0 obliga a citar al autor (en `public/models/ATTRIBUTION.md` y en los créditos); toda marca real se sustituye por la de parodia (el proveedor de neumáticos es **Pirulí** y Cinturita para las de agua, salvo que el usuario elija otro nombre); los dos de origen dudoso se usan solo como referencia, rehaciendo en Blender lo necesario, salvo que el usuario decida otra cosa en CA1 o CK1; nada entra en el juego sin pasar el presupuesto de PF8.
+
+**Reglas de siempre:** cada tarea empieza por su contrato de tests, que el usuario aprueba antes de programar; las tareas que tocan el motor llevan además la comprobación de determinismo y de guardado. Las pruebas en dispositivos reales las hace el usuario con una lista preparada.
+
+---
+
+### 7.9 Sprint 7 — Inicio, ajustes, móvil y temporada (planificado el 24/10/2026)
+
+**Objetivo:** que el juego se entienda en la primera pantalla y en el móvil: un inicio con opciones, unos ajustes completos fuera de carrera (con la radio y sus descargas antes de correr), un modo desarrollador escondido, la carrera usable en el teléfono y un centro de temporada que dice qué decisión toca y la enseña en 3D.
+
+**Propuesta para el centro de temporada (a confirmar en el contrato de UX9 y UX10):** cuatro zonas en lugar de unos 14 paneles al mismo nivel (Coche: desarrollo, componentes, reglaje · Equipo: pilotos, personal, mecánicos, reserva · Sede y dinero: instalaciones, finanzas, patrocinadores, junta · Fin de semana: calendario, libres, espionaje); una portada con 2–3 tarjetas de «próxima decisión» con su efecto y su coste; y una imagen 3D de lo que se cambia. Opción recomendada para las imágenes: **mixta**: el coche del juego en 3D en vivo con la pieza resaltada (se actualiza solo cuando llegue el coche de 2025) e imágenes hechas en Blender para la sede, las instalaciones y el personal. Alternativas: todo con imágenes de Blender (ligero, pero se rehace al cambiar el coche) o todo en 3D en vivo (lo más vistoso y lo más pesado).
+
+* **UX1 — Pantalla de inicio con opciones:** `[ ] PENDIENTE — PLANIFICADA 24/10/2026; CONTRATO DE TESTS POR PROPONER`
+  * *Qué:* la portada deja de proponer directamente las carreras: Jugar (carrera rápida, temporada, multijugador), Continuar la partida guardada y Ajustes, con lo justo en pantalla.
+  * *Aceptación:* desde el inicio se llega a todo en 1–2 toques; en el móvil cabe sin desplazamiento lateral.
+  * *Tests propuestos:* las entradas del inicio llevan a cada modo; Continuar solo aparece con partida guardada; vista a 375 px.
+
+* **UX2 — Ajustes fuera de carrera:** `[ ] PENDIENTE — PLANIFICADA 24/10/2026; CONTRATO DE TESTS POR PROPONER`
+  * *Qué:* una página de Ajustes desde el inicio con sonido, gráficos, controles y radio (modo, versión del modelo, voz, micro). **Las descargas de los modelos se hacen aquí, antes de correr**; en carrera solo se ve el estado y se enciende o apaga la IA.
+  * *Decisiones propuestas:* la sección de radio va arriba y destacada; cada descarga dice tamaño, versión y si ya está; borrar libera el espacio.
+  * *Aceptación:* en carrera no se puede empezar una descarga; los ajustes se guardan y valen en la carrera siguiente.
+  * *Tests propuestos:* el menú de carrera no ofrece descargas; las preferencias se leen al entrar en carrera; la radio sigue con su respaldo si el modelo no está.
+
+* **UX3 — Modo desarrollador oculto:** `[ ] PENDIENTE — PLANIFICADA 24/10/2026; CONTRATO DE TESTS POR PROPONER`
+  * *Qué:* escondido en Ajustes (por ejemplo, 7 toques en el número de versión). Reúne lo que hoy va por `?revision=…`: páginas de revisión, evaluación de la radio, semilla de la carrera, banderas y Safety Car de prueba y el contador de rendimiento (PF1).
+  * *Aceptación:* un jugador normal no lo ve; activado, se recuerda en ese dispositivo y se puede apagar.
+  * *Tests propuestos:* oculto por defecto; se activa con el gesto; las herramientas no entran en el paquete principal.
+
+* **UX4 — Descargas que no se repiten:** `[ ] PENDIENTE — PLANIFICADA 24/10/2026; CONTRATO DE TESTS POR PROPONER`
+  * *Qué:* arregla lo que vio el usuario: tras cerrar y volver a la pestaña no había barra y «Descargar» parecía bajar el modelo otra vez. Al volver se ve lo ya guardado y la barra continúa desde ahí; no se bajan los archivos que ya están; dos pestañas no descargan a la vez (bloqueo entre pestañas); si otra pestaña está descargando, esta lo dice.
+  * *Aceptación:* cortar a mitad, cerrar, volver y continuar solo baja lo que falta, con la barra en el punto real.
+  * *Tests propuestos:* progreso inicial con archivos ya guardados; bloqueo entre dos pestañas simuladas; reanudar sin repetir archivos.
+
+* **UX5 — Carrera en el móvil: pantallas completas y franja de la vuelta:** `[ ] PENDIENTE — PLANIFICADA 24/10/2026; CONTRATO DE TESTS POR PROPONER`
+  * *Qué:* las pestañas dejan de partir la pantalla por la mitad: cada una (pista, tiempos, muro, detalle) ocupa la pantalla entera. Arriba, siempre visible, una **franja de la vuelta**: una línea de salida a meta con un punto por coche, los dos del jugador resaltados con su posición, la meta marcada y quién está a punto de cruzarla.
+  * *Aceptación:* en un teléfono de 375 px se decide sin desplazar ni hacer zoom; la franja se lee de un vistazo.
+  * *Tests propuestos:* la franja coloca cada coche por su avance en la vuelta y resalta los del jugador; cambiar de pestaña no deja la pantalla partida; vista a 375 px.
+
+* **UX6 — Cámaras según el dispositivo:** `[ ] PENDIENTE — PLANIFICADA 24/10/2026; CONTRATO DE TESTS POR PROPONER`
+  * *Qué:* menú de cámaras rediseñado. En el móvil, menos cámaras y pensadas para el dedo; la cámara libre funciona con gestos (arrastrar y pellizcar) o desaparece del móvil (a decidir en el contrato). En el escritorio, las 8 de hoy.
+  * *Aceptación:* en el móvil todas las cámaras ofrecidas funcionan con el dedo.
+  * *Tests propuestos:* lista de cámaras por tipo de dispositivo; gestos de la libre (o su ausencia) en el móvil.
+
+* **UX7 — Velocímetro sin fallos:** `[ ] PENDIENTE — PLANIFICADA 24/10/2026; CONTRATO DE TESTS POR PROPONER`
+  * *Qué:* el usuario ha visto varias veces que el velocímetro se buguea. Primero se reproduce y se identifica la causa; el rediseño visual va en VS7.
+  * *Tests propuestos:* el caso que lo reproduce, en verde tras el arreglo.
+
+* **UX8 — La IA de la radio, siempre visible:** `[ ] PENDIENTE — PLANIFICADA 24/10/2026; CONTRATO DE TESTS POR PROPONER`
+  * *Qué:* que se vea claramente cuándo se usa la IA (modelo, voz realista y micro), sobre todo en Android e iOS: un indicador en el menú de carrera del móvil y en el panel de radio, y una sección destacada en Ajustes con el estado de cada pieza (descargada, lista, apagada, no disponible en este dispositivo y por qué).
+  * *Aceptación:* en un vistazo el jugador sabe si habla con la IA o con la radio básica, y qué voz oye.
+  * *Tests propuestos:* el indicador refleja cada estado de la IA y de la voz; texto claro cuando el dispositivo no puede.
+
+* **UX9 — Centro de temporada que enseña la decisión:** `[ ] PENDIENTE — PLANIFICADA 24/10/2026; CONTRATO DE TESTS POR PROPONER`
+  * *Qué:* las cuatro zonas de la propuesta de arriba y una portada con 2–3 tarjetas de «próxima decisión» (por ejemplo: «El alerón delantero v2 está listo: −0,15 s por vuelta, 1,2 M»), con el efecto y el coste, y la posibilidad de decidir ahí mismo. Cada pantalla dice arriba qué se decide en ella.
+  * *Aceptación:* el usuario sabe en cada pantalla qué está decidiendo y qué cambia.
+  * *Tests propuestos:* las tarjetas salen del estado de la temporada (piezas listas, contratos que vencen, dinero); cada decisión de una tarjeta hace lo mismo que en su panel.
+
+* **UX10 — Imágenes 3D de lo que se cambia:** `[ ] PENDIENTE — PLANIFICADA 24/10/2026; CONTRATO DE TESTS POR PROPONER`
+  * *Qué (opción recomendada, a confirmar):* el coche del juego en 3D con la pieza que se mejora resaltada (alerón delantero, trasero, suelo, motor…), girando despacio; imágenes hechas en Blender para la sede, las instalaciones (túnel de viento, simulador, fábrica) y el personal, con estilo propio y sin marcas reales.
+  * *Aceptación:* al tocar una mejora se ve qué parte del coche o de la sede cambia; en el móvil no baja la fluidez.
+  * *Tests propuestos:* cada pieza del desarrollo tiene su parte resaltable en el modelo; cada instalación su imagen; el 3D del menú solo se carga en el centro de temporada.
+
+* **UX11 — Prueba en dispositivos reales:** `[ ] PENDIENTE — PLANIFICADA 24/10/2026; LA HACE EL USUARIO CON UNA LISTA PREPARADA`
+  * *Qué:* recorrer inicio, ajustes, descargas, una carrera y la temporada en Android, iPhone y tableta, con una lista de comprobación; lo que falle vuelve como tarea.
+
+**Orden propuesto:** UX7 → UX4 → UX1 → UX2 → UX3 → UX8 → UX5 → UX6 → UX9 → UX10 → UX11 (primero los dos fallos, después la estructura, el móvil y la temporada).
+
+---
+
+### 7.10 Sprint 8 — Rendimiento y deuda técnica (planificado el 24/10/2026)
+
+**Objetivo:** medir el juego, quitar lo que sobra y hacerlo ir fluido en móviles medianos antes de añadir peso visual. Es también la base para decidir sobre Unity: dice si el límite es la web o el código.
+
+* **PF1 — Medición base y contador de rendimiento:** `[ ] PENDIENTE — PLANIFICADA 24/10/2026; CONTRATO DE TESTS POR PROPONER`
+  * *Qué:* fotogramas, tiempo por fotograma (procesador y gráfica), memoria, tiempo de carga y peso de la descarga, en el PC del usuario, su móvil y uno modesto; un contador en el modo desarrollador (UX3). Las cifras quedan como referencia.
+
+* **PF2 — Renderizado 3D más ligero:** `[ ] PENDIENTE — PLANIFICADA 24/10/2026; CONTRATO DE TESTS POR PROPONER`
+  * *Qué:* instancias para lo repetido (gradas, árboles, vallas), niveles de detalle según la distancia, descartar lo que no se ve y sombras ajustadas.
+
+* **PF3 — Modelos y texturas comprimidos:** `[ ] PENDIENTE — PLANIFICADA 24/10/2026; CONTRATO DE TESTS POR PROPONER`
+  * *Qué:* texturas comprimidas para la gráfica y mallas comprimidas; carga diferida de lo que no hace falta al empezar.
+
+* **PF4 — Calidad automática según el dispositivo:** `[ ] PENDIENTE — PLANIFICADA 24/10/2026; CONTRATO DE TESTS POR PROPONER`
+  * *Qué:* niveles de calidad (bajo, medio, alto) elegidos por el dispositivo y ajustables en Ajustes; baja sola si los fotogramas caen.
+
+* **PF5 — Partir el motor de carrera:** `[ ] PENDIENTE — PLANIFICADA 24/10/2026; CONTRATO DE TESTS POR PROPONER`
+  * *Qué:* `RaceSimulation` es la pieza más conectada del juego; se separa en módulos (ritmo, adelantamientos, boxes, clima, órdenes) sin cambiar ningún resultado: misma semilla, misma carrera.
+
+* **PF6 — Limpieza de código sobrante:** `[ ] PENDIENTE — PLANIFICADA 24/10/2026; CONTRATO DE TESTS POR PROPONER`
+  * *Qué:* quitar lo que el 3D ha dejado sin uso del dibujo 2D, código muerto y dependencias que no se usan.
+
+* **PF7 — Batería de pruebas más rápida:** `[ ] PENDIENTE — PLANIFICADA 24/10/2026; CONTRATO DE TESTS POR PROPONER`
+  * *Qué:* hoy tarda unos 25 minutos; pruebas en paralelo y compilaciones compartidas, sin quitar ninguna prueba.
+
+* **PF8 — Presupuesto vigilado:** `[ ] PENDIENTE — PLANIFICADA 24/10/2026; CONTRATO DE TESTS POR PROPONER`
+  * *Qué:* objetivos medibles (por ejemplo, 60 FPS en el PC del usuario y 30 estables en un móvil medio, y un peso máximo del paquete principal) y una prueba que avisa si alguno empeora.
+
+---
+
+### 7.11 Sprint 9 — Coche de 2025 y ruedas propias (planificado el 24/10/2026)
+
+**Objetivo:** que el juego use el coche de 2025 (la temporada que está implementada) y unas ruedas propias en todas partes, de la portada al cambio de ruedas en boxes, que se vea y que dependa de la parada.
+
+* **CA1 — Licencias y marcas de los assets:** `[ ] PENDIENTE — PLANIFICADA 24/10/2026; CONTRATO DE TESTS POR PROPONER`
+  * *Qué:* confirmar con el usuario qué assets se usan tal cual y cuáles solo de referencia (AMR24 y Shanghái tienen origen dudoso); añadir la atribución CC BY de cada uno; quitar toda marca real de mallas y texturas.
+  * *Tests propuestos:* cada modelo del juego tiene su atribución; ninguna textura ni nombre de malla lleva marcas reales (prueba de parodia ampliada a los modelos).
+
+* **CA2 — Coche de 2025 en el juego:** `[ ] PENDIENTE — PLANIFICADA 24/10/2026; CONTRATO DE TESTS POR PROPONER`
+  * *Qué:* reducir `2025_f1_car.glb` en Blender de 3,1 M triángulos y 85 MB al presupuesto del coche actual (≈ 3 MB) más su versión lejana; separar las piezas (alerón delantero, alerón trasero, fondo plano, tapa motor, ruedas) para UX10 y las temporadas largas; zonas de librea para los 10 equipos de parodia. Sustituye al coche de 2026, que se guarda para la época 2026 de las temporadas largas.
+  * *Aceptación:* se ve mejor que el actual y no baja los fotogramas medidos en PF1.
+
+* **CA3 — Ruedas propias con los cinco compuestos:** `[ ] PENDIENTE — PLANIFICADA 24/10/2026; CONTRATO DE TESTS POR PROPONER`
+  * *Qué:* el pack de 2022 retexturizado en Blender con la marca de parodia en el flanco y el color de cada compuesto; se crean las que faltan: intermedias (verde) y de lluvia (azul). Reducido al presupuesto, con llanta y frenos.
+  * *Tests propuestos:* existen los cinco compuestos con su color; ninguna lleva Pirelli.
+
+* **CA4 — Las ruedas en todo el juego:** `[ ] PENDIENTE — PLANIFICADA 24/10/2026; CONTRATO DE TESTS POR PROPONER`
+  * *Qué:* la rueda de la portada (hoy `F1Wheel3D`, dibujada por código) se sustituye por la nueva; los iconos de compuesto de la interfaz salen de imágenes de estas ruedas; cada coche 3D lleva montado el compuesto que lleva en carrera.
+  * *Tests propuestos:* la portada carga la rueda nueva; cada compuesto de la interfaz usa su imagen; el coche 3D cambia de compuesto al salir de boxes.
+
+* **CA5 — Cambio de ruedas en 3D:** `[ ] PENDIENTE — PLANIFICADA 24/10/2026; CONTRATO DE TESTS POR PROPONER`
+  * *Qué:* al parar, el coche se levanta, salen las ruedas gastadas y entran las del compuesto nuevo, con una duración que es la de la parada que calcula el motor: rápida con buenos mecánicos, lenta con malos o con un fallo (una rueda que se atasca se ve atascada). Una cámara para verlo.
+  * *Aceptación:* lo que se ve coincide con lo que dice el motor, segundo a segundo.
+
+* **CA6 — Que la parada influya y se entienda:** `[ ] PENDIENTE — PLANIFICADA 24/10/2026; CONTRATO DE TESTS POR PROPONER`
+  * *Qué:* revisar que el tiempo de parada sale de los mecánicos y su estado (PitCrew), con sus fallos, y enseñarlo: tiempo de cada parada, comparación con la media y motivo si fue lenta. Toca el motor solo si falta algo: con contrato y determinismo.
+
+---
+
+### 7.12 Sprint 10 — Circuitos: kit común y relieve (planificado el 24/10/2026)
+
+**Objetivo:** que todos los circuitos tengan el nivel de detalle del modelo de Shanghái sin perder lo que identifica a cada uno, y que el relieve se vea y afecte a los coches.
+
+* **CK1 — Análisis del modelo de Shanghái:** `[ ] PENDIENTE — PLANIFICADA 24/10/2026; CONTRATO DE TESTS POR PROPONER`
+  * *Qué:* inventario de los tipos de piezas que tiene (gradas, vallas, guardarraíles, muros de neumáticos, pianos, escapatorias, carteles, edificio de boxes, torres, iluminación, vegetación, marcas en la pista), con su peso y si se pueden reutilizar; decisión con el usuario sobre su origen (CA1).
+
+* **CK2 — Kit común de piezas de circuito:** `[ ] PENDIENTE — PLANIFICADA 24/10/2026; CONTRATO DE TESTS POR PROPONER`
+  * *Qué:* piezas genéricas hechas o rehechas en Blender a partir del análisis, sin marcas, ligeras, con variantes de color por circuito y preparadas para instancias (PF2). Carteles con patrocinadores de parodia.
+
+* **CK3 — El kit en los 23 circuitos:** `[ ] PENDIENTE — PLANIFICADA 24/10/2026; CONTRATO DE TESTS POR PROPONER`
+  * *Qué:* colocar el kit en cada circuito respetando lo que lo identifica (los monumentos ya hechos: casino, torre Eiffel, Marina Bay, noria…) y sin pasar el presupuesto de PF8.
+
+* **CK4 — Shanghái, circuito de referencia:** `[ ] PENDIENTE — PLANIFICADA 24/10/2026; CONTRATO DE TESTS POR PROPONER`
+  * *Qué:* Shanghái completo con el kit y sus piezas propias, como modelo de cómo debe verse un circuito terminado.
+
+* **CK5 — Relieve de los circuitos:** `[ ] PENDIENTE — PLANIFICADA 24/10/2026; CONTRATO DE TESTS POR PROPONER`
+  * *Qué:* hoy cada circuito tiene un solo número de desnivel (`elevationChangeMeters`, 25 m en todos). Se añade la altura punto a punto de cada trazado, de datos abiertos con licencia, y se ve en 3D.
+
+* **CK6 — Pendientes en el motor:** `[ ] PENDIENTE — PLANIFICADA 24/10/2026; CONTRATO DE TESTS POR PROPONER`
+  * *Qué:* subidas, bajadas y crestas cambian velocidad, frenada y agarre. Toca el motor: misma semilla, misma carrera, y guardado compatible.
+
+---
+
+### 7.13 Sprint 11 — Identidad visual (planificado el 24/10/2026)
+
+**Objetivo:** que deje de parecer una web genérica: un sistema visual propio, ambiente en los circuitos, temperatura de pista que cuenta y un velocímetro nuevo.
+
+* **VS1 — Sistema visual y menús rediseñados:** `[ ] PENDIENTE — PLANIFICADA 24/10/2026; CONTRATO DE TESTS POR PROPONER`
+  * *Qué:* tipografía, color, iconos y movimiento propios, aplicados a inicio, temporada y carrera; menos información a la vez y cada pantalla con un propósito.
+
+* **VS2 — Ambiente de los circuitos:** `[ ] PENDIENTE — PLANIFICADA 24/10/2026; CONTRATO DE TESTS POR PROPONER`
+  * *Qué:* cielo y luz según la hora, público, efectos (calor sobre el asfalto, lluvia, chispas), dentro del presupuesto de PF8.
+
+* **VS3 — Temperatura de pista en el agarre y el desgaste:** `[ ] PENDIENTE — PLANIFICADA 24/10/2026; CONTRATO DE TESTS POR PROPONER`
+  * *Qué:* `trackTempCelsius` ya existe y afecta al agua; pasa a afectar también al agarre y al desgaste de cada compuesto. Toca el motor.
+
+* **VS4 — Velocímetro y telemetría rediseñados:** `[ ] PENDIENTE — PLANIFICADA 24/10/2026; CONTRATO DE TESTS POR PROPONER`
+  * *Qué:* nuevo diseño con el sistema visual de VS1 (el arreglo del fallo va antes, en UX7).
+
+---
+
+### 7.14 Sprint 12 — Temporadas largas (planificado el 24/10/2026)
+
+**Objetivo:** una carrera de varios años desde, por ejemplo, 2023, en la que los coches de los rivales y sus libreas cambian cada temporada y el coche propio mejora a la vista pieza a pieza, con su librea.
+
+**Las épocas, con los assets del usuario:** 2023 (base: Mercedes W14), 2024 (base: AMR24, solo como referencia si se confirma su origen dudoso), 2025 (el coche de CA2) y 2026 (el coche actual del juego). Cada equipo de parodia lleva cada año su librea sobre el coche de esa época.
+
+**Propuestas para la librea propia (a decidir en el contrato de TL5):**
+- **A. Plantillas:** 6–8 diseños base y el jugador elige colores. Sencillo y siempre queda bien.
+- **B. Editor por zonas (recomendada):** colores por zona (morro, pontones, tapa motor, alerones), un número y sitios para los patrocinadores de parodia que se ganan en la gestión: más patrocinadores, más huecos. La librea cuenta la historia del equipo.
+- **C. Diseño libre:** el jugador sube su propia imagen. Lo más libre, pero difícil de que encaje en el modelo y de mantener sin marcas reales.
+
+* **TL1 — Carrera de varias temporadas:** `[ ] PENDIENTE — PLANIFICADA 24/10/2026; CONTRATO DE TESTS POR PROPONER`
+  * *Qué:* elegir año de inicio (2023 en adelante) y encadenar temporadas con calendario y reglamento de cada año; todo se guarda y se retoma.
+
+* **TL2 — Los rivales evolucionan:** `[ ] PENDIENTE — PLANIFICADA 24/10/2026; CONTRATO DE TESTS POR PROPONER`
+  * *Qué:* cada temporada los equipos rivales cambian de coche (de época) y de rendimiento según su desarrollo; se ve en carrera y en la presentación.
+
+* **TL3 — Libreas por año:** `[ ] PENDIENTE — PLANIFICADA 24/10/2026; CONTRATO DE TESTS POR PROPONER`
+  * *Qué:* una librea de parodia por equipo y año, que cambia de una temporada a otra, sin marcas reales.
+
+* **TL4 — Tu coche mejora a la vista:** `[ ] PENDIENTE — PLANIFICADA 24/10/2026; CONTRATO DE TESTS POR PROPONER`
+  * *Qué:* las piezas que tienen sentido como pieza (alerón delantero, alerón trasero, fondo plano, tapa motor) tienen 3–4 versiones hechas en Blender, de la básica a la más evolucionada; al desarrollar una mejora, el coche monta la versión nueva y se ve en carrera, en la temporada (UX10) y en la presentación. El chasis no se trocea.
+
+* **TL5 — Tu librea:** `[ ] PENDIENTE — PLANIFICADA 24/10/2026; CONTRATO DE TESTS POR PROPONER`
+  * *Qué:* la opción que el usuario elija de las tres de arriba (recomendada: editor por zonas con patrocinadores ganados).
+
+* **TL6 — Presentación de la temporada:** `[ ] PENDIENTE — PLANIFICADA 24/10/2026; CONTRATO DE TESTS POR PROPONER`
+  * *Qué:* al empezar cada temporada, el coche nuevo del jugador y los de los rivales se presentan en 3D, con lo que ha cambiado respecto al año anterior.
+
+---
+
+### 7.15 Sprint 13 — Jugar sin internet y paradas programadas (planificado el 24/10/2026)
+
+**Objetivo:** que el juego se instale y funcione sin conexión, y cerrar el hueco que la radio deja a la vista (las paradas programadas).
+
+* **OF1 — Juego instalable y sin conexión (PWA):** `[ ] PENDIENTE — PLANIFICADA 24/10/2026; CONTRATO DE TESTS POR PROPONER`
+  * *Qué:* service worker que guarda el juego y la librería de IA; se instala en la pantalla de inicio y abre sin red (la nota de 7.6 queda planificada aquí).
+
+* **OF2 — Datos que no se borran:** `[ ] PENDIENTE — PLANIFICADA 24/10/2026; CONTRATO DE TESTS POR PROPONER`
+  * *Qué:* pedir almacenamiento persistente para modelos, assets y partidas; instalado, Safari deja de borrar el modelo a los 7 días.
+
+* **OF3 — Avisos de versión nueva:** `[ ] PENDIENTE — PLANIFICADA 24/10/2026; CONTRATO DE TESTS POR PROPONER`
+  * *Qué:* con el juego guardado en el navegador, avisar cuando hay una versión nueva y actualizar sin perder la partida.
+
+* **OF4 — Paradas programadas en el motor:** `[ ] PENDIENTE — PLANIFICADA 24/10/2026; CONTRATO DE TESTS POR PROPONER`
+  * *Qué:* «para en 5 vueltas» o «en la vuelta 22» se programa en el motor (con o sin compuesto) y se puede anular; la radio deja de contestar que no se puede. Toca el motor.
+
+---
+
+### 7.16 Sprint 14 — Unity: decisión y prueba de viabilidad (planificado el 24/10/2026, condicional)
+
+**Objetivo:** decidir con datos si llevar el juego a Unity. Puede que tras el Sprint 13 (juego instalable y sin conexión) ya no haga falta.
+
+* **UN1 — Decidir si hace falta:** `[ ] PENDIENTE — PLANIFICADA 24/10/2026; CONDICIONAL`
+  * *Qué:* con las cifras de PF1–PF8 y el juego instalable, responder: ¿falta calidad gráfica, rendimiento o publicar en tiendas? Si no falta nada, el sprint termina aquí. Lo que se perdería o habría que rehacer al migrar: la radio con IA (WebLLM no existe en Unity), Firebase en la web, el multijugador por WebRTC y la carga rápida en el navegador; migrar es reescribir unas 43.000 líneas en C#.
+
+* **UN2 — Prueba de viabilidad:** `[ ] PENDIENTE — PLANIFICADA 24/10/2026; CONDICIONAL A UN1`
+  * *Qué:* un circuito, los coches y una cámara en Unity, comparados con la versión web optimizada en calidad, fotogramas y tamaño de descarga, en el PC y en el móvil del usuario. Con eso, migrar por fases o seguir en la web.
+
 
 ---
 
