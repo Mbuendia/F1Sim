@@ -1,4 +1,4 @@
-// UX3 — Modo desarrollador oculto (Sprint 7). Contrato propuesto el 24/10/2026, sin aprobar todavía.
+// UX3 — Modo desarrollador oculto (Sprint 7). Contrato acordado con el usuario el 24/10/2026 (punto 6 añadido ese día por el usuario).
 //  1. Apagado por defecto; se enciende con 7 toques en el número de versión de Ajustes en menos de 4 s; se recuerda en
 //     ese dispositivo y se puede apagar.
 //  2. Con él apagado, Ajustes no enseña la sección de desarrollo.
@@ -6,6 +6,9 @@
 //     puente) y el contador de rendimiento (PF1).
 //  4. Las páginas de revisión se abren en desarrollo o con el modo encendido, nunca para un jugador normal.
 //  5. Las herramientas no entran en el paquete principal.
+//  6. El tiempo es del modo desarrollador (decisión del usuario del 24/10/2026): el botón «Probar tiempo» de la carrera
+//     y la elección del tiempo antes de una carrera libre o en una sala solo salen con el modo encendido. Sin él, la
+//     carrera libre sortea el tiempo con la probabilidad de lluvia del circuito, como la temporada.
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { readFileSync } from 'node:fs';
@@ -50,5 +53,16 @@ export default async function run({ server, assert, test }) {
     const main = readFileSync('src/main.tsx', 'utf8');
     assert(/devToolsAllowed\(/.test(main) && !/import\.meta\.env\.DEV && new URLSearchParams/.test(main), 'UX3: main.tsx abre las páginas de revisión con devToolsAllowed');
     assert(!/^import [^(]*from ['"]\.\/dev\//m.test(main), 'UX3: las herramientas se cargan con import(), fuera del paquete principal');
+  });
+
+  await test('UX3: el tiempo, solo en modo desarrollador', async () => {
+    const { drawWeatherScenario } = await load('/src/data/weatherScenarios.ts');
+    assert(dev.freeRaceWeather({ devMode: false, chosen: 'tormenta', rainProbabilityPercent: 30, seed: 5 }) === drawWeatherScenario(30, 5), 'UX3: sin el modo, la carrera libre sortea el tiempo según el circuito');
+    assert(dev.freeRaceWeather({ devMode: true, chosen: 'tormenta', rainProbabilityPercent: 30, seed: 5 }) === 'tormenta', 'UX3: con el modo, vale el tiempo elegido');
+    const app = readFileSync('src/App.tsx', 'utf8');
+    assert(!/weatherTest=\{mode === 'free'\}/.test(app) && /weatherTest=\{[^}]*(devMode|devToolsAllowed)/.test(app), 'UX3: el botón «Probar tiempo» solo sale con el modo encendido');
+    assert(/onSelectWeather=\{[^}]*(devMode|devToolsAllowed)/.test(app), 'UX3: la elección del tiempo antes de la carrera libre, solo con el modo');
+    const rooms = readFileSync('src/components/RoomScreens.tsx', 'utf8');
+    assert(/devMode[\s\S]{0,400}sala-tiempo/.test(rooms), 'UX3: en la sala, el tiempo solo se elige con el modo');
   });
 }

@@ -1,4 +1,4 @@
-// UX4 — Descargas que no se repiten (Sprint 7). Contrato propuesto el 24/10/2026, sin aprobar todavía.
+// UX4 — Descargas que no se repiten (Sprint 7). Contrato acordado con el usuario el 24/10/2026 (puntos 6 a 8 añadidos ese día por el usuario).
 // Lo que vio el usuario: tras cerrar y volver, no había barra con la descarga en marcha y «Descargar» bajaba el modelo
 // otra vez. Causas encontradas: cada vez que se abren los ajustes se crea un controlador nuevo (la descarga anterior
 // sigue sola, sin barra, y se puede lanzar otra a la vez), y tras recargar la página la tienda no sabe cuánto había.
@@ -8,6 +8,13 @@
 //     que ya están.
 //  4. La tienda de WebLLM cuenta lo guardado en la caché del navegador, archivo a archivo, aunque la descarga no acabase.
 //  5. Si otra pestaña está descargando, esta lo dice y no empieza otra.
+//  También en el móvil, no solo en el escritorio (decisión del usuario del 24/10/2026):
+//  6. Si la descarga se corta porque la página pasa a segundo plano (pantalla bloqueada o cambio de aplicación), queda
+//     en pausa con lo guardado, no como error de red, y al volver continúa desde ahí.
+//  7. El bloqueo entre pestañas funciona aunque el navegador no tenga Web Locks (respaldo con el almacenamiento local);
+//     una pestaña sola no se bloquea a sí misma y el bloqueo de una pestaña cerrada caduca (un minuto sin renovarse).
+//  8. A 375 px, Ajustes enseña la descarga entera (barra, tamaño, versión y botones) sin salirse; se comprueba en el
+//     navegador con __uiAudit() y una captura.
 export default async function run({ server, assert, test }) {
   const load = p => server.ssrLoadModule(p);
   const dl = await load('/src/radio/model/download.ts');
@@ -80,5 +87,40 @@ export default async function run({ server, assert, test }) {
     const tab = dl.createModelDownload({ store: s.store, totalBytes: 100, persist: async () => true, lock: busyLock });
     await tab.start();
     assert(tab.state().status === 'otra-pestana' && s.calls() === 0 && /otra pestaña/i.test(tab.state().message ?? ''), 'UX4: con otra pestaña descargando, lo dice y no empieza otra', JSON.stringify(tab.state()));
+  });
+
+  await test('UX4: en el móvil, la página pasa a segundo plano', async () => {
+    const cut = () => {
+      let loaded = 0;
+      return {
+        has: async () => loaded >= 100, bytesOnDisk: async () => loaded, remove: async () => { loaded = 0; },
+        async download(onProgress) {
+          if (loaded === 0) { loaded = 30; onProgress(30, 100); throw new Error('Failed to fetch'); }
+          loaded = 100; onProgress(100, 100);
+        },
+      };
+    };
+    const bg = dl.createModelDownload({ store: cut(), totalBytes: 100, persist: async () => true, hidden: () => true });
+    await bg.start();
+    assert(bg.state().status === 'cancelada' && bg.state().loaded === 30, 'UX4: en segundo plano queda en pausa con lo guardado, no como error', JSON.stringify(bg.state()));
+    await bg.start();
+    assert(bg.state().status === 'completa', 'UX4: al volver continúa y termina');
+    const fg = dl.createModelDownload({ store: cut(), totalBytes: 100, persist: async () => true, hidden: () => false });
+    await fg.start();
+    assert(fg.state().status === 'error-red', 'UX4: con la página a la vista, un corte sí es un error de red');
+  });
+
+  await test('UX4: bloqueo entre pestañas sin Web Locks', async () => {
+    const m = new Map();
+    const storage = { getItem: k => m.get(k) ?? null, setItem: (k, v) => m.set(k, String(v)), removeItem: k => m.delete(k) };
+    let now = 0;
+    const a = dl.createTabLock({ locks: undefined, storage, now: () => now });
+    const b = dl.createTabLock({ locks: undefined, storage, now: () => now });
+    assert(await a.acquire() === true && await a.acquire() === true, 'UX4: una pestaña sola no se bloquea a sí misma');
+    assert(await b.acquire() === false, 'UX4: otra pestaña no puede descargar a la vez');
+    a.release();
+    assert(await b.acquire() === true, 'UX4: al soltarlo, la otra puede');
+    b.release(); await a.acquire(); now += 61_000;
+    assert(await b.acquire() === true, 'UX4: el bloqueo de una pestaña cerrada caduca');
   });
 }

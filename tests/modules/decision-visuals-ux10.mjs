@@ -1,5 +1,5 @@
-// UX10 — Imágenes 3D de lo que se cambia (Sprint 7). Contrato propuesto el 24/10/2026, sin aprobar todavía.
-// Opción recomendada (a confirmar): mixta. El coche del juego en 3D con la pieza resaltada y, para la sede, las
+// UX10 — Imágenes 3D de lo que se cambia (Sprint 7). Contrato acordado con el usuario el 24/10/2026.
+// Opción mixta, confirmada por el usuario el 24/10/2026. El coche del juego en 3D con la pieza resaltada y, para la sede, las
 // instalaciones y el personal, imágenes hechas en Blender, con estilo propio y sin marcas reales.
 //  1. Cada proyecto de desarrollo apunta a una pieza del coche: alerones → alerón delantero y trasero, suelo → fondo
 //     plano, refrigeración → pontones, eficiencia → tapa motor, neumáticos → ruedas.

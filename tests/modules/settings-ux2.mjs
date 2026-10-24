@@ -1,4 +1,4 @@
-// UX2 — Ajustes fuera de carrera (Sprint 7). Contrato propuesto el 24/10/2026, sin aprobar todavía.
+// UX2 — Ajustes fuera de carrera (Sprint 7). Contrato acordado con el usuario el 24/10/2026.
 //  1. La página de Ajustes tiene, en este orden, Radio con IA (arriba y destacada), Sonido, Gráficos y Controles.
 //  2. Las descargas de los modelos están en Ajustes; en carrera, la radio solo enseña el estado y enciende o apaga.
 //  3. En carrera no se puede empezar ninguna descarga: sin botón de Descargar y con un aviso que manda a Ajustes.

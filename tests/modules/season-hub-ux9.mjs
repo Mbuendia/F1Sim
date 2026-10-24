@@ -1,5 +1,5 @@
-// UX9 — Centro de temporada que enseña la decisión (Sprint 7). Contrato propuesto el 24/10/2026, sin aprobar todavía.
-// Propuesta (a confirmar): Inicio, Coche, Equipo, Sede y dinero, y Fin de semana (con Correr al final), en lugar de
+// UX9 — Centro de temporada que enseña la decisión (Sprint 7). Contrato acordado con el usuario el 24/10/2026.
+// Confirmado por el usuario el 24/10/2026: Inicio, Coche, Equipo, Sede y dinero, y Fin de semana (con Correr al final), en lugar de
 // Inicio, Equipo, Fábrica, Finanzas, Temporada y Correr.
 //  1. Las pestañas del centro de temporada son las de la propuesta, y cada una dice arriba qué se decide en ella.
 //  2. Cada decisión pendiente lleva qué es, su efecto (lo que cambia) y su coste, si lo tiene, y qué enseñar en 3D

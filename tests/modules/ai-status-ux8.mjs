@@ -1,10 +1,14 @@
-// UX8 — La IA de la radio, siempre visible (Sprint 7). Contrato propuesto el 24/10/2026, sin aprobar todavía.
+// UX8 — La IA de la radio, siempre visible (Sprint 7). Contrato acordado con el usuario el 24/10/2026 (puntos 4 y 5 cambiados ese día por el usuario).
 //  1. Un resumen del estado de la IA dice, en una línea, si hablas con la IA o con la radio básica, y el estado de cada
 //     pieza: modelo (versión), voz (realista o del sistema) y micro (Chrome, sin red o ninguno).
 //  2. Cada estado tiene su texto claro: lista, cargando, descargada pero apagada, sin descargar y no disponible en este
 //     dispositivo con su motivo.
 //  3. El indicador aparece en el panel de radio, en el menú de carrera (también en el móvil) y destacado en Ajustes.
-//  4. En el móvil se ve sin abrir ningún menú: un distintivo junto al botón de radio.
+//  4. En el móvil (decisión del usuario del 24/10/2026) se ve sin abrir ningún menú, con menos información: un icono
+//     pulsable junto al botón de radio con solo el tono (IA, básica o cargando); al tocarlo se abre el resumen completo.
+//     Se lee con lector de pantalla.
+//  5. La radio se ve bien en el móvil: a 375 px el panel de radio cabe sin salirse; se comprueba en el navegador con
+//     __uiAudit() y una captura.
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { readFileSync } from 'node:fs';
@@ -37,5 +41,14 @@ export default async function run({ server, assert, test }) {
     for (const f of files) assert(/AiStatusBadge/.test(readFileSync(f, 'utf8')), `UX8: el indicador está en ${f.split('/').pop()}`);
     const app = readFileSync('src/App.tsx', 'utf8') + readFileSync('src/components/RaceTabs.tsx', 'utf8');
     assert(/AiStatusBadge/.test(app), 'UX8: en el móvil se ve sin abrir menús (junto a la radio o en las pestañas)');
+  });
+
+  await test('UX8: en el móvil, un icono pulsable', () => {
+    const summary = aiStatusSummary({ mode: 'ia', aiStatus: 'lista', variant: 'q4', voice: 'piper', mic: 'web-speech' });
+    const closed = renderToStaticMarkup(createElement(AiStatusBadge, { summary, compact: true }));
+    assert(/<button\b/.test(closed) && /aria-expanded=["']false["']/.test(closed) && /aria-label=["'][^"']*IA/.test(closed), 'UX8: en el móvil es un icono pulsable que se lee con lector de pantalla', closed.slice(0, 200));
+    assert(!/realista|Chrome|ligera/i.test(closed.replace(/aria-label="[^"]*"/g, '')), 'UX8: cerrado enseña menos información (solo el tono)');
+    const open = renderToStaticMarkup(createElement(AiStatusBadge, { summary, compact: true, open: true }));
+    assert(/aria-expanded=["']true["']/.test(open) && /realista/i.test(open) && /Chrome/.test(open), 'UX8: al tocarlo se abre el resumen completo');
   });
 }

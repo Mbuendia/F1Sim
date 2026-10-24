@@ -1,5 +1,5 @@
-// UX5 — Carrera en el móvil: pantallas completas y franja de la vuelta (Sprint 7). Contrato propuesto el 24/10/2026,
-// sin aprobar todavía.
+// UX5 — Carrera en el móvil: pantallas completas y franja de la vuelta (Sprint 7). Contrato acordado con el usuario
+// el 24/10/2026.
 //  1. En el móvil, cada pestaña ocupa la pantalla entera: con Tiempos, Muro o Detalle no se ve la pista partida debajo,
 //     y con Pista se ve solo la pista. En tableta y escritorio no cambia nada.
 //  2. Arriba, siempre visible en el móvil, la franja de la vuelta: una línea de salida a meta con un punto por coche en

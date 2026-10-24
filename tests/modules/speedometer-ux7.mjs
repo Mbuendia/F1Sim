@@ -1,13 +1,17 @@
-// UX7 — Velocímetro sin fallos (Sprint 7). Contrato propuesto el 24/10/2026, sin aprobar todavía.
+// UX7 — Velocímetro sin fallos (Sprint 7). Contrato acordado con el usuario el 24/10/2026 (punto 5 cambiado ese día por decisión del usuario).
 // Reproducción del 24/10/2026: en Barcelona con Safety Car (semilla 7) varios coches pasan de 260 km/h a 0 y marcan
 // velocidades negativas (113 muestras en 4 minutos); además, la animación del número se queda en NaN para siempre si le
 // llega un valor no numérico, y al cambiar de coche barre desde la velocidad del anterior.
 //  1. El motor nunca da una velocidad negativa ni no numérica: 5 circuitos, con Safety Car, semilla fija.
 //  2. Fuera de un accidente o de entrar en boxes, la velocidad no salta más de 120 km/h en 0,1 s.
 //  3. La animación del número se recupera de un valor no numérico y nunca enseña negativos.
-//  4. Al cambiar de coche, el número muestra al momento la velocidad del coche nuevo.
-//  5. Los dos velocímetros (panel inferior y telemetría) usan la misma lectura.
-import { readFileSync } from 'node:fs';
+//  4. Al cambiar de coche (entre los dos del jugador), el número muestra al momento la velocidad del coche nuevo.
+//  5. Solo hay un velocímetro, en el Muro (decisión del usuario del 24/10/2026): enseña la velocidad del coche del
+//     jugador al que se dan las órdenes. El Detalle deja de enseñarla y TelemetryPanel (sin uso desde T4.17) se borra.
+//     El usuario autorizó ese día cambiar los tests aprobados que lo nombran (race-ui, visual-animations,
+//     visual-chassis, visual-icons, polish-t417, race-session-n3): sus casos pasan al velocímetro del Muro o se quitan
+//     si solo miraban ese panel. Se cambian al implementar UX7.
+import { existsSync, readFileSync } from 'node:fs';
 
 export default async function run({ server, assert, test }) {
   const load = p => server.ssrLoadModule(p);
@@ -50,9 +54,11 @@ export default async function run({ server, assert, test }) {
     assert(speedReadout(-4) === 0 && speedReadout(NaN) === 0 && speedReadout(undefined) === 0 && speedReadout(259.6) === 260, 'UX7: la lectura es un entero y nunca negativa ni NaN');
   });
 
-  await test('UX7: cambio de coche y los dos velocímetros', () => {
-    const dock = readFileSync('src/components/BottomTelemetryDock.tsx', 'utf8'), panel = readFileSync('src/components/TelemetryPanel.tsx', 'utf8');
-    assert(/useTweenedNumber\([^)]*car\??\.id/.test(dock) && /useTweenedNumber\([^)]*\.id/.test(panel), 'UX7: el número se reinicia con el coche: el identificador del coche va a la animación');
-    assert(/speedReadout\(/.test(dock) && /speedReadout\(/.test(panel), 'UX7: los dos velocímetros usan la misma lectura');
+  await test('UX7: un solo velocímetro, en el Muro', () => {
+    const wall = readFileSync('src/components/BoxControls.tsx', 'utf8'), dock = readFileSync('src/components/BottomTelemetryDock.tsx', 'utf8');
+    assert(/data-odometer=["']speed["']/.test(wall) && /speedReadout\(/.test(wall), 'UX7: el velocímetro está en el Muro y usa la lectura común');
+    assert(/useTweenedNumber\([^)]*\.id/.test(wall), 'UX7: el número se reinicia con el coche: el identificador del coche va a la animación');
+    assert(!/speedKmh/.test(dock) && !/data-odometer=["']speed["']/.test(dock), 'UX7: el Detalle ya no enseña la velocidad');
+    assert(!existsSync('src/components/TelemetryPanel.tsx'), 'UX7: TelemetryPanel, sin uso, se ha borrado');
   });
 }

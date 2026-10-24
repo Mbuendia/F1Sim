@@ -1,4 +1,4 @@
-// UX11 — Prueba en dispositivos reales (Sprint 7). Contrato propuesto el 24/10/2026, sin aprobar todavía.
+// UX11 — Prueba en dispositivos reales (Sprint 7). Contrato acordado con el usuario el 24/10/2026.
 // La prueba la hace el usuario; este módulo comprueba que la lista existe y lo cubre todo.
 //  1. Hay una lista de comprobación en docs/pruebas/ux11-dispositivos.md.
 //  2. Cubre Android (Chrome), iPhone (Safari) y una tableta.
