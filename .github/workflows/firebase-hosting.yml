@@ -35,11 +35,13 @@ jobs:
         if: ${{ env.HAS_SERVICE_ACCOUNT == 'true' }}
         run: npm ci
 
+      # La clave web de Firebase sale del secreto VITE_FIREBASE_API_KEY (ya no está en el código, 26/10/2026).
       - name: Build
         if: ${{ env.HAS_SERVICE_ACCOUNT == 'true' }}
         run: npm run build
         env:
           BASE_PATH: /
+          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
 
       # En un pull request publica una vista previa temporal; en main o a mano, la versión real.
       - name: Deploy to Firebase Hosting

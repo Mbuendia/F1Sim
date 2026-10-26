@@ -20,12 +20,34 @@ El proyecto actual es `f1sim-d5085` y ya está montado. Esto sirve para recrearl
 1. En [console.firebase.google.com](https://console.firebase.google.com), **crear un proyecto** (sin Google Analytics; no hace falta).
 2. **Realtime Database** → Crear base de datos → región de Europa (`europe-west1`) → empezar en modo bloqueado.
 3. **Authentication** → Método de acceso → activar **Anónimo**.
-4. **Configuración del proyecto** → Tus apps → añadir una **app web**. Copiar su configuración en `src/net/firebaseConfig.ts`. Esa configuración es pública por diseño: lo que protege los datos son las reglas.
+4. **Configuración del proyecto** → Tus apps → añadir una **app web**. Su clave (`apiKey`) va en `.env.local` y en el secreto de GitHub (apartado «Clave de Firebase»); el resto de identificadores, en `src/net/firebaseConfig.ts` o en sus variables.
 5. En un terminal, dentro del repositorio: `npx firebase login` y `npx firebase use --add` (elegir el proyecto).
 6. **Publicar las reglas:** `npx firebase deploy --only database`. Hay que repetirlo cada vez que cambie `database.rules.json`.
 7. **Publicar el juego:** lo hace solo el flujo `.github/workflows/firebase-hosting.yml` (N11): al fusionar en `main` se publica en `https://<proyecto>.web.app`, y cada pull request se publica en una dirección de vista previa propia, que el flujo deja como comentario en el PR.
 
 Comprobar las reglas sin tocar el proyecto real: `node test-suite.mjs --module rooms-rules-n4,rules-n10`. Arranca el emulador de Firebase solo; necesita **Java 21 o superior**.
+
+## Clave de Firebase
+
+Desde el 26/10/2026 la clave web (`apiKey`) **no está en el repositorio**: GitHub la marcaba como expuesta porque el repositorio es público. La lee `src/net/firebaseConfig.ts` de la variable `VITE_FIREBASE_API_KEY`. Sin ella el juego funciona igual, pero el multijugador no se intenta y la sala dice que falta la clave.
+
+**Ojo:** en una web esta clave no se puede ocultar a los jugadores, porque va en el JavaScript que descarga el navegador. Lo que la protege son sus **restricciones** en Google Cloud y las **reglas** de la base de datos; sacarla del repositorio evita que vuelva a quedar en el historial de git.
+
+**Cambiar la clave (la vieja ya no se usa):**
+
+1. [console.cloud.google.com](https://console.cloud.google.com) → proyecto `f1sim-d5085` → **APIs y servicios → Credenciales** → **Crear credenciales → Clave de API**.
+2. En la clave nueva, **Restricciones de aplicaciones → Sitios web**, y añadir:
+   - `https://f1sim-d5085.web.app/*`
+   - `https://f1sim-d5085.firebaseapp.com/*`
+   - `https://f1sim-d5085--*.web.app/*` (vistas previas de los pull requests)
+   - `http://localhost:3010/*` y `http://localhost:3011/*` (desarrollo)
+3. **Restricciones de API → Restringir clave**: solo **Identity Toolkit API** y **Token Service API** (la sesión anónima). Guardar.
+4. **En el equipo:** copiar `.env.example` como `.env.local` y poner `VITE_FIREBASE_API_KEY=<clave nueva>`. Reiniciar el servidor de desarrollo.
+5. **En GitHub:** repositorio → **Settings → Secrets and variables → Actions → New repository secret**, nombre `VITE_FIREBASE_API_KEY` y la clave nueva. Lo usan los dos flujos que compilan el juego (`firebase-hosting.yml` y `deploy.yml`).
+6. Probar una sala (crear y unirse). Si funciona, **borrar la clave vieja** en Credenciales.
+7. En GitHub, **Security → Secret scanning**, cerrar la alerta como **revocada**. La clave vieja sigue en el historial de git, pero ya no sirve: no hace falta reescribirlo.
+
+**Refuerzo opcional:** activar **App Check** (reCAPTCHA) para la Realtime Database, de modo que solo el juego pueda usarla aunque alguien copie la clave, y una **alerta de presupuesto** en el proyecto.
 
 ## Probar en casa (una sola red)
 

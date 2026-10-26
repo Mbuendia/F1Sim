@@ -35,3 +35,7 @@ assets3d/circuits/*.blend
 # N4: registro del emulador de Firebase
 database-debug.log
 firebase-debug.log
+
+# Claves locales (Firebase): nunca en el repositorio. Plantilla en .env.example.
+.env.local
+.env.*.local
