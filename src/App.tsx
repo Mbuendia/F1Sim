@@ -84,7 +84,8 @@ import { D20LuckModal } from './components/D20LuckModal';
 import { RaceMenu } from './components/RaceMenu';
 import { RaceNotices, RaceNotice, RaceNoticeTone } from './components/RaceNotices';
 import { OFFICIAL_CIRCUITS } from './data/circuits';
-import { buildWeatherScenario } from './data/weatherScenarios';
+import { buildWeatherScenario, type WeatherScenarioId } from './data/weatherScenarios';
+import { browserDevStorage, freeRaceWeather, isDevMode } from './dev/devMode';
 import { runQualifying } from './simulation/Qualifying';
 import { activeProjects, emptyProgram, installFirst, parseProgram, upgradesFor, PROGRAM_STORAGE_KEY } from './simulation/Development';
 import type { DevelopmentProgram } from './simulation/Development';
@@ -414,6 +415,8 @@ export const App: React.FC = () => {
 
   // [R44] Meteorología de la próxima carrera
   const [weatherScenarioId, setWeatherScenarioId] = useState<string>('seco');
+  // [UX3] Modo desarrollador (se enciende en Ajustes): se lee en cada render, así vale al volver de Ajustes.
+  const devMode = isDevMode(browserDevStorage());
 
   // Historial de carreras guardadas
   const [raceHistory, setRaceHistory] = useState<RaceResultHistory[]>(() => {
@@ -724,7 +727,9 @@ export const App: React.FC = () => {
     const weatherRound = seasonRace ? nextRound(championship, season) : null;
     const seededSeason = weatherRound ? withWeatherSeed(season, newRaceSeed()) : season;
     if (seededSeason !== season) saveSeason(seededSeason);
-    const scenarioId = weatherRound ? roundWeather(seededSeason, weatherRound, sprintRace ? 'sprint' : 'gp') : weatherScenarioId;
+    // [UX3] En carrera libre, el tiempo elegido solo vale con el modo desarrollador; sin él se sortea según el circuito.
+    const scenarioId = weatherRound ? roundWeather(seededSeason, weatherRound, sprintRace ? 'sprint' : 'gp')
+      : freeRaceWeather({ devMode: isDevMode(browserDevStorage()), chosen: weatherScenarioId, rainProbabilityPercent: OFFICIAL_CIRCUITS[selectedCircuitId]?.rainProbabilityPercent ?? 0, seed: newRaceSeed() }) as WeatherScenarioId;
     simulation.setWeatherScenario(buildWeatherScenario(scenarioId, simulation.totalLaps * 90));
     camera.resetToFullTrack();
     setSelectedCarId(null);
@@ -1651,7 +1656,7 @@ export const App: React.FC = () => {
         sprintAvailable={sprintAvailable}
         onSelectFormat={setRaceFormat}
         weatherScenarioId={weatherScenarioId}
-        onSelectWeather={setWeatherScenarioId}
+        onSelectWeather={devMode ? setWeatherScenarioId : undefined}
         setup={{ setups, onChange: handleSetupChange }}
         saveGames={saveStore ? {
           slots, currentName: saveName, message: saveMessage,
@@ -1773,8 +1778,8 @@ export const App: React.FC = () => {
           {mode === 'career' && <span className={styles.gameSlot}>{gameMenu}</span>}
           <RaceMenu
             safetyCarDeployed={safetyCar !== null}
-            onToggleSafetyCarTest={handleSafetyCarTest}
-            onRedFlagTest={handleRedFlagTest}
+            onToggleSafetyCarTest={devMode ? handleSafetyCarTest : undefined}
+            onRedFlagTest={devMode ? handleRedFlagTest : undefined}
             luckVariantEnabled={luckVariantEnabled}
             onToggleLuckVariant={handleToggleLuckVariant}
             onSaveGame={saveStore ? handleSaveGame : undefined}
@@ -1808,7 +1813,7 @@ export const App: React.FC = () => {
               camera={camera}
               selectedCarId={selectedCarId}
               onSelectCar={handleSelectCar}
-              weatherTest={mode === 'free'}
+              weatherTest={mode === 'free' && devMode}
               onWeatherTest={index => { void sendOrder({ kind: 'weatherTest', index }); }}
             />
 

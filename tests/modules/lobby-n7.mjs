@@ -157,7 +157,17 @@ export default async function run({ server, assert, test }) {
       settings, teams, players, onSettings: noop, onOpenTeams: noop, onClose: noop,
     });
     assert(out.includes('ABC234') && out.includes('https://f1sim-d5085.web.app/?sala=ABC234') && out.includes('<svg'), 'N7: el anfitrión ve código, enlace y QR');
-    assert(/Mónaco|Monaco/.test(out) && out.includes('Tormenta'), 'N7: y elige circuito y tiempo');
+    // [UX3] El tiempo solo se elige con el modo desarrollador; sin él, la sala dice que se sortea (cambio autorizado por
+    // el usuario el 26/10/2026).
+    assert(/Mónaco|Monaco/.test(out) && !out.includes('Tormenta') && out.includes('Se sortea según el circuito'), 'N7: elige el circuito; sin el modo desarrollador, el tiempo se sortea');
+    const saved = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
+    Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: { getItem: k => (k === 'f1sim.desarrollador' ? '1' : null), setItem() {}, removeItem() {} } });
+    try {
+      const dev = html(screens.HostLobby, { code: 'ABC234', link: 'https://f1sim-d5085.web.app/?sala=ABC234', qr: qrSvg('https://f1sim-d5085.web.app/?sala=ABC234'), settings, teams, players, onSettings: noop, onOpenTeams: noop, onClose: noop });
+      assert(dev.includes('Tormenta'), 'N7: con el modo desarrollador, el anfitrión elige el tiempo');
+    } finally {
+      if (saved) Object.defineProperty(globalThis, 'localStorage', saved); else delete globalThis.localStorage;
+    }
     // [N8→N9] Decisiones del usuario del 19/10/2026: la sala ofrece GP directo y, desde N9, con clasificación; el sprint no.
     assert(out.includes('GP directo') && out.includes('Con clasificación') && !out.includes('Sprint'), 'N9: la sala ofrece GP directo y con clasificación, sin sprint');
     for (const p of ['Ana', 'Bea', 'Carla', 'Dani', 'Eva']) assert(out.includes(p), `N7: ve conectarse a ${p}`);

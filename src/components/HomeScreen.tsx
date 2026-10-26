@@ -1248,8 +1248,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           {onSelectFormat && (
             <RaceFormatSelect className={styles.rulesProfile} value={raceFormat ?? 'directo'} onChange={onSelectFormat} sprintAvailable={sprintAvailable} />
           )}
-          {/* [T4.12] En la carrera de temporada el tiempo se sortea: se enseña la previsión. En carrera libre se elige. */}
-          {nextRound && !freeRace ? (
+          {/* [T4.12] En la carrera de temporada el tiempo se sortea: se enseña la previsión. [UX3] En carrera libre se
+              elige solo con el modo desarrollador; sin él también se sortea y se enseña la previsión. */}
+          {(nextRound && !freeRace) || !onSelectWeather ? (
             <WeatherOutlook className={styles.rulesProfile} rainProbabilityPercent={selectedCircuit.rainProbabilityPercent} />
           ) : onSelectWeather && (
             <WeatherScenarioSelect className={styles.rulesProfile} value={weatherScenarioId ?? 'seco'} onChange={onSelectWeather} />

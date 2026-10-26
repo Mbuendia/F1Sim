@@ -7,6 +7,10 @@ import { animate, stagger } from 'animejs';
 import { Check, Copy, Eye, LogOut, Play, Users, X } from 'lucide-react';
 import { OFFICIAL_CIRCUITS } from '../data/circuits';
 import { WEATHER_SCENARIOS } from '../data/weatherScenarios';
+import { browserDevStorage, isDevMode } from '../dev/devMode';
+
+/** [UX3] ¿Está encendido el modo desarrollador en este dispositivo? */
+const devMode = () => isDevMode(browserDevStorage());
 import type { RaceFormatId } from './RaceFormatSelect';
 import { Segmented } from './ui/Segmented';
 import type { LobbySettings, Seats, SeatWant } from '../net/Lobby';
@@ -122,11 +126,14 @@ export function HostLobby({ code, link, qr, settings, players, onSettings, onOpe
               options={[{ value: 'directo', label: 'GP directo', title: 'Parrilla prefijada' }, { value: 'clasificacion', label: 'Con clasificación', title: 'Q1, Q2 y Q3 antes de salir' }]}
               onChange={format => onSettings({ ...settings, format })} />
           </div>
+          {/* [UX3] El tiempo es una herramienta de prueba: se elige solo con el modo desarrollador; sin él, se sortea. */}
           <div className={s.inputRow}>
             <span className={s.label}>Tiempo</span>
-            <Segmented wrap label="Tiempo" name="sala-tiempo" value={settings.weather}
-              options={WEATHER_SCENARIOS.map(w => ({ value: w.id as string, label: w.label, title: w.description }))}
-              onChange={weather => onSettings({ ...settings, weather })} />
+            {devMode() ? (
+              <Segmented wrap label="Tiempo" name="sala-tiempo" value={settings.weather}
+                options={WEATHER_SCENARIOS.map(w => ({ value: w.id as string, label: w.label, title: w.description }))}
+                onChange={weather => onSettings({ ...settings, weather })} />
+            ) : <span className={s.dim}>Se sortea según el circuito</span>}
           </div>
         </section>
 

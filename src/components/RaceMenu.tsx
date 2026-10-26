@@ -7,8 +7,9 @@ const RadioSettings = lazy(() => import('./RadioSettings'));
 
 interface RaceMenuProps {
   safetyCarDeployed: boolean;
-  onToggleSafetyCarTest: () => void;
-  onRedFlagTest: () => void;
+  /** [UX3] Pruebas de desarrollo: solo con el modo desarrollador (sin ellas, el menú no enseña la sección). */
+  onToggleSafetyCarTest?: () => void;
+  onRedFlagTest?: () => void;
   /** Solo para pruebas y maquetas: abrir el menú de inicio. */
   defaultOpen?: boolean;
   /** [R26] Variante D20: activada o no, y su interruptor. */
@@ -111,13 +112,17 @@ export const RaceMenu: React.FC<RaceMenuProps> = ({
           )}
           {/* [UX2] En carrera, la radio solo enseña el estado y se enciende o apaga: las descargas van en Ajustes. */}
           {radioSettings && <Suspense fallback={null}><RadioSettings place="carrera" /></Suspense>}
-          <div className={styles.section}>Herramientas de desarrollo</div>
-          <button type="button" role="menuitem" className={`${styles.item} ${styles.itemSc}`} onClick={run(onToggleSafetyCarTest)}>
-            {safetyCarDeployed ? 'Prueba: retirar Safety Car' : 'Prueba: desplegar Safety Car'}
-          </button>
-          <button type="button" role="menuitem" className={`${styles.item} ${styles.itemRed}`} onClick={run(onRedFlagTest)}>
-            Prueba: forzar bandera roja
-          </button>
+          {onToggleSafetyCarTest && onRedFlagTest && (
+            <>
+              <div className={styles.section}>Herramientas de desarrollo</div>
+              <button type="button" role="menuitem" className={`${styles.item} ${styles.itemSc}`} onClick={run(onToggleSafetyCarTest)}>
+                {safetyCarDeployed ? 'Prueba: retirar Safety Car' : 'Prueba: desplegar Safety Car'}
+              </button>
+              <button type="button" role="menuitem" className={`${styles.item} ${styles.itemRed}`} onClick={run(onRedFlagTest)}>
+                Prueba: forzar bandera roja
+              </button>
+            </>
+          )}
         </div>
       )}
     </div>
