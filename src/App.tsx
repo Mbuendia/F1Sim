@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense } from 'react';
 import styles from './App.module.css';
 import { RaceTabs, raceLayout } from './components/RaceTabs';
 import { StintTimeline } from './components/StintTimeline';
@@ -42,6 +42,8 @@ import { StartLights } from './components/StartLights';
 import { RaceHeader } from './components/RaceHeader';
 import { Leaderboard } from './components/Leaderboard';
 import { BottomTelemetryDock } from './components/BottomTelemetryDock';
+// [UX1] Ajustes fuera del paquete principal.
+const SettingsScreen = lazy(() => import('./components/SettingsScreen'));
 import { BoxControls } from './components/BoxControls';
 import { RightStatsPanel } from './components/RightStatsPanel';
 import { PodiumModal } from './components/PodiumModal';
@@ -200,7 +202,7 @@ export const App: React.FC = () => {
   // [T4.19] Tras la portada va el menú de partidas; de él salen la carrera profesional y la carrera libre.
   // [N7] Un enlace de invitación (?sala=CÓDIGO) abre directamente la pantalla de unirse a esa sala.
   const [linkedRoom, setLinkedRoom] = useState<string | null>(() => (typeof location === 'undefined' ? null : codeFromLink(location.href)));
-  const [currentView, setCurrentView] = useState<'landing' | 'menu' | 'saves' | 'new' | 'home' | 'race' | 'report' | 'room'>(() => (linkedRoom ? 'room' : 'landing'));
+  const [currentView, setCurrentView] = useState<'landing' | 'menu' | 'settings' | 'saves' | 'new' | 'home' | 'race' | 'report' | 'room'>(() => (linkedRoom ? 'room' : 'landing'));
   const [roomIntent, setRoomIntent] = useState<'create' | 'join'>('join');
   // [N8] Carrera compartida del anfitrión: la sala y su transporte (desde «Empezar» hasta salir de la carrera).
   const sharedRef = useRef<HostStart | null>(null);
@@ -1474,6 +1476,11 @@ export const App: React.FC = () => {
     return <LandingPage onEnter={() => setCurrentView('menu')} />;
   }
 
+  // [UX1] Ajustes desde la pantalla de juego (se carga aparte, con import()).
+  if (currentView === 'settings') {
+    return <Suspense fallback={null}><SettingsScreen onBack={() => setCurrentView('menu')} /></Suspense>;
+  }
+
   // ── [T4.19] Menú de partidas, partidas guardadas y partida nueva ──
   if (currentView === 'menu') {
     return (
@@ -1481,7 +1488,8 @@ export const App: React.FC = () => {
         onContinue={handleContinueCareer} onNew={() => setCurrentView('new')} onLoad={() => { setSaveMessage(null); setCurrentView('saves'); }}
         onFree={() => { setMode('free'); setCurrentView('home'); }}
         onCreateRoom={() => { setRoomIntent('create'); setCurrentView('room'); }}
-        onJoinRoom={() => { setRoomIntent('join'); setCurrentView('room'); }} />
+        onJoinRoom={() => { setRoomIntent('join'); setCurrentView('room'); }}
+        onSettings={() => setCurrentView('settings')} />
     );
   }
   // [N7] Salas: crear (anfitrión) o unirse (invitado). La carrera compartida llega con N8.

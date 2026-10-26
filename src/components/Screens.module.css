@@ -2,25 +2,128 @@
    Composición de docs/design/maqueta-sprint4.html; colores y tipografías de src/index.css. */
 .screen { width: 100vw; height: 100vh; height: 100dvh; display: flex; flex-direction: column; background: var(--bg); color: var(--text); font-family: var(--font-ui); font-size: 16px; font-weight: 500; overflow: hidden; }
 
-/* Menú de partidas: contenido a la izquierda y la rueda grande, oscurecida, al fondo */
-.entry { position: relative; flex: 1; display: flex; overflow: hidden; }
-.wheel { position: absolute; right: -16vh; top: 50%; width: 96vh; height: 96vh; transform: translateY(-50%); opacity: 0.32; pointer-events: none; }
-.entry::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, var(--bg) 30%, rgba(13, 17, 23, 0.7) 60%, rgba(13, 17, 23, 0.1)); pointer-events: none; }
-.front { position: relative; z-index: 1; padding: 6vh 7vw; display: flex; flex-direction: column; justify-content: center; gap: 16px; width: min(780px, 64vw); }
-.brand { font-family: var(--font-marca); font-weight: 900; font-size: clamp(26px, 3.2vw, 40px); line-height: 1; letter-spacing: 0.02em; }
+/* [UX1] Pantalla de juego (opción B del 26/10/2026): panel grande con la imagen cortada en diagonal y fila de tarjetas.
+   El color del modo elegido (--acento) tiñe la franja del corte, el brillo del panel y la tarjeta. */
+@property --acento { syntax: '<color>'; inherits: true; initial-value: #e10600; }
+.menu { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 18px; padding: 22px clamp(16px, 4vw, 56px) 24px; overflow: hidden; transition: --acento 500ms ease; }
+.menu::before { content: ''; position: absolute; inset: 0; background: radial-gradient(70% 60% at 72% 38%, color-mix(in srgb, var(--acento) 16%, transparent), transparent 70%); pointer-events: none; transition: opacity 500ms ease; }
+.menuTop { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.menuTopSettings { display: none; align-items: center; justify-content: center; width: var(--toque); height: var(--toque); border: 1px solid var(--line-strong); border-radius: var(--radio-m); background: var(--panel); color: var(--text); cursor: pointer; }
+.brand { font-family: var(--font-marca); font-weight: 900; font-size: clamp(22px, 2.6vw, 34px); line-height: 1; letter-spacing: 0.02em; }
 .brand em { font-style: normal; color: var(--accion); }
-.continue { display: grid; grid-template-columns: auto 1fr; gap: 6px 18px; align-items: center; padding: 16px 18px; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--c, var(--equipo)); border-radius: var(--radio-l); }
-.continueTitle { font-family: var(--font-marca); font-weight: 700; font-size: 18px; letter-spacing: 0.04em; }
-.option { display: flex; justify-content: space-between; align-items: center; gap: 12px; width: 100%; padding: 12px 16px; background: rgba(23, 29, 38, 0.88); border: 1px solid var(--line); border-radius: var(--radio-m); color: var(--text); cursor: pointer; font-family: var(--font-ui); font-size: 18px; font-weight: 600; text-align: left; }
-.option:hover { border-color: var(--text-3); }
-.option span { display: inline-flex; align-items: center; gap: 10px; }
-.option small { font-size: 15px; color: var(--text-3); font-weight: 500; }
-.stack { display: flex; flex-direction: column; gap: 8px; }
+
+/* Panel grande: los paneles de todos los modos están apilados; solo el activo se ve y responde. */
+.hero { position: relative; flex: 1; min-height: 300px; border-radius: 14px; overflow: hidden; background: var(--panel); border: 1px solid var(--line); isolation: isolate; }
+.heroPanel { position: absolute; inset: 0; visibility: hidden; }
+.heroPanel[data-state='active'], .heroPanel[data-state='leaving'] { visibility: visible; }
+.heroPanel[data-state='leaving'] { z-index: 0; pointer-events: none; }
+.heroPanel[data-state='active'] { z-index: 1; }
+/* La imagen ocupa la derecha, cortada en diagonal; dentro, la foto se mueve muy despacio mientras se mira. */
+.heroImage { position: absolute; inset: 0 0 0 34%; clip-path: polygon(22% 0, 100% 0, 100% 100%, 0 100%); overflow: hidden; }
+.heroImage span { position: absolute; inset: -4%; background: var(--img) center / cover no-repeat; }
+.heroImage::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(13, 17, 23, 0.55), transparent 45%), linear-gradient(0deg, rgba(13, 17, 23, 0.55), transparent 40%); }
+.heroStripe { position: absolute; top: 0; bottom: 0; left: 34%; width: 66%; clip-path: polygon(calc(22% - 7px) 0, 22% 0, 0 100%, -7px 100%); background: var(--acento); transform-origin: top; }
+/* Palabra gigante y hueca detrás del texto: entra deslizándose un poco más lenta que el título (efecto de profundidad). */
+.heroWord { position: absolute; left: clamp(12px, 3vw, 40px); bottom: -0.18em; font-family: var(--font-marca); font-weight: 900; font-size: clamp(64px, 11vw, 168px); line-height: 1; text-transform: uppercase; white-space: nowrap; color: transparent; -webkit-text-stroke: 1px color-mix(in srgb, var(--acento) 45%, transparent); opacity: 0.55; pointer-events: none; z-index: 0; }
+.heroText { position: relative; z-index: 1; display: flex; flex-direction: column; justify-content: center; gap: 8px; height: 100%; width: min(46%, 560px); padding: clamp(18px, 3vw, 40px); box-sizing: border-box; }
+.heroKicker { font-size: 14px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--acento); }
+.heroTitle { font-family: var(--font-marca); font-weight: 900; font-size: clamp(30px, 3.6vw, 54px); line-height: 1.02; letter-spacing: 0.01em; overflow-wrap: anywhere; }
+.heroLine { color: var(--text-2); font-size: 16px; line-height: 1.45; max-width: 46ch; }
+.heroLine + .heroLine { color: var(--text-3); font-size: 15px; }
+.heroActions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+.heroActions .primary { background: var(--acento); border-color: var(--acento); }
+.heroActions .primary:hover:not(:disabled) { filter: brightness(1.12); background: var(--acento); }
+.heroSecondary { display: inline-flex; align-items: center; gap: 8px; min-height: var(--toque); padding: 8px 18px; max-width: 100%; border-radius: var(--radio-s); border: 1px solid var(--line-strong); background: rgba(13, 17, 23, 0.6); color: var(--text); cursor: pointer; font-family: var(--font-ui); font-size: 15px; font-weight: 600; text-align: left; }
+.heroSecondary:hover { border-color: var(--acento); }
+
+/* ── Cambio de modo (escritorio). Duraciones: imagen 560 ms, franja 380 ms, textos escalonados 70 ms cada uno. ── */
+@keyframes heroWipeIn { from { clip-path: polygon(100% 0, 100% 0, 100% 100%, 78% 100%); } to { clip-path: polygon(22% 0, 100% 0, 100% 100%, 0 100%); } }
+@keyframes heroPhotoIn { from { transform: translateX(6%) scale(1.1); filter: saturate(0.4) brightness(1.4); } to { transform: none; filter: none; } }
+@keyframes heroPhotoDrift { from { transform: scale(1) translateX(0); } to { transform: scale(1.06) translateX(-1.5%); } }
+@keyframes heroPhotoOut { to { transform: translateX(-4%) scale(0.97); opacity: 0; } }
+@keyframes heroStripeIn { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes heroTextIn { from { opacity: 0; transform: translateX(-26px); } to { opacity: 1; transform: none; } }
+@keyframes heroTextOut { to { opacity: 0; transform: translateX(18px); } }
+@keyframes heroWordIn { from { opacity: 0; transform: translateX(70px); } to { opacity: 0.55; transform: none; } }
+.heroPanel[data-state='active'] .heroImage { animation: heroWipeIn 560ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.heroPanel[data-state='active'] .heroImage span { animation: heroPhotoIn 900ms cubic-bezier(0.2, 0.8, 0.2, 1) both, heroPhotoDrift 14s 900ms ease-in-out infinite alternate; }
+.heroPanel[data-state='active'] .heroStripe { animation: heroStripeIn 380ms 160ms cubic-bezier(0.7, 0, 0.2, 1) both; }
+.heroPanel[data-state='active'] .heroWord { animation: heroWordIn 900ms 120ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.heroPanel[data-state='active'] .heroText > * { animation: heroTextIn 460ms calc(140ms + var(--i, 0) * 70ms) cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.heroPanel[data-state='leaving'] .heroImage span { animation: heroPhotoOut 520ms ease-in both; }
+.heroPanel[data-state='leaving'] .heroText > *, .heroPanel[data-state='leaving'] .heroWord, .heroPanel[data-state='leaving'] .heroStripe { animation: heroTextOut 220ms ease-in both; }
+
+/* Fila de tarjetas: la elegida se levanta, se ilumina con su color y lleva debajo una barra que se llena. */
+.modeCards { position: relative; display: flex; gap: 12px; min-height: 0; }
+.modeBlock { display: flex; gap: 12px; min-width: 0; }
+.modeBlock[data-block='jugar'] { flex: 3; }
+.modeBlock[data-block='continuar'] { flex: 1.1; }
+.modeBlock[data-block='ajustes'] { flex: 0 0 auto; }
+.menu[data-first-time] .modeBlock[data-block='jugar'] { flex: 4; }
+.modeCard { position: relative; flex: 1; min-width: 0; min-height: 112px; display: flex; align-items: flex-end; padding: 0; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--panel-2); color: var(--text); cursor: pointer; text-align: left; font-family: var(--font-ui); filter: brightness(0.62) saturate(0.55); transition: transform 280ms cubic-bezier(0.2, 0.8, 0.2, 1), filter 280ms ease, border-color 280ms ease, box-shadow 280ms ease; }
+.modeCard::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: var(--acento); transform: scaleX(0); transform-origin: left; transition: transform 420ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+.modeCard:hover { filter: brightness(0.85) saturate(0.85); }
+.modeCard[aria-pressed='true'] { filter: none; transform: translateY(-6px); border-color: var(--acento); box-shadow: 0 14px 30px -12px color-mix(in srgb, var(--acento) 70%, transparent); }
+.modeCard[aria-pressed='true']::after { transform: scaleX(1); }
+.modeCard:focus-visible { outline: 2px solid var(--foco); outline-offset: 3px; }
+.modeCardImage { position: absolute; inset: 0; background: linear-gradient(0deg, rgba(13, 17, 23, 0.92) 8%, rgba(13, 17, 23, 0.15) 70%), var(--img) center / cover no-repeat; transition: transform 600ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+.modeCard[aria-pressed='true'] .modeCardImage { transform: scale(1.06); }
+.modeCardText { position: relative; display: flex; flex-direction: column; gap: 2px; width: 100%; min-width: 0; padding: 10px 14px 12px; }
+.modeCardTitle { display: flex; align-items: center; gap: 8px; min-width: 0; font-family: var(--font-marca); font-weight: 700; font-size: clamp(15px, 1.3vw, 18px); letter-spacing: 0.04em; text-transform: uppercase; }
+.modeCardTitle > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.modeCardText small { font-size: 14px; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.settingsCard { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; width: 104px; min-height: 112px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel-2); color: var(--text-2); cursor: pointer; font-family: var(--font-ui); font-size: 15px; font-weight: 600; transition: color 200ms ease, border-color 200ms ease; }
+.settingsCard:hover:not(:disabled) { color: var(--text); border-color: var(--text-3); }
+.settingsCard:disabled { opacity: 0.5; cursor: default; }
+
+/* Tableta: el panel sigue partido; las tarjetas pasan a rejilla. */
+@media (max-width: 1023px) {
+  .modeCards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+  .modeBlock { display: contents; }
+  .settingsCard { width: auto; }
+  .heroText { width: min(58%, 520px); }
+  .heroImage { inset: 0 0 0 42%; }
+  .heroStripe { left: 42%; width: 58%; }
+}
+/* Móvil: la imagen arriba con el corte abajo, el texto y los botones debajo, y las tarjetas en dos columnas. Ajustes
+   pasa a un botón en la cabecera. Todo el texto puede partirse: nada se sale de su hueco. */
+@media (max-width: 767px) {
+  .menu { gap: 12px; padding: 12px 16px 16px; overflow-y: auto; }
+  .menuTopSettings { display: inline-flex; }
+  .modeBlock[data-block='ajustes'] { display: none; }
+  .hero { flex: none; min-height: 0; display: grid; }
+  .heroPanel { position: relative; inset: auto; grid-area: 1 / 1; display: flex; flex-direction: column; }
+  .heroPanel[data-state='idle'] { display: none; }
+  .heroImage { position: relative; inset: auto; height: 34vh; min-height: 170px; clip-path: polygon(0 0, 100% 0, 100% 78%, 0 100%); }
+  .heroStripe { display: none; }
+  .heroWord { display: none; }
+  .heroText { width: 100%; height: auto; padding: 4px 16px 18px; margin-top: -28px; }
+  .heroTitle { font-size: clamp(26px, 8vw, 36px); }
+  .heroLine { font-size: 15px; }
+  .heroActions > * { flex: 1 1 100%; justify-content: center; }
+  .modeCards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .modeCard { min-height: 84px; }
+  .modeCard[aria-pressed='true'] { transform: none; }
+  .modeCardTitle { font-size: clamp(12px, 3.7vw, 15px); letter-spacing: 0.02em; }
+  .modeCardTitle > svg { display: none; }
+  .modeCardTitle > span, .modeCardText small { white-space: normal; overflow-wrap: normal; word-break: normal; hyphens: none; }
+  .modeCardText { padding: 8px 12px 10px; }
+  .menu[data-first-time] .modeBlock[data-block='jugar'] .modeCard:first-child { grid-column: span 2; }
+  @keyframes heroWipeIn { from { clip-path: polygon(0 0, 0 0, 0 78%, 0 100%); } to { clip-path: polygon(0 0, 100% 0, 100% 78%, 0 100%); } }
+  .heroPanel[data-state='leaving'] { display: none; }
+}
+/* Con movimiento reducido, solo fundidos cortos. */
+@media (prefers-reduced-motion: reduce) {
+  .heroPanel[data-state] .heroImage, .heroPanel[data-state] .heroImage span, .heroPanel[data-state] .heroStripe, .heroPanel[data-state] .heroWord, .heroPanel[data-state] .heroText > * { animation: none; }
+  .heroPanel[data-state='leaving'] { visibility: hidden; }
+  .modeCard, .modeCard::after, .modeCardImage { transition: none; }
+}
+
 .muted { color: var(--text-2); }
 .dim { color: var(--text-3); font-size: 14px; }
 .warn { color: var(--aviso); }
 
-.primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 8px 22px; border-radius: var(--radio-s); border: 1px solid var(--accion); background: var(--accion); color: #fff; cursor: pointer; font-family: var(--font-ui); font-size: 16px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; }
+.primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 8px 22px; border-radius: var(--radio-s); border: 1px solid var(--accion); background: var(--accion); color: #fff; cursor: pointer; font-family: var(--font-ui); font-size: 16px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
 .primary:hover:not(:disabled) { background: var(--accion-hover); }
 .primary:disabled { opacity: 0.5; cursor: not-allowed; }
 .button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 36px; padding: 6px 14px; border-radius: var(--radio-s); border: 1px solid var(--line-strong); background: var(--panel-2); color: var(--text); cursor: pointer; font-family: var(--font-ui); font-size: 15px; font-weight: 600; white-space: nowrap; }

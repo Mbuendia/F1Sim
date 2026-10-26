@@ -17,8 +17,9 @@ export default async function run({ server, assert, test }) {
   await test('R58: portada sin WebGL', async () => {
     const { LandingPage } = await server.ssrLoadModule('/src/components/LandingPage.tsx');
     const html = renderToStaticMarkup(createElement(LandingPage, { onEnter() {} }));
-    const wheel2d = html.includes('viewBox="0 0 2000 2000"'), wheel3d = html.includes('wheel3dWrapper'), enter = html.includes('Entrar al paddock');
-    assert(wheel2d && !wheel3d && enter, 'R58: sin WebGL la portada muestra la rueda 2D y «Entrar al paddock», sin montar la rueda 3D',
+    const wheel2d = html.includes('viewBox="0 0 2000 2000"'), wheel3d = html.includes('wheel3dWrapper'), enter = />Jugar</.test(html);
+    // [UX1] El botón pasó de «Entrar al paddock» a «Jugar» con la autorización del usuario (26/10/2026).
+    assert(wheel2d && !wheel3d && enter, 'R58: sin WebGL la portada muestra la rueda 2D y «Jugar», sin montar la rueda 3D',
       `rueda 2D ${wheel2d}, rueda 3D ${wheel3d}, botón ${enter}`);
   });
 }

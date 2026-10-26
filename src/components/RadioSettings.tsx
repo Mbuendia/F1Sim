@@ -18,6 +18,7 @@ import { createWebllmStore } from '../radio/model/webllmStore';
 import { modelRevisions, upgradingStore } from '../radio/model/versionSwitch';
 import { browserStorage, persistStorage, readRadioMode, writeRadioMode, type RadioMode } from '../radio/model/storage';
 import { createModelDownload, type DownloadState } from '../radio/model/download';
+import { browserModelDownload } from '../radio/model/browserDownloads';
 import { browserVariantEnv, chooseVariant, readVariantPreference, writeVariantPreference, type RadioVariant, type VariantChoice, type VariantPreference } from '../radio/model/variants';
 import { radioStore } from '../state/radioStore';
 import { createPiperStore, PIPER_VOICE } from '../radio/voice/piperVoice';
@@ -77,7 +78,9 @@ export default function RadioSettings({ store: givenStore, device: givenDevice, 
   const variant: RadioVariant | null = !choice || choice.variant === 'basica' ? null : preference === 'pequena' || !choice.options.includes('q0f16') ? 'q4' : 'q0f16';
   const model = RADIO_MODELS[variant ?? 'q4'];
   const store = stores[variant ?? 'q4'];
-  const download = useMemo(() => createModelDownload({ store, totalBytes: model.bytes, estimate, persist: persistStorage }), [store, model, estimate]);
+  // [UX4] Con los modelos del juego, la descarga es una sola en toda la página: al volver a los ajustes se ve la misma.
+  const download = useMemo(() => (givenStore ? createModelDownload({ store, totalBytes: model.bytes, estimate, persist: persistStorage })
+    : browserModelDownload(`radio-${model.modelId}`, { store, totalBytes: model.bytes, estimate, persist: persistStorage })), [givenStore, store, model, estimate]);
   const [state, setState] = useState<DownloadState>(download.state());
   const [outdated, setOutdated] = useState(false);
   useEffect(() => {
@@ -119,7 +122,7 @@ export default function RadioSettings({ store: givenStore, device: givenDevice, 
   const size = toMB(model.bytes);
   const blocked = choice?.variant === 'basica';
   const loadedMB = toMB(state.loaded);
-  const resumable = state.status === 'cancelada' || state.status === 'error-red';
+  const resumable = state.status === 'cancelada' || state.status === 'error-red' || state.status === 'otra-pestana';
 
   return (
     <div className={styles.settings} data-radio-settings>
@@ -194,7 +197,10 @@ const realWhisperStore = createWhisperStore();
 
 /** [IA6] Una descarga de un modelo pequeño (voz o micro): tamaño, barra, cancelar y borrar. */
 function ModelBlock({ store, bytes, estimate, saveData, label, onReady }: { store: ModelStore; bytes: number; estimate?: () => Promise<{ quota?: number; usage?: number }>; saveData: boolean; label: string; onReady?: () => void }) {
-  const download = useMemo(() => createModelDownload({ store, totalBytes: bytes, estimate, persist: persistStorage }), [store, bytes, estimate]);
+  // [UX4] Con las tiendas reales (voz y micro), la descarga es una sola en toda la página.
+  const shareKey = store === realPiperStore ? "voz-piper" : store === realWhisperStore ? "micro-whisper" : null;
+  const download = useMemo(() => (shareKey ? browserModelDownload(shareKey, { store, totalBytes: bytes, estimate, persist: persistStorage })
+    : createModelDownload({ store, totalBytes: bytes, estimate, persist: persistStorage })), [shareKey, store, bytes, estimate]);
   const [state, setState] = useState<DownloadState>(download.state());
   const [confirming, setConfirming] = useState(false);
   useEffect(() => { const stop = download.subscribe(setState); void download.refresh(); return stop; }, [download]);
