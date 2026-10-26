@@ -2,6 +2,8 @@ import React, { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspens
 import styles from './App.module.css';
 import { RaceTabs, raceLayout, mobileRaceView } from './components/RaceTabs';
 import { LapStrip } from './components/LapStrip';
+import { FreeRaceWizard } from './components/FreeRaceWizard';
+import { firstDriverOf } from './freeRace/freeRace';
 import { StintTimeline } from './components/StintTimeline';
 import { QualifyingLive } from './components/QualifyingLive';
 import { PracticePanel } from './components/PracticePanel';
@@ -162,10 +164,6 @@ const AUTOSAVE_MS = 30000;
 const MIRROR_SYNC_MS = 5000;
 const SAVE_NAME_KEY = 'f1_save_name';
 /** [T4.19] En la carrera libre el paddock no enseña nada de la partida: solo piloto, circuito, formato y tiempo. */
-const FREE_RACE_PADDOCK: Partial<React.ComponentProps<typeof HomeScreen>> = {
-  season: undefined, finance: undefined, facilities: undefined, sponsors: undefined, board: undefined, pitCrew: undefined, development: undefined,
-  components: undefined, setup: undefined, saveGames: undefined, championship: undefined, raceHistory: [],
-};
 const SETUPS_KEY = 'f1_setups';
 const newRaceSeed = () => (Math.floor(Math.random() * 0x7fffffff) ^ Date.now()) >>> 0;
 const TYRE_WORDS: Record<string, string> = { soft: 'blandos', medium: 'medios', hard: 'duros', intermediate: 'intermedios', wet: 'de lluvia' };
@@ -1544,6 +1542,20 @@ export const App: React.FC = () => {
     return <NewCareerScreen onBack={() => setCurrentView('menu')} onStart={handleNewCareer} />;
   }
 
+  // [UX12] La carrera libre se elige por pasos: equipo, circuito y resumen. Al elegir equipo, la cámara seguirá al
+  // primero de sus pilotos; el arranque es el mismo de siempre.
+  if (currentView === 'home' && mode === 'free') {
+    return (
+      <FreeRaceWizard roster={roster} raceFormat={effectiveFormat} onSelectFormat={setRaceFormat} sprintAvailable={sprintAvailable}
+        weatherScenarioId={weatherScenarioId} onSelectWeather={devMode ? setWeatherScenarioId : undefined}
+        onSelectTeam={teamId => setSelectedDriverId(firstDriverOf(roster, teamId))}
+        onSelectCircuit={circuitId => setSelectedCircuitId(circuitId)}
+        onStart={handleStartRaceFromHome}
+        onExit={() => { setMode('career'); setCurrentView('menu'); }}
+        driverAttributes={driver => attributesOf(development, driver)} />
+    );
+  }
+
   if (currentView === 'home') {
     return (
       <>
@@ -1673,7 +1685,6 @@ export const App: React.FC = () => {
           slots, currentName: saveName, message: saveMessage,
           onSave: handleSaveGame, onLoad: handleLoadGame, onExport: handleExportGame, onImport: handleImportGame, onDelete: handleDeleteGame,
         } : undefined}
-        {...(mode === 'free' ? FREE_RACE_PADDOCK : {})}
       />
       {/* [R51] Cierre de temporada: se ve antes de empezar la siguiente (el resumen ya está archivado). */}
       {seasonEnd && (

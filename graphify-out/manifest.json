@@ -1,8 +1,8 @@
 {
   "src/App.tsx": {
-    "mtime": 1793051887.7112799,
-    "seen": 1793052107.6354718,
-    "ast_hash": "5ef58f121b0f12787e8e9bcb48117486",
+    "mtime": 1793052159.7296216,
+    "seen": 1793052336.580382,
+    "ast_hash": "f22ec82d2e12debdabafc64cc2cf334c",
     "semantic_hash": ""
   },
   "src/audio/AudioEngine.ts": {
@@ -3810,9 +3810,9 @@
     "semantic_hash": ""
   },
   "AGENTS.md": {
-    "mtime": 1793052049.3719733,
-    "seen": 1793052107.6364062,
-    "ast_hash": "6a9a9b9a204b7b916b2ad3c0717aad8d",
+    "mtime": 1793052257.6586967,
+    "seen": 1793052336.5813644,
+    "ast_hash": "3ac98d0d9d9ba9ac9236689d0b486a4a",
     "semantic_hash": ""
   },
   "CLAUDE.md": {
@@ -3828,9 +3828,9 @@
     "semantic_hash": "bd014af3a57aef4d59ac424e7042bafd"
   },
   "DASHBOARD.md": {
-    "mtime": 1793052049.370468,
-    "seen": 1793052107.636413,
-    "ast_hash": "23d92228483f6da140c5cdf8e7b18afd",
+    "mtime": 1793052257.6576855,
+    "seen": 1793052336.58137,
+    "ast_hash": "8fd9b5a2bf903a9ede86115186abf551",
     "semantic_hash": ""
   },
   "GEMINI.md": {
@@ -3846,9 +3846,9 @@
     "semantic_hash": "27c1373f4dc4b15147f80935e2207fd3"
   },
   "dashboard_visual.html": {
-    "mtime": 1793052050.6412458,
-    "seen": 1793052107.6364264,
-    "ast_hash": "097e037938b7d57f7e5c2233b002cad4",
+    "mtime": 1793052258.9272027,
+    "seen": 1793052336.5813813,
+    "ast_hash": "762df827b0963eb5d32c0c6b453f5ddd",
     "semantic_hash": ""
   },
   "docs/design/brief-revision-ux-ui.md": {
@@ -3930,9 +3930,9 @@
     "semantic_hash": "c437aad7a063cbda404f7193f324acef"
   },
   "index.html": {
-    "mtime": 1793052049.9736848,
-    "seen": 1793052107.6364565,
-    "ast_hash": "a8786c14fe88a8ff69a714614b4281bd",
+    "mtime": 1793052258.2751617,
+    "seen": 1793052336.5814054,
+    "ast_hash": "7e8e288718d06c4187ca4452099ffe74",
     "semantic_hash": ""
   },
   "prototypes/n1/index.html": {
@@ -4785,6 +4785,12 @@
     "mtime": 1793051959.7118213,
     "seen": 1793052107.6355276,
     "ast_hash": "71ff3b2b27acee85b52c1dc2b8ea1740",
+    "semantic_hash": ""
+  },
+  "src/scene3d/cameraInput.ts": {
+    "mtime": 1793052159.6290264,
+    "seen": 1793052336.5807579,
+    "ast_hash": "24b3cbe188bc087ad56bb30f70fefa18",
     "semantic_hash": ""
   }
 }

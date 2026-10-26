@@ -1,17 +1,17 @@
 # Graph Report - brave-mendeleev  (2026-10-26)
 
 ## Corpus Check
-- 724 files · ~1,440,580 words
+- 725 files · ~1,441,032 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 257 file(s) not represented in the graph (top: .meta 108, .glb 63, .css 45)
 
 ## Summary
-- 5189 nodes · 12948 edges · 221 communities (202 shown, 19 thin omitted)
+- 5196 nodes · 12968 edges · 211 communities (194 shown, 17 thin omitted)
 - Extraction: 96% EXTRACTED · 4% INFERRED · 0% AMBIGUOUS · INFERRED: 493 edges (avg confidence: 0.85)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `5faac3c7`
+- Built from commit: `2d33629f`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -20,13 +20,13 @@
 - Tests de carrera y banderas
 - RaceSimulation
 - Pilotos, contratos y reserva
-- modelScene.ts
-- barcelonaTrack.ts
-- fixedRandom
+- carSprites3d.ts
+- carPosition.ts
+- advance
 - Tests de React y carrera
 - RadioSettings.tsx
 - Referencias externas del App
-- types.ts
+- corrections.ts
 - RoomFlow.tsx
 - RaceScene3D.ts
 - Costs.ts
@@ -39,16 +39,16 @@
 - Reglas de neumáticos
 - Tests con Node y auditoría radio
 - Sesión de carrera en red
-- Scripts de auditoría scratch
+- vite
 - Motor en Worker (N3)
 - Random.ts
 - f1.ts
 - TeamRadio.ts
-- RoomFlow.tsx
+- RoomScreens.tsx
 - Escenografía 3D
 - TrackRenderer.ts
 - Rediseño UI Sprint 2.9
-- corrections.ts
+- ExampleInterpreter.ts
 - PodiumModal.tsx
 - TrackDefinition
 - DriverDevelopment.ts
@@ -62,7 +62,7 @@
 - usage.ts
 - whisperStt.ts
 - Dataset del modelo de radio
-- lucide-react
+- Development.ts
 - Catálogo de palabras clave
 - Despliegue y flujo de trabajo
 - Cámaras 3D
@@ -73,7 +73,7 @@
 - LlmEngine.ts
 - Tests de hosting y clasificador
 - Clasificación en directo
-- TrackLayerGL
+- Facilities.ts
 - .lapFuelKg
 - Log suite N5
 - RadioEval.tsx
@@ -95,7 +95,7 @@
 - ruleSets.ts
 - DASHBOARD (3)
 - DASHBOARD (4)
-- Staff.ts
+- q20-align.mjs
 - Snapshot.ts
 - tsconfig
 - DASHBOARD (5)
@@ -140,12 +140,12 @@
 - build
 - n3 run1
 - capture radio ia5
-- CarShowcase.tsx
+- Sponsors.ts
 - main
 - capture bridge
 - capture radio
 - capture radio ia2
-- carSprites3d.ts
+- RightStatsPanel.tsx
 - n3 box
 - webllm radio test
 - scenery models (5)
@@ -153,16 +153,16 @@
 - download.ts
 - parody names
 - eval ia10 q0f16
-- voice/runtime.ts
+- lucide-react
 - pit route
 - f1 architecture rendered
 - package (3)
-- EngineHost.ts
+- WeatherModel.ts
 - scenery 3d 3
 - RadioReview.tsx
 - CONTEXT
-- llm/runtime.ts
-- devMode.ts
+- RoomLive.tsx
+- WeatherModel
 - landing
 - q19 apply
 - g7 shift fixtures
@@ -179,18 +179,18 @@
 - rooms-rules-n4.mjs
 - n3 canvas
 - LEEME
-- RadioChain
+- .internalState
 - scenery models (7)
 - scenery 3d
 - n1/engine.worker.ts
 - blocks
-- combined v2
+- race-session-n3 (N3): 44 PASS, 1 FAIL
 - q12 decompose
-- driverRadio.ts
+- RenderPose.ts
 - scripts
 - modal lifecycle
 - radio replies ia2
-- ModelStore
+- Geometría: svgTrackParser a escala real (1 unidad = 1 m)
 - scenery 3d 5
 - firebaseDb.ts
 - build dataset (2)
@@ -200,40 +200,30 @@
 - cdp peek
 - build dataset (3)
 - build dataset (4)
-- liveries.ts
+- PR Sprint 2.8: calidad de simulación, boxes reales, muro táctico y DRS oficial
 - pdf view
 - vite env d
 - rules-n10.mjs
 - AudioEngine
 - R28: guardado, reinicio y calidad de datos (snapshot)
-- ref_node_child_process
-- driverCalls.ts
-- react
-- systemVoice.ts
-- LapStrip.tsx
+- visual-icons.mjs
+- Tests por funcionalidad (README)
+- voice/runtime.ts
 - Wall.ts
 - kw-holdout.mjs
 - radio-ia1.mjs
-- units3.mjs
-- kw-audit.mjs
 - finalize-models.mjs
-- team-orders-probe.mjs
-- q15-debug.mjs
-- mon.mjs
-- WeatherModel.ts
+- WeatherForecast.ts
 - q13-model.mjs
-- align-circuit-references.mjs
 - Modelo propio de la radio: ciclo de mejora (IA7)
-- StorageLike
 - piper-wasm.d.ts
-- uiAudit.ts
 - roomStore.ts
-- App
+- SaveStore
 - drs-references.mjs
 
 ## God Nodes (most connected - your core abstractions)
 1. `RaceSimulation` - 209 edges
-2. `App()` - 190 edges
+2. `App()` - 193 edges
 3. `raceFactory()` - 167 edges
 4. `react` - 156 edges
 5. `CarState` - 108 edges
@@ -244,6 +234,8 @@
 10. `vite` - 53 edges
 
 ## Surprising Connections (you probably didn't know these)
+- `Tests de React como renderizado SSR` --semantically_similar_to--> `Limitación: suite sin entorno DOM (solo SSR)`  [INFERRED] [semantically similar]
+  tests/README.md → docs/reviews/auditoria-q12-q19.md
 - `cars` --indirect_call--> `F1CarSilhouette()`  [INFERRED]
   scratch/q21-preview.mjs → src/components/F1CarSilhouette.tsx
 - `row()` --indirect_call--> `CompoundBadge()`  [INFERRED]
@@ -252,8 +244,6 @@
   scratch/q22-preview.mjs → src/components/CarChassisSvg.tsx
 - `small` --indirect_call--> `CarChassisSvg()`  [INFERRED]
   scratch/q22-preview.mjs → src/components/CarChassisSvg.tsx
-- `Landing F1 Race Manager: La carrera se decide en el muro` --semantically_similar_to--> `F1 Race Manager`  [INFERRED] [semantically similar]
-  public/landing/index.html → README.md
 
 ## Import Cycles
 - None detected.
@@ -277,39 +267,39 @@
 - **Multiplayer stack N2-N5 (engine host, session, rooms, transport)** — scratch_n5_all_engine_host_n2, scratch_n5_all_race_session_n3, scratch_n5_all_rooms_n4, scratch_n5_all_transport_n5 [INFERRED 0.85]
 - **Artefactos de revisión de Q12–Q19 del Sprint 2.8** — docs_reviews_auditoria_q12_q19_doc, tests_audit_doc, tests_results_fix83_verification_doc, docs_reviews_revision_sprint_2_8_doc, docs_reviews_revision_sprint_2_8_review_page, docs_reviews_pr_sprint_2_8_doc [INFERRED 0.85]
 
-## Communities (221 total, 19 thin omitted)
+## Communities (211 total, 17 thin omitted)
 
 ### Community 0 - "Season.ts"
-Cohesion: 0.03
-Nodes (140): App(), CAMERA_LABELS, FLAG_CHIPS, FLAG_NOTICES, FREE_RACE_PADDOCK, newRaceSeed(), playerDriverIds(), SettingsScreen (+132 more)
+Cohesion: 0.04
+Nodes (124): App(), CAMERA_LABELS, FLAG_CHIPS, FLAG_NOTICES, FREE_RACE_PADDOCK, newRaceSeed(), playerDriverIds(), SettingsScreen (+116 more)
 
 ### Community 1 - "Tests de carrera y banderas"
 Cohesion: 0.04
-Nodes (44): run(), run(), run(), run(), run(), run(), run(), run() (+36 more)
+Nodes (53): run(), run(), run(), run(), run(), run(), run(), run() (+45 more)
 
 ### Community 2 - "RaceSimulation"
 Cohesion: 0.04
-Nodes (15): teamView, advanceAutoRace(), AUTO_RACE, autoRaceDone(), startAutoRace(), applyAttributes(), DriverAttributes, overtakeAdvantageNeeded() (+7 more)
+Nodes (14): teamView, advanceAutoRace(), AUTO_RACE, autoRaceDone(), startAutoRace(), applyAttributes(), DriverAttributes, RaceResult (+6 more)
 
 ### Community 3 - "Pilotos, contratos y reserva"
 Cohesion: 0.08
-Nodes (65): DriverContractsPanel(), Helmet(), perSeason(), Props, Facts(), hundred(), paceAt(), Props (+57 more)
+Nodes (61): DriverContractsPanel(), Helmet(), perSeason(), Props, Facts(), hundred(), paceAt(), Props (+53 more)
 
-### Community 4 - "modelScene.ts"
-Cohesion: 0.15
-Nodes (20): three, SafetyCar3D(), applyLivery(), CAR_MODEL, DECAL_BACKGROUND, decalTexts(), liveryColors(), MeshLike (+12 more)
+### Community 4 - "carSprites3d.ts"
+Cohesion: 0.05
+Nodes (67): three, Car3DViewer(), Car3DViewerProps, Car3DViewer, CarShowcase(), CarShowcaseProps, supportsWebGL(), F1CarSilhouette() (+59 more)
 
-### Community 5 - "barcelonaTrack.ts"
-Cohesion: 0.06
-Nodes (52): BARCELONA_CIRCUIT, BARCELONA_FIA_EXACT_POINTS, pitLanePoints, points, CircuitReview(), IDS, Layer, LAYERS (+44 more)
+### Community 5 - "carPosition.ts"
+Cohesion: 0.13
+Nodes (26): CircuitReview(), IDS, Layer, LAYERS, soloCar(), CarRouteState, CarWorldPosition, EDGE_MARGIN_M (+18 more)
 
-### Community 6 - "fixedRandom"
-Cohesion: 0.07
-Nodes (29): run(), run(), run(), run(), run(), run(), run(), run() (+21 more)
+### Community 6 - "advance"
+Cohesion: 0.43
+Nodes (4): run(), run(), run(), advance()
 
 ### Community 7 - "Tests de React y carrera"
 Cohesion: 0.04
-Nodes (15): react, react-dom, cars, compounds, row(), cases, cell(), small (+7 more)
+Nodes (21): react, react-dom, cases, cell(), small, run(), run(), run() (+13 more)
 
 ### Community 8 - "RadioSettings.tsx"
 Cohesion: 0.10
@@ -319,157 +309,157 @@ Nodes (37): browserEstimate(), CorrectionsSettings(), fromDevice(), MicSettings(
 Cohesion: 0.02
 Nodes (5): CAMERA_LABELS, FLAG_CHIPS, FLAG_NOTICES, FREE_RACE_PADDOCK, TYRE_WORDS
 
-### Community 10 - "types.ts"
-Cohesion: 0.09
-Nodes (36): INTENT_KINDS, keywordInterpreter, finetunedParse(), keywords(), SCHEDULED_REASON, selectedIds(), RadioAi, createLlmInterpreter() (+28 more)
+### Community 10 - "corrections.ts"
+Cohesion: 0.08
+Nodes (32): Reserva, CLASSES, forcedOf(), intentOfClass(), RadioClass, Bank, RadioAck, applyCorrection() (+24 more)
 
 ### Community 11 - "RoomFlow.tsx"
-Cohesion: 0.11
-Nodes (23): HostStart, generateRoomCode(), ROOM_ALPHABET, ROOM_CODE_LENGTH, ROOM_LINK_PARAM, roomLink(), cleanName(), createRoom() (+15 more)
+Cohesion: 0.08
+Nodes (45): HostStart, playersOf(), RoomFlow(), stable(), Waiting(), LobbyMember, LobbyPhase, metaPath() (+37 more)
 
 ### Community 12 - "RaceScene3D.ts"
 Cohesion: 0.06
-Nodes (47): bridgeRoadHeight(), DECK_HALF_M, DECK_HEIGHT_M, Pt, RAMP_M, SIDE_M, overpassFor(), ASPHALT_DRY (+39 more)
+Nodes (53): bridgeRoadHeight(), DECK_HALF_M, DECK_HEIGHT_M, Pt, RAMP_M, SIDE_M, Sun, overpassFor() (+45 more)
 
 ### Community 13 - "Costs.ts"
-Cohesion: 0.07
-Nodes (60): ComponentsPanel(), ComponentsPanelProps, GridPenaltyNoticeProps, QualifyingResultsProps, aiReplace(), ALLOCATION, BACK_OF_GRID_PLACES, COMPONENT_LABEL (+52 more)
+Cohesion: 0.08
+Nodes (51): ComponentsPanel(), aiReplace(), ALLOCATION, applyGridPenalties(), BACK_OF_GRID_PLACES, COMPONENT_LABEL, COMPONENT_TYPES, ComponentPenalty (+43 more)
 
 ### Community 14 - "EngineHost"
-Cohesion: 0.08
-Nodes (10): ClientRaceReview(), post(), tick(), createEngine(), EngineInit, EngineHost, EngineMessage, isId() (+2 more)
+Cohesion: 0.06
+Nodes (24): ClientRaceReview(), post(), tick(), createEngine(), EngineInit, CAR_ORDERS, Compliance, COMPOUNDS (+16 more)
 
 ### Community 15 - "RaceSimulation.ts"
 Cohesion: 0.05
-Nodes (45): CarTechnical, CHASSIS_BLEND, chassisGripAt(), HIGH_DOWNFORCE, LOW_DOWNFORCE, PackageId, PACKAGES, PowerUnit (+37 more)
+Nodes (47): CarTechnical, CHASSIS_BLEND, chassisGripAt(), HIGH_DOWNFORCE, LOW_DOWNFORCE, PackageId, PACKAGES, PowerUnit (+39 more)
 
 ### Community 16 - "Banco de respuestas de pilotos"
 Cohesion: 0.08
 Nodes (38): Temperament, ALL, allLines(), BANK, btn, KINDS, Line, NAMES (+30 more)
 
 ### Community 17 - "RaceCanvas.tsx"
-Cohesion: 0.11
-Nodes (21): segmentAt(), BridgeReview(), cameraMode, clouds, q, raceTimeSec, zoom, frameCost (+13 more)
+Cohesion: 0.17
+Nodes (14): cameraMode, clouds, q, raceTimeSec, zoom, bridgePaintOrder(), bridgeSide(), Crossing (+6 more)
 
 ### Community 18 - "Detalle visual del coche"
 Cohesion: 0.08
-Nodes (40): StintSegment, stintSegments(), RAIN_LIGHT_HZ, rearLight, safetyCarLightOn(), WHEEL_CIRCUMFERENCE_M, wheelMarkPhase(), buildCarDraws() (+32 more)
+Nodes (42): CameraMode, RAIN_LIGHT_HZ, rearLight, safetyCarLightOn(), WHEEL_CIRCUMFERENCE_M, wheelMarkPhase(), buildCarDraws(), buildSafetyCarDraw() (+34 more)
 
 ### Community 19 - "Management.ts"
 Cohesion: 0.05
-Nodes (72): ManagementState: estado único de la gestión, SponsorsPanel(), Terms(), isAcademy(), reserveSalary(), advanceAges(), ageAttributes(), Ages (+64 more)
+Nodes (80): ManagementState: estado único de la gestión, Pips(), PitCrewPanel(), seconds(), roleName(), StaffPanel(), isAcademy(), startAcademy() (+72 more)
 
 ### Community 20 - "Reglas de neumáticos"
 Cohesion: 0.08
-Nodes (38): chooseCompound(), StrategyState, allocationSets(), availableSets(), COMPOUND_LABEL, createInventory(), inventoryFromSets(), MONACO_SETS_REQUIRED (+30 more)
+Nodes (36): SPRINT_VENUES, usedPracticeTyre(), WeekendState, allocationSets(), COMPOUND_LABEL, createInventory(), inventoryFromSets(), MONACO_SETS_REQUIRED (+28 more)
 
 ### Community 21 - "Tests con Node y auditoría radio"
-Cohesion: 0.08
-Nodes (13): files, swaps, buildTaskIndex(), projectRoot, synchronizeIndex(), run(), glbNodes(), run() (+5 more)
+Cohesion: 0.07
+Nodes (19): files, swaps, cars, compounds, row(), buildTaskIndex(), projectRoot, synchronizeIndex() (+11 more)
 
 ### Community 22 - "Sesión de carrera en red"
-Cohesion: 0.07
-Nodes (31): PauseRequestBanner(), buildWeatherScenario(), CONFIG, Fakes, HostRace(), RoomLive(), RaceConfig, SharedInit (+23 more)
+Cohesion: 0.08
+Nodes (27): GuestRace(), RaceConfig, SharedInit, EngineOrder, EngineLink, Ack, now(), RaceSession (+19 more)
 
-### Community 23 - "Scripts de auditoría scratch"
-Cohesion: 0.06
-Nodes (8): vite, [circuit, format, step], picked, turn, a, b, by, sc
+### Community 23 - "vite"
+Cohesion: 0.03
+Nodes (30): vite, [circuit, format, step], MODEL_FAILS, notes, phrases, picked, turn, f (+22 more)
 
 ### Community 24 - "Motor en Worker (N3)"
 Cohesion: 0.06
-Nodes (40): App.tsx N3 patch: race engine behind Worker link, restartEngine (engineEpoch bump), syncFromEngine (session.save then restoreSnapshot), ClientRaceScreen(), LINK_TEXT, SharedRaceEnd(), startNotice(), LinkLabel (+32 more)
+Nodes (42): App.tsx N3 patch: race engine behind Worker link, restartEngine (engineEpoch bump), syncFromEngine (session.save then restoreSnapshot), raceCars sectors/lapHistory from public or own state, Public sectors and laps (times + compound, no wear), aheadInfo/behindInfo in public car view, carState() with HEAVY excluded fields (own-car state in view), ClientRaceScreen() (+34 more)
 
 ### Community 25 - "Random.ts"
-Cohesion: 0.05
-Nodes (34): FLAG_CONFIG, getSectorDotClass(), RaceFlagsHUD(), RaceFlagsHUDProps, interpolatePose(), Pose, RenderInterpolator, shortestTurn() (+26 more)
+Cohesion: 0.08
+Nodes (22): IncidentModel, DOUBLE_YELLOW_SPEED_FACTOR, LocalFlag, localFlagsFrom(), MARSHAL_SECTOR_COUNT, marshalSectorOf(), normalize(), PermissionInput (+14 more)
 
 ### Community 26 - "f1.ts"
-Cohesion: 0.07
-Nodes (26): DnfNotificationModalProps, LeaderboardProps, StartLightsProps, EngineModel, FuelModel, AggressionLevel, BoxOrderStatus, CarTelemetryLog (+18 more)
+Cohesion: 0.06
+Nodes (29): DnfNotificationModalProps, LeaderboardProps, RightStatsPanelProps, StartLightsProps, EngineModel, FuelModel, AggressionLevel, BoxOrderIssuer (+21 more)
 
 ### Community 27 - "TeamRadio.ts"
-Cohesion: 0.14
+Cohesion: 0.12
 Nodes (13): TeamComplianceView, applySituation(), Compliance, complianceOdds, COMPLIANCES, decideCompliance(), INSIST_LAPS, LAST_LAPS (+5 more)
 
-### Community 28 - "RoomFlow.tsx"
-Cohesion: 0.07
-Nodes (65): qrcode-generator, FIREBASE, GUEST_CONFIG, playersOf(), RoomFlow(), stable(), TEAM_IDS, TEAM_LIST (+57 more)
+### Community 28 - "RoomScreens.tsx"
+Cohesion: 0.09
+Nodes (34): RaceFormatId, calm(), circuitName(), devMode(), Ended(), FORMAT_TEXT, GuestWaiting(), HostLobby() (+26 more)
 
 ### Community 29 - "Escenografía 3D"
-Cohesion: 0.09
-Nodes (52): getScenario(), tvCamerasFor(), barrierOffset(), Box, build(), buildBarriers(), buildPitBuilding(), cache (+44 more)
+Cohesion: 0.11
+Nodes (48): getScenario(), tvCamerasFor(), barrierOffset(), Box, build(), buildBarriers(), buildPitBuilding(), cache (+40 more)
 
 ### Community 30 - "TrackRenderer.ts"
-Cohesion: 0.08
-Nodes (36): CameraMode, battleParticipants(), DETAIL_LABEL_ZOOM, Label, OVERVIEW_ZOOM, renderCarLabels(), CAR_SHADOW_HEIGHT, NIGHT_RACES (+28 more)
+Cohesion: 0.05
+Nodes (36): CarDraw, SafetyCarDraw, TopSprite, cache, DrsDetectionMarker, drsMarkers, DrsZoneMarker, CAR_SHADOW_HEIGHT (+28 more)
 
 ### Community 31 - "Rediseño UI Sprint 2.9"
 Cohesion: 0.05
 Nodes (34): Atajos de carrera (Espacio, 1–6, C, Esc), Brief: revisión de diseño y refactor UX/UI de F1Sim, F1Sim (simulador de Team Principal), MOB01 consulta móvil, Módulos de test de UI (visual-icons, race-ui, box-ui, pace-ui, luck-modal, sc-deploy…), Bloque R29–R34 (rediseño Sprint 2.9), R39: el Muro tapa el circuito, Stack React 19 + TS + Vite + CSS Modules (+26 more)
 
-### Community 32 - "corrections.ts"
+### Community 32 - "ExampleInterpreter.ts"
 Cohesion: 0.09
-Nodes (32): Reserva, CLASSES, forcedOf(), intentOfClass(), NO_ORDER, PACE, RadioClass, TEAM (+24 more)
+Nodes (24): NO_ORDER, LoadProgress, AiState, AiStatus, ClassifierAi, createClassifierAi(), fail(), createExampleInterpreter() (+16 more)
 
 ### Community 33 - "PodiumModal.tsx"
-Cohesion: 0.14
-Nodes (16): DriverProgressEntry, DriverProgressPanel(), DriverProgressPanelProps, F1CarSilhouette(), F1CarSilhouetteProps, PodiumModal(), PodiumModalProps, END_REASON (+8 more)
+Cohesion: 0.18
+Nodes (11): DriverProgressEntry, DriverProgressPanel(), DriverProgressPanelProps, PodiumModalProps, END_REASON, formatTime(), ResultsTable(), ResultsTableProps (+3 more)
 
 ### Community 34 - "TrackDefinition"
-Cohesion: 0.08
-Nodes (29): RaceCanvas(), RaceCanvasProps, GuestRace(), TrackDefinition, renderBridge(), Camera, renderLeftMinimap(), TrackRenderer (+21 more)
+Cohesion: 0.06
+Nodes (33): PaintScene, RaceCanvas(), RaceCanvasProps, segmentAt(), TrackDefinition, BridgeReview(), renderBridge(), Camera (+25 more)
 
 ### Community 35 - "DriverDevelopment.ts"
-Cohesion: 0.15
-Nodes (18): DriverAttributesCard(), DriverAttributesCardProps, oneDecimal(), Junior, attributeRows(), attributesOf(), baseAttributes(), clamp() (+10 more)
+Cohesion: 0.08
+Nodes (36): DriverAttributesCard(), DriverAttributesCardProps, oneDecimal(), drawWeatherScenario(), freeRaceWeather(), advanceAges(), ageAttributes(), ageStep() (+28 more)
 
 ### Community 36 - "BoxControls.tsx"
-Cohesion: 0.09
+Cohesion: 0.11
 Nodes (29): BoxControls(), CROSSOVER_LABEL, decimal(), ORDER_STATUS, WallSpeedometer(), OPTIONS, Pace, PACE_LABEL (+21 more)
 
 ### Community 37 - "RaceSimulation.ts"
-Cohesion: 0.05
-Nodes (36): RunoffSurface, RunoffZone, AQUAPLANING, aquaplaningReason(), aquaplaningRiskPerSec(), fitnessNoiseFactor(), wetGripFactor(), DrsPermissions (+28 more)
+Cohesion: 0.07
+Nodes (44): RunoffZone, AQUAPLANING, aquaplaningReason(), aquaplaningRiskPerSec(), commitmentT(), nextCrossing(), normalizeLap(), orderIsActive() (+36 more)
 
 ### Community 38 - "RadioPanel.tsx"
-Cohesion: 0.07
-Nodes (31): callChooser, RadioPanel(), STATUS_LABEL, useDriverCalls(), driverRadio, ACK_TIMEOUT_MS, COMPOUND_NAME, driverSays() (+23 more)
+Cohesion: 0.06
+Nodes (35): callChooser, RadioPanel(), STATUS_LABEL, useDriverCalls(), usePushToTalk(), driverRadio, ACK_TIMEOUT_MS, COMPOUND_NAME (+27 more)
 
 ### Community 39 - "Log suite N3"
 Cohesion: 0.06
-Nodes (42): Order acknowledgement protocol ({type:ack, seq, ok, reason}), box-orders (Q9, Q10): 65 PASS, Career T4.x modules (finance, costs, facilities, pit crew, sponsors, hub, board, academy, staff, practice), circuit-quality (G1): 347 PASS, contracts-t47 (T4.7): 198 PASS, documentation (Regla de Oro 6): 4 PASS, drs-detection (Q19): 16 PASS, drs-references (Q19): 141 PASS (+34 more)
+Nodes (32): box-orders (Q9, Q10): 65 PASS, Career T4.x modules (finance, costs, facilities, pit crew, sponsors, hub, board, academy, staff, practice), circuit-quality (G1): 347 PASS, contracts-t47 (T4.7): 198 PASS, documentation (Regla de Oro 6): 4 PASS, drs-detection (Q19): 16 PASS, drs-references (Q19): 141 PASS, FAIL: Q14 DEV button uses engine SC deploy and retire (+24 more)
 
 ### Community 40 - "manifest.ts"
-Cohesion: 0.17
-Nodes (14): @mlc-ai/web-llm, CATALOG_VERSION, handler, createWebllmEngine(), radioAppConfig(), ModelManifest, modelUrl(), RADIO_MODELS (+6 more)
+Cohesion: 0.11
+Nodes (19): @mlc-ai/web-llm, revisionsOf(), handler, radioAi, createWebllmEngine(), radioAppConfig(), ModelDownloadDeps, ModelManifest (+11 more)
 
 ### Community 41 - "piperVoice.ts"
-Cohesion: 0.11
-Nodes (22): @diffusionstudio/piper-wasm, @diffusionstudio/vits-web, applyRadioVoice(), RADIO_VOICE_PREF_KEY, StorageLike, VoicePref, chooseVoiceEngine(), createPiperSpeaker() (+14 more)
+Cohesion: 0.12
+Nodes (20): @diffusionstudio/piper-wasm, @diffusionstudio/vits-web, applyRadioVoice(), RADIO_VOICE_PREF_KEY, StorageLike, VoicePref, chooseVoiceEngine(), createPiperSpeaker() (+12 more)
 
 ### Community 42 - "CarState"
-Cohesion: 0.10
-Nodes (17): PaintScene, RightStatsPanelProps, commitmentT(), nextCrossing(), normalizeLap(), orderIsActive(), updateOrderCommitment(), PitStopModel (+9 more)
+Cohesion: 0.09
+Nodes (12): fitnessNoiseFactor(), overtakeAdvantageNeeded(), wetGripFactor(), DrsPermissions, PitStopModel, FieldCar, CarState, lapsToPitEntry() (+4 more)
 
 ### Community 43 - "usage.ts"
 Cohesion: 0.08
-Nodes (18): RoomBackend, UsageMeter(), roomPaths, DirectChannel, DirectConnector, DirectListener, createWebRtcConnector(), createWebRtcListener() (+10 more)
+Nodes (24): zustand, FIREBASE, GUEST_CONFIG, RoomBackend, TEAM_IDS, TEAM_LIST, UsageMeter(), roomPaths (+16 more)
 
 ### Community 44 - "whisperStt.ts"
-Cohesion: 0.10
-Nodes (12): usePushToTalk(), PRIVACY_NOTE, Recognizer, SttEngine, WHISPER_MODEL, RecognitionLike, ResultLike, cached() (+4 more)
+Cohesion: 0.15
+Nodes (9): PRIVACY_NOTE, Recognizer, SttEngine, WHISPER_MODEL, cached(), createWhisperStore(), loadTranscriber(), transcribe() (+1 more)
 
 ### Community 45 - "Dataset del modelo de radio"
 Cohesion: 0.05
 Nodes (34): A_FORMS, A_RE, ALL_NAMES, ARGS, AT_LAP, B_FORMS, B_RE, base (+26 more)
 
-### Community 46 - "lucide-react"
-Cohesion: 0.08
-Nodes (34): lucide-react, DevelopmentPanel(), DevelopmentPanelProps, STATUS_LABEL, ICONS, NextRace, StatusCard, SpeedControlsProps (+26 more)
+### Community 46 - "Development.ts"
+Cohesion: 0.14
+Nodes (21): DevelopmentPanel(), DevelopmentPanelProps, STATUS_LABEL, ATR_PERCENT, CARRY_OVER, CATALOG_VERSION, DevelopmentProgram, EffectField (+13 more)
 
 ### Community 47 - "Catálogo de palabras clave"
-Cohesion: 0.12
-Nodes (26): BOX_WORDS, CANCEL_WORDS, COMPOUND_WORDS, DELEGATE_WORDS, GROUP_WORDS, Keyword, kw(), PACE_WORDS (+18 more)
+Cohesion: 0.09
+Nodes (34): BOX_WORDS, CANCEL_WORDS, COMPOUND_WORDS, DELEGATE_WORDS, GROUP_WORDS, Keyword, kw(), PACE_WORDS (+26 more)
 
 ### Community 48 - "Despliegue y flujo de trabajo"
 Cohesion: 0.07
@@ -488,28 +478,28 @@ Cohesion: 0.15
 Nodes (16): AiStatusBadge(), LiveAiStatusBadge(), useAiStatusSummary(), RaceMenu(), RaceMenuProps, RadioSettings, AiStatusInput, AiStatusItem (+8 more)
 
 ### Community 52 - "scenarioRegistry.ts"
-Cohesion: 0.14
-Nodes (22): Escenarios visuales por circuito (getScenario), barcelonaScenario, buildProfile(), calendarScenarios, profiles, VisualProfile, defaultScenario, monacoScenario (+14 more)
+Cohesion: 0.12
+Nodes (25): Escenarios visuales por circuito (getScenario), barcelonaScenario, buildProfile(), calendarScenarios, profiles, VisualProfile, defaultScenario, monacoScenario (+17 more)
 
 ### Community 53 - "Auditoría Q12-Q19"
-Cohesion: 0.14
-Nodes (28): DASHBOARD.md (fuente de verdad del plan), Auditoría Q12–Q19 (Sprint 2.8), drsDetections, getRejoinProjection, Q12 Modos de ritmo, Q13 Predictor de reincorporación, Q14 Movimiento en neutralizaciones, Q15 Banderas azules (+20 more)
+Cohesion: 0.23
+Nodes (19): Auditoría Q12–Q19 (Sprint 2.8), drsDetections, getRejoinProjection, Q12 Modos de ritmo, Q13 Predictor de reincorporación, Q14 Movimiento en neutralizaciones, Q15 Banderas azules, Q16 ERS, combustible y térmica (+11 more)
 
 ### Community 54 - "LlmEngine.ts"
-Cohesion: 0.11
-Nodes (22): AiState, AiStatus, ChatEngine, ChatOptions, createRadioAi(), fail(), generate(), failureReason() (+14 more)
+Cohesion: 0.07
+Nodes (49): CATALOG_VERSION, INTENT_KINDS, keywordInterpreter, createFinetunedInterpreter(), finetunedParse(), keywords(), SCHEDULED_REASON, selectedIds() (+41 more)
 
 ### Community 55 - "Tests de hosting y clasificador"
-Cohesion: 0.12
-Nodes (15): root, run(), walk(), run(), never(), run(), tick(), never() (+7 more)
+Cohesion: 0.14
+Nodes (12): run(), never(), run(), tick(), never(), run(), tick(), files() (+4 more)
 
 ### Community 56 - "Clasificación en directo"
-Cohesion: 0.13
-Nodes (25): fitOutline(), OutlinePoint, QualifyingLive(), formatLapTime(), GridSlot, QualiCompound, QualiCompounds, QualiFormat (+17 more)
+Cohesion: 0.10
+Nodes (31): fitOutline(), OutlinePoint, QualifyingLive(), QualifyingResults(), QualifyingResultsProps, SharedRaceRecord, GridChange, formatLapTime() (+23 more)
 
-### Community 57 - "TrackLayerGL"
-Cohesion: 0.14
-Nodes (3): SpraySystem, TrackLayerGL, sprayLevel()
+### Community 57 - "Facilities.ts"
+Cohesion: 0.11
+Nodes (29): NewCareerScreen(), TEAM_ORDER, DEFAULT_CAREER_NAME, levelOf(), teamDifficulty(), aiInvestFacilities(), allAt(), benchHazard() (+21 more)
 
 ### Community 58 - ".lapFuelKg"
 Cohesion: 0.22
@@ -520,12 +510,12 @@ Cohesion: 0.10
 Nodes (28): circuit-quality (G1): 347 PASS, Direct (WebRTC/STUN) vs fallback (Firebase) link modes, documentation suite (Regla de Oro 6): dashboard/index sync, engine-host-n2 suite (N2): 39 PASS, FAIL N5: lost order not resent within 2 s / not applied once and acked, FAIL N5: first order after reload is not applied (direct and fallback), FAIL N5: retry that does not open in 5 s is not abandoned, Fast / slow / team views (+20 more)
 
 ### Community 60 - "RadioEval.tsx"
-Cohesion: 0.09
-Nodes (24): alwaysThere, base(), fpsDuring(), outcome(), OWN_KEYS, params, pct(), Phrase (+16 more)
+Cohesion: 0.12
+Nodes (24): DEFAULT_DRIVER_RADIO, DRIVER_RADIO, radioNames(), radioNamesById(), alwaysThere, base(), fpsDuring(), outcome() (+16 more)
 
 ### Community 61 - "ref_node_child_process"
-Cohesion: 0.15
-Nodes (8): R29: inventario funcional y contrato de pruebas, root, modules, args, cwd, assert(), report, test()
+Cohesion: 0.07
+Nodes (17): R29: inventario funcional y contrato de pruebas, chrome, res, t0, waiting, ws, root, root (+9 more)
 
 ### Community 62 - "scrollcraft"
 Cohesion: 0.14
@@ -536,24 +526,24 @@ Cohesion: 0.11
 Nodes (15): billboard(), box(), building(), city_wall(), _hull(), mat(), paddock(), pavilion() (+7 more)
 
 ### Community 64 - "Practice.ts"
-Cohesion: 0.07
-Nodes (51): ICON, PracticeLearned(), PracticePanel(), setupText(), SetupCompare(), SHORT, SetupPanel(), SetupPanelProps (+43 more)
+Cohesion: 0.08
+Nodes (40): ICON, PracticeLearned(), PracticePanel(), setupText(), SHORT, SetupPanel(), SetupPanelProps, Setups (+32 more)
 
 ### Community 65 - "DASHBOARD"
 Cohesion: 0.09
 Nodes (25): FIA 2025 F1 Sporting Regulations (Issue 5), FIA 2025 F1 Technical Regulations (Issue 3), MOB01: seguimiento móvil de solo lectura (sustituida por Sprint 5), Q16: ERS, combustible y penalización térmica, R01: perfil de reglas versionado y procedencia, R02: cronometraje por cruces y tráfico físico, R03: datos de evento y geometría con unidades, R05: aerodinámica, rebufo y adelantamiento físico (+17 more)
 
 ### Community 66 - "GuestTransport"
-Cohesion: 0.05
-Nodes (26): fromDb(), RemoteLink, LINK_TIMING, LinkAction, LinkMachine, LinkMode, OrderInbox, OrderOutbox (+18 more)
+Cohesion: 0.04
+Nodes (28): fromDb(), readRace(), RemoteLink, LINK_TIMING, LinkAction, LinkMachine, LinkMode, OrderInbox (+20 more)
 
 ### Community 67 - "svgTrackParser.ts"
-Cohesion: 0.05
-Nodes (55): Geometría: svgTrackParser a escala real (1 unidad = 1 m), Análisis de rectas de los 22 circuitos, Circuitos sin SVG (monza, silverstone, spa, red_bull_ring, …), Muestras x,y del trazado SVG cada 0.1 de t, Análisis de las tres rectas principales por circuito, 23 circuitos a escala real, Física: velocidad por radio, trazada de mínima curvatura, rebufo, neumáticos, ERS, apexes() (+47 more)
+Cohesion: 0.06
+Nodes (54): BARCELONA_CIRCUIT, BARCELONA_FIA_EXACT_POINTS, CornerMarker, pitLanePoints, points, BRAKE_LOOKAHEAD_M, DEFAULT_CURVATURE_GAIN, LAP_REFERENCE_NOTE (+46 more)
 
 ### Community 68 - "Finance.ts"
-Cohesion: 0.06
-Nodes (66): FacilitiesPanel(), Pips(), BalanceChart(), byKind(), FinancePanel(), NewCareerScreen(), TEAM_ORDER, Row() (+58 more)
+Cohesion: 0.08
+Nodes (50): BalanceChart(), byKind(), FinancePanel(), RoundReportScreen(), Row(), STEPS, WinterScreen(), ACCENTS (+42 more)
 
 ### Community 70 - "fakeDb"
 Cohesion: 0.23
@@ -568,16 +558,16 @@ Cohesion: 0.12
 Nodes (20): ahead(), bySprint, clean(), closedSprints, detail, esc(), group(), index (+12 more)
 
 ### Community 74 - ".step"
-Cohesion: 0.06
-Nodes (25): R13: comisarios y sanciones ejecutables, CLASSIFIED_FRACTION, classify(), compareByResults(), ConstructorRow, constructorStandings(), EndReason, POINTS_2025 (+17 more)
+Cohesion: 0.07
+Nodes (23): R13: comisarios y sanciones ejecutables, CLASSIFIED_FRACTION, classify(), ConstructorRow, constructorStandings(), EndReason, POINTS_2025, PointsContext (+15 more)
 
 ### Community 75 - "BottomTelemetryDock.tsx"
 Cohesion: 0.16
 Nodes (14): BottomTelemetryDock(), BottomTelemetryDockProps, CarChassisSvg(), CarChassisSvgProps, WheelId, WHEELS, DrsStatusBadge(), DrsStatusBadgeProps (+6 more)
 
 ### Community 76 - "ruleSets.ts"
-Cohesion: 0.12
-Nodes (20): DEFAULT_RULE_SET_ID, FIA_2025_VALUES, GAME_2025_VALUES, GAME_KEYS, GameKey, ORIGINS, REGULATION_KEYS, RegulationKey (+12 more)
+Cohesion: 0.07
+Nodes (29): DEFAULT_RULE_SET_ID, DEFAULT_RULES, FIA_2025_VALUES, GAME_2025_VALUES, GAME_KEYS, GameKey, getRuleSet(), ORIGINS (+21 more)
 
 ### Community 77 - "DASHBOARD (3)"
 Cohesion: 0.11
@@ -587,9 +577,9 @@ Nodes (19): docs/design/grill-sprint4-visual.md (diseño de la gestión), R19: v
 Cohesion: 0.18
 Nodes (19): Alojamiento del modelo en Hugging Face con commit fijado, IA10: radio con el modelo propio ajustado (q0f16 / q4), IA1: catálogo de órdenes de radio e intérprete por palabras clave, IA2: respuestas de los pilotos y voz (Web Speech), IA3: obediencia del piloto según su carácter, IA4: ajustes de la radio y gestión del modelo (ModelStore), IA5: modelo de IA en el navegador con WebLLM (evaluación), IA6: voces Piper y órdenes por micro (Whisper) (+11 more)
 
-### Community 79 - "Staff.ts"
+### Community 79 - "q20-align.mjs"
 Cohesion: 0.15
-Nodes (21): roleName(), StaffPanel(), clampLevel(), FIRST, hireStaff(), IncomingStaff, initials(), LAST (+13 more)
+Nodes (17): apexes(), apply(), geo, icp(), median(), nearest(), pct(), pitRoutesSvg() (+9 more)
 
 ### Community 80 - "Snapshot.ts"
 Cohesion: 0.13
@@ -604,8 +594,8 @@ Cohesion: 0.12
 Nodes (11): Correcciones de auditoría C1-C7 y A1-A6 (SC, boxes, mutaciones), Comandos de verificación (sync:tasks, check:tasks, test-suite, build), Deuda técnica M1-M10 y B1-B7 (capas del monoplaza, desgaste por rueda, limpieza), F1 Simulator Dashboard & Plan de Implementación, Para valorar más adelante: grabaciones de audio, sesiones jugables, PWA sin internet, Roadmap y estado global de sprints, Sprint 1: trazado SVG Barcelona, core loop, timing tower, cámaras, Sprint 2: SC físico, undercut/overcut, monoplaza vectorial 2D (+3 more)
 
 ### Community 83 - "radioFilter.ts"
-Cohesion: 0.10
-Nodes (14): AudioContextLike, buildRadioChain(), ENGINE_BASE_HZ, ENGINE_LEVEL, engineFrequency(), EngineInfo, NodeLike, ParamLike (+6 more)
+Cohesion: 0.08
+Nodes (15): AudioContextLike, buildRadioChain(), ENGINE_BASE_HZ, ENGINE_LEVEL, engineFrequency(), EngineInfo, NodeLike, ParamLike (+7 more)
 
 ### Community 84 - "scenery models (2)"
 Cohesion: 0.13
@@ -625,11 +615,11 @@ Nodes (17): Q10: línea de compromiso y cancelación de parada, Q11: gestión du
 
 ### Community 88 - "package"
 Cohesion: 0.11
-Nodes (15): name, private, type, version, firebase-tools, @huggingface/transformers, pixi.js, @types/animejs (+7 more)
+Nodes (16): name, private, type, version, firebase-tools, @huggingface/transformers, pixi.js, qrcode-generator (+8 more)
 
 ### Community 89 - "Leaderboard.tsx"
-Cohesion: 0.10
-Nodes (22): animejs, CompoundBadge(), CompoundBadgeProps, D20LuckModal(), D20LuckModalProps, D20LuckResult(), COUNTRY_TO_ISO, EMOJI_TO_ISO (+14 more)
+Cohesion: 0.13
+Nodes (15): CompoundBadge(), CompoundBadgeProps, D20LuckModal(), D20LuckModalProps, D20LuckResult(), COUNTRY_TO_ISO, EMOJI_TO_ISO, FlagIconProps (+7 more)
 
 ### Community 90 - "q20 apply redraw"
 Cohesion: 0.12
@@ -648,8 +638,8 @@ Cohesion: 0.13
 Nodes (14): Q14: SC y bandera roja sin asignaciones de posición, R10: SC, desdoblamiento y relanzamiento, R29-R34: rediseño de escritorio (paddock, muro, accesibilidad), Sprint 3.7: rediseño visual y adaptación a móvil y tableta (V1-V10), T4.13: entrenamientos libres, V10: Safety Car, recogida del pelotón, V1: base visual y auditoría repetible (__uiAudit), V2: carrera adaptada a móvil y tableta (RaceTabs) (+6 more)
 
 ### Community 94 - "variants.ts"
-Cohesion: 0.09
-Nodes (18): DeviceEnv, Estimate, GpuLike, MIN_BINDING, MIN_BUFFER, MIN_QUOTA, AdapterLike, MIN_MEMORY_GB (+10 more)
+Cohesion: 0.08
+Nodes (19): DEVICE_REASONS, DeviceEnv, Estimate, GpuLike, MIN_BINDING, MIN_BUFFER, MIN_QUOTA, AdapterLike (+11 more)
 
 ### Community 95 - "q20 redraw"
 Cohesion: 0.17
@@ -660,8 +650,8 @@ Cohesion: 0.14
 Nodes (15): database.rules.json, El anfitrión corre el motor (Web Worker), Multijugador: puesta en marcha, prueba entre redes y consumo, Flujo firebase-hosting.yml (N11), Firebase como punto de encuentro (sala y señalización), Medidor de consumo ?medir, Plan gratuito Spark (100 conexiones, 1 GB, 10 GB/mes), Proyecto Firebase f1sim-d5085 (+7 more)
 
 ### Community 97 - "HomeScreen.tsx"
-Cohesion: 0.06
-Nodes (51): BoardPanel(), F1WheelSvg(), F1WheelSvgProps, FlagIcon(), HomeScreen(), HomeScreenProps, HubHeader(), PitCrewPanel() (+43 more)
+Cohesion: 0.07
+Nodes (45): BoardPanel(), ChampionshipTable(), ComponentsPanelProps, F1WheelSvg(), F1WheelSvgProps, FacilitiesPanel(), FlagIcon(), HomeScreen() (+37 more)
 
 ### Community 98 - "package (2)"
 Cohesion: 0.12
@@ -677,7 +667,7 @@ Nodes (9): EVENT_DATA_IDS, EventData, EventLine, EventLineKind, inRange(), Prove
 
 ### Community 101 - "SaveGame.ts"
 Cohesion: 0.08
-Nodes (25): elapsedText(), GameMenu(), ACCENT, GameMenuScreen(), image(), Mode, Panel, slotStatus() (+17 more)
+Nodes (37): elapsedText(), GameMenu(), ACCENT, GameMenuScreen(), image(), Mode, Panel, slotStatus() (+29 more)
 
 ### Community 102 - "capture 3d"
 Cohesion: 0.22
@@ -748,8 +738,8 @@ Cohesion: 0.26
 Nodes (7): build_all(), build_car_lod(), casino(), clear(), finish(), prism(), scene()
 
 ### Community 119 - "AppErrorBoundary"
-Cohesion: 0.16
-Nodes (8): Punto de entrada de la app (#root, /src/main.tsx), AppErrorBoundary, PerfOverlay(), params, renderApp(), REVIEWS, revision, root
+Cohesion: 0.13
+Nodes (11): Punto de entrada de la app (#root, /src/main.tsx), AppErrorBoundary, PerfOverlay(), name(), uiAudit, visible(), params, renderApp() (+3 more)
 
 ### Community 120 - "scenery models (4)"
 Cohesion: 0.15
@@ -760,16 +750,16 @@ Cohesion: 0.15
 Nodes (3): CHOICE, out, out
 
 ### Community 122 - "n3 run1"
-Cohesion: 0.14
-Nodes (16): Engine order kinds (devSafetyCar, devRedFlag, pause, speed, luckReward, luckClear, luckVariant, confirmStart, startSequence, dnfClear, endSuspended, confirmResult, weatherTest), sendOrder (EngineOrder to RaceSession), Documentation fail: dashboard and index aligned, engine-host-n2 test module (N2, 39 PASS), race-session-n3 test module (N3), R53 fail: weather panel shows radar forecast, N3 test suite run 1 (1085 PASS, 13 FAIL, 33 modules), T4.14 fail: app enables rival team orders and notices (+8 more)
+Cohesion: 0.19
+Nodes (12): Engine order kinds (devSafetyCar, devRedFlag, pause, speed, luckReward, luckClear, luckVariant, confirmStart, startSequence, dnfClear, endSuspended, confirmResult, weatherTest), sendOrder (EngineOrder to RaceSession), Documentation fail: dashboard and index aligned, engine-host-n2 test module (N2, 39 PASS), race-session-n3 test module (N3), R53 fail: weather panel shows radar forecast, N3 test suite run 1 (1085 PASS, 13 FAIL, 33 modules), T4.14 fail: app enables rival team orders and notices (+4 more)
 
 ### Community 123 - "capture radio ia5"
 Cohesion: 0.24
 Nodes (11): chrome, evaluate(), open(), requests, run(), send(), shot(), size() (+3 more)
 
-### Community 124 - "CarShowcase.tsx"
-Cohesion: 0.33
-Nodes (9): Car3DViewer, CarShowcase(), CarShowcaseProps, supportsWebGL(), ModelCredit(), ModelCreditProps, SafetyCar3D, SafetyCarShowcase() (+1 more)
+### Community 124 - "Sponsors.ts"
+Cohesion: 0.13
+Nodes (24): Terms(), aiSignSponsors(), carSponsors(), GoalKind, goalMet(), goalText(), isDeal(), isObject() (+16 more)
 
 ### Community 125 - "main"
 Cohesion: 0.21
@@ -787,9 +777,9 @@ Nodes (11): chrome, evaluate(), open(), run(), say(), send(), shot(), size() (+3
 Cohesion: 0.29
 Nodes (11): chrome, evaluate(), open(), run(), say(), send(), shot(), size() (+3 more)
 
-### Community 129 - "carSprites3d.ts"
-Cohesion: 0.25
-Nodes (17): modelUrl(), buildCarPortraits(), buildCarSprites(), buildSafetyCarSprite(), carSprite(), closeStage(), createStage(), levelsOf() (+9 more)
+### Community 129 - "RightStatsPanel.tsx"
+Cohesion: 0.14
+Nodes (13): animejs, RaceHeaderProps, cell, minutes(), RainForecastPanel(), RainForecastPanelProps, RightPanelTab, StintSegment (+5 more)
 
 ### Community 130 - "n3 box"
 Cohesion: 0.18
@@ -819,9 +809,9 @@ Nodes (10): BRANDS, DRIVER_NAMES, ENGINES, files(), REAL_DRIVERS, run(), stripCo
 Cohesion: 0.22
 Nodes (10): F1-Radio-0.5B-q0f16-MLC model, IA10 eval: F1-Radio-0.5B-q0f16-MLC (WebGPU), Radio intent classes (boxes, anular-boxes, ritmo-*, equipo-*, propuesta-*, delegar-*, ninguna, orden-doble), Reserva v3 holdout dataset (101 phrases), F1-Radio-0.5B-q4f16_1-MLC model, IA10 eval: F1-Radio-0.5B-q4f16_1-MLC (partial run), HF repo gooday89/F1-Radio-0.5B-q0f16-MLC (~1 GB), HF repo gooday89/F1-Radio-0.5B-q4f16_1-MLC (~290 MB) (+2 more)
 
-### Community 137 - "voice/runtime.ts"
-Cohesion: 0.18
-Nodes (10): AUDIO_LEVEL_LABEL, AUDIO_LEVELS, AUDIO_STORAGE_KEY, AudioSnapshot, FLAG_SOUND, LIGHTS, pending, SOUND_IDS (+2 more)
+### Community 137 - "lucide-react"
+Cohesion: 0.13
+Nodes (12): lucide-react, RaceFormatSelectProps, SetupCompare(), SpeedControlsProps, SpyPanel(), SegmentOption, ICONS, WeatherScenarioSelect() (+4 more)
 
 ### Community 138 - "pit route"
 Cohesion: 0.31
@@ -835,9 +825,9 @@ Nodes (9): App.tsx (Game Loop & UI, React, frontend), Archify 2.17.0-dev.1 (diag
 Cohesion: 0.22
 Nodes (9): devDependencies, @firebase/rules-unit-testing, firebase-tools, @types/node, @types/react, @types/react-dom, typescript, vite (+1 more)
 
-### Community 141 - "EngineHost.ts"
-Cohesion: 0.10
-Nodes (16): DRY_DRAW, RAIN_DRAW, WEATHER_TESTS, CAR_ORDERS, Compliance, COMPOUNDS, EngineHostOptions, EngineRequest (+8 more)
+### Community 141 - "WeatherModel.ts"
+Cohesion: 0.15
+Nodes (11): DRY_DRAW, RAIN_DRAW, WEATHER_SCENARIOS, WEATHER_TESTS, CloudBank, DRY_SCENARIO, GRIP_CURVES, SEGMENTS (+3 more)
 
 ### Community 142 - "scenery 3d 3"
 Cohesion: 0.33
@@ -845,19 +835,19 @@ Nodes (8): glbInfo(), HOT, inside(), luminance(), median(), MOUNTAIN, run(), STR
 
 ### Community 143 - "RadioReview.tsx"
 Cohesion: 0.16
-Nodes (12): Card(), CASES, fake(), RadioReview(), cachedUrls(), createClassifierStore(), DEVICE_REASONS, createFakeModelStore() (+4 more)
+Nodes (12): Card(), CASES, fake(), RadioReview(), cachedUrls(), createClassifierStore(), RADIO_MODELS, createFakeModelStore() (+4 more)
 
 ### Community 144 - "CONTEXT"
 Cohesion: 0.25
 Nodes (8): Aquaplaning, Escapatoria, Nubosidad, Radar, Perfil personalizado / perfil FIA 2025, Salida de pista, Trazada, Meteorología: celdas de lluvia, radar, agua, aquaplaning
 
-### Community 145 - "llm/runtime.ts"
-Cohesion: 0.15
-Nodes (14): createFinetunedInterpreter(), BatteryInfo, radioRequest(), radioSystemPrompt(), filterReply(), isBanned(), REAL, VETOED (+6 more)
+### Community 145 - "RoomLive.tsx"
+Cohesion: 0.18
+Nodes (10): PauseRequestBanner(), buildWeatherScenario(), CONFIG, Fakes, HostRace(), RoomLive(), LocalLink, rosterOf() (+2 more)
 
-### Community 146 - "devMode.ts"
-Cohesion: 0.15
-Nodes (11): drawWeatherScenario(), WeatherScenarioId, DEV_MODE_KEY, DEV_TAP_WINDOW_MS, DEV_TAPS, DEV_TOOLS, DevTool, devToolsAllowed() (+3 more)
+### Community 146 - "WeatherModel"
+Cohesion: 0.22
+Nodes (4): weatherLayers, cloudCover(), normalize(), WeatherModel
 
 ### Community 147 - "landing"
 Cohesion: 0.36
@@ -888,8 +878,8 @@ Cohesion: 0.29
 Nodes (11): chrome, evaluate(), open(), run(), say(), send(), shot(), size() (+3 more)
 
 ### Community 154 - "SettingsScreen.tsx"
-Cohesion: 0.18
-Nodes (14): parseAudioLevel(), SettingsAudio, SettingsScreen(), SHORTCUTS, toolHref(), createDevTapCounter(), setDevMode(), storedLevel() (+6 more)
+Cohesion: 0.09
+Nodes (21): SettingsAudio, SettingsScreen(), SHORTCUTS, StorageLike, toolHref(), createDevTapCounter(), DEV_MODE_KEY, DEV_TAP_WINDOW_MS (+13 more)
 
 ### Community 155 - "blender build circuits"
 Cohesion: 0.48
@@ -939,17 +929,17 @@ Nodes (3): makeView(), r(), tick()
 Cohesion: 0.40
 Nodes (4): blocks, [file, changes], spec, t
 
-### Community 168 - "combined v2"
-Cohesion: 0.40
-Nodes (3): MODEL_FAILS, notes, phrases
+### Community 168 - "race-session-n3 (N3): 44 PASS, 1 FAIL"
+Cohesion: 0.27
+Nodes (10): Order acknowledgement protocol ({type:ack, seq, ok, reason}), engine-host-n2 (N2): 39 PASS, FAIL: N3 order devRedFlag differs from direct call, Fast view size budget <=1500 bytes with 20 cars (790-791 bytes), race-session-n3 (N3): 44 PASS, 1 FAIL, red-flag-r12 (R12, R35): 25 PASS, Interpolation between fast views at 60/144 Hz (no repeated frame, advance within 10%, >30 m jumps not interpolated), snapshot (R28): 30 PASS (+2 more)
 
 ### Community 169 - "q12 decompose"
 Cohesion: 0.50
 Nodes (3): mean(), report(), undo
 
-### Community 170 - "driverRadio.ts"
-Cohesion: 0.31
-Nodes (10): DEFAULT_DRIVER_RADIO, DRIVER_RADIO, radioNames(), radioNamesById(), DRIVERS, contextFromRace(), RadioContextSpec, rivalNamesExcept() (+2 more)
+### Community 170 - "RenderPose.ts"
+Cohesion: 0.36
+Nodes (4): interpolatePose(), Pose, RenderInterpolator, shortestTurn()
 
 ### Community 171 - "scripts"
 Cohesion: 0.25
@@ -963,9 +953,9 @@ Nodes (4): dependencyArrays(), read(), run(), stateUpdaters()
 Cohesion: 0.60
 Nodes (4): run(), SURNAMES, tick(), word()
 
-### Community 174 - "ModelStore"
-Cohesion: 0.23
-Nodes (6): revisionsOf(), ModelDownloadDeps, ModelStore, modelRevisions(), pickModelVersion(), upgradingStore()
+### Community 174 - "Geometría: svgTrackParser a escala real (1 unidad = 1 m)"
+Cohesion: 0.29
+Nodes (7): Geometría: svgTrackParser a escala real (1 unidad = 1 m), Análisis de rectas de los 22 circuitos, Circuitos sin SVG (monza, silverstone, spa, red_bull_ring, …), Muestras x,y del trazado SVG cada 0.1 de t, Análisis de las tres rectas principales por circuito, 23 circuitos a escala real, Física: velocidad por radio, trazada de mínima curvatura, rebufo, neumáticos, ERS
 
 ### Community 175 - "scenery 3d 5"
 Cohesion: 0.40
@@ -999,9 +989,9 @@ Nodes (3): coreOf(), leaks(), v2Bodies
 Cohesion: 0.67
 Nodes (3): example(), test2, test3
 
-### Community 184 - "liveries.ts"
-Cohesion: 0.15
-Nodes (14): Car3DViewer(), Car3DViewerProps, DEFAULT_LIVERY, LIVERIES, Livery, liveryFor(), ModelCredit, SAFETY_CAR_LIVERY (+6 more)
+### Community 184 - "PR Sprint 2.8: calidad de simulación, boxes reales, muro táctico y DRS oficial"
+Cohesion: 0.38
+Nodes (7): DASHBOARD.md (fuente de verdad del plan), PR Sprint 2.8: calidad de simulación, boxes reales, muro táctico y DRS oficial, Q20 Boxes reales (OSM y planos FIA), Q21 Neumáticos coherentes, Q22 Chasis cenital, Q23 Clasificación viva, Estado de publicación — 29/09/2026
 
 ### Community 190 - "rules-n10.mjs"
 Cohesion: 0.80
@@ -1015,25 +1005,17 @@ Nodes (3): AudioContextLike, AudioEngine, SoundId
 Cohesion: 0.20
 Nodes (10): Q18: reconciliación de timers y reset limpio, R06: cuatro neumáticos con temperatura, carga y desgaste, R22: clima físico mínimo y decisiones de seguridad, R28: guardado, reinicio y calidad de datos (snapshot), R48: cargar y continuar una partida (snapshot v2), Sprint 3: audio, telemetría, radar y clima (T3.1-T3.4), T3.1: escapatorias vs muros (duración del SC, Runoff.ts), T3.2: sistema meteorológico dinámico y trazada que seca (+2 more)
 
-### Community 195 - "ref_node_child_process"
-Cohesion: 0.22
-Nodes (5): chrome, res, t0, waiting, ws
+### Community 195 - "visual-icons.mjs"
+Cohesion: 0.40
+Nodes (4): ALL_COMPOUNDS, COMPOUND_NAMES, PIRELLI_COLORS, run()
 
-### Community 196 - "driverCalls.ts"
-Cohesion: 0.25
-Nodes (8): CALL_GAP_SEC, CallCar, CallSnapshot, DriverCall, Memory, OVERTAKE_GAP_LAPS, WEAR_CALL_PCT, CallKind
-
-### Community 199 - "systemVoice.ts"
-Cohesion: 0.15
-Nodes (8): browserSpeaker(), createSystemSpeaker(), pickVoice(), Speaker, SynthLike, UtteranceCtor, UtteranceLike, VoiceLike
-
-### Community 200 - "LapStrip.tsx"
-Cohesion: 0.33
-Nodes (5): LapStrip(), LapStripCar, LapStripDot, lapStripDots(), NEAR_LINE
+### Community 199 - "voice/runtime.ts"
+Cohesion: 0.06
+Nodes (29): AUDIO_LEVEL_LABEL, AUDIO_LEVELS, AUDIO_STORAGE_KEY, parseAudioLevel(), AudioSnapshot, FLAG_SOUND, LIGHTS, pending (+21 more)
 
 ### Community 201 - "Wall.ts"
-Cohesion: 0.07
-Nodes (33): DEFAULT_RULES, decimal(), DRS_FLAP_SECONDS, DrsDetection, DrsReading, drsStatus, Passage, Permission (+25 more)
+Cohesion: 0.09
+Nodes (24): decimal(), PIT_WINDOW, pitWindow, TrackCar, tyreInfo, undercutRisk(), classifyMove(), decimal() (+16 more)
 
 ### Community 202 - "kw-holdout.mjs"
 Cohesion: 0.33
@@ -1043,29 +1025,13 @@ Nodes (4): bad, f, hold, car()
 Cohesion: 0.47
 Nodes (4): files(), phrases, run(), same()
 
-### Community 204 - "units3.mjs"
-Cohesion: 0.33
-Nodes (5): fv, host, o, place, sim
-
-### Community 205 - "kw-audit.mjs"
-Cohesion: 0.40
-Nodes (4): f, right, toModel, wrongOk
-
 ### Community 206 - "finalize-models.mjs"
 Cohesion: 0.33
 Nodes (5): `f1-car.glb`, Modelos 3D de terceros, `safety-car.glb`, Créditos: TUMFTM y MultiViewer API, MODELS
 
-### Community 208 - "q15-debug.mjs"
-Cohesion: 0.50
-Nodes (4): a, b, frac(), mk()
-
-### Community 209 - "mon.mjs"
-Cohesion: 0.50
-Nodes (3): out, pit, pitPts
-
-### Community 210 - "WeatherModel.ts"
-Cohesion: 0.07
-Nodes (32): cell, minutes(), RainForecastPanel(), RainForecastPanelProps, weatherLayers, FORECAST, ForecastSector, ForecastSlot (+24 more)
+### Community 210 - "WeatherForecast.ts"
+Cohesion: 0.19
+Nodes (13): FORECAST, ForecastSector, ForecastSlot, normalize(), radarForecast(), SeenCell, seenCells(), seenRate() (+5 more)
 
 ### Community 211 - "q13-model.mjs"
 Cohesion: 0.83
@@ -1075,37 +1041,29 @@ Nodes (3): model(), run(), vTarget()
 Cohesion: 0.50
 Nodes (3): Cambio de versión en el juego, El ciclo, Modelo propio de la radio: ciclo de mejora (IA7)
 
-### Community 216 - "uiAudit.ts"
-Cohesion: 0.83
-Nodes (3): name(), uiAudit, visible()
-
-### Community 217 - "roomStore.ts"
-Cohesion: 0.29
-Nodes (3): zustand, RoomState, roomStore
-
-### Community 218 - "App"
-Cohesion: 0.67
-Nodes (3): App(), newRaceSeed(), playerDriverIds()
+### Community 218 - "SaveStore"
+Cohesion: 0.22
+Nodes (5): App(), newRaceSeed(), playerDriverIds(), SaveStore, StorageLike
 
 ## Knowledge Gaps
 - **191 isolated node(s):** `firebase-tools`, `@types/animejs`, `@types/node`, `@types/react`, `@types/react-dom` (+186 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 1608 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **19 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 1610 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **17 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `react` connect `Tests de React y carrera` to `Season.ts`, `Tests de carrera y banderas`, `Pilotos, contratos y reserva`, `modelScene.ts`, `barcelonaTrack.ts`, `fixedRandom`, `RadioSettings.tsx`, `Referencias externas del App`, `Costs.ts`, `RadioReview.tsx`, `Banco de respuestas de pilotos`, `RaceCanvas.tsx`, `Detalle visual del coche`, `Tests con Node y auditoría radio`, `Sesión de carrera en red`, `Motor en Worker (N3)`, `Random.ts`, `f1.ts`, `SettingsScreen.tsx`, `RoomFlow.tsx`, `PodiumModal.tsx`, `DriverDevelopment.ts`, `BoxControls.tsx`, `RadioPanel.tsx`, `usage.ts`, `lucide-react`, `AiStatusBadge.tsx`, `liveries.ts`, `Clasificación en directo`, `.lapFuelKg`, `RadioEval.tsx`, `Practice.ts`, `Finance.ts`, `RaceCanvas top`, `fakeDb`, `kw-holdout.mjs`, `BottomTelemetryDock.tsx`, `WeatherModel.ts`, `package`, `Leaderboard.tsx`, `HomeScreen.tsx`, `SaveGame.ts`, `F1Wheel3D.tsx`, `AppErrorBoundary`, `CarShowcase.tsx`?**
-  _High betweenness centrality (0.254) - this node is a cross-community bridge._
+- **Why does `react` connect `Tests de React y carrera` to `Season.ts`, `RightStatsPanel.tsx`, `Tests de carrera y banderas`, `Pilotos, contratos y reserva`, `carSprites3d.ts`, `carPosition.ts`, `RadioSettings.tsx`, `Referencias externas del App`, `lucide-react`, `Costs.ts`, `EngineHost`, `RadioReview.tsx`, `Banco de respuestas de pilotos`, `RaceCanvas.tsx`, `RoomLive.tsx`, `Tests con Node y auditoría radio`, `Motor en Worker (N3)`, `f1.ts`, `SettingsScreen.tsx`, `RoomScreens.tsx`, `PodiumModal.tsx`, `TrackDefinition`, `DriverDevelopment.ts`, `BoxControls.tsx`, `RadioPanel.tsx`, `usage.ts`, `Development.ts`, `AiStatusBadge.tsx`, `Clasificación en directo`, `Facilities.ts`, `.lapFuelKg`, `RadioEval.tsx`, `Practice.ts`, `visual-icons.mjs`, `Finance.ts`, `RaceCanvas top`, `fakeDb`, `kw-holdout.mjs`, `BottomTelemetryDock.tsx`, `package`, `Leaderboard.tsx`, `HomeScreen.tsx`, `SaveGame.ts`, `F1Wheel3D.tsx`, `AppErrorBoundary`?**
+  _High betweenness centrality (0.239) - this node is a cross-community bridge._
 - **Are the 3 inferred relationships involving `App()` (e.g. with `.run()` and `projectCost()`) actually correct?**
   _`App()` has 3 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `firebase-tools`, `@types/animejs`, `@types/node` to the rest of the system?**
   _191 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Season.ts` be split into smaller, more focused modules?**
-  _Cohesion score 0.03216374269005848 - nodes in this community are weakly interconnected._
-- **Why does `RaceSimulation` connect `RaceSimulation` to `Season.ts`, `barcelonaTrack.ts`, `EngineHost.ts`, `EngineHost`, `RaceSimulation.ts`, `RaceCanvas.tsx`, `Reglas de neumáticos`, `Sesión de carrera en red`, `Motor en Worker (N3)`, `Random.ts`, `f1.ts`, `TeamRadio.ts`, `RoomFlow.tsx`, `TrackDefinition`, `DriverDevelopment.ts`, `RaceSimulation.ts`, `n1/engine.worker.ts`, `CarState`, `Practice.ts`, `Wall.ts`, `.step`, `ruleSets.ts`, `Snapshot.ts`, `WeatherModel.ts`, `OvertakingZones`?**
-  _High betweenness centrality (0.054) - this node is a cross-community bridge._
+  _Cohesion score 0.03607399794450154 - nodes in this community are weakly interconnected._
+- **Why does `RaceSimulation` connect `RaceSimulation` to `Season.ts`, `Pilotos, contratos y reserva`, `carPosition.ts`, `EngineHost`, `RaceSimulation.ts`, `RaceCanvas.tsx`, `RoomLive.tsx`, `Detalle visual del coche`, `Reglas de neumáticos`, `Sesión de carrera en red`, `Motor en Worker (N3)`, `Random.ts`, `f1.ts`, `TeamRadio.ts`, `TrackDefinition`, `.internalState`, `RaceSimulation.ts`, `n1/engine.worker.ts`, `RenderPose.ts`, `usage.ts`, `CarState`, `Practice.ts`, `Wall.ts`, `.step`, `ruleSets.ts`, `Snapshot.ts`, `OvertakingZones`?**
+  _High betweenness centrality (0.067) - this node is a cross-community bridge._
 - **Should `Tests de carrera y banderas` be split into smaller, more focused modules?**
-  _Cohesion score 0.04395604395604396 - nodes in this community are weakly interconnected._
-- **Why does `vite` connect `Scripts de auditoría scratch` to `react`, `Tests de React y carrera`, `combined v2`, `q12 decompose`, `kw-holdout.mjs`, `units3.mjs`, `kw-audit.mjs`, `Dataset del modelo de radio`, `team-orders-probe.mjs`, `q15-debug.mjs`, `mon.mjs`, `q19 drs`, `q13-model.mjs`, `align-circuit-references.mjs`, `Tests de hosting y clasificador`, `package`, `ref_node_child_process`, `q20 redraw`?**
-  _High betweenness centrality (0.044) - this node is a cross-community bridge._
+  _Cohesion score 0.03653044203502919 - nodes in this community are weakly interconnected._
+- **Why does `raceFactory()` connect `Tests de carrera y banderas` to `TrackDefinition`, `visual-icons.mjs`, `advance`, `fakeDb`, `Tests de React y carrera`, `CarState`, `pit route`, `Reglas de neumáticos`, `bench`, `Tests con Node y auditoría radio`, `.lapFuelKg`?**
+  _High betweenness centrality (0.041) - this node is a cross-community bridge._

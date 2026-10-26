@@ -601,6 +601,7 @@ export const modules = [
   { "id": "decision-visuals-ux10", "tasks": ["UX10"], "sprint": "7", "kind": "contract" },
   { "id": "device-check-ux11", "tasks": ["UX11"], "sprint": "7", "kind": "contract" },
   { "id": "radio-noise-ux13", "tasks": ["UX13"], "sprint": "7", "kind": "contract" },
+  { "id": "free-race-ux12", "tasks": ["UX12"], "sprint": "7", "kind": "contract" },
   { "id": "radio-real-ux14", "tasks": ["UX14"], "sprint": "7", "kind": "contract" },
   { "id": "radio-model-ia4", "tasks": ["IA4"], "sprint": "6", "kind": "contract" },
   { "id": "radio-llm-ia5", "tasks": ["IA5"], "sprint": "6", "kind": "contract" },
