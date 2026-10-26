@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense } from 'react';
 import styles from './App.module.css';
-import { RaceTabs, raceLayout } from './components/RaceTabs';
+import { RaceTabs, raceLayout, mobileRaceView } from './components/RaceTabs';
+import { LapStrip } from './components/LapStrip';
 import { StintTimeline } from './components/StintTimeline';
 import { QualifyingLive } from './components/QualifyingLive';
 import { PracticePanel } from './components/PracticePanel';
@@ -1685,9 +1686,10 @@ export const App: React.FC = () => {
   // [V2] Tres composiciones: móvil (pestañas), tableta (pista arriba; posiciones y muro debajo) y escritorio.
   const layout = raceLayout(viewportWidth);
   const detailReplacesPositions = detailOpen && !isWide;
-  const showPositions = layout === 'movil' ? raceTab === 'tiempos' : leftSidebarOpen && !detailReplacesPositions;
-  const showDetail = layout === 'movil' ? raceTab === 'detalle' : detailOpen;
-  const showWall = layout !== 'movil' || raceTab === 'muro';
+  const mobileView = mobileRaceView(layout, raceTab);
+  const showPositions = layout === 'movil' ? mobileView.panel === 'tiempos' : leftSidebarOpen && !detailReplacesPositions;
+  const showDetail = layout === 'movil' ? mobileView.panel === 'detalle' : detailOpen;
+  const showWall = layout !== 'movil' || mobileView.panel === 'muro';
   const columns: string[] = [];
   const areas: string[] = [];
   if (showPositions) { columns.push('var(--ancho-posiciones)'); areas.push('pos'); }
@@ -1734,7 +1736,7 @@ export const App: React.FC = () => {
           totalLaps={simulation.totalLaps}
         />
 
-        <div className={`${styles.barGroup} ${styles.viewTools}`}>
+        <div className={`${styles.barGroup} ${styles.viewTools} ${mobileView.track ? '' : styles.isHidden}`}>
           <button
             className={styles.barBtn}
             onClick={handleCycleCameraMode}
@@ -1793,7 +1795,13 @@ export const App: React.FC = () => {
         </div>
       </header>
 
-      <div className={styles.raceShell} style={shellLayout} data-layout={layout} data-side={shellSide} data-tab={raceTab}>
+      <div className={styles.raceShell} style={shellLayout} data-layout={layout} data-side={shellSide} data-tab={raceTab} data-track={mobileView.track ? 'on' : 'off'}>
+        {mobileView.strip && (
+          <div className={styles.stripArea}>
+            <LapStrip playerTeamId={favoriteCar.team.id}
+              cars={cars.map(c => ({ id: c.id, code: c.driver.code, progress: c.progress, position: c.currentPosition, teamId: c.team.id, status: c.status, inPit: c.isInPitLane || c.status === 'pit', color: c.team.color }))} />
+          </div>
+        )}
         {/* ── 1. CLASIFICACIÓN COMPACTA ── */}
         <aside className={`${styles.positionsArea} ${showPositions ? '' : styles.isHidden}`} aria-label="Posiciones">
           <Leaderboard

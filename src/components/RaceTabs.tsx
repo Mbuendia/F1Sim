@@ -10,6 +10,15 @@ export const BREAKPOINTS = { tableta: 768, escritorio: 1024, ancho: 1440 } as co
 /** [V2] Composición de la pantalla de carrera según el ancho de la ventana. */
 export const raceLayout = (width: number): RaceLayout => (width < BREAKPOINTS.tableta ? 'movil' : width < BREAKPOINTS.escritorio ? 'tableta' : 'escritorio');
 
+/**
+ * [UX5] Qué se ve en la carrera. En el móvil cada pestaña ocupa la pantalla entera (Pista: solo la pista; las demás:
+ * solo su panel) y arriba va siempre la franja de la vuelta. En tableta y escritorio no cambia nada.
+ */
+export function mobileRaceView(layout: RaceLayout, tab: RaceTab): { track: boolean; panel: Exclude<RaceTab, 'pista'> | null; strip: boolean } {
+  if (layout !== 'movil') return { track: true, panel: null, strip: false };
+  return tab === 'pista' ? { track: true, panel: null, strip: true } : { track: false, panel: tab, strip: true };
+}
+
 const TABS: { id: RaceTab; label: string; icon: typeof Gauge }[] = [
   { id: 'pista', label: 'Pista', icon: MapIcon },
   { id: 'tiempos', label: 'Tiempos', icon: ListOrdered },
@@ -17,7 +26,7 @@ const TABS: { id: RaceTab; label: string; icon: typeof Gauge }[] = [
   { id: 'detalle', label: 'Detalle', icon: Gauge },
 ];
 
-/** [V2] Pestañas inferiores de la carrera en móvil: la pista sola o con uno de los tres paneles debajo. */
+/** [V2] Pestañas inferiores de la carrera en móvil. [UX5] Cada una ocupa la pantalla entera. */
 export function RaceTabs({ tab, onChange }: { tab: RaceTab; onChange: (tab: RaceTab) => void }) {
   return (
     <nav className={styles.tabs} role="tablist" aria-label="Paneles de la carrera">
