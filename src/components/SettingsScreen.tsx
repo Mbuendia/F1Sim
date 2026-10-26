@@ -4,6 +4,7 @@ import { createDevTapCounter, DEV_TOOLS, isDevMode, setDevMode } from '../dev/de
 import { AUDIO_LEVEL_LABEL, AUDIO_STORAGE_KEY, parseAudioLevel } from '../audio/AudioEngine';
 import { browserSettingsStorage, readRaceView, writeRaceView, type RaceView } from '../settings/graphics';
 import RadioSettings, { type RadioSettingsProps } from './RadioSettings';
+import { LiveAiStatusBadge } from './AiStatusBadge';
 import { Segmented } from './ui/Segmented';
 import s from './Screens.module.css';
 
@@ -68,6 +69,7 @@ export default function SettingsScreen({ onBack, audio, radioProps, storage = br
           <section className={`${s.settingsSection} ${s.settingsFeatured}`} aria-labelledby="ajustes-radio">
             <h2 id="ajustes-radio"><Radio size={20} aria-hidden="true" />Radio con IA</h2>
             <p className={s.dim}>Las descargas del modelo, la voz y el micro se hacen aquí, antes de correr. En carrera solo se enciende o se apaga.</p>
+            <LiveAiStatusBadge />
             <RadioSettings {...radioProps} />
           </section>
 

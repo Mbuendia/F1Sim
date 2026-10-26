@@ -24,7 +24,12 @@ export interface RadioState {
   /** [IA4] Por qué se usa la radio básica aunque se eligió la IA, y si se ofrece descargar el modelo. */
   aiReason?: string;
   offerDownload: boolean;
-  setAi(patch: Partial<Pick<RadioState, 'mode' | 'aiStatus' | 'aiReason' | 'offerDownload'>>): void;
+  /** [UX8] Lo que enseña el estado de la IA: versión del modelo, voz que suena, micro y si el modelo está descargado. */
+  variant?: 'q0f16' | 'q4';
+  voice?: 'piper' | 'sistema' | 'texto';
+  mic?: 'web-speech' | 'whisper' | null;
+  downloaded?: boolean;
+  setAi(patch: Partial<Pick<RadioState, 'mode' | 'aiStatus' | 'aiReason' | 'offerDownload' | 'variant' | 'voice' | 'mic' | 'downloaded'>>): void;
   conversations: Record<number, RadioMessage[]>;
   voiceQueue: { carId: number; text: string }[];
   add(carId: number, message: Omit<RadioMessage, 'id'>): string;

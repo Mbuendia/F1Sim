@@ -20,6 +20,7 @@ import { driverRadio } from '../data/driverRadio';
 import { radioClock, radioVoice, setRadioClock } from '../radio/voice/runtime';
 import { radioStore, useRadio, type RadioMessage } from '../state/radioStore';
 import styles from './RadioPanel.module.css';
+import { LiveAiStatusBadge } from './AiStatusBadge';
 import { applyCorrection, CORRECTION_CLASSES, CORRECTION_LABELS } from '../radio/learning/corrections';
 
 const VISIBLE = 6;
@@ -89,7 +90,8 @@ export function RadioPanel({ cars, team, ordersAvailable, send, carId, onClose, 
       <header className={styles.head}>
         <Radio size={16} aria-hidden="true" />
         <strong>RADIO</strong>
-        {mode === 'ia' || aiReason ? <span className={styles.aiChip} data-ai={aiStatus} title={aiReason}>{aiStatus === 'lista' ? 'IA lista' : aiStatus === 'conectando' ? 'IA conectando' : 'Radio básica'}</span> : null}
+        {/* [UX8] Estado de la IA: icono que se pulsa y abre el detalle (modelo, voz y micro). */}
+        <LiveAiStatusBadge compact className={styles.aiBadge} />
         <div className={styles.cars} role="tablist" aria-label="Piloto al que hablas">
           {cars.map(c => (
             <button key={c.id} type="button" role="tab" aria-selected={c.id === selected} className={c.id === selected ? styles.carOn : styles.car}
@@ -100,7 +102,7 @@ export function RadioPanel({ cars, team, ordersAvailable, send, carId, onClose, 
         </div>
         <button type="button" className={styles.close} onClick={onClose} aria-label="Cerrar la radio"><X size={16} aria-hidden="true" /></button>
       </header>
-      {aiReason && <p className={styles.notice}>{aiReason}{offerDownload ? '. Descárgalo en Menú › Radio del muro.' : '.'}</p>}
+      {aiReason && <p className={styles.notice}>{aiReason}{offerDownload ? '. Se descarga en Ajustes, desde el menú principal.' : '.'}</p>}
       <ol className={styles.log} aria-live="polite">
         {visible.length === 0 && <li className={styles.hint}>Prueba «box, duros», «ataca», «deja pasar a {cars.find(c => c.id !== selected)?.driver.firstName ?? 'tu compañero'}» o «decide tú».</li>}
         {visible.map(m => (
@@ -155,7 +157,9 @@ function usePushToTalk(send: (text: string) => void, show: (text: string) => voi
       let whisperReady = false;
       try { whisperReady = await (await import('../radio/stt/whisperStt')).createWhisperStore().has(); } catch { whisperReady = false; }
       if (!alive) return;
-      setEngine(stt.chooseStt(stt.browserSttEnv(whisperReady)));
+      const chosen = stt.chooseStt(stt.browserSttEnv(whisperReady));
+      setEngine(chosen);
+      radioStore.getState().setAi({ mic: chosen });
       ptt.current = stt.createPushToTalk({
         recognizer: async () => latest.current.engine === 'whisper'
           ? (await import('../radio/stt/whisperStt')).createWhisperRecognizer()
@@ -258,7 +262,15 @@ export function useRadioModeCheck() {
     void import('../radio/replies/bankLoader').then(m => m.loadReplyBank()).catch(() => {});
     // [IA6] La voz de los pilotos: Piper si está descargada y encendida; si no, la del sistema.
     void Promise.all([import('../radio/voice/piperRuntime'), import('../radio/model/storage'), import('../radio/model/variants')])
-      .then(([voice, storage, variants]) => voice.applyRadioVoice(voice.readVoicePref(storage.browserStorage(), variants.browserVariantEnv().mobile))).catch(() => {});
+      .then(([voice, storage, variants]) => voice.applyRadioVoice(voice.readVoicePref(storage.browserStorage(), variants.browserVariantEnv().mobile)))
+      .then(engine => { if (alive) set({ voice: engine }); }).catch(() => {});
+    // [UX8] El micro que se usará (Chrome con red, Whisper sin red o ninguno), para el estado de la IA.
+    void (async () => {
+      const stt = await import('../radio/stt/sttChooser');
+      let whisperReady = false;
+      try { whisperReady = await (await import('../radio/stt/whisperStt')).createWhisperStore().has(); } catch { whisperReady = false; }
+      if (alive) set({ mic: stt.chooseStt(stt.browserSttEnv(whisperReady)) });
+    })().catch(() => {});
     void (async () => {
       const storage = await import('../radio/model/storage');
       const preferred = storage.readRadioMode(storage.browserStorage());
@@ -278,8 +290,10 @@ export function useRadioModeCheck() {
         return revisions[v].find(r => r.store === picked.store) ?? null;
       };
       const variant = (await variants.installedVariant(choice, async v => (await installed(v)) !== null)) ?? choice.variant;
-      const revision = (await installed(variant)) ?? revisions[variant][0];
+      const found = await installed(variant);
+      const revision = found ?? revisions[variant][0];
       if (!alive) return;
+      set({ variant, downloaded: found !== null });
       const stores = { [variant]: revision.store } as Record<'q0f16' | 'q4', import('../radio/model/ModelStore').ModelStore>;
       const { ai, interpreter } = runtime.finetunedRadio(revision.manifest, choice.mobile ? variants.browserBattery : undefined);
       aiInterpreter = interpreter;

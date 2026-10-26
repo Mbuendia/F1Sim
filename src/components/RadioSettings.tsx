@@ -23,7 +23,7 @@ import { browserVariantEnv, chooseVariant, readVariantPreference, writeVariantPr
 import { radioStore } from '../state/radioStore';
 import { createPiperStore, PIPER_VOICE } from '../radio/voice/piperVoice';
 import { applyRadioVoice, readVoicePref, writeVoicePref, type VoicePref } from '../radio/voice/piperRuntime';
-import { PRIVACY_NOTE, WHISPER_MODEL } from '../radio/stt/sttChooser';
+import { PRIVACY_NOTE, WHISPER_MODEL, browserSttEnv, chooseStt } from '../radio/stt/sttChooser';
 import { createWhisperStore } from '../radio/stt/whisperStt';
 import { clearCorrections, exportCorrections, readCorrections } from '../radio/learning/corrections';
 import styles from './RadioSettings.module.css';
@@ -125,6 +125,17 @@ export default function RadioSettings({ store: givenStore, device: givenDevice, 
   };
   const size = toMB(model.bytes);
   const blocked = choice?.variant === 'basica';
+  // [UX8] En Ajustes, el estado de la IA lo dice esta misma página: modo, versión, si está descargado y por qué no.
+  useEffect(() => {
+    if (race || choice === null) return;
+    const complete = state.status === 'completa';
+    radioStore.getState().setAi({
+      mode, variant: variant ?? undefined, downloaded: complete,
+      aiStatus: mode === 'ia' && complete && !blocked ? 'lista' : state.status === 'descargando' ? 'descargando' : 'basica',
+      aiReason: blocked ? choice.reason : undefined,
+      offerDownload: mode === 'ia' && !complete && !blocked,
+    });
+  }, [race, mode, variant, state.status, blocked, choice]);
   const loadedMB = toMB(state.loaded);
   const resumable = state.status === 'cancelada' || state.status === 'error-red' || state.status === 'otra-pestana';
   // [UX2] En carrera, solo el estado del modelo: nada se descarga desde aquí.
@@ -209,7 +220,7 @@ const realPiperStore = createPiperStore();
 const realWhisperStore = createWhisperStore();
 
 /** [IA6] Una descarga de un modelo pequeño (voz o micro): tamaño, barra, cancelar y borrar. */
-function ModelBlock({ store, bytes, estimate, saveData, label, onReady, race = false }: { store: ModelStore; bytes: number; estimate?: () => Promise<{ quota?: number; usage?: number }>; saveData: boolean; label: string; onReady?: () => void; race?: boolean }) {
+function ModelBlock({ store, bytes, estimate, saveData, label, onReady, onReadyChange, race = false }: { store: ModelStore; bytes: number; estimate?: () => Promise<{ quota?: number; usage?: number }>; saveData: boolean; label: string; onReady?: () => void; onReadyChange?: (ready: boolean) => void; race?: boolean }) {
   // [UX4] Con las tiendas reales (voz y micro), la descarga es una sola en toda la página.
   const shareKey = store === realPiperStore ? "voz-piper" : store === realWhisperStore ? "micro-whisper" : null;
   const download = useMemo(() => (shareKey ? browserModelDownload(shareKey, { store, totalBytes: bytes, estimate, persist: persistStorage })
@@ -217,7 +228,7 @@ function ModelBlock({ store, bytes, estimate, saveData, label, onReady, race = f
   const [state, setState] = useState<DownloadState>(download.state());
   const [confirming, setConfirming] = useState(false);
   useEffect(() => { const stop = download.subscribe(setState); void download.refresh(); return stop; }, [download]);
-  useEffect(() => { if (state.status === 'completa') onReady?.(); }, [state.status]);
+  useEffect(() => { onReadyChange?.(state.status === 'completa'); if (state.status === 'completa') onReady?.(); }, [state.status]);
   const size = toMB(bytes);
   // [UX2] En carrera, solo el estado.
   if (race) return state.status === 'completa'
@@ -251,6 +262,8 @@ function ModelBlock({ store, bytes, estimate, saveData, label, onReady, race = f
 function VoiceSettings({ store, estimate, mobile, remember, saveData, race = false }: { store: ModelStore; estimate?: () => Promise<{ quota?: number; usage?: number }>; mobile: boolean; remember: boolean; saveData: boolean; race?: boolean }) {
   const [pref, setPref] = useState<VoicePref>(() => (remember ? readVoicePref(browserStorage(), mobile) : mobile ? 'sistema' : 'piper'));
   const choose = (next: VoicePref) => { setPref(next); if (remember) { writeVoicePref(browserStorage(), next); void applyRadioVoice(next); } };
+  // [UX8] La voz que sonará: la realista solo cuando está descargada (la avisa onReady); si no, la del sistema.
+  useEffect(() => { if (!race && pref === 'sistema') radioStore.getState().setAi({ voice: 'sistema' }); }, [pref, race]);
   return (
     <div className={styles.model}>
       <div role="radiogroup" aria-label="Voz de los pilotos" className={styles.modes}>
@@ -264,7 +277,7 @@ function VoiceSettings({ store, estimate, mobile, remember, saveData, race = fal
       {mobile && <p className={styles.note}>En el móvil viene apagada: gasta CPU y batería.</p>}
       {pref === 'piper' && (
         <>
-          <ModelBlock store={store} bytes={PIPER_VOICE.bytes} estimate={estimate} saveData={saveData} label="Voz de radio" race={race} onReady={() => { if (remember) void applyRadioVoice('piper'); }} />
+          <ModelBlock store={store} bytes={PIPER_VOICE.bytes} estimate={estimate} saveData={saveData} label="Voz de radio" race={race} onReadyChange={ready => { if (!race) radioStore.getState().setAi({ voice: ready ? 'piper' : 'sistema' }); }} onReady={() => { if (remember) void applyRadioVoice('piper'); }} />
           <p className={styles.note}>{PIPER_VOICE.credit}.</p>
         </>
       )}
@@ -274,12 +287,15 @@ function VoiceSettings({ store, estimate, mobile, remember, saveData, race = fal
 
 /** [IA6] Micro: con red, el de Chrome; sin red, Whisper en el navegador si se descarga. */
 function MicSettings({ store, estimate, saveData, race = false }: { store: ModelStore; estimate?: () => Promise<{ quota?: number; usage?: number }>; saveData: boolean; race?: boolean }) {
+  // [UX8] El micro que se usaría: Chrome con red, Whisper sin red si está descargado, o ninguno.
+  const [whisperReady, setWhisperReady] = useState(false);
+  useEffect(() => { if (!race) radioStore.getState().setAi({ mic: chooseStt(browserSttEnv(whisperReady)) }); }, [whisperReady, race]);
   return (
     <div className={styles.model}>
       <p className={styles.note}><Mic size={14} aria-hidden="true" /> Mantén el botón del micro (o la tecla T) para hablar.</p>
       <p className={styles.note}>{PRIVACY_NOTE}</p>
       <p className={styles.note}>Micro sin red (reconocimiento en tu equipo):</p>
-      <ModelBlock store={store} bytes={WHISPER_MODEL.bytes} estimate={estimate} saveData={saveData} label="Micro sin red" race={race} />
+      <ModelBlock store={store} bytes={WHISPER_MODEL.bytes} estimate={estimate} saveData={saveData} label="Micro sin red" race={race} onReadyChange={setWhisperReady} />
     </div>
   );
 }

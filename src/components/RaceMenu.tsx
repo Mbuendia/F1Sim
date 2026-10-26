@@ -1,6 +1,7 @@
 import React, { Suspense, lazy, useEffect, useRef, useState } from 'react';
 import { Menu } from 'lucide-react';
 import styles from './RaceMenu.module.css';
+import { LiveAiStatusBadge } from './AiStatusBadge';
 
 // [IA4] Los ajustes de la radio (y con ellos el código del modelo) se cargan al abrir el menú, no al arrancar el juego.
 const RadioSettings = lazy(() => import('./RadioSettings'));
@@ -111,6 +112,8 @@ export const RaceMenu: React.FC<RaceMenuProps> = ({
             </>
           )}
           {/* [UX2] En carrera, la radio solo enseña el estado y se enciende o apaga: las descargas van en Ajustes. */}
+          {/* [UX8] Antes de los ajustes de la radio, su estado: con la IA o con la básica, modelo, voz y micro. */}
+          {radioSettings && <LiveAiStatusBadge className={styles.aiStatus} />}
           {radioSettings && <Suspense fallback={null}><RadioSettings place="carrera" /></Suspense>}
           {onToggleSafetyCarTest && onRedFlagTest && (
             <>

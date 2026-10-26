@@ -82,6 +82,7 @@ import RaceFlagsHUD from './components/RaceFlagsHUD';
 import { DnfNotificationModal } from './components/DnfNotificationModal';
 import { D20LuckModal } from './components/D20LuckModal';
 import { RaceMenu } from './components/RaceMenu';
+import { LiveAiStatusBadge } from './components/AiStatusBadge';
 import { RaceNotices, RaceNotice, RaceNoticeTone } from './components/RaceNotices';
 import { OFFICIAL_CIRCUITS } from './data/circuits';
 import { buildWeatherScenario, type WeatherScenarioId } from './data/weatherScenarios';
@@ -1776,6 +1777,8 @@ export const App: React.FC = () => {
             <span className={styles.barLabel}>Detalle</span>
           </button>
           {mode === 'career' && <span className={styles.gameSlot}>{gameMenu}</span>}
+          {/* [UX8] En el móvil, el estado de la IA de la radio se ve sin abrir menús: icono que se pulsa. */}
+          {layout === 'movil' && <LiveAiStatusBadge compact />}
           <RaceMenu
             safetyCarDeployed={safetyCar !== null}
             onToggleSafetyCarTest={devMode ? handleSafetyCarTest : undefined}
