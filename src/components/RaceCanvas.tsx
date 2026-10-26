@@ -19,6 +19,7 @@ import type { RaceScene3D } from '../scene3d/RaceScene3D';
 import { CameraDirector3D, drawLabels3D } from '../scene3d/director3d';
 import type { CameraMode3D } from '../scene3d/cameras';
 import { WEATHER_TESTS } from '../data/weatherScenarios';
+import { browserSettingsStorage, readRaceView } from '../settings/graphics';
 import type { TrackDefinition } from '../data/barcelonaTrack';
 import type { CarState, RejoinEstimate, SafetyCarState, TrackWeatherState } from '../types/f1';
 import { raceStore } from '../state/raceStore';
@@ -118,7 +119,8 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
   }, [selectedCarId, director]);
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (!supportsWebGL() || params.has('2d') || params.has('canvas')) return;
+    // [UX2] La vista 2D también se elige en Ajustes (se guarda en el dispositivo).
+    if (!supportsWebGL() || params.has('2d') || params.has('canvas') || readRaceView(browserSettingsStorage()) === '2d') return;
     let cancelled = false;
     let created: RaceScene3D | null = null;
     import('../scene3d/RaceScene3D')

@@ -1478,7 +1478,8 @@ export const App: React.FC = () => {
 
   // [UX1] Ajustes desde la pantalla de juego (se carga aparte, con import()).
   if (currentView === 'settings') {
-    return <Suspense fallback={null}><SettingsScreen onBack={() => setCurrentView('menu')} /></Suspense>;
+    return <Suspense fallback={null}><SettingsScreen onBack={() => setCurrentView('menu')}
+      audio={{ level: audioLevel, labels: AUDIO_LEVEL_LABEL, onLevel: setAudioLevel, credits: soundCredits() }} /></Suspense>;
   }
 
   // ── [T4.19] Menú de partidas, partidas guardadas y partida nueva ──

@@ -43,6 +43,9 @@ export interface RadioSettingsProps {
   /** [IA6] Tiendas simuladas de la voz Piper y de Whisper (página de revisión). */
   voiceStore?: ModelStore;
   whisperStore?: ModelStore;
+  /** [UX2] «ajustes» (por defecto): todo, con las descargas. «carrera»: solo el estado y encender o apagar; las descargas
+   * se hacen en Ajustes, antes de correr. */
+  place?: 'ajustes' | 'carrera';
 }
 
 function browserEstimate() {
@@ -66,7 +69,8 @@ const realStores: Record<RadioVariant, ModelStore> = {
 };
 const previousStores: Record<RadioVariant, ModelStore[]> = { q0f16: revisionsOf('q0f16').slice(1).map(r => r.store), q4: revisionsOf('q4').slice(1).map(r => r.store) };
 
-export default function RadioSettings({ store: givenStore, device: givenDevice, choice: givenChoice, estimate: givenEstimate, saveData = browserSaveData(), initialMode, remember = true, voiceStore, whisperStore }: RadioSettingsProps) {
+export default function RadioSettings({ store: givenStore, device: givenDevice, choice: givenChoice, estimate: givenEstimate, saveData = browserSaveData(), initialMode, remember = true, voiceStore, whisperStore, place = 'ajustes' }: RadioSettingsProps) {
+  const race = place === 'carrera';
   const [estimate] = useState(() => givenEstimate ?? browserEstimate());
   const [mode, setMode] = useState<RadioMode>(() => initialMode ?? readRadioMode(browserStorage()));
   const [preference, setPreference] = useState<VariantPreference>(() => (remember ? readVariantPreference(browserStorage()) : 'auto'));
@@ -123,10 +127,19 @@ export default function RadioSettings({ store: givenStore, device: givenDevice, 
   const blocked = choice?.variant === 'basica';
   const loadedMB = toMB(state.loaded);
   const resumable = state.status === 'cancelada' || state.status === 'error-red' || state.status === 'otra-pestana';
+  // [UX2] En carrera, solo el estado del modelo: nada se descarga desde aquí.
+  const raceStatus = (
+    <p className={state.status === 'completa' ? styles.ok : styles.note} data-race-status>
+      {state.status === 'completa' ? `Modelo listo (${model.label.toLowerCase()}).`
+        : state.status === 'descargando' ? `Descargándose en Ajustes: ${state.percent} %.`
+        : 'Modelo sin descargar: se descarga en Ajustes, desde el menú principal.'}
+    </p>
+  );
 
   return (
     <div className={styles.settings} data-radio-settings>
       <div className={styles.section}>Radio del muro</div>
+      {race && <p className={styles.note} data-race-downloads>Las descargas (modelo, voz y micro) se hacen en Ajustes, desde el menú principal, antes de correr.</p>}
       <div role="radiogroup" aria-label="Tipo de radio" className={styles.modes}>
         <button type="button" role="radio" aria-checked={mode === 'basica'} className={styles.mode} onClick={() => choose('basica')}>
           <Radio size={16} aria-hidden="true" /><span>Radio básica <small>sin descargas</small></span>
@@ -149,7 +162,7 @@ export default function RadioSettings({ store: givenStore, device: givenDevice, 
               ))}
             </div>
           )}
-          {state.status === 'completa' ? (
+          {race ? raceStatus : state.status === 'completa' ? (
             <>
               <p className={styles.ok}>Modelo listo ({model.label.toLowerCase()}) · {size} MB en este dispositivo.</p>
               <button type="button" className={styles.action} onClick={() => void download.remove()}><Trash2 size={16} aria-hidden="true" />Borrar modelo (libera {size} MB)</button>
@@ -185,8 +198,8 @@ export default function RadioSettings({ store: givenStore, device: givenDevice, 
         </div>
       )}
       <div className={styles.section}>Voz y micro</div>
-      <VoiceSettings store={voiceStore ?? realPiperStore} estimate={estimate} mobile={choice?.mobile ?? false} remember={remember} saveData={saveData} />
-      <MicSettings store={whisperStore ?? realWhisperStore} estimate={estimate} saveData={saveData} />
+      <VoiceSettings store={voiceStore ?? realPiperStore} estimate={estimate} mobile={choice?.mobile ?? false} remember={remember} saveData={saveData} race={race} />
+      <MicSettings store={whisperStore ?? realWhisperStore} estimate={estimate} saveData={saveData} race={race} />
       <CorrectionsSettings />
     </div>
   );
@@ -196,7 +209,7 @@ const realPiperStore = createPiperStore();
 const realWhisperStore = createWhisperStore();
 
 /** [IA6] Una descarga de un modelo pequeño (voz o micro): tamaño, barra, cancelar y borrar. */
-function ModelBlock({ store, bytes, estimate, saveData, label, onReady }: { store: ModelStore; bytes: number; estimate?: () => Promise<{ quota?: number; usage?: number }>; saveData: boolean; label: string; onReady?: () => void }) {
+function ModelBlock({ store, bytes, estimate, saveData, label, onReady, race = false }: { store: ModelStore; bytes: number; estimate?: () => Promise<{ quota?: number; usage?: number }>; saveData: boolean; label: string; onReady?: () => void; race?: boolean }) {
   // [UX4] Con las tiendas reales (voz y micro), la descarga es una sola en toda la página.
   const shareKey = store === realPiperStore ? "voz-piper" : store === realWhisperStore ? "micro-whisper" : null;
   const download = useMemo(() => (shareKey ? browserModelDownload(shareKey, { store, totalBytes: bytes, estimate, persist: persistStorage })
@@ -206,6 +219,10 @@ function ModelBlock({ store, bytes, estimate, saveData, label, onReady }: { stor
   useEffect(() => { const stop = download.subscribe(setState); void download.refresh(); return stop; }, [download]);
   useEffect(() => { if (state.status === 'completa') onReady?.(); }, [state.status]);
   const size = toMB(bytes);
+  // [UX2] En carrera, solo el estado.
+  if (race) return state.status === 'completa'
+    ? <p className={styles.ok}>{label} listo.</p>
+    : <p className={styles.note}>{label}: {state.status === 'descargando' ? `descargándose en Ajustes (${state.percent} %)` : 'sin descargar; se descarga en Ajustes'}.</p>;
   const start = () => { if (saveData && !confirming) { setConfirming(true); return; } setConfirming(false); void download.start(); };
   if (state.status === 'completa') return (
     <>
@@ -231,7 +248,7 @@ function ModelBlock({ store, bytes, estimate, saveData, label, onReady }: { stor
 }
 
 /** [IA6] Voz de los pilotos: la del sistema o Piper (más natural, con efecto de radio). */
-function VoiceSettings({ store, estimate, mobile, remember, saveData }: { store: ModelStore; estimate?: () => Promise<{ quota?: number; usage?: number }>; mobile: boolean; remember: boolean; saveData: boolean }) {
+function VoiceSettings({ store, estimate, mobile, remember, saveData, race = false }: { store: ModelStore; estimate?: () => Promise<{ quota?: number; usage?: number }>; mobile: boolean; remember: boolean; saveData: boolean; race?: boolean }) {
   const [pref, setPref] = useState<VoicePref>(() => (remember ? readVoicePref(browserStorage(), mobile) : mobile ? 'sistema' : 'piper'));
   const choose = (next: VoicePref) => { setPref(next); if (remember) { writeVoicePref(browserStorage(), next); void applyRadioVoice(next); } };
   return (
@@ -247,7 +264,7 @@ function VoiceSettings({ store, estimate, mobile, remember, saveData }: { store:
       {mobile && <p className={styles.note}>En el móvil viene apagada: gasta CPU y batería.</p>}
       {pref === 'piper' && (
         <>
-          <ModelBlock store={store} bytes={PIPER_VOICE.bytes} estimate={estimate} saveData={saveData} label="Voz de radio" onReady={() => { if (remember) void applyRadioVoice('piper'); }} />
+          <ModelBlock store={store} bytes={PIPER_VOICE.bytes} estimate={estimate} saveData={saveData} label="Voz de radio" race={race} onReady={() => { if (remember) void applyRadioVoice('piper'); }} />
           <p className={styles.note}>{PIPER_VOICE.credit}.</p>
         </>
       )}
@@ -256,13 +273,13 @@ function VoiceSettings({ store, estimate, mobile, remember, saveData }: { store:
 }
 
 /** [IA6] Micro: con red, el de Chrome; sin red, Whisper en el navegador si se descarga. */
-function MicSettings({ store, estimate, saveData }: { store: ModelStore; estimate?: () => Promise<{ quota?: number; usage?: number }>; saveData: boolean }) {
+function MicSettings({ store, estimate, saveData, race = false }: { store: ModelStore; estimate?: () => Promise<{ quota?: number; usage?: number }>; saveData: boolean; race?: boolean }) {
   return (
     <div className={styles.model}>
       <p className={styles.note}><Mic size={14} aria-hidden="true" /> Mantén el botón del micro (o la tecla T) para hablar.</p>
       <p className={styles.note}>{PRIVACY_NOTE}</p>
       <p className={styles.note}>Micro sin red (reconocimiento en tu equipo):</p>
-      <ModelBlock store={store} bytes={WHISPER_MODEL.bytes} estimate={estimate} saveData={saveData} label="Micro sin red" />
+      <ModelBlock store={store} bytes={WHISPER_MODEL.bytes} estimate={estimate} saveData={saveData} label="Micro sin red" race={race} />
     </div>
   );
 }

@@ -134,8 +134,13 @@ export default async function run({ server, assert, test }) {
       if (rel.startsWith('radio/model/') || rel.startsWith('dev/')) continue;
       const src = readFileSync(f, 'utf8');
       const staticModel = [...src.matchAll(/^\s*import\s+(?!type\b)[^;]*?from\s+['"]([^'"]+)['"]/gm)].map(m => m[1]).filter(p => /radio\/model\//.test(p) || /\/RadioSettings['"]?$/.test(p) || p.endsWith('/RadioSettings'));
-      if (rel !== 'components/RadioSettings.tsx' && staticModel.length) offenders.push(`${rel}: ${staticModel.join(', ')}`);
+      // [UX2] La página de Ajustes puede importar RadioSettings porque App solo la carga con import() (se comprueba
+      // abajo). Excepción autorizada por el usuario el 26/10/2026.
+      const lazyPage = rel === 'components/SettingsScreen.tsx' && staticModel.every(p => p.endsWith('/RadioSettings'));
+      if (rel !== 'components/RadioSettings.tsx' && !lazyPage && staticModel.length) offenders.push(`${rel}: ${staticModel.join(', ')}`);
     }
+    const appSource = readFileSync('src/App.tsx', 'utf8');
+    if (/^import [^;]*SettingsScreen/m.test(appSource) || !/import\(['"]\.\/components\/SettingsScreen['"]\)/.test(appSource)) offenders.push('App.tsx: SettingsScreen solo puede cargarse con import()');
     assert(offenders.length === 0, 'Radio IA4: nadie importa src/radio/model/ (ni RadioSettings) al arrancar: solo con import()', offenders.join(' | '));
     const lazy = files('src').some(f => /import\(\s*['"][^'"]*RadioSettings['"]\s*\)/.test(readFileSync(f, 'utf8')));
     assert(lazy, 'Radio IA4: los ajustes de la radio se cargan con import()');

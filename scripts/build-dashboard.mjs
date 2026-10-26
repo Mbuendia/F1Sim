@@ -19,6 +19,8 @@ const sprintOf = id => {
   if (/^PF\d/.test(id)) return 'Sprint 8';
   if (/^CA\d/.test(id)) return 'Sprint 9';
   if (/^CK\d/.test(id)) return 'Sprint 10';
+  // Sprint 10.5: circuitos fieles al real (planificado el 26/10/2026).
+  if (/^CR\d/.test(id)) return 'Sprint 10.5';
   if (/^VS\d/.test(id)) return 'Sprint 11';
   if (/^TL\d/.test(id)) return 'Sprint 12';
   if (/^OF\d/.test(id)) return 'Sprint 13';

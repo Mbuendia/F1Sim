@@ -170,3 +170,17 @@
 
 /* [V5] Botones de 44 px. */
 .button { min-height: var(--toque); min-width: var(--toque); }
+
+/* [UX2] Ajustes: secciones en tarjetas; la radio con IA, arriba y destacada. Una columna en el móvil. */
+.settings { display: flex; flex-direction: column; gap: 16px; width: min(860px, 100%); margin: 0 auto; }
+.settingsSection { display: flex; flex-direction: column; gap: 12px; padding: 18px 20px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radio-l); min-width: 0; }
+.settingsSection h2 { display: flex; align-items: center; gap: 10px; font-family: var(--font-marca); font-size: 19px; letter-spacing: 0.04em; }
+.settingsFeatured { border-color: var(--accion); box-shadow: 0 0 0 1px var(--accion) inset; background: linear-gradient(180deg, rgba(225, 6, 0, 0.08), var(--panel) 40%); }
+.settingsCredits summary { cursor: pointer; color: var(--text-2); }
+.settingsCredits ul { margin: 8px 0 0 18px; color: var(--text-3); font-size: 14px; }
+.shortcuts { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 8px 18px; }
+.shortcuts > div { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.shortcuts dt { flex: 0 0 auto; }
+.shortcuts kbd { display: inline-block; min-width: 34px; padding: 3px 8px; border: 1px solid var(--line-strong); border-bottom-width: 3px; border-radius: var(--radio-s); background: var(--panel-2); font-family: var(--font-ui); font-size: 14px; font-weight: 700; text-align: center; }
+.shortcuts dd { color: var(--text-2); overflow-wrap: anywhere; }
+@media (max-width: 767px) { .settingsSection { padding: 14px 14px; } .body { padding: 14px 16px; } }

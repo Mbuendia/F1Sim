@@ -109,7 +109,8 @@ export const RaceMenu: React.FC<RaceMenuProps> = ({
               </details>
             </>
           )}
-          {radioSettings && <Suspense fallback={null}><RadioSettings /></Suspense>}
+          {/* [UX2] En carrera, la radio solo enseña el estado y se enciende o apaga: las descargas van en Ajustes. */}
+          {radioSettings && <Suspense fallback={null}><RadioSettings place="carrera" /></Suspense>}
           <div className={styles.section}>Herramientas de desarrollo</div>
           <button type="button" role="menuitem" className={`${styles.item} ${styles.itemSc}`} onClick={run(onToggleSafetyCarTest)}>
             {safetyCarDeployed ? 'Prueba: retirar Safety Car' : 'Prueba: desplegar Safety Car'}
