@@ -518,7 +518,7 @@ export class RaceSimulation {
     }
     const { end } = PitStopModel.limitFractions(laneM);
     const lane = Math.min(1, Math.max(0, (car.progress - entry) / len));
-    const v = lane >= end ? Math.min(260, car.currentSpeedKmh + dt * 200) : Math.min(PitStopModel.PIT_SPEED_LIMIT_KMH, car.currentSpeedKmh + dt * 100);
+    const v = lane >= end ? PitStopModel.exitSpeed(car.currentSpeedKmh, dt, this.raceFlagState, this.safetyCar.mode) : Math.min(PitStopModel.PIT_SPEED_LIMIT_KMH, car.currentSpeedKmh + dt * 100);
     car.currentSpeedKmh = v;
     car.speed = v / 3.6 / lapDistanceMeters;
     car.progress += car.speed * dt;
@@ -2172,7 +2172,8 @@ export class RaceSimulation {
                // si no, dos coches emparejados se intercambiaban el puesto en cada paso de una frenada.
                const overlapped = deltaProgress * lapDistanceMeters < OT.OVERLAP_M;
                const followKmh = overlapped ? carAhead.currentSpeedKmh * 0.97 - 180 * dt : carAhead.currentSpeedKmh * 0.99;
-               car.currentSpeedKmh = Math.min(car.currentSpeedKmh, Math.max(followKmh, stepStartKmh - 180 * dt));
+               // [UX7] Con el de delante parado, las dos referencias salían negativas: el coche se detiene, no va marcha atrás.
+               car.currentSpeedKmh = Math.max(0, Math.min(car.currentSpeedKmh, Math.max(followKmh, stepStartKmh - 180 * dt)));
             }
             car.speed = (car.currentSpeedKmh / 3.6) / lapDistanceMeters;
           }
@@ -2261,6 +2262,8 @@ export class RaceSimulation {
         vscNextRef = RejoinModel.progressAfter(vscProfile, car.vscRef, dt);
         car.speed = Math.min(car.speed, Math.max(0, vscNextRef - car.progress) / Math.max(dt, 1e-9));
       }
+      // [UX7] Ningún límite deja una velocidad negativa ni no numérica.
+      if (!(car.speed > 0)) car.speed = 0;
       car.currentSpeedKmh = car.speed * lapDistanceMeters * 3.6;
       const prevProgress = car.progress;
       car.progress += car.speed * dt;
@@ -3324,7 +3327,7 @@ export class RaceSimulation {
     const limit = PitStopModel.PIT_SPEED_LIMIT_KMH;
     let v = car.currentSpeedKmh;
     if (car.redFlagRelease) {
-      v = pit.pitLaneProgress >= end ? Math.min(260, v + dt * 200) : Math.min(limit, v + dt * 100);
+      v = pit.pitLaneProgress >= end ? PitStopModel.exitSpeed(v, dt, this.raceFlagState, this.safetyCar.mode) : Math.min(limit, v + dt * 100);
     } else {
       const idx = Math.max(0, this.redFlag.order.indexOf(car.id));
       const slot = Math.max(start + 0.01, end - (idx + 1) * RaceSimulation.RED_FLAG_SLOT_M / laneM);

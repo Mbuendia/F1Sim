@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ArrowUpDown, CloudRain, Dices, Fuel, Gauge, Hourglass, Lock, Radio, Swords, Wrench, Zap } from 'lucide-react';
 import { RadioPanel, useDriverCalls, useRadioHotkey, useRadioModeCheck } from './RadioPanel';
 import type { SlowView } from '../engine/RaceView';
@@ -17,16 +17,37 @@ import { PitWindowLine } from './WallPanel';
 import { Segmented } from './ui/Segmented';
 import { Meter, meterTone } from './ui/Meter';
 import { Chip } from './ui/Tile';
+import { speedReadout, useTweenedNumber } from '../utils/useTweenedNumber';
 
 const CROSSOVER_LABEL = { slick: 'neumático de seco', intermediate: 'INTERMEDIO', wet: 'LLUVIA' } as const;
 const ORDER_STATUS = { consumed: 'EJECUTADA', committed: 'CONFIRMADA', cancelled: 'CANCELADA', rejected: 'RECHAZADA', accepted: 'ACEPTADA' } as const;
 const decimal = (value: number) => value.toFixed(1).replace('.', ',');
 
+/**
+ * [UX7] El único velocímetro de la carrera: el del piloto que se enseña en el muro. El número se anima (Q23), salta
+ * al momento al cambiar de coche y nunca enseña negativos ni NaN.
+ */
+export function WallSpeedometer({ car }: { car: CarState }) {
+  const target = speedReadout(car.telemetry.speedKmh);
+  const speed = speedReadout(useTweenedNumber(target, car.id));
+  const rpm = Math.max(0, Math.round(useTweenedNumber(car.telemetry.rpm ?? 0, car.id)));
+  return (
+    <div className={styles.speedometer} role="group" aria-label={`Velocidad de ${car.driver.code}: ${speed} km/h`}>
+      <span className={styles.speedCode}>{car.driver.code}</span>
+      <span className={styles.speedDigits} data-odometer="speed">{speed}<small>km/h</small></span>
+      <span className={styles.speedGear} title="Marcha">{car.telemetry.gear ?? '–'}</span>
+      <span className={styles.speedRpm} data-odometer="rpm">{rpm.toLocaleString('es-ES')} rpm</span>
+    </div>
+  );
+}
+
 // [Q11] Panel dual de pilotos del equipo — controles independientes de boxes para ambos coches.
 // [V3] Sin desplegables: el ritmo y el compuesto son controles segmentados, el estado del coche son medidores y los
 // avisos, fichas en una sola línea. Cada tarjeta mide siempre lo mismo, así que el muro no le cambia el alto al circuito.
-export function BoxControls({ car, teamCars, team, race, send, slow }: {
+export function BoxControls({ car, teamCars, team, race, send, slow, focusId }: {
   car: CarState;
+  /** [UX7] Coche que el jugador ha seleccionado: si es suyo, el muro (y su velocímetro) pasa a ese piloto. */
+  focusId?: number | null;
   teamCars?: CarState[];
   /** [N3] Vista privada del equipo (muro, propuestas, órdenes, ritmo y cruce de compuestos) que manda el motor. */
   team: TeamView | null | undefined;
@@ -50,6 +71,8 @@ export function BoxControls({ car, teamCars, team, race, send, slow }: {
   const pilots = teamCars && teamCars.length === 2 ? teamCars : [car];
 
   const shown = pilots.some(p => p.id === shownId) ? shownId! : pilots[0].id;
+  useEffect(() => { if (focusId != null && pilots.some(p => p.id === focusId)) setShownId(focusId); }, [focusId]); // eslint-disable-line react-hooks/exhaustive-deps
+  const speedCar = pilots.find(p => p.id === shown) ?? pilots[0];
   // [IA1] Radio del muro: coche con el que se habla (null: panel cerrado). La tecla R la abre con el piloto a la vista.
   const [radioCar, setRadioCar] = useState<number | null>(null);
   const openRadio = useCallback(() => setRadioCar(current => current ?? shown), [shown]);
@@ -78,12 +101,15 @@ export function BoxControls({ car, teamCars, team, race, send, slow }: {
       <div className={styles.teamHeader}>
         <strong>MURO · {car.team.shortName.toUpperCase()}</strong>
       </div>
-      {pilots.length > 1 && (
-        <div className={styles.pilotSwitch}>
-          <Segmented label="Piloto que se enseña en el muro" name="muro-piloto" value={String(shown)} onChange={value => setShownId(Number(value))}
-            options={pilots.map(p => ({ value: String(p.id), label: `${p.driver.code} · P${p.currentPosition}` }))} />
-        </div>
-      )}
+      <div className={styles.wallTop}>
+        <WallSpeedometer car={speedCar} />
+        {pilots.length > 1 && (
+          <div className={styles.pilotSwitch}>
+            <Segmented label="Piloto que se enseña en el muro" name="muro-piloto" value={String(shown)} onChange={value => setShownId(Number(value))}
+              options={pilots.map(p => ({ value: String(p.id), label: `${p.driver.code} · P${p.currentPosition}` }))} />
+          </div>
+        )}
+      </div>
       <div className={styles.pilotsGrid} data-orders={pilots.length > 1 ? 'true' : undefined}>
         {/* [T4.14] Órdenes de equipo: franja estrecha entre las dos tarjetas. */}
         {pilots.length > 1 && (

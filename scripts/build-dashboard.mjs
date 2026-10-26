@@ -14,6 +14,17 @@ const sprintOf = id => {
   if (/^V\d/.test(id)) return 'Sprint 3.7';
   if (/^N\d/.test(id)) return 'Sprint 5';
   if (/^IA\d/.test(id)) return 'Sprint 6';
+  // Sprints 7 a 14 (planificados el 24/10/2026).
+  if (/^UX\d/.test(id)) return 'Sprint 7';
+  if (/^PF\d/.test(id)) return 'Sprint 8';
+  if (/^CA\d/.test(id)) return 'Sprint 9';
+  if (/^CK\d/.test(id)) return 'Sprint 10';
+  // Sprint 10.5: circuitos fieles al real (planificado el 26/10/2026).
+  if (/^CR\d/.test(id)) return 'Sprint 10.5';
+  if (/^VS\d/.test(id)) return 'Sprint 11';
+  if (/^TL\d/.test(id)) return 'Sprint 12';
+  if (/^OF\d/.test(id)) return 'Sprint 13';
+  if (/^UN\d/.test(id)) return 'Sprint 14';
   if (/^G\d/.test(id)) return 'Sprint 4.5';
   if (/^T4\./.test(id)) return 'Sprint 4';
   if (/^T3\./.test(id)) return 'Sprint 3';
@@ -53,7 +64,9 @@ const bySprint = sprintNames.sort((a, b) => order(b) - order(a)).map(name => {
   const row = index.sprints.find(sprint => sprint.name === name);
   return { name, list, scope: row ? clean(row.scope) : '', open: list.filter(task => task.status !== 'completed').length };
 });
-const openSprints = bySprint.filter(sprint => sprint.open > 0), closedSprints = bySprint.filter(sprint => sprint.open === 0);
+// Los abiertos, en el orden en que se harán: el sprint en curso y después los siguientes (7, 8, 9…); lo que no tiene sprint, al final.
+const ahead = name => (name === `Sprint ${index.activeSprint}` ? -Infinity : name === 'Fuera de sprint' ? Infinity : parseFloat(name.replace('Sprint ', '')));
+const openSprints = bySprint.filter(sprint => sprint.open > 0).sort((a, b) => ahead(a.name) - ahead(b.name)), closedSprints = bySprint.filter(sprint => sprint.open === 0);
 // Última pasada completa de la suite guardada en tests/results (la más reciente con más de 100 módulos).
 const suite = readdirSync(`${root}tests/results`).filter(name => name.endsWith('.json'))
   .map(name => ({ name, time: statSync(`${root}tests/results/${name}`).mtimeMs }))

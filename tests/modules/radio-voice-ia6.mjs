@@ -25,7 +25,8 @@ export default async function run({ server, assert, test }) {
   /** Contexto de audio simulado: apunta cada nodo creado y cada conexión. */
   const fakeContext = () => {
     const log = { nodes: [], links: [], started: 0 };
-    const param = () => ({ value: 0, setValueAtTime() {}, linearRampToValueAtTime() {} });
+    // [UX13] Las rampas dejan el valor final (como cuando terminan en el navegador).
+    const param = () => ({ value: 0, setValueAtTime(v) { this.value = v; }, linearRampToValueAtTime(v) { this.value = v; } });
     const node = (kind, extra = {}) => {
       const n = { kind, ...extra, connect(to) { log.links.push([n, to]); return to; }, disconnect() {} };
       log.nodes.push(n);
@@ -85,7 +86,11 @@ export default async function run({ server, assert, test }) {
     const shaper = log.nodes.find(n => n.kind === 'shaper');
     assert(to(chain.input).includes(hp) && to(hp).includes(lp) && to(lp).includes(shaper) && shaper.curve && shaper.curve.length > 0, 'IA6: voz → paso alto → paso bajo → saturación suave');
     const reachesOut = n => { const seen = new Set(); const walk = x => { if (x === context.destination) return true; if (seen.has(x)) return false; seen.add(x); return to(x).some(walk); }; return walk(n); };
-    assert(reachesOut(shaper) && reachesOut(chain.noise) && Math.abs(chain.noise.gain.value - 0.02) < 1e-9, 'IA6: la saturación y el ruido de fondo (2 %) llegan a la salida');
+    // [UX13] El ruido se mide con la radio abierta: al crear la cadena está en silencio (cambio autorizado por el
+    // usuario el 26/10/2026).
+    chain.open();
+    assert(reachesOut(shaper) && reachesOut(chain.noise) && Math.abs(chain.noise.gain.value - 0.02) < 1e-9, 'IA6: la saturación y el ruido de fondo (2 %, con la radio abierta) llegan a la salida');
+    chain.close();
     const before = log.started;
     chain.click();
     assert(log.started > before, 'IA6: chasquido de apertura y cierre');

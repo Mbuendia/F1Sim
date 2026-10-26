@@ -262,7 +262,7 @@ export default async function run({ server, assert, test }) {
 
   await test('N3: ningún componente ni pintor de la carrera toca el motor', () => {
     const files = ['src/components/RaceCanvas.tsx', 'src/components/BoxControls.tsx', 'src/components/PaceControls.tsx', 'src/components/Leaderboard.tsx',
-      'src/components/TelemetryPanel.tsx', 'src/components/BottomTelemetryDock.tsx', 'src/components/RightStatsPanel.tsx', 'src/components/RaceFlagsHUD.tsx',
+      'src/components/BottomTelemetryDock.tsx', 'src/components/RightStatsPanel.tsx', 'src/components/RaceFlagsHUD.tsx',
       'src/components/StartLights.tsx', 'src/components/PodiumModal.tsx', 'src/components/WallPanel.tsx', 'src/components/StintTimeline.tsx',
       'src/components/RaceTabs.tsx', 'src/renderer/MinimapRenderer.ts', 'src/renderer/CarRenderer.ts', 'src/renderer/CarLabels.ts', 'src/renderer/carDraws.ts'];
     const touching = files.filter(f => /simulation\/RaceSimulation|\bsimulation\s*[:.]/.test(readFileSync(f, 'utf8')));

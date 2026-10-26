@@ -5,7 +5,7 @@ import { getAuth, signInAnonymously } from 'firebase/auth';
 import {
   getDatabase, connectDatabaseEmulator, ref, get, set, update, remove, runTransaction, onValue, onDisconnect,
 } from 'firebase/database';
-import { firebaseConfig } from './firebaseConfig';
+import { FIREBASE_MISSING, firebaseConfig, firebaseConfigured } from './firebaseConfig';
 import type { RoomDb } from './RoomService';
 
 export interface ConnectOptions {
@@ -17,6 +17,8 @@ const isPermissionDenied = (error: unknown) => /permission[_ -]?denied/i.test(St
 
 /** Inicia sesión anónima y devuelve el adaptador de base de datos para RoomService. */
 export async function connectFirebase(options: ConnectOptions = {}): Promise<RoomDb> {
+  // Sin clave (compilado sin VITE_FIREBASE_API_KEY) no se intenta: la sala enseña el motivo.
+  if (!firebaseConfigured() && !options.emulator) throw new Error(FIREBASE_MISSING);
   const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const { user } = auth.currentUser ? { user: auth.currentUser } : await signInAnonymously(auth);

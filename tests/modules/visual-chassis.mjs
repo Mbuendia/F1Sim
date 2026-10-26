@@ -1,6 +1,8 @@
 // Q22 — CarChassisSvg: Chasis SVG cenital interactivo con neumáticos térmicos y DRS
 // Contrato: componente React reutilizable con props de desgaste por rueda, estado DRS y color de equipo,
 // integrado en TelemetryPanel consumiendo datos reales sin inventar desgaste individual.
+// [UX7] El 24/10/2026 el usuario autorizó borrar TelemetryPanel (sin uso desde T4.17): la integración se comprueba en el
+// detalle del coche (BottomTelemetryDock), que es donde se ve el chasis.
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { raceFactory } from '../support/race.mjs';
@@ -118,8 +120,8 @@ export default async function run({ server, assert, test }) {
     assert(html.includes(teamColor), 'El chasis utiliza el color del equipo');
   });
 
-  await test('Q22: TelemetryPanel integra CarChassisSvg con datos reales de telemetría y DRS', async () => {
-    const { TelemetryPanel } = await server.ssrLoadModule('/src/components/TelemetryPanel.tsx');
+  await test('Q22: el detalle del coche integra CarChassisSvg con datos reales de telemetría y DRS', async () => {
+    const { BottomTelemetryDock } = await server.ssrLoadModule('/src/components/BottomTelemetryDock.tsx');
     const sim = make('barcelona', 1);
     const car = sim.cars[0];
     car.telemetry.tireHealthFL = 18;
@@ -128,20 +130,20 @@ export default async function run({ server, assert, test }) {
     car.telemetry.tireHealthRR = 88;
     car.telemetry.drsActive = true;
 
-    const html = renderToStaticMarkup(createElement(TelemetryPanel, {
-      car, onClose: () => {}
+    const html = renderToStaticMarkup(createElement(BottomTelemetryDock, {
+      car, onSelectCar: () => {}
     }));
 
     for (const wheel of ['FL', 'FR', 'RL', 'RR']) {
       assert(html.includes(`data-wheel="${wheel}"`),
-        `TelemetryPanel: integra rueda ${wheel} del CarChassisSvg`);
+        `Detalle del coche: integra rueda ${wheel} del CarChassisSvg`);
     }
     assert(html.includes('data-drs="open"') || html.includes('drs-open'),
-      'TelemetryPanel: propaga estado DRS activo al CarChassisSvg');
+      'Detalle del coche: propaga estado DRS activo al CarChassisSvg');
     assert(html.includes('data-warning="true"') || html.includes('tire-warning'),
-      'TelemetryPanel: propaga advertencia de rueda crítica (<25%) al CarChassisSvg');
+      'Detalle del coche: propaga advertencia de rueda crítica (<25%) al CarChassisSvg');
     assert(html.includes('18%') && html.includes('62%') && html.includes('34%') && html.includes('88%'),
-      'TelemetryPanel: conserva lectura de porcentajes reales por rueda sin inventar datos');
+      'Detalle del coche: conserva lectura de porcentajes reales por rueda sin inventar datos');
   });
 
   await test('Q22: No renderiza NaN ni undefined', async () => {

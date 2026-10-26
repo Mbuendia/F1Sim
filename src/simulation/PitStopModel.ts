@@ -6,6 +6,7 @@ import { TireModel } from './TireModel';
 import { TrackDefinition } from '../data/barcelonaTrack';
 import { TEAMS } from '../data/teams';
 import { nextCrossing, orderIsActive, updateOrderCommitment } from './BoxOrders';
+import { SafetyCarModel } from './SafetyCarModel';
 
 export class PitStopModel {
   /** [R01] Límite del pit lane (decisión de Dirección de Carrera), del perfil por defecto. */
@@ -16,6 +17,15 @@ export class PitStopModel {
   static readonly MAX_BRAKE_KMH_S = 180;
   static readonly BOX_BRAKE_MS2 = 12;
   static readonly RELEASE_CLEARANCE_M = 15;
+
+  /**
+   * [UX7] Aceleración tras la línea del limitador. Con Safety Car, coche virtual o bandera roja, no pasa de la velocidad
+   * permitida: antes salía a 260 km/h, se metía encima de la fila y la fila lo dejaba a 0 de golpe.
+   */
+  static exitSpeed(currentKmh: number, dt: number, raceFlagState?: string, scMode?: string): number {
+    const cap = SafetyCarModel.getMaxAllowedSpeed((raceFlagState ?? 'green') as never, (scMode ?? 'idle') as never) ?? 260;
+    return currentKmh > cap ? Math.max(cap, currentKmh - dt * this.MAX_BRAKE_KMH_S) : Math.min(cap, currentKmh + dt * 200);
+  }
 
   /** Longitud del pit lane medida sobre el trazado (m). */
   static laneLengthMeters(track: Pick<TrackDefinition, 'pitEntryT' | 'pitExitT' | 'lapLengthMeters'>): number {
@@ -176,7 +186,7 @@ export class PitStopModel {
         const { start: dtStart, end: dtEnd } = this.limitFractions(dtLaneMeters);
         if (pit.pitLaneProgress < dtStart) car.currentSpeedKmh = Math.max(this.PIT_SPEED_LIMIT_KMH, car.currentSpeedKmh - dt * this.MAX_BRAKE_KMH_S);
         else if (pit.pitLaneProgress < dtEnd) car.currentSpeedKmh = Math.min(this.PIT_SPEED_LIMIT_KMH, Math.max(car.currentSpeedKmh, 20));
-        else car.currentSpeedKmh = Math.min(260, car.currentSpeedKmh + dt * 200);
+        else car.currentSpeedKmh = this.exitSpeed(car.currentSpeedKmh, dt, raceFlagState, scMode);
         return true;
       }
 
@@ -347,7 +357,7 @@ export class PitStopModel {
         const { end } = this.limitFractions(laneMetersOut);
         // Saliendo del pit lane: limitador hasta la línea final; después, aceleración libre.
         if (pit.pitLaneProgress >= end) {
-          car.currentSpeedKmh = Math.min(260, car.currentSpeedKmh + dt * 200);
+          car.currentSpeedKmh = this.exitSpeed(car.currentSpeedKmh, dt, raceFlagState, scMode);
         } else {
           if (car.currentSpeedKmh > this.PIT_SPEED_LIMIT_KMH + 0.5 && !pit.limitEndFlagged) {
             pit.limitEndFlagged = true;

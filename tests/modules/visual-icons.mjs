@@ -149,21 +149,8 @@ export default async function run({ server, assert, test }) {
     }
   });
 
-  await test('Q21: TelemetryPanel usa CompoundBadge', async () => {
-    const { TelemetryPanel } = await server.ssrLoadModule('/src/components/TelemetryPanel.tsx');
-    const sim = make('barcelona', 1);
-    const car = sim.cars[0];
-
-    const html = renderToStaticMarkup(createElement(TelemetryPanel, {
-      car, onClose: () => {}
-    }));
-
-    // Debe contener el badge SVG del compuesto actual
-    assert(html.includes('compound-badge') || html.includes('CompoundBadge') ||
-      (html.includes(PIRELLI_COLORS[car.tires.compound])
-       && (html.includes('>S<') || html.includes('>M<') || html.includes('>H<'))),
-      'TelemetryPanel: usa badge SVG de compuesto');
-  });
+  // [UX7] «TelemetryPanel usa CompoundBadge» se quitó con TelemetryPanel (permiso del usuario del 24/10/2026): el detalle
+  // del coche lo cubre «BottomTelemetryDock muestra CompoundBadge para los 5 compuestos».
 
   await test('Q21: BoxControls usa CompoundBadge', async () => {
     const { BoxControls } = await server.ssrLoadModule('/src/components/BoxControls.tsx');
@@ -286,7 +273,7 @@ export default async function run({ server, assert, test }) {
     const { readFileSync } = await import('node:fs');
     const read = f => readFileSync(new URL(`../../src/components/${f}`, import.meta.url), 'utf8');
     const legacy = /getCompoundDotColor|getCompoundColor|tireDot|compoundPill|currentCompoundColor/;
-    for (const file of ['Leaderboard.tsx', 'BoxControls.tsx', 'BottomTelemetryDock.tsx', 'RightStatsPanel.tsx', 'TelemetryPanel.tsx']) {
+    for (const file of ['Leaderboard.tsx', 'BoxControls.tsx', 'BottomTelemetryDock.tsx', 'RightStatsPanel.tsx']) {
       assert(!legacy.test(read(file)), `${file}: sin punto/píldora de color heredado (usa CompoundBadge)`);
     }
   });

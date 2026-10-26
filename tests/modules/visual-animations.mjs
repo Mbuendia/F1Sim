@@ -1,4 +1,6 @@
 // Q23 — Micro-animaciones Anime.js: flash de posición en Leaderboard, odometer en TelemetryPanel, slideIn.
+// [UX7] El 24/10/2026 el usuario autorizó borrar TelemetryPanel (sin uso desde T4.17): el odómetro se comprueba en el
+// velocímetro del muro (el único de la carrera) y la entrada animada en el detalle del coche (BottomTelemetryDock).
 // Contrato: los componentes exponen los marcadores explícitos de animación (sin falsos positivos por clases CSS antiguas)
 // y conservan renderizado SSR sin DOM.
 import { createElement } from 'react';
@@ -61,47 +63,27 @@ export default async function run({ server, assert, test }) {
       'Leaderboard incluye marcador animable para coche en boxes');
   });
 
-  // ── TelemetryPanel: odometer y slideIn (sin falsos positivos por clases CSS previas) ──
+  // ── [UX7] Velocímetro del muro: odómetro; detalle del coche: slideIn ──
 
-  await test('Q23: TelemetryPanel contiene marcador explícito para odómetro de velocidad', async () => {
-    const { TelemetryPanel } = await server.ssrLoadModule('/src/components/TelemetryPanel.tsx');
+  await test('Q23: el velocímetro del muro contiene marcador explícito para odómetro de velocidad', async () => {
+    const { WallSpeedometer } = await server.ssrLoadModule('/src/components/BoxControls.tsx');
     const sim = make('barcelona', 1);
-    const car = sim.cars[0];
-
-    const html = renderToStaticMarkup(createElement(TelemetryPanel, {
-      car, onClose: () => {}
-    }));
-
-    // Exige atributo explícito de odómetro de velocidad (no basta la clase CSS antigua speedValue)
-    assert(html.includes('data-odometer="speed"') || html.includes('speed-odometer'),
-      'TelemetryPanel contiene marcador explícito para odómetro de velocidad');
+    const html = renderToStaticMarkup(createElement(WallSpeedometer, { car: sim.cars[0] }));
+    assert(html.includes('data-odometer="speed"'), 'Velocímetro del muro: marcador explícito para odómetro de velocidad');
   });
 
-  await test('Q23: TelemetryPanel contiene marcador explícito para odómetro de RPM', async () => {
-    const { TelemetryPanel } = await server.ssrLoadModule('/src/components/TelemetryPanel.tsx');
+  await test('Q23: el velocímetro del muro contiene marcador explícito para odómetro de RPM', async () => {
+    const { WallSpeedometer } = await server.ssrLoadModule('/src/components/BoxControls.tsx');
     const sim = make('barcelona', 1);
-    const car = sim.cars[0];
-
-    const html = renderToStaticMarkup(createElement(TelemetryPanel, {
-      car, onClose: () => {}
-    }));
-
-    // Exige atributo explícito de odómetro de RPM (no basta la clase CSS antigua rpmText)
-    assert(html.includes('data-odometer="rpm"') || html.includes('rpm-odometer'),
-      'TelemetryPanel contiene marcador explícito para odómetro de RPM');
+    const html = renderToStaticMarkup(createElement(WallSpeedometer, { car: sim.cars[0] }));
+    assert(html.includes('data-odometer="rpm"'), 'Velocímetro del muro: marcador explícito para odómetro de RPM');
   });
 
-  await test('Q23: TelemetryPanel contenedor con marcador explícito para slideIn', async () => {
-    const { TelemetryPanel } = await server.ssrLoadModule('/src/components/TelemetryPanel.tsx');
+  await test('Q23: el detalle del coche, con marcador explícito para slideIn', async () => {
+    const { BottomTelemetryDock } = await server.ssrLoadModule('/src/components/BottomTelemetryDock.tsx');
     const sim = make('barcelona', 1);
-
-    const html = renderToStaticMarkup(createElement(TelemetryPanel, {
-      car: sim.cars[0], onClose: () => {}
-    }));
-
-    // Exige marcador explícito de entrada animada (no cualquier class= genérico)
-    assert(html.includes('data-animate') || html.includes('telemetry-animate'),
-      'TelemetryPanel tiene marcador explícito de animación de entrada');
+    const html = renderToStaticMarkup(createElement(BottomTelemetryDock, { car: sim.cars[0], onSelectCar: () => {} }));
+    assert(html.includes('data-animate'), 'Detalle del coche: marcador explícito de animación de entrada');
   });
 
   // ── Integridad: las animaciones no rompen el SSR ──
@@ -122,18 +104,16 @@ export default async function run({ server, assert, test }) {
     assert(error === null, 'Leaderboard renderiza sin error en SSR (Anime.js hooks son client-only)');
   });
 
-  await test('Q23: TelemetryPanel renderiza sin errores en SSR', async () => {
-    const { TelemetryPanel } = await server.ssrLoadModule('/src/components/TelemetryPanel.tsx');
+  await test('Q23: el velocímetro del muro y el detalle renderizan sin errores en SSR', async () => {
+    const { WallSpeedometer } = await server.ssrLoadModule('/src/components/BoxControls.tsx');
+    const { BottomTelemetryDock } = await server.ssrLoadModule('/src/components/BottomTelemetryDock.tsx');
     const sim = make('barcelona', 1);
-
     let error = null;
     try {
-      renderToStaticMarkup(createElement(TelemetryPanel, {
-        car: sim.cars[0], onClose: () => {}
-      }));
+      renderToStaticMarkup(createElement(WallSpeedometer, { car: sim.cars[0] }));
+      renderToStaticMarkup(createElement(BottomTelemetryDock, { car: sim.cars[0], onSelectCar: () => {} }));
     } catch (e) { error = e; }
-
-    assert(error === null, 'TelemetryPanel renderiza sin error en SSR');
+    assert(error === null, 'Velocímetro del muro y detalle renderizan sin error en SSR');
   });
 
   // R38 (contrato aprobado por el usuario el 02/10/2026): la flecha de cambio de posición se anima cuando ya está en

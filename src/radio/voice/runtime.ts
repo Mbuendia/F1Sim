@@ -23,6 +23,7 @@ const systemSpeaker = browserSpeaker();
 let piperSpeaker: Speaker | null = null;
 /** La voz que habla ahora: Piper si está puesta; si no, la del sistema. */
 const activeSpeaker: Speaker = {
+  get ownCues() { return Boolean((piperSpeaker ?? systemSpeaker).ownCues); },
   available: () => (piperSpeaker ?? systemSpeaker).available(),
   speak: (text, opts) => (piperSpeaker ?? systemSpeaker).speak(text, opts),
   cancel: () => { piperSpeaker?.cancel(); systemSpeaker.cancel(); },

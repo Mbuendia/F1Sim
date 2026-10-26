@@ -23,7 +23,8 @@ export function createVoiceQueue(deps: {
   let busy = false;
   const fresh = (item: VoiceItem) => deps.now() - item.requestedAt <= MAX_REPLY_AGE_SEC && deps.isRunning(item.carId);
   const silent = () => { try { return deps.level() <= 0 || !deps.speaker.available(); } catch { return true; } };
-  const sound = () => { try { deps.playSound('radio'); } catch { /* sin audio */ } };
+  // [UX13] Con una voz que pone sus propios sonidos de apertura y cierre (Piper), la cola no los repite.
+  const sound = () => { if (deps.speaker.ownCues) return; try { deps.playSound('radio'); } catch { /* sin audio */ } };
 
   async function drain() {
     busy = true;

@@ -20,6 +20,8 @@ export interface Speaker {
   /** [IA6] `driverId`: quién habla (la voz Piper elige su voz y su velocidad; la del sistema usa pitch y rate). */
   speak(text: string, opts: { pitch: number; rate: number; volume?: number; driverId?: string }): Promise<void>;
   cancel(): void;
+  /** [UX13] La voz pone ella misma los sonidos de apertura y cierre de la radio (Piper); si no, los pone la cola. */
+  ownCues?: boolean;
 }
 
 /** Tiempo máximo de una frase: si el navegador no avisa del final, la cola no se queda parada. */
