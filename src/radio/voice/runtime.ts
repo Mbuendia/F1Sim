@@ -54,3 +54,8 @@ export function setRadioClock(now: number, running: (carId: number) => boolean) 
 }
 
 export function radioClock(): number { return deps.now; }
+
+/** [UX14] Cómo va el motor de cada coche (lo pone el panel de radio con los coches del jugador), para el fondo. */
+let engineOf: (carId: number) => { rpm: number; moving: boolean } | null = () => null;
+export function setRadioEngine(fn: (carId: number) => { rpm: number; moving: boolean } | null) { engineOf = fn; }
+export function radioEngineOf(carId: number) { try { return engineOf(carId); } catch { return null; } }

@@ -17,7 +17,7 @@ import { driverSays, submitRadio } from '../radio/controller';
 import { createCallDetector, type CallSnapshot } from '../radio/replies/driverCalls';
 import { createChooser } from '../radio/replies/chooser';
 import { driverRadio } from '../data/driverRadio';
-import { radioClock, radioVoice, setRadioClock } from '../radio/voice/runtime';
+import { radioClock, radioVoice, setRadioClock, setRadioEngine } from '../radio/voice/runtime';
 import { radioStore, useRadio, type RadioMessage } from '../state/radioStore';
 import styles from './RadioPanel.module.css';
 import { LiveAiStatusBadge } from './AiStatusBadge';
@@ -203,6 +203,15 @@ export function useDriverCalls(cars: CarState[], team: TeamView | null | undefin
   const latest = useRef({ cars, team });
   latest.current = { cars, team };
   useEffect(() => { detector.current = createCallDetector(); }, [ids]);
+  // [UX14] El motor de cada coche del jugador (revoluciones y si va rodando), para el fondo de la radio.
+  useEffect(() => {
+    setRadioEngine(carId => {
+      const car = latest.current.cars.find(c => c.id === carId);
+      if (!car) return null;
+      return { rpm: car.telemetry?.rpm ?? 0, moving: car.status === 'running' && !car.isInPitLane && (car.telemetry?.speedKmh ?? 0) > 60 };
+    });
+    return () => setRadioEngine(() => null);
+  }, []);
   useEffect(() => {
     if (!slow) return;
     const { cars: own, team: teamView } = latest.current;

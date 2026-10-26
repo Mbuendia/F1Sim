@@ -2,18 +2,19 @@
 // Lo que vio el usuario: tras una respuesta, queda un ruido blanco de fondo para siempre. Causa: buildRadioChain
 // arrancaba un bucle de ruido al crearse, con el volumen fijo al 2 %, y no lo paraba nunca.
 //  1. Al crear la cadena de radio, el ruido está en silencio y no hay ningún bucle sonando.
-//  2. Al empezar una frase suena la apertura (chasquido y pitido corto) y el ruido sube en 80 ms como mucho.
+//  2. Al empezar una frase suena la apertura (un chasquido de radio) y el ruido sube en 80 ms como mucho.
+//     [UX14] Antes era «chasquido y pitido corto»: el pitido se cambia por un chasquido, como en la radio real, con
+//     autorización del usuario del 26/10/2026. El fondo es ahora el motor del coche (UX14).
 //  3. Al acabar suena el cierre y el ruido baja a cero y se para en 200 ms como mucho; ningún bucle sigue en marcha
 //     (con un contexto de audio falso).
 //  4. Cancelar a mitad de frase cierra igual.
 //  5. La voz del sistema usa los mismos sonidos de apertura y cierre.
 export default async function run({ server, assert, test }) {
   const load = p => server.ssrLoadModule(p);
-  const { RADIO_FILTER, RADIO_CUE, buildRadioChain } = await load('/src/radio/voice/radioFilter.ts');
+  const { RADIO_FILTER, buildRadioChain } = await load('/src/radio/voice/radioFilter.ts');
   const { createPiperSpeaker } = await load('/src/radio/voice/piperVoice.ts');
   const { createSystemSpeaker } = await load('/src/radio/voice/systemVoice.ts');
   const { createVoiceQueue } = await load('/src/radio/voice/voiceQueue.ts');
-  const { SOUNDS } = await load('/src/audio/sounds.ts');
 
   /** Contexto de audio falso: guarda las fuentes (con bucle o no, cuándo empiezan y cuándo paran) y las rampas. */
   const fakeContext = () => {
@@ -56,7 +57,7 @@ export default async function run({ server, assert, test }) {
     let mark = sources.length;
     chain.open();
     const openRamp = chain.noise.gain.events.filter(e => e.kind === 'ramp').at(-1);
-    assert(oneShots(sources, mark).length >= 1, 'UX13: al abrir suena la apertura (chasquido y pitido)');
+    assert(oneShots(sources, mark).length >= 1, 'UX13: al abrir suena la apertura (chasquido)');
     assert(openRamp && Math.abs(openRamp.value - RADIO_FILTER.noise) < 1e-9 && openRamp.at - ctx.currentTime <= 0.08 + 1e-9 && loopsRunning().length === 1, 'UX13: el ruido sube al 2 % en 80 ms como mucho', JSON.stringify(openRamp));
     mark = sources.length;
     chain.close();
@@ -65,7 +66,8 @@ export default async function run({ server, assert, test }) {
     assert(oneShots(sources, mark).length >= 1, 'UX13: al cerrar suena el cierre');
     assert(closeRamp && closeRamp.value === 0 && closeRamp.at - ctx.currentTime <= 0.2 + 1e-9, 'UX13: el ruido baja a cero en 200 ms como mucho', JSON.stringify(closeRamp));
     assert(hiss.stoppedAt !== null && hiss.stoppedAt - ctx.currentTime <= 0.2 + 1e-9, 'UX13: y el bucle se para', String(hiss.stoppedAt));
-    assert(RADIO_CUE.notes.join() === SOUNDS.radio.provisional.notes.join(), 'UX13: el pitido es el mismo sonido «radio» del juego');
+    const crossings = d => { let c = 0; for (let i = 1; i < d.length; i++) if ((d[i] >= 0) !== (d[i - 1] >= 0)) c++; return c / d.length; };
+    assert(oneShots(sources, mark).every(s => crossings(s.buffer.getChannelData(0)) > 0.25), 'UX13: el cierre es un chasquido de ruido, sin pitido musical (UX14)');
   });
 
   /** Altavoz Piper con el contexto falso: `endNow()` termina la frase como lo haría el navegador. */
@@ -112,6 +114,6 @@ export default async function run({ server, assert, test }) {
     await new Promise(r => setTimeout(r, 0));
     p.voiceSource()?.onended?.();
     await q2.idle();
-    assert(sounds.length === 0 && p.loopsRunning().length === 0, 'UX13: con la voz realista, la apertura y el cierre los pone la radio (el mismo pitido), sin repetirlos', sounds.join());
+    assert(sounds.length === 0 && p.loopsRunning().length === 0, 'UX13: con la voz realista, la apertura y el cierre los pone la radio (su chasquido), sin repetirlos', sounds.join());
   });
 }

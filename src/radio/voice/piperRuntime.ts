@@ -4,7 +4,7 @@
  * apagada por defecto (gasta CPU y batería): el jugador puede encenderla.
  */
 import { chooseVoiceEngine, createPiperSpeaker, createPiperStore, createPiperSynth, type Synth } from './piperVoice';
-import { setPiperSpeaker, systemVoiceAvailable } from './runtime';
+import { radioEngineOf, setPiperSpeaker, systemVoiceAvailable } from './runtime';
 import type { AudioContextLike } from './radioFilter';
 
 export const RADIO_VOICE_PREF_KEY = 'f1_radio_voz';
@@ -36,6 +36,7 @@ export async function applyRadioVoice(pref: VoicePref): Promise<'piper' | 'siste
   setPiperSpeaker(createPiperSpeaker({
     synth: (text, voice) => synth!.then(s => s(text, voice)),
     context: () => (context ??= new Ctx()),
+    engine: radioEngineOf,
   }));
   return 'piper';
 }

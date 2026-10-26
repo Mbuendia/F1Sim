@@ -9,7 +9,7 @@ import { DRIVERS } from '../../data/drivers';
 import type { ModelStore } from '../model/ModelStore';
 import { ModelError } from '../model/ModelStore';
 import type { Speaker } from './systemVoice';
-import { buildRadioChain, type AudioContextLike, type RadioChain } from './radioFilter';
+import { buildRadioChain, type AudioContextLike, type EngineInfo, type RadioChain } from './radioFilter';
 
 export const PIPER_VOICE = {
   id: 'es_ES-sharvard-medium' as const,
@@ -70,7 +70,7 @@ export type Synth = (text: string, voice: PilotVoice) => Promise<Synthesized>;
 const MAX_PHRASE_MS = 15000;
 
 /** Altavoz con Piper: genera la frase con la voz del piloto y la reproduce por el filtro de radio. */
-export function createPiperSpeaker(deps: { synth: Synth; context: () => AudioContextLike | null; voiceOf?: (driverId: string) => PilotVoice }): Speaker {
+export function createPiperSpeaker(deps: { synth: Synth; context: () => AudioContextLike | null; voiceOf?: (driverId: string) => PilotVoice; /** [UX14] Motor del coche que habla, para el fondo de la radio. */ engine?: (carId: number) => EngineInfo | null }): Speaker {
   const voiceOf = deps.voiceOf ?? pilotVoice;
   let chain: { ctx: AudioContextLike; chain: RadioChain } | null = null;
   let current: { stop(): void } | null = null;
@@ -82,7 +82,7 @@ export function createPiperSpeaker(deps: { synth: Synth; context: () => AudioCon
     // [UX13] La apertura y el cierre los pone la radio (con el mismo pitido que el sonido «radio»): la cola no los repite.
     ownCues: true,
     available: () => { try { return Boolean(deps.context()); } catch { return false; } },
-    async speak(text, { volume = 1, driverId }) {
+    async speak(text, { volume = 1, driverId, carId }) {
       const ctx = deps.context();
       if (!ctx) return;
       const voice = voiceOf(driverId ?? '');
@@ -101,6 +101,8 @@ export function createPiperSpeaker(deps: { synth: Synth; context: () => AudioCon
         const finish = () => { if (!done) { done = true; current = null; radio.close(); resolve(); } };
         src.onended = finish;
         current = { stop: () => { try { src.stop(); } catch { /* ya parado */ } finish(); } };
+        // [UX14] De fondo, el motor del coche que habla (sus revoluciones, y casi nada si está parado o en boxes).
+        radio.setEngine(carId !== undefined ? deps.engine?.(carId) ?? null : null);
         radio.open();
         try { src.start(); } catch { finish(); }
         setTimeout(finish, MAX_PHRASE_MS);

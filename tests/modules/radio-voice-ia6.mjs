@@ -79,17 +79,21 @@ export default async function run({ server, assert, test }) {
   await test('IA6: filtro de radio', () => {
     const { context, log } = fakeContext();
     const chain = buildRadioChain(context, context.destination);
-    const [hp, lp] = log.nodes.filter(n => n.kind === 'biquad');
-    assert(RADIO_FILTER.highpassHz === 300 && RADIO_FILTER.lowpassHz === 3400 && RADIO_FILTER.noise === 0.02, 'IA6: valores acordados (300 Hz, 3.400 Hz, ruido al 2 %)');
-    assert(hp?.type === 'highpass' && hp.frequency.value === 300 && lp?.type === 'lowpass' && lp.frequency.value === 3400, 'IA6: paso alto a 300 Hz y paso bajo a 3.400 Hz', JSON.stringify([hp?.type, hp?.frequency.value, lp?.type, lp?.frequency.value]));
+    // [UX14] Valores cambiados con autorización del usuario (26/10/2026): banda de unos 250 a 3.800 Hz con dos filtros a
+    // cada lado y, de fondo, el motor a unos −17 dB (antes 300–3.400 Hz y ruido blanco al 2 %).
+    const biquads = log.nodes.filter(n => n.kind === 'biquad');
+    const hp = biquads.filter(n => n.type === 'highpass'), lp = biquads.filter(n => n.type === 'lowpass');
+    assert(RADIO_FILTER.highpassHz === 280 && RADIO_FILTER.lowpassHz === 3200 && Math.abs(20 * Math.log10(RADIO_FILTER.noise) + 17) < 1e-6, 'IA6: valores acordados en UX14 (paso alto 280 Hz, paso bajo 3.200 Hz, fondo a −17 dB)');
+    assert(hp.length === 2 && hp.every(n => n.frequency.value === 280) && lp.length === 2 && lp.every(n => n.frequency.value === 3200), 'IA6: dos pasos altos a 280 Hz y dos pasos bajos a 3.200 Hz', JSON.stringify(biquads.map(n => [n.type, n.frequency.value])));
     const to = from => log.links.filter(([a]) => a === from).map(([, b]) => b);
+    const reachesOutVia = (from, target) => { const seen = new Set(); const walk = x => x === target || (!seen.has(x) && (seen.add(x), to(x).some(walk))); return walk(from); };
     const shaper = log.nodes.find(n => n.kind === 'shaper');
-    assert(to(chain.input).includes(hp) && to(hp).includes(lp) && to(lp).includes(shaper) && shaper.curve && shaper.curve.length > 0, 'IA6: voz → paso alto → paso bajo → saturación suave');
+    assert(to(chain.input).includes(hp[0]) && to(hp[0]).includes(hp[1]) && to(hp[1]).includes(lp[0]) && to(lp[0]).includes(lp[1]) && reachesOutVia(lp[1], shaper) && shaper.curve && shaper.curve.length > 0, 'IA6: voz → pasos altos → pasos bajos → saturación suave');
     const reachesOut = n => { const seen = new Set(); const walk = x => { if (x === context.destination) return true; if (seen.has(x)) return false; seen.add(x); return to(x).some(walk); }; return walk(n); };
     // [UX13] El ruido se mide con la radio abierta: al crear la cadena está en silencio (cambio autorizado por el
     // usuario el 26/10/2026).
     chain.open();
-    assert(reachesOut(shaper) && reachesOut(chain.noise) && Math.abs(chain.noise.gain.value - 0.02) < 1e-9, 'IA6: la saturación y el ruido de fondo (2 %, con la radio abierta) llegan a la salida');
+    assert(reachesOut(shaper) && reachesOut(chain.noise) && Math.abs(chain.noise.gain.value - RADIO_FILTER.noise) < 1e-9, 'IA6: la saturación y el fondo (el motor, con la radio abierta) llegan a la salida');
     chain.close();
     const before = log.started;
     chain.click();
