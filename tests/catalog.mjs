@@ -600,6 +600,7 @@ export const modules = [
   { "id": "season-hub-ux9", "tasks": ["UX9"], "sprint": "7", "kind": "contract" },
   { "id": "decision-visuals-ux10", "tasks": ["UX10"], "sprint": "7", "kind": "contract" },
   { "id": "device-check-ux11", "tasks": ["UX11"], "sprint": "7", "kind": "contract" },
+  { "id": "radio-noise-ux13", "tasks": ["UX13"], "sprint": "7", "kind": "contract" },
   { "id": "radio-model-ia4", "tasks": ["IA4"], "sprint": "6", "kind": "contract" },
   { "id": "radio-llm-ia5", "tasks": ["IA5"], "sprint": "6", "kind": "contract" },
   { "id": "radio-classifier-ia8", "tasks": ["IA8"], "sprint": "6", "kind": "contract" },

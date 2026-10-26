@@ -116,6 +116,11 @@ export function GameMenuScreen({ current = null, slots = [], onContinue, onNew, 
     if (next === shown) return;
     setLeaving(shown);
     setSelected(next);
+    // En el móvil, si el panel grande no se ve entero, se sube hasta él para que se vea el cambio.
+    const hero = heroRef.current;
+    if (hero && typeof window !== 'undefined' && window.matchMedia?.('(max-width: 767px)').matches && hero.getBoundingClientRect().top < 0) {
+      hero.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    }
   };
   // La cortinilla dura 600 ms: después, el panel que sale se esconde del todo.
   useEffect(() => {
@@ -143,7 +148,9 @@ export function GameMenuScreen({ current = null, slots = [], onContinue, onNew, 
     <button key={p.id} type="button" className={s.modeCard} data-card={p.id} aria-pressed={p.id === shown}
       style={{ ['--acento' as string]: p.accent, ['--img' as string]: `url("${image(p.id)}")` } as CSSProperties}
       onClick={() => (p.id === shown ? act(p.id) : select(p.id))}
-      onFocus={() => select(p.id)}
+      // Con el teclado (Tab), enfocar ya elige; al tocar o hacer clic, no: el primer toque elige (y se ve el cambio) y el
+      // segundo hace la acción. Antes el foco elegía y el mismo toque ejecutaba al momento, sin animación.
+      onFocus={event => { if (event.currentTarget.matches(':focus-visible')) select(p.id); }}
       onPointerEnter={event => {
         if (event.pointerType !== 'mouse') return;
         if (hoverTimer.current) window.clearTimeout(hoverTimer.current);

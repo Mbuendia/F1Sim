@@ -79,6 +79,8 @@ export function createPiperSpeaker(deps: { synth: Synth; context: () => AudioCon
     return chain.chain;
   };
   return {
+    // [UX13] La apertura y el cierre los pone la radio (con el mismo pitido que el sonido «radio»): la cola no los repite.
+    ownCues: true,
     available: () => { try { return Boolean(deps.context()); } catch { return false; } },
     async speak(text, { volume = 1, driverId }) {
       const ctx = deps.context();
@@ -96,10 +98,10 @@ export function createPiperSpeaker(deps: { synth: Synth; context: () => AudioCon
       src.connect(radio.input);
       await new Promise<void>(resolve => {
         let done = false;
-        const finish = () => { if (!done) { done = true; current = null; radio.click(); resolve(); } };
+        const finish = () => { if (!done) { done = true; current = null; radio.close(); resolve(); } };
         src.onended = finish;
         current = { stop: () => { try { src.stop(); } catch { /* ya parado */ } finish(); } };
-        radio.click();
+        radio.open();
         try { src.start(); } catch { finish(); }
         setTimeout(finish, MAX_PHRASE_MS);
       });

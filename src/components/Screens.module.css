@@ -22,7 +22,7 @@
 .heroImage { position: absolute; inset: 0 0 0 34%; clip-path: polygon(22% 0, 100% 0, 100% 100%, 0 100%); overflow: hidden; }
 .heroImage span { position: absolute; inset: -4%; background: var(--img) center / cover no-repeat; }
 .heroImage::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(13, 17, 23, 0.55), transparent 45%), linear-gradient(0deg, rgba(13, 17, 23, 0.55), transparent 40%); }
-.heroStripe { position: absolute; top: 0; bottom: 0; left: 34%; width: 66%; clip-path: polygon(calc(22% - 7px) 0, 22% 0, 0 100%, -7px 100%); background: var(--acento); transform-origin: top; }
+.heroStripe { position: absolute; top: 0; bottom: 0; left: 34%; width: 66%; clip-path: polygon(calc(22% - 7px) 0, 22% 0, 0 100%, -7px 100%); background: var(--acento); }
 /* Palabra gigante y hueca detrás del texto: entra deslizándose un poco más lenta que el título (efecto de profundidad). */
 .heroWord { position: absolute; left: clamp(12px, 3vw, 40px); bottom: -0.18em; font-family: var(--font-marca); font-weight: 900; font-size: clamp(64px, 11vw, 168px); line-height: 1; text-transform: uppercase; white-space: nowrap; color: transparent; -webkit-text-stroke: 1px color-mix(in srgb, var(--acento) 45%, transparent); opacity: 0.55; pointer-events: none; z-index: 0; }
 .heroText { position: relative; z-index: 1; display: flex; flex-direction: column; justify-content: center; gap: 8px; height: 100%; width: min(46%, 560px); padding: clamp(18px, 3vw, 40px); box-sizing: border-box; }
@@ -41,13 +41,14 @@
 @keyframes heroPhotoIn { from { transform: translateX(6%) scale(1.1); filter: saturate(0.4) brightness(1.4); } to { transform: none; filter: none; } }
 @keyframes heroPhotoDrift { from { transform: scale(1) translateX(0); } to { transform: scale(1.06) translateX(-1.5%); } }
 @keyframes heroPhotoOut { to { transform: translateX(-4%) scale(0.97); opacity: 0; } }
-@keyframes heroStripeIn { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+/* La franja crece a lo largo del corte, de abajo arriba: los dos puntos de arriba salen de los de abajo. */
+@keyframes heroStripeIn { from { clip-path: polygon(-7px 100%, 0 100%, 0 100%, -7px 100%); } to { clip-path: polygon(calc(22% - 7px) 0, 22% 0, 0 100%, -7px 100%); } }
 @keyframes heroTextIn { from { opacity: 0; transform: translateX(-26px); } to { opacity: 1; transform: none; } }
 @keyframes heroTextOut { to { opacity: 0; transform: translateX(18px); } }
 @keyframes heroWordIn { from { opacity: 0; transform: translateX(70px); } to { opacity: 0.55; transform: none; } }
 .heroPanel[data-state='active'] .heroImage { animation: heroWipeIn 560ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
 .heroPanel[data-state='active'] .heroImage span { animation: heroPhotoIn 900ms cubic-bezier(0.2, 0.8, 0.2, 1) both, heroPhotoDrift 14s 900ms ease-in-out infinite alternate; }
-.heroPanel[data-state='active'] .heroStripe { animation: heroStripeIn 380ms 160ms cubic-bezier(0.7, 0, 0.2, 1) both; }
+.heroPanel[data-state='active'] .heroStripe { animation: heroStripeIn 520ms 140ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
 .heroPanel[data-state='active'] .heroWord { animation: heroWordIn 900ms 120ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
 .heroPanel[data-state='active'] .heroText > * { animation: heroTextIn 460ms calc(140ms + var(--i, 0) * 70ms) cubic-bezier(0.2, 0.8, 0.2, 1) both; }
 .heroPanel[data-state='leaving'] .heroImage span { animation: heroPhotoOut 520ms ease-in both; }
@@ -62,7 +63,7 @@
 .menu[data-first-time] .modeBlock[data-block='jugar'] { flex: 4; }
 .modeCard { position: relative; flex: 1; min-width: 0; min-height: 112px; display: flex; align-items: flex-end; padding: 0; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--panel-2); color: var(--text); cursor: pointer; text-align: left; font-family: var(--font-ui); filter: brightness(0.62) saturate(0.55); transition: transform 280ms cubic-bezier(0.2, 0.8, 0.2, 1), filter 280ms ease, border-color 280ms ease, box-shadow 280ms ease; }
 .modeCard::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: var(--acento); transform: scaleX(0); transform-origin: left; transition: transform 420ms cubic-bezier(0.2, 0.8, 0.2, 1); }
-.modeCard:hover { filter: brightness(0.85) saturate(0.85); }
+@media (hover: hover) { .modeCard:hover { filter: brightness(0.85) saturate(0.85); } }
 .modeCard[aria-pressed='true'] { filter: none; transform: translateY(-6px); border-color: var(--acento); box-shadow: 0 14px 30px -12px color-mix(in srgb, var(--acento) 70%, transparent); }
 .modeCard[aria-pressed='true']::after { transform: scaleX(1); }
 .modeCard:focus-visible { outline: 2px solid var(--foco); outline-offset: 3px; }
@@ -92,8 +93,10 @@
   .menuTopSettings { display: inline-flex; }
   .modeBlock[data-block='ajustes'] { display: none; }
   .hero { flex: none; min-height: 0; display: grid; }
+  /* Todos los paneles ocupan la misma celda y solo se ve el activo: la celda mide lo que el más alto, así que cambiar
+     de modo no empuja las tarjetas aunque uno tenga dos botones y otro uno. */
   .heroPanel { position: relative; inset: auto; grid-area: 1 / 1; display: flex; flex-direction: column; }
-  .heroPanel[data-state='idle'] { display: none; }
+  .heroPanel[data-state='idle'], .heroPanel[data-state='leaving'] { visibility: hidden; pointer-events: none; }
   .heroImage { position: relative; inset: auto; height: 34vh; min-height: 170px; clip-path: polygon(0 0, 100% 0, 100% 78%, 0 100%); }
   .heroStripe { display: none; }
   .heroWord { display: none; }
@@ -110,7 +113,6 @@
   .modeCardText { padding: 8px 12px 10px; }
   .menu[data-first-time] .modeBlock[data-block='jugar'] .modeCard:first-child { grid-column: span 2; }
   @keyframes heroWipeIn { from { clip-path: polygon(0 0, 0 0, 0 78%, 0 100%); } to { clip-path: polygon(0 0, 100% 0, 100% 78%, 0 100%); } }
-  .heroPanel[data-state='leaving'] { display: none; }
 }
 /* Con movimiento reducido, solo fundidos cortos. */
 @media (prefers-reduced-motion: reduce) {
