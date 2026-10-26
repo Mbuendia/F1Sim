@@ -1461,10 +1461,10 @@ export const App: React.FC = () => {
     badges: hubBadges,
     inicio: (go: (section: HubSection) => void) => (
       <HubHome next={hubNext} pending={hubPending} onGo={go} status={[
-        { label: 'Campeonato', value: teamStanding >= 0 ? `P${teamStanding + 1} · ${teamPoints} pts` : 'Sin carreras', detail: `${grandsPrixRun(championship)} Grandes Premios disputados`, section: 'temporada' },
-        { label: 'Finanzas', value: formatMoney(hubBalance), detail: `Próxima ronda: ${formatMoney(roundForecast(management.finance, management.playerTeamId).net, true)} sin contar puntos`, section: 'finanzas' },
-        { label: 'Fábrica', value: `${activeProjects(program, management.playerTeamId).length} proyectos`, detail: hubWork ? `Obra en curso: quedan ${hubWork.remaining} rondas` : 'Sin obras en curso', section: 'fabrica' },
-        { label: 'Junta', value: `${Math.round(management.board.confidence)} · objetivo ${management.board.objective}.º`, detail: `Equipo de boxes: nivel ${hubCrew?.level ?? 1}, fatiga ${Math.round(hubCrew?.fatigue ?? 0)} %`, section: 'finanzas' },
+        { label: 'Campeonato', value: teamStanding >= 0 ? `P${teamStanding + 1} · ${teamPoints} pts` : 'Sin carreras', detail: `${grandsPrixRun(championship)} Grandes Premios disputados`, section: 'finde' },
+        { label: 'Finanzas', value: formatMoney(hubBalance), detail: `Próxima ronda: ${formatMoney(roundForecast(management.finance, management.playerTeamId).net, true)} sin contar puntos`, section: 'sede' },
+        { label: 'Coche', value: `${activeProjects(program, management.playerTeamId).length} proyectos`, detail: hubWork ? `Obra en la sede: quedan ${hubWork.remaining} rondas` : 'Sin obras en la sede', section: 'coche' },
+        { label: 'Junta', value: `${Math.round(management.board.confidence)} · objetivo ${management.board.objective}.º`, detail: `Equipo de boxes: nivel ${hubCrew?.level ?? 1}, fatiga ${Math.round(hubCrew?.fatigue ?? 0)} %`, section: 'sede' },
       ]} />
     ),
     correr: hubNext ? (
@@ -1481,7 +1481,6 @@ export const App: React.FC = () => {
         <SpyPanel round={hubNext.round} available={Boolean(practiceFor(season, hubNext.round))} reports={practiceFor(season, hubNext.round)?.spy ?? []}
           teams={[...new Set(Object.values(roster).map(driver => driver.teamId))].filter(id => id !== management.playerTeamId).map(id => ({ id, name: TEAMS[id]?.shortName ?? id }))}
           canAfford={cost => canSpend(management.finance, management.playerTeamId, cost)} driverCode={id => roster[id]?.code ?? id} onSpy={handleSpy} />
-        <SetupPanel drivers={teamDrivers} setups={setups} onChange={handleSetupChange} />
       </RaceWeekendPanel>
     ) : <p>La temporada está completa: no quedan rondas por correr.</p>,
   } : undefined;

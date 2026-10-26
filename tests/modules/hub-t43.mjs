@@ -10,6 +10,8 @@
 //  4. Correr: la ronda, la previsión, las sesiones del fin de semana como pasos, los dos pilotos y un solo botón rojo.
 //  5. Temporada: franja de 24 rondas con la que toca resaltada, las disputadas con su ganador y las de sprint marcadas.
 //  6. Cabecera con equipo, temporada, ronda y saldo, y las seis pestañas en su orden.
+// [UX9] Cambiado el 26/10/2026 con autorización del usuario (solo los nombres de pestaña y su orden): las pestañas son
+// ahora Inicio · Coche · Equipo · Sede y dinero · Fin de semana («Fin de semana», con Correr, la última).
 //  7. Revisión en el navegador a 1280×720, 1366×768 y 1920×1080 (manual; en el dashboard).
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -36,7 +38,7 @@ export default async function run({ server, assert, test }) {
   await test('T4.3: pendientes de tu decisión', () => {
     // Una partida recién empezada: dos huecos de desarrollo libres y un hueco de patrocinio con ofertas.
     const start = hub.pendingDecisions(input({}));
-    assert(ids(start).includes('desarrollo-libre') && ids(start).includes('patrocinio') && start.every(item => item.title && item.detail && ['equipo', 'fabrica', 'finanzas', 'temporada', 'correr'].includes(item.section)),
+    assert(ids(start).includes('desarrollo-libre') && ids(start).includes('patrocinio') && start.every(item => item.title && item.detail && ['coche', 'equipo', 'sede', 'finde'].includes(item.section)),
       'T4.3: al empezar avisa del hueco de desarrollo y de las ofertas de patrocinio, cada aviso con su texto y su pestaña', ids(start).join());
     // Todo resuelto: proyectos en marcha y patrocinio firmado.
     let program = dev.emptyProgram();
@@ -44,17 +46,17 @@ export default async function run({ server, assert, test }) {
     const signed = { ...fresh, sponsors: sp.signSponsor(fresh.sponsors, PLAYER, fresh.sponsors.teams[PLAYER].offers[0].id).state };
     assert(hub.pendingDecisions(input({ program, management: signed })).length === 0, 'T4.3: sin nada que decidir, la lista queda vacía');
     const ready = hub.pendingDecisions(input({ program, management: signed, raceIndex: 30 }));
-    assert(ids(ready).filter(id => id.startsWith('mejora-')).length === 2 && ready[0].section === 'fabrica' && /montar/i.test(ready[0].title), 'T4.3: una mejora fabricada avisa de que está lista para montar', JSON.stringify(ready[0]));
+    assert(ids(ready).filter(id => id.startsWith('mejora-')).length === 2 && ready[0].section === 'coche' && /montar/i.test(ready[0].title), 'T4.3: una mejora fabricada avisa de que está lista para montar', JSON.stringify(ready[0]));
     const worn = { ...allDrivers, units: allDrivers.units.map(unit => (unit.driverId === 'alonso' && unit.type === 'ICE' ? { ...unit, races: comps.NOMINAL_RACES.ICE + 2, firstUsedRace: 0 } : unit)) };
     const risk = hub.pendingDecisions(input({ program, management: signed, components: worn }));
-    assert(risk.length === 1 && risk[0].id.startsWith('componente-') && risk[0].section === 'fabrica' && risk[0].detail.includes('ALO'), 'T4.3: un componente pasado de su vida avisa del riesgo de avería, con su piloto', JSON.stringify(risk));
+    assert(risk.length === 1 && risk[0].id.startsWith('componente-') && risk[0].section === 'coche' && risk[0].detail.includes('ALO'), 'T4.3: un componente pasado de su vida avisa del riesgo de avería, con su piloto', JSON.stringify(risk));
     const rival = { ...allDrivers, units: allDrivers.units.map(unit => (unit.driverId === 'norris' && unit.type === 'ICE' ? { ...unit, races: comps.NOMINAL_RACES.ICE + 2 } : unit)) };
     assert(hub.pendingDecisions(input({ program, management: signed, components: rival })).length === 0, 'T4.3: los componentes de los rivales no son asunto tuyo');
     const tired = { ...signed, pitCrews: { ...signed.pitCrews, teams: { ...signed.pitCrews.teams, [PLAYER]: { ...signed.pitCrews.teams[PLAYER], fatigue: 85 } } } };
     assert(ids(hub.pendingDecisions(input({ program, management: tired }))).join() === 'boxes-fatiga', 'T4.3: un equipo de boxes muy fatigado avisa en la pestaña Equipo');
     const broke = { ...signed, finance: finance.spend(signed.finance, PLAYER, { round: 1, kind: 'obra', label: 'x', amount: finance.balanceOf(signed.finance, PLAYER) + finance.FINANCE.DEBT_LIMIT }).state };
     const debt = hub.pendingDecisions(input({ program, management: broke }));
-    assert(debt[0].id === 'deuda-limite' && debt[0].section === 'finanzas', 'T4.3: en el límite de deuda, ese es el primer aviso');
+    assert(debt[0].id === 'deuda-limite' && debt[0].section === 'sede', 'T4.3: en el límite de deuda, ese es el primer aviso');
   });
 
   await test('T4.3: acento de cada equipo', () => {
@@ -72,7 +74,7 @@ export default async function run({ server, assert, test }) {
     const pending = hub.pendingDecisions(input({}));
     const home = await render('/src/components/HubHome.tsx', 'HubHome', {
       next: { round: 7, circuitName: 'Circuit de Monaco', laps: 78, rainPercent: 15, sprint: false }, pending, onGo: noop,
-      status: [{ label: 'Campeonato', value: 'P5 · 88 pts', detail: 'ALO 7.º', section: 'temporada' }, { label: 'Finanzas', value: '12,4 M', detail: 'sin deuda', section: 'finanzas' }, { label: 'Fábrica', value: 'Suelo: lista', detail: '', section: 'fabrica' }, { label: 'Equipo', value: 'Boxes nivel 3', detail: '', section: 'equipo' }],
+      status: [{ label: 'Campeonato', value: 'P5 · 88 pts', detail: 'ALO 7.º', section: 'finde' }, { label: 'Finanzas', value: '12,4 M', detail: 'sin deuda', section: 'sede' }, { label: 'Fábrica', value: 'Suelo: lista', detail: '', section: 'coche' }, { label: 'Equipo', value: 'Boxes nivel 3', detail: '', section: 'equipo' }],
     });
     assert(/ronda 7 de 24/i.test(home) && home.includes('Circuit de Monaco') && /78 vueltas/.test(home) && /lluvia 15\s*%/i.test(home) && /Preparar carrera/.test(home), 'T4.3: Inicio enseña la ronda que toca con su previsión y el botón para prepararla', home.slice(0, 200));
     assert(pending.every(item => home.includes(item.title)) && new RegExp(`\\(${pending.length}\\)`).test(home) && ['Campeonato', 'Finanzas', 'Fábrica', 'Equipo'].every(label => home.includes(label)) && home.includes('P5 · 88 pts'),
@@ -101,10 +103,10 @@ export default async function run({ server, assert, test }) {
       'T4.3: la franja enseña las 24 rondas con su estado y resalta la que toca');
     assert(strip.includes('NOR') && (strip.match(/data-sprint/g) ?? []).length === rounds.filter(r => r.sprint).length && rounds.filter(r => r.sprint).length === 6, 'T4.3: las rondas disputadas llevan su ganador y las de sprint van marcadas');
 
-    const header = await render('/src/components/HubHeader.tsx', 'HubHeader', { teamName: 'Aston Martin', seasonNumber: 2, round: 7, kpis: [{ label: 'saldo', value: '12,4 M' }, { label: 'constructores', value: 'P5' }], section: 'finanzas', onSection: noop });
-    const order = ['Inicio', 'Equipo', 'Fábrica', 'Finanzas', 'Temporada', 'Correr'].map(label => header.indexOf(`>${label}<`));
+    const header = await render('/src/components/HubHeader.tsx', 'HubHeader', { teamName: 'Aston Martin', seasonNumber: 2, round: 7, kpis: [{ label: 'saldo', value: '12,4 M' }, { label: 'constructores', value: 'P5' }], section: 'sede', onSection: noop });
+    const order = ['Inicio', 'Coche', 'Equipo', 'Sede y dinero', 'Fin de semana'].map(label => header.indexOf(`>${label}<`));
     assert(header.includes('Aston Martin') && /Temporada 2/.test(header) && /ronda 7 de 24/i.test(header) && header.includes('12,4 M') && header.includes('P5'), 'T4.3: la cabecera dice el equipo, la temporada, la ronda y el saldo', header.slice(0, 200));
-    assert(order.every(index => index >= 0) && order.every((index, i) => i === 0 || index > order[i - 1]) && (header.match(/aria-selected="true"/g) ?? []).length === 1 && /aria-selected="true"[^>]*>(<svg[\s\S]*?<\/svg>)?Finanzas</.test(header),
-      'T4.3: las seis pestañas van en su orden, con «Correr» la última, y la activa marcada', order.join());
+    assert(order.every(index => index >= 0) && order.every((index, i) => i === 0 || index > order[i - 1]) && (header.match(/aria-selected="true"/g) ?? []).length === 1 && /aria-selected="true"[^>]*>(<svg[\s\S]*?<\/svg>)?Sede y dinero</.test(header),
+      'T4.3 [UX9]: las cinco pestañas van en su orden, con «Fin de semana» la última, y la activa marcada', order.join());
   });
 }

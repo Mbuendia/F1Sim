@@ -1,8 +1,8 @@
 {
   "src/App.tsx": {
-    "mtime": 1793052159.7296216,
-    "seen": 1793052336.580382,
-    "ast_hash": "f22ec82d2e12debdabafc64cc2cf334c",
+    "mtime": 1793052709.6057372,
+    "seen": 1793053053.1335084,
+    "ast_hash": "23510bbc2997e490a440e072845cba04",
     "semantic_hash": ""
   },
   "src/audio/AudioEngine.ts": {
@@ -2466,9 +2466,9 @@
     "semantic_hash": ""
   },
   "tests/catalog.mjs": {
-    "mtime": 1793050837.1454964,
-    "seen": 1793051323.3303566,
-    "ast_hash": "59911136cb2bc9ede50a806b745e3df1",
+    "mtime": 1793052491.9830077,
+    "seen": 1793053053.1340191,
+    "ast_hash": "ee20854eadc0b52b0942e32e1e1be0e8",
     "semantic_hash": ""
   },
   "tests/fixtures/drs-references.json": {
@@ -3810,9 +3810,9 @@
     "semantic_hash": ""
   },
   "AGENTS.md": {
-    "mtime": 1793052257.6586967,
-    "seen": 1793052336.5813644,
-    "ast_hash": "3ac98d0d9d9ba9ac9236689d0b486a4a",
+    "mtime": 1793052971.0546277,
+    "seen": 1793053053.1343956,
+    "ast_hash": "6b220151b7fa74965340faa82d7a990f",
     "semantic_hash": ""
   },
   "CLAUDE.md": {
@@ -3828,9 +3828,9 @@
     "semantic_hash": "bd014af3a57aef4d59ac424e7042bafd"
   },
   "DASHBOARD.md": {
-    "mtime": 1793052257.6576855,
-    "seen": 1793052336.58137,
-    "ast_hash": "8fd9b5a2bf903a9ede86115186abf551",
+    "mtime": 1793052971.0535035,
+    "seen": 1793053053.1344,
+    "ast_hash": "c1cd0a056d5bff1b24cad7ad8e458ac8",
     "semantic_hash": ""
   },
   "GEMINI.md": {
@@ -3846,9 +3846,9 @@
     "semantic_hash": "27c1373f4dc4b15147f80935e2207fd3"
   },
   "dashboard_visual.html": {
-    "mtime": 1793052258.9272027,
-    "seen": 1793052336.5813813,
-    "ast_hash": "762df827b0963eb5d32c0c6b453f5ddd",
+    "mtime": 1793052972.7307186,
+    "seen": 1793053053.134409,
+    "ast_hash": "de03b27435b48c2aba9c7708d4f0b7e7",
     "semantic_hash": ""
   },
   "docs/design/brief-revision-ux-ui.md": {
@@ -3930,9 +3930,9 @@
     "semantic_hash": "c437aad7a063cbda404f7193f324acef"
   },
   "index.html": {
-    "mtime": 1793052258.2751617,
-    "seen": 1793052336.5814054,
-    "ast_hash": "7e8e288718d06c4187ca4452099ffe74",
+    "mtime": 1793052971.7171333,
+    "seen": 1793053053.1344316,
+    "ast_hash": "ecc306ccdcd2852fba18f159cfcfb219",
     "semantic_hash": ""
   },
   "prototypes/n1/index.html": {
@@ -4791,6 +4791,36 @@
     "mtime": 1793052159.6290264,
     "seen": 1793052336.5807579,
     "ast_hash": "24b3cbe188bc087ad56bb30f70fefa18",
+    "semantic_hash": ""
+  },
+  "src/components/CircuitSheet.tsx": {
+    "mtime": 1793052709.7881434,
+    "seen": 1793053053.1335301,
+    "ast_hash": "2b4e77a993e96f360f6016a95bd7ab4e",
+    "semantic_hash": ""
+  },
+  "src/components/DriverSheet.tsx": {
+    "mtime": 1793052709.7404687,
+    "seen": 1793053053.1335456,
+    "ast_hash": "66275db285ee52c1cd64e8f6362ff40b",
+    "semantic_hash": ""
+  },
+  "src/components/FreeRaceWizard.tsx": {
+    "mtime": 1793052709.6911097,
+    "seen": 1793053053.1335585,
+    "ast_hash": "a045864a04632c20127766881a4f8c0d",
+    "semantic_hash": ""
+  },
+  "src/freeRace/freeRace.ts": {
+    "mtime": 1793052709.6439412,
+    "seen": 1793053053.133741,
+    "ast_hash": "92763bec9598ab04b3926a549e666648",
+    "semantic_hash": ""
+  },
+  "tests/modules/free-race-ux12.mjs": {
+    "mtime": 1793052745.0609517,
+    "seen": 1793053053.1340957,
+    "ast_hash": "8ced544c55a89df616a1b2635f188977",
     "semantic_hash": ""
   }
 }

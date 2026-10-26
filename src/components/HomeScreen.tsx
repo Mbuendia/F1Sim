@@ -173,7 +173,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   const freeRace = Boolean(nextRound) && nextRound?.circuitId !== selectedCircuitId;
   const [activeTab, setActiveTab] = useState<'drivers' | 'circuits'>('drivers');
   // Menú del paddock: una pestaña por sección y «Correr», la última, con la selección de carrera y la entrada a pista.
-  const [section, setSection] = useState<HubSection>(hub ? 'inicio' : 'correr');
+  const [section, setSection] = useState<HubSection>(hub ? 'inicio' : 'finde');
   const [driverSubTab, setDriverSubTab] = useState<'specs' | 'strategy' | 'records'>('specs');
   const [circuitSubTab, setCircuitSubTab] = useState<'overview' | 'drs' | 'telemetry'>('overview');
   const [inspectedDriverId, setInspectedDriverId] = useState<string>(selectedDriverId);
@@ -292,7 +292,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         </HubHeader>
       )}
       {hub && section === 'inicio' && hub.inicio(setSection)}
-      {hub && section === 'correr' && hub.correr}
+      {/* [UX9] Fin de semana: primero la carrera que toca (libres, espionaje, formato y salida) y después el calendario. */}
+      {hub && section === 'finde' && hub.correr}
       {!hub && (
       <header className={styles.header}>
         <div className={styles.brandGroup}>
@@ -307,7 +308,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       </header>
       )}
 
-      {section === 'temporada' && raceHistory.length > 0 && (
+      {section === 'finde' && raceHistory.length > 0 && (
         <section className={styles.sectionBlock}>
           <h2 className={styles.sectionHeading}>
             <History size={14} aria-hidden="true" />
@@ -333,7 +334,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         </section>
       )}
 
-      {section === 'temporada' && season && (
+      {section === 'finde' && season && (
         <section className={styles.sectionBlock}>
           <SeasonStrip rounds={season.rounds} />
           <h2 className={styles.sectionHeading}>
@@ -344,7 +345,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         </section>
       )}
 
-      {section === 'temporada' && season && season.archive.length > 0 && (
+      {section === 'finde' && season && season.archive.length > 0 && (
         <section className={styles.sectionBlock}>
           <h2 className={styles.sectionHeading}>
             <span>Historial de temporadas ({season.archive.length})</span>
@@ -353,7 +354,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         </section>
       )}
 
-      {section === 'temporada' && championship && championship.races.length > 0 && (
+      {section === 'finde' && championship && championship.races.length > 0 && (
         <section className={styles.sectionBlock}>
           <h2 className={styles.sectionHeading}>
             <span>Campeonato ({championship.races.length})</span>
@@ -362,7 +363,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         </section>
       )}
 
-      {section === 'finanzas' && finance && (
+      {section === 'sede' && finance && (
         <section className={styles.sectionBlock}>
           <h2 className={styles.sectionHeading}>
             <span>Finanzas · saldo {formatMoney(balanceOf(finance.state, finance.teamId))}</span>
@@ -371,7 +372,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         </section>
       )}
 
-      {section === 'fabrica' && facilities && (
+      {section === 'sede' && facilities && (
         <section className={styles.sectionBlock}>
           <h2 className={styles.sectionHeading}>
             <span>Instalaciones de la fábrica</span>
@@ -380,9 +381,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         </section>
       )}
 
-      {section === 'finanzas' && board && <BoardPanel board={board} />}
+      {section === 'sede' && board && <BoardPanel board={board} />}
 
-      {section === 'finanzas' && sponsors && (
+      {section === 'sede' && sponsors && (
         <section className={styles.sectionBlock}>
           <h2 className={styles.sectionHeading}>
             <span>Patrocinio ({sponsors.team.deals.length} de 3)</span>
@@ -422,7 +423,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         </section>
       )}
 
-      {section === 'fabrica' && development && (
+      {section === 'coche' && development && (
         <section className={styles.sectionBlock}>
           <h2 className={styles.sectionHeading}>
             <span>Desarrollo del coche</span>
@@ -434,13 +435,23 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         </section>
       )}
 
-      {section === 'fabrica' && components && (
+      {section === 'coche' && components && (
         <section className={styles.sectionBlock}>
           <h2 className={styles.sectionHeading}>
             <span>Componentes de la unidad de potencia</span>
           </h2>
           <ComponentsPanel state={components} drivers={Object.values(roster).filter(d => d.teamId === selectedDriver.teamId)}
             onFitNew={onFitComponent} onUndo={onUndoComponent} costOf={componentCostOf} onRefit={onRefitComponent} />
+        </section>
+      )}
+
+      {/* [UX9] El reglaje es del coche: pasa de «Correr» a la pestaña Coche. */}
+      {section === 'coche' && setup && (
+        <section className={styles.sectionBlock}>
+          <h2 className={styles.sectionHeading}>
+            <span>Reglaje</span>
+          </h2>
+          <SetupPanel drivers={Object.values(roster).filter(d => d.teamId === selectedDriver.teamId)} setups={setup.setups} onChange={setup.onChange} />
         </section>
       )}
 
