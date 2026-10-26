@@ -134,6 +134,7 @@ import { WallPanel } from './components/WallPanel';
 import { nextAlerts, wallAlerts } from './simulation/Wall';
 import type { WallReading } from './simulation/Wall';
 import { CAMERA_LABELS as CAMERA_LABELS_3D } from './scene3d/cameras';
+import { cameraFor, hasMouse, nextCameraFor } from './scene3d/cameraInput';
 
 // R32: estado de carrera siempre visible en la barra.
 const FLAG_CHIPS: Record<RaceFlagState, { label: string; className: string }> = {
@@ -916,10 +917,18 @@ export const App: React.FC = () => {
     setCurrentView(report ? 'report' : 'home');
   }, [development, showRoundReport, simulation, selectedDriverId, selectedCircuitId, raceHistory, championship, saveDevelopment, developmentAfter, components, program, seasonArchive, saveStore, season, management, raceCounts, applyCareer, playerCodes, mode, roster]);
 
+  // [UX6] En 3D se recorren solo las cámaras del dispositivo (la libre, solo con ratón; en el móvil, cinco).
   const handleCycleCameraMode = useCallback(() => {
-    camera.cycleMode();
+    if (camera.view3d) camera.mode3d = nextCameraFor(raceLayout(viewportWidth), { raton: hasMouse() }, camera.mode3d);
+    else camera.cycleMode();
     setCameraMode(camera.view3d ? camera.mode3d : camera.currentMode);
-  }, [camera]);
+  }, [camera, viewportWidth]);
+  // [UX6] Si la cámara activa no existe en este dispositivo (la libre al pasar al móvil), se pasa a la primera.
+  useEffect(() => {
+    if (!camera.view3d) return;
+    const fit = cameraFor(raceLayout(viewportWidth), { raton: hasMouse() }, camera.mode3d);
+    if (fit !== camera.mode3d) { camera.mode3d = fit; setCameraMode(fit); }
+  }, [camera, viewportWidth, cameraMode]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
