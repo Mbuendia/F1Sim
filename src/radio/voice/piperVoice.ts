@@ -161,27 +161,38 @@ async function storedFile(name: string): Promise<Blob> {
  * El ejecutor: un modelo cargado una vez; por frase, fonemas (piper-wasm) y una pasada del modelo con la voz
  * (`sid`) y la velocidad (`length_scale`) del piloto.
  */
-export async function createPiperSynth(): Promise<Synth> {
-  const [ort, phon, vits] = await Promise.all([
-    import('onnxruntime-web'),
+/** Lo que devuelve espeak-ng (piper-wasm) para una frase: los fonemas escritos (IPA) y sus números para Piper. */
+export interface EspeakLine { phonemes: string[]; phoneme_ids: number[] }
+
+/**
+ * [UX15] espeak-ng de piper-wasm (con los datos del español) como función: texto → fonemas. Lo usan Piper y Kokoro.
+ * No necesita el modelo de Piper descargado: sus datos llegan con import() y del CDN de vits-web.
+ */
+export async function createEspeak(voice = 'es'): Promise<(text: string) => Promise<EspeakLine>> {
+  const [phon, vits] = await Promise.all([
     import('@diffusionstudio/piper-wasm/build/piper_phonemize.js'),
     import('@diffusionstudio/vits-web'),
   ]);
   const createPhonemize = ((phon as unknown as { default?: unknown }).default ?? phon) as (args: object) => Promise<{ callMain(args: string[]): void }>;
+  return text => new Promise<EspeakLine>((resolve, reject) => {
+    void createPhonemize({
+      print: (line: string) => { try { resolve(JSON.parse(line) as EspeakLine); } catch (e) { reject(e); } },
+      printErr: (line: string) => reject(new Error(line)),
+      locateFile: (file: string) => (file.endsWith('.wasm') ? `${vits.WASM_BASE}.wasm` : file.endsWith('.data') ? `${vits.WASM_BASE}.data` : file),
+    }).then(m => m.callMain(['-l', voice, '--input', JSON.stringify([{ text: text.trim() }]), '--espeak_data', '/espeak-ng-data']), reject);
+  });
+}
+
+export async function createPiperSynth(): Promise<Synth> {
+  const ort = await import('onnxruntime-web');
   ort.env.wasm.wasmPaths = `https://cdn.jsdelivr.net/npm/onnxruntime-web@${ort.env.versions.web}/dist/`;
   const config = JSON.parse(await (await storedFile(`${PIPER_VOICE.id}.onnx.json`)).text()) as {
     audio: { sample_rate: number }; espeak: { voice: string }; inference: { noise_scale: number; length_scale: number; noise_w: number };
   };
   const session = await ort.InferenceSession.create(new Uint8Array(await (await storedFile(`${PIPER_VOICE.id}.onnx`)).arrayBuffer()));
-  const phonemes = (text: string) => new Promise<number[]>((resolve, reject) => {
-    void createPhonemize({
-      print: (line: string) => { try { resolve(JSON.parse(line).phoneme_ids); } catch (e) { reject(e); } },
-      printErr: (line: string) => reject(new Error(line)),
-      locateFile: (file: string) => (file.endsWith('.wasm') ? `${vits.WASM_BASE}.wasm` : file.endsWith('.data') ? `${vits.WASM_BASE}.data` : file),
-    }).then(m => m.callMain(['-l', config.espeak.voice, '--input', JSON.stringify([{ text: text.trim() }]), '--espeak_data', '/espeak-ng-data']), reject);
-  });
+  const espeak = await createEspeak(config.espeak.voice);
   return async (text, voice) => {
-    const ids = await phonemes(text);
+    const ids = (await espeak(text)).phoneme_ids;
     const feeds = {
       input: new ort.Tensor('int64', BigInt64Array.from(ids.map(BigInt)), [1, ids.length]),
       input_lengths: new ort.Tensor('int64', BigInt64Array.from([BigInt(ids.length)])),

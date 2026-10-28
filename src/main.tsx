@@ -35,6 +35,8 @@ const REVIEWS: Record<string, () => Promise<{ default: React.ComponentType }>> =
   radio: () => import('./dev/RadioReview'),
   respuestas: () => import('./dev/RepliesReview'),
   puente: () => import('./dev/BridgeReview'),
+  // [UX15] Prueba a ciegas de voces (Piper frente a Kokoro).
+  voces: () => import('./dev/VoiceBlindTest'),
 }
 const revision = params.get('revision')
 const wantsTools = Boolean(revision && REVIEWS[revision]) || params.has('rendimiento')

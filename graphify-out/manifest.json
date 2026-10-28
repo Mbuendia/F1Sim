@@ -192,9 +192,9 @@
     "semantic_hash": ""
   },
   "src/components/HubHome.tsx": {
-    "mtime": 1793053373.4550996,
-    "seen": 1793053578.0457695,
-    "ast_hash": "58cdb00c69632ad17a58450bbe5678ca",
+    "mtime": 1793213269.2014956,
+    "seen": 1793213897.1315591,
+    "ast_hash": "06d7d83c1147ce47057a9d56fc968516",
     "semantic_hash": ""
   },
   "src/components/LandingPage.tsx": {
@@ -3810,9 +3810,9 @@
     "semantic_hash": ""
   },
   "AGENTS.md": {
-    "mtime": 1793053513.7991767,
-    "seen": 1793053578.0466614,
-    "ast_hash": "16570af6b612768bfdccd69b86ab9eec",
+    "mtime": 1793213937.76062,
+    "seen": 1793214238.4763339,
+    "ast_hash": "c556105ba794cce987edc9b1d79bbecb",
     "semantic_hash": ""
   },
   "CLAUDE.md": {
@@ -3828,9 +3828,9 @@
     "semantic_hash": "bd014af3a57aef4d59ac424e7042bafd"
   },
   "DASHBOARD.md": {
-    "mtime": 1793053513.798172,
-    "seen": 1793053578.0466664,
-    "ast_hash": "e692ed835478fc50a4b7a3345dc9250f",
+    "mtime": 1793213944.4251773,
+    "seen": 1793214238.476339,
+    "ast_hash": "f2d13b3ceac5730472b71345e1e7b280",
     "semantic_hash": ""
   },
   "GEMINI.md": {
@@ -3846,9 +3846,9 @@
     "semantic_hash": "27c1373f4dc4b15147f80935e2207fd3"
   },
   "dashboard_visual.html": {
-    "mtime": 1793053515.1236541,
-    "seen": 1793053578.0466762,
-    "ast_hash": "e6e001593cceecb4e0596240a2d0f834",
+    "mtime": 1793213945.905536,
+    "seen": 1793214238.476349,
+    "ast_hash": "9fe5993d3a5fbc74e40b25ebdb80c43d",
     "semantic_hash": ""
   },
   "docs/design/brief-revision-ux-ui.md": {
@@ -3930,9 +3930,9 @@
     "semantic_hash": "c437aad7a063cbda404f7193f324acef"
   },
   "index.html": {
-    "mtime": 1793053514.4020627,
-    "seen": 1793053578.046701,
-    "ast_hash": "986c62e876f609b53d2b52ecf57650ac",
+    "mtime": 1793213945.1354766,
+    "seen": 1793214238.4763758,
+    "ast_hash": "df695ce13e39f1ead61520de4c634b76",
     "semantic_hash": ""
   },
   "prototypes/n1/index.html": {
@@ -3948,10 +3948,10 @@
     "semantic_hash": "bb87e71c64b6b9b77a97e7b7b3e47e94"
   },
   "public/models/ATTRIBUTION.md": {
-    "mtime": 1791530917.1340728,
-    "seen": 1792755216.2391093,
-    "ast_hash": "1e1056b008d8366872935032461f6018",
-    "semantic_hash": "1e1056b008d8366872935032461f6018"
+    "mtime": 1793212851.3245835,
+    "seen": 1793213897.1324434,
+    "ast_hash": "2dd2de95bec84084ffa2558450a40045",
+    "semantic_hash": ""
   },
   "scratch/app-n3.txt": {
     "mtime": 1792364062.3439689,
@@ -4821,6 +4821,30 @@
     "mtime": 1793052745.0609517,
     "seen": 1793053053.1340957,
     "ast_hash": "8ced544c55a89df616a1b2635f188977",
+    "semantic_hash": ""
+  },
+  "src/components/DecisionVisual.tsx": {
+    "mtime": 1793212823.4066114,
+    "seen": 1793213897.131524,
+    "ast_hash": "31f6887f8c40d9f00436a7ca77b8ef6d",
+    "semantic_hash": ""
+  },
+  "src/components/PartViewer.tsx": {
+    "mtime": 1793212823.454192,
+    "seen": 1793213897.1315706,
+    "ast_hash": "80add36e5b718d0a321ef07770ce49be",
+    "semantic_hash": ""
+  },
+  "src/scene3d/partVisuals.ts": {
+    "mtime": 1793212823.3655896,
+    "seen": 1793213897.131878,
+    "ast_hash": "4e6313703f339e2418975510fb008a8f",
+    "semantic_hash": ""
+  },
+  "docs/pruebas/ux11-dispositivos.md": {
+    "mtime": 1793213937.1457148,
+    "seen": 1793214238.476365,
+    "ast_hash": "81b54610d9c70d114cf9fb24b0d0b455",
     "semantic_hash": ""
   }
 }
