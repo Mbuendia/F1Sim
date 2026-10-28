@@ -750,9 +750,9 @@
     "semantic_hash": "3c9a7f0d4452380e62a4c786ea07ef96"
   },
   "src/main.tsx": {
-    "mtime": 1793039201.7494702,
-    "seen": 1793049566.8246517,
-    "ast_hash": "70ef4187e1de27694f5e888fd656ed2c",
+    "mtime": 1793214521.0713315,
+    "seen": 1793214912.9121826,
+    "ast_hash": "13a435aaf801329fa1e0576072a03441",
     "semantic_hash": ""
   },
   "src/net/Lobby.ts": {
@@ -1734,8 +1734,8 @@
     "semantic_hash": "6d961a10b31c5265599ed07fe96dc938"
   },
   "package.json": {
-    "mtime": 1792761598.6090136,
-    "seen": 1792766312.2428544,
+    "mtime": 1793214624.5047672,
+    "seen": 1793214912.911214,
     "ast_hash": "cf475abee55f0ad2a7e79bd7d39125ff",
     "semantic_hash": ""
   },
@@ -2466,9 +2466,9 @@
     "semantic_hash": ""
   },
   "tests/catalog.mjs": {
-    "mtime": 1793052491.9830077,
-    "seen": 1793053053.1340191,
-    "ast_hash": "ee20854eadc0b52b0942e32e1e1be0e8",
+    "mtime": 1793214749.2649834,
+    "seen": 1793214912.9128242,
+    "ast_hash": "0bcda892ccdbea12834f1d68086952eb",
     "semantic_hash": ""
   },
   "tests/fixtures/drs-references.json": {
@@ -3810,9 +3810,9 @@
     "semantic_hash": ""
   },
   "AGENTS.md": {
-    "mtime": 1793213937.76062,
-    "seen": 1793214238.4763339,
-    "ast_hash": "c556105ba794cce987edc9b1d79bbecb",
+    "mtime": 1793214853.049096,
+    "seen": 1793214912.9134917,
+    "ast_hash": "405092692bf5975b5510f0ea895ebe0d",
     "semantic_hash": ""
   },
   "CLAUDE.md": {
@@ -3828,9 +3828,9 @@
     "semantic_hash": "bd014af3a57aef4d59ac424e7042bafd"
   },
   "DASHBOARD.md": {
-    "mtime": 1793213944.4251773,
-    "seen": 1793214238.476339,
-    "ast_hash": "f2d13b3ceac5730472b71345e1e7b280",
+    "mtime": 1793214853.0480933,
+    "seen": 1793214912.9134974,
+    "ast_hash": "1381d98906c4d8b368b0d21a01218757",
     "semantic_hash": ""
   },
   "GEMINI.md": {
@@ -3846,9 +3846,9 @@
     "semantic_hash": "27c1373f4dc4b15147f80935e2207fd3"
   },
   "dashboard_visual.html": {
-    "mtime": 1793213945.905536,
-    "seen": 1793214238.476349,
-    "ast_hash": "9fe5993d3a5fbc74e40b25ebdb80c43d",
+    "mtime": 1793214854.6216016,
+    "seen": 1793214912.9135077,
+    "ast_hash": "72573e64c903b6358f27e6bc6c60dc7a",
     "semantic_hash": ""
   },
   "docs/design/brief-revision-ux-ui.md": {
@@ -3930,9 +3930,9 @@
     "semantic_hash": "c437aad7a063cbda404f7193f324acef"
   },
   "index.html": {
-    "mtime": 1793213945.1354766,
-    "seen": 1793214238.4763758,
-    "ast_hash": "df695ce13e39f1ead61520de4c634b76",
+    "mtime": 1793214853.7975273,
+    "seen": 1793214912.9135497,
+    "ast_hash": "d53753770f6e168a1f39b8294ccd77d7",
     "semantic_hash": ""
   },
   "prototypes/n1/index.html": {
@@ -4140,9 +4140,9 @@
     "semantic_hash": ""
   },
   "src/radio/voice/piperVoice.ts": {
-    "mtime": 1793050988.3255374,
-    "seen": 1793051323.3301744,
-    "ast_hash": "ff2fbbe7a01bb21a320d4438c4e4190f",
+    "mtime": 1793214615.3973508,
+    "seen": 1793214912.9124122,
+    "ast_hash": "57297f623ab2f700fa31169868b5f641",
     "semantic_hash": ""
   },
   "src/radio/voice/radioFilter.ts": {
@@ -4845,6 +4845,30 @@
     "mtime": 1793213937.1457148,
     "seen": 1793214238.476365,
     "ast_hash": "81b54610d9c70d114cf9fb24b0d0b455",
+    "semantic_hash": ""
+  },
+  "src/dev/VoiceBlindTest.tsx": {
+    "mtime": 1793214521.1936903,
+    "seen": 1793214912.9121351,
+    "ast_hash": "192d13855d7d576d756cbd1f8a296c37",
+    "semantic_hash": ""
+  },
+  "src/dev/blindVoiceTest.ts": {
+    "mtime": 1793214521.1525424,
+    "seen": 1793214912.9121387,
+    "ast_hash": "921b9a956255ba53d917398727d3f23c",
+    "semantic_hash": ""
+  },
+  "src/radio/voice/kokoroVoice.ts": {
+    "mtime": 1793214711.0068104,
+    "seen": 1793214912.9124014,
+    "ast_hash": "8c6c3c0570242ac1f02fd5e65ddcd760",
+    "semantic_hash": ""
+  },
+  "tests/modules/voice-natural-ux15.mjs": {
+    "mtime": 1793214749.184175,
+    "seen": 1793214912.913408,
+    "ast_hash": "690cde7b52c4ff4dc27b2b325d8d31ef",
     "semantic_hash": ""
   }
 }

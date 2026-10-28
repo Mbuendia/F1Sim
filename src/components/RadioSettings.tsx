@@ -22,6 +22,8 @@ import { browserModelDownload } from '../radio/model/browserDownloads';
 import { browserVariantEnv, chooseVariant, readVariantPreference, writeVariantPreference, type RadioVariant, type VariantChoice, type VariantPreference } from '../radio/model/variants';
 import { radioStore } from '../state/radioStore';
 import { createPiperStore, PIPER_VOICE } from '../radio/voice/piperVoice';
+import { createBrowserKokoroStore, hasWebGPU, KOKORO_VOICE } from '../radio/voice/kokoroVoice';
+import { radioRecordingCredits } from '../radio/voice/radioRecordings';
 import { applyRadioVoice, readVoicePref, writeVoicePref, type VoicePref } from '../radio/voice/piperRuntime';
 import { PRIVACY_NOTE, WHISPER_MODEL, browserSttEnv, chooseStt } from '../radio/stt/sttChooser';
 import { createWhisperStore } from '../radio/stt/whisperStt';
@@ -42,6 +44,9 @@ export interface RadioSettingsProps {
   remember?: boolean;
   /** [IA6] Tiendas simuladas de la voz Piper y de Whisper (página de revisión). */
   voiceStore?: ModelStore;
+  /** [UX15] La descarga de Kokoro y si hay WebGPU (para la página de revisión y los tests; sin esto, las del navegador). */
+  kokoroStore?: ModelStore;
+  webgpu?: boolean;
   whisperStore?: ModelStore;
   /** [UX2] «ajustes» (por defecto): todo, con las descargas. «carrera»: solo el estado y encender o apagar; las descargas
    * se hacen en Ajustes, antes de correr. */
@@ -69,7 +74,7 @@ const realStores: Record<RadioVariant, ModelStore> = {
 };
 const previousStores: Record<RadioVariant, ModelStore[]> = { q0f16: revisionsOf('q0f16').slice(1).map(r => r.store), q4: revisionsOf('q4').slice(1).map(r => r.store) };
 
-export default function RadioSettings({ store: givenStore, device: givenDevice, choice: givenChoice, estimate: givenEstimate, saveData = browserSaveData(), initialMode, remember = true, voiceStore, whisperStore, place = 'ajustes' }: RadioSettingsProps) {
+export default function RadioSettings({ store: givenStore, device: givenDevice, choice: givenChoice, estimate: givenEstimate, saveData = browserSaveData(), initialMode, remember = true, voiceStore, kokoroStore, webgpu, whisperStore, place = 'ajustes' }: RadioSettingsProps) {
   const race = place === 'carrera';
   const [estimate] = useState(() => givenEstimate ?? browserEstimate());
   const [mode, setMode] = useState<RadioMode>(() => initialMode ?? readRadioMode(browserStorage()));
@@ -209,7 +214,7 @@ export default function RadioSettings({ store: givenStore, device: givenDevice, 
         </div>
       )}
       <div className={styles.section}>Voz y micro</div>
-      <VoiceSettings store={voiceStore ?? realPiperStore} estimate={estimate} mobile={choice?.mobile ?? false} remember={remember} saveData={saveData} race={race} />
+      <VoiceSettings store={voiceStore ?? realPiperStore} kokoroStore={kokoroStore ?? realKokoroStore} webgpu={webgpu} estimate={estimate} mobile={choice?.mobile ?? false} remember={remember} saveData={saveData} race={race} />
       <MicSettings store={whisperStore ?? realWhisperStore} estimate={estimate} saveData={saveData} race={race} />
       <CorrectionsSettings />
     </div>
@@ -217,12 +222,13 @@ export default function RadioSettings({ store: givenStore, device: givenDevice, 
 }
 
 const realPiperStore = createPiperStore();
+const realKokoroStore = createBrowserKokoroStore();
 const realWhisperStore = createWhisperStore();
 
 /** [IA6] Una descarga de un modelo pequeño (voz o micro): tamaño, barra, cancelar y borrar. */
 function ModelBlock({ store, bytes, estimate, saveData, label, onReady, onReadyChange, race = false }: { store: ModelStore; bytes: number; estimate?: () => Promise<{ quota?: number; usage?: number }>; saveData: boolean; label: string; onReady?: () => void; onReadyChange?: (ready: boolean) => void; race?: boolean }) {
   // [UX4] Con las tiendas reales (voz y micro), la descarga es una sola en toda la página.
-  const shareKey = store === realPiperStore ? "voz-piper" : store === realWhisperStore ? "micro-whisper" : null;
+  const shareKey = store === realPiperStore ? "voz-piper" : store === realKokoroStore ? "voz-kokoro" : store === realWhisperStore ? "micro-whisper" : null;
   const download = useMemo(() => (shareKey ? browserModelDownload(shareKey, { store, totalBytes: bytes, estimate, persist: persistStorage })
     : createModelDownload({ store, totalBytes: bytes, estimate, persist: persistStorage })), [shareKey, store, bytes, estimate]);
   const [state, setState] = useState<DownloadState>(download.state());
@@ -258,8 +264,16 @@ function ModelBlock({ store, bytes, estimate, saveData, label, onReady, onReadyC
   );
 }
 
-/** [IA6] Voz de los pilotos: la del sistema o Piper (más natural, con efecto de radio). */
-function VoiceSettings({ store, estimate, mobile, remember, saveData, race = false }: { store: ModelStore; estimate?: () => Promise<{ quota?: number; usage?: number }>; mobile: boolean; remember: boolean; saveData: boolean; race?: boolean }) {
+/**
+ * [IA6] Voz de los pilotos: la del sistema o la realista (con efecto de radio). [UX15] La realista es Kokoro si hay
+ * WebGPU; sin WebGPU, Piper (más ligera), como antes.
+ */
+function VoiceSettings({ store, kokoroStore, webgpu: givenWebgpu, estimate, mobile, remember, saveData, race = false }: { store: ModelStore; kokoroStore: ModelStore; webgpu?: boolean; estimate?: () => Promise<{ quota?: number; usage?: number }>; mobile: boolean; remember: boolean; saveData: boolean; race?: boolean }) {
+  const [detected, setDetected] = useState<boolean | null>(null);
+  useEffect(() => { if (givenWebgpu === undefined) void hasWebGPU().then(setDetected); }, [givenWebgpu]);
+  const webgpu = givenWebgpu ?? detected;
+  const kokoro = webgpu === true;
+  const realistic = kokoro ? KOKORO_VOICE : PIPER_VOICE;
   const [pref, setPref] = useState<VoicePref>(() => (remember ? readVoicePref(browserStorage(), mobile) : mobile ? 'sistema' : 'piper'));
   const choose = (next: VoicePref) => { setPref(next); if (remember) { writeVoicePref(browserStorage(), next); void applyRadioVoice(next); } };
   // [UX8] La voz que sonará: la realista solo cuando está descargada (la avisa onReady); si no, la del sistema.
@@ -271,13 +285,21 @@ function VoiceSettings({ store, estimate, mobile, remember, saveData, race = fal
           <Volume2 size={16} aria-hidden="true" /><span>Voz del sistema <small>sin descargas</small></span>
         </button>
         <button type="button" role="radio" aria-checked={pref === 'piper'} className={styles.mode} onClick={() => choose('piper')}>
-          <Radio size={16} aria-hidden="true" /><span>Voz de radio realista <small>≈ {toMB(PIPER_VOICE.bytes)} MB</small></span>
+          <Radio size={16} aria-hidden="true" /><span>Voz de radio realista <small>≈ {toMB(realistic.bytes)} MB</small></span>
         </button>
       </div>
       {mobile && <p className={styles.note}>En el móvil viene apagada: gasta CPU y batería.</p>}
-      {pref === 'piper' && (
+      {pref === 'piper' && kokoro && (
         <>
-          <ModelBlock store={store} bytes={PIPER_VOICE.bytes} estimate={estimate} saveData={saveData} label="Voz de radio" race={race} onReadyChange={ready => { if (!race) radioStore.getState().setAi({ voice: ready ? 'piper' : 'sistema' }); }} onReady={() => { if (remember) void applyRadioVoice('piper'); }} />
+          <ModelBlock key="kokoro" store={kokoroStore} bytes={KOKORO_VOICE.bytes} estimate={estimate} saveData={saveData} label="Voz de radio" race={race} onReadyChange={ready => { if (!race) radioStore.getState().setAi({ voice: ready ? 'kokoro' : 'sistema' }); }} onReady={() => { if (remember) void applyRadioVoice('piper'); }} />
+          <p className={styles.note}>{KOKORO_VOICE.credit}. Necesita WebGPU; sin él, suena Piper si está descargada.</p>
+          <p className={styles.note}>{radioRecordingCredits().join(' · ')}.</p>
+        </>
+      )}
+      {pref === 'piper' && webgpu === false && <p className={styles.note}>Este equipo no tiene WebGPU: la voz realista es Piper, más ligera.</p>}
+      {pref === 'piper' && webgpu === false && (
+        <>
+          <ModelBlock key="piper" store={store} bytes={PIPER_VOICE.bytes} estimate={estimate} saveData={saveData} label="Voz de radio" race={race} onReadyChange={ready => { if (!race) radioStore.getState().setAi({ voice: ready ? 'piper' : 'sistema' }); }} onReady={() => { if (remember) void applyRadioVoice('piper'); }} />
           <p className={styles.note}>{PIPER_VOICE.credit}.</p>
         </>
       )}

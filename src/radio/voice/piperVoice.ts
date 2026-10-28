@@ -64,7 +64,8 @@ export function chooseVoiceEngine(env: { piperReady: boolean; audio: boolean; sy
 }
 
 export interface Synthesized { samples: Float32Array; sampleRate: number }
-export type Synth = (text: string, voice: PilotVoice) => Promise<Synthesized>;
+/** [UX15] Con el piloto que habla: Kokoro elige su voz por piloto (Piper usa solo `voice`). */
+export type Synth = (text: string, voice: PilotVoice, driverId?: string) => Promise<Synthesized>;
 
 /** Tiempo máximo de una frase, por si el navegador no avisa del final. */
 const MAX_PHRASE_MS = 15000;
@@ -87,7 +88,7 @@ export function createPiperSpeaker(deps: { synth: Synth; context: () => AudioCon
       if (!ctx) return;
       const voice = voiceOf(driverId ?? '');
       let audio: Synthesized;
-      try { audio = await deps.synth(text, voice); } catch { return; }
+      try { audio = await deps.synth(text, voice, driverId); } catch { return; }
       const radio = chainFor(ctx);
       const buffer = ctx.createBuffer(1, audio.samples.length, audio.sampleRate);
       buffer.getChannelData(0).set(audio.samples);

@@ -24,7 +24,7 @@ export function compressorOutputDb(inDb: number): number {
   return inDb <= threshold ? inDb : threshold + (inDb - threshold) / ratio;
 }
 
-/** [UX14] Motor de fondo: un ciclo con armónicos a 100 Hz que se acelera hasta la frecuencia de encendido. */
+/** [UX14] Motor de fondo: un bucle que, a velocidad 1, enciende a 100 Hz y se acelera hasta la frecuencia de encendido. */
 export const ENGINE_BASE_HZ = 100;
 export const ENGINE_LEVEL = { movingDb: -17, minDb: -19.5, maxDb: -15.5, idleDb: -40, lowRpm: 8000, highRpm: 12500 } as const;
 export interface EngineInfo { rpm: number; moving: boolean }
@@ -32,6 +32,51 @@ export interface EngineInfo { rpm: number; moving: boolean }
 /** Frecuencia de encendido de un V6 de cuatro tiempos: revoluciones ÷ 60 × 3, entre 400 y 950 Hz. */
 export function engineFrequency(rpm: number): number {
   return Math.min(950, Math.max(400, (rpm / 60) * 3));
+}
+
+/**
+ * [UX15] Perfil del motor de un F1 V6 híbrido (dB de cada armónico del giro del cigüeñal, revoluciones ÷ 60): medido el
+ * 28/10/2026 en una referencia de sonido de motor de F1 (solo para medir; ese audio no está en el juego). El primero es
+ * el del cigüeñal; el encendido es el 3.º; bajan suave hasta unos −30 dB hacia el 20.º.
+ */
+export const ENGINE_ORDERS_DB = [0, -10.9, -9.1, -10.7, -12.2, -15.6, -12.1, -17.5, -13.3, -17.1, -19.6, -20.8, -22.8, -25.6, -23, -27.7, -22.3, -27.9, -21.9, -27.9] as const;
+/** Vueltas del cigüeñal que dura el bucle (cada una un poco distinta, como la combustión de verdad). */
+export const ENGINE_LOOP_REVS = 8;
+/** Ruido de combustión respecto a los armónicos. */
+export const ENGINE_NOISE_DB = -20;
+
+/**
+ * Un bucle del motor: ENGINE_LOOP_REVS vueltas del cigüeñal (3 encendidos cada una, a ENGINE_BASE_HZ), con los
+ * armónicos del perfil, una irregularidad suave de vuelta a vuelta y un golpe de ruido en cada encendido. Empieza y
+ * acaba igual, así que se repite sin costura. `random` fijo en los tests.
+ */
+export function engineLoop(sampleRate: number, random: () => number = Math.random): Float32Array {
+  const fire = Math.max(2, Math.round(sampleRate / ENGINE_BASE_HZ));
+  const rev = fire * 3, length = rev * ENGINE_LOOP_REVS;
+  const out = new Float32Array(length);
+  const phase = ENGINE_ORDERS_DB.map(() => random() * Math.PI * 2);
+  const amp = ENGINE_ORDERS_DB.map(db => Math.pow(10, db / 20));
+  // Intensidad de cada vuelta (±12 %), interpolada en coseno y cerrada sobre sí misma.
+  const revGain = Array.from({ length: ENGINE_LOOP_REVS }, () => 1 + (random() - 0.5) * 0.24);
+  const gainAt = (i: number) => {
+    const x = i / rev, a = Math.floor(x), t = x - a;
+    const g0 = revGain[a % ENGINE_LOOP_REVS], g1 = revGain[(a + 1) % ENGINE_LOOP_REVS];
+    return g0 + (g1 - g0) * (0.5 - 0.5 * Math.cos(Math.PI * t));
+  };
+  const noise = Math.pow(10, ENGINE_NOISE_DB / 20);
+  let lp = 0;
+  for (let i = 0; i < length; i++) {
+    let v = 0;
+    for (let k = 0; k < amp.length; k++) v += amp[k] * Math.sin((2 * Math.PI * (k + 1) * i) / rev + phase[k]);
+    // Golpe de ruido al principio de cada encendido, filtrado (paso bajo de un polo) para que no sea un siseo.
+    const inFire = (i % fire) / fire;
+    lp += 0.35 * ((random() * 2 - 1) - lp);
+    v += noise * 4 * lp * Math.exp(-6 * inFire);
+    out[i] = v * gainAt(i);
+  }
+  let peak = 0; for (const x of out) peak = Math.max(peak, Math.abs(x));
+  for (let i = 0; i < length; i++) out[i] /= peak || 1;
+  return out;
 }
 /** Nivel del motor respecto a la voz: −19,5 a −15,5 dB según las revoluciones; parado o en boxes, −40 dB. */
 export function engineLevelDb(info: EngineInfo | null | undefined): number {
@@ -92,7 +137,41 @@ function rampTo(ctx: AudioContextLike, param: ParamLike, value: number, sec: num
   } else param.value = value;
 }
 
-export function buildRadioChain(ctx: AudioContextLike, destination: unknown = ctx.destination): RadioChain {
+/** [UX15] Una grabación ya leída: muestras en mono y su frecuencia de muestreo. */
+export interface RadioRecording { samples: Float32Array; sampleRate: number }
+/** [UX15] Grabaciones de la radio: el pitido al abrir y el motor de fondo (si no hay, suena lo sintético). */
+export interface RadioRecordings { cue?: RadioRecording; engine?: RadioRecording }
+/** Revoluciones a las que la grabación del motor suena a su velocidad natural. */
+export const ENGINE_REF_RPM = 11500;
+/** Nivel del pitido grabado frente a la voz. */
+export const RECORDED_CUE_LEVEL = 0.55;
+
+let recordings: RadioRecordings = {};
+/** Las grabaciones que usarán las cadenas de radio que se creen desde ahora (las carga radioRecordings.ts). */
+export function setRadioRecordings(next: RadioRecordings) { recordings = next; }
+export function radioRecordings(): RadioRecordings { return recordings; }
+
+/** Lee un WAV PCM de 16 bits (mono o estéreo, que se mezcla a mono). */
+export function parseWav16(data: ArrayBuffer): RadioRecording {
+  const v = new DataView(data);
+  const tag = (o: number) => String.fromCharCode(v.getUint8(o), v.getUint8(o + 1), v.getUint8(o + 2), v.getUint8(o + 3));
+  if (tag(0) !== 'RIFF' || tag(8) !== 'WAVE') throw new Error('No es un WAV');
+  let o = 12, channels = 1, rate = 44100, bits = 16;
+  while (o + 8 <= v.byteLength) {
+    const id = tag(o), size = v.getUint32(o + 4, true);
+    if (id === 'fmt ') { channels = v.getUint16(o + 10, true); rate = v.getUint32(o + 12, true); bits = v.getUint16(o + 22, true); }
+    if (id === 'data') {
+      if (bits !== 16) throw new Error('El WAV debe ser de 16 bits');
+      const frames = Math.floor(size / (2 * channels)), samples = new Float32Array(frames);
+      for (let i = 0; i < frames; i++) { let s = 0; for (let c = 0; c < channels; c++) s += v.getInt16(o + 8 + (i * channels + c) * 2, true); samples[i] = s / channels / 32768; }
+      return { samples, sampleRate: rate };
+    }
+    o += 8 + size + (size % 2);
+  }
+  throw new Error('WAV sin datos');
+}
+
+export function buildRadioChain(ctx: AudioContextLike, destination: unknown = ctx.destination, rec: RadioRecordings = recordings): RadioChain {
   const input = ctx.createGain();
   input.gain.value = 1;
   // Banda: dos pasos altos y dos pasos bajos en cascada.
@@ -116,20 +195,25 @@ export function buildRadioChain(ctx: AudioContextLike, destination: unknown = ct
   last.connect(shaper); shaper.connect(destination);
   const bandIn = filters[0];
 
-  // Motor de fondo: un ciclo con los ocho primeros armónicos (diente de sierra suavizado) en bucle, por la misma banda.
+  // Motor de fondo, por la misma banda. [UX15] Con la grabación, un F1 de verdad en bucle; si no, el sintético. La
+  // grabación se declara con la frecuencia de muestreo que hace que, a la velocidad engineFrequency ÷ ENGINE_BASE_HZ
+  // (como el sintético), suene a su velocidad natural a ENGINE_REF_RPM y más aguda o más grave con las revoluciones.
   const engine = ctx.createGain();
   engine.gain.value = 0;
   engine.connect(bandIn);
-  const period = Math.max(2, Math.round(ctx.sampleRate / ENGINE_BASE_HZ));
-  const cycle = ctx.createBuffer(1, period, ctx.sampleRate);
-  const wave = cycle.getChannelData(0);
-  let peak = 0;
-  for (let i = 0; i < period; i++) {
-    let v = 0;
-    for (let k = 1; k <= 8; k++) v += Math.sin((2 * Math.PI * k * i) / period) / k;
-    wave[i] = v; peak = Math.max(peak, Math.abs(v));
-  }
-  for (let i = 0; i < period; i++) wave[i] /= peak || 1;
+  const loop = rec.engine?.samples ?? engineLoop(ctx.sampleRate);
+  const loopRate = rec.engine ? Math.max(3000, rec.engine.sampleRate * ENGINE_BASE_HZ / engineFrequency(ENGINE_REF_RPM)) : ctx.sampleRate;
+  const cycle = ctx.createBuffer(1, loop.length, loopRate);
+  cycle.getChannelData(0).set(loop);
+  // [UX15] El pitido grabado, ya con sonido de radio: va directo a la salida, sin volver a filtrarlo.
+  const cueBuffer = rec.cue ? ctx.createBuffer(1, rec.cue.samples.length, rec.cue.sampleRate) : null;
+  cueBuffer?.getChannelData(0).set(rec.cue!.samples);
+  const playCue = () => {
+    if (!cueBuffer) return false;
+    const g = ctx.createGain(); g.gain.value = RECORDED_CUE_LEVEL; g.connect(destination);
+    const src = ctx.createBufferSource(); src.buffer = cueBuffer; src.connect(g); src.start();
+    return true;
+  };
   let source: SourceLike | null = null;
   let info: EngineInfo | null = null;
   let open = false;
@@ -158,7 +242,7 @@ export function buildRadioChain(ctx: AudioContextLike, destination: unknown = ct
     },
     open() {
       open = true;
-      burst(RADIO_CUE.squelchSec, RADIO_CUE.level);
+      if (!playCue()) burst(RADIO_CUE.squelchSec, RADIO_CUE.level);
       if (!source) {
         source = ctx.createBufferSource();
         source.buffer = cycle; source.loop = true; source.engine = true;

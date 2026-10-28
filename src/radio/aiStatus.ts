@@ -10,7 +10,7 @@ export interface AiStatusInput {
   aiStatus: 'apagada' | 'descargando' | 'conectando' | 'lista' | 'basica';
   aiReason?: string;
   variant?: 'q0f16' | 'q4';
-  voice?: 'piper' | 'sistema' | 'texto';
+  voice?: 'kokoro' | 'piper' | 'sistema' | 'texto';
   mic?: 'web-speech' | 'whisper' | null;
   /** ¿Está el modelo en el dispositivo? (si se sabe) */
   downloaded?: boolean;
@@ -32,7 +32,7 @@ function modelState(input: AiStatusInput): string {
   return 'No disponible';
 }
 
-const VOICE = { piper: 'Realista (Piper)', sistema: 'Del sistema', texto: 'Sin voz (solo texto)' } as const;
+const VOICE = { kokoro: 'Realista (Kokoro)', piper: 'Realista (Piper)', sistema: 'Del sistema', texto: 'Sin voz (solo texto)' } as const;
 const MIC = { 'web-speech': 'Micro de Chrome (con red)', whisper: 'Micro sin red (Whisper)' } as const;
 
 export function aiStatusSummary(input: AiStatusInput): AiStatusSummary {
