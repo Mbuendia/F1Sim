@@ -2,6 +2,10 @@
 
 Revisión: 30/09/2026. Complementa el acuerdo de `grill-redesign.md`; las medidas y tratamientos nuevos son propuestas para validar, no cambios implementados.
 
+## Circuitos (Sprint 10.5)
+
+- **Mónaco, vista cenital** (`referencias/monaco-vista-cenital.webp`, captura que pasa el usuario el 28/10/2026): densidad de la ciudad hasta la pista, puerto con barcos en filas y jardines del casino. Referencia de ambiente para CR4; solo se mira.
+
 ## Alcance y evidencia
 
 Este documento conserva la primera revisión de páginas públicas y capturas. La prueba posterior de flujos autenticados y carrera está documentada por separado en [playtest-managers.md](playtest-managers.md), para no mezclar observaciones estáticas con comportamiento comprobado.

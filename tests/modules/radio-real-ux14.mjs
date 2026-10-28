@@ -10,6 +10,8 @@
 //     habla (revoluciones ÷ 60 × 3, de unos 400 a 950 Hz), por la misma banda y unos 15–20 dB por debajo de la voz; sube
 //     con las revoluciones y casi desaparece en boxes o parado; sigue sonando solo con la radio abierta (UX13).
 //  4. Apertura y cierre con un chasquido de radio (ráfaga corta de ruido filtrado), sin pitido musical.
+//     [UX15] Cambiado el 28/10/2026 con aprobación del usuario: con la grabación cargada, la apertura es el pitido de radio
+//     grabado por el usuario (musical; lo comprueba voice-natural-ux15). Aquí se mide la cadena sin grabaciones, el respaldo.
 //  5. Todo lo anterior solo en la voz realista (Piper); la voz del sistema no pasa por el filtro (el navegador no lo
 //     permite).
 import { readFileSync } from 'node:fs';

@@ -5,6 +5,8 @@
 //  2. Al empezar una frase suena la apertura (un chasquido de radio) y el ruido sube en 80 ms como mucho.
 //     [UX14] Antes era «chasquido y pitido corto»: el pitido se cambia por un chasquido, como en la radio real, con
 //     autorización del usuario del 26/10/2026. El fondo es ahora el motor del coche (UX14).
+//     [UX15] Cambiado el 28/10/2026 con aprobación del usuario: con la grabación cargada, la apertura es el pitido de radio
+//     grabado por el usuario (lo comprueba voice-natural-ux15); este módulo mide la cadena sin grabaciones (el respaldo).
 //  3. Al acabar suena el cierre y el ruido baja a cero y se para en 200 ms como mucho; ningún bucle sigue en marcha
 //     (con un contexto de audio falso).
 //  4. Cancelar a mitad de frase cierra igual.
