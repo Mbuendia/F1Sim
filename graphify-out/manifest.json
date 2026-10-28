@@ -1,8 +1,8 @@
 {
   "src/App.tsx": {
-    "mtime": 1793052709.6057372,
-    "seen": 1793053053.1335084,
-    "ast_hash": "23510bbc2997e490a440e072845cba04",
+    "mtime": 1793053241.7773843,
+    "seen": 1793053578.0457065,
+    "ast_hash": "c07f57a64ea395b51c837ec9c5310af8",
     "semantic_hash": ""
   },
   "src/audio/AudioEngine.ts": {
@@ -180,22 +180,22 @@
     "semantic_hash": "c5b212891e5684d7b3fef465888bb89b"
   },
   "src/components/HomeScreen.tsx": {
-    "mtime": 1793039236.5689006,
-    "seen": 1793049566.8244932,
-    "ast_hash": "f1750852476cd24d76d704200a5e3df5",
+    "mtime": 1793053250.0676968,
+    "seen": 1793053578.0457664,
+    "ast_hash": "75fef4443a831bf1f4aed8ad820afb9c",
     "semantic_hash": ""
   },
   "src/components/HubHeader.tsx": {
-    "mtime": 1791548118.488689,
-    "seen": 1792709270.8663876,
-    "ast_hash": "9435aa944a76be2bd56f642c91f13aa8",
-    "semantic_hash": "9435aa944a76be2bd56f642c91f13aa8"
+    "mtime": 1793053189.3226783,
+    "seen": 1793053578.0457683,
+    "ast_hash": "76864b594d4858727068a853ae838463",
+    "semantic_hash": ""
   },
   "src/components/HubHome.tsx": {
-    "mtime": 1791548118.557523,
-    "seen": 1792709270.8663886,
-    "ast_hash": "0b279780201d8334ebcc5000cef8871a",
-    "semantic_hash": "0b279780201d8334ebcc5000cef8871a"
+    "mtime": 1793053373.4550996,
+    "seen": 1793053578.0457695,
+    "ast_hash": "58cdb00c69632ad17a58450bbe5678ca",
+    "semantic_hash": ""
   },
   "src/components/LandingPage.tsx": {
     "mtime": 1793032963.4561152,
@@ -1374,10 +1374,10 @@
     "semantic_hash": "9c4d723bfff8671d464beaec1b19c69c"
   },
   "src/simulation/Hub.ts": {
-    "mtime": 1792376268.7124634,
-    "seen": 1792709270.8666143,
-    "ast_hash": "cbdda9c3002b4b792341cf2e9c988838",
-    "semantic_hash": "cbdda9c3002b4b792341cf2e9c988838"
+    "mtime": 1793053178.9961114,
+    "seen": 1793053578.0461676,
+    "ast_hash": "4f67c8cf2ff90bb60deae5a49b03dfec",
+    "semantic_hash": ""
   },
   "src/simulation/IncidentModel.ts": {
     "mtime": 1791530917.242026,
@@ -2760,10 +2760,10 @@
     "semantic_hash": "72f3e38198913ef7e5e8b2fd74515f51"
   },
   "tests/modules/hub-t43.mjs": {
-    "mtime": 1791548050.4108527,
-    "seen": 1792755216.2388306,
-    "ast_hash": "cc246af2704d65eec29a0edb1b871376",
-    "semantic_hash": "cc246af2704d65eec29a0edb1b871376"
+    "mtime": 1793053497.503041,
+    "seen": 1793053578.04635,
+    "ast_hash": "9cbdf1a2e28f2096c83bc896f0852ade",
+    "semantic_hash": ""
   },
   "tests/modules/landing-compound.mjs": {
     "mtime": 1793032996.1210508,
@@ -3810,9 +3810,9 @@
     "semantic_hash": ""
   },
   "AGENTS.md": {
-    "mtime": 1793052971.0546277,
-    "seen": 1793053053.1343956,
-    "ast_hash": "6b220151b7fa74965340faa82d7a990f",
+    "mtime": 1793053513.7991767,
+    "seen": 1793053578.0466614,
+    "ast_hash": "16570af6b612768bfdccd69b86ab9eec",
     "semantic_hash": ""
   },
   "CLAUDE.md": {
@@ -3828,9 +3828,9 @@
     "semantic_hash": "bd014af3a57aef4d59ac424e7042bafd"
   },
   "DASHBOARD.md": {
-    "mtime": 1793052971.0535035,
-    "seen": 1793053053.1344,
-    "ast_hash": "c1cd0a056d5bff1b24cad7ad8e458ac8",
+    "mtime": 1793053513.798172,
+    "seen": 1793053578.0466664,
+    "ast_hash": "e692ed835478fc50a4b7a3345dc9250f",
     "semantic_hash": ""
   },
   "GEMINI.md": {
@@ -3846,9 +3846,9 @@
     "semantic_hash": "27c1373f4dc4b15147f80935e2207fd3"
   },
   "dashboard_visual.html": {
-    "mtime": 1793052972.7307186,
-    "seen": 1793053053.134409,
-    "ast_hash": "de03b27435b48c2aba9c7708d4f0b7e7",
+    "mtime": 1793053515.1236541,
+    "seen": 1793053578.0466762,
+    "ast_hash": "e6e001593cceecb4e0596240a2d0f834",
     "semantic_hash": ""
   },
   "docs/design/brief-revision-ux-ui.md": {
@@ -3930,9 +3930,9 @@
     "semantic_hash": "c437aad7a063cbda404f7193f324acef"
   },
   "index.html": {
-    "mtime": 1793052971.7171333,
-    "seen": 1793053053.1344316,
-    "ast_hash": "ecc306ccdcd2852fba18f159cfcfb219",
+    "mtime": 1793053514.4020627,
+    "seen": 1793053578.046701,
+    "ast_hash": "986c62e876f609b53d2b52ecf57650ac",
     "semantic_hash": ""
   },
   "prototypes/n1/index.html": {

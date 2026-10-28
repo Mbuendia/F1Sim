@@ -150,6 +150,8 @@
 .decisionFacts div { display: grid; grid-template-columns: 6.5em minmax(0, 1fr); gap: 8px; font-size: 15px; }
 .decisionFacts dt { color: var(--text-3); }
 .decisionFacts dd { margin: 0; font-weight: 600; }
+.decisionImage { display: block; width: 100%; aspect-ratio: 16 / 9; height: auto; max-height: 200px; border-radius: var(--radio-s); object-fit: cover; background: var(--panel-2); }
+.decisionCard > button[data-part-button] { align-self: flex-start; min-height: 44px; gap: 6px; padding: 0 12px; }
 .decisionEmpty { display: flex; flex-direction: column; gap: 8px; border-top: 4px solid var(--positivo); }
 
 .weekend { display: flex; flex-direction: column; gap: 14px; flex-shrink: 0; }

@@ -1,9 +1,13 @@
+import { Suspense, lazy, useEffect, useState } from 'react';
 import { ArrowRight, CloudRain, Flag, ListChecks } from 'lucide-react';
 import { nextDecisions } from '../simulation/Hub';
 import type { HubSection, PendingItem } from '../simulation/Hub';
 import { HUB_SECTIONS } from '../simulation/Hub';
 import { SEASON_RACES } from '../simulation/Season';
 import m from './Management.module.css';
+
+/** [UX10] La imagen de cada decisión (y su visor 3D) se carga aparte, solo en el centro de temporada. */
+const DecisionVisual = lazy(() => import('./DecisionVisual'));
 
 export interface NextRace { round: number; circuitName?: string; name?: string; laps?: number; rainPercent?: number; sprint?: boolean; note?: string }
 export interface StatusCard { label: string; value: string; detail: string; section: HubSection }
@@ -28,6 +32,9 @@ export function HubHome({ next, pending, status, onGo }: {
   onGo: (section: HubSection) => void;
 }) {
   const top = nextDecisions(pending, DECISION_CARDS);
+  // Las imágenes solo en el navegador (al pintar en el servidor no se descarga nada).
+  const [client, setClient] = useState(false);
+  useEffect(() => setClient(true), []);
   const rest = pending.filter(item => !top.includes(item));
   return (
     <div className={m.hubHome}>
@@ -42,6 +49,7 @@ export function HubHome({ next, pending, status, onGo }: {
         ) : top.map(item => (
           <article key={item.id} className={`${m.card} ${m.decisionCard}`} data-decision-card data-urgency={item.priority}>
             <span className={m.label}>{URGENCY[item.priority] ?? 'Pendiente'} · {SECTION_LABEL[item.section]}</span>
+            {client && item.visual && <Suspense fallback={null}><DecisionVisual visual={item.visual} /></Suspense>}
             <div className={m.decisionTitle}>{item.title}</div>
             <span className={m.muted}>{item.detail}</span>
             <dl className={m.decisionFacts}>
