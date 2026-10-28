@@ -603,6 +603,7 @@ export const modules = [
   { "id": "radio-noise-ux13", "tasks": ["UX13"], "sprint": "7", "kind": "contract" },
   { "id": "free-race-ux12", "tasks": ["UX12"], "sprint": "7", "kind": "contract" },
   { "id": "voice-natural-ux15", "tasks": ["UX15"], "sprint": "7", "kind": "contract" },
+  { "id": "car-dots-ux16", "tasks": ["UX16"], "sprint": "7", "kind": "contract" },
   { "id": "radio-real-ux14", "tasks": ["UX14"], "sprint": "7", "kind": "contract" },
   { "id": "radio-model-ia4", "tasks": ["IA4"], "sprint": "6", "kind": "contract" },
   { "id": "radio-llm-ia5", "tasks": ["IA5"], "sprint": "6", "kind": "contract" },

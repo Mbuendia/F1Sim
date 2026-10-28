@@ -1843,6 +1843,7 @@ export const App: React.FC = () => {
               camera={camera}
               selectedCarId={selectedCarId}
               onSelectCar={handleSelectCar}
+              playerTeamId={favoriteCar.team.id}
               weatherTest={mode === 'free' && devMode}
               onWeatherTest={index => { void sendOrder({ kind: 'weatherTest', index }); }}
             />

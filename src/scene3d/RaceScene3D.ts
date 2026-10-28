@@ -26,11 +26,40 @@ import { SPONSOR_COLORS, type Sponsor } from './sponsors';
 import { fireworkBursts, yasHotelColor } from './effects';
 import { lampAim, nearestFloodlights, nightLook, sunLightVector } from './sunLight';
 import type { CameraView } from './cameras';
+import { perfStats } from '../dev/perfStats';
+import { planCars, type CarLevel } from './carDots';
 
 const W = (x: number, y: number, z = 0) => new THREE.Vector3(x, z, y);
-/** A partir de esta distancia a la cámara, cada coche pasa a su versión ligera (el modelo completo pesa mucho). */
-const CAR_LOD_M = 90;
 const LOD_FILE = 'models/f1-car-lod.glb';
+/** [UX16] Puntos a la vez como mucho (uno por coche). */
+const MAX_DOTS = 40;
+const RING_CODE = { ninguno: 0, blanco: 1, seguido: 2 } as const;
+
+/**
+ * [UX16] Puntos de los coches lejanos: un único objeto para todos, de tamaño fijo en píxeles, redondos, del color del
+ * equipo y con borde blanco (los del jugador) o amarillo (el seguido); siempre por encima de la pista.
+ */
+function createCarDots(): THREE.Points {
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(MAX_DOTS * 3), 3));
+  g.setAttribute('color', new THREE.Float32BufferAttribute(new Float32Array(MAX_DOTS * 3), 3));
+  g.setAttribute('size', new THREE.Float32BufferAttribute(new Float32Array(MAX_DOTS), 1));
+  g.setAttribute('ring', new THREE.Float32BufferAttribute(new Float32Array(MAX_DOTS), 1));
+  g.setDrawRange(0, 0);
+  const m = new THREE.ShaderMaterial({
+    vertexShader: `attribute float size; attribute float ring; attribute vec3 color; varying vec3 vColor; varying float vRing;
+      void main() { vColor = color; vRing = ring; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); gl_PointSize = size; }`,
+    fragmentShader: `varying vec3 vColor; varying float vRing;
+      void main() { vec2 p = gl_PointCoord * 2.0 - 1.0; float r = length(p); if (r > 1.0) discard;
+        vec3 c = vColor; if (vRing > 0.5 && r > 0.6) c = vRing > 1.5 ? vec3(1.0, 0.82, 0.1) : vec3(1.0);
+        else if (r > 0.82) c *= 0.55; gl_FragColor = vec4(c, 1.0); }`,
+    depthTest: false, depthWrite: false, transparent: false,
+  });
+  const points = new THREE.Points(g, m);
+  points.frustumCulled = false;
+  points.renderOrder = 10;
+  return points;
+}
 /** Partículas de cada explosión de fuegos artificiales y explosiones a la vez como mucho. */
 const SPARKS = 70;
 const MAX_BURSTS = 12;
@@ -44,6 +73,9 @@ export interface Frame3D {
   shadowRadius: number;
   /** Segundos desde la bandera a cuadros (null: la carrera sigue); para los fuegos artificiales. */
   fireworksSec?: number | null;
+  /** [UX16] Equipo del jugador y coche seguido, para resaltar sus puntos de lejos. */
+  playerTeamId?: string | null;
+  followedCarId?: number | null;
 }
 
 interface CarSlot { full: THREE.Object3D | null; lod: THREE.Object3D | null; proxy: THREE.Mesh; release: (() => void) | null; key: string }
@@ -62,6 +94,9 @@ export class RaceScene3D {
   private ledMaterials: THREE.MeshStandardMaterial[] = [];
   private lampMaterials: THREE.MeshStandardMaterial[] = [];
   private fireworks: THREE.Points | null = null;
+  /** [UX16] Puntos de los coches lejanos y el nivel de cada coche en el fotograma anterior (para el margen). */
+  private dots: THREE.Points | null = null;
+  private readonly carLevels = new Map<number, CarLevel>();
   /** Torres de luz del circuito y las luces de verdad que se encienden en las ocho más cercanas (de noche). */
   private floodlights: SceneItem[] = [];
   private readonly lampLights: THREE.PointLight[] = [];
@@ -190,9 +225,11 @@ export class RaceScene3D {
     if (this.lampFx) this.lampFx.visible = night;
     this.placeFireworks(frame.fireworksSec ?? null);
 
-    this.placeCars(frame.cars);
+    this.placeCars(frame.cars, { fovDeg: view.fov, viewportHeightPx: height, pixelRatio: Math.min(pixelRatio, 2), playerTeamId: frame.playerTeamId ?? null, followedCarId: frame.followedCarId ?? null });
     this.placeSafetyCar(frame.safetyCar);
     this.renderer.render(this.scene, this.camera);
+    // [UX16] Para el contador de rendimiento (UX3).
+    perfStats.drawCalls = this.renderer.info.render.calls; perfStats.triangles = this.renderer.info.render.triangles;
     return canvas;
   }
 
@@ -219,12 +256,34 @@ export class RaceScene3D {
     return bridgeSide({ ...o, halfWindowT: (DECK_HALF_M + RAMP_M) / this.lap }, car.trackT) === 'over' ? bridgeRoadHeight(o, car.trackT, this.lap) : 0;
   }
 
-  private placeCars(cars: CarState[]): void {
+  private placeCars(cars: CarState[], view: { fovDeg: number; viewportHeightPx: number; pixelRatio: number; playerTeamId: string | null; followedCarId: number | null }): void {
     const seen = new Set<number>();
     const cam = this.camera.position;
-    for (const car of cars) {
-      if (!isCarVisible(car)) continue;
+    // [UX16] Nivel de cada coche por lo que mide en pantalla: completo, ligero o punto (con margen para no parpadear).
+    const visibleCars = cars.filter(car => isCarVisible(car));
+    const posOf = (car: CarState) => W(car.worldX, car.worldY, this.carHeight(car));
+    const plans = new Map(planCars(visibleCars.map(car => ({
+      id: car.id, teamId: car.team.id, color: car.team.color, status: car.status, isRetiredVisible: car.isRetiredVisible, distanceM: cam.distanceTo(posOf(car)),
+    })), view, this.carLevels).map(p => [p.id, p]));
+    if (!this.dots) { this.dots = createCarDots(); this.world.add(this.dots); }
+    const dotPos = this.dots.geometry.getAttribute('position') as THREE.BufferAttribute;
+    const dotColor = this.dots.geometry.getAttribute('color') as THREE.BufferAttribute;
+    const dotSize = this.dots.geometry.getAttribute('size') as THREE.BufferAttribute;
+    const dotRing = this.dots.geometry.getAttribute('ring') as THREE.BufferAttribute;
+    const tint = new THREE.Color();
+    let dotCount = 0;
+    for (const car of visibleCars) {
       seen.add(car.id);
+      const plan = plans.get(car.id);
+      if (plan?.dot && dotCount < MAX_DOTS) {
+        const p = posOf(car);
+        dotPos.setXYZ(dotCount, p.x, p.y + 1.5, p.z);
+        tint.set(plan.dot.color);
+        dotColor.setXYZ(dotCount, tint.r, tint.g, tint.b);
+        dotSize.setX(dotCount, plan.dot.sizePx * view.pixelRatio);
+        dotRing.setX(dotCount, RING_CODE[plan.dot.ring]);
+        dotCount++;
+      }
       let slot = this.cars.get(car.id);
       if (!slot) {
         const proxy = new THREE.Mesh(new THREE.BoxGeometry(5.4, 1.0, 1.9), new THREE.MeshLambertMaterial({ color: car.team.color }));
@@ -267,14 +326,19 @@ export class RaceScene3D {
       holder.rotation.y = -car.worldAngle;
       // En desarrollo, `window.__forceLod = true` enseña el coche ligero de cerca (para revisarlo).
       const forceLod = import.meta.env.DEV && (globalThis as { __forceLod?: boolean }).__forceLod === true;
-      const far = forceLod || cam.distanceTo(holder.position) > CAR_LOD_M;
-      // De cerca, el modelo completo; de lejos, el ligero (sacado del mismo modelo); la caja, solo mientras cargan.
-      if (slot.full) slot.full.visible = !far || !slot.lod;
-      if (slot.lod) slot.lod.visible = far || !slot.full;
+      const planned = plan?.level ?? 'completo';
+      const level = forceLod && planned === 'completo' ? 'ligero' : planned;
+      // De cerca, el modelo completo; a media distancia, el ligero; de lejos, nada (va su punto). La caja, solo mientras
+      // cargan los modelos. [UX16] Los modelos solo se esconden: al acercarse vuelven sin cargarse otra vez.
+      if (slot.full) slot.full.visible = level === 'completo' || !slot.lod;
+      if (slot.lod) slot.lod.visible = level === 'ligero' || !slot.full;
       slot.proxy.visible = !slot.full && !slot.lod;
-      holder.visible = true;
+      holder.visible = level !== 'punto';
     }
+    this.dots.geometry.setDrawRange(0, dotCount);
+    for (const a of [dotPos, dotColor, dotSize, dotRing]) a.needsUpdate = true;
     for (const [id, slot] of this.cars) if (!seen.has(id)) (slot as CarSlot & { holder: THREE.Group }).holder.visible = false;
+    for (const id of [...this.carLevels.keys()]) if (!seen.has(id)) this.carLevels.delete(id);
   }
 
   /** Fuegos artificiales: un único conjunto de puntos que se rellena con las explosiones vivas. */
@@ -338,6 +402,7 @@ export class RaceScene3D {
     if (this.carModel) disposeModel(this.carModel.scene);
     if (this.lodModel) disposeModel(this.lodModel.scene);
     if (this.safetyModel) disposeModel(this.safetyModel.scene);
+    if (this.dots) { this.dots.geometry.dispose(); (this.dots.material as THREE.Material).dispose(); }
     this.world.traverse(o => { const m = o as THREE.Mesh; if (m.isMesh) { m.geometry.dispose(); (Array.isArray(m.material) ? m.material : [m.material]).forEach(x => x.dispose()); } });
     this.renderer.dispose();
     this.renderer.forceContextLoss();
