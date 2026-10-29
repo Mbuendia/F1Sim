@@ -12,7 +12,7 @@
 //  8. Los tiempos por vuelta no cambian: lo comprueba el banco de la suite, sin regenerar su referencia.
 //  9. Revisión en el navegador (manual; en el dashboard).
 // Decisiones del usuario: los daños quedan fuera (el motor no los modela); la lectura va en el panel de detalle.
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { raceFactory, fixedRandom } from '../support/race.mjs';
@@ -27,6 +27,8 @@ export default async function run({ server, assert, test }) {
   const { PROJECTS } = await server.ssrLoadModule('/src/simulation/Development.ts');
   const fixture = JSON.parse(readFileSync(new URL('../fixtures/snapshot-v1.json', import.meta.url), 'utf8'));
   const source = relative => readFileSync(new URL(`../../${relative}`, import.meta.url), 'utf8');
+  // [PF5] El motor está partido en RaceSimulation.ts y src/simulation/race/*.ts (29/10/2026): se lee entero.
+  const engineSource = () => ['src/simulation/RaceSimulation.ts', ...readdirSync('src/simulation/race').map(f => `src/simulation/race/${f}`)].map(source).join('\n');
   const frac = x => ((x % 1) + 1) % 1;
   const sum = log => log.reduce((total, move) => total + move.delta, 0);
   const consistent = sim => sim.cars.every(car => car.gridPosition - car.currentPosition === sum(car.positionLog)
@@ -203,7 +205,7 @@ export default async function run({ server, assert, test }) {
   });
 
   await test('R24: sin cifras ficticias, y lo nuevo se guarda', () => {
-    const engine = source('src/simulation/RaceSimulation.ts');
+    const engine = engineSource();
     assert(!/currentLap \* 0\.35|currentLap \* 0\.65|gridPosition - car\.currentPosition/.test(engine), 'R24: desaparecen los porcentajes fijos de ataque y ahorro y el falso contador de adelantamientos');
 
     const original = Math.random;

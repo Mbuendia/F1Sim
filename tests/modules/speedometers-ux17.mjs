@@ -17,11 +17,13 @@
 //     final de su recta más larga, 11.700–12.000 rpm) y las curvas más lentas en 1.ª o 2.ª; solo cambia la telemetría.
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 
 export default async function run({ server, assert, test }) {
   const load = p => server.ssrLoadModule(p);
   const read = p => readFileSync(p, 'utf8');
+  // [PF5] El motor está partido en RaceSimulation.ts y src/simulation/race/*.ts (29/10/2026): se lee entero.
+  const engineSource = () => ['src/simulation/RaceSimulation.ts', ...readdirSync('src/simulation/race').map(f => `src/simulation/race/${f}`)].map(read).join('\n');
   const box = read('src/components/BoxControls.tsx'), css = read('src/components/BoxControls.module.css');
   const rev = await load('/src/utils/revLights.ts');
   const pt = await load('/src/simulation/PowertrainModel.ts');
@@ -91,7 +93,7 @@ export default async function run({ server, assert, test }) {
         assert(slowest && slowest.gear <= 2, `UX17 (${id}): la curva más lenta, en 1.ª o 2.ª`, JSON.stringify(slowest));
       }
     } finally { Math.random = originalRandom; }
-    const sim = read('src/simulation/RaceSimulation.ts');
+    const sim = engineSource();
     assert(/engineTempStep\([^)]*finalRpm/.test(sim) && /const finalRpm = Math\.round\(rpmFor\(car\.currentSpeedKmh, gearVal\)\)/.test(sim), 'UX17: la temperatura del motor sigue con las revoluciones de antes (la carrera no cambia)');
   });
 }
