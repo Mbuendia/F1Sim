@@ -19,7 +19,11 @@ try {
   if (!modules.some(m => m.id === id)) throw new Error(`Módulo desconocido: ${id}`);
   server = await createServer({
     root: fileURLToPath(new URL('../../', import.meta.url)),
-    server: { middlewareMode: true },
+    // [PF7] Sin recarga en caliente ni vigilante de archivos: no hacen falta en los tests. El vigilante recorría toda la
+    // carpeta del proyecto en cada módulo (unos 13 s de procesador) y el puerto fijo de la recarga (24678) chocaba en paralelo.
+    // `watch: null` se pierde al mezclarse con vite.config (Vite ignora los null), así que se quita ya resuelto.
+    server: { middlewareMode: true, hmr: false },
+    plugins: [{ name: 'tests-sin-vigilante', configResolved(config) { config.server.watch = null; } }],
     // SSR no necesita escanear entradas HTML para prebundling del navegador.
     // Evita carreras entre el escáner asíncrono y el cierre de módulos cortos.
     optimizeDeps: { noDiscovery: true, include: [] },

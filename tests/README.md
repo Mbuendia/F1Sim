@@ -11,7 +11,10 @@ node test-suite.mjs --module scenario-monza
 node test-suite.mjs --sprint 2.8 --json tests/results/sprint-2.8.json
 node test-suite.mjs --regression
 node test-suite.mjs --all --json tests/results/latest.json
+node test-suite.mjs --all --jobs 1
 ```
+
+**En paralelo (PF7, 29/10/2026):** los módulos corren a la vez, cada uno en su proceso (por defecto, los núcleos de la máquina menos dos; `--jobs N` lo cambia y `--jobs 1` vuelve a uno en uno). La salida de cada módulo se escribe entera y en el orden del catálogo, y el JSON y el resumen son los de siempre. Los módulos marcados `"serial": true` en `catalog.mjs` (el emulador de Firebase de `rooms-rules-n4`, con su puerto fijo) corren solos al final. En paralelo, el tiempo máximo de cada módulo se dobla (240 s), porque se reparten el procesador.
 
 Para una modificación localizada, seleccionar el módulo afectado y los consumidores relevantes. Por ejemplo, una modificación de posición afecta a `world-position`, `geometry-rendering` y la funcionalidad que la modifica; una orden de boxes afecta a `box-orders`, `double-stack` y `box-ui`. No hace falta ejecutar todos los módulos en cada cambio.
 
