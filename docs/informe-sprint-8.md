@@ -12,8 +12,8 @@ PF1 y PF2 se hicieron con tu aprobación tarea a tarea. De PF3 a PF8 se trabajó
 | Modelos 3D en la descarga (gzip) | 5,0 MB | 2,9 MB |
 | Imágenes en la descarga (gzip) | 20,6 MB | 2,2 MB |
 | Coche 3D (archivo) | 3,2 MB | 1,2 MB |
-| Llamadas de dibujo, Barcelona con cámara de persecución | 177 | 90 |
-| Triángulos, Barcelona con cámara de persecución | 681.000 | 80.000 |
+| Llamadas de dibujo, Barcelona con cámara de persecución | 177 | 92 |
+| Triángulos, Barcelona con cámara de persecución | 681.000 | 312.000 (con el seguido y su vecino completos) |
 | Llamadas de dibujo, vista general | 394 | 212 (107 en calidad baja) |
 | `RaceSimulation.ts` | 4.064 líneas | 1.733 líneas |
 | Suite completa de tests | unos 25 min | 5,5 min |
@@ -31,7 +31,7 @@ Los fotogramas por segundo en tus dispositivos siguen **pendientes**: los mide l
 ### PF2 — Renderizado 3D más ligero (commit `4f3e760`)
 - Escenario con instancias: lo repetido (árboles, carteles, gradas, edificios…) se dibuja por grupos, en trozos de 250 m para que three descarte lo que no se ve (`src/scene3d/instancing.ts`).
 - El coche completo (127.000 triángulos) solo sale cuando mide 150 px o más en pantalla (opción A que elegiste); la sombra de cada coche sale del modelo ligero.
-- Efecto visible: con la cámara de persecución, el coche seguido va con el modelo ligero.
+- Ampliación que pediste al ver el resultado: con las cámaras de persecución y a bordo, el coche seguido y los que estén a menos de 80 m de él van siempre con el modelo completo (40 m en calidad media; en baja, nunca), con un margen del 10 % para que no parpadeen al cruzar el radio. Así, en curvas cerradas o con coches pegados delante o detrás, se ven con su calidad.
 
 ### PF3 — Modelos comprimidos y carga diferida (commit `55114f0`)
 - Nueve modelos comprimidos con meshopt (`scripts/compress-models.mjs`), con la misma geometría: mismos triángulos y vértices y posiciones exactas. El coche pasa de 3,2 a 1,2 MB y el Safety Car de 1,9 a 0,9 MB.
@@ -86,7 +86,7 @@ Las reglas de AGENTS.md piden autorización para tocar un test acordado. Estos s
 ## Lo que te toca
 
 1. **Medir los fotogramas**: enciende el modo desarrollador (Ajustes, 7 toques en la versión), abre `?rendimiento=prueba` en tu PC, en tu móvil y en uno modesto, pulsa «Copiar» y pégame los resúmenes. Con eso se rellena la línea base y se comprueba el objetivo de PF8.
-2. **Revisar en el juego**: el coche seguido con el modelo ligero (PF2), la calidad en Ajustes (PF4) y que todo se vea como antes.
+2. **Revisar en el juego**: los coches cerca del seguido con la cámara de persecución (PF2), la calidad en Ajustes (PF4) y que todo se vea como antes.
 3. **Dar por buenas** las tareas (están «en revisión local») y decidir cuándo se sube la rama y se abre el PR.
 
 ## Lo que no se hizo o queda abierto

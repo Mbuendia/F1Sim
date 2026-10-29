@@ -322,7 +322,9 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
           }
         }
         const pixelRatioMax = q?.profile.pixelRatioMax ?? 1.5;
-        const image = scene3d.render({ cars: frame.cars, safetyCar: frame.safetyCar, view: shot.view, sun: sun3, shadowRadius: shot.shadowRadius, fireworksSec, playerTeamId, followedCarId: selectedCarId }, w, h, Math.min(dpr, pixelRatioMax));
+        const image = scene3d.render({ cars: frame.cars, safetyCar: frame.safetyCar, view: shot.view, sun: sun3, shadowRadius: shot.shadowRadius, fireworksSec, playerTeamId, followedCarId: selectedCarId,
+          // [PF2.7] Con las cámaras pegadas al coche, él y los cercanos van con el modelo completo.
+          focusCarId: director.mode === 'persecucion' || director.mode === 'a-bordo' ? selectedCarId : null }, w, h, Math.min(dpr, pixelRatioMax));
         ctx.drawImage(image, 0, 0, w, h);
         const eye = shot.view.position;
         drawLabels3D(ctx, frame.cars, selectedCarId, director.mode === 'vista', car => {

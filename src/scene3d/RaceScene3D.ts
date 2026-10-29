@@ -80,6 +80,8 @@ export interface Frame3D {
   /** [UX16] Equipo del jugador y coche seguido, para resaltar sus puntos de lejos. */
   playerTeamId?: string | null;
   followedCarId?: number | null;
+  /** [PF2.7] Coche en foco (persecución o a bordo): él y los cercanos, con el modelo completo. */
+  focusCarId?: number | null;
 }
 
 interface CarSlot { full: THREE.Object3D | null; lod: THREE.Object3D | null; proxy: THREE.Mesh; release: (() => void) | null; key: string }
@@ -256,7 +258,7 @@ export class RaceScene3D {
     if (this.lampFx) this.lampFx.visible = night;
     this.placeFireworks(frame.fireworksSec ?? null);
 
-    this.placeCars(frame.cars, { fovDeg: view.fov, viewportHeightPx: height, pixelRatio: Math.min(pixelRatio, 2), playerTeamId: frame.playerTeamId ?? null, followedCarId: frame.followedCarId ?? null });
+    this.placeCars(frame.cars, { fovDeg: view.fov, viewportHeightPx: height, pixelRatio: Math.min(pixelRatio, 2), playerTeamId: frame.playerTeamId ?? null, followedCarId: frame.followedCarId ?? null, focusCarId: frame.focusCarId ?? null });
     this.placeSafetyCar(frame.safetyCar);
     // [PF1] Con el contador abierto, la gráfica se cronometra alrededor del pintado.
     perfStats.gpuTimer?.begin();
@@ -292,15 +294,15 @@ export class RaceScene3D {
     return bridgeSide({ ...o, halfWindowT: (DECK_HALF_M + RAMP_M) / this.lap }, car.trackT) === 'over' ? bridgeRoadHeight(o, car.trackT, this.lap) : 0;
   }
 
-  private placeCars(cars: CarState[], view: { fovDeg: number; viewportHeightPx: number; pixelRatio: number; playerTeamId: string | null; followedCarId: number | null }): void {
+  private placeCars(cars: CarState[], view: { fovDeg: number; viewportHeightPx: number; pixelRatio: number; playerTeamId: string | null; followedCarId: number | null; focusCarId: number | null }): void {
     const seen = new Set<number>();
     const cam = this.camera.position;
     // [UX16] Nivel de cada coche por lo que mide en pantalla: completo, ligero o punto (con margen para no parpadear).
     const visibleCars = cars.filter(car => isCarVisible(car));
     const posOf = (car: CarState) => W(car.worldX, car.worldY, this.carHeight(car));
     const plans = new Map(planCars(visibleCars.map(car => ({
-      id: car.id, teamId: car.team.id, color: car.team.color, status: car.status, isRetiredVisible: car.isRetiredVisible, distanceM: cam.distanceTo(posOf(car)),
-    })), { ...view, fullCarPx: this.quality.fullCarPx }, this.carLevels).map(p => [p.id, p]));
+      id: car.id, teamId: car.team.id, color: car.team.color, status: car.status, isRetiredVisible: car.isRetiredVisible, distanceM: cam.distanceTo(posOf(car)), x: car.worldX, y: car.worldY,
+    })), { ...view, fullCarPx: this.quality.fullCarPx, focusRadiusM: this.quality.focusRadiusM }, this.carLevels).map(p => [p.id, p]));
     if (!this.dots) { this.dots = createCarDots(); this.world.add(this.dots); }
     const dotPos = this.dots.geometry.getAttribute('position') as THREE.BufferAttribute;
     const dotColor = this.dots.geometry.getAttribute('color') as THREE.BufferAttribute;

@@ -47,11 +47,11 @@ Medido el 29/10/2026 en Chrome sin ventana: las llamadas de dibujo y los triáng
 
 | Escena | Llamadas antes | Llamadas después | Triángulos antes | Triángulos después |
 | --- | --- | --- | --- | --- |
-| Barcelona, persecución | 177 | 90 | 681.000 | 80.000 |
+| Barcelona, persecución | 177 | 92 | 681.000 | 312.000 |
 | Barcelona, vista general | 394 | 212 | 55.000 | 55.000 |
 
 - La persecución de «antes» es la medida de PF1 (177 llamadas y 681.000 triángulos); repetida el mismo día dio 139 llamadas y 795.000 triángulos, porque depende de cuántos coches hay cerca en ese fotograma.
-- Los triángulos bajan porque el modelo completo (127.000) solo sale cuando el coche mide 150 px o más en pantalla; con la cámara de persecución el coche seguido mide unos 70 px y va con el ligero (9.600).
+- Los triángulos bajan porque el modelo completo (127.000) solo sale cuando el coche mide 150 px o más en pantalla. Al entregar PF2 la persecución quedaba en 90 llamadas y 80.000 triángulos, con el coche seguido (unos 70 px) en ligero; el 29/10/2026 el usuario pide que con la cámara de persecución (y a bordo) el coche seguido y los que estén a menos de 80 m de él vayan completos (40 m en calidad media, nada en baja), y la medida pasa a 92 llamadas y 312.000 triángulos (el seguido y el que va pegado a él), dentro del objetivo.
 - Las llamadas bajan por las instancias del escenario: en los 23 circuitos el escenario pasa de unas 250 llamadas de media a unas 134 en total, y menos en pantalla porque se descartan los trozos que no se ven.
 
 ## PF3 — Modelos comprimidos y carga diferida

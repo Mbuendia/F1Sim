@@ -17,12 +17,14 @@ export interface QualityProfile {
   antialias: boolean;
   /** Tamaño en pantalla desde el que se pinta el coche completo (PF2); Infinity: nunca. */
   fullCarPx: number;
+  /** [PF2.7] Con la cámara de persecución o a bordo, radio (m) alrededor del coche seguido en el que todos van completos. */
+  focusRadiusM: number;
 }
 
 export const QUALITY_PROFILES: Record<QualityLevel, QualityProfile> = {
-  alto: { pixelRatioMax: 1.5, shadowMapSize: 2048, softShadows: true, antialias: true, fullCarPx: 150 },
-  medio: { pixelRatioMax: 1.25, shadowMapSize: 1024, softShadows: false, antialias: true, fullCarPx: 250 },
-  bajo: { pixelRatioMax: 1, shadowMapSize: 0, softShadows: false, antialias: false, fullCarPx: Infinity },
+  alto: { pixelRatioMax: 1.5, shadowMapSize: 2048, softShadows: true, antialias: true, fullCarPx: 150, focusRadiusM: 80 },
+  medio: { pixelRatioMax: 1.25, shadowMapSize: 1024, softShadows: false, antialias: true, fullCarPx: 250, focusRadiusM: 40 },
+  bajo: { pixelRatioMax: 1, shadowMapSize: 0, softShadows: false, antialias: false, fullCarPx: Infinity, focusRadiusM: 0 },
 };
 
 export const QUALITY_KEY = 'f1sim.calidad';

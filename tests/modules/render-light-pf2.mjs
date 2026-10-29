@@ -104,6 +104,36 @@ export default async function run({ server, assert, test }) {
     assert(/add\(lines, '#e8e8e8', \{ cast: false \}\)/.test(source), 'PF2: las rayas de la pista siguen sin sombra');
   });
 
+  // PF2.7 — Ampliación pedida por el usuario el 29/10/2026: con la cámara de persecución (y a bordo), el coche seguido y
+  // los que están cerca de él van con el modelo completo, aunque midan menos de 150 px, para que en curvas cerradas o con
+  // coches pegados delante o detrás se vean siempre con su calidad. Radio según el nivel (PF4): 80 m en alta, 40 m en
+  // media y nada en baja (en baja, nunca completo); margen del 10 % para no parpadear al cruzar el radio.
+  await test('PF2.7: coches cerca del coche seguido', async () => {
+    const d = await load('/src/scene3d/carDots.ts');
+    const { QUALITY_PROFILES } = await load('/src/settings/quality.ts');
+    assert(QUALITY_PROFILES.alto.focusRadiusM === 80 && QUALITY_PROFILES.medio.focusRadiusM === 40 && QUALITY_PROFILES.bajo.focusRadiusM === 0, 'PF2: radio de 80 m en alta, 40 m en media y nada en baja');
+    const car = (id, x, distanceM) => ({ id, teamId: `t${id}`, color: '#fff', status: 'running', isRetiredVisible: false, distanceM, x, y: 0 });
+    // Cámara a 60 m del seguido (mide unos 70 px): sin la ampliación, ligero.
+    const cars = [car(1, 0, 60), car(2, 50, 90), car(3, -30, 40), car(4, 150, 190)];
+    const view = { fovDeg: 55, viewportHeightPx: 800, followedCarId: 1, fullCarPx: 150 };
+    const plain = d.planCars(cars, view, new Map());
+    assert(plain.every(p => p.level === 'ligero'), 'PF2: sin coche seguido en foco, la regla de los 150 px', plain.map(p => p.level).join(','));
+    const near = new Map(d.planCars(cars, { ...view, focusCarId: 1, focusRadiusM: 80 }, new Map()).map(p => [p.id, p.level]));
+    assert(near.get(1) === 'completo', 'PF2: el coche seguido, completo');
+    assert(near.get(2) === 'completo' && near.get(3) === 'completo', 'PF2: los que están a menos de 80 m del seguido (delante o detrás), completos');
+    assert(near.get(4) === 'ligero', 'PF2: los que están más lejos, con la regla de siempre');
+    const prev = new Map([[2, 'completo']]);
+    const edge = new Map(d.planCars([car(1, 0, 60), car(2, 85, 120)], { ...view, focusCarId: 1, focusRadiusM: 80 }, prev).map(p => [p.id, p.level]));
+    assert(edge.get(2) === 'completo', 'PF2: quien ya va completo sigue así hasta pasar de 88 m (no parpadea)');
+    const low = d.planCars(cars, { ...view, fullCarPx: Infinity, focusCarId: 1, focusRadiusM: 0 }, new Map());
+    assert(low.every(p => p.level === 'ligero'), 'PF2: en calidad baja, nunca completo');
+    const far = d.planCars([car(1, 0, 3000), car(2, 20, 3000)], { ...view, focusCarId: 1, focusRadiusM: 80 }, new Map());
+    assert(far.every(p => p.level === 'punto'), 'PF2: de muy lejos siguen siendo puntos');
+    const canvas = readFileSync('src/components/RaceCanvas.tsx', 'utf8');
+    assert(/focusCarId/.test(source) && /focusRadiusM/.test(source), 'PF2: la escena 3D pasa el coche en foco y el radio del nivel');
+    assert(/focusCarId[^\n]*(persecucion|a-bordo)/.test(canvas), 'PF2: el foco se pone con las cámaras de persecución y a bordo');
+  });
+
   await test('PF2.6: medida antes y después', () => {
     const md = readFileSync('docs/perf/linea-base.md', 'utf8');
     const at = md.indexOf('## PF2');
