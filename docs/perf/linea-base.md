@@ -63,3 +63,7 @@ Medido el 29/10/2026 con `npm run perf:size` (gzip) y `node scripts/compress-mod
 - Coche: 3.187 KB → 1.181 KB; coche por piezas (menú): 2.091 → 712; coche ligero: 344 → 152; Safety Car: 1.871 → 890; monumentos (Red Bull, Torre Cota, Torre Eiffel, Biosfera, noria): 1.599 → 573.
 - Misma geometría: mismos triángulos y vértices; posiciones exactas; normales y colores en 8 bits.
 - Texturas: los modelos no llevan imágenes (las texturas del 3D se dibujan en el momento); las imágenes 2D sin uso se quitan en PF6.
+
+## PF4 — Calidad según el dispositivo
+
+Niveles (alto es lo que había): alto ×1,5 de resolución, sombras 2048 suaves, suavizado y coche completo desde 150 px; medio ×1,25, sombras 1024, coche completo desde 250 px; bajo ×1, sin sombras ni suavizado y siempre el coche ligero. Medido el 29/10/2026 en Chrome sin ventana con calidad baja: vista general 212 → 107 llamadas; persecución 88 llamadas y 51.000 triángulos; gráfica unos 1,9 ms frente a 3,5 ms en alta.

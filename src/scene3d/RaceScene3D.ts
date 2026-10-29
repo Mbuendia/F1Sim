@@ -29,6 +29,7 @@ import type { CameraView } from './cameras';
 import { perfStats } from '../dev/perfStats';
 import { planCars, shadowSource, type CarLevel } from './carDots';
 import { itemTransform, planInstances } from './instancing';
+import { QUALITY_PROFILES, type QualityProfile } from '../settings/quality';
 
 const W = (x: number, y: number, z = 0) => new THREE.Vector3(x, z, y);
 const LOD_FILE = 'models/f1-car-lod.glb';
@@ -127,10 +128,35 @@ export class RaceScene3D {
     this.scene.add(this.sunLight, this.sunLight.target, this.hemi, this.world);
   }
 
-  /** Devuelve null si el navegador no da WebGL. */
-  static create(): RaceScene3D | null {
+  /** [PF4] Nivel de calidad en uso: sombras y corte del coche completo. */
+  private quality: QualityProfile = QUALITY_PROFILES.alto;
+
+  /**
+   * [PF4] Cambia la calidad: tamaño y tipo del mapa de sombras (o sin sombras) y desde qué tamaño se pinta el coche
+   * completo. Los materiales se recompilan una vez, porque las sombras van en sus programas.
+   */
+  setQuality(profile: QualityProfile): void {
+    const before = this.quality;
+    this.quality = profile;
+    const shadows = profile.shadowMapSize > 0;
+    if (before.shadowMapSize === profile.shadowMapSize && before.softShadows === profile.softShadows && this.renderer.shadowMap.enabled === shadows) return;
+    this.renderer.shadowMap.enabled = shadows;
+    this.renderer.shadowMap.type = profile.softShadows ? THREE.PCFSoftShadowMap : THREE.PCFShadowMap;
+    this.sunLight.castShadow = shadows;
+    if (shadows) this.sunLight.shadow.mapSize.set(profile.shadowMapSize, profile.shadowMapSize);
+    this.sunLight.shadow.map?.dispose();
+    this.sunLight.shadow.map = null;
+    this.scene.traverse(o => {
+      const mesh = o as THREE.Mesh;
+      if (!mesh.isMesh) return;
+      for (const m of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) m.needsUpdate = true;
+    });
+  }
+
+  /** Devuelve null si el navegador no da WebGL. [PF4] El suavizado de bordes solo se elige al crear el lienzo. */
+  static create(antialias = true): RaceScene3D | null {
     try {
-      const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
+      const renderer = new THREE.WebGLRenderer({ antialias, alpha: false, powerPreference: 'high-performance' });
       return new RaceScene3D(renderer);
     } catch {
       return null;
@@ -274,7 +300,7 @@ export class RaceScene3D {
     const posOf = (car: CarState) => W(car.worldX, car.worldY, this.carHeight(car));
     const plans = new Map(planCars(visibleCars.map(car => ({
       id: car.id, teamId: car.team.id, color: car.team.color, status: car.status, isRetiredVisible: car.isRetiredVisible, distanceM: cam.distanceTo(posOf(car)),
-    })), view, this.carLevels).map(p => [p.id, p]));
+    })), { ...view, fullCarPx: this.quality.fullCarPx }, this.carLevels).map(p => [p.id, p]));
     if (!this.dots) { this.dots = createCarDots(); this.world.add(this.dots); }
     const dotPos = this.dots.geometry.getAttribute('position') as THREE.BufferAttribute;
     const dotColor = this.dots.geometry.getAttribute('color') as THREE.BufferAttribute;

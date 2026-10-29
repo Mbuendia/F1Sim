@@ -28,10 +28,11 @@ export function screenLengthPx(distanceM: number, fovDeg: number, viewportHeight
  * Nivel de un coche por lo que mide en pantalla: punto si se ve pequeño, completo si se ve grande ([PF2] 150 px) y
  * ligero en medio, con margen respecto a cómo estaba para que no parpadee. `distanceM` ya no decide (se conserva la firma).
  */
-export function carLevel(lengthPx: number, _distanceM: number, previous: CarLevel | undefined): CarLevel {
+export function carLevel(lengthPx: number, _distanceM: number, previous: CarLevel | undefined, fullPx = FULL_PX): CarLevel {
   const limit = previous === 'punto' ? DOT_PX * (1 + DOT_HYSTERESIS) : DOT_PX;
   if (lengthPx < limit) return 'punto';
-  const full = previous === 'completo' ? FULL_PX * (1 - FULL_HYSTERESIS) : FULL_PX;
+  // [PF4] El corte depende del nivel de calidad (Infinity en bajo: nunca completo).
+  const full = previous === 'completo' ? fullPx * (1 - FULL_HYSTERESIS) : fullPx;
   return lengthPx >= full ? 'completo' : 'ligero';
 }
 
@@ -56,11 +57,11 @@ export interface CarPlan { id: number; level: CarLevel; dot: (DotStyle & { color
  * El plan de un fotograma: un nivel por coche visible (los ocultos no salen, tampoco como punto) y, para los que van de
  * punto, su estilo. `previous` guarda el nivel de cada coche en el fotograma anterior (para el margen).
  */
-export function planCars(cars: CarPlanInput[], view: { fovDeg: number; viewportHeightPx: number; playerTeamId?: string | null; followedCarId?: number | null }, previous: Map<number, CarLevel>): CarPlan[] {
+export function planCars(cars: CarPlanInput[], view: { fovDeg: number; viewportHeightPx: number; playerTeamId?: string | null; followedCarId?: number | null; fullCarPx?: number }, previous: Map<number, CarLevel>): CarPlan[] {
   const plans: CarPlan[] = [];
   for (const car of cars) {
     if (!isCarVisible({ status: car.status as never, isRetiredVisible: car.isRetiredVisible })) continue;
-    const level = carLevel(screenLengthPx(car.distanceM, view.fovDeg, view.viewportHeightPx), car.distanceM, previous.get(car.id));
+    const level = carLevel(screenLengthPx(car.distanceM, view.fovDeg, view.viewportHeightPx), car.distanceM, previous.get(car.id), view.fullCarPx);
     previous.set(car.id, level);
     const style = level === 'punto' ? dotStyle({ mine: Boolean(view.playerTeamId) && car.teamId === view.playerTeamId, followed: car.id === view.followedCarId }) : null;
     plans.push({ id: car.id, level, dot: style ? { ...style, color: car.color } : null });

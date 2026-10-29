@@ -21,6 +21,7 @@ import { CameraDirector3D, drawLabels3D } from '../scene3d/director3d';
 import type { CameraMode3D } from '../scene3d/cameras';
 import { WEATHER_TESTS } from '../data/weatherScenarios';
 import { browserSettingsStorage, readRaceView } from '../settings/graphics';
+import { QUALITY_PROFILES, browserDevice, createQualityGovernor, effectiveQuality, readQuality, type QualityProfile } from '../settings/quality';
 import type { TrackDefinition } from '../data/barcelonaTrack';
 import type { CarState, RejoinEstimate, SafetyCarState, TrackWeatherState } from '../types/f1';
 import { raceStore } from '../state/raceStore';
@@ -99,6 +100,8 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
   // ── Vista 3D (22/10/2026): pintor three.js con escenario, sombras y seis modos de cámara. Sin WebGL (o con `?2d`)
   // se queda la vista cenital de siempre.
   const scene3dRef = useRef<RaceScene3D | null>(null);
+  // [PF4] Calidad en uso, vigilante de fotogramas y cuenta del segundo en curso.
+  const qualityRef = useRef<{ profile: QualityProfile; governor: ReturnType<typeof createQualityGovernor>; frames: number; windowStart: number } | null>(null);
   const [view3d, setView3d] = useState(false);
   // El modo de la cámara 3D vive en `camera` (la compartida con la barra de arriba, cuyo botón lo cambia).
   const director = useMemo(() => {
@@ -127,10 +130,15 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
     if (!supportsWebGL() || params.has('2d') || params.has('canvas') || readRaceView(browserSettingsStorage()) === '2d') return;
     let cancelled = false;
     let created: RaceScene3D | null = null;
+    // [PF4] Nivel de calidad: el de Ajustes o, en automático, el del dispositivo; el vigilante lo baja si caen los fps.
+    const setting = readQuality(browserSettingsStorage());
+    const level = effectiveQuality(setting, browserDevice());
+    qualityRef.current = { profile: QUALITY_PROFILES[level], governor: createQualityGovernor({ start: level, auto: setting === 'auto' }), frames: 0, windowStart: performance.now() };
     import('../scene3d/RaceScene3D')
       .then(async module => {
-        created = module.RaceScene3D.create();
+        created = module.RaceScene3D.create(QUALITY_PROFILES[level].antialias);
         if (!created || cancelled) { created?.destroy(); created = null; return; }
+        created.setQuality(QUALITY_PROFILES[level]);
         scene3dRef.current = created;
         camera.view3d = true;
         setView3d(true);
@@ -302,7 +310,19 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
         if (finished && finishedAt === null) finishedAt = performance.now();
         if (!finished) finishedAt = null;
         const fireworksSec = finishedAt === null ? null : (performance.now() - finishedAt) / 1000;
-        const image = scene3d.render({ cars: frame.cars, safetyCar: frame.safetyCar, view: shot.view, sun: sun3, shadowRadius: shot.shadowRadius, fireworksSec, playerTeamId, followedCarId: selectedCarId }, w, h, Math.min(dpr, 1.5));
+        // [PF4] Fotogramas de cada segundo para el vigilante de calidad; si baja el nivel, la escena lo aplica.
+        const q = qualityRef.current;
+        if (q) {
+          q.frames++;
+          const now = performance.now();
+          if (now - q.windowStart >= 1000) {
+            const next = q.governor.second((q.frames * 1000) / (now - q.windowStart));
+            q.frames = 0; q.windowStart = now;
+            if (next) { q.profile = QUALITY_PROFILES[next]; scene3d.setQuality(q.profile); }
+          }
+        }
+        const pixelRatioMax = q?.profile.pixelRatioMax ?? 1.5;
+        const image = scene3d.render({ cars: frame.cars, safetyCar: frame.safetyCar, view: shot.view, sun: sun3, shadowRadius: shot.shadowRadius, fireworksSec, playerTeamId, followedCarId: selectedCarId }, w, h, Math.min(dpr, pixelRatioMax));
         ctx.drawImage(image, 0, 0, w, h);
         const eye = shot.view.position;
         drawLabels3D(ctx, frame.cars, selectedCarId, director.mode === 'vista', car => {

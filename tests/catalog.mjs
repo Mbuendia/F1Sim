@@ -614,5 +614,6 @@ export const modules = [
   { "id": "perf-baseline-pf1", "tasks": ["PF1"], "sprint": "8", "kind": "contract" },
   { "id": "render-light-pf2", "tasks": ["PF2"], "sprint": "8", "kind": "contract" },
   { "id": "models-compressed-pf3", "tasks": ["PF3"], "sprint": "8", "kind": "contract" },
+  { "id": "quality-pf4", "tasks": ["PF4"], "sprint": "8", "kind": "contract" },
   { "id": "viewport-movil", "tasks": [], "sprint": null, "kind": "regression" }
 ];
