@@ -84,10 +84,11 @@ import type { RaceSnapshot } from '../Snapshot';
 import { overtakingZonesOf, zoneAt } from '../OvertakingZones';
 import type { OvertakingZone } from '../OvertakingZones';
 import { RaceSimulation, PIT_APPROACH_METERS, OT_FOLLOW, FieldCar } from '../RaceSimulation';
+import type { SplinePoint } from '../../utils/spline';
 
 export interface CarStepContext {
   dt: number;
-  points: import("C:/Users/Usuario/Documents/antigravity/brave-mendeleev/src/utils/spline").SplinePoint[];
+  points: SplinePoint[];
   totalPoints: number;
   lapDistanceMeters: number;
   leaderCar: CarState;

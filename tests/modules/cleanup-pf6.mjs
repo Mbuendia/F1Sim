@@ -74,6 +74,30 @@ export default async function run({ assert, test }) {
     assert(dead.length === 0, 'PF6: nada exportado en src sin ningún uso', dead.join('; '));
   });
 
+  // PF6.5 (29/10/2026, tras romper el CI del PR 33): el script que partió el motor (PF5) dejó en carStep.ts un tipo con la
+  // ruta absoluta de la máquina (import("C:/Users/…")); compilaba en Windows y fallaba en el servidor de GitHub. Y Linux
+  // distingue mayúsculas en los nombres de archivo: cada import relativo tiene que coincidir letra a letra.
+  await test('PF6.5: el código compila en cualquier máquina', () => {
+    const absolute = walk('src', /\.(ts|tsx)$/).filter(f => /["'`][A-Za-z]:[\\/]|["'`]\/(Users|home)\//.test(readFileSync(f, 'utf8')));
+    assert(absolute.length === 0, 'PF6: ninguna ruta absoluta de una máquina en src', absolute.join(', '));
+    const wrongCase = [];
+    for (const f of walk('src', /\.(ts|tsx)$/)) {
+      for (const m of readFileSync(f, 'utf8').matchAll(/(?:from\s+|import\(\s*)['"](\.{1,2}\/[^'"]+)['"]/g)) {
+        const base = resolve(dirname(f), m[1]);
+        const hit = ['', '.ts', '.tsx', '.css', '/index.ts', '/index.tsx'].map(e => base + e).find(p => existsSync(p) && statSync(p).isFile());
+        if (!hit) continue;
+        // Cada tramo de la ruta, comparado con el nombre real en su carpeta.
+        const parts = relative(process.cwd(), hit).split(/[\\/]/);
+        let dir = process.cwd();
+        for (const part of parts) {
+          if (!readdirSync(dir).includes(part)) { wrongCase.push(`${f}: ${m[1]}`); break; }
+          dir = join(dir, part);
+        }
+      }
+    }
+    assert(wrongCase.length === 0, 'PF6: cada import coincide letra a letra con el nombre del archivo (Linux distingue mayúsculas)', wrongCase.join('; '));
+  });
+
   await test('PF6.4: dependencias', () => {
     const { packages } = reachable();
     const deps = Object.keys(JSON.parse(readFileSync('package.json', 'utf8')).dependencies ?? {});
