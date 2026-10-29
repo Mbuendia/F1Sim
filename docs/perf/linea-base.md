@@ -67,3 +67,21 @@ Medido el 29/10/2026 con `npm run perf:size` (gzip) y `node scripts/compress-mod
 ## PF4 — Calidad según el dispositivo
 
 Niveles (alto es lo que había): alto ×1,5 de resolución, sombras 2048 suaves, suavizado y coche completo desde 150 px; medio ×1,25, sombras 1024, coche completo desde 250 px; bajo ×1, sin sombras ni suavizado y siempre el coche ligero. Medido el 29/10/2026 en Chrome sin ventana con calidad baja: vista general 212 → 107 llamadas; persecución 88 llamadas y 51.000 triángulos; gráfica unos 1,9 ms frente a 3,5 ms en alta.
+
+## PF6 — Limpieza
+
+- Fuera `public/racecars2d` (216 archivos, 19,5 MB): el pack de sprites 2D de T28, que no usaba ningún código desde que la carrera es 3D. Las imágenes de la descarga bajan de 20.613 KB a 2.230 KB (gzip).
+- Fuera tres archivos sin uso (`radio/model/classifierStore.ts`, `radio/classifier/vectorCache.ts` y el clasificador que los usaba) y 18 exportaciones que no usaba nadie.
+- Todas las dependencias de `dependencies` las importa la aplicación.
+
+## PF8 — Presupuesto
+
+Los límites están en `docs/perf/presupuesto.json` y los vigila `tests/modules/budget-pf8.mjs`: paquete principal 490 KB (hoy 449), modelos 3.170 KB (hoy 2.885), escenario 250 llamadas en el peor circuito (hoy 229, Las Vegas), coche 135.000 triángulos (hoy 126.720), coche ligero 10.500 (hoy 9.583) y `RaceSimulation.ts` 1.900 líneas (hoy 1.733). Objetivos de fotogramas: 60 fps en el PC del usuario y 30 en un móvil medio, medidos con `?rendimiento=prueba`.
+
+## PF7 — Suite de tests más rápida
+
+Suite completa (`node test-suite.mjs --all`, 207 módulos y 7.598 aserciones) en el PC del usuario (12 núcleos), 29/10/2026:
+
+- Antes: unos 25 min (la cifra del plan del sprint, de uno en uno; AGENTS.md hablaba de 12 en otra fase del proyecto).
+- En paralelo con el vigilante de archivos de Vite aún encendido: 16,7 min (cada módulo gastaba unos 13 s de procesador recorriendo la carpeta del proyecto).
+- Después: 5,5 min (330 s), en paralelo con 10 procesos y sin vigilante ni recarga en caliente en los tests. Sumando lo que tarda cada módulo salen 49 min de trabajo, frente a 157 antes del arreglo del vigilante.

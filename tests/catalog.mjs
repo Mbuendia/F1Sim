@@ -567,7 +567,7 @@ export const modules = [
   { "id": "engine-host-n2", "tasks": ["N2"], "sprint": "5", "kind": "contract" },
   { "id": "race-session-n3", "tasks": ["N3"], "sprint": "5", "kind": "contract" },
   { "id": "rooms-n4", "tasks": ["N4"], "sprint": "5", "kind": "contract" },
-  { "id": "rooms-rules-n4", "tasks": ["N4"], "sprint": "5", "kind": "contract" },
+  { "id": "rooms-rules-n4", "tasks": ["N4"], "sprint": "5", "kind": "contract", "serial": true },
   { "id": "transport-n5", "tasks": ["N5"], "sprint": "5", "kind": "contract" },
   { "id": "owners-n6", "tasks": ["N6"], "sprint": "5", "kind": "contract" },
   { "id": "lobby-n7", "tasks": ["N7"], "sprint": "5", "kind": "contract" },
@@ -615,5 +615,9 @@ export const modules = [
   { "id": "render-light-pf2", "tasks": ["PF2"], "sprint": "8", "kind": "contract" },
   { "id": "models-compressed-pf3", "tasks": ["PF3"], "sprint": "8", "kind": "contract" },
   { "id": "quality-pf4", "tasks": ["PF4"], "sprint": "8", "kind": "contract" },
+  { "id": "race-split-pf5", "tasks": ["PF5"], "sprint": "8", "kind": "contract" },
+  { "id": "cleanup-pf6", "tasks": ["PF6"], "sprint": "8", "kind": "contract" },
+  { "id": "fast-suite-pf7", "tasks": ["PF7"], "sprint": "8", "kind": "contract" },
+  { "id": "budget-pf8", "tasks": ["PF8"], "sprint": "8", "kind": "contract" },
   { "id": "viewport-movil", "tasks": [], "sprint": null, "kind": "regression" }
 ];

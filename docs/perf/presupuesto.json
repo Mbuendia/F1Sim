@@ -1,0 +1,22 @@
+{
+  "nota": "PF8 (Sprint 8). Lo vigila tests/modules/budget-pf8.mjs. Si una mejora baja una cifra, se puede bajar su límite; subir un límite es aceptar que el juego pesa o gasta más, y lo decide el usuario. Los fps los mide la prueba ?rendimiento=prueba (PF1) en cada dispositivo; el resto, la suite.",
+  "fps": { "pc": 60, "movil": 30 },
+  "limits": {
+    "mainBundleKB": 490,
+    "modelsKB": 3170,
+    "sceneryDrawCallsPerCircuit": 250,
+    "carTriangles": 135000,
+    "carLodTriangles": 10500,
+    "raceSimulationLines": 1900
+  },
+  "measured": {
+    "fecha": "29/10/2026, al acabar PF2 a PF6",
+    "mainBundleKB": 449,
+    "modelsKB": 2885,
+    "sceneryDrawCallsPerCircuit": 229,
+    "carTriangles": 126720,
+    "carLodTriangles": 9583,
+    "raceSimulationLines": 1733
+  },
+  "unidades": "KB = 1024 bytes comprimidos con gzip (npm run perf:size); llamadas de dibujo del escenario por circuito sin contar lo que se descarta por estar fuera de cámara (Las Vegas es el peor)."
+}
