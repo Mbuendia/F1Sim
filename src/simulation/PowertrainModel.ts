@@ -50,3 +50,23 @@ export function gearFor(speedKmh: number): number {
 export function rpmFor(speedKmh: number, gear: number): number {
   return Math.min(15000, Math.max(4000, SHIFT_RPM * speedKmh / GEAR_TOP_KMH[gear]));
 }
+
+/** [UX17] Corte de revoluciones: con rebufo o DRS se puede pasar un poco de las de cambio, hasta aquí. */
+export const REV_LIMIT = 12500;
+
+/**
+ * [UX17] Desarrollos de un circuito: la misma escala de marchas, con la 8.ª acabando en la velocidad máxima del circuito
+ * (así, al final de su recta más larga, las revoluciones llegan al cambio). Índice = marcha (1..8).
+ */
+export function gearTopsFor(topKmh: number): number[] {
+  const k = Math.max(200, topKmh) / GEAR_TOP_KMH[8];
+  return GEAR_TOP_KMH.map(v => Math.round(v * k * 10) / 10);
+}
+
+/** [UX17] Marcha y revoluciones con los desarrollos del circuito (solo para la telemetría que se enseña). */
+export function telemetryGear(speedKmh: number, tops: readonly number[]): { gear: number; rpm: number } {
+  let gear = 8;
+  for (let g = 1; g < 8; g++) if (speedKmh < tops[g]) { gear = g; break; }
+  const rpm = Math.min(REV_LIMIT, Math.max(4000, SHIFT_RPM * speedKmh / tops[gear]));
+  return { gear, rpm: Math.round(rpm) };
+}

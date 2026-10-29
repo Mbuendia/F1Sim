@@ -1,0 +1,11 @@
+/* [UX5] Franja de la vuelta (móvil): una línea de salida a meta con un punto por coche; meta a la derecha. */
+.strip { box-sizing: border-box; height: var(--franja-vuelta, 50px); padding: 22px 18px 0; background: var(--panel); border-bottom: 1px solid var(--line); }
+.track { position: relative; height: 4px; border-radius: 2px; background: var(--line-strong); }
+.finish { position: absolute; right: -2px; top: -9px; width: 6px; height: 22px; border-radius: 1px; background: repeating-linear-gradient(0deg, #fff 0 3px, #111 3px 6px); }
+.dot { position: absolute; top: 50%; width: 8px; height: 8px; margin: -4px 0 0 -4px; border-radius: 50%; background: var(--c); opacity: 0.75; }
+.dot[data-pit] { background: transparent; border: 2px solid var(--c); opacity: 0.6; }
+.dot[data-near] { box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.55); }
+.mine { width: 14px; height: 14px; margin: -7px 0 0 -7px; opacity: 1; border: 2px solid #fff; z-index: 2; }
+.mine[data-pit] { border-color: var(--c); background: var(--panel); }
+.dot[data-below] .tag { bottom: auto; top: 14px; }
+.tag { position: absolute; bottom: 14px; left: 50%; transform: translateX(calc(var(--x) * -100%)); padding: 1px 6px; border-radius: 4px; background: var(--c); color: #fff; font: 700 11px var(--font-ui); white-space: nowrap; text-shadow: 0 1px 1px rgba(0, 0, 0, 0.5); }

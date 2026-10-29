@@ -1,14 +1,16 @@
 import React, { Suspense, lazy, useEffect, useRef, useState } from 'react';
 import { Menu } from 'lucide-react';
 import styles from './RaceMenu.module.css';
+import { LiveAiStatusBadge } from './AiStatusBadge';
 
 // [IA4] Los ajustes de la radio (y con ellos el código del modelo) se cargan al abrir el menú, no al arrancar el juego.
 const RadioSettings = lazy(() => import('./RadioSettings'));
 
 interface RaceMenuProps {
   safetyCarDeployed: boolean;
-  onToggleSafetyCarTest: () => void;
-  onRedFlagTest: () => void;
+  /** [UX3] Pruebas de desarrollo: solo con el modo desarrollador (sin ellas, el menú no enseña la sección). */
+  onToggleSafetyCarTest?: () => void;
+  onRedFlagTest?: () => void;
   /** Solo para pruebas y maquetas: abrir el menú de inicio. */
   defaultOpen?: boolean;
   /** [R26] Variante D20: activada o no, y su interruptor. */
@@ -110,14 +112,20 @@ export const RaceMenu: React.FC<RaceMenuProps> = ({
             </>
           )}
           {/* [UX2] En carrera, la radio solo enseña el estado y se enciende o apaga: las descargas van en Ajustes. */}
+          {/* [UX8] Antes de los ajustes de la radio, su estado: con la IA o con la básica, modelo, voz y micro. */}
+          {radioSettings && <LiveAiStatusBadge className={styles.aiStatus} />}
           {radioSettings && <Suspense fallback={null}><RadioSettings place="carrera" /></Suspense>}
-          <div className={styles.section}>Herramientas de desarrollo</div>
-          <button type="button" role="menuitem" className={`${styles.item} ${styles.itemSc}`} onClick={run(onToggleSafetyCarTest)}>
-            {safetyCarDeployed ? 'Prueba: retirar Safety Car' : 'Prueba: desplegar Safety Car'}
-          </button>
-          <button type="button" role="menuitem" className={`${styles.item} ${styles.itemRed}`} onClick={run(onRedFlagTest)}>
-            Prueba: forzar bandera roja
-          </button>
+          {onToggleSafetyCarTest && onRedFlagTest && (
+            <>
+              <div className={styles.section}>Herramientas de desarrollo</div>
+              <button type="button" role="menuitem" className={`${styles.item} ${styles.itemSc}`} onClick={run(onToggleSafetyCarTest)}>
+                {safetyCarDeployed ? 'Prueba: retirar Safety Car' : 'Prueba: desplegar Safety Car'}
+              </button>
+              <button type="button" role="menuitem" className={`${styles.item} ${styles.itemRed}`} onClick={run(onRedFlagTest)}>
+                Prueba: forzar bandera roja
+              </button>
+            </>
+          )}
         </div>
       )}
     </div>

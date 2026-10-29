@@ -107,3 +107,6 @@
 .credits { padding: 4px 10px 8px; font-size: 14px; color: var(--text-2); }
 .credits summary { min-height: 32px; display: flex; align-items: center; cursor: pointer; }
 .credits ul { margin: 4px 0 0; padding-left: 16px; display: flex; flex-direction: column; gap: 4px; }
+
+/* [UX8] Estado de la IA dentro del menú de carrera. */
+.aiStatus { margin: 6px 8px; }

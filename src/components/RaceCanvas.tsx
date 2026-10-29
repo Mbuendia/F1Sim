@@ -44,6 +44,8 @@ interface RaceCanvasProps {
   onWeatherTest?: (index: number) => void;
   /** Vista 3D (22/10/2026): modo de cámara con el que empieza. */
   initialCameraMode?: CameraMode3D;
+  /** [UX16] Equipo del jugador: sus coches se resaltan cuando de lejos se ven como puntos. */
+  playerTeamId?: string | null;
 }
 
 /** [N3] Lo que pinta un fotograma, montado con las vistas: coches con su pose interpolada, Safety Car y tiempo. */
@@ -70,6 +72,7 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
   weatherTest = false,
   onWeatherTest,
   initialCameraMode,
+  playerTeamId = null,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const trackLayerRef = useRef<TrackLayerGL | null>(null);
@@ -234,7 +237,7 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
         seenFastAt = state.fastAt;
       }
       const painted = interpolator.frame(now);
-      const base = carViews({ roster, fast: state.fast, slow: state.slow, teams: state.teams, drsChangedAt: state.drsChangedAt });
+      const base = carViews({ roster, fast: state.fast, slow: state.slow, teams: state.teams, drsChangedAt: state.drsChangedAt, circuitId });
       const poses = new Map(painted.cars.map(car => [car.id, car]));
       const cars = base.map(car => {
         const pose = poses.get(car.id);
@@ -298,7 +301,7 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
         if (finished && finishedAt === null) finishedAt = performance.now();
         if (!finished) finishedAt = null;
         const fireworksSec = finishedAt === null ? null : (performance.now() - finishedAt) / 1000;
-        const image = scene3d.render({ cars: frame.cars, safetyCar: frame.safetyCar, view: shot.view, sun: sun3, shadowRadius: shot.shadowRadius, fireworksSec }, w, h, Math.min(dpr, 1.5));
+        const image = scene3d.render({ cars: frame.cars, safetyCar: frame.safetyCar, view: shot.view, sun: sun3, shadowRadius: shot.shadowRadius, fireworksSec, playerTeamId, followedCarId: selectedCarId }, w, h, Math.min(dpr, 1.5));
         ctx.drawImage(image, 0, 0, w, h);
         const eye = shot.view.position;
         drawLabels3D(ctx, frame.cars, selectedCarId, director.mode === 'vista', car => {
@@ -431,7 +434,7 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
       resizeObserver.disconnect();
       window.removeEventListener('resize', handleResize);
     };
-  }, [track, roster, camera, circuitId, selectedCarId, director]);
+  }, [track, roster, camera, circuitId, selectedCarId, director, playerTeamId]);
 
   // ── MANEJADORES DE RATÓN: ROTACIÓN 360°, PAN Y ZOOM ──
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {

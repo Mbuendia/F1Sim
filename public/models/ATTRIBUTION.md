@@ -13,6 +13,14 @@ Los dos modelos de esta carpeta son obras de otros autores, publicadas en Sketch
   separadas con animación de giro; zonas de pintura por material (principal, secundaria y carbono); banda del compuesto
   en los neumáticos; superficies para el dorsal y los patrocinadores (ficticios, los pone el juego).
 
+## `f1-car-piezas.glb`
+
+- **Obra original y licencia:** las mismas de `f1-car.glb` (Qvist_designs, CC BY 4.0).
+- **Cambios (UX10, 28/10/2026):** a partir de `f1-car.glb`, el cuerpo se separa en Blender en piezas con nombre
+  (`ala_delantera`, `ala_trasera`, `suelo`, `pontones`, `tapa_motor` y `chasis`), las ruedas cuelgan de `ruedas`, se
+  quitan las superficies de rótulos y se reduce a unos 67 000 triángulos. Lo usa el centro de temporada para resaltar
+  la pieza que cambia cada mejora.
+
 ## `safety-car.glb`
 
 - **Obra original:** «2019 Mercedes-Benz AMG GTR Safety Car»
@@ -28,3 +36,9 @@ los coches y el Safety Car en la pista. El crédito visible va junto al visor de
 
 Los archivos se preparan en Blender y se terminan con `node scripts/finalize-models.mjs`, que une la animación de las
 ruedas en un clip y escribe esta atribución dentro de cada `.glb`.
+
+## Imágenes del centro de temporada (`public/hub/`)
+
+`tunel.webp`, `simulador.webp`, `produccion.webp`, `banco.webp` y `sede.webp` están hechas para F1Sim en Blender
+(28/10/2026), con estilo propio y sin marcas reales; el coche que aparece en ellas es `f1-car.glb` sin librea. Son del
+proyecto, sin licencia de terceros.

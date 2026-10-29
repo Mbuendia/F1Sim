@@ -1,8 +1,10 @@
-import { useState } from 'react';
-import { ArrowLeft, Gamepad2, Monitor, Radio, Volume2 } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { ArrowLeft, Code2, ExternalLink, Gamepad2, Monitor, Radio, Volume2 } from 'lucide-react';
+import { createDevTapCounter, DEV_TOOLS, isDevMode, setDevMode } from '../dev/devMode';
 import { AUDIO_LEVEL_LABEL, AUDIO_STORAGE_KEY, parseAudioLevel } from '../audio/AudioEngine';
 import { browserSettingsStorage, readRaceView, writeRaceView, type RaceView } from '../settings/graphics';
 import RadioSettings, { type RadioSettingsProps } from './RadioSettings';
+import { LiveAiStatusBadge } from './AiStatusBadge';
 import { Segmented } from './ui/Segmented';
 import s from './Screens.module.css';
 
@@ -10,6 +12,9 @@ interface StorageLike { getItem(key: string): string | null; setItem(key: string
 
 /** Sonido de la aplicación: el nivel elegido, sus nombres, cómo cambiarlo y los créditos (lo pasa App). */
 export interface SettingsAudio { level: number; labels: string[]; onLevel: (level: number) => void; credits: { id: string; label: string; text: string }[] }
+
+const APP_VERSION = typeof __APP_VERSION__ !== 'undefined' && __APP_VERSION__ ? __APP_VERSION__ : 'desarrollo';
+const toolHref = (query: string) => `${import.meta.env.BASE_URL ?? '/'}${query}`;
 
 const SHORTCUTS: [string, string][] = [
   ['Espacio', 'Pausa y reanuda'],
@@ -41,6 +46,17 @@ export default function SettingsScreen({ onBack, audio, radioProps, storage = br
     else { setOwnLevel(next); try { storage?.setItem(AUDIO_STORAGE_KEY, String(next)); } catch { /* sin almacenamiento */ } }
   };
   const chooseView = (next: RaceView) => { setView(next); writeRaceView(storage, next); };
+  // [UX3] Modo desarrollador: siete toques seguidos en la versión lo encienden; se apaga desde su sección.
+  const [devOn, setDevOn] = useState(() => isDevMode(storage));
+  const [tapNote, setTapNote] = useState<string | null>(null);
+  const taps = useMemo(() => createDevTapCounter({ storage }), [storage]);
+  const tapVersion = () => {
+    if (devOn) { setTapNote('El modo desarrollador ya está encendido.'); return; }
+    if (taps.tap()) { setDevOn(true); setTapNote('Modo desarrollador encendido.'); return; }
+    const left = taps.remaining();
+    setTapNote(left <= 3 ? `A ${left} ${left === 1 ? 'toque' : 'toques'} del modo desarrollador.` : null);
+  };
+  const turnOff = () => { setDevMode(storage, false); setDevOn(false); setTapNote('Modo desarrollador apagado.'); };
 
   return (
     <div className={s.screen}>
@@ -53,6 +69,7 @@ export default function SettingsScreen({ onBack, audio, radioProps, storage = br
           <section className={`${s.settingsSection} ${s.settingsFeatured}`} aria-labelledby="ajustes-radio">
             <h2 id="ajustes-radio"><Radio size={20} aria-hidden="true" />Radio con IA</h2>
             <p className={s.dim}>Las descargas del modelo, la voz y el micro se hacen aquí, antes de correr. En carrera solo se enciende o se apaga.</p>
+            <LiveAiStatusBadge />
             <RadioSettings {...radioProps} />
           </section>
 
@@ -82,6 +99,24 @@ export default function SettingsScreen({ onBack, audio, radioProps, storage = br
             </dl>
             <p className={s.dim}>En el móvil, todo se maneja con el dedo: las teclas son para el escritorio.</p>
           </section>
+
+          {devOn && (
+            <section className={s.settingsSection} aria-labelledby="ajustes-desarrollo" data-dev-tools>
+              <h2 id="ajustes-desarrollo"><Code2 size={20} aria-hidden="true" />Modo desarrollador</h2>
+              <p className={s.dim}>Herramientas de revisión y de prueba. En carrera, el menú añade las pruebas de Safety Car y bandera roja, y la carrera libre deja elegir el tiempo.</p>
+              <ul className={s.devTools}>
+                {DEV_TOOLS.map(tool => (
+                  <li key={tool.id}><a href={toolHref(tool.query)} target="_blank" rel="noreferrer"><b>{tool.label}</b><span>{tool.description}</span><ExternalLink size={16} aria-hidden="true" /></a></li>
+                ))}
+              </ul>
+              <button type="button" className={s.button} onClick={turnOff}>Apagar el modo desarrollador</button>
+            </section>
+          )}
+
+          <footer className={s.settingsFoot}>
+            <button type="button" className={s.versionButton} onClick={tapVersion} data-version>Versión {APP_VERSION}</button>
+            {tapNote && <span className={s.dim} role="status">{tapNote}</span>}
+          </footer>
         </div>
       </main>
     </div>

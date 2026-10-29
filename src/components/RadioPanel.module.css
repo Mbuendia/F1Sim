@@ -29,6 +29,8 @@
 .close:hover { color: #fff; background: rgba(255, 255, 255, 0.08); }
 .log { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; max-height: 210px; overflow-y: auto; font-size: 15px; }
 .hint { color: var(--text-2, #aeb9c8); font-size: 14px; }
+/* [UX8] Estado de la IA en la cabecera: icono pulsable. */
+.aiBadge { flex: none; }
 .aiChip { padding: 1px 8px; border-radius: 999px; font: 700 11px var(--font-ui, inherit); letter-spacing: 0.04em; border: 1px solid currentColor; color: #aeb9c8; }
 .aiChip[data-ai='lista'] { color: #4ade80; }
 .aiChip[data-ai='conectando'] { color: #facc15; }

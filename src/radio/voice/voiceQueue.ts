@@ -32,7 +32,7 @@ export function createVoiceQueue(deps: {
       const item = items.shift()!;
       if (silent() || !fresh(item)) continue;
       sound();
-      await deps.speaker.speak(item.text, { pitch: item.pitch, rate: item.rate, volume: Math.min(1, deps.level()), driverId: item.driverId });
+      await deps.speaker.speak(item.text, { pitch: item.pitch, rate: item.rate, volume: Math.min(1, deps.level()), driverId: item.driverId, carId: item.carId });
       sound();
     }
     busy = false;

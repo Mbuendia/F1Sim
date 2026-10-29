@@ -9,7 +9,7 @@ import { DRIVERS } from '../../data/drivers';
 import type { ModelStore } from '../model/ModelStore';
 import { ModelError } from '../model/ModelStore';
 import type { Speaker } from './systemVoice';
-import { buildRadioChain, type AudioContextLike, type RadioChain } from './radioFilter';
+import { buildRadioChain, type AudioContextLike, type EngineInfo, type RadioChain } from './radioFilter';
 
 export const PIPER_VOICE = {
   id: 'es_ES-sharvard-medium' as const,
@@ -64,13 +64,14 @@ export function chooseVoiceEngine(env: { piperReady: boolean; audio: boolean; sy
 }
 
 export interface Synthesized { samples: Float32Array; sampleRate: number }
-export type Synth = (text: string, voice: PilotVoice) => Promise<Synthesized>;
+/** [UX15] Con el piloto que habla: Kokoro elige su voz por piloto (Piper usa solo `voice`). */
+export type Synth = (text: string, voice: PilotVoice, driverId?: string) => Promise<Synthesized>;
 
 /** Tiempo máximo de una frase, por si el navegador no avisa del final. */
 const MAX_PHRASE_MS = 15000;
 
 /** Altavoz con Piper: genera la frase con la voz del piloto y la reproduce por el filtro de radio. */
-export function createPiperSpeaker(deps: { synth: Synth; context: () => AudioContextLike | null; voiceOf?: (driverId: string) => PilotVoice }): Speaker {
+export function createPiperSpeaker(deps: { synth: Synth; context: () => AudioContextLike | null; voiceOf?: (driverId: string) => PilotVoice; /** [UX14] Motor del coche que habla, para el fondo de la radio. */ engine?: (carId: number) => EngineInfo | null }): Speaker {
   const voiceOf = deps.voiceOf ?? pilotVoice;
   let chain: { ctx: AudioContextLike; chain: RadioChain } | null = null;
   let current: { stop(): void } | null = null;
@@ -82,12 +83,12 @@ export function createPiperSpeaker(deps: { synth: Synth; context: () => AudioCon
     // [UX13] La apertura y el cierre los pone la radio (con el mismo pitido que el sonido «radio»): la cola no los repite.
     ownCues: true,
     available: () => { try { return Boolean(deps.context()); } catch { return false; } },
-    async speak(text, { volume = 1, driverId }) {
+    async speak(text, { volume = 1, driverId, carId }) {
       const ctx = deps.context();
       if (!ctx) return;
       const voice = voiceOf(driverId ?? '');
       let audio: Synthesized;
-      try { audio = await deps.synth(text, voice); } catch { return; }
+      try { audio = await deps.synth(text, voice, driverId); } catch { return; }
       const radio = chainFor(ctx);
       const buffer = ctx.createBuffer(1, audio.samples.length, audio.sampleRate);
       buffer.getChannelData(0).set(audio.samples);
@@ -101,6 +102,8 @@ export function createPiperSpeaker(deps: { synth: Synth; context: () => AudioCon
         const finish = () => { if (!done) { done = true; current = null; radio.close(); resolve(); } };
         src.onended = finish;
         current = { stop: () => { try { src.stop(); } catch { /* ya parado */ } finish(); } };
+        // [UX14] De fondo, el motor del coche que habla (sus revoluciones, y casi nada si está parado o en boxes).
+        radio.setEngine(carId !== undefined ? deps.engine?.(carId) ?? null : null);
         radio.open();
         try { src.start(); } catch { finish(); }
         setTimeout(finish, MAX_PHRASE_MS);
@@ -159,27 +162,38 @@ async function storedFile(name: string): Promise<Blob> {
  * El ejecutor: un modelo cargado una vez; por frase, fonemas (piper-wasm) y una pasada del modelo con la voz
  * (`sid`) y la velocidad (`length_scale`) del piloto.
  */
-export async function createPiperSynth(): Promise<Synth> {
-  const [ort, phon, vits] = await Promise.all([
-    import('onnxruntime-web'),
+/** Lo que devuelve espeak-ng (piper-wasm) para una frase: los fonemas escritos (IPA) y sus números para Piper. */
+export interface EspeakLine { phonemes: string[]; phoneme_ids: number[] }
+
+/**
+ * [UX15] espeak-ng de piper-wasm (con los datos del español) como función: texto → fonemas. Lo usan Piper y Kokoro.
+ * No necesita el modelo de Piper descargado: sus datos llegan con import() y del CDN de vits-web.
+ */
+export async function createEspeak(voice = 'es'): Promise<(text: string) => Promise<EspeakLine>> {
+  const [phon, vits] = await Promise.all([
     import('@diffusionstudio/piper-wasm/build/piper_phonemize.js'),
     import('@diffusionstudio/vits-web'),
   ]);
   const createPhonemize = ((phon as unknown as { default?: unknown }).default ?? phon) as (args: object) => Promise<{ callMain(args: string[]): void }>;
+  return text => new Promise<EspeakLine>((resolve, reject) => {
+    void createPhonemize({
+      print: (line: string) => { try { resolve(JSON.parse(line) as EspeakLine); } catch (e) { reject(e); } },
+      printErr: (line: string) => reject(new Error(line)),
+      locateFile: (file: string) => (file.endsWith('.wasm') ? `${vits.WASM_BASE}.wasm` : file.endsWith('.data') ? `${vits.WASM_BASE}.data` : file),
+    }).then(m => m.callMain(['-l', voice, '--input', JSON.stringify([{ text: text.trim() }]), '--espeak_data', '/espeak-ng-data']), reject);
+  });
+}
+
+export async function createPiperSynth(): Promise<Synth> {
+  const ort = await import('onnxruntime-web');
   ort.env.wasm.wasmPaths = `https://cdn.jsdelivr.net/npm/onnxruntime-web@${ort.env.versions.web}/dist/`;
   const config = JSON.parse(await (await storedFile(`${PIPER_VOICE.id}.onnx.json`)).text()) as {
     audio: { sample_rate: number }; espeak: { voice: string }; inference: { noise_scale: number; length_scale: number; noise_w: number };
   };
   const session = await ort.InferenceSession.create(new Uint8Array(await (await storedFile(`${PIPER_VOICE.id}.onnx`)).arrayBuffer()));
-  const phonemes = (text: string) => new Promise<number[]>((resolve, reject) => {
-    void createPhonemize({
-      print: (line: string) => { try { resolve(JSON.parse(line).phoneme_ids); } catch (e) { reject(e); } },
-      printErr: (line: string) => reject(new Error(line)),
-      locateFile: (file: string) => (file.endsWith('.wasm') ? `${vits.WASM_BASE}.wasm` : file.endsWith('.data') ? `${vits.WASM_BASE}.data` : file),
-    }).then(m => m.callMain(['-l', config.espeak.voice, '--input', JSON.stringify([{ text: text.trim() }]), '--espeak_data', '/espeak-ng-data']), reject);
-  });
+  const espeak = await createEspeak(config.espeak.voice);
   return async (text, voice) => {
-    const ids = await phonemes(text);
+    const ids = (await espeak(text)).phoneme_ids;
     const feeds = {
       input: new ort.Tensor('int64', BigInt64Array.from(ids.map(BigInt)), [1, ids.length]),
       input_lengths: new ort.Tensor('int64', BigInt64Array.from([BigInt(ids.length)])),

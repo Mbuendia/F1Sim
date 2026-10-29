@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense } from 'react';
 import styles from './App.module.css';
-import { RaceTabs, raceLayout } from './components/RaceTabs';
+import { RaceTabs, raceLayout, mobileRaceView } from './components/RaceTabs';
+import { LapStrip } from './components/LapStrip';
+import { FreeRaceWizard } from './components/FreeRaceWizard';
+import { firstDriverOf } from './freeRace/freeRace';
 import { StintTimeline } from './components/StintTimeline';
 import { QualifyingLive } from './components/QualifyingLive';
 import { PracticePanel } from './components/PracticePanel';
@@ -82,9 +85,11 @@ import RaceFlagsHUD from './components/RaceFlagsHUD';
 import { DnfNotificationModal } from './components/DnfNotificationModal';
 import { D20LuckModal } from './components/D20LuckModal';
 import { RaceMenu } from './components/RaceMenu';
+import { LiveAiStatusBadge } from './components/AiStatusBadge';
 import { RaceNotices, RaceNotice, RaceNoticeTone } from './components/RaceNotices';
 import { OFFICIAL_CIRCUITS } from './data/circuits';
-import { buildWeatherScenario } from './data/weatherScenarios';
+import { buildWeatherScenario, type WeatherScenarioId } from './data/weatherScenarios';
+import { browserDevStorage, freeRaceWeather, isDevMode } from './dev/devMode';
 import { runQualifying } from './simulation/Qualifying';
 import { activeProjects, emptyProgram, installFirst, parseProgram, upgradesFor, PROGRAM_STORAGE_KEY } from './simulation/Development';
 import type { DevelopmentProgram } from './simulation/Development';
@@ -131,6 +136,7 @@ import { WallPanel } from './components/WallPanel';
 import { nextAlerts, wallAlerts } from './simulation/Wall';
 import type { WallReading } from './simulation/Wall';
 import { CAMERA_LABELS as CAMERA_LABELS_3D } from './scene3d/cameras';
+import { cameraFor, hasMouse, nextCameraFor } from './scene3d/cameraInput';
 
 // R32: estado de carrera siempre visible en la barra.
 const FLAG_CHIPS: Record<RaceFlagState, { label: string; className: string }> = {
@@ -158,10 +164,6 @@ const AUTOSAVE_MS = 30000;
 const MIRROR_SYNC_MS = 5000;
 const SAVE_NAME_KEY = 'f1_save_name';
 /** [T4.19] En la carrera libre el paddock no enseña nada de la partida: solo piloto, circuito, formato y tiempo. */
-const FREE_RACE_PADDOCK: Partial<React.ComponentProps<typeof HomeScreen>> = {
-  season: undefined, finance: undefined, facilities: undefined, sponsors: undefined, board: undefined, pitCrew: undefined, development: undefined,
-  components: undefined, setup: undefined, saveGames: undefined, championship: undefined, raceHistory: [],
-};
 const SETUPS_KEY = 'f1_setups';
 const newRaceSeed = () => (Math.floor(Math.random() * 0x7fffffff) ^ Date.now()) >>> 0;
 const TYRE_WORDS: Record<string, string> = { soft: 'blandos', medium: 'medios', hard: 'duros', intermediate: 'intermedios', wet: 'de lluvia' };
@@ -414,6 +416,8 @@ export const App: React.FC = () => {
 
   // [R44] Meteorología de la próxima carrera
   const [weatherScenarioId, setWeatherScenarioId] = useState<string>('seco');
+  // [UX3] Modo desarrollador (se enciende en Ajustes): se lee en cada render, así vale al volver de Ajustes.
+  const devMode = isDevMode(browserDevStorage());
 
   // Historial de carreras guardadas
   const [raceHistory, setRaceHistory] = useState<RaceResultHistory[]>(() => {
@@ -505,7 +509,7 @@ export const App: React.FC = () => {
       if (state.fast && state.fast !== fastSample && now - last >= 100) { last = now; setFastSample(state.fast); }
     });
   }, []);
-  const viewCars = useMemo(() => carViews({ roster: raceRoster, fast: fastSample, slow: slowView, teams: teamViews }), [raceRoster, fastSample, slowView, teamViews]);
+  const viewCars = useMemo(() => carViews({ roster: raceRoster, fast: fastSample, slow: slowView, teams: teamViews, circuitId: simulation.circuitId }), [raceRoster, fastSample, slowView, teamViews, simulation.circuitId]);
   // Hasta que llega la primera vista se enseña la copia de la pestaña (la parrilla preparada).
   const cars = viewCars.length && slowView ? viewCars : simulation.cars;
   const ownView = useCallback((carId: number) => Object.values(teamViews).flatMap(team => team.cars).find(car => car.id === carId), [teamViews]);
@@ -724,7 +728,9 @@ export const App: React.FC = () => {
     const weatherRound = seasonRace ? nextRound(championship, season) : null;
     const seededSeason = weatherRound ? withWeatherSeed(season, newRaceSeed()) : season;
     if (seededSeason !== season) saveSeason(seededSeason);
-    const scenarioId = weatherRound ? roundWeather(seededSeason, weatherRound, sprintRace ? 'sprint' : 'gp') : weatherScenarioId;
+    // [UX3] En carrera libre, el tiempo elegido solo vale con el modo desarrollador; sin él se sortea según el circuito.
+    const scenarioId = weatherRound ? roundWeather(seededSeason, weatherRound, sprintRace ? 'sprint' : 'gp')
+      : freeRaceWeather({ devMode: isDevMode(browserDevStorage()), chosen: weatherScenarioId, rainProbabilityPercent: OFFICIAL_CIRCUITS[selectedCircuitId]?.rainProbabilityPercent ?? 0, seed: newRaceSeed() }) as WeatherScenarioId;
     simulation.setWeatherScenario(buildWeatherScenario(scenarioId, simulation.totalLaps * 90));
     camera.resetToFullTrack();
     setSelectedCarId(null);
@@ -909,10 +915,18 @@ export const App: React.FC = () => {
     setCurrentView(report ? 'report' : 'home');
   }, [development, showRoundReport, simulation, selectedDriverId, selectedCircuitId, raceHistory, championship, saveDevelopment, developmentAfter, components, program, seasonArchive, saveStore, season, management, raceCounts, applyCareer, playerCodes, mode, roster]);
 
+  // [UX6] En 3D se recorren solo las cámaras del dispositivo (la libre, solo con ratón; en el móvil, cinco).
   const handleCycleCameraMode = useCallback(() => {
-    camera.cycleMode();
+    if (camera.view3d) camera.mode3d = nextCameraFor(raceLayout(viewportWidth), { raton: hasMouse() }, camera.mode3d);
+    else camera.cycleMode();
     setCameraMode(camera.view3d ? camera.mode3d : camera.currentMode);
-  }, [camera]);
+  }, [camera, viewportWidth]);
+  // [UX6] Si la cámara activa no existe en este dispositivo (la libre al pasar al móvil), se pasa a la primera.
+  useEffect(() => {
+    if (!camera.view3d) return;
+    const fit = cameraFor(raceLayout(viewportWidth), { raton: hasMouse() }, camera.mode3d);
+    if (fit !== camera.mode3d) { camera.mode3d = fit; setCameraMode(fit); }
+  }, [camera, viewportWidth, cameraMode]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -1447,10 +1461,10 @@ export const App: React.FC = () => {
     badges: hubBadges,
     inicio: (go: (section: HubSection) => void) => (
       <HubHome next={hubNext} pending={hubPending} onGo={go} status={[
-        { label: 'Campeonato', value: teamStanding >= 0 ? `P${teamStanding + 1} · ${teamPoints} pts` : 'Sin carreras', detail: `${grandsPrixRun(championship)} Grandes Premios disputados`, section: 'temporada' },
-        { label: 'Finanzas', value: formatMoney(hubBalance), detail: `Próxima ronda: ${formatMoney(roundForecast(management.finance, management.playerTeamId).net, true)} sin contar puntos`, section: 'finanzas' },
-        { label: 'Fábrica', value: `${activeProjects(program, management.playerTeamId).length} proyectos`, detail: hubWork ? `Obra en curso: quedan ${hubWork.remaining} rondas` : 'Sin obras en curso', section: 'fabrica' },
-        { label: 'Junta', value: `${Math.round(management.board.confidence)} · objetivo ${management.board.objective}.º`, detail: `Equipo de boxes: nivel ${hubCrew?.level ?? 1}, fatiga ${Math.round(hubCrew?.fatigue ?? 0)} %`, section: 'finanzas' },
+        { label: 'Campeonato', value: teamStanding >= 0 ? `P${teamStanding + 1} · ${teamPoints} pts` : 'Sin carreras', detail: `${grandsPrixRun(championship)} Grandes Premios disputados`, section: 'finde' },
+        { label: 'Finanzas', value: formatMoney(hubBalance), detail: `Próxima ronda: ${formatMoney(roundForecast(management.finance, management.playerTeamId).net, true)} sin contar puntos`, section: 'sede' },
+        { label: 'Coche', value: `${activeProjects(program, management.playerTeamId).length} proyectos`, detail: hubWork ? `Obra en la sede: quedan ${hubWork.remaining} rondas` : 'Sin obras en la sede', section: 'coche' },
+        { label: 'Junta', value: `${Math.round(management.board.confidence)} · objetivo ${management.board.objective}.º`, detail: `Equipo de boxes: nivel ${hubCrew?.level ?? 1}, fatiga ${Math.round(hubCrew?.fatigue ?? 0)} %`, section: 'sede' },
       ]} />
     ),
     correr: hubNext ? (
@@ -1467,7 +1481,6 @@ export const App: React.FC = () => {
         <SpyPanel round={hubNext.round} available={Boolean(practiceFor(season, hubNext.round))} reports={practiceFor(season, hubNext.round)?.spy ?? []}
           teams={[...new Set(Object.values(roster).map(driver => driver.teamId))].filter(id => id !== management.playerTeamId).map(id => ({ id, name: TEAMS[id]?.shortName ?? id }))}
           canAfford={cost => canSpend(management.finance, management.playerTeamId, cost)} driverCode={id => roster[id]?.code ?? id} onSpy={handleSpy} />
-        <SetupPanel drivers={teamDrivers} setups={setups} onChange={handleSetupChange} />
       </RaceWeekendPanel>
     ) : <p>La temporada está completa: no quedan rondas por correr.</p>,
   } : undefined;
@@ -1526,6 +1539,20 @@ export const App: React.FC = () => {
   }
   if (currentView === 'new') {
     return <NewCareerScreen onBack={() => setCurrentView('menu')} onStart={handleNewCareer} />;
+  }
+
+  // [UX12] La carrera libre se elige por pasos: equipo, circuito y resumen. Al elegir equipo, la cámara seguirá al
+  // primero de sus pilotos; el arranque es el mismo de siempre.
+  if (currentView === 'home' && mode === 'free') {
+    return (
+      <FreeRaceWizard roster={roster} raceFormat={effectiveFormat} onSelectFormat={setRaceFormat} sprintAvailable={sprintAvailable}
+        weatherScenarioId={weatherScenarioId} onSelectWeather={devMode ? setWeatherScenarioId : undefined}
+        onSelectTeam={teamId => setSelectedDriverId(firstDriverOf(roster, teamId))}
+        onSelectCircuit={circuitId => setSelectedCircuitId(circuitId)}
+        onStart={handleStartRaceFromHome}
+        onExit={() => { setMode('career'); setCurrentView('menu'); }}
+        driverAttributes={driver => attributesOf(development, driver)} />
+    );
   }
 
   if (currentView === 'home') {
@@ -1651,13 +1678,12 @@ export const App: React.FC = () => {
         sprintAvailable={sprintAvailable}
         onSelectFormat={setRaceFormat}
         weatherScenarioId={weatherScenarioId}
-        onSelectWeather={setWeatherScenarioId}
+        onSelectWeather={devMode ? setWeatherScenarioId : undefined}
         setup={{ setups, onChange: handleSetupChange }}
         saveGames={saveStore ? {
           slots, currentName: saveName, message: saveMessage,
           onSave: handleSaveGame, onLoad: handleLoadGame, onExport: handleExportGame, onImport: handleImportGame, onDelete: handleDeleteGame,
         } : undefined}
-        {...(mode === 'free' ? FREE_RACE_PADDOCK : {})}
       />
       {/* [R51] Cierre de temporada: se ve antes de empezar la siguiente (el resumen ya está archivado). */}
       {seasonEnd && (
@@ -1679,9 +1705,10 @@ export const App: React.FC = () => {
   // [V2] Tres composiciones: móvil (pestañas), tableta (pista arriba; posiciones y muro debajo) y escritorio.
   const layout = raceLayout(viewportWidth);
   const detailReplacesPositions = detailOpen && !isWide;
-  const showPositions = layout === 'movil' ? raceTab === 'tiempos' : leftSidebarOpen && !detailReplacesPositions;
-  const showDetail = layout === 'movil' ? raceTab === 'detalle' : detailOpen;
-  const showWall = layout !== 'movil' || raceTab === 'muro';
+  const mobileView = mobileRaceView(layout, raceTab);
+  const showPositions = layout === 'movil' ? mobileView.panel === 'tiempos' : leftSidebarOpen && !detailReplacesPositions;
+  const showDetail = layout === 'movil' ? mobileView.panel === 'detalle' : detailOpen;
+  const showWall = layout !== 'movil' || mobileView.panel === 'muro';
   const columns: string[] = [];
   const areas: string[] = [];
   if (showPositions) { columns.push('var(--ancho-posiciones)'); areas.push('pos'); }
@@ -1728,7 +1755,7 @@ export const App: React.FC = () => {
           totalLaps={simulation.totalLaps}
         />
 
-        <div className={`${styles.barGroup} ${styles.viewTools}`}>
+        <div className={`${styles.barGroup} ${styles.viewTools} ${mobileView.track ? '' : styles.isHidden}`}>
           <button
             className={styles.barBtn}
             onClick={handleCycleCameraMode}
@@ -1771,10 +1798,12 @@ export const App: React.FC = () => {
             <span className={styles.barLabel}>Detalle</span>
           </button>
           {mode === 'career' && <span className={styles.gameSlot}>{gameMenu}</span>}
+          {/* [UX8] En el móvil, el estado de la IA de la radio se ve sin abrir menús: icono que se pulsa. */}
+          {layout === 'movil' && <LiveAiStatusBadge compact />}
           <RaceMenu
             safetyCarDeployed={safetyCar !== null}
-            onToggleSafetyCarTest={handleSafetyCarTest}
-            onRedFlagTest={handleRedFlagTest}
+            onToggleSafetyCarTest={devMode ? handleSafetyCarTest : undefined}
+            onRedFlagTest={devMode ? handleRedFlagTest : undefined}
             luckVariantEnabled={luckVariantEnabled}
             onToggleLuckVariant={handleToggleLuckVariant}
             onSaveGame={saveStore ? handleSaveGame : undefined}
@@ -1785,7 +1814,13 @@ export const App: React.FC = () => {
         </div>
       </header>
 
-      <div className={styles.raceShell} style={shellLayout} data-layout={layout} data-side={shellSide} data-tab={raceTab}>
+      <div className={styles.raceShell} style={shellLayout} data-layout={layout} data-side={shellSide} data-tab={raceTab} data-track={mobileView.track ? 'on' : 'off'}>
+        {mobileView.strip && (
+          <div className={styles.stripArea}>
+            <LapStrip playerTeamId={favoriteCar.team.id}
+              cars={cars.map(c => ({ id: c.id, code: c.driver.code, progress: c.progress, position: c.currentPosition, teamId: c.team.id, status: c.status, inPit: c.isInPitLane || c.status === 'pit', color: c.team.color }))} />
+          </div>
+        )}
         {/* ── 1. CLASIFICACIÓN COMPACTA ── */}
         <aside className={`${styles.positionsArea} ${showPositions ? '' : styles.isHidden}`} aria-label="Posiciones">
           <Leaderboard
@@ -1808,7 +1843,8 @@ export const App: React.FC = () => {
               camera={camera}
               selectedCarId={selectedCarId}
               onSelectCar={handleSelectCar}
-              weatherTest={mode === 'free'}
+              playerTeamId={favoriteCar.team.id}
+              weatherTest={mode === 'free' && devMode}
               onWeatherTest={index => { void sendOrder({ kind: 'weatherTest', index }); }}
             />
 

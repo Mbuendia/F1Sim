@@ -138,6 +138,21 @@
 .statusCard { display: flex; flex-direction: column; gap: 6px; text-align: left; cursor: pointer; }
 .statusCard:hover { border-color: var(--equipo); }
 .statusValue { font-family: var(--font-marca); font-weight: 700; font-size: 22px; }
+/* [UX9] Qué se decide en la pestaña abierta y tarjetas de «próxima decisión» de la portada. */
+.hubPurpose { margin: 0; padding: 8px 20px 10px; color: var(--text-2); font-size: 15px; border-top: 1px solid var(--line); }
+.decisions { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 14px; }
+.decisionCard { display: flex; flex-direction: column; gap: 8px; border-top: 4px solid var(--equipo); }
+.decisionCard[data-urgency="1"] { border-top-color: var(--accion); }
+.decisionCard[data-urgency="2"] { border-top-color: var(--aviso); }
+.decisionCard .primary { align-self: flex-start; }
+.decisionTitle { font-size: 19px; font-weight: 700; }
+.decisionFacts { display: flex; flex-direction: column; gap: 6px; margin: 0; }
+.decisionFacts div { display: grid; grid-template-columns: 6.5em minmax(0, 1fr); gap: 8px; font-size: 15px; }
+.decisionFacts dt { color: var(--text-3); }
+.decisionFacts dd { margin: 0; font-weight: 600; }
+.decisionImage { display: block; width: 100%; aspect-ratio: 16 / 9; height: auto; max-height: 200px; border-radius: var(--radio-s); object-fit: cover; background: var(--panel-2); }
+.decisionCard > button[data-part-button] { align-self: flex-start; min-height: 44px; gap: 6px; padding: 0 12px; }
+.decisionEmpty { display: flex; flex-direction: column; gap: 8px; border-top: 4px solid var(--positivo); }
 
 .weekend { display: flex; flex-direction: column; gap: 14px; flex-shrink: 0; }
 /* El botón rojo se queda a la vista aunque la página se desplace. */

@@ -13,3 +13,6 @@ interface ImportMetaEnv {
   readonly VITE_FIREBASE_PROJECT_ID?: string;
   readonly VITE_FIREBASE_APP_ID?: string;
 }
+
+// [UX3] Versión del juego, puesta por vite.config.ts al compilar.
+declare const __APP_VERSION__: string | undefined;

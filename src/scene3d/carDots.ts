@@ -1,0 +1,58 @@
+/**
+ * [UX16] De lejos, puntos de colores en lugar de coches (para gastar menos). Lo que decide el nivel de cada coche, sin
+ * three: cuánto mide en pantalla, con qué nivel se pinta (completo, ligero o punto, con margen para no parpadear) y cómo
+ * es su punto. La escena 3D (RaceScene3D) lo aplica.
+ */
+import { isCarVisible } from '../utils/carPosition';
+
+/** Largo de un F1 (m), el del modelo. */
+export const CAR_LENGTH_M = 5.4;
+/** Por debajo de este largo en pantalla (píxeles CSS), el coche pasa a punto (decisión del usuario, 28/10/2026). */
+export const DOT_PX = 8;
+/** Margen para volver del punto al coche: tiene que medir un 20 % más (así no parpadea al cruzar el límite). */
+export const DOT_HYSTERESIS = 0.2;
+/** Hasta esta distancia (m), el modelo completo; más allá, el ligero (como antes de UX16). */
+export const CAR_LOD_M = 90;
+
+export type CarLevel = 'completo' | 'ligero' | 'punto';
+
+/** Largo en pantalla (píxeles CSS) de algo de `lengthM` metros a `distanceM` de una cámara de `fovDeg` grados en vertical. */
+export function screenLengthPx(distanceM: number, fovDeg: number, viewportHeightPx: number, lengthM = CAR_LENGTH_M): number {
+  const d = Math.max(0.01, distanceM);
+  return (lengthM / (2 * d * Math.tan((fovDeg * Math.PI) / 360))) * viewportHeightPx;
+}
+
+/** Nivel de un coche: punto si se ve pequeño (con margen respecto a cómo estaba), y si no, completo o ligero por metros. */
+export function carLevel(lengthPx: number, distanceM: number, previous: CarLevel | undefined): CarLevel {
+  const limit = previous === 'punto' ? DOT_PX * (1 + DOT_HYSTERESIS) : DOT_PX;
+  if (lengthPx < limit) return 'punto';
+  return distanceM > CAR_LOD_M ? 'ligero' : 'completo';
+}
+
+export interface DotStyle { sizePx: number; ring: 'ninguno' | 'blanco' | 'seguido' }
+
+/** Cómo es el punto: los del jugador, más grandes y con borde blanco; el seguido, el más grande y con borde amarillo. */
+export function dotStyle(car: { mine: boolean; followed: boolean }): DotStyle {
+  if (car.followed) return { sizePx: 12, ring: 'seguido' };
+  if (car.mine) return { sizePx: 10, ring: 'blanco' };
+  return { sizePx: 7, ring: 'ninguno' };
+}
+
+export interface CarPlanInput { id: number; teamId: string; color: string; status: string; isRetiredVisible: boolean; distanceM: number }
+export interface CarPlan { id: number; level: CarLevel; dot: (DotStyle & { color: string }) | null }
+
+/**
+ * El plan de un fotograma: un nivel por coche visible (los ocultos no salen, tampoco como punto) y, para los que van de
+ * punto, su estilo. `previous` guarda el nivel de cada coche en el fotograma anterior (para el margen).
+ */
+export function planCars(cars: CarPlanInput[], view: { fovDeg: number; viewportHeightPx: number; playerTeamId?: string | null; followedCarId?: number | null }, previous: Map<number, CarLevel>): CarPlan[] {
+  const plans: CarPlan[] = [];
+  for (const car of cars) {
+    if (!isCarVisible({ status: car.status as never, isRetiredVisible: car.isRetiredVisible })) continue;
+    const level = carLevel(screenLengthPx(car.distanceM, view.fovDeg, view.viewportHeightPx), car.distanceM, previous.get(car.id));
+    previous.set(car.id, level);
+    const style = level === 'punto' ? dotStyle({ mine: Boolean(view.playerTeamId) && car.teamId === view.playerTeamId, followed: car.id === view.followedCarId }) : null;
+    plans.push({ id: car.id, level, dot: style ? { ...style, color: car.color } : null });
+  }
+  return plans;
+}

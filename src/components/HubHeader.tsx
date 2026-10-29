@@ -1,16 +1,17 @@
 import type { ReactNode } from 'react';
-import { CalendarDays, Factory, Flag, Home, Users, Wallet } from 'lucide-react';
-import { HUB_SECTIONS } from '../simulation/Hub';
+import { Building2, CarFront, Flag, Home, Users } from 'lucide-react';
+import { HUB_SECTIONS, SECTION_PURPOSE } from '../simulation/Hub';
 import type { HubSection } from '../simulation/Hub';
 import { SEASON_RACES } from '../simulation/Season';
 import m from './Management.module.css';
 
-const ICONS: Record<HubSection, typeof Home> = { inicio: Home, equipo: Users, fabrica: Factory, finanzas: Wallet, temporada: CalendarDays, correr: Flag };
+const ICONS: Record<HubSection, typeof Home> = { inicio: Home, coche: CarFront, equipo: Users, sede: Building2, finde: Flag };
 
 /**
  * [T4.3] Cabecera del centro de gestión: equipo, temporada y ronda, cifras de estado, lo que vaya a la derecha (el
  * menú «Partida») y las pestañas en su orden, con «Correr» la última y en rojo. `badges` es el número de pendientes
- * de cada pestaña.
+ * de cada pestaña. [UX9] Pestañas Inicio, Coche, Equipo, Sede y dinero y Fin de semana (la última, en rojo), y debajo,
+ * qué se decide en la que está abierta.
  */
 export function HubHeader({ teamName, seasonNumber, round, kpis, section, onSection, badges = {}, children }: {
   teamName: string;
@@ -36,12 +37,13 @@ export function HubHeader({ teamName, seasonNumber, round, kpis, section, onSect
         {HUB_SECTIONS.map(([id, label]) => {
           const Icon = ICONS[id];
           return (
-            <button key={id} type="button" role="tab" className={id === 'correr' ? m.hubTabRace : undefined} aria-selected={section === id} onClick={() => onSection(id)}>
+            <button key={id} type="button" role="tab" className={id === 'finde' ? m.hubTabRace : undefined} aria-selected={section === id} onClick={() => onSection(id)}>
               <Icon size={16} aria-hidden="true" />{label}{badges[id] ? <span className={m.badge} title={`${badges[id]} pendiente${badges[id] === 1 ? '' : 's'}`}>{badges[id]}</span> : null}
             </button>
           );
         })}
       </nav>
+      <p className={m.hubPurpose} data-section-purpose>{SECTION_PURPOSE[section]}</p>
     </header>
   );
 }

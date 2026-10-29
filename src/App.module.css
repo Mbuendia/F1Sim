@@ -226,17 +226,21 @@
 .raceShell[data-layout='tableta'] .positionsArea,
 .raceShell[data-layout='tableta'] .detailArea { grid-area: side; max-height: 346px; border-top: 1px solid var(--line); overflow-y: auto; }
 
-/* Móvil (hasta 767 px): la pista arriba y, debajo, el panel de la pestaña elegida; con «Pista» ocupa toda la pantalla. */
+/* [UX5] Móvil (hasta 767 px): arriba la franja de la vuelta y, debajo, la pestaña elegida a pantalla entera
+   (Pista: solo la pista; Tiempos, Muro o Detalle: solo su panel). */
 .raceShell[data-layout='movil'] {
+  position: relative;
   grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: minmax(40%, 1fr) minmax(0, auto);
-  grid-template-areas: 'canvas' 'panel';
+  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-areas: 'strip' 'canvas';
 }
+.raceShell[data-layout='movil'][data-track='off'] { grid-template-areas: 'strip' 'panel'; }
+.stripArea { grid-area: strip; min-width: 0; }
 .raceShell[data-layout='movil'] .positionsArea,
 .raceShell[data-layout='movil'] .wallArea,
-.raceShell[data-layout='movil'] .detailArea { grid-area: panel; min-width: 0; max-height: 48vh; overflow-y: auto; border: none; border-top: 1px solid var(--line); }
-/* El muro de un piloto cabe entero sin desplazarlo (la pista conserva su 40 % mínimo). */
-.raceShell[data-layout='movil'] .wallArea { max-height: 60vh; }
+.raceShell[data-layout='movil'] .detailArea { grid-area: panel; min-width: 0; min-height: 0; overflow-y: auto; border: none; }
+/* La pista sigue montada (no se recarga al volver), pero oculta y sin ocupar sitio. */
+.raceShell[data-layout='movil'][data-track='off'] .canvasArea { position: absolute; inset: 0; visibility: hidden; pointer-events: none; z-index: -1; }
 
 @media (max-width: 1023px) {
   .raceBar { gap: 6px; padding: 0 6px; }
@@ -245,8 +249,8 @@
 }
 @media (max-width: 767px) {
   .panelToggle { display: none; }
-  /* Las herramientas de cámara flotan sobre la pista, a la derecha, para dejar la barra en lo esencial. */
-  .viewTools { position: fixed; top: calc(var(--barra-carrera) + 8px); right: 8px; z-index: 30; flex-direction: column; gap: 6px; }
+  /* Las herramientas de cámara flotan sobre la pista, a la derecha, debajo de la franja de la vuelta (UX5). */
+  .viewTools { position: fixed; top: calc(var(--barra-carrera) + var(--franja-vuelta, 50px) + 8px); right: 8px; z-index: 30; flex-direction: column; gap: 6px; }
   .viewTools .barBtn { background: rgba(13, 17, 23, 0.82); }
   .flagChip { padding: 4px 6px; font-size: 14px; }
   /* La barra no desborda: el chip de bandera cede antes de que nada se monte encima de nada. */
