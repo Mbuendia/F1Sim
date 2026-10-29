@@ -75,6 +75,11 @@ Los filtros se intersectan. Una selección desconocida o vacía, una excepción 
 - Otras sesiones pueden dejar commits en la rama local del sprint: antes de `git push`, mira `git log origin/RAMA..RAMA`.
 - Para provocar casos raros en el navegador: `sim.reportCrash(car)`, `sim.reportIncident(car, tipo)`, `sim.startRedFlag(motivo)`, `car.hasPuncture = true`, `sim.setWallDelegation(id, true)`.
 
+## Punto de reanudación (29/10/2026)
+
+- **Estado (rama `sprint/8`, sale de `main` tras fusionar el Sprint 7 con el PR 32):** los Sprints 5, 6 y 7 están completados y dados por buenos por el usuario (UX1 a UX18, el 29/10/2026). Siguiente: PF1 (medición base y contador de rendimiento), con el contrato de tests por proponer; no se implementa sin acordarlo.
+- Los archivos `.claude/` que aparecen preparados en el índice son de otra sesión: no entran en los commits del sprint (hacer commit nombrando los archivos o con `git commit -- <rutas>`).
+
 ## Punto de reanudación (24/10/2026)
 
 - **Estado (rama `sprint/7`, sale de `main` tras fusionar el Sprint 6 con el PR 29; sin subir):** los Sprints 5 y 6 están completados y dados por buenos por el usuario. El Sprint 7 (`DASHBOARD.md`, sección 7.9; tareas UX1 a UX11: inicio, ajustes, modo desarrollador, descargas, móvil, cámaras, velocímetro, estado de la IA, centro de temporada, imágenes 3D y prueba en dispositivos) tiene **los 11 contratos de tests acordados con el usuario el 24/10/2026** (escritos en cada ficha y en la cabecera de cada módulo), y sus 11 módulos escritos y registrados en `tests/catalog.mjs`, todos en rojo porque no hay nada implementado (commit `9325615`).
