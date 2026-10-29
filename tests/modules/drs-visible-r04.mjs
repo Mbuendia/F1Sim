@@ -10,7 +10,7 @@
 //  8. Revisión en el navegador de un adelantamiento antes y después de la detección (manual; en el dashboard).
 // Decisiones del usuario: la transición del flap solo se ve (la física no cambia); la función antigua `evaluateDRS`
 // se quita y queda una sola implementación (la de Q19).
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { raceFactory, fixedRandom } from '../support/race.mjs';
@@ -26,6 +26,8 @@ export default async function run({ server, assert, test }) {
   const { buildWeatherScenario } = await server.ssrLoadModule('/src/data/weatherScenarios.ts');
   const fixture = JSON.parse(readFileSync(new URL('../fixtures/snapshot-v1.json', import.meta.url), 'utf8'));
   const source = relative => readFileSync(new URL(`../../${relative}`, import.meta.url), 'utf8');
+  // [PF5] El motor está partido en RaceSimulation.ts y src/simulation/race/*.ts (29/10/2026): se lee entero.
+  const engineSource = () => ['src/simulation/RaceSimulation.ts', ...readdirSync('src/simulation/race').map(f => `src/simulation/race/${f}`)].map(source).join('\n');
   const frac = x => ((x % 1) + 1) % 1;
 
   // Pista plana sintética (como en los casos de Q19): sin frenadas, con las zonas y la detección indicadas.
@@ -361,7 +363,7 @@ export default async function run({ server, assert, test }) {
     const model = source('src/simulation/DRSModel.ts');
     assert(!/evaluateDRS|speedBoostMultiplier|class DRSModel/.test(model) && drs.DRSModel === undefined, 'R04: desaparece la función antigua con su multiplicador de velocidad');
     assert(typeof drs.DrsPermissions === 'function' && typeof drs.drsStatus === 'function' && typeof drs.flapOpenness === 'function', 'R04: el módulo del DRS ofrece permisos, estado visible y flap');
-    const engine = source('src/simulation/RaceSimulation.ts');
-    assert(/drsStatus\(/.test(engine) && /this\.drsPermissions\.reading\(/.test(engine), 'R04: el motor construye el estado visible con lo medido en la detección');
+    const engine = engineSource();
+    assert(/drsStatus\(/.test(engine) && /(this|sim)\.drsPermissions\.reading\(/.test(engine), 'R04: el motor construye el estado visible con lo medido en la detección');
   });
 }

@@ -3,7 +3,6 @@
  * una ventana privada o con el almacenamiento bloqueado, radio básica y sin errores.
  */
 export const RADIO_MODE_KEY = 'f1_radio_mode';
-export const RADIO_VOICE_KEY = 'f1_radio_voice';
 export type RadioMode = 'basica' | 'ia';
 type StorageLike = Pick<Storage, 'getItem' | 'setItem'> | undefined;
 

@@ -16,7 +16,6 @@
       { "source": "/models/**", "headers": [{ "key": "Cache-Control", "value": "public, max-age=2592000" }] },
       { "source": "/circuits/**", "headers": [{ "key": "Cache-Control", "value": "public, max-age=2592000" }] },
       { "source": "/audio/**", "headers": [{ "key": "Cache-Control", "value": "public, max-age=2592000" }] },
-      { "source": "/racecars2d/**", "headers": [{ "key": "Cache-Control", "value": "public, max-age=2592000" }] },
       { "source": "/flags/**", "headers": [{ "key": "Cache-Control", "value": "public, max-age=2592000" }] }
     ]
   }

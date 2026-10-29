@@ -24,17 +24,6 @@ export function replyKindForCompliance(compliance?: string): LineKind | null {
 export const ACK_TIMEOUT_MS = 3000;
 const COMPOUND_NAME: Record<TireCompound, string> = { soft: 'blandos', medium: 'medios', hard: 'duros', intermediate: 'intermedios', wet: 'de lluvia' };
 
-/** Respuesta neutra del piloto (la de IA1; IA2 usa las plantillas de su carácter). */
-export function neutralReply(parse: RadioParse): string {
-  switch (parse.status) {
-    case 'ok': return 'Recibido.';
-    case 'ambigua': return 'No te he entendido, repite.';
-    case 'no-es-tuyo': return 'Ese no es de nuestro equipo.';
-    case 'sin-compuesto': return '¿Qué goma pongo?';
-    case 'no-disponible': return `Ahora no se puede: ${(parse.reason ?? '').toLowerCase()}.`;
-  }
-}
-
 /** La cola de voz, o lo mínimo que necesita la radio de ella. */
 export interface VoiceSink { push(item: VoiceItem): boolean }
 

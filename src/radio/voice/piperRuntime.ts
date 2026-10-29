@@ -63,6 +63,3 @@ export async function applyRadioVoice(pref: VoicePref): Promise<RadioVoice> {
   setPiperSpeaker(null);
   return systemVoiceAvailable() ? 'sistema' : 'texto';
 }
-
-/** Para los tests: olvida las voces cargadas. */
-export function resetRadioVoices() { synths = {}; }

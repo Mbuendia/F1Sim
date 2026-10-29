@@ -7,14 +7,16 @@
     <title>F-Uno Sim - Gran Premio de España (Barcelona)</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- [PF8, LCP] Las fuentes no bloquean el primer pintado: se pide su CSS aparte y se aplica al llegar (display=swap). -->
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@500;600;700&family=Inter:wght@300;400;500;600;700&display=swap"></noscript>
     <script id="project-task-index" type="application/json">
 {
   "source": "DASHBOARD.md",
-  "sha256": "c41093a5624cd60866be38cfb7e1a9721e4b5ccb92d125457d55f1320e989292",
-  "activeSprint": "7",
-  "currentTask": "UX18",
-  "nextTask": "PF1",
+  "sha256": "6df0c3a52012e352d0f1ebe77c503942968bfc12556712e0fe9f5796ffd18d43",
+  "activeSprint": "8",
+  "currentTask": "PF9",
+  "nextTask": "PF10",
   "sprints": [
     {
       "name": "Sprint 1",
@@ -89,12 +91,12 @@
     {
       "name": "Sprint 7",
       "scope": "Inicio, ajustes, móvil y temporada: pantalla de inicio con opciones, ajustes fuera de carrera con las descargas de la radio antes de correr, modo desarrollador oculto, descargas que no se repiten, carrera en el móvil a pantalla completa con la franja de la vuelta, cámaras según el dispositivo, velocímetro sin fallos, IA de la radio siempre visible, centro de temporada que enseña la decisión en 3D, carrera libre por pasos y radio sin ruido constante y más parecida a la real (UX1-UX14)",
-      "status": "⏳ EN CURSO — contratos de UX1 a UX11 acordados el 24/10/2026; UX7, UX4 y UX1 en revisión local; UX12 a UX14 añadidas el 26/10/2026: contratos de UX12 y UX13 acordados ese día; el de UX14, por proponer"
+      "status": "✅ COMPLETADO — UX1 a UX18 en main desde el 29/10/2026 (PR #30, #31 y #32); dadas por válidas por el usuario ese día al cerrar el sprint"
     },
     {
       "name": "Sprint 8",
       "scope": "Rendimiento y deuda técnica: medición base, renderizado 3D más ligero, modelos y texturas comprimidos, calidad según el dispositivo, motor de carrera partido en módulos, limpieza, pruebas más rápidas y presupuesto vigilado (PF1-PF8)",
-      "status": "⏳ PLANIFICADO el 24/10/2026"
+      "status": "⏳ EN REVISIÓN LOCAL — PF1 a PF8 entregadas el 29/10/2026 en la rama sprint/8 (suite completa en verde, 5,5 min); falta que el usuario mida los fps en sus dispositivos y dé el sprint por bueno; informe en `docs/informe-sprint-8.md`"
     },
     {
       "name": "Sprint 9",
@@ -1096,131 +1098,141 @@
     {
       "id": "UX1",
       "title": "Portada y pantalla de juego",
-      "status": "review"
+      "status": "completed"
     },
     {
       "id": "UX2",
       "title": "Ajustes fuera de carrera",
-      "status": "review"
+      "status": "completed"
     },
     {
       "id": "UX3",
       "title": "Modo desarrollador oculto",
-      "status": "review"
+      "status": "completed"
     },
     {
       "id": "UX4",
       "title": "Descargas que no se repiten",
-      "status": "review"
+      "status": "completed"
     },
     {
       "id": "UX5",
       "title": "Carrera en el móvil: pantallas completas y franja de la vuelta",
-      "status": "review"
+      "status": "completed"
     },
     {
       "id": "UX6",
       "title": "Cámaras según el dispositivo",
-      "status": "review"
+      "status": "completed"
     },
     {
       "id": "UX7",
       "title": "Velocímetro sin fallos",
-      "status": "review"
+      "status": "completed"
     },
     {
       "id": "UX8",
       "title": "La IA de la radio, siempre visible",
-      "status": "review"
+      "status": "completed"
     },
     {
       "id": "UX9",
       "title": "Centro de temporada que enseña la decisión",
-      "status": "review"
+      "status": "completed"
     },
     {
       "id": "UX10",
       "title": "Imágenes 3D de lo que se cambia",
-      "status": "review"
+      "status": "completed"
     },
     {
       "id": "UX11",
       "title": "Prueba en dispositivos reales",
-      "status": "review"
+      "status": "completed"
     },
     {
       "id": "UX12",
       "title": "Carrera libre por pasos: equipo, circuito y resumen",
-      "status": "review"
+      "status": "completed"
     },
     {
       "id": "UX13",
       "title": "El ruido de la radio no se queda encendido",
-      "status": "review"
+      "status": "completed"
     },
     {
       "id": "UX14",
       "title": "Radio más parecida a la de verdad",
-      "status": "review"
+      "status": "completed"
     },
     {
       "id": "UX15",
       "title": "Voz de los pilotos más natural (Piper o Kokoro) y motor grabado",
-      "status": "review"
+      "status": "completed"
     },
     {
       "id": "UX16",
       "title": "De lejos, puntos de colores en lugar de coches",
-      "status": "review"
+      "status": "completed"
     },
     {
       "id": "UX17",
       "title": "Velocímetro de los dos coches, quieto y con luces de revoluciones",
-      "status": "review"
+      "status": "completed"
     },
     {
       "id": "UX18",
       "title": "Curvas lentas a su velocidad real",
-      "status": "review"
+      "status": "completed"
     },
     {
       "id": "PF1",
       "title": "Medición base y contador de rendimiento",
-      "status": "pending"
+      "status": "review"
     },
     {
       "id": "PF2",
       "title": "Renderizado 3D más ligero",
-      "status": "pending"
+      "status": "review"
     },
     {
       "id": "PF3",
       "title": "Modelos y texturas comprimidos",
-      "status": "pending"
+      "status": "review"
     },
     {
       "id": "PF4",
       "title": "Calidad automática según el dispositivo",
-      "status": "pending"
+      "status": "review"
     },
     {
       "id": "PF5",
       "title": "Partir el motor de carrera",
-      "status": "pending"
+      "status": "review"
     },
     {
       "id": "PF6",
       "title": "Limpieza de código sobrante",
-      "status": "pending"
+      "status": "review"
     },
     {
       "id": "PF7",
       "title": "Batería de pruebas más rápida",
-      "status": "pending"
+      "status": "review"
     },
     {
       "id": "PF8",
       "title": "Presupuesto vigilado",
+      "status": "review"
+    },
+    {
+      "id": "PF9",
+      "title": "Portada ligera con una escena de Blender",
+      "status": "review"
+    },
+    {
+      "id": "PF10",
+      "title": "Pantalla de carga para teléfonos lentos",
       "status": "pending"
     },
     {

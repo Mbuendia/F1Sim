@@ -2,11 +2,13 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { CAR_MODEL, DECAL_BACKGROUND, SAFETY_CAR_MODEL, applyLivery, decalTexts, liveryColors, textColorOn } from './carModel3d';
 import { SAFETY_CAR_LIVERY } from '../data/liveries';
 
+/** [PF3] Los modelos van comprimidos con meshopt (scripts/compress-models.mjs): el cargador lleva su descompresor. */
 export function loadModel(url: string): Promise<GLTF> {
-  return new GLTFLoader().loadAsync(url);
+  return new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).loadAsync(url);
 }
 
 const materialsOf = (mesh: THREE.Mesh) => (Array.isArray(mesh.material) ? mesh.material : [mesh.material]);

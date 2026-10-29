@@ -27,10 +27,14 @@ import { fireworkBursts, yasHotelColor } from './effects';
 import { lampAim, nearestFloodlights, nightLook, sunLightVector } from './sunLight';
 import type { CameraView } from './cameras';
 import { perfStats } from '../dev/perfStats';
-import { planCars, type CarLevel } from './carDots';
+import { planCars, shadowSource, type CarLevel } from './carDots';
+import { itemTransform, planInstances } from './instancing';
+import { QUALITY_PROFILES, type QualityProfile } from '../settings/quality';
 
 const W = (x: number, y: number, z = 0) => new THREE.Vector3(x, z, y);
 const LOD_FILE = 'models/f1-car-lod.glb';
+/** [PF2] Capa que solo ve la cámara de la sombra (el coche ligero que da la sombra del completo). */
+const SHADOW_ONLY_LAYER = 1;
 /** [UX16] Puntos a la vez como mucho (uno por coche). */
 const MAX_DOTS = 40;
 const RING_CODE = { ninguno: 0, blanco: 1, seguido: 2 } as const;
@@ -76,6 +80,8 @@ export interface Frame3D {
   /** [UX16] Equipo del jugador y coche seguido, para resaltar sus puntos de lejos. */
   playerTeamId?: string | null;
   followedCarId?: number | null;
+  /** [PF2.7] Coche en foco (persecución o a bordo): él y los cercanos, con el modelo completo. */
+  focusCarId?: number | null;
 }
 
 interface CarSlot { full: THREE.Object3D | null; lod: THREE.Object3D | null; proxy: THREE.Mesh; release: (() => void) | null; key: string }
@@ -119,13 +125,40 @@ export class RaceScene3D {
     this.sunLight.shadow.mapSize.set(2048, 2048);
     this.sunLight.shadow.bias = -0.0004;
     this.sunLight.shadow.normalBias = 0.4;
+    // [PF2] La cámara de la sombra ve también la capa 1: ahí va el coche ligero cuando solo da sombra.
+    this.sunLight.shadow.camera.layers.enable(SHADOW_ONLY_LAYER);
     this.scene.add(this.sunLight, this.sunLight.target, this.hemi, this.world);
   }
 
-  /** Devuelve null si el navegador no da WebGL. */
-  static create(): RaceScene3D | null {
+  /** [PF4] Nivel de calidad en uso: sombras y corte del coche completo. */
+  private quality: QualityProfile = QUALITY_PROFILES.alto;
+
+  /**
+   * [PF4] Cambia la calidad: tamaño y tipo del mapa de sombras (o sin sombras) y desde qué tamaño se pinta el coche
+   * completo. Los materiales se recompilan una vez, porque las sombras van en sus programas.
+   */
+  setQuality(profile: QualityProfile): void {
+    const before = this.quality;
+    this.quality = profile;
+    const shadows = profile.shadowMapSize > 0;
+    if (before.shadowMapSize === profile.shadowMapSize && before.softShadows === profile.softShadows && this.renderer.shadowMap.enabled === shadows) return;
+    this.renderer.shadowMap.enabled = shadows;
+    this.renderer.shadowMap.type = profile.softShadows ? THREE.PCFSoftShadowMap : THREE.PCFShadowMap;
+    this.sunLight.castShadow = shadows;
+    if (shadows) this.sunLight.shadow.mapSize.set(profile.shadowMapSize, profile.shadowMapSize);
+    this.sunLight.shadow.map?.dispose();
+    this.sunLight.shadow.map = null;
+    this.scene.traverse(o => {
+      const mesh = o as THREE.Mesh;
+      if (!mesh.isMesh) return;
+      for (const m of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) m.needsUpdate = true;
+    });
+  }
+
+  /** Devuelve null si el navegador no da WebGL. [PF4] El suavizado de bordes solo se elige al crear el lienzo. */
+  static create(antialias = true): RaceScene3D | null {
     try {
-      const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
+      const renderer = new THREE.WebGLRenderer({ antialias, alpha: false, powerPreference: 'high-performance' });
       return new RaceScene3D(renderer);
     } catch {
       return null;
@@ -225,11 +258,16 @@ export class RaceScene3D {
     if (this.lampFx) this.lampFx.visible = night;
     this.placeFireworks(frame.fireworksSec ?? null);
 
-    this.placeCars(frame.cars, { fovDeg: view.fov, viewportHeightPx: height, pixelRatio: Math.min(pixelRatio, 2), playerTeamId: frame.playerTeamId ?? null, followedCarId: frame.followedCarId ?? null });
+    this.placeCars(frame.cars, { fovDeg: view.fov, viewportHeightPx: height, pixelRatio: Math.min(pixelRatio, 2), playerTeamId: frame.playerTeamId ?? null, followedCarId: frame.followedCarId ?? null, focusCarId: frame.focusCarId ?? null });
     this.placeSafetyCar(frame.safetyCar);
+    // [PF1] Con el contador abierto, la gráfica se cronometra alrededor del pintado.
+    perfStats.gpuTimer?.begin();
     this.renderer.render(this.scene, this.camera);
-    // [UX16] Para el contador de rendimiento (UX3).
+    perfStats.gpuTimer?.end();
+    // [UX16] Para el contador de rendimiento (UX3). [PF1] Y la memoria de la gráfica y su contexto.
     perfStats.drawCalls = this.renderer.info.render.calls; perfStats.triangles = this.renderer.info.render.triangles;
+    perfStats.geometries = this.renderer.info.memory.geometries; perfStats.textures = this.renderer.info.memory.textures;
+    perfStats.gl = this.renderer.getContext();
     return canvas;
   }
 
@@ -256,15 +294,15 @@ export class RaceScene3D {
     return bridgeSide({ ...o, halfWindowT: (DECK_HALF_M + RAMP_M) / this.lap }, car.trackT) === 'over' ? bridgeRoadHeight(o, car.trackT, this.lap) : 0;
   }
 
-  private placeCars(cars: CarState[], view: { fovDeg: number; viewportHeightPx: number; pixelRatio: number; playerTeamId: string | null; followedCarId: number | null }): void {
+  private placeCars(cars: CarState[], view: { fovDeg: number; viewportHeightPx: number; pixelRatio: number; playerTeamId: string | null; followedCarId: number | null; focusCarId: number | null }): void {
     const seen = new Set<number>();
     const cam = this.camera.position;
     // [UX16] Nivel de cada coche por lo que mide en pantalla: completo, ligero o punto (con margen para no parpadear).
     const visibleCars = cars.filter(car => isCarVisible(car));
     const posOf = (car: CarState) => W(car.worldX, car.worldY, this.carHeight(car));
     const plans = new Map(planCars(visibleCars.map(car => ({
-      id: car.id, teamId: car.team.id, color: car.team.color, status: car.status, isRetiredVisible: car.isRetiredVisible, distanceM: cam.distanceTo(posOf(car)),
-    })), view, this.carLevels).map(p => [p.id, p]));
+      id: car.id, teamId: car.team.id, color: car.team.color, status: car.status, isRetiredVisible: car.isRetiredVisible, distanceM: cam.distanceTo(posOf(car)), x: car.worldX, y: car.worldY,
+    })), { ...view, fullCarPx: this.quality.fullCarPx, focusRadiusM: this.quality.focusRadiusM }, this.carLevels).map(p => [p.id, p]));
     if (!this.dots) { this.dots = createCarDots(); this.world.add(this.dots); }
     const dotPos = this.dots.geometry.getAttribute('position') as THREE.BufferAttribute;
     const dotColor = this.dots.geometry.getAttribute('color') as THREE.BufferAttribute;
@@ -330,8 +368,17 @@ export class RaceScene3D {
       const level = forceLod && planned === 'completo' ? 'ligero' : planned;
       // De cerca, el modelo completo; a media distancia, el ligero; de lejos, nada (va su punto). La caja, solo mientras
       // cargan los modelos. [UX16] Los modelos solo se esconden: al acercarse vuelven sin cargarse otra vez.
-      if (slot.full) slot.full.visible = level === 'completo' || !slot.lod;
-      if (slot.lod) slot.lod.visible = level === 'ligero' || !slot.full;
+      // [PF2] La sombra sale del ligero: con el completo a la vista, el ligero pasa a la capa que solo ve la sombra.
+      const shadowFromLod = shadowSource(level) === 'ligero' && slot.lod !== null;
+      if (slot.full) {
+        slot.full.visible = level === 'completo' || !slot.lod;
+        setCastShadow(slot.full, !shadowFromLod);
+      }
+      if (slot.lod) {
+        const showLod = level === 'ligero' || !slot.full;
+        slot.lod.visible = level === 'ligero' || !slot.full || (level === 'completo' && shadowFromLod);
+        setLayer(slot.lod, showLod ? 0 : SHADOW_ONLY_LAYER);
+      }
       slot.proxy.visible = !slot.full && !slot.lod;
       holder.visible = level !== 'punto';
     }
@@ -451,6 +498,22 @@ class FlatBuilder {
 }
 
 const col = (hex: string, alpha = 1, under = ASPHALT_DRY) => alpha >= 1 ? new THREE.Color(hex) : new THREE.Color(under).lerp(new THREE.Color(hex), alpha);
+
+/** [PF2] Cambia si las piezas de un coche dan sombra (solo recorre el modelo cuando cambia). */
+const castState = new WeakMap<THREE.Object3D, boolean>();
+function setCastShadow(root: THREE.Object3D, cast: boolean): void {
+  if (castState.get(root) === cast) return;
+  castState.set(root, cast);
+  root.traverse(o => { if ((o as THREE.Mesh).isMesh) o.castShadow = cast; });
+}
+
+/** [PF2] Pone todas las piezas de un modelo en una sola capa (0: la de la cámara; 1: solo la sombra). */
+const layerState = new WeakMap<THREE.Object3D, number>();
+function setLayer(root: THREE.Object3D, layer: number): void {
+  if (layerState.get(root) === layer) return;
+  layerState.set(root, layer);
+  root.traverse(o => o.layers.set(layer));
+}
 
 function buildGround(track: TrackDefinition, circuitId: string, infield: { x: number; y: number }[][], water: { x: number; y: number }[][], street: boolean): THREE.Mesh {
   const b = track.bounds, pad = 3000;
@@ -648,8 +711,12 @@ function buildElevatedRoad(track: TrackDefinition, o: { upperT: number }): THREE
 
 // ───────────────────────────── Escenario ─────────────────────────────
 
-const FACE_TRACK = new Set(['grandstand', 'vip', 'building', 'landmark', 'floodlight', 'pit-building', 'billboard']);
-
+/**
+ * [PF2] Escenario con instancias: lo repetido va en InstancedMesh, un grupo por modelo, variante y trozo de unos 250 m
+ * (`planInstances`), con la misma posición, tamaño y giro que tenía cada objeto suelto (`itemTransform`); lo único
+ * sigue siendo una copia del modelo. Así el escenario pasa de una llamada de dibujo por pieza de cada objeto a una por
+ * pieza de cada grupo, y three descarta los trozos que no se ven.
+ */
 async function buildScenery(items: SceneItem[], track: TrackDefinition, base: string): Promise<THREE.Group> {
   const group = new THREE.Group();
   const models = [...new Set(items.map(it => it.model))];
@@ -657,52 +724,65 @@ async function buildScenery(items: SceneItem[], track: TrackDefinition, base: st
   await Promise.all(models.map(async m => {
     try {
       const gltf = await loadModel(modelUrl(base, `models/scenery/${m}.glb`));
+      gltf.scene.updateMatrixWorld(true);
       const size = new THREE.Box3().setFromObject(gltf.scene).getSize(new THREE.Vector3());
       loaded.set(m, { scene: gltf.scene, size });
     } catch { /* sin ese modelo: se salta */ }
   }));
   const tinted = new Map<string, THREE.Material>();
-  for (const it of items) {
+  /** Material de una pieza para la variante del objeto (panel con su patrocinador o pieza teñida). */
+  const materialFor = (it: SceneItem, mat: THREE.Material): THREE.Material => {
+    const named = mat as THREE.MeshStandardMaterial;
+    if (it.sponsor && named.name === 'panel') {
+      const key = `panel|${it.sponsor}`;
+      if (!tinted.has(key)) tinted.set(key, new THREE.MeshLambertMaterial({ map: sponsorTexture(it.sponsor) }));
+      return tinted.get(key)!;
+    }
+    if (it.tint && named.name === 'tint') {
+      const key = `${it.model}|${it.tint}`;
+      if (!tinted.has(key)) { const m = named.clone(); m.color.set(it.tint); tinted.set(key, m); }
+      return tinted.get(key)!;
+    }
+    return mat;
+  };
+  const matrixOf = (it: SceneItem, size: THREE.Vector3) => {
+    const t = itemTransform(it, size, track);
+    return new THREE.Matrix4().compose(W(t.x, t.y, 0), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), -t.heading), new THREE.Vector3(t.sx, t.sy, t.sz));
+  };
+  const plan = planInstances(items);
+  for (const it of plan.singles) {
     const model = loaded.get(it.model);
     if (!model) continue;
     const root = model.scene.clone(true);
     root.traverse(o => {
       const mesh = o as THREE.Mesh;
       if (!mesh.isMesh) return;
-      mesh.castShadow = it.kind !== 'tree' || true; mesh.receiveShadow = true;
-      const mat = mesh.material as THREE.MeshStandardMaterial;
-      if (it.sponsor && mat.name === 'panel') {
-        const key = `panel|${it.sponsor}`;
-        if (!tinted.has(key)) tinted.set(key, new THREE.MeshLambertMaterial({ map: sponsorTexture(it.sponsor) }));
-        mesh.material = tinted.get(key)!;
-      } else if (it.tint && mat.name === 'tint') {
-        const key = `${it.model}|${it.tint}`;
-        if (!tinted.has(key)) { const m = mat.clone(); m.color.set(it.tint); tinted.set(key, m); }
-        mesh.material = tinted.get(key)!;
-      }
+      mesh.castShadow = true; mesh.receiveShadow = true;
+      mesh.material = materialFor(it, mesh.material as THREE.Material);
     });
-    root.scale.set(it.length / model.size.x, it.height / model.size.y, it.width / model.size.z);
-    let heading = it.heading;
-    if (FACE_TRACK.has(it.kind)) {
-      // El frente del modelo (−Z en glTF) mira a la pista más cercana.
-      const near = nearestAxis(track, it);
-      const fx = Math.sin(heading), fy = -Math.cos(heading);
-      if (fx * (near.x - it.x) + fy * (near.y - it.y) < 0) heading += Math.PI;
-    }
-    root.rotation.y = -heading;
-    root.position.copy(W(it.x, it.y, 0));
+    root.matrixAutoUpdate = false;
+    root.matrix.copy(matrixOf(it, model.size));
     group.add(root);
   }
-  return group;
-}
-
-function nearestAxis(track: TrackDefinition, p: { x: number; y: number }) {
-  let best = track.points[0], bestD = Infinity;
-  for (let i = 0; i < track.points.length; i += 3) {
-    const q = track.points[i], d = (q.x - p.x) ** 2 + (q.y - p.y) ** 2;
-    if (d < bestD) { bestD = d; best = q; }
+  for (const g of plan.groups) {
+    const model = loaded.get(g.model);
+    if (!model) continue;
+    const placed = g.items.map(it => matrixOf(it, model.size));
+    model.scene.traverse(o => {
+      const mesh = o as THREE.Mesh;
+      if (!mesh.isMesh) return;
+      // La pieza dentro del modelo (los glb del escenario tienen un solo nodo, pero por si acaso).
+      const local = mesh.matrixWorld;
+      const instanced = new THREE.InstancedMesh(mesh.geometry, materialFor(g.items[0], mesh.material as THREE.Material), placed.length);
+      const m = new THREE.Matrix4();
+      placed.forEach((at, i) => instanced.setMatrixAt(i, m.multiplyMatrices(at, local)));
+      instanced.instanceMatrix.needsUpdate = true;
+      instanced.computeBoundingSphere();
+      instanced.castShadow = true; instanced.receiveShadow = true;
+      group.add(instanced);
+    });
   }
-  return best;
+  return group;
 }
 
 // ───────────────────────────── Escapatorias, boxes y focos (23/10/2026) ─────────────────────────────

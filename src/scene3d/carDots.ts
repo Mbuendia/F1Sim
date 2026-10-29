@@ -11,8 +11,10 @@ export const CAR_LENGTH_M = 5.4;
 export const DOT_PX = 8;
 /** Margen para volver del punto al coche: tiene que medir un 20 % más (así no parpadea al cruzar el límite). */
 export const DOT_HYSTERESIS = 0.2;
-/** Hasta esta distancia (m), el modelo completo; más allá, el ligero (como antes de UX16). */
-export const CAR_LOD_M = 90;
+/** [PF2] El modelo completo (127.000 triángulos) solo cuando el coche mide al menos esto en pantalla (píxeles CSS). */
+export const FULL_PX = 150;
+/** [PF2] Margen para dejar el completo: quien lo lleva sigue con él hasta bajar un 20 % del corte (120 px). */
+export const FULL_HYSTERESIS = 0.2;
 
 export type CarLevel = 'completo' | 'ligero' | 'punto';
 
@@ -22,11 +24,21 @@ export function screenLengthPx(distanceM: number, fovDeg: number, viewportHeight
   return (lengthM / (2 * d * Math.tan((fovDeg * Math.PI) / 360))) * viewportHeightPx;
 }
 
-/** Nivel de un coche: punto si se ve pequeño (con margen respecto a cómo estaba), y si no, completo o ligero por metros. */
-export function carLevel(lengthPx: number, distanceM: number, previous: CarLevel | undefined): CarLevel {
+/**
+ * Nivel de un coche por lo que mide en pantalla: punto si se ve pequeño, completo si se ve grande ([PF2] 150 px) y
+ * ligero en medio, con margen respecto a cómo estaba para que no parpadee. `distanceM` ya no decide (se conserva la firma).
+ */
+export function carLevel(lengthPx: number, _distanceM: number, previous: CarLevel | undefined, fullPx = FULL_PX): CarLevel {
   const limit = previous === 'punto' ? DOT_PX * (1 + DOT_HYSTERESIS) : DOT_PX;
   if (lengthPx < limit) return 'punto';
-  return distanceM > CAR_LOD_M ? 'ligero' : 'completo';
+  // [PF4] El corte depende del nivel de calidad (Infinity en bajo: nunca completo).
+  const full = previous === 'completo' ? fullPx * (1 - FULL_HYSTERESIS) : fullPx;
+  return lengthPx >= full ? 'completo' : 'ligero';
+}
+
+/** [PF2] Con qué modelo se dibuja la sombra de un coche: siempre el ligero; un punto no da sombra. */
+export function shadowSource(level: CarLevel): 'ligero' | null {
+  return level === 'punto' ? null : 'ligero';
 }
 
 export interface DotStyle { sizePx: number; ring: 'ninguno' | 'blanco' | 'seguido' }
@@ -38,18 +50,41 @@ export function dotStyle(car: { mine: boolean; followed: boolean }): DotStyle {
   return { sizePx: 7, ring: 'ninguno' };
 }
 
-export interface CarPlanInput { id: number; teamId: string; color: string; status: string; isRetiredVisible: boolean; distanceM: number }
+export interface CarPlanInput {
+  id: number; teamId: string; color: string; status: string; isRetiredVisible: boolean; distanceM: number;
+  /** [PF2.7] Posición en el mundo (m), para saber quién está cerca del coche en foco. */
+  x?: number; y?: number;
+}
+
+/** [PF2.7] Margen para dejar el completo por cercanía: quien lo lleva sigue con él hasta un 10 % más allá del radio. */
+export const FOCUS_HYSTERESIS = 0.1;
 export interface CarPlan { id: number; level: CarLevel; dot: (DotStyle & { color: string }) | null }
 
 /**
  * El plan de un fotograma: un nivel por coche visible (los ocultos no salen, tampoco como punto) y, para los que van de
  * punto, su estilo. `previous` guarda el nivel de cada coche en el fotograma anterior (para el margen).
  */
-export function planCars(cars: CarPlanInput[], view: { fovDeg: number; viewportHeightPx: number; playerTeamId?: string | null; followedCarId?: number | null }, previous: Map<number, CarLevel>): CarPlan[] {
+export function planCars(cars: CarPlanInput[], view: {
+  fovDeg: number; viewportHeightPx: number; playerTeamId?: string | null; followedCarId?: number | null; fullCarPx?: number;
+  /**
+   * [PF2.7] Coche en foco (el seguido con las cámaras de persecución y a bordo) y radio del nivel de calidad: él y los
+   * que estén a menos de ese radio van con el modelo completo aunque midan menos que el corte, para que en curvas
+   * cerradas o con coches pegados delante o detrás se vean siempre bien. En calidad baja (corte Infinity) no se aplica.
+   */
+  focusCarId?: number | null; focusRadiusM?: number;
+}, previous: Map<number, CarLevel>): CarPlan[] {
   const plans: CarPlan[] = [];
+  const focus = view.focusCarId != null && (view.focusRadiusM ?? 0) > 0 && Number.isFinite(view.fullCarPx ?? FULL_PX)
+    ? cars.find(c => c.id === view.focusCarId && c.x !== undefined && c.y !== undefined) ?? null
+    : null;
   for (const car of cars) {
     if (!isCarVisible({ status: car.status as never, isRetiredVisible: car.isRetiredVisible })) continue;
-    const level = carLevel(screenLengthPx(car.distanceM, view.fovDeg, view.viewportHeightPx), car.distanceM, previous.get(car.id));
+    const before = previous.get(car.id);
+    let level = carLevel(screenLengthPx(car.distanceM, view.fovDeg, view.viewportHeightPx), car.distanceM, before, view.fullCarPx);
+    if (focus && level === 'ligero' && car.x !== undefined && car.y !== undefined) {
+      const radius = (view.focusRadiusM ?? 0) * (before === 'completo' ? 1 + FOCUS_HYSTERESIS : 1);
+      if (Math.hypot(car.x - focus.x!, car.y - focus.y!) <= radius) level = 'completo';
+    }
     previous.set(car.id, level);
     const style = level === 'punto' ? dotStyle({ mine: Boolean(view.playerTeamId) && car.teamId === view.playerTeamId, followed: car.id === view.followedCarId }) : null;
     plans.push({ id: car.id, level, dot: style ? { ...style, color: car.color } : null });

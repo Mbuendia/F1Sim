@@ -3,6 +3,7 @@ import { ArrowLeft, Code2, ExternalLink, Gamepad2, Monitor, Radio, Volume2 } fro
 import { createDevTapCounter, DEV_TOOLS, isDevMode, setDevMode } from '../dev/devMode';
 import { AUDIO_LEVEL_LABEL, AUDIO_STORAGE_KEY, parseAudioLevel } from '../audio/AudioEngine';
 import { browserSettingsStorage, readRaceView, writeRaceView, type RaceView } from '../settings/graphics';
+import { QUALITY_LABELS, browserDevice, readQuality, recommendedQuality, writeQuality, type QualitySetting } from '../settings/quality';
 import RadioSettings, { type RadioSettingsProps } from './RadioSettings';
 import { LiveAiStatusBadge } from './AiStatusBadge';
 import { Segmented } from './ui/Segmented';
@@ -46,6 +47,10 @@ export default function SettingsScreen({ onBack, audio, radioProps, storage = br
     else { setOwnLevel(next); try { storage?.setItem(AUDIO_STORAGE_KEY, String(next)); } catch { /* sin almacenamiento */ } }
   };
   const chooseView = (next: RaceView) => { setView(next); writeRaceView(storage, next); };
+  // [PF4] Calidad gráfica: automática (la del dispositivo, y baja sola si caen los fotogramas) o elegida a mano.
+  const [quality, setQuality] = useState<QualitySetting>(() => readQuality(storage));
+  const chooseQuality = (next: QualitySetting) => { setQuality(next); writeQuality(storage, next); };
+  const recommended = useMemo(() => QUALITY_LABELS[recommendedQuality(browserDevice())].toLowerCase(), []);
   // [UX3] Modo desarrollador: siete toques seguidos en la versión lo encienden; se apaga desde su sección.
   const [devOn, setDevOn] = useState(() => isDevMode(storage));
   const [tapNote, setTapNote] = useState<string | null>(null);
@@ -90,6 +95,9 @@ export default function SettingsScreen({ onBack, audio, radioProps, storage = br
             <Segmented label="Vista de la carrera" name="ajustes-vista" value={view} onChange={chooseView}
               options={[{ value: '3d', label: 'Vista 3D' }, { value: '2d', label: 'Vista 2D (más ligera)' }]} />
             <p className={s.dim}>La vista 2D desde arriba gasta menos batería; se aplica en la próxima carrera.</p>
+            <Segmented wrap label="Calidad" name="ajustes-calidad" value={quality} onChange={value => chooseQuality(value as QualitySetting)}
+              options={(['auto', 'alto', 'medio', 'bajo'] as const).map(v => ({ value: v, label: QUALITY_LABELS[v] }))} />
+            <p className={s.dim}>En automática, este dispositivo usa calidad {recommended}, y baja sola si la carrera va a tirones. Se aplica en la próxima carrera.</p>
           </section>
 
           <section className={s.settingsSection} aria-labelledby="ajustes-controles">

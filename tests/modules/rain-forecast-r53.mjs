@@ -12,7 +12,7 @@
 // Decisión del usuario: radar con incertidumbre (ve hasta 20 minutos, por tramos de 5 y por sector). Sustituye a la
 // previsión de R22 basada solo en lo observado; el test de R22 «sin conocimiento del futuro» se adapta a «nada de
 // más allá del horizonte».
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { raceFactory } from '../support/race.mjs';
@@ -29,6 +29,8 @@ export default async function run({ server, assert, test }) {
   const snap = await server.ssrLoadModule('/src/simulation/Snapshot.ts');
   const { buildWeatherScenario } = await server.ssrLoadModule('/src/data/weatherScenarios.ts');
   const source = relative => readFileSync(new URL(`../../${relative}`, import.meta.url), 'utf8');
+  // [PF5] El motor está partido en RaceSimulation.ts y src/simulation/race/*.ts (29/10/2026): se lee entero.
+  const engineSource = () => ['src/simulation/RaceSimulation.ts', ...readdirSync('src/simulation/race').map(f => `src/simulation/race/${f}`)].map(source).join('\n');
   const { FORECAST } = radar;
   const cell = (over = {}) => ({ startSec: 600, endSec: 900, centerT: 0, widthT: 1, rateMmH: 12, driftTPerSec: 0, ...over });
   const scenario = (...cells) => ({ id: 'prueba', cells });
@@ -150,7 +152,7 @@ export default async function run({ server, assert, test }) {
         JSON.stringify(blind.orders));
       assert(aware.orders[0] && ['intermediate', 'wet'].includes(aware.orders[0].compound), 'R53: con previsión, la IA no monta seco con la lluvia inminente y va directa a intermedios', JSON.stringify(aware.orders));
     } finally { Math.random = original; }
-    assert(/getRainForecast\(\)/.test(source('src/simulation/RaceSimulation.ts')) && /anticipatedDepth\(/.test(source('src/simulation/RaceSimulation.ts')) && /rainImminent\(/.test(source('src/simulation/RaceSimulation.ts')),
+    assert(/getRainForecast\(\)/.test(engineSource()) && /anticipatedDepth\(/.test(engineSource()) && /rainImminent\(/.test(engineSource()),
       'R53: el estratega de la IA decide con la previsión');
   });
 

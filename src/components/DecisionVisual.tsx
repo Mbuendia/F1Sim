@@ -1,7 +1,7 @@
 import { Suspense, lazy, useState } from 'react';
 import { Box } from 'lucide-react';
 import type { DecisionVisual as Visual } from '../simulation/Hub';
-import { FACILITY_IMAGE, PART_FOR_PROJECT, resolveVisual } from '../scene3d/partVisuals';
+import { resolveVisual } from '../scene3d/partVisuals';
 import m from './Management.module.css';
 
 /** El visor 3D (con three) solo se descarga cuando se pide ver la pieza. */
@@ -32,6 +32,3 @@ export default function DecisionVisual({ visual, accent }: { visual: Visual; acc
     </Suspense>
   );
 }
-
-/** Para comprobar de un vistazo que todas las mejoras e instalaciones tienen qué enseñar. */
-export const VISUAL_SOURCES = { PART_FOR_PROJECT, FACILITY_IMAGE };

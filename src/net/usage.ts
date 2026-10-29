@@ -8,7 +8,6 @@ import type { DirectChannel, DirectConnector, DirectListener } from './transport
 
 const params = () => (typeof location === 'undefined' ? new URLSearchParams() : new URLSearchParams(location.search));
 export const forceFallback = () => params().has('respaldo');
-export const showUsage = () => params().has('medir');
 
 /** Conexión directa que nunca se abre: el transporte pasa solo al respaldo. */
 export const blockedConnector: DirectConnector = {

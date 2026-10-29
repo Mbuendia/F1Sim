@@ -70,10 +70,17 @@ Los filtros se intersectan. Una selección desconocida o vacía, una excepción 
 ## Notas prácticas de trabajo
 
 - La mayoría de los archivos están en CRLF y `grep` de Git Bash no lo muestra. En un script de edición, normaliza a LF el archivo y los textos, edita y vuelve a escribir con el final de línea original.
-- La suite completa tarda unos 12 minutos: lánzala en segundo plano. No encadenes commits detrás de un `grep` de la salida de un build o de la suite.
+- La suite completa tarda unos 6 minutos en paralelo (PF7, 29/10/2026: `--jobs N`, por defecto núcleos menos dos; `--jobs 1`, de uno en uno): lánzala en segundo plano. No encadenes commits detrás de un `grep` de la salida de un build o de la suite.
 - Revisión en navegador: `npm run build` y `npx vite preview --port 4174 --strictPort` (el 4173 puede estar ocupado por otra sesión; no mates procesos ajenos). Con el panel del navegador oculto, `requestAnimationFrame` no corre: monta la aplicación en un `iframe srcdoc` con `requestAnimationFrame` sustituido por `setTimeout`, toma `simulation` y `camera` de la fibra de React del canvas y avanza con `sim.update(0.1)` en bucles cortos. Al terminar, vacía la página, limpia `localStorage` y para tu servidor.
 - Otras sesiones pueden dejar commits en la rama local del sprint: antes de `git push`, mira `git log origin/RAMA..RAMA`.
 - Para provocar casos raros en el navegador: `sim.reportCrash(car)`, `sim.reportIncident(car, tipo)`, `sim.startRedFlag(motivo)`, `car.hasPuncture = true`, `sim.setWallDelegation(id, true)`.
+
+## Punto de reanudación (29/10/2026)
+
+- **Sprint 8 entregado (rama `sprint/8`, sin subir):** PF1 a PF8 en revisión local, con commits; suite completa en verde (7.598 aserciones, 5,5 min). PF1 y PF2 con aprobación del usuario tarea a tarea; PF3 a PF8 en el modo que pidió ese día («no me pidas permiso, sigue hasta finalizar el sprint»), con contrato de tests escrito y en rojo antes de cada una. Informe completo, con los tests anteriores que se cambiaron y por qué: `docs/informe-sprint-8.md`. Falta: que el usuario mida los fps con `?rendimiento=prueba` en su PC y sus móviles, que dé el sprint por bueno y que pida subir la rama y abrir el PR. Siguiente sprint: 9 (CA1).
+- **Piezas nuevas del Sprint 8:** `src/dev/perfMeter.ts`, `perfBench.ts`, `PerfBenchPage.tsx` y `src/perf/loadMarks.ts` (medición); `src/scene3d/instancing.ts` (escenario con instancias); `src/settings/quality.ts` (calidad alta, media o baja); `src/simulation/race/*.ts` (el motor partido: la clase llama a funciones `(sim, …)` con el mismo nombre; los miembros que usan llevan `@internal`); `scripts/perf-size.mjs`, `scripts/compress-models.mjs` (los .glb van con meshopt: cualquier modelo nuevo de más de 100 KB se comprime con él); `docs/perf/linea-base.md` y `docs/perf/presupuesto.json` (límites que vigila `budget-pf8`).
+- **Ojo al editar el motor:** `tests/modules/race-split-pf5.mjs` compara el estado final de tres carreras con una huella fija; un cambio que altere resultados lo pone en rojo a propósito y la huella solo se actualiza con autorización del usuario.
+- Los archivos `.claude/` que aparecen preparados en el índice son de otra sesión: no entran en los commits del sprint (hacer commit nombrando los archivos o con `git commit -- <rutas>`).
 
 ## Punto de reanudación (24/10/2026)
 
