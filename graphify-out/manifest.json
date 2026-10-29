@@ -1,8 +1,8 @@
 {
   "src/App.tsx": {
-    "mtime": 1793218655.117506,
-    "seen": 1793219029.098647,
-    "ast_hash": "0ed360c8044383dbc95319b6e1503d27",
+    "mtime": 1793231240.5348344,
+    "seen": 1793232108.8222458,
+    "ast_hash": "107f3be831e257009b7d184f45f4646e",
     "semantic_hash": ""
   },
   "src/audio/AudioEngine.ts": {
@@ -36,9 +36,9 @@
     "semantic_hash": ""
   },
   "src/components/BoxControls.tsx": {
-    "mtime": 1792868918.7487273,
-    "seen": 1792870403.264137,
-    "ast_hash": "9a8742d9e897946abe67995d65ae9ee3",
+    "mtime": 1793231199.4341695,
+    "seen": 1793232108.822259,
+    "ast_hash": "cfebd17ea63fa04e1ef6544539bb2e20",
     "semantic_hash": ""
   },
   "src/components/Car3DViewer.tsx": {
@@ -258,9 +258,9 @@
     "semantic_hash": "a0fb7d0fbb0b132212aa16323881e458"
   },
   "src/components/RaceCanvas.tsx": {
-    "mtime": 1793218919.2086039,
-    "seen": 1793219029.098765,
-    "ast_hash": "d434387122409f6a9db507ae7803762f",
+    "mtime": 1793231240.5796375,
+    "seen": 1793232108.8223357,
+    "ast_hash": "3a3bf7c9e12bb5961b025c87f03d2c7e",
     "semantic_hash": ""
   },
   "src/components/RaceFlagsHUD.tsx": {
@@ -744,10 +744,10 @@
     "semantic_hash": "bff2449ca2ceaf3144a675b1fe342574"
   },
   "src/engine/raceCars.ts": {
-    "mtime": 1792376268.696901,
-    "seen": 1792709270.866494,
-    "ast_hash": "3c9a7f0d4452380e62a4c786ea07ef96",
-    "semantic_hash": "3c9a7f0d4452380e62a4c786ea07ef96"
+    "mtime": 1793231240.4532163,
+    "seen": 1793232108.8224695,
+    "ast_hash": "c72f9784a15342de352c7c16a68c4e2a",
+    "semantic_hash": ""
   },
   "src/main.tsx": {
     "mtime": 1793214521.0713315,
@@ -1416,10 +1416,10 @@
     "semantic_hash": "13b7b41220d73c0113adc551024ada12"
   },
   "src/simulation/PowertrainModel.ts": {
-    "mtime": 1791530917.2435553,
-    "seen": 1792709270.8666217,
-    "ast_hash": "d29b78855b337d4f9200fdf40bdfba81",
-    "semantic_hash": "d29b78855b337d4f9200fdf40bdfba81"
+    "mtime": 1793219736.5298014,
+    "seen": 1793232108.8226757,
+    "ast_hash": "b27faae4180a4584d48d5b79f3bea3fd",
+    "semantic_hash": ""
   },
   "src/simulation/Practice.ts": {
     "mtime": 1792376268.7134633,
@@ -1452,9 +1452,9 @@
     "semantic_hash": "7c304a94b41ac30626d528a3bdf11d38"
   },
   "src/simulation/RaceSimulation.ts": {
-    "mtime": 1792868521.6924136,
-    "seen": 1792870403.2645512,
-    "ast_hash": "f9bc59ac408544451890191a71eacae5",
+    "mtime": 1793219736.5690777,
+    "seen": 1793232108.8226845,
+    "ast_hash": "29a390eb22b2e89576b55e6296b95662",
     "semantic_hash": ""
   },
   "src/simulation/Random.ts": {
@@ -2466,9 +2466,9 @@
     "semantic_hash": ""
   },
   "tests/catalog.mjs": {
-    "mtime": 1793218215.760964,
-    "seen": 1793219029.099273,
-    "ast_hash": "100e7106af130c90376ea3f567db3ff3",
+    "mtime": 1793219736.6466691,
+    "seen": 1793232108.8227496,
+    "ast_hash": "c8346a00b1bfc4e314b375b0e27ced1d",
     "semantic_hash": ""
   },
   "tests/fixtures/drs-references.json": {
@@ -3810,9 +3810,9 @@
     "semantic_hash": ""
   },
   "AGENTS.md": {
-    "mtime": 1793218917.046221,
-    "seen": 1793219029.0997012,
-    "ast_hash": "184194d41604d2ffc84216e404cc4102",
+    "mtime": 1793232027.6637118,
+    "seen": 1793232108.8231308,
+    "ast_hash": "242c65dd8d17d687a51453996ae785cb",
     "semantic_hash": ""
   },
   "CLAUDE.md": {
@@ -3828,9 +3828,9 @@
     "semantic_hash": "bd014af3a57aef4d59ac424e7042bafd"
   },
   "DASHBOARD.md": {
-    "mtime": 1793218917.045216,
-    "seen": 1793219029.0997062,
-    "ast_hash": "1100de0c4e9791b37a18344babbedae2",
+    "mtime": 1793232027.6637118,
+    "seen": 1793232108.8231359,
+    "ast_hash": "f38f715251562672c96da544cddcf96a",
     "semantic_hash": ""
   },
   "GEMINI.md": {
@@ -3846,9 +3846,9 @@
     "semantic_hash": "27c1373f4dc4b15147f80935e2207fd3"
   },
   "dashboard_visual.html": {
-    "mtime": 1793218918.444948,
-    "seen": 1793219029.0997155,
-    "ast_hash": "348717089e34a905764c78faa8e49262",
+    "mtime": 1793232029.045546,
+    "seen": 1793232108.8231447,
+    "ast_hash": "33be635f210145c75f7b83a6fc111f1d",
     "semantic_hash": ""
   },
   "docs/design/brief-revision-ux-ui.md": {
@@ -3930,9 +3930,9 @@
     "semantic_hash": "c437aad7a063cbda404f7193f324acef"
   },
   "index.html": {
-    "mtime": 1793218917.704115,
-    "seen": 1793219029.099741,
-    "ast_hash": "a794ddc592a79505fe7c76c155d06654",
+    "mtime": 1793232028.325235,
+    "seen": 1793232108.8231692,
+    "ast_hash": "531adeaf2fc12689cff0dea7a4d43813",
     "semantic_hash": ""
   },
   "prototypes/n1/index.html": {
@@ -4326,9 +4326,9 @@
     "semantic_hash": ""
   },
   "tests/modules/speedometer-ux7.mjs": {
-    "mtime": 1792867251.9853227,
-    "seen": 1792868016.9641962,
-    "ast_hash": "53709b8eb7596741fe4fcf2932ac28bf",
+    "mtime": 1793232041.3173892,
+    "seen": 1793232108.8230119,
+    "ast_hash": "e017e54b1eeee49171cd5b0ddc989726",
     "semantic_hash": ""
   },
   "scratch/ux7-capture.mjs": {
@@ -4965,6 +4965,36 @@
     "mtime": 1793218215.797849,
     "seen": 1793219029.0993161,
     "ast_hash": "c11badc0990fa39d56ee139cff4fed9e",
+    "semantic_hash": ""
+  },
+  "scratch/ux17-telemetria.mjs": {
+    "mtime": 1793219337.8035817,
+    "seen": 1793232108.822179,
+    "ast_hash": "1a7f38e91d817c45d4ed90c4366cdc53",
+    "semantic_hash": ""
+  },
+  "scratch/ux17-vmax.mjs": {
+    "mtime": 1793219454.8901644,
+    "seen": 1793232108.8221815,
+    "ast_hash": "36d3c2955c9a96082fe0dd6abb8a2bae",
+    "semantic_hash": ""
+  },
+  "src/data/gearing.ts": {
+    "mtime": 1793219473.912461,
+    "seen": 1793232108.8224118,
+    "ast_hash": "5eaf3a366a9c58e9b80fcebc3374d84a",
+    "semantic_hash": ""
+  },
+  "src/utils/revLights.ts": {
+    "mtime": 1793219736.4446368,
+    "seen": 1793232108.8227348,
+    "ast_hash": "4aae26f8ce0ab02cd3ab2d3552a6e5b7",
+    "semantic_hash": ""
+  },
+  "tests/modules/speedometers-ux17.mjs": {
+    "mtime": 1793219764.7623913,
+    "seen": 1793232108.8230133,
+    "ast_hash": "9c4166c13cb3ae90d8986a754d4deeb7",
     "semantic_hash": ""
   }
 }

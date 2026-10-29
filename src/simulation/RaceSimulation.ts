@@ -2238,7 +2238,10 @@ export class RaceSimulation {
       // [R41] Límite de distancia en fila sin frenazos imposibles: se respeta la frenada máxima del paso y, como muro
       // absoluto, no se alcanza al coche de delante.
       const queueCap = (distanceLaps: number) => {
-        const brakeFloor = Math.max(0, stepStartKmh - 180 * dt) / 3.6 / lapDistanceMeters;
+        // [UX18] Más cerca que el hueco de la fila, solo levanta el pie (30 km/h por segundo): antes frenaba a fondo hasta
+        // quedar por debajo del de delante y en la fila se formaba un acordeón que paraba en seco a los de detrás contra el
+        // muro. La frenada fuerte la dan la curva de aproximación de R41 y el muro.
+        const brakeFloor = Math.max(0, stepStartKmh - 30 * dt) / 3.6 / lapDistanceMeters;
         const wanted = Math.max(0, distanceLaps - RaceSimulation.QUEUE_GAP_LAPS) / Math.max(dt, 1e-9);
         const wall = Math.max(0, distanceLaps - 1 / lapDistanceMeters) / Math.max(dt, 1e-9);
         return Math.min(Math.max(Math.min(car.speed, wanted), Math.min(car.speed, brakeFloor)), wall);

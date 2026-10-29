@@ -3,6 +3,7 @@ import { TrackDefinition, CornerMarker } from '../data/barcelonaTrack';
 import { CircuitSpec } from '../data/circuits';
 import svgPathsJson from '../data/svgTrackPaths.json';
 import { setIdealRacingLine } from './racingLine';
+import { getLateralDisplacement } from './carPosition';
 import { sampleSvgPath } from './svgPathSampler';
 import { closedFrames, closedLength, resampleClosed, smoothClosed, type AxisFrame } from './circuitGeometry';
 import pitLaneRoutes from '../data/pitLaneRoutes.json';
@@ -23,26 +24,79 @@ const TURN_GAIN = 25;
 const CORNER_CURVATURE = 0.008;
 
 /**
- * [G3] Velocidad de paso por curva con el radio real del eje. La aceleración lateral que aguanta el coche crece con
- * la velocidad por el apoyo aerodinámico: a = (A0 + K·v²) / severidad, y en la curva v² = a·R. De ahí
- * v² = A0·R / (severidad − K·R): una horquilla de 12 m se pasa a unos 55 km/h, una curva de 70 m a unos 150 km/h y a
- * partir de unos 300 m de radio se va a fondo. `severity` es la ganancia calibrada por circuito (`curvatureGain`)
- * dividida por `SEVERITY_REFERENCE`. El resultado se devuelve como el factor de velocidad que usa el motor.
+ * [G3] Velocidad de paso por curva con el radio real del eje. [UX18] Agarre lateral en dos partes, como un coche de
+ * verdad: el mecánico, fijo (MECH_GRIP, unos 1,63 g), y el de la carga aerodinámica, que crece con la velocidad al
+ * cuadrado (C·v²), con un tope (MAX_LATERAL_G). En la curva v² = a·R, así que v² = MECH·R / (1 − C·R) mientras no se
+ * llegue al tope: a poca velocidad manda el mecánico (la horquilla de Mónaco, a unos 50 km/h) y a mucha la carga.
+ * `gain` es la ganancia calibrada por circuito (`curvatureGain`, R47): cuanto mayor, menos carga (C = AERO_REF / gain).
+ * Antes de UX18 el agarre dependía solo del radio y a poca velocidad salía casi 4 g.
  */
-export const CORNER_GRIP = { A0: 20, K: 0.0032, SEVERITY_REFERENCE: 25 };
+export const MECH_GRIP = 16;
+export const MAX_LATERAL_G = 5.5;
+const G = 9.81, AERO_REF = 0.087, MAX_LATERAL = MAX_LATERAL_G * G;
+/** Aceleración lateral máxima (m/s²) a una velocidad, con la carga del circuito. */
+export function lateralLimit(kmh: number, gain: number): number {
+  const v = kmh / 3.6, c = AERO_REF / Math.max(0.05, gain);
+  return Math.min(MAX_LATERAL, MECH_GRIP + c * v * v);
+}
 export function cornerSpeedKmh(curvature: number, gain: number): number {
   if (!(curvature > 1e-9)) return Infinity;
-  const severity = Math.max(0.05, gain / CORNER_GRIP.SEVERITY_REFERENCE), radius = 1 / curvature;
-  const grip = severity - CORNER_GRIP.K * radius;
-  return grip <= 1e-9 ? Infinity : Math.sqrt(CORNER_GRIP.A0 * radius / grip) * 3.6;
+  const radius = 1 / curvature, c = AERO_REF / Math.max(0.05, gain);
+  const denom = 1 - c * radius;
+  const v2 = denom > 1e-9 ? MECH_GRIP * radius / denom : Infinity;
+  // Si con esa velocidad la carga pasaría del tope, manda el tope.
+  const capped = !(v2 < Infinity) || MECH_GRIP + c * v2 > MAX_LATERAL ? MAX_LATERAL * radius : v2;
+  return Math.sqrt(capped) * 3.6;
 }
-/** Inversa de la velocidad objetivo del motor por tramos (`RaceSimulation`): km/h de paso → factor de velocidad. */
+/**
+ * Inversa de la velocidad objetivo del motor por tramos (`RaceSimulation`): km/h de paso → factor de velocidad.
+ * [UX18] El mínimo baja de 0,24 (unos 78 km/h: ninguna curva podía ir más lenta) a 0,08 (unos 40 km/h).
+ */
 export function cornerSpeedFactor(curvature: number, gain: number): number {
   const kmh = cornerSpeedKmh(curvature, gain);
   if (kmh >= 302.5) return 1;
   if (kmh >= 190) return 0.65 + (kmh - 190) / 450;
   if (kmh >= 120) return 0.4 + (kmh - 120) / 280;
-  return Math.max(0.24, 0.2 + (kmh - 68) / 240);
+  return Math.max(0.08, 0.2 + (kmh - 68) / 240);
+}
+
+/**
+ * Límite de velocidad de cada punto (factor del motor) a partir de su curvatura, con la rampa de frenada antes de cada
+ * curva lenta (R47: la rampa mide metros reales). Devuelve también qué puntos son zona de frenada.
+ */
+function speedLimitsFor(curvatures: number[], gain: number, lapLengthMeters: number): { final: number[]; braking: boolean[] } {
+  const total = curvatures.length;
+  const raw = curvatures.map(c => cornerSpeedFactor(c, gain));
+  const final = [...raw];
+  const braking = new Array<boolean>(total).fill(false);
+  const lookaheadSteps = Math.max(2, Math.round(BRAKE_LOOKAHEAD_M / (lapLengthMeters / total)));
+  for (let i = 0; i < total; i++) {
+    const apexSpeed = raw[i];
+    if (apexSpeed >= 0.55) continue;
+    for (let step = 1; step <= lookaheadSteps; step++) {
+      const prevIdx = (i - step + total) % total;
+      const interpolatedLimit = apexSpeed + (1.0 - apexSpeed) * (step / lookaheadSteps);
+      if (interpolatedLimit < final[prevIdx]) final[prevIdx] = interpolatedLimit;
+      if (step <= lookaheadSteps * 0.75) braking[prevIdx] = true;
+    }
+  }
+  return { final, braking };
+}
+
+/**
+ * [UX18] Curvatura (1/m) de la trazada ideal: la que sigue el coche, que usa el ancho de la pista y abre las curvas
+ * medias. Tres puntos a 15 m a cada lado (el círculo que pasa por ellos: el recorrido de un coche de 5,4 m, no el pico
+ * del vértice) y una media de ±8 m para quitar ruido.
+ */
+export function racingLineCurvatures(points: { x: number; y: number }[], stepM: number): number[] {
+  const n = points.length, k = Math.max(1, Math.round(15 / stepM)), w = Math.max(1, Math.round(8 / stepM));
+  const raw = points.map((_, i) => {
+    const a = points[(i - k + n) % n], b = points[i], c = points[(i + k) % n];
+    const ab = Math.hypot(b.x - a.x, b.y - a.y), bc = Math.hypot(c.x - b.x, c.y - b.y), ca = Math.hypot(a.x - c.x, a.y - c.y);
+    const cross = Math.abs((b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x));
+    return ab * bc * ca > 1e-9 ? (2 * cross) / (ab * bc * ca) : 0;
+  });
+  return raw.map((_, i) => { let s = 0; for (let d = -w; d <= w; d++) s += raw[(i + d + n) % n]; return s / (2 * w + 1); });
 }
 
 interface AxisBake { worldPoints: Point2D[]; frames: AxisFrame[]; toWorld: (p: Point2D) => Point2D }
@@ -151,34 +205,8 @@ export function buildTrackFromSvg(circuit: CircuitSpec, _sampleCount?: number): 
   // Velocidades locales en función de la curvatura
   // [R47] Ganancia calibrada por circuito para que la vuelta del motor se acerque a la de referencia.
   const curvatureGain = LAP_REFERENCES[circuit.id]?.curvatureGain ?? DEFAULT_CURVATURE_GAIN;
-  const rawSpeedLimits: number[] = [];
-  for (let i = 0; i < total; i++) {
-    const curv = smoothedCurvatures[i];
-    rawSpeedLimits.push(cornerSpeedFactor(curv, curvatureGain));
-  }
-
-  // Lookahead para frenadas F1
-  const finalSpeedLimits: number[] = [...rawSpeedLimits];
-  const isBrakingZones: boolean[] = new Array(total).fill(false);
-
-  // [R47] La rampa de frenada mide metros reales, no una fracción fija de la vuelta.
-  const lookaheadSteps = Math.max(2, Math.round(BRAKE_LOOKAHEAD_M / (circuit.lapLengthMeters / total)));
-  for (let i = 0; i < total; i++) {
-    const apexSpeed = rawSpeedLimits[i];
-    if (apexSpeed < 0.55) {
-      for (let step = 1; step <= lookaheadSteps; step++) {
-        const prevIdx = (i - step + total) % total;
-        const progressToApex = step / lookaheadSteps;
-        const interpolatedLimit = apexSpeed + (1.0 - apexSpeed) * progressToApex;
-        if (interpolatedLimit < finalSpeedLimits[prevIdx]) {
-          finalSpeedLimits[prevIdx] = interpolatedLimit;
-        }
-        if (step <= lookaheadSteps * 0.75) {
-          isBrakingZones[prevIdx] = true;
-        }
-      }
-    }
-  }
+  // [UX18] Primero con la curvatura del eje (para montar los puntos); después se rehace con la de la trazada.
+  let { final: finalSpeedLimits, braking: isBrakingZones } = speedLimitsFor(smoothedCurvatures, curvatureGain, circuit.lapLengthMeters);
 
   const splinePoints: SplinePoint[] = [];
   accumDist = 0;
@@ -255,6 +283,19 @@ export function buildTrackFromSvg(circuit: CircuitSpec, _sampleCount?: number): 
     const cachedLine = line;
     splinePoints.forEach((p, i) => { p.idealLineOffset = cachedLine[i]; });
   }
+
+  // [UX18] Límites de velocidad con la curvatura de la trazada (la que sigue el coche), no la del eje: las curvas medias
+  // se abren usando el ancho de la pista y las horquillas apenas cambian. El eje sigue para dibujar.
+  const linePoints = splinePoints.map(p => {
+    const off = p.idealLineOffset * getLateralDisplacement(1, p.trackWidthMeters);
+    return { x: p.x + p.normal.x * off, y: p.y + p.normal.y * off };
+  });
+  ({ final: finalSpeedLimits, braking: isBrakingZones } = speedLimitsFor(racingLineCurvatures(linePoints, circuit.lapLengthMeters / total), curvatureGain, circuit.lapLengthMeters));
+  // La capacidad (cuántos coches caben) sigue la misma regla que arriba, ahora con los límites de la trazada.
+  splinePoints.forEach((p, i) => {
+    p.speedLimitFactor = finalSpeedLimits[i]; p.isBrakingZone = isBrakingZones[i];
+    p.trackWidthCars = finalSpeedLimits[i] > 0.8 || finalSpeedLimits[(i - 1 + total) % total] >= 0.9 ? baseTrackWidthCars : Math.max(1, baseTrackWidthCars - 1);
+  });
 
   // ── 4. GENERACIÓN DEL PIT LANE OFICIAL (CARRIL DE BOXES INTERIOR) ──
   const pitEntryT = circuit.pitEntryT !== undefined ? circuit.pitEntryT : 0.92;
