@@ -25,6 +25,7 @@ const sprintOf = id => {
   if (/^TL\d/.test(id)) return 'Sprint 12';
   if (/^OF\d/.test(id)) return 'Sprint 13';
   if (/^UN\d/.test(id)) return 'Sprint 14';
+  if (/^MJ\d/.test(id)) return 'Sprint 15';
   if (/^G\d/.test(id)) return 'Sprint 4.5';
   if (/^T4\./.test(id)) return 'Sprint 4';
   if (/^T3\./.test(id)) return 'Sprint 3';
