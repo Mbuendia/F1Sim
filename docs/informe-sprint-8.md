@@ -71,6 +71,14 @@ Los fotogramas por segundo en tus dispositivos siguen **pendientes**: los mide l
 - **LCP de la portada.** `main.tsx` monta `Root`, que pinta la portada con React y su código (paquete inicial de 458 a 78 KB) y carga el juego aparte, precargándolo con la primera señal de que se va a jugar; el CSS de Google Fonts ya no bloquea el primer pintado y la rueda 3D espera a que termine la carga. **LCP en móvil de 5,06 s a 1,43 s** (escritorio 1,09 s); INP y CLS siguen en verde. Contrato en `tests/modules/landing-lcp-pf8.mjs`; límite del paquete inicial en el presupuesto, 85 KB.
 - **CI del PR.** Fallaba la compilación en GitHub: el script que partió el motor (PF5) dejó en `race/carStep.ts` un tipo con la ruta absoluta de la máquina (`import("C:/Users/…")`), que compilaba en Windows y no en el servidor. Arreglado con un import relativo, y el test de limpieza (PF6) vigila ahora que no haya rutas absolutas en `src` y que cada import coincida letra a letra con el nombre del archivo (Linux distingue mayúsculas).
 
+### PF9 — Portada nueva con una escena de Blender (29/10/2026)
+
+- Pedida por ti: fuera la rueda 3D (`F1Wheel3D`, three.js en la portada) y una portada inspirada en un hero de referencia, hecha en Blender con el coche del juego. Escena con librea de parodia, asfalto mojado y estelas rojas; efectos con la skill `vfx-fx` (chispas, brasas desenfocadas, bruma rasante y bloom).
+- Capas en AVIF animadas solo con CSS: estelas que salen del punto de fuga, coche pegado a su reflejo con el empuje de cámara, brasas que pasan y ruedas que giran (cuatro fotogramas de 15°). Encuadre propio en vertical para el móvil. Quieta con «reducir movimiento».
+- Peso de las imágenes: 88 KB en escritorio y 56 KB en móvil. LCP 0,65 s en escritorio y 1,66 s en móvil; TBT 0 ms antes de pulsar «Jugar».
+- Contrato en `tests/modules/landing-hero-pf9.mjs`; capas regenerables con `scripts/encode-hero.mjs` desde los renders. La rueda 2D se queda (la usa la pantalla de gestión).
+- PF10, la pantalla de carga para teléfonos lentos, queda planificada como tarea aparte.
+
 ## Cambios en tests anteriores
 
 Las reglas de AGENTS.md piden autorización para tocar un test acordado. Estos son todos los que se cambiaron y por qué:
@@ -82,6 +90,8 @@ Las reglas de AGENTS.md piden autorización para tocar un test acordado. Estos s
 | `perf-baseline-pf1` | La tabla de dispositivos se lee solo en su sección (PF2 añade otra tabla al mismo documento) | Tuya, explícita |
 | `drs-visible-r04`, `rain-forecast-r53`, `wall-telemetry-r24`, `speedometers-ux17` | Leían el texto de `RaceSimulation.ts`; ahora leen el motor entero (clase y `race/*.ts`) y aceptan `sim.` donde pedían `this.`. Lo que comprueban no cambia | Modo sin permisos (PF5) |
 | `models-compressed-pf3` | Pedía que desde `main.tsx` se llegara a más de 20 archivos; con la mejora del LCP son 13 (el juego se carga aparte): ahora comprueba que el recorrido llega a la portada | Petición de mejorar el LCP |
+| `landing-compound` (R30, R58) | Con la rueda 3D se retira su compuesto al azar en cada carga; R58 sigue: la portada funciona sin WebGL, ahora porque no lo necesita | Petición de quitar la rueda (PF9) |
+| `landing-lcp-pf8`, `models-compressed-pf3` | Los casos que nombraban la rueda 3D pasan a comprobar que la portada no carga three.js | Petición de quitar la rueda (PF9) |
 | `models-compressed-pf3`, `budget-pf8` (propios del sprint) | Antes de darlos por buenos: el tamaño mínimo pasó a «al menos un 10 % menos» (el redondeo dejaba pasar un archivo igual) y el presupuesto compila como `npm run build` (el entorno de pruebas metía React de desarrollo) | Modo sin permisos |
 
 ## Validación

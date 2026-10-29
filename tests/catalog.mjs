@@ -620,5 +620,6 @@ export const modules = [
   { "id": "fast-suite-pf7", "tasks": ["PF7"], "sprint": "8", "kind": "contract" },
   { "id": "budget-pf8", "tasks": ["PF8"], "sprint": "8", "kind": "contract" },
   { "id": "landing-lcp-pf8", "tasks": ["PF8"], "sprint": "8", "kind": "contract" },
+  { "id": "landing-hero-pf9", "tasks": ["PF9"], "sprint": "8", "kind": "contract" },
   { "id": "viewport-movil", "tasks": [], "sprint": null, "kind": "regression" }
 ];

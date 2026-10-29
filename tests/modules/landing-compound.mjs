@@ -1,25 +1,19 @@
-// Portada: la rueda muestra un compuesto al azar en cada carga, nunca el de la carga anterior.
+// Portada (R30, R58). Revisado el 29/10/2026 con PF9: el usuario pidió quitar la rueda 3D de la portada y sustituirla por
+// una escena de Blender. Con la rueda se va su compuesto al azar en cada carga (el caso «compuesto aleatorio distinto
+// del de la recarga anterior» deja de tener objeto y se retira); R58 se mantiene en su sentido: la portada funciona sin
+// WebGL, ahora porque ya no lo necesita.
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
+import { readFileSync } from 'node:fs';
 
 export default async function run({ server, assert, test }) {
-  const { chooseLandingCompound } = await server.ssrLoadModule('/src/components/F1Wheel3D.tsx');
-  await test('Portada: compuesto aleatorio distinto del de la recarga anterior', () => {
-    const data = new Map();
-    const storage = { getItem: k => data.get(k) ?? null, setItem: (k, v) => data.set(k, v) };
-    const loads = Array.from({ length: 50 }, (_, i) => chooseLandingCompound(storage, () => (i * 0.37) % 1));
-    const valid = loads.every(c => ['soft', 'medium', 'hard', 'inter', 'wet'].includes(c));
-    const repeats = loads.filter((c, i) => i > 0 && c === loads[i - 1]).length;
-    assert(valid && repeats === 0, 'Portada: compuesto válido y nunca repetido entre recargas seguidas', `${repeats} repeticiones`);
-  });
-
-  // R58: sin WebGL (como aquí, sin navegador) la portada no monta la rueda 3D, que es la que rompía la aplicación.
+  // R58: sin WebGL (como aquí, sin navegador) la portada se ve entera y se puede entrar al juego.
   await test('R58: portada sin WebGL', async () => {
     const { LandingPage } = await server.ssrLoadModule('/src/components/LandingPage.tsx');
     const html = renderToStaticMarkup(createElement(LandingPage, { onEnter() {} }));
-    const wheel2d = html.includes('viewBox="0 0 2000 2000"'), wheel3d = html.includes('wheel3dWrapper'), enter = />Jugar</.test(html);
+    const scene = /data-hero-layer="fondo"/.test(html), enter = />Jugar</.test(html);
+    const webgl = /WebGL|getContext\(|from ['"]three['"]|F1Wheel3D/.test(readFileSync('src/components/LandingPage.tsx', 'utf8'));
     // [UX1] El botón pasó de «Entrar al paddock» a «Jugar» con la autorización del usuario (26/10/2026).
-    assert(wheel2d && !wheel3d && enter, 'R58: sin WebGL la portada muestra la rueda 2D y «Jugar», sin montar la rueda 3D',
-      `rueda 2D ${wheel2d}, rueda 3D ${wheel3d}, botón ${enter}`);
+    assert(scene && enter && !webgl, 'R58: la portada no depende de WebGL: enseña su escena y «Jugar»', `escena ${scene}, botón ${enter}, WebGL ${webgl}`);
   });
 }

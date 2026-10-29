@@ -8,6 +8,7 @@
 //  3. Las fuentes no bloquean el primer pintado: el CSS de Google Fonts se pide sin bloquear (preload + onload, con
 //     <noscript> de respaldo) y con conexión anticipada a fonts.gstatic.com.
 //  4. La rueda 3D (three.js) se monta cuando la página ha terminado de cargar; hasta entonces, la rueda 2D.
+//     [PF9, 29/10/2026] La rueda 3D se retira a petición del usuario: la portada no carga three.js en ningún momento.
 //  5. Medido después con el mismo método (docs/perf/linea-base.md): LCP en móvil 2,5 s como mucho («bueno») y el
 //     paquete inicial dentro de presupuesto.json (límite con un 10 % de margen sobre lo medido).
 import { createElement } from 'react';
@@ -52,7 +53,8 @@ export default async function run({ server, assert, test }) {
   await test('LCP.2: primero la portada; con enlace de sala, el juego', async () => {
     const { default: Root, startsInGame } = await server.ssrLoadModule('/src/Root.tsx');
     const html = renderToStaticMarkup(createElement(Root));
-    assert(/data-landing-wheel/.test(html), 'LCP: lo primero que se pinta es la portada', html.slice(0, 200));
+    // [PF9] La portada es ahora la escena de Blender (antes se reconocía por la rueda: data-landing-wheel).
+    assert(/data-hero-layer="fondo"/.test(html), 'LCP: lo primero que se pinta es la portada', html.slice(0, 200));
     assert(startsInGame('https://mbuendia.github.io/F1Sim/') === false, 'LCP: sin enlace de sala, portada');
     const { roomLink } = await server.ssrLoadModule('/src/net/roomCode.ts');
     const link = roomLink('ABCD23', 'https://mbuendia.github.io/F1Sim/');
@@ -71,10 +73,10 @@ export default async function run({ server, assert, test }) {
     assert(/rel="preconnect" href="https:\/\/fonts\.gstatic\.com" crossorigin/.test(html), 'LCP: conexión anticipada al servidor de las fuentes');
   });
 
-  await test('LCP.4: la rueda 3D, después', () => {
+  // [PF9] Sin rueda 3D: la portada no carga three.js ni de forma diferida (antes, la rueda esperaba al final de la carga).
+  await test('LCP.4: la portada no carga three.js', () => {
     const landing = readFileSync('src/components/LandingPage.tsx', 'utf8');
-    assert(/afterLoad|addEventListener\(['"]load['"]/.test(landing) && /requestIdleCallback|setTimeout/.test(landing), 'LCP: la rueda 3D espera a que la página termine de cargar');
-    assert(/F1WheelSvg/.test(landing), 'LCP: hasta entonces, la rueda 2D');
+    assert(!/F1Wheel3D|from ['"]three['"]|import\(['"]three['"]\)/.test(landing), 'LCP: la portada no carga la rueda 3D ni three.js');
   });
 
   await test('LCP.5: medido después', () => {

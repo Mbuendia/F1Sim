@@ -8,6 +8,7 @@
 //  4. Texturas: los modelos no llevan imágenes dentro; si alguno las llevara, en WebP o KTX2 (nunca PNG o JPG sin
 //     comprimir para la gráfica).
 //  5. Carga diferida: three.js no entra en el paquete principal; la rueda 3D de la portada se carga aparte.
+//     [PF9, 29/10/2026] La rueda 3D se retira a petición del usuario: la portada ya no carga three.js de ninguna forma.
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
 import { MeshoptDecoder } from 'meshoptimizer/decoder';
@@ -150,6 +151,6 @@ export default async function run({ assert, test }) {
     // llega a la portada (13 archivos); antes se pedían más de 20. Se comprueba que el recorrido llega a la portada.
     assert([...reached].some(f => /LandingPage\.tsx$/.test(f)), 'PF3: el recorrido de imports encuentra la portada', String(reached.size));
     const landing = readFileSync('src/components/LandingPage.tsx', 'utf8');
-    assert(/lazy\(\s*\(\)\s*=>\s*import\(['"]\.\/F1Wheel3D['"]\)/.test(landing), 'PF3: la rueda 3D de la portada se carga aparte');
+    assert(!/F1Wheel3D|from ['"]three['"]|import\(['"]three['"]\)/.test(landing), 'PF3: la portada no carga three.js (la rueda 3D se retiró en PF9)');
   });
 }
