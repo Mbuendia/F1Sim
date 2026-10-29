@@ -17,6 +17,3 @@ export const CORNER_REFERENCES: Record<string, CornerReference[]> = {
   suzuka: [{ name: 'Horquilla', at: 0.5, kmh: 77, gear: 3, laterIn: 'CR2' }],
   montreal: [{ name: 'Horquilla (L\'Épingle)', at: 0.62, kmh: 65, gear: 2 }],
 };
-
-/** Velocidad punta (km/h) en esas mismas vueltas de clasificación, por si sirve de comparación. */
-export const REAL_TOP_KMH: Record<string, number> = { monaco: 289, monza: 348, spa: 339, suzuka: 325, montreal: 332 };

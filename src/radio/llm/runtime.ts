@@ -6,16 +6,8 @@ import { CATALOG_VERSION } from '../catalog';
 import type { RadioModelManifest } from '../model/manifest';
 import type { RadioInterpreter } from '../types';
 import { createFinetunedInterpreter } from './FinetunedInterpreter';
-import { createRadioAi, type BatteryInfo, type RadioAi, type ReplyRequest } from './LlmEngine';
-import { createLlmInterpreter } from './LlmInterpreter';
+import { createRadioAi, type BatteryInfo, type RadioAi } from './LlmEngine';
 import { radioRequest } from './radioPrompt';
-import { filterReply } from './replyFilter';
-
-export const radioAi = createRadioAi({
-  factory: async () => (await import('./webllmEngine')).createWebllmEngine(),
-});
-
-export const llmInterpreter = createLlmInterpreter(radioAi);
 
 /**
  * [IA10] La radio con IA del juego: el modelo propio en la versión elegida para el dispositivo, con el prompt del
@@ -32,16 +24,4 @@ export function finetunedRadio(model: RadioModelManifest, battery?: () => Promis
     finetuned.set(key, radio);
   }
   return radio;
-}
-
-/**
- * Respuestas libres del modelo: apagadas por decisión del usuario del 22/10/2026. Con Qwen2.5-0.5B salían frases sin
- * sentido («¿En qué te puedo ayudar hoy?»), así que el piloto contesta con las plantillas de IA2. El modelo solo interpreta.
- */
-export const MODEL_REPLIES = false;
-
-/** Respuesta del piloto con el modelo, filtrada; si no hay modelo o tarda, la plantilla. */
-export async function aiReply(req: ReplyRequest): Promise<string> {
-  const text = await radioAi.reply(req);
-  return filterReply(text, req.text);
 }

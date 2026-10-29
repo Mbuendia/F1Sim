@@ -1,5 +1,5 @@
 // [N3] Almacén de la sala. En N3 la partida es de un jugador (`solo`); las salas compartidas llegan con N4 a N7.
-import { createStore, useStore } from 'zustand';
+import { createStore } from 'zustand';
 
 export interface RoomState {
   mode: 'solo' | 'host' | 'guest';
@@ -19,6 +19,3 @@ export function createRoomStore() {
 }
 
 export const roomStore = createRoomStore();
-export function useRoom<T>(selector: (state: RoomState) => T): T {
-  return useStore(roomStore, selector);
-}

@@ -190,13 +190,6 @@ function usedPracticeTyre(compound: TireCompound) {
   return { ...tires, health, healthFL: health, healthFR: health, healthRL: health, healthRR: health };
 }
 
-/** Lo aprendido, en una línea por piloto, para el panel y el informe. */
-export function learningLine(entry: PracticeLearning, setupText: (setup: CarSetup) => string): string {
-  if (entry.program === 'setup') return `El setup más rápido está entre ${entry.setupCandidates?.length ?? 0}: ${(entry.setupCandidates ?? []).map(setupText).join(' · ')}`;
-  if (entry.program === 'tanda-larga') return `Vida estimada (±${entry.tyreLifeMargin} vueltas): blando ${entry.tyreLife?.soft}, medio ${entry.tyreLife?.medium}, duro ${entry.tyreLife?.hard}`;
-  return `Ritmo a una vuelta: hacia el puesto ${entry.paceRank} (±${entry.paceRankMargin}), a ${(entry.paceGapSec ?? 0).toFixed(2).replace('.', ',')} s del mejor`;
-}
-
 /** Valida el resultado guardado de unos libres; null si no sirve. */
 export function readPractice(data: unknown): PracticeResult | null {
   const value = data as PracticeResult | null;

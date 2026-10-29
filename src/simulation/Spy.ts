@@ -66,10 +66,6 @@ export function canSpy(reports: SpyReport[], round: number, teamId: string): boo
   return mine.length < SPY.MAX_PER_ROUND && !mine.some(report => report.teamId === teamId);
 }
 
-export function readSpyReports(data: unknown): SpyReport[] {
-  return Array.isArray(data) ? data.filter(report => report && typeof report === 'object' && Number.isInteger(report.round) && typeof report.teamId === 'string' && report.setups) : [];
-}
-
 /**
  * Cobra un informe al equipo del jugador: el coste es un gasto voluntario (se rechaza si pasa del límite de deuda) y, si
  * la FIA lo descubre, la multa se cobra siempre y la junta pierde confianza. Devuelve la gestión sin cambios si no se paga.
