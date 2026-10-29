@@ -5,18 +5,26 @@
 import type { CarState, Driver, Team } from '../types/f1';
 import { decodeFast } from './RaceView';
 import type { FastView, SlowView, TeamView } from './RaceView';
+import { gearTopsFor, telemetryGear } from '../simulation/PowertrainModel';
+import { CIRCUIT_TOP_KMH } from '../data/gearing';
 
 export interface RosterEntry { id: number; driver: Driver; team: Team }
 
 /** Coche de la pantalla: un CarState con lo que se sabe de él. */
 export type CarView = CarState;
 
-export function carViews({ roster, fast, slow, teams, drsChangedAt = {} }: {
-  roster: RosterEntry[]; fast: FastView | null; slow: SlowView | null; teams: Record<string, TeamView>; drsChangedAt?: Record<number, number>;
+/**
+ * [UX17] `circuitId`: con él, la marcha de los coches propios se calcula con la velocidad del mismo fotograma (la que
+ * llega en la vista rápida) y los desarrollos del circuito; la de la vista lenta llega hasta un segundo tarde y no
+ * cuadraba con la velocidad.
+ */
+export function carViews({ roster, fast, slow, teams, drsChangedAt = {}, circuitId }: {
+  roster: RosterEntry[]; fast: FastView | null; slow: SlowView | null; teams: Record<string, TeamView>; drsChangedAt?: Record<number, number>; circuitId?: string;
 }): CarView[] {
   const poses = new Map((fast ? decodeFast(fast) : []).map(pose => [pose.id, pose]));
   const publicCars = new Map((slow?.cars ?? []).map(car => [car.id, car]));
   const privateCars = new Map(Object.values(teams).flatMap(team => team.cars.map(car => [car.id, car] as const)));
+  const tops = circuitId ? gearTopsFor(CIRCUIT_TOP_KMH[circuitId] ?? 345) : null;
   return roster.map(entry => {
     const pose = poses.get(entry.id);
     const pub = publicCars.get(entry.id);
@@ -24,7 +32,8 @@ export function carViews({ roster, fast, slow, teams, drsChangedAt = {} }: {
     const status = pose?.status ?? pub?.status ?? 'running';
     const ownState = (own?.state ?? {}) as Partial<CarState>;
     const telemetry = own
-      ? { ...(ownState.telemetry ?? {}), speedKmh: pose?.speedKmh ?? ownState.telemetry?.speedKmh ?? 0, rpm: pose?.rpm ?? ownState.telemetry?.rpm ?? 0 }
+      ? { ...(ownState.telemetry ?? {}), speedKmh: pose?.speedKmh ?? ownState.telemetry?.speedKmh ?? 0, rpm: pose?.rpm ?? ownState.telemetry?.rpm ?? 0,
+          ...(tops && pose && (pose.rpm ?? 0) > 0 ? { gear: telemetryGear(pose.speedKmh, tops).gear } : {}) }
       : { speedKmh: pose?.speedKmh ?? 0, rpm: pose?.rpm ?? 0, brake: pose?.brake ? 1 : 0, drsActive: pose?.drsActive ?? false };
     const view = {
       ...ownState,

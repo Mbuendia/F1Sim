@@ -57,7 +57,9 @@ export default async function run({ server, assert, test }) {
   await test('UX7: un solo velocímetro, en el Muro', () => {
     const wall = readFileSync('src/components/BoxControls.tsx', 'utf8'), dock = readFileSync('src/components/BottomTelemetryDock.tsx', 'utf8');
     assert(/data-odometer=["']speed["']/.test(wall) && /speedReadout\(/.test(wall), 'UX7: el velocímetro está en el Muro y usa la lectura común');
-    assert(/useTweenedNumber\([^)]*\.id/.test(wall), 'UX7: el número se reinicia con el coche: el identificador del coche va a la animación');
+    // [UX17] Cambiado el 29/10/2026 con autorización del usuario: el número ya no usa useTweenedNumber (anime.js por
+    // referencias, punto 4 de UX17); que no arrastre la animación de otro coche lo garantiza un velocímetro por coche.
+    assert(/<WallSpeedometer key=\{p\.id\}/.test(wall) && /animate\(/.test(wall), 'UX7: el número se reinicia con el coche: cada coche tiene su velocímetro y su animación');
     assert(!/speedKmh/.test(dock) && !/data-odometer=["']speed["']/.test(dock), 'UX7: el Detalle ya no enseña la velocidad');
     assert(!existsSync('src/components/TelemetryPanel.tsx'), 'UX7: TelemetryPanel, sin uso, se ha borrado');
   });

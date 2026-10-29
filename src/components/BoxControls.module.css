@@ -50,17 +50,33 @@
 .teamOrders > fieldset { flex-direction:column; align-self:center; }
 /* El selector lleva la rejilla delante para ganar al relleno estrecho de los controles compactos. */
 .pilotsGrid .teamOrders > fieldset > label { flex:0 0 auto; justify-content:flex-start; padding:0 12px; font-size:14px; }
-.pilotSwitch { display:none; }
-/* [UX7] Fila superior de alto fijo: el velocímetro (el único de la carrera) y, en pantallas estrechas, el conmutador. */
-.wallTop { display:flex; align-items:center; gap:10px; min-height:var(--toque, 44px); min-width:0; }
-.speedometer { display:flex; align-items:baseline; gap:10px; padding:2px 12px; border:1px solid var(--line); border-radius:var(--radio-m); background:var(--panel-2); white-space:nowrap; flex:0 0 auto; }
-.speedCode { font-size:14px; font-weight:700; color:var(--text-2); }
-.speedDigits { font:700 26px/1.1 'Orbitron', var(--font-ui); color:var(--text); font-variant-numeric:tabular-nums; min-width:3ch; text-align:right; }
-.speedDigits small { margin-left:4px; font:600 12px var(--font-ui); color:var(--text-2); }
-.speedGear { font:700 18px 'Orbitron', var(--font-ui); color:#38bdf8; }
-.speedRpm { font:600 12px 'Orbitron', var(--font-ui); color:var(--text-2); font-variant-numeric:tabular-nums; }
-@media (max-width:767px) { .speedRpm { display:none; } .speedDigits { font-size:22px; } }
-.wallTop > .pilotSwitch { flex:1; min-width:0; }
+/* [UX17] Fila de velocímetros: uno por coche, en el orden de las tarjetas, de alto fijo (no empuja el muro). En
+   escritorio cada uno queda sobre su tarjeta (izquierda y derecha); en tableta y móvil ocupan media fila cada uno y,
+   al tocarlos, enseñan la tarjeta de ese piloto. */
+.speedRow { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:10px; height:56px; align-items:stretch; min-width:0; }
+.speedRow[data-count="1"] { grid-template-columns:minmax(0, 1fr); }
+.speedRow > :last-child:not(:first-child) { justify-self:end; }
+.speedRow > :first-child { justify-self:start; }
+/* La caja: cada dato en su hueco de ancho fijo (medido en su propia fuente), así los números no la mueven. */
+.speedometer { display:grid; grid-template-columns:max-content max-content max-content max-content max-content max-content; grid-template-rows:8px 1fr; column-gap:8px; row-gap:6px;
+  align-items:baseline; width:max-content; max-width:100%; box-sizing:border-box; padding:6px 12px 5px; margin:0; overflow:hidden;
+  border:1px solid var(--line); border-left:3px solid var(--equipo, var(--line-strong)); border-radius:var(--radio-m); background:var(--panel-2); color:var(--text);
+  font:inherit; text-align:left; cursor:default; white-space:nowrap; }
+.speedometer:focus-visible { outline:2px solid var(--foco); outline-offset:2px; }
+.speedLeds { grid-column:1 / -1; align-self:stretch; display:grid; grid-template-columns:repeat(15, minmax(0, 1fr)); gap:3px; height:8px; }
+.speedLeds > span { border-radius:2px; background:color-mix(in srgb, var(--c) 16%, transparent); transition:background-color 60ms linear; }
+.speedLeds > span[data-led="verde"] { --c:#22c55e; }
+.speedLeds > span[data-led="roja"] { --c:#ef4444; }
+.speedLeds > span[data-led="azul"] { --c:#60a5fa; }
+.speedLeds > span[data-on="true"] { background:var(--c); box-shadow:0 0 6px color-mix(in srgb, var(--c) 70%, transparent); }
+.speedometer[data-flash] .speedLeds > span { background:var(--c); animation:revFlash 0.14s steps(2, jump-none) infinite; }
+@keyframes revFlash { 50% { opacity:0.15; } }
+.speedCode { font-size:14px; font-weight:700; color:var(--text-2); width:3.4ch; }
+.speedDigits { font:700 24px/1 'Orbitron', var(--font-ui); width:3ch; text-align:right; font-variant-numeric:tabular-nums; color:var(--text); }
+.speedUnit, .rpmUnit { font:600 12px var(--font-ui); color:var(--text-2); }
+.speedGear { font:700 20px/1 'Orbitron', var(--font-ui); width:1.4ch; text-align:center; color:#38bdf8; display:inline-block; }
+.speedRpm { font:600 13px 'Orbitron', var(--font-ui); width:6ch; text-align:right; font-variant-numeric:tabular-nums; color:var(--text-2); }
+@media (prefers-reduced-motion: reduce) { .speedometer[data-flash] .speedLeds > span { animation:none; } .speedLeds > span { transition:none; } }
 /* La composición de cada tarjeta depende del ancho del muro, no del de la ventana: con el detalle abierto el muro se
    estrecha aunque la ventana sea ancha. Tres composiciones, las tres de altura fija. */
 .controls { container-type:inline-size; }
@@ -88,8 +104,13 @@
 }
 /* Tableta y móvil: un piloto cada vez, elegido con el conmutador. */
 @media (max-width:1023px) {
-  .pilotSwitch { display:flex; }
-  .pilotSwitch > fieldset { flex:1; }
+  /* [UX17] Los dos velocímetros, media fila cada uno; el pulsado es el piloto cuya tarjeta se ve. */
+  .speedRow > *, .speedRow > :last-child:not(:first-child), .speedRow > :first-child { justify-self:stretch; width:auto; cursor:pointer; }
+  /* Media fila no da para las revoluciones en cifras: las dicen las luces. */
+  .speedometer { grid-template-columns:max-content max-content max-content 1fr; }
+  .speedRpm, .rpmUnit { display:none; }
+  .speedometer[aria-pressed="true"] { border-color:var(--equipo, var(--foco)); box-shadow:inset 0 0 0 1px var(--equipo, var(--foco)); }
+  .speedometer[aria-pressed="false"] { opacity:0.8; }
   .pilotsGrid,.pilotsGrid[data-orders] { grid-template-columns:minmax(0, 1fr); }
   .pilotCard:not([data-shown]) { display:none; }
   /* Con un piloto a la vista, las órdenes van en una fila encima de su tarjeta. */
@@ -99,6 +120,12 @@
 }
 @media (max-width:767px) {
   .controls { padding:8px; }
+  /* [UX17] En el móvil, sin las revoluciones en cifras (quedan las luces), para que quepan dos en 320 px. */
+  .speedRow { height:50px; gap:8px; }
+  .speedometer { grid-template-columns:max-content max-content max-content 1fr; padding:5px 8px 4px; column-gap:6px; row-gap:5px; }
+  .speedRpm, .rpmUnit { display:none; }
+  .speedDigits { font-size:20px; }
+  .speedGear { font-size:18px; justify-self:end; }
   /* Móvil: la tarjeta es una columna de filas de alto fijo. El compuesto ocupa su fila y BOX y Seguir, la siguiente,
      así ningún botón queda contra el borde. */
   .pilotCard { display:flex; flex-direction:column; align-items:stretch; gap:4px; padding:8px; }
@@ -112,3 +139,5 @@
   .orderActions { flex:1 1 100%; }
   .orderActions button,.orderActions button:first-of-type { flex:1; padding:0 10px; font-size:15px; }
 }
+/* [UX17] Móvil muy estrecho (320–380 px): sin «km/h», para que los dos velocímetros quepan sin cortarse. */
+@media (max-width:380px) { .speedUnit { display:none; } .speedometer { grid-template-columns:max-content max-content 1fr; } .speedCode { width:auto; } }

@@ -237,7 +237,7 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
         seenFastAt = state.fastAt;
       }
       const painted = interpolator.frame(now);
-      const base = carViews({ roster, fast: state.fast, slow: state.slow, teams: state.teams, drsChangedAt: state.drsChangedAt });
+      const base = carViews({ roster, fast: state.fast, slow: state.slow, teams: state.teams, drsChangedAt: state.drsChangedAt, circuitId });
       const poses = new Map(painted.cars.map(car => [car.id, car]));
       const cars = base.map(car => {
         const pose = poses.get(car.id);

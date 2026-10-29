@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { animate } from 'animejs';
 import { ArrowUpDown, CloudRain, Dices, Fuel, Gauge, Hourglass, Lock, Radio, Swords, Wrench, Zap } from 'lucide-react';
 import { RadioPanel, useDriverCalls, useRadioHotkey, useRadioModeCheck } from './RadioPanel';
 import type { SlowView } from '../engine/RaceView';
@@ -17,27 +18,69 @@ import { PitWindowLine } from './WallPanel';
 import { Segmented } from './ui/Segmented';
 import { Meter, meterTone } from './ui/Meter';
 import { Chip } from './ui/Tile';
-import { speedReadout, useTweenedNumber } from '../utils/useTweenedNumber';
+import { speedReadout } from '../utils/useTweenedNumber';
+import { REV_LEDS, ledColor, revLights } from '../utils/revLights';
 
 const CROSSOVER_LABEL = { slick: 'neumático de seco', intermediate: 'INTERMEDIO', wet: 'LLUVIA' } as const;
 const ORDER_STATUS = { consumed: 'EJECUTADA', committed: 'CONFIRMADA', cancelled: 'CANCELADA', rejected: 'RECHAZADA', accepted: 'ACEPTADA' } as const;
 const decimal = (value: number) => value.toFixed(1).replace('.', ',');
 
+const reduceMotion = () => typeof window !== 'undefined' && Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
+const rpmText = (rpm: number) => Math.max(0, Math.round(rpm)).toLocaleString('es-ES');
+
 /**
- * [UX7] El único velocímetro de la carrera: el del piloto que se enseña en el muro. El número se anima (Q23), salta
- * al momento al cambiar de coche y nunca enseña negativos ni NaN.
+ * [UX7] Velocímetro del muro: el número se anima (Q23), nunca enseña negativos ni NaN. [UX17] Uno por cada coche del
+ * jugador, en una caja de medidas fijas (no se mueve con los números), con las 15 luces de revoluciones de un volante de
+ * F1. Las animaciones (número, revoluciones, luces y un destello al cambiar de marcha) las hace anime.js escribiendo en
+ * el DOM por referencias: React solo pinta la caja al principio y cuando cambia lo que se lee (la etiqueta).
+ * `selected`/`onSelect`: en tableta y móvil, tocarlo enseña la tarjeta de ese piloto.
  */
-export function WallSpeedometer({ car }: { car: CarState }) {
-  const target = speedReadout(car.telemetry.speedKmh);
-  const speed = speedReadout(useTweenedNumber(target, car.id));
-  const rpm = Math.max(0, Math.round(useTweenedNumber(car.telemetry.rpm ?? 0, car.id)));
+export function WallSpeedometer({ car, selected, onSelect }: { car: CarState; selected?: boolean; onSelect?: () => void }) {
+  const speed = speedReadout(car.telemetry.speedKmh);
+  const gear = car.telemetry.gear ?? 0;
+  const rpm = car.telemetry.rpm ?? 0;
+  // Lo que se pinta al principio (también en el servidor); después lo cambia anime.js.
+  const first = useRef({ speed, rpm, lights: revLights(rpm) }).current;
+  const root = useRef<HTMLElement | null>(null), speedEl = useRef<HTMLSpanElement>(null), rpmEl = useRef<HTMLSpanElement>(null), gearEl = useRef<HTMLSpanElement>(null);
+  const shown = useRef({ speed, rpm }), lastGear = useRef(gear), anim = useRef<{ pause(): unknown } | null>(null);
+  useEffect(() => {
+    const paint = (s: number, r: number) => {
+      if (speedEl.current) speedEl.current.textContent = String(speedReadout(s));
+      if (rpmEl.current) rpmEl.current.textContent = rpmText(r);
+      const { lit, flash } = revLights(r);
+      root.current?.querySelectorAll<HTMLElement>('[data-led]').forEach((led, i) => { led.dataset.on = i < lit ? 'true' : 'false'; });
+      if (root.current) { if (flash) root.current.dataset.flash = 'true'; else delete root.current.dataset.flash; }
+    };
+    anim.current?.pause();
+    if (reduceMotion()) { shown.current = { speed, rpm }; paint(speed, rpm); return; }
+    const from = { ...shown.current };
+    const tween = { s: Number.isFinite(from.speed) ? from.speed : speed, r: Number.isFinite(from.rpm) ? from.rpm : rpm };
+    anim.current = animate(tween, {
+      s: speed, r: rpm, duration: 150, ease: 'outQuad',
+      onUpdate: () => { shown.current = { speed: tween.s, rpm: tween.r }; paint(tween.s, tween.r); },
+    });
+  }, [speed, rpm]);
+  useEffect(() => {
+    if (gear === lastGear.current) return;
+    lastGear.current = gear;
+    if (gearEl.current) gearEl.current.textContent = gear ? String(gear) : 'N';
+    if (gearEl.current && !reduceMotion()) animate(gearEl.current, { scale: [1.35, 1], duration: 260, ease: 'outBack' });
+  }, [gear]);
+  useEffect(() => () => { anim.current?.pause(); }, []);
+  const label = `${car.driver.code}: ${speed} km/h, marcha ${gear || 'N'}`;
   return (
-    <div className={styles.speedometer} role="group" aria-label={`Velocidad de ${car.driver.code}: ${speed} km/h`}>
-      <span className={styles.speedCode}>{car.driver.code}</span>
-      <span className={styles.speedDigits} data-odometer="speed">{speed}<small>km/h</small></span>
-      <span className={styles.speedGear} title="Marcha">{car.telemetry.gear ?? '–'}</span>
-      <span className={styles.speedRpm} data-odometer="rpm">{rpm.toLocaleString('es-ES')} rpm</span>
-    </div>
+    <button type="button" ref={el => { root.current = el; }} className={styles.speedometer} aria-label={label} aria-pressed={selected}
+      onClick={onSelect} data-flash={first.lights.flash || undefined} style={{ ['--equipo' as string]: car.team.color }}>
+      <span className={styles.speedLeds} aria-hidden="true">
+        {Array.from({ length: REV_LEDS }, (_, i) => <span key={i} data-led={ledColor(i)} data-on={i < first.lights.lit ? 'true' : 'false'} />)}
+      </span>
+      <span className={styles.speedCode} aria-hidden="true">{car.driver.code}</span>
+      <span className={styles.speedDigits} aria-hidden="true" ref={speedEl} data-odometer="speed">{first.speed}</span>
+      <small className={styles.speedUnit} aria-hidden="true">km/h</small>
+      <span className={styles.speedGear} aria-hidden="true" title="Marcha" ref={gearEl} data-gear>{gear || 'N'}</span>
+      <span className={styles.speedRpm} aria-hidden="true" ref={rpmEl} data-odometer="rpm">{rpmText(first.rpm)}</span>
+      <small className={styles.rpmUnit} aria-hidden="true">rpm</small>
+    </button>
   );
 }
 
@@ -101,14 +144,10 @@ export function BoxControls({ car, teamCars, team, race, send, slow, focusId }: 
       <div className={styles.teamHeader}>
         <strong>MURO · {car.team.shortName.toUpperCase()}</strong>
       </div>
-      <div className={styles.wallTop}>
-        <WallSpeedometer car={speedCar} />
-        {pilots.length > 1 && (
-          <div className={styles.pilotSwitch}>
-            <Segmented label="Piloto que se enseña en el muro" name="muro-piloto" value={String(shown)} onChange={value => setShownId(Number(value))}
-              options={pilots.map(p => ({ value: String(p.id), label: `${p.driver.code} · P${p.currentPosition}` }))} />
-          </div>
-        )}
+      {/* [UX17] Un velocímetro por coche, en el orden de las tarjetas; en tableta y móvil, tocarlo enseña su tarjeta. */}
+      <div className={styles.speedRow} data-count={pilots.length}>
+        {pilots.map(p => <WallSpeedometer key={p.id} car={p} selected={pilots.length > 1 ? p.id === shown : undefined}
+          onSelect={() => setShownId(p.id)} />)}
       </div>
       <div className={styles.pilotsGrid} data-orders={pilots.length > 1 ? 'true' : undefined}>
         {/* [T4.14] Órdenes de equipo: franja estrecha entre las dos tarjetas. */}

@@ -1,8 +1,8 @@
 {
   "src/App.tsx": {
-    "mtime": 1793053241.7773843,
-    "seen": 1793053578.0457065,
-    "ast_hash": "c07f57a64ea395b51c837ec9c5310af8",
+    "mtime": 1793218655.117506,
+    "seen": 1793219029.098647,
+    "ast_hash": "0ed360c8044383dbc95319b6e1503d27",
     "semantic_hash": ""
   },
   "src/audio/AudioEngine.ts": {
@@ -258,9 +258,9 @@
     "semantic_hash": "a0fb7d0fbb0b132212aa16323881e458"
   },
   "src/components/RaceCanvas.tsx": {
-    "mtime": 1793036351.3176985,
-    "seen": 1793036681.9002087,
-    "ast_hash": "ace89edc7a4169eb8a9e8aded654c878",
+    "mtime": 1793218919.2086039,
+    "seen": 1793219029.098765,
+    "ast_hash": "d434387122409f6a9db507ae7803762f",
     "semantic_hash": ""
   },
   "src/components/RaceFlagsHUD.tsx": {
@@ -1200,10 +1200,10 @@
     "semantic_hash": "3f1a6d6175d63d78d7332ddf399db746"
   },
   "src/scene3d/RaceScene3D.ts": {
-    "mtime": 1792689451.148357,
-    "seen": 1792709270.8665826,
-    "ast_hash": "dca03e9a2b41cc39d4639357b579f671",
-    "semantic_hash": "dca03e9a2b41cc39d4639357b579f671"
+    "mtime": 1793218919.1082964,
+    "seen": 1793219029.0991254,
+    "ast_hash": "42fab38baacdb86b28cb9f65b802c1f3",
+    "semantic_hash": ""
   },
   "src/scene3d/cameras.ts": {
     "mtime": 1792689451.148357,
@@ -2466,9 +2466,9 @@
     "semantic_hash": ""
   },
   "tests/catalog.mjs": {
-    "mtime": 1793214749.2649834,
-    "seen": 1793214912.9128242,
-    "ast_hash": "0bcda892ccdbea12834f1d68086952eb",
+    "mtime": 1793218215.760964,
+    "seen": 1793219029.099273,
+    "ast_hash": "100e7106af130c90376ea3f567db3ff3",
     "semantic_hash": ""
   },
   "tests/fixtures/drs-references.json": {
@@ -3810,9 +3810,9 @@
     "semantic_hash": ""
   },
   "AGENTS.md": {
-    "mtime": 1793217952.6924195,
-    "seen": 1793217992.308597,
-    "ast_hash": "d682891be0f7765d737f23e1e69dbcd1",
+    "mtime": 1793218917.046221,
+    "seen": 1793219029.0997012,
+    "ast_hash": "184194d41604d2ffc84216e404cc4102",
     "semantic_hash": ""
   },
   "CLAUDE.md": {
@@ -3828,9 +3828,9 @@
     "semantic_hash": "bd014af3a57aef4d59ac424e7042bafd"
   },
   "DASHBOARD.md": {
-    "mtime": 1793217952.7740653,
-    "seen": 1793217992.308602,
-    "ast_hash": "0f1f846df883ea2aaff1ce2bf8c70eeb",
+    "mtime": 1793218917.045216,
+    "seen": 1793219029.0997062,
+    "ast_hash": "1100de0c4e9791b37a18344babbedae2",
     "semantic_hash": ""
   },
   "GEMINI.md": {
@@ -3846,9 +3846,9 @@
     "semantic_hash": "27c1373f4dc4b15147f80935e2207fd3"
   },
   "dashboard_visual.html": {
-    "mtime": 1793217954.1801991,
-    "seen": 1793217992.3086116,
-    "ast_hash": "08e47823cb15dd5cb0ff8783e6d359fc",
+    "mtime": 1793218918.444948,
+    "seen": 1793219029.0997155,
+    "ast_hash": "348717089e34a905764c78faa8e49262",
     "semantic_hash": ""
   },
   "docs/design/brief-revision-ux-ui.md": {
@@ -3930,9 +3930,9 @@
     "semantic_hash": "c437aad7a063cbda404f7193f324acef"
   },
   "index.html": {
-    "mtime": 1793217953.47213,
-    "seen": 1793217992.308636,
-    "ast_hash": "bb5f42d12f3f7236fe86046c7bb727d6",
+    "mtime": 1793218917.704115,
+    "seen": 1793219029.099741,
+    "ast_hash": "a794ddc592a79505fe7c76c155d06654",
     "semantic_hash": ""
   },
   "prototypes/n1/index.html": {
@@ -4698,9 +4698,9 @@
     "semantic_hash": ""
   },
   "src/dev/PerfOverlay.tsx": {
-    "mtime": 1793039202.6924715,
-    "seen": 1793049566.8246226,
-    "ast_hash": "e505c7df907fd754e72cb5210a12e632",
+    "mtime": 1793218919.1595333,
+    "seen": 1793219029.0989325,
+    "ast_hash": "f20d88beb7e826a3960144d5845290b8",
     "semantic_hash": ""
   },
   "src/dev/devMode.ts": {
@@ -4947,6 +4947,24 @@
     "mtime": 1793217276.5532262,
     "seen": 1793217802.837019,
     "ast_hash": "4eb1f9daa89235a4dbd0c0f869eae9d1",
+    "semantic_hash": ""
+  },
+  "src/dev/perfStats.ts": {
+    "mtime": 1793218325.3467216,
+    "seen": 1793219029.0989482,
+    "ast_hash": "f5383b8082adde782b02f4dd56600092",
+    "semantic_hash": ""
+  },
+  "src/scene3d/carDots.ts": {
+    "mtime": 1793218215.8099484,
+    "seen": 1793219029.09913,
+    "ast_hash": "5e46b65f8b1d024ce11cb506dea85114",
+    "semantic_hash": ""
+  },
+  "tests/modules/car-dots-ux16.mjs": {
+    "mtime": 1793218215.797849,
+    "seen": 1793219029.0993161,
+    "ast_hash": "c11badc0990fa39d56ee139cff4fed9e",
     "semantic_hash": ""
   }
 }

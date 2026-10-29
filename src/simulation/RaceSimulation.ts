@@ -42,7 +42,8 @@ import { RejoinModel } from './RejoinModel';
 import { IncidentModel } from './IncidentModel';
 import { calculateCarWorldPosition, lapsToPitEntry, limitLateralChange, GRID_SLOT_M } from '../utils/carPosition';
 import { lineCrossings, TimingLine, TimingService } from './Timing';
-import { brakeDecelFactor, brakeTempStep, engineTempStep, gearFor, rpmFor } from './PowertrainModel';
+import { brakeDecelFactor, brakeTempStep, engineTempStep, gearFor, gearTopsFor, rpmFor, telemetryGear } from './PowertrainModel';
+import { CIRCUIT_TOP_KMH } from '../data/gearing';
 import { chassisGripAt, resolveTechnical } from '../data/teamProfiles';
 import type { CarTechnical } from '../data/teamProfiles';
 import { applySetup, isNeutralSetup, normalizeSetup } from './Setup';
@@ -651,6 +652,13 @@ export class RaceSimulation {
       defaultRunoffSurface: street && scenario.trackType !== 'street' ? 'wall' : scenario.defaultRunoffSurface,
       runoffZones: this.runoffZones ?? (street && scenario.trackType !== 'street' ? [] : scenario.runoffZones),
     }, trackT);
+  }
+
+  /** [UX17] Desarrollos del circuito actual (por su velocidad máxima medida). */
+  private gearTopsCache: { id: string; tops: number[] } | null = null;
+  private gearTops(): number[] {
+    if (this.gearTopsCache?.id !== this.circuitId) this.gearTopsCache = { id: this.circuitId, tops: gearTopsFor(CIRCUIT_TOP_KMH[this.circuitId] ?? 345) };
+    return this.gearTopsCache.tops;
   }
 
   setCircuit(circuitId: string) {
@@ -2356,6 +2364,9 @@ export class RaceSimulation {
       const kmh = Math.round(car.currentSpeedKmh);
       const gearVal = gearFor(car.currentSpeedKmh);
       const finalRpm = Math.round(rpmFor(car.currentSpeedKmh, gearVal));
+      // [UX17] Lo que se enseña: marcha y revoluciones con los desarrollos del circuito (la 8.ª llega al cambio al final de
+      // su recta más larga). La temperatura del motor sigue con las de antes, para que la carrera no cambie.
+      const shown = telemetryGear(car.currentSpeedKmh, this.gearTops());
 
       // [R16] Temperaturas tras el paso: los frenos con su potencia de fricción, el motor con su demanda; ambos se
       // refrigeran peor en la estela. El paso siguiente frena y empuja con estas temperaturas.
@@ -2379,8 +2390,8 @@ export class RaceSimulation {
         speedKmh: kmh,
         throttle: throttleVal,
         brake: brakeVal,
-        gear: gearVal,
-        rpm: finalRpm,
+        gear: shown.gear,
+        rpm: shown.rpm,
         drsActive: car.drsActive,
         drsAvailable: car.drsEligible,
         engineMode: car.engineMode,

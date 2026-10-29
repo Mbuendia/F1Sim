@@ -509,7 +509,7 @@ export const App: React.FC = () => {
       if (state.fast && state.fast !== fastSample && now - last >= 100) { last = now; setFastSample(state.fast); }
     });
   }, []);
-  const viewCars = useMemo(() => carViews({ roster: raceRoster, fast: fastSample, slow: slowView, teams: teamViews }), [raceRoster, fastSample, slowView, teamViews]);
+  const viewCars = useMemo(() => carViews({ roster: raceRoster, fast: fastSample, slow: slowView, teams: teamViews, circuitId: simulation.circuitId }), [raceRoster, fastSample, slowView, teamViews, simulation.circuitId]);
   // Hasta que llega la primera vista se enseña la copia de la pestaña (la parrilla preparada).
   const cars = viewCars.length && slowView ? viewCars : simulation.cars;
   const ownView = useCallback((carId: number) => Object.values(teamViews).flatMap(team => team.cars).find(car => car.id === carId), [teamViews]);
