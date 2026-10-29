@@ -15,7 +15,7 @@ export default async function run({server,assert,test}){
       sim.issueBoxOrder(car.id,'wet');html=render();
       assert(html.includes('WET')&&html.includes('ACEPTADA'),'Q9 UI: acuse muestra compuesto aceptado');
       car.progress=car.pitStop.activeBoxOrder.commitmentProgress;sim.cancelBoxOrder(car.id);html=render();
-      const buttons=[...html.matchAll(/<button([^>]*)>/g)].filter(m=>!m[1].includes('data-radio')); // [IA1] el botón de radio no es de la parada
+      const buttons=[...html.matchAll(/<button([^>]*)>/g)].filter(m=>!m[1].includes('data-radio')&&!m[1].includes('speedometer')); // [IA1] el botón de radio no es de la parada; [UX7] el velocímetro tampoco
       assert(buttons.length===2&&buttons.every(m=>m[1].includes('disabled')),'Q10 UI: compromiso bloquea cambio y cancelación');
       assert(html.includes('CONFIRMADA'),'Q10 UI: muestra orden comprometida');
     });

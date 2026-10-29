@@ -225,18 +225,26 @@ export default async function run({ server, assert, test }) {
   await test('R50: defenderse exige más ventaja al atacante, salvo que ya esté en paralelo', () => {
     const OT = RaceSimulation.OVERTAKE;
     assert(OT.DEFENCE_FACTOR === 1.3, 'R50: la defensa exige un 30 % más de ventaja', String(OT.DEFENCE_FACTOR));
-    // En la mejor zona de Mónaco: ventaja suficiente sin defensa e insuficiente con ella.
-    const best = new RaceSimulation('monaco').overtakingZones.reduce((a, b) => (b.difficulty < a.difficulty ? b : a));
-    const undefended = OT.MIN_ADVANTAGE * best.difficulty;
-    // [Sprint 4.5] contrato revisado el 13/10/2026: con el radio real la mejor zona de Mónaco es menos difícil y el margen
-    // entre los dos umbrales es más estrecho; la ventaja de la prueba se acerca al umbral sin defensa (antes +0,002).
+    // [UX18] contrato revisado con el usuario el 29/10/2026: antes, en la mejor zona de Mónaco tras 4 vueltas; con las
+    // curvas lentas a su velocidad real en Mónaco ya no se llega a rueda («que en Mónaco cueste adelantar es normal»), así
+    // que se prueba en Miami, en su zona difícil de recta más larga, con el atacante a rueda (10 m) al empezar la zona.
+    const OT_FACTOR = OT.DEFENCE_FACTOR;
+    const between = z => OT.MIN_ADVANTAGE * z.difficulty * (1 - OT_FACTOR) + 0.0012 + OT.CLOSING_AID_MAX < 0;
+    const target = new RaceSimulation('miami').overtakingZones.filter(between).reduce((a, b) => (b.straightM > a.straightM ? b : a));
+    const undefended = OT.MIN_ADVANTAGE * target.difficulty;
     const advantage = undefended + 0.0012;
     assert(advantage + OT.CLOSING_AID_MAX < undefended * OT.DEFENCE_FACTOR, 'R50: la ventaja de la prueba queda entre los dos umbrales', `${(undefended * 100).toFixed(2)} % / ${(undefended * OT.DEFENCE_FACTOR * 100).toFixed(2)} %`);
+    const throughZone = () => {
+      const scene = train('miami', 2, advantage, target.startT);
+      const behindAt = scene.leader.progress - 10 / scene.L;
+      Object.assign(scene.fast, { progress: behindAt, trackT: ((behindAt % 1) + 1) % 1, currentSpeedKmh: scene.leader.currentSpeedKmh });
+      return watch(scene, ((((target.endT - target.startT) % 1) + 1) % 1) + 0.02, passes => passes.length > 0);
+    };
     const factor = OT.DEFENCE_FACTOR;
     let withoutDefence;
-    try { OT.DEFENCE_FACTOR = 1; withoutDefence = duel('monaco', advantage, 4); } finally { OT.DEFENCE_FACTOR = factor; }
-    const withDefence = duel('monaco', advantage, 4);
-    assert(withoutDefence.gained === 1 && withoutDefence.passes[0].zone === best.id, 'R50: sin el efecto de la defensa, esa ventaja basta para pasar en la mejor zona', JSON.stringify(withoutDefence.passes));
+    try { OT.DEFENCE_FACTOR = 1; withoutDefence = throughZone(); } finally { OT.DEFENCE_FACTOR = factor; }
+    const withDefence = throughZone();
+    assert(withoutDefence.gained === 1 && withoutDefence.passes[0].zone === target.id, 'R50: sin el efecto de la defensa, esa ventaja basta para pasar en esa zona', JSON.stringify(withoutDefence.passes));
     assert(withDefence.gained === 0, 'R50: con el interior cubierto, la misma ventaja no basta', JSON.stringify(withDefence.passes));
 
     // Atacante ya en paralelo (a 4 m) al empezar: el de delante no puede cerrarle.

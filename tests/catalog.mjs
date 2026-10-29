@@ -605,6 +605,7 @@ export const modules = [
   { "id": "voice-natural-ux15", "tasks": ["UX15"], "sprint": "7", "kind": "contract" },
   { "id": "car-dots-ux16", "tasks": ["UX16"], "sprint": "7", "kind": "contract" },
   { "id": "speedometers-ux17", "tasks": ["UX17"], "sprint": "7", "kind": "contract" },
+  { "id": "slow-corners-ux18", "tasks": ["UX18"], "sprint": "7", "kind": "contract" },
   { "id": "radio-real-ux14", "tasks": ["UX14"], "sprint": "7", "kind": "contract" },
   { "id": "radio-model-ia4", "tasks": ["IA4"], "sprint": "6", "kind": "contract" },
   { "id": "radio-llm-ia5", "tasks": ["IA5"], "sprint": "6", "kind": "contract" },

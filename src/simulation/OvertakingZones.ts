@@ -84,6 +84,9 @@ export function computeOvertakingZones(track: ZoneTrack): OvertakingZone[] {
       widthCars = Math.min(widthCars, at(brake).trackWidthCars);
       brake++;
     }
+    // [UX18] Si la pista se estrecha justo donde se frena, se frena en el último punto ancho de la recta: así siempre
+    // queda sitio para lanzar la maniobra.
+    if (at(brake).trackWidthCars < 2 && brake - 1 > i) brake--;
     const straightM = (brake - i) * step;
     // Frenada: mientras la velocidad baja, hasta el vértice (primer punto con la velocidad mínima).
     let apex = brake, minFactor = at(brake).speedLimitFactor;
