@@ -227,9 +227,14 @@ export class RaceScene3D {
 
     this.placeCars(frame.cars, { fovDeg: view.fov, viewportHeightPx: height, pixelRatio: Math.min(pixelRatio, 2), playerTeamId: frame.playerTeamId ?? null, followedCarId: frame.followedCarId ?? null });
     this.placeSafetyCar(frame.safetyCar);
+    // [PF1] Con el contador abierto, la gráfica se cronometra alrededor del pintado.
+    perfStats.gpuTimer?.begin();
     this.renderer.render(this.scene, this.camera);
-    // [UX16] Para el contador de rendimiento (UX3).
+    perfStats.gpuTimer?.end();
+    // [UX16] Para el contador de rendimiento (UX3). [PF1] Y la memoria de la gráfica y su contexto.
     perfStats.drawCalls = this.renderer.info.render.calls; perfStats.triangles = this.renderer.info.render.triangles;
+    perfStats.geometries = this.renderer.info.memory.geometries; perfStats.textures = this.renderer.info.memory.textures;
+    perfStats.gl = this.renderer.getContext();
     return canvas;
   }
 

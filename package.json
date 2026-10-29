@@ -10,7 +10,8 @@
     "dashboard": "node scripts/build-dashboard.mjs",
     "prebuild": "npm run check:tasks",
     "build": "tsc -b && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "perf:size": "node scripts/perf-size.mjs"
   },
   "dependencies": {
     "@diffusionstudio/piper-wasm": "1.0.0",

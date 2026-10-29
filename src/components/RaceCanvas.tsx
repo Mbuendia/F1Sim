@@ -11,6 +11,7 @@ import { OFFICIAL_CIRCUITS } from '../data/circuits';
 import { supportsWebGL } from './CarShowcase';
 import type { TrackLayerGL } from '../renderer/TrackLayerGL';
 import { frameCost, recordStage } from '../renderer/frameCost';
+import { markLoad } from '../perf/loadMarks';
 import { buildCarDraws, buildSafetyCarDraw } from '../renderer/carDraws';
 import { bridgePaintOrder, bridgeSide, overpassFor } from '../renderer/overpass';
 import { renderBridge } from '../renderer/BridgeRenderer';
@@ -320,9 +321,11 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
         ctx.restore();
         const frameEnd = performance.now();
         frameCost.simScale = 1; frameCost.gpu = true;
-        recordStage('simulacion', simulated - frameStart); recordStage('pista', rendered - simulated); recordStage('clima', 0);
-        recordStage('coches', 0); recordStage('resto', frameEnd - rendered); recordStage('total', frameEnd - frameStart);
+        // [PF1] En la vista 3D, pista, escenario y coches van juntos en la fase '3d'.
+        recordStage('simulacion', simulated - frameStart); recordStage('pista', 0); recordStage('clima', 0);
+        recordStage('coches', 0); recordStage('3d', rendered - simulated); recordStage('resto', frameEnd - rendered); recordStage('total', frameEnd - frameStart);
         frameCost.frames++;
+        markLoad('firstFrame');
         return;
       }
 
@@ -422,8 +425,9 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
       frameCost.simScale = 1;
       frameCost.gpu = gpu;
       recordStage('simulacion', simulated - frameStart); recordStage('pista', trackDone - simulated); recordStage('clima', weatherDone - trackDone);
-      recordStage('coches', carsDone - weatherDone); recordStage('resto', frameEnd - carsDone); recordStage('total', frameEnd - frameStart);
+      recordStage('coches', carsDone - weatherDone); recordStage('3d', 0); recordStage('resto', frameEnd - carsDone); recordStage('total', frameEnd - frameStart);
       frameCost.frames++;
+      markLoad('firstFrame');
     };
 
     repaint = () => { try { paintFrame(performance.now(), false); } catch { ctx.restore(); } };

@@ -46,9 +46,12 @@ else {
   import('./dev/devMode').then(({ devToolsAllowed, browserDevStorage }) => {
     const allowed = devToolsAllowed({ dev: import.meta.env.DEV, storage: browserDevStorage() })
     const review = allowed && revision ? REVIEWS[revision] : undefined
-    if (review) review().then(({ default: Page }) => root.render(<Page />))
+    // [PF1] Prueba de rendimiento repetible: `?rendimiento=prueba` (lleva su propio contador).
+    const bench = allowed && params.get('rendimiento') === 'prueba'
+    if (bench) import('./dev/PerfBenchPage').then(({ default: Page }) => root.render(<Page />))
+    else if (review) review().then(({ default: Page }) => root.render(<Page />))
     else renderApp()
-    if (allowed && params.has('rendimiento')) {
+    if (allowed && params.has('rendimiento') && !bench) {
       const host = document.body.appendChild(document.createElement('div'))
       import('./dev/PerfOverlay').then(({ PerfOverlay }) => ReactDOM.createRoot(host).render(<PerfOverlay />))
     }

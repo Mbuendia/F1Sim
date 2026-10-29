@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspens
 import styles from './App.module.css';
 import { RaceTabs, raceLayout, mobileRaceView } from './components/RaceTabs';
 import { LapStrip } from './components/LapStrip';
+import { markLoad } from './perf/loadMarks';
 import { FreeRaceWizard } from './components/FreeRaceWizard';
 import { firstDriverOf } from './freeRace/freeRace';
 import { StintTimeline } from './components/StintTimeline';
@@ -186,6 +187,8 @@ const CAMERA_LABELS: Record<string, string> = {
 };
 
 export const App: React.FC = () => {
+  // [PF1] Marca de carga: la primera pantalla del juego está lista.
+  useEffect(() => { markLoad('menu'); }, []);
   // Piloto y Circuito seleccionados
   const [selectedDriverId, setSelectedDriverId] = useState<string>('alonso');
   // [R51] El paddock abre con el circuito del Gran Premio que toca en la temporada.
