@@ -11,8 +11,10 @@ export const CAR_LENGTH_M = 5.4;
 export const DOT_PX = 8;
 /** Margen para volver del punto al coche: tiene que medir un 20 % más (así no parpadea al cruzar el límite). */
 export const DOT_HYSTERESIS = 0.2;
-/** Hasta esta distancia (m), el modelo completo; más allá, el ligero (como antes de UX16). */
-export const CAR_LOD_M = 90;
+/** [PF2] El modelo completo (127.000 triángulos) solo cuando el coche mide al menos esto en pantalla (píxeles CSS). */
+export const FULL_PX = 150;
+/** [PF2] Margen para dejar el completo: quien lo lleva sigue con él hasta bajar un 20 % del corte (120 px). */
+export const FULL_HYSTERESIS = 0.2;
 
 export type CarLevel = 'completo' | 'ligero' | 'punto';
 
@@ -22,11 +24,20 @@ export function screenLengthPx(distanceM: number, fovDeg: number, viewportHeight
   return (lengthM / (2 * d * Math.tan((fovDeg * Math.PI) / 360))) * viewportHeightPx;
 }
 
-/** Nivel de un coche: punto si se ve pequeño (con margen respecto a cómo estaba), y si no, completo o ligero por metros. */
-export function carLevel(lengthPx: number, distanceM: number, previous: CarLevel | undefined): CarLevel {
+/**
+ * Nivel de un coche por lo que mide en pantalla: punto si se ve pequeño, completo si se ve grande ([PF2] 150 px) y
+ * ligero en medio, con margen respecto a cómo estaba para que no parpadee. `distanceM` ya no decide (se conserva la firma).
+ */
+export function carLevel(lengthPx: number, _distanceM: number, previous: CarLevel | undefined): CarLevel {
   const limit = previous === 'punto' ? DOT_PX * (1 + DOT_HYSTERESIS) : DOT_PX;
   if (lengthPx < limit) return 'punto';
-  return distanceM > CAR_LOD_M ? 'ligero' : 'completo';
+  const full = previous === 'completo' ? FULL_PX * (1 - FULL_HYSTERESIS) : FULL_PX;
+  return lengthPx >= full ? 'completo' : 'ligero';
+}
+
+/** [PF2] Con qué modelo se dibuja la sombra de un coche: siempre el ligero; un punto no da sombra. */
+export function shadowSource(level: CarLevel): 'ligero' | null {
+  return level === 'punto' ? null : 'ligero';
 }
 
 export interface DotStyle { sizePx: number; ring: 'ninguno' | 'blanco' | 'seguido' }

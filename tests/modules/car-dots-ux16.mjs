@@ -23,7 +23,9 @@ export default async function run({ server, assert, test }) {
     assert(Math.abs(px - 41.5) < 1, 'UX16: el largo en pantalla sale de la distancia, el ángulo y el alto de la ventana', px.toFixed(1));
     assert(d.screenLengthPx(100, 55, 1600) > d.screenLengthPx(100, 55, 800) && d.screenLengthPx(100, 30, 800) > px, 'UX16: con más pantalla o más zoom, se ve más grande');
     assert(d.DOT_PX === 8 && d.DOT_HYSTERESIS === 0.2, 'UX16: corte en 8 píxeles, con un margen del 20 %');
-    assert(d.carLevel(40, 50, undefined) === 'completo' && d.carLevel(40, 200, undefined) === 'ligero' && d.carLevel(7.9, 600, undefined) === 'punto', 'UX16: completo de cerca, ligero a media distancia y punto si mide menos de 8 px');
+    // [PF2] Cambiado con autorización del usuario (29/10/2026, opción A): el completo va por tamaño en pantalla (150 px),
+    // no por metros; un coche de 40 px a 50 m es ya «ligero». Antes: d.carLevel(40, 50, undefined) === 'completo'.
+    assert(d.carLevel(200, 25, undefined) === 'completo' && d.carLevel(40, 200, undefined) === 'ligero' && d.carLevel(7.9, 600, undefined) === 'punto', 'UX16: completo de cerca, ligero a media distancia y punto si mide menos de 8 px');
     assert(d.carLevel(8.5, 600, 'punto') === 'punto' && d.carLevel(9.7, 600, 'punto') === 'ligero' && d.carLevel(8.5, 600, 'ligero') === 'ligero', 'UX16: para dejar de ser punto tiene que pasar de 9,6 px (no parpadea)');
     // Lo mismo en metros, distinto en píxeles: el nivel lo deciden los píxeles.
     assert(d.carLevel(d.screenLengthPx(700, 55, 400), 700, undefined) === 'punto' && d.carLevel(d.screenLengthPx(700, 15, 1600), 700, undefined) === 'ligero', 'UX16: a la misma distancia, con zoom o pantalla grande sigue siendo coche');
@@ -49,7 +51,9 @@ export default async function run({ server, assert, test }) {
   await test('UX16: al acercar, vuelven los coches', () => {
     const prev = new Map();
     d.planCars([car(1, 3000)], { fovDeg: 55, viewportHeightPx: 800 }, prev);
-    const near = d.planCars([car(1, 40)], { fovDeg: 55, viewportHeightPx: 800 }, prev);
+    // [PF2] Cambiado con autorización del usuario (29/10/2026): a 40 m el coche mide 104 px y con el corte de 150 px va
+    // ligero; a 25 m mide 166 px y va completo. Antes: car(1, 40).
+    const near = d.planCars([car(1, 25)], { fovDeg: 55, viewportHeightPx: 800 }, prev);
     assert(near[0].level === 'completo' && near[0].dot === null, 'UX16: de cerca, el coche completo');
     // Al pasar a punto los modelos solo se esconden: no se liberan ni se vuelven a cargar.
     const placeCars = scene.slice(scene.indexOf('private placeCars'), scene.indexOf('private placeFireworks'));

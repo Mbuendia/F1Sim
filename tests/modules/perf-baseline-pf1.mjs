@@ -171,7 +171,10 @@ export default async function run({ server, assert, test }) {
     const path = 'docs/perf/linea-base.md';
     assert(existsSync(path), 'PF1: existe docs/perf/linea-base.md');
     const md = readFileSync(path, 'utf8');
-    const rows = md.split(/\r?\n/).filter(l => /^\|/.test(l)).map(l => l.split('|').slice(1, -1).map(c => c.trim()));
+    // [PF2] Revisado con autorización del usuario (29/10/2026): solo la tabla de su sección; otras tablas del documento
+    // (la de PF2) no son filas de dispositivo.
+    const section = md.slice(md.indexOf('## Fotogramas, memoria y carga')).split(/\r?\n## /)[0];
+    const rows = section.split(/\r?\n/).filter(l => /^\|/.test(l)).map(l => l.split('|').slice(1, -1).map(c => c.trim()));
     const header = rows[0] ?? [];
     const cols = ['Dispositivo', 'Estado', 'fps', 'ms medio', 'peor ms', 'p95 ms', 'gráfica ms', 'memoria MB', 'menú ms', 'primer fotograma ms'];
     assert(cols.every(c => header.includes(c)), 'PF1: la tabla tiene las columnas acordadas', header.join(' | '));

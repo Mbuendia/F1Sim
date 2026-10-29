@@ -612,5 +612,6 @@ export const modules = [
   { "id": "radio-classifier-ia8", "tasks": ["IA8"], "sprint": "6", "kind": "contract" },
   { "id": "radio-finetuned-ia10", "tasks": ["IA10"], "sprint": "6", "kind": "contract" },
   { "id": "perf-baseline-pf1", "tasks": ["PF1"], "sprint": "8", "kind": "contract" },
+  { "id": "render-light-pf2", "tasks": ["PF2"], "sprint": "8", "kind": "contract" },
   { "id": "viewport-movil", "tasks": [], "sprint": null, "kind": "regression" }
 ];
