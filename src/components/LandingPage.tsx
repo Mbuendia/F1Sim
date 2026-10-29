@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { lazy, Suspense, useEffect, useState } from 'react';
 import styles from './LandingPage.module.css';
 import { Play } from 'lucide-react';
-import { F1Wheel3D } from './F1Wheel3D';
+// [PF3] La rueda 3D (y con ella three.js) se carga aparte: fuera del paquete principal. Mientras llega, la rueda 2D.
+const F1Wheel3D = lazy(() => import('./F1Wheel3D').then(m => ({ default: m.F1Wheel3D })));
 import { F1WheelSvg } from './F1WheelSvg';
 import { supportsWebGL } from './CarShowcase';
 
@@ -51,7 +52,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, loading = nul
       {/* Rueda de fondo: en 3D gira y responde al puntero; sin WebGL, la rueda 2D fija */}
       <div className={styles.wheelStage} data-landing-wheel={webgl ? '3d' : '2d'} aria-hidden="true">
         {webgl
-          ? <F1Wheel3D isTransitioning={isTransitioning} className={styles.wheelBackdrop} />
+          ? <Suspense fallback={<F1WheelSvg className={styles.wheelBackdrop} />}><F1Wheel3D isTransitioning={isTransitioning} className={styles.wheelBackdrop} /></Suspense>
           : <F1WheelSvg className={styles.wheelBackdrop} />}
       </div>
       <div className={styles.readingShade} aria-hidden="true" />

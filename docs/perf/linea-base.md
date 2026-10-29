@@ -53,3 +53,13 @@ Medido el 29/10/2026 en Chrome sin ventana: las llamadas de dibujo y los triáng
 - La persecución de «antes» es la medida de PF1 (177 llamadas y 681.000 triángulos); repetida el mismo día dio 139 llamadas y 795.000 triángulos, porque depende de cuántos coches hay cerca en ese fotograma.
 - Los triángulos bajan porque el modelo completo (127.000) solo sale cuando el coche mide 150 px o más en pantalla; con la cámara de persecución el coche seguido mide unos 70 px y va con el ligero (9.600).
 - Las llamadas bajan por las instancias del escenario: en los 23 circuitos el escenario pasa de unas 250 llamadas de media a unas 134 en total, y menos en pantalla porque se descartan los trozos que no se ven.
+
+## PF3 — Modelos comprimidos y carga diferida
+
+Medido el 29/10/2026 con `npm run perf:size` (gzip) y `node scripts/compress-models.mjs`:
+
+- Paquete principal: 606,3 KB → 447,4 KB (three.js sale de la portada: la rueda 3D se carga aparte).
+- Modelos en la descarga: 5.010 KB → 2.885 KB.
+- Coche: 3.187 KB → 1.181 KB; coche por piezas (menú): 2.091 → 712; coche ligero: 344 → 152; Safety Car: 1.871 → 890; monumentos (Red Bull, Torre Cota, Torre Eiffel, Biosfera, noria): 1.599 → 573.
+- Misma geometría: mismos triángulos y vértices; posiciones exactas; normales y colores en 8 bits.
+- Texturas: los modelos no llevan imágenes (las texturas del 3D se dibujan en el momento); las imágenes 2D sin uso se quitan en PF6.
