@@ -146,7 +146,9 @@ export default async function run({ assert, test }) {
   await test('PF3.5: carga diferida', () => {
     const { files: reached, externals } = staticGraph('src/main.tsx');
     assert(!externals.has('three'), 'PF3: three.js no entra en el paquete principal', externals.get('three') ?? '');
-    assert(reached.size > 20, 'PF3: el recorrido de imports encuentra la aplicación', String(reached.size));
+    // Ajustado el 29/10/2026 con la mejora del LCP: el juego ya se carga aparte (Root), así que desde main.tsx solo se
+    // llega a la portada (13 archivos); antes se pedían más de 20. Se comprueba que el recorrido llega a la portada.
+    assert([...reached].some(f => /LandingPage\.tsx$/.test(f)), 'PF3: el recorrido de imports encuentra la portada', String(reached.size));
     const landing = readFileSync('src/components/LandingPage.tsx', 'utf8');
     assert(/lazy\(\s*\(\)\s*=>\s*import\(['"]\.\/F1Wheel3D['"]\)/.test(landing), 'PF3: la rueda 3D de la portada se carga aparte');
   });

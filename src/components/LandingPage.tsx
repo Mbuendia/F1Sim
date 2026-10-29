@@ -18,7 +18,28 @@ interface LandingPageProps {
 // por delante. Solo el botón y Enter/Espacio entran al paddock (sin navegación por clic en el fondo o la rueda).
 // [UX1] Es solo la presentación: un botón, «Jugar», que lleva a la pantalla de juego. Si hay algo que descargar, se
 // enseña aquí con su barra y «Jugar» espera a que acabe.
+/**
+ * [PF8, LCP] La rueda 3D (three.js) espera a que la página termine de cargar y el navegador quede libre: no compite con
+ * el primer pintado. Hasta entonces se ve la rueda 2D.
+ */
+function useAfterLoad(): boolean {
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    let cancel = () => {};
+    const go = () => {
+      const w = window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number; cancelIdleCallback?: (id: number) => void };
+      if (w.requestIdleCallback) { const id = w.requestIdleCallback(() => setReady(true), { timeout: 1500 }); cancel = () => w.cancelIdleCallback?.(id); }
+      else { const id = setTimeout(() => setReady(true), 300); cancel = () => clearTimeout(id); }
+    };
+    if (document.readyState === 'complete') go();
+    else window.addEventListener('load', go, { once: true });
+    return () => { window.removeEventListener('load', go); cancel(); };
+  }, []);
+  return ready;
+}
+
 export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, loading = null }) => {
+  const afterLoad = useAfterLoad();
   const percent = loading ? Math.min(100, Math.floor((loading.loaded / Math.max(1, loading.total)) * 100)) : 100;
   const waiting = Boolean(loading) && percent < 100;
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -51,7 +72,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, loading = nul
     <div className={`${styles.landingContainer} ${isTransitioning ? styles.landingTransitionOut : ''}`}>
       {/* Rueda de fondo: en 3D gira y responde al puntero; sin WebGL, la rueda 2D fija */}
       <div className={styles.wheelStage} data-landing-wheel={webgl ? '3d' : '2d'} aria-hidden="true">
-        {webgl
+        {webgl && afterLoad
           ? <Suspense fallback={<F1WheelSvg className={styles.wheelBackdrop} />}><F1Wheel3D isTransitioning={isTransitioning} className={styles.wheelBackdrop} /></Suspense>
           : <F1WheelSvg className={styles.wheelBackdrop} />}
       </div>

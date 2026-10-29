@@ -64,6 +64,13 @@ Los fotogramas por segundo en tus dispositivos siguen **pendientes**: los mide l
 - `docs/perf/presupuesto.json` fija los límites: paquete principal 490 KB, modelos 3.170 KB, escenario 250 llamadas en el peor circuito, coche 135.000 triángulos, coche ligero 10.500 y `RaceSimulation.ts` 1.900 líneas. También los objetivos de 60 fps en el PC y 30 en un móvil medio.
 - `tests/modules/budget-pf8.mjs` compila la aplicación y avisa de qué cifra se pasa, cuánto vale y cuál es su límite.
 
+### Después de abrir el PR (29/10/2026)
+
+- **Dependencias.** `firebase` 13.1, `react`/`react-dom` 19.3.1, `zustand` 5.0.16, `vite` 6.4.5, `firebase-tools` 15.34.2, `transformers` 4.3.2, `qrcode-generator` 1.5.2 y tipos de React al día. `@types/three` pasa a `devDependencies`; fuera `@types/animejs` (era para animejs 3; la 4 trae sus tipos); `meshoptimizer` entra como dependencia de desarrollo (lo usan `scripts/compress-models.mjs` y el test de PF3). Se fuerza `@grpc/grpc-js` 1.14.7: Firestore (dentro de `firebase`, sin uso en el juego) fijaba la 1.9, con cuatro avisos altos. **Las dependencias de la web quedan sin vulnerabilidades**; quedan cinco avisos moderados solo en desarrollo, dentro de `firebase-tools`. Sin tocar a propósito: `web-llm` (la radio se evaluó con la 0.2.85), `three` 0.186 y las versiones mayores (Vite 8, TypeScript 7, plugin de React 6, lucide 1.x).
+- **Lanzador de tests.** Tras cambiar el lockfile, varios módulos en paralelo reescribían a la vez la caché de Vite y alguno fallaba (EPERM); cada proceso de test tiene ahora su propia caché temporal.
+- **LCP de la portada.** `main.tsx` monta `Root`, que pinta la portada con React y su código (paquete inicial de 458 a 78 KB) y carga el juego aparte, precargándolo con la primera señal de que se va a jugar; el CSS de Google Fonts ya no bloquea el primer pintado y la rueda 3D espera a que termine la carga. **LCP en móvil de 5,06 s a 1,43 s** (escritorio 1,09 s); INP y CLS siguen en verde. Contrato en `tests/modules/landing-lcp-pf8.mjs`; límite del paquete inicial en el presupuesto, 85 KB.
+- **CI del PR.** Fallaba la compilación en GitHub: el script que partió el motor (PF5) dejó en `race/carStep.ts` un tipo con la ruta absoluta de la máquina (`import("C:/Users/…")`), que compilaba en Windows y no en el servidor. Arreglado con un import relativo, y el test de limpieza (PF6) vigila ahora que no haya rutas absolutas en `src` y que cada import coincida letra a letra con el nombre del archivo (Linux distingue mayúsculas).
+
 ## Cambios en tests anteriores
 
 Las reglas de AGENTS.md piden autorización para tocar un test acordado. Estos son todos los que se cambiaron y por qué:
@@ -74,6 +81,7 @@ Las reglas de AGENTS.md piden autorización para tocar un test acordado. Estos s
 | `perf-baseline-pf1` | Nombre de la página de la prueba (`PerfBenchPage.tsx`) y filtro de `src/dev/` | Tuya, explícita |
 | `perf-baseline-pf1` | La tabla de dispositivos se lee solo en su sección (PF2 añade otra tabla al mismo documento) | Tuya, explícita |
 | `drs-visible-r04`, `rain-forecast-r53`, `wall-telemetry-r24`, `speedometers-ux17` | Leían el texto de `RaceSimulation.ts`; ahora leen el motor entero (clase y `race/*.ts`) y aceptan `sim.` donde pedían `this.`. Lo que comprueban no cambia | Modo sin permisos (PF5) |
+| `models-compressed-pf3` | Pedía que desde `main.tsx` se llegara a más de 20 archivos; con la mejora del LCP son 13 (el juego se carga aparte): ahora comprueba que el recorrido llega a la portada | Petición de mejorar el LCP |
 | `models-compressed-pf3`, `budget-pf8` (propios del sprint) | Antes de darlos por buenos: el tamaño mínimo pasó a «al menos un 10 % menos» (el redondeo dejaba pasar un archivo igual) y el presupuesto compila como `npm run build` (el entorno de pruebas metía React de desarrollo) | Modo sin permisos |
 
 ## Validación

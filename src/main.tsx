@@ -1,6 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import App from './App'
+// [PF8, LCP] Root pinta la portada al momento y carga el juego (App) aparte.
+import Root from './Root'
 import { AppErrorBoundary } from './components/AppErrorBoundary'
 import './index.css'
 
@@ -19,7 +20,7 @@ if (params.has('medir')) {
 const renderApp = () => root.render(
   <React.StrictMode>
     <AppErrorBoundary>
-      <App />
+      <Root />
     </AppErrorBoundary>
   </React.StrictMode>,
 )

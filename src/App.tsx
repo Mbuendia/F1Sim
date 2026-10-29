@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspens
 import styles from './App.module.css';
 import { RaceTabs, raceLayout, mobileRaceView } from './components/RaceTabs';
 import { LapStrip } from './components/LapStrip';
-import { markLoad } from './perf/loadMarks';
 import { FreeRaceWizard } from './components/FreeRaceWizard';
 import { firstDriverOf } from './freeRace/freeRace';
 import { StintTimeline } from './components/StintTimeline';
@@ -186,9 +185,8 @@ const CAMERA_LABELS: Record<string, string> = {
   free: 'Libre',
 };
 
-export const App: React.FC = () => {
-  // [PF1] Marca de carga: la primera pantalla del juego está lista.
-  useEffect(() => { markLoad('menu'); }, []);
+/** [PF8, LCP] `startAt`: la portada la pinta Root antes de cargar el juego; al pulsar «Jugar», App empieza en el menú. */
+export const App: React.FC<{ startAt?: 'menu' }> = ({ startAt }) => {
   // Piloto y Circuito seleccionados
   const [selectedDriverId, setSelectedDriverId] = useState<string>('alonso');
   // [R51] El paddock abre con el circuito del Gran Premio que toca en la temporada.
@@ -207,7 +205,7 @@ export const App: React.FC = () => {
   // [T4.19] Tras la portada va el menú de partidas; de él salen la carrera profesional y la carrera libre.
   // [N7] Un enlace de invitación (?sala=CÓDIGO) abre directamente la pantalla de unirse a esa sala.
   const [linkedRoom, setLinkedRoom] = useState<string | null>(() => (typeof location === 'undefined' ? null : codeFromLink(location.href)));
-  const [currentView, setCurrentView] = useState<'landing' | 'menu' | 'settings' | 'saves' | 'new' | 'home' | 'race' | 'report' | 'room'>(() => (linkedRoom ? 'room' : 'landing'));
+  const [currentView, setCurrentView] = useState<'landing' | 'menu' | 'settings' | 'saves' | 'new' | 'home' | 'race' | 'report' | 'room'>(() => (linkedRoom ? 'room' : startAt ?? 'landing'));
   const [roomIntent, setRoomIntent] = useState<'create' | 'join'>('join');
   // [N8] Carrera compartida del anfitrión: la sala y su transporte (desde «Empezar» hasta salir de la carrera).
   const sharedRef = useRef<HostStart | null>(null);

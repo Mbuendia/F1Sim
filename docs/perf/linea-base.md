@@ -85,3 +85,18 @@ Suite completa (`node test-suite.mjs --all`, 207 módulos y 7.598 aserciones) en
 - Antes: unos 25 min (la cifra del plan del sprint, de uno en uno; AGENTS.md hablaba de 12 en otra fase del proyecto).
 - En paralelo con el vigilante de archivos de Vite aún encendido: 16,7 min (cada módulo gastaba unos 13 s de procesador recorriendo la carpeta del proyecto).
 - Después: 5,5 min (330 s), en paralelo con 10 procesos y sin vigilante ni recarga en caliente en los tests. Sumando lo que tarda cada módulo salen 49 min de trabajo, frente a 157 antes del arreglo del vigilante.
+
+## Core Web Vitals de la portada (29/10/2026)
+
+Laboratorio con Chrome sin ventana sobre la versión de producción (servida con gzip como GitHub Pages), mediana de 3 pasadas; INP con un toque en «Jugar». Perfil móvil como Lighthouse: procesador 4× más lento y 4G lenta (150 ms, 1,6 Mb/s).
+
+| Perfil | LCP | FCP | CLS | TBT | INP | TTFB | Descarga |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Escritorio | 0,94 s (bueno) | 0,92 s | 0,0001 (bueno) | 26 ms | 96 ms (bueno) | 6 ms | 838 KB |
+| Móvil | 5,06 s (malo, > 4 s) | 5,01 s | 0,0005 (bueno) | 586 ms | 176 ms (bueno) | 94 ms | 838 KB |
+| Escritorio (después) | 1,09 s (bueno) | 0,74 s | 0,0001 (bueno) | 199 ms | 96 ms (bueno) | 4 ms | 873 KB |
+| Móvil (después) | 1,43 s (bueno) | 1,35 s | 0,0003 (bueno) | 536 ms | 184 ms (bueno) | 4 ms | 412 KB |
+
+- El LCP es el logotipo (texto en Orbitron) y coincide con el FCP: no se pinta nada hasta que baja y se ejecuta el paquete principal (458 KB gzip, todo el juego: la portada solo usa una parte). Antes del primer pintado bloquean además el CSS de Google Fonts (otro dominio) y el CSS propio; la rueda 3D (three.js, 154 KB) se pide también al empezar.
+- Reparto del paquete principal (sin comprimir, 1.359 KB): componentes de la interfaz 34 %, motor de carrera 19 %, React DOM 15 %, datos, utilidades y dibujo el resto.
+- **Después (mejora del LCP pedida por el usuario el 29/10/2026):** `main.tsx` monta `Root`, que pinta la portada con React y su propio código (paquete inicial de 458 KB a 78 KB) y carga el juego (`App`) aparte, precargándolo con la primera señal de que se va a jugar (puntero, toque o tecla); el CSS de Google Fonts se pide sin bloquear el primer pintado; la rueda 3D se monta cuando la página termina de cargar. Precargar el juego en cuanto el navegador quedaba libre se probó y se descartó: subía el TBT en móvil a 1,6 s. El TBT de escritorio sube de 26 a 199 ms porque el trabajo de la rueda 3D pasa a contar después del primer pintado (antes ocurría antes); el LCP de escritorio sube de 0,94 a 1,09 s porque el logotipo se pinta primero con la fuente de respaldo y se vuelve a pintar al llegar Orbitron.
