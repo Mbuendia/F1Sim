@@ -7,6 +7,8 @@ import type { TireCompound } from '../types/f1';
 import { BOX_WORDS, CANCEL_WORDS, COMPOUND_WORDS, DELEGATE_WORDS, GROUP_WORDS, PACE_WORDS, PROPOSAL_WORDS, TEAM_WORDS, type Keyword } from './catalog';
 import { intentToOrders } from './mapper';
 import { looksLike, tokens } from './normalize';
+import { scheduledStop } from './llm/postRules';
+import { scheduleOf } from './scheduled';
 import type { RadioCar, RadioContext, RadioIntent, RadioInterpreter, RadioParse, TeamOrderMode } from './types';
 
 type Kind = RadioIntent['kind'];
@@ -125,6 +127,14 @@ export function interpretSync(text: string, context: RadioContext, forced?: { ki
       if (failure) return failure;
       if (car.inBoxes) return fail('no-disponible', [car.id], 'Ya está entrando en boxes');
       if (kind === 'anular-boxes') { intent = { kind, carId: car.id }; break; }
+      // [OF4] «Para en 5 vueltas» o «en la vuelta 22»: parada programada; el compuesto, solo si se dice.
+      const when = scheduleOf(scheduledStop(text));
+      if (when) {
+        const said = compounds[0];
+        if (said && car.compounds && !car.compounds.includes(said)) return fail('no-disponible', [car.id], `No quedan juegos de ${COMPOUND_NAME[said]}`);
+        intent = { kind, carId: car.id, ...(said ? { compound: said } : {}), ...when };
+        break;
+      }
       const compound = compounds[0] ?? [...car.proposals].reverse().find(p => p.kind === 'parada' && p.compound)?.compound;
       if (!compound) return fail('sin-compuesto', [car.id]);
       if (car.compounds && !car.compounds.includes(compound)) return fail('no-disponible', [car.id], `No quedan juegos de ${COMPOUND_NAME[compound]}`);

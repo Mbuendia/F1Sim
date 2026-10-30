@@ -15,13 +15,16 @@ export const REPLY_KINDS = [
 export const CALL_KINDS = [
   'desgaste', 'pinchazo', 'lluvia-empieza', 'lluvia-para', 'safety-car', 'vsc', 'orden-cumplida', 'adelanta', 'adelantado',
 ] as const;
-export type ReplyKind = (typeof REPLY_KINDS)[number];
+/** [OF4] Respuestas nuevas que solo están en las plantillas (el banco de IA9 no las tiene: se usan estas). */
+export const TEMPLATE_ONLY_KINDS = ['ok-boxes-programada'] as const;
+export type ReplyKind = (typeof REPLY_KINDS)[number] | (typeof TEMPLATE_ONLY_KINDS)[number];
 export type CallKind = (typeof CALL_KINDS)[number];
 export type LineKind = ReplyKind | CallKind;
 
 export const TEMPLATES: Record<Temperament, Record<LineKind, string[]>> = {
   frio: {
     'ok-boxes': ['Copiado. Entro, {compuesto}.', 'Entendido, box esta vuelta con {compuesto}.', 'Recibido. {compuesto}.'],
+    'ok-boxes-programada': ['Copiado, paramos en la vuelta {vuelta}, en {faltan}.', 'Entendido, box en la vuelta {vuelta}: en {faltan}.', 'Recibido. Vuelta {vuelta}, en {faltan}, dentro.'],
     'ok-anular-boxes': ['Copiado, me quedo fuera.', 'Entendido, no entro.', 'Recibido, sigo en pista.'],
     'ok-ritmo': ['Copiado, cambio el ritmo.', 'Entendido.', 'Recibido, ajusto.'],
     'ok-orden-equipo': ['Copiado.', 'Entendido, hecho con {companero}.', 'Recibido, de acuerdo.'],
@@ -48,6 +51,7 @@ export const TEMPLATES: Record<Temperament, Record<LineKind, string[]>> = {
   },
   competitivo: {
     'ok-boxes': ['¡Vamos! Entro, {compuesto}.', 'Box, box, {compuesto}. ¡A por ellos!', 'Perfecto, {compuesto} y a atacar.'],
+    'ok-boxes-programada': ['Hecho: vuelta {vuelta}, en {faltan}, y a por ellos.', 'Box en la vuelta {vuelta}, en {faltan}. Hasta entonces, a tope.', 'Perfecto, entro en la vuelta {vuelta}, en {faltan}.'],
     'ok-anular-boxes': ['Mejor, me quedo fuera y aprieto.', 'Bien, sigo, que voy rápido.', '¡Me quedo! Esto aguanta.'],
     'ok-ritmo': ['¡Vamos allá!', 'Entendido, dame lo que tengas.', 'Hecho, a por ello.'],
     'ok-orden-equipo': ['Vale, por el equipo.', 'Hecho, que {companero} lo aproveche.', 'De acuerdo, pero luego me lo devolvéis.'],
@@ -74,6 +78,7 @@ export const TEMPLATES: Record<Temperament, Record<LineKind, string[]>> = {
   },
   quejica: {
     'ok-boxes': ['Vale, entro... {compuesto}, espero que funcione.', 'Box con {compuesto}. Ojalá no perdamos tiempo.', 'Bueno, {compuesto}. Ya veremos.'],
+    'ok-boxes-programada': ['Vale, vuelta {vuelta}, en {faltan}... espero aguantar hasta ahí.', 'Box en la vuelta {vuelta}, en {faltan}. Las gomas no van a durar mucho más.', 'Bueno, paramos en la vuelta {vuelta}, en {faltan}.'],
     'ok-anular-boxes': ['Vale, me quedo fuera, pero las gomas están fatal.', 'Sigo, aunque no sé cuánto aguantan.', 'Bueno, no entro...'],
     'ok-ritmo': ['Vale, aunque el coche no va.', 'Bueno, lo intento.', 'Hecho, pero no prometo nada.'],
     'ok-orden-equipo': ['Vale... como siempre.', 'Bueno, lo que digáis con {companero}.', 'Hecho, aunque no me hace gracia.'],
@@ -100,6 +105,7 @@ export const TEMPLATES: Record<Temperament, Record<LineKind, string[]>> = {
   },
   bromista: {
     'ok-boxes': ['¡Marchando unos {compuesto}!', 'Box, box. Que estén calentitos esos {compuesto}.', 'Voy, poned la mesa: {compuesto}.'],
+    'ok-boxes-programada': ['Apuntado en la agenda: vuelta {vuelta}, en {faltan}.', 'Vuelta {vuelta}, en {faltan}: que vayan calentando la mesa.', 'Box en la vuelta {vuelta}, en {faltan}. No me esperéis despiertos.'],
     'ok-anular-boxes': ['Vale, el café para luego.', 'Me quedo fuera, que se está bien.', 'Nada de boxes, sigo de paseo.'],
     'ok-ritmo': ['¡Marchando!', 'Hecho, cambio de marcha... y de humor.', 'Recibido, jefe.'],
     'ok-orden-equipo': ['Hecho, que {companero} me invite a cenar.', 'Vale, pero me debéis una.', 'De acuerdo, soy un sol.'],

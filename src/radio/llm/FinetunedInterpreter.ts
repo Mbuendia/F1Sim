@@ -2,18 +2,15 @@
  * [IA10] Intérprete con el modelo propio de la radio: el modelo va primero (con las palabras clave delante bajaba del
  * 88,7 % al 83 % en la reserva v2) y las palabras clave de IA1 son el respaldo, que siempre funciona: sin modelo, si
  * tarda más de 2,5 s, si falla o si contesta un JSON que no vale, la frase se interpreta con ellas en el acto.
- * Después del modelo, el compuesto y las vueltas salen del texto (postRules). Una parada programada («para en 5
- * vueltas») no da orden: el motor aún no las tiene, y parar ya sería hacer otra cosa.
+ * Después del modelo, el compuesto y las vueltas salen del texto (postRules). [OF4] Una parada programada («para en 5
+ * vueltas», «en la vuelta 22») da la orden schedulePit: el motor ya las tiene.
  */
 import { INTENT_KINDS } from '../catalog';
 import { keywordInterpreter } from '../keywordInterpreter';
 import type { RadioContext, RadioInterpreter, RadioParse } from '../types';
 import type { RadioAi } from './LlmEngine';
-import { applyRules, scheduledStop, type FinetunedAnswer } from './postRules';
-import { answerToParse, carCode, RIVAL_TARGET } from './schema';
-
-/** Va en el hueco {motivo} de las respuestas («Ahora no se puede: todavía no se pueden programar paradas.»). */
-export const SCHEDULED_REASON = 'Todavía no se pueden programar paradas';
+import { applyRules, type FinetunedAnswer } from './postRules';
+import { answerToParse } from './schema';
 
 const selectedIds = (context: RadioContext) => {
   const car = context.cars.find(c => c.id === context.selectedCarId) ?? context.cars[0];
@@ -30,18 +27,12 @@ export function finetunedParse(answerText: string, text: string, context: RadioC
   // La confianza no informa: en el entrenamiento toda orden lleva «alta» y solo «ninguna» lleva «baja». La versión de
   // 4 bits a veces escribe «baja» o «1» con la orden bien entendida (23/10/2026: 72 % en la reserva v3 por eso).
   const a = applyRules({ ...raw, confianza: 'alta' }, text);
-  if (a.intent === 'boxes' && (a.enVueltas !== undefined || a.vuelta !== undefined) && a.target !== RIVAL_TARGET) {
-    const car = context.cars.find(c => carCode(c) === a.target);
-    return { status: 'no-disponible', orders: [], carIds: car ? [car.id] : selectedIds(context), reason: SCHEDULED_REASON };
-  }
   return answerToParse(JSON.stringify(a), context);
 }
 
-/** Las palabras clave, sin parar ya cuando la frase pide una parada programada. */
+/** Las palabras clave (que ya programan la parada si la frase lo pide: OF4). */
 async function keywords(base: RadioInterpreter, text: string, context: RadioContext): Promise<RadioParse> {
-  const parse = await base.interpret(text, context);
-  if (parse.status === 'ok' && parse.intent?.kind === 'boxes' && scheduledStop(text)) return { status: 'no-disponible', orders: [], carIds: parse.carIds, reason: SCHEDULED_REASON };
-  return parse;
+  return base.interpret(text, context);
 }
 
 /**

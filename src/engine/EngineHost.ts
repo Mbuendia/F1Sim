@@ -17,6 +17,8 @@ import type { FastView, SlowView, TeamView } from './RaceView';
 export type EngineOrder =
   | { kind: 'box'; carId: number; compound: TireCompound }
   | { kind: 'cancelBox'; carId: number }
+  /** [OF4] Parada programada: en la vuelta `lap` o dentro de `inLaps` vueltas; sin compuesto, lo elige el muro. */
+  | { kind: 'schedulePit'; carId: number; lap?: number; inLaps?: number; compound?: TireCompound }
   | { kind: 'pace'; carId: number; mode: 'push' | 'balanced' | 'save' }
   | { kind: 'teamOrder'; teamId: string; mode: TeamOrderMode; favouredCarId?: number }
   | { kind: 'acceptProposal'; carId: number; proposalId: string }
@@ -76,7 +78,7 @@ const TEAM_ORDERS = ['libre', 'mantener', 'dejar-pasar'];
 type Compliance = import('../simulation/TeamRadio').Compliance;
 const isId = (v: unknown): v is number => typeof v === 'number' && Number.isInteger(v);
 /** Órdenes sobre un coche, sobre un equipo o sobre la tirada de suerte (las demás son generales, del anfitrión). */
-const CAR_ORDERS = ['box', 'cancelBox', 'pace', 'acceptProposal', 'discardProposal', 'delegate'];
+const CAR_ORDERS = ['box', 'cancelBox', 'schedulePit', 'pace', 'acceptProposal', 'discardProposal', 'delegate'];
 const LUCK_ORDERS = ['luckReward', 'luckClear'];
 
 export class EngineHost {
@@ -307,6 +309,12 @@ export class EngineHost {
         if (!COMPOUNDS.includes(String(o.compound))) return reject('Compuesto desconocido');
         const result = sim.issueBoxOrder(car!.id, o.compound as TireCompound, 'player');
         return done(result !== null, car!.pitStop.lastOrderRejection || 'El motor no acepta la parada ahora');
+      }
+      case 'schedulePit': {
+        if (o.compound !== undefined && !COMPOUNDS.includes(String(o.compound))) return reject('Compuesto desconocido');
+        const num = (v: unknown) => (typeof v === 'number' ? v : undefined);
+        const result = sim.schedulePitStop(car!.id, { lap: num(o.lap), inLaps: num(o.inLaps), compound: o.compound as TireCompound | undefined });
+        return done(result.ok, result.reason ?? 'El motor no acepta la parada programada');
       }
       case 'cancelBox': return done(sim.cancelBoxOrder(car!.id), 'No hay una orden de boxes que se pueda cancelar');
       case 'pace':

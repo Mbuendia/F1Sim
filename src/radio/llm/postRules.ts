@@ -32,7 +32,8 @@ export function scheduledStop(text: string): { enVueltas?: number; vuelta?: numb
   const w = tokens(text);
   for (let i = 0; i < w.length; i++) {
     if (w[i] === 'vuelta' && /^\d+$/.test(w[i + 1] ?? '')) return { vuelta: Number(w[i + 1]) };
-    if (w[i] !== 'vueltas') continue;
+    // [OF4] También en singular: «en 1 vuelta», «dentro de una vuelta».
+    if (w[i] !== 'vueltas' && w[i] !== 'vuelta') continue;
     const n = num(w[i - 1]);
     if (n === undefined) continue;
     if (w[i - 2] === 'en' || (w[i - 2] === 'de' && w[i - 3] === 'dentro') || w[i + 1] === 'mas') return { enVueltas: n };

@@ -8,7 +8,7 @@ import type { Temperament } from '../../data/driverRadio';
 import type { RadioParse } from '../types';
 import { TEMPLATES, type LineKind, type ReplyKind } from './templates';
 
-export type TemplateVars = Partial<Record<'compuesto' | 'companero' | 'vuelta' | 'motivo', string | number>>;
+export type TemplateVars = Partial<Record<'compuesto' | 'companero' | 'vuelta' | 'motivo' | 'faltan', string | number>>;
 
 /** Azar reproducible (mulberry32). */
 export function seededRandom(seed: number): () => number {
@@ -73,7 +73,12 @@ export function createChooser(random: () => number = Math.random): Chooser {
 /** Qué tipo de respuesta toca a un resultado del intérprete (antes de saber el acuse del motor). */
 export function replyKindOf(parse: RadioParse): ReplyKind {
   switch (parse.status) {
-    case 'ok': return `ok-${parse.intent!.kind}` as ReplyKind;
+    case 'ok': {
+      const intent = parse.intent!;
+      // [OF4] Parada programada: el piloto contesta con la vuelta.
+      if (intent.kind === 'boxes' && (intent.lap !== undefined || intent.inLaps !== undefined)) return 'ok-boxes-programada';
+      return `ok-${intent.kind}` as ReplyKind;
+    }
     case 'ambigua': return 'repetir';
     default: return parse.status;
   }
