@@ -1330,6 +1330,8 @@ export class RaceSimulation {
 
   /** [R08] Programa paradas futuras (vuelta y compuesto); se rechaza si falta stock para alguna. */
   programPitStops(carId: number, plans: { lap: number; compound: TireCompound }[]): boolean { return wall.programPitStops(this, carId, plans); }
+  /** [OF4] Parada programada del jugador: «en la vuelta N» o «en K vueltas», con o sin compuesto. */
+  schedulePitStop(carId: number, plan: { lap?: number; inLaps?: number; compound?: TireCompound | null }): wall.ScheduleResult { return wall.schedulePitStop(this, carId, plan); }
 
   /** [R08] Emite la siguiente parada programada al llegar a su vuelta, si no hay otra orden en curso. */
   private issuePlannedStop(car: CarState) { return wall.issuePlannedStop(this, car); }

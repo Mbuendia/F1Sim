@@ -10,6 +10,9 @@ import { markLoad } from './perf/loadMarks';
  * Antes la portada esperaba a bajar y ejecutar todo el juego: LCP de 5 s en un móvil con 4G lenta.
  */
 const App = lazy(() => import('./App'));
+// [OF3] Aviso de versión nueva, en todas las pantallas (también la portada); se carga aparte, tras el primer pintado.
+const UpdateNotice = lazy(() => import('./components/UpdateNotice'));
+const notice = <Suspense fallback={null}><UpdateNotice /></Suspense>;
 
 /** Con un enlace de sala (?sala=…) no se enseña la portada. */
 export function startsInGame(href: string): boolean {
@@ -35,10 +38,11 @@ export default function Root() {
   // [PF1] Marca de carga: la primera pantalla del juego está lista.
   useEffect(() => { markLoad('menu'); }, []);
   useEffect(() => onFirstIntent(() => { void import('./App'); }), []);
-  if (!inGame) return <LandingPage onEnter={() => setInGame(true)} />;
+  if (!inGame) return <><LandingPage onEnter={() => setInGame(true)} />{notice}</>;
   return (
     <Suspense fallback={<div role="status" style={{ position: 'fixed', inset: 0, display: 'grid', placeItems: 'center', background: '#0b0e13', color: '#9aa4b2', font: '600 14px system-ui' }}>Cargando el paddock…</div>}>
       <App startAt="menu" />
+      {notice}
     </Suspense>
   );
 }

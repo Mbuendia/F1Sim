@@ -185,13 +185,68 @@ export function programPitStops(sim: RaceSimulation, carId: number, plans: { lap
   return true;
 }
 
+/** [OF4] Resultado de programar una parada: la vuelta y el compuesto (null: lo elige el muro), o por qué no. */
+export interface ScheduleResult { ok: boolean; lap?: number; inLaps?: number; compound?: TireCompound | null; reason?: string }
+const COMPOUNDS: TireCompound[] = ['soft', 'medium', 'hard', 'intermediate', 'wet'];
+
+/**
+ * [OF4] Parada programada por el jugador (muro o radio): «en la vuelta N» entra en boxes al final de la vuelta N; «en
+ * K vueltas», en la vuelta actual + K. Sustituye al programa anterior y a una orden aún cancelable.
+ */
+export function schedulePitStop(sim: RaceSimulation, carId: number, plan: { lap?: number; inLaps?: number; compound?: TireCompound | null }): ScheduleResult {
+  const car = sim.getCarById(carId);
+  const reject = (reason: string): ScheduleResult => ({ ok: false, reason });
+  if (!car || car.status !== 'running' || sim.isFinished) return reject('El coche no está en carrera');
+  let lap: number;
+  if (plan.lap !== undefined) {
+    if (!Number.isInteger(plan.lap) || plan.lap < 1) return reject('Esa no es una vuelta válida');
+    lap = plan.lap;
+  } else if (plan.inLaps !== undefined) {
+    if (!Number.isInteger(plan.inLaps) || plan.inLaps < 1) return reject('Di en cuántas vueltas (una o más)');
+    lap = car.currentLap + plan.inLaps;
+  } else return reject('Falta la vuelta de la parada');
+  if (lap < car.currentLap) return reject(`La vuelta ${lap} ya ha pasado`);
+  if (lap >= sim.totalLaps) return reject(`No quedan vueltas para parar en la ${lap}: la última es la ${sim.totalLaps}`);
+  const compound = plan.compound ?? null;
+  if (compound !== null && !COMPOUNDS.includes(compound)) return reject('Compuesto desconocido');
+  if (compound !== null && car.tireInventory && availableSets(car.tireInventory, compound) === 0) {
+    return reject(`Sin juegos de ${COMPOUND_LABEL[compound]} disponibles`);
+  }
+  const order = car.pitStop.activeBoxOrder;
+  if (order?.status === 'accepted') { order.status = 'cancelled'; order.message = 'Sustituida por una parada programada.'; }
+  car.pitStop.plannedStops = [{ lap, compound }];
+  car.pitStop.lastOrderRejection = undefined;
+  car.pitStop.playerControlled = true;
+  if (car.wallDelegated) car.wallDelegated = false;
+  return { ok: true, lap, inLaps: lap - car.currentLap, compound };
+}
+
+/** Mientras el programa emite su orden, issueBoxOrder no lo borra. */
+let issuingPlan = false;
+
 /** [R08] Emite la siguiente parada programada al llegar a su vuelta, si no hay otra orden en curso. */
 export function issuePlannedStop(sim: RaceSimulation, car: CarState) {
   const plan = car.pitStop.plannedStops?.[0];
-  if (!plan || car.currentLap < plan.lap || car.isInPitLane || car.pitStop.isPitting) return;
-  if (orderIsActive(car.pitStop.activeBoxOrder)) return;
+  if (!plan) return;
+  const pit = car.pitStop;
+  // [OF4] La orden del programa ya se cumplió: la próxima parada ya no es suya.
+  if (pit.planOrderId && !pit.isPitting && pit.activeBoxOrder?.id === pit.planOrderId && pit.activeBoxOrder.status === 'consumed') delete pit.planOrderId;
+  // [OF4] Ha parado antes por otro motivo (pinchazo, desgaste): la programada se anula.
+  if (pit.isPitting && car.currentLap < plan.lap && !(pit.planOrderId && pit.activeBoxOrder?.id === pit.planOrderId)) {
+    pit.plannedStops = [];
+    pit.lastOrderRejection = `Parada programada de la vuelta ${plan.lap} anulada: ya ha parado en la vuelta ${car.currentLap}`;
+    return;
+  }
+  if (car.currentLap < plan.lap || car.isInPitLane || pit.isPitting) return;
+  if (orderIsActive(pit.activeBoxOrder)) return;
   const delegated = car.wallDelegated === true;
-  if (sim.issueBoxOrder(car.id, plan.compound, 'player')) car.pitStop.plannedStops!.shift();
+  const compound = plan.compound
+    ?? chooseCompound(sim.totalLaps - car.currentLap, car.tireInventory, sim.getTireCompliance(car.id), sim.weatherModel.meanDepth())
+    ?? car.tires.compound;
+  issuingPlan = true;
+  const order = sim.issueBoxOrder(car.id, compound, 'player');
+  issuingPlan = false;
+  if (order) { pit.plannedStops!.shift(); pit.planOrderId = order.id; }
   // [R54] Cumplir el programa del jugador no es una orden nueva: la delegación sigue como estaba.
   if (delegated) car.wallDelegated = true;
 }
@@ -540,6 +595,8 @@ export function issueBoxOrder(sim: RaceSimulation, carId: number, compound: Tire
   if (issuer === 'player') { car.pitStop.playerControlled = true; if (car.wallDelegated) car.wallDelegated = false; }
   // La orden sustituye la estrategia previa; no deja scheduledLap residual al cancelar.
   car.pitStop.scheduledLap = 0;
+  // [OF4] Una orden de boxes inmediata del jugador sustituye a la parada programada.
+  if (!issuingPlan && issuer === 'player' && car.pitStop.plannedStops?.length) car.pitStop.plannedStops = [];
   return order;
 }
 
@@ -548,7 +605,10 @@ export function cancelBoxOrder(sim: RaceSimulation, carId: number): boolean {
   if (!car) return false;
   updateOrderCommitment(car);
   const order = car.pitStop.activeBoxOrder;
-  if (!order || order.status !== 'accepted' || car.isInPitLane || car.pitStop.isPitting || car.status !== 'running') return false;
+  // [OF4] También anula la parada programada que aún no ha llegado.
+  const planned = Boolean(car.pitStop.plannedStops?.length);
+  if (planned) car.pitStop.plannedStops = [];
+  if (!order || order.status !== 'accepted' || car.isInPitLane || car.pitStop.isPitting || car.status !== 'running') return planned;
   order.status = 'cancelled';
   order.message = 'Cancelada: sigue en pista. Pinchazo, desgaste crítico o roja pueden exigir otra entrada.';
   return true;

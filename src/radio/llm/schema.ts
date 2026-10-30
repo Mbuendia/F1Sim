@@ -7,6 +7,7 @@ import type { TireCompound } from '../../types/f1';
 import { INTENT_KINDS } from '../catalog';
 import { intentToOrders } from '../mapper';
 import type { RadioCar, RadioContext, RadioIntent, RadioParse } from '../types';
+import { scheduleOf } from '../scheduled';
 
 export const COMPOUNDS: TireCompound[] = ['soft', 'medium', 'hard', 'intermediate', 'wet'];
 export const PACE_MODES = ['push', 'balanced', 'save'] as const;
@@ -18,6 +19,8 @@ export const NO_TARGET = 'NADIE';
 export interface ModelAnswer {
   intent: string; target: string; compound?: string; favoured?: string; paceMode?: string; teamMode?: string;
   accept?: boolean; delegated?: boolean; confianza: 'alta' | 'baja';
+  /** [OF4] Parada programada: dentro de cuántas vueltas o en qué vuelta. */
+  enVueltas?: number; vuelta?: number;
 }
 
 /** Código del coche para el modelo (las siglas del piloto, en mayúsculas). */
@@ -67,6 +70,14 @@ export function answerToParse(text: string, context: RadioContext): RadioParse {
       if (car.inBoxes) return fail('no-disponible', [car.id], 'Ya está entrando en boxes');
       if (a.intent === 'anular-boxes') { intent = { kind: 'anular-boxes', carId: car.id }; break; }
       if (a.compound !== undefined && !COMPOUNDS.includes(a.compound as TireCompound)) return fail('ambigua', [car.id]);
+      // [OF4] Parada programada: el compuesto, solo si se ha dicho (sin él, lo elige el muro al llegar).
+      const when = scheduleOf(a);
+      if (when) {
+        const said = a.compound as TireCompound | undefined;
+        if (said && car.compounds && !car.compounds.includes(said)) return fail('no-disponible', [car.id], 'No quedan juegos de ese compuesto');
+        intent = { kind: 'boxes', carId: car.id, ...(said ? { compound: said } : {}), ...when };
+        break;
+      }
       const compound = (a.compound as TireCompound | undefined) ?? [...car.proposals].reverse().find(p => p.kind === 'parada' && p.compound)?.compound;
       if (!compound) return fail('sin-compuesto', [car.id]);
       if (car.compounds && !car.compounds.includes(compound)) return fail('no-disponible', [car.id], 'No quedan juegos de ese compuesto');

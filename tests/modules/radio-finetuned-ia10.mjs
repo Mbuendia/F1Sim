@@ -9,6 +9,8 @@
 //     fallo grave, básica el resto de la carrera.
 //  5. Reglas: el compuesto y las vueltas del texto sustituyen a los del modelo; ritmo, equipo, propuesta y delegar nunca
 //     llevan compuesto; una parada programada no da orden y contesta no-disponible.
+//     [OF4, 29/10/2026] Con autorización del usuario, la parada programada ya da la orden schedulePit (el motor la
+//     tiene): cambian las dos aserciones de «no-disponible» por las de la orden.
 //  6. Manifiesto: las dos versiones apuntan a gooday89 con commit fijado, su librería de WebLLM 0.2.85 y su tamaño;
 //     ninguna URL de descarga apunta a Firebase Hosting.
 //  7. El paquete principal sigue sin WebLLM (compilación de vite, como IA5).
@@ -27,7 +29,7 @@ export default async function run({ server, assert, test }) {
   const { createRadioAi, bindVisibility, LOAD_TIMEOUT_MS, INTERPRET_TIMEOUT_MS } = await load('/src/radio/llm/LlmEngine.ts');
   const { radioSystemPrompt, radioRequest } = await load('/src/radio/llm/radioPrompt.ts');
   const { applyRules, scheduledStop, compoundInText } = await load('/src/radio/llm/postRules.ts');
-  const { createFinetunedInterpreter, SCHEDULED_REASON } = await load('/src/radio/llm/FinetunedInterpreter.ts');
+  const { createFinetunedInterpreter } = await load('/src/radio/llm/FinetunedInterpreter.ts');
   const { contextFromSpec } = await load('/src/radio/context.ts');
   const { createFakeModelStore } = await load('/src/radio/model/ModelStore.ts');
   const phrases = JSON.parse(readFileSync('tests/fixtures/radio-phrases.json', 'utf8'));
@@ -195,9 +197,9 @@ export default async function run({ server, assert, test }) {
     const p = await interp.interpret('Lance, box, gomas amarillas', ctx());
     assert(p.status === 'ok' && JSON.stringify(p.orders) === json([{ kind: 'box', carId: 10, compound: 'medium' }]), 'Radio IA10: la orden sale con el compuesto del texto', JSON.stringify(p));
     const sched = await interp.interpret('Lance, para en 5 vueltas', ctx());
-    assert(sched.status === 'no-disponible' && sched.orders.length === 0 && sched.carIds.includes(10) && sched.reason === SCHEDULED_REASON && /programar/i.test(SCHEDULED_REASON), 'Radio IA10: parada programada → sin orden y no-disponible', JSON.stringify(sched));
+    assert(sched.status === 'ok' && JSON.stringify(sched.orders) === json([{ kind: 'schedulePit', carId: 10, inLaps: 5 }]), 'Radio IA10 (OF4): parada programada → orden schedulePit, sin compuesto', JSON.stringify(sched));
     const kw = await createFinetunedInterpreter({ interpret: async () => null }).interpret('Fer, para en 5 vueltas con duros', ctx());
-    assert(kw.status === 'no-disponible' && kw.orders.length === 0, 'Radio IA10: también con las palabras clave, una parada programada no para ya', JSON.stringify(kw));
+    assert(kw.status === 'ok' && JSON.stringify(kw.orders) === json([{ kind: 'schedulePit', carId: 9, inLaps: 5, compound: 'hard' }]), 'Radio IA10 (OF4): también con las palabras clave, una parada programada programa (y no para ya)', JSON.stringify(kw));
   });
 
   await test('Radio IA10: manifiesto de las dos versiones', () => {

@@ -5,6 +5,7 @@
  */
 import type { EngineOrder } from '../engine/EngineHost';
 import type { RadioContext, RadioIntent } from './types';
+import { scheduleOf } from './scheduled';
 
 const COMPOUNDS = new Set(['soft', 'medium', 'hard', 'intermediate', 'wet']);
 const PACES = new Set(['push', 'balanced', 'save']);
@@ -14,9 +15,17 @@ const isCar = (n: unknown): n is number => typeof n === 'number' && Number.isInt
 export function intentToOrders(intent: RadioIntent, context: RadioContext): EngineOrder[] {
   const i = intent as RadioIntent & Record<string, unknown>;
   switch (i.kind) {
-    case 'boxes':
-      if (!isCar(i.carId) || !COMPOUNDS.has(i.compound as string)) break;
-      return [{ kind: 'box', carId: i.carId, compound: i.compound }];
+    case 'boxes': {
+      if (!isCar(i.carId)) break;
+      // [OF4] Parada programada: en una vuelta o dentro de unas vueltas, con o sin compuesto.
+      const when = scheduleOf({ vuelta: i.lap, enVueltas: i.inLaps });
+      if (i.lap !== undefined || i.inLaps !== undefined) {
+        if (!when || (i.compound !== undefined && !COMPOUNDS.has(i.compound as string))) break;
+        return [{ kind: 'schedulePit', carId: i.carId, ...when, ...(i.compound ? { compound: i.compound } : {}) }];
+      }
+      if (!COMPOUNDS.has(i.compound as string)) break;
+      return [{ kind: 'box', carId: i.carId, compound: i.compound! }];
+    }
     case 'anular-boxes':
       if (!isCar(i.carId)) break;
       return [{ kind: 'cancelBox', carId: i.carId }];

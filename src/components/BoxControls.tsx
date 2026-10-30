@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { animate } from 'animejs';
 import { ArrowUpDown, CloudRain, Dices, Fuel, Gauge, Hourglass, Lock, Radio, Swords, Wrench, Zap } from 'lucide-react';
 import { RadioPanel, useDriverCalls, useRadioHotkey, useRadioModeCheck } from './RadioPanel';
+import { lapsLeftText } from '../radio/scheduled';
 import type { SlowView } from '../engine/RaceView';
 import type { CarState, TireCompound } from '../types/f1';
 import type { EngineOrder } from '../engine/EngineHost';
@@ -24,6 +25,8 @@ import { REV_LEDS, ledColor, revLights } from '../utils/revLights';
 const CROSSOVER_LABEL = { slick: 'neumático de seco', intermediate: 'INTERMEDIO', wet: 'LLUVIA' } as const;
 const ORDER_STATUS = { consumed: 'EJECUTADA', committed: 'CONFIRMADA', cancelled: 'CANCELADA', rejected: 'RECHAZADA', accepted: 'ACEPTADA' } as const;
 const decimal = (value: number) => value.toFixed(1).replace('.', ',');
+/** [OF4] Compuesto de una parada programada, como se dice en la radio. */
+const PLANNED_NAME = { soft: 'blandos', medium: 'medios', hard: 'duros', intermediate: 'intermedios', wet: 'de lluvia' } as const;
 
 const reduceMotion = () => typeof window !== 'undefined' && Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
 const rpmText = (rpm: number) => Math.max(0, Math.round(rpm)).toLocaleString('es-ES');
@@ -171,6 +174,12 @@ export function BoxControls({ car, teamCars, team, race, send, slow, focusId }: 
           const available = race.lightState === 'racing' && !race.isFinished &&
             race.raceFlagState !== 'red' && p.status === 'running' && !p.isInPitLane && !p.pitStop.isPitting;
           const locked = order?.status === 'committed';
+          // [OF4] Parada programada pendiente (si no hay ya una orden en curso, es lo que se enseña).
+          const planned = p.pitStop.plannedStops?.[0];
+          const orderActive = order?.status === 'accepted' || order?.status === 'committed';
+          const showPlan = Boolean(planned) && !orderActive;
+          const lapsLeft = planned ? planned.lap - p.currentLap : 0;
+          const plannedText = planned ? `Parada programada en la vuelta ${planned.lap} · ${lapsLeft > 0 ? `dentro de ${lapsLeftText(lapsLeft)}` : 'esta vuelta'} · ${planned.compound ? PLANNED_NAME[planned.compound] : 'compuesto: lo elige el muro'}` : '';
           const compound = compounds[p.id] || 'hard';
           const feedback = feedbacks[p.id] || '';
           const isWaiting = p.pitStop.waitingForBox;
@@ -190,8 +199,9 @@ export function BoxControls({ car, teamCars, team, race, send, slow, focusId }: 
           else if (isPitting) { statusBadge = 'PIT'; statusClass = styles.badgePit; }
           else if (order?.status === 'committed') { statusBadge = 'CONFIRMADA'; statusClass = styles.badgeCommitted; }
           else if (order?.status === 'accepted') { statusBadge = 'ACEPTADA'; statusClass = styles.badgeAccepted; }
+          else if (showPlan) { statusBadge = 'PROGRAMADA'; statusClass = styles.badgeAccepted; }
 
-          const message = feedback || (p.status === 'out' || p.status === 'finished' ? 'No disponible.' : order?.message) || '';
+          const message = feedback || (p.status === 'out' || p.status === 'finished' ? 'No disponible.' : showPlan ? plannedText : order?.message) || '';
           const health = Math.round(p.tires.health);
 
           return (
@@ -234,7 +244,7 @@ export function BoxControls({ car, teamCars, team, race, send, slow, focusId }: 
                   <button disabled={!available || locked} onClick={() => {
                     void send({ kind: 'box', carId: p.id, compound }).then(ack => setFeedbackFor(p.id, ack.ok ? '' : 'Rechazada'));
                   }}>{order?.status === 'accepted' ? 'Actualizar' : 'BOX'}</button>
-                  <button disabled={!available || order?.status !== 'accepted'} title="Anular la parada y seguir en pista" onClick={() => {
+                  <button disabled={!available || (order?.status !== 'accepted' && !showPlan)} title="Anular la parada y seguir en pista" onClick={() => {
                     void send({ kind: 'cancelBox', carId: p.id }).then(ack => setFeedbackFor(p.id, ack.ok ? '' : 'No cancelable'));
                   }}>Seguir</button>
                 </span>
@@ -260,7 +270,7 @@ export function BoxControls({ car, teamCars, team, race, send, slow, focusId }: 
                 {(message || order) && (
                   <span className={styles.message}>
                     {message}
-                    {order && <span> <CompoundBadge compound={order.compound} size={14} detail="solicitado" /> {order.compound.toUpperCase()} · {order.status in ORDER_STATUS ? ORDER_STATUS[order.status as keyof typeof ORDER_STATUS] : 'ACEPTADA'}</span>}
+                    {order && !showPlan && <span> <CompoundBadge compound={order.compound} size={14} detail="solicitado" /> {order.compound.toUpperCase()} · {order.status in ORDER_STATUS ? ORDER_STATUS[order.status as keyof typeof ORDER_STATUS] : 'ACEPTADA'}</span>}
                   </span>
                 )}
               </div>

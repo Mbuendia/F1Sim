@@ -148,19 +148,25 @@ export interface RoomBackend {
   connector: (db: RoomDb, code: string) => DirectConnector;
 }
 // [N10] Firebase se mide siempre (el medidor se ve con `?medir`); con `?respaldo`, sin conexión directa.
+/** [OF1] Sin red, el multijugador no puede funcionar (el resto del juego sí, gracias al service worker). */
+export const OFFLINE_ROOM = 'Sin conexión: el multijugador necesita internet. El resto del juego funciona sin red.';
+const browserOnline = () => typeof navigator === 'undefined' || navigator.onLine !== false;
+
 const FIREBASE: RoomBackend = {
   connect: () => import('../net/firebaseDb').then(m => m.connectFirebase()).then(measured),
   listener: (db, code) => (forceFallback() ? blockedListener : createWebRtcListener(db, code)),
   connector: (db, code) => (forceFallback() ? blockedConnector : createWebRtcConnector(db, code)),
 };
 
-export function RoomFlow({ intent, initialCode, onExit, onHostStart, resume, backend = FIREBASE }: {
+export function RoomFlow({ intent, initialCode, onExit, onHostStart, resume, backend = FIREBASE, online = browserOnline() }: {
   intent: 'create' | 'join'; initialCode?: string; onExit: () => void;
   /** [N9] «Otra carrera»: el anfitrión vuelve a su sala abierta (misma base, código y transporte) en vez de crear otra. */
   resume?: HostStart | null;
   /** [N8] El anfitrión empieza: la aplicación arranca su carrera compartida (sin esto, solo se marca la sala en carrera). */
   onHostStart?: (start: HostStart) => void;
   backend?: RoomBackend;
+  /** [OF1] ¿Hay conexión al abrir la sala? (por defecto, la del navegador). */
+  online?: boolean;
 }) {
   const [db, setDb] = useState<RoomDb | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
@@ -184,6 +190,7 @@ export function RoomFlow({ intent, initialCode, onExit, onHostStart, resume, bac
   // Sesión anónima y base de datos.
   useEffect(() => {
     if (resume) { setDb(resume.db); return; }
+    if (!online) return;
     let alive = true;
     backend.connect().then(
       connected => { if (alive) setDb(connected); },
@@ -281,6 +288,7 @@ export function RoomFlow({ intent, initialCode, onExit, onHostStart, resume, bac
     }
   };
 
+  if (!online && !resume) return <Waiting text={OFFLINE_ROOM} onBack={onExit} />;
   if (failure) return <Waiting text={failure} onBack={onExit} />;
   if (!db) return <Waiting text="Conectando…" onBack={onExit} />;
 

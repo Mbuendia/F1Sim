@@ -143,7 +143,9 @@ export interface TeamCarView {
   /** [R44] Cruce de compuestos según el agua; [Q12] estado del ritmo; [Q13] reincorporación estimada si parase ahora. */
   crossover: unknown; paceStatus: unknown; rejoin: unknown;
   pit: { waitingForBox: boolean; boxWaitTimer: number; isPitting: boolean; currentStopTimer: number; stopDuration: number;
-    crewBenefit: unknown; scheduledLap: number; totalPitStops: number; stopLog: unknown[] };
+    crewBenefit: unknown; scheduledLap: number; totalPitStops: number; stopLog: unknown[];
+    /** [OF4] Paradas programadas pendientes (vuelta y compuesto; null: lo elige el muro). */
+    plannedStops: unknown[] };
   energy: { percent: number } | null; drsStatus: unknown; drsUses: number; offTrack: unknown;
   /** [R49] Salida desde el pit lane: esperando el semáforo o saliendo. */
   pitLaneStart: string | null;
@@ -212,6 +214,7 @@ export function teamView(sim: RaceSimulation, teamId: string, shared?: { notices
           waitingForBox: Boolean(car.pitStop.waitingForBox), boxWaitTimer: car.pitStop.boxWaitTimer ?? 0, isPitting: car.pitStop.isPitting,
           currentStopTimer: car.pitStop.currentStopTimer ?? 0, stopDuration: car.pitStop.stopDuration ?? 0, crewBenefit: plain(car.pitStop.crewBenefit ?? null),
           scheduledLap: car.pitStop.scheduledLap ?? 0, totalPitStops: car.pitStop.totalPitStops, stopLog: plain(car.pitStop.stopLog ?? []) ?? [],
+          plannedStops: plain(car.pitStop.plannedStops ?? []) ?? [],
         },
         energy: reading ? { percent: reading.energy.percent } : null,
         drsStatus: plain(car.drsStatus ?? null), drsUses: car.drsUses ?? 0, offTrack: plain(car.offTrack ?? null),
