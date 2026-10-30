@@ -58,3 +58,12 @@ else {
     }
   }).catch(renderApp)
 }
+
+// [OF1] Juego instalable y sin conexión: el service worker se registra al acabar de cargar la página, solo en la
+// versión compilada (en desarrollo, Vite sirve los archivos al momento y no hace falta). [OF2] datos persistentes
+// si está instalado; [OF3] avisos de versión nueva.
+if (import.meta.env.PROD) {
+  import('./offline/register')
+    .then(m => m.startOffline({ nav: navigator, win: window, base: import.meta.env.BASE_URL, prod: true }))
+    .catch(() => {})
+}

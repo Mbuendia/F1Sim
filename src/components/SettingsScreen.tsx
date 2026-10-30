@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react';
-import { ArrowLeft, Code2, ExternalLink, Gamepad2, Monitor, Radio, Volume2 } from 'lucide-react';
+import { ArrowLeft, Code2, ExternalLink, Gamepad2, HardDrive, Monitor, Radio, Volume2 } from 'lucide-react';
 import { createDevTapCounter, DEV_TOOLS, isDevMode, setDevMode } from '../dev/devMode';
 import { AUDIO_LEVEL_LABEL, AUDIO_STORAGE_KEY, parseAudioLevel } from '../audio/AudioEngine';
 import { browserSettingsStorage, readRaceView, writeRaceView, type RaceView } from '../settings/graphics';
 import { QUALITY_LABELS, browserDevice, readQuality, recommendedQuality, writeQuality, type QualitySetting } from '../settings/quality';
 import RadioSettings, { type RadioSettingsProps } from './RadioSettings';
 import { LiveAiStatusBadge } from './AiStatusBadge';
+import { BrowserStorageSettings } from './StorageSettings';
 import { Segmented } from './ui/Segmented';
 import s from './Screens.module.css';
 
@@ -106,6 +107,12 @@ export default function SettingsScreen({ onBack, audio, radioProps, storage = br
               {SHORTCUTS.map(([key, what]) => (<div key={key}><dt><kbd>{key}</kbd></dt><dd>{what}</dd></div>))}
             </dl>
             <p className={s.dim}>En el móvil, todo se maneja con el dedo: las teclas son para el escritorio.</p>
+          </section>
+
+          {/* [OF2] Si el navegador puede borrar el juego guardado, los modelos y las partidas. */}
+          <section className={s.settingsSection} aria-labelledby="ajustes-datos">
+            <h2 id="ajustes-datos"><HardDrive size={20} aria-hidden="true" />Datos guardados</h2>
+            <BrowserStorageSettings />
           </section>
 
           {devOn && (

@@ -10,7 +10,8 @@
     "sceneryDrawCallsPerCircuit": 250,
     "carTriangles": 135000,
     "carLodTriangles": 10500,
-    "raceSimulationLines": 1900
+    "raceSimulationLines": 1900,
+    "offlineCoreKB": 7200
   },
   "measured": {
     "fecha": "29/10/2026, al acabar PF2 a PF6; paquete inicial tras la mejora del LCP",

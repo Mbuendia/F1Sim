@@ -10,7 +10,8 @@ export type TeamOrderMode = 'libre' | 'mantener' | 'dejar-pasar';
 
 /** Lo que el jugador ha pedido, ya entendido (antes de convertirlo en orden del motor). */
 export type RadioIntent =
-  | { kind: 'boxes'; carId: number; compound: TireCompound }
+  /** [OF4] Con `lap` o `inLaps` es una parada programada y el compuesto es opcional (sin él, lo elige el muro). */
+  | { kind: 'boxes'; carId: number; compound?: TireCompound; lap?: number; inLaps?: number }
   | { kind: 'anular-boxes'; carId: number }
   | { kind: 'ritmo'; carIds: number[]; mode: PaceMode }
   | { kind: 'orden-equipo'; mode: TeamOrderMode; favouredCarId?: number }

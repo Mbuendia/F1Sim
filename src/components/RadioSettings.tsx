@@ -17,6 +17,10 @@ import type { ModelStore } from '../radio/model/ModelStore';
 import { createWebllmStore } from '../radio/model/webllmStore';
 import { modelRevisions, upgradingStore } from '../radio/model/versionSwitch';
 import { browserStorage, persistStorage, readRadioMode, writeRadioMode, type RadioMode } from '../radio/model/storage';
+import { cacheAiLibrary } from '../offline/register';
+
+/** [OF1] Al acabar de bajar un modelo: que el navegador no lo borre y que el juego guarde la librería de IA para usarla sin red. */
+const persistAndKeepAi = async () => { cacheAiLibrary(); return persistStorage(); };
 import { createModelDownload, type DownloadState } from '../radio/model/download';
 import { browserModelDownload } from '../radio/model/browserDownloads';
 import { browserVariantEnv, chooseVariant, readVariantPreference, writeVariantPreference, type RadioVariant, type VariantChoice, type VariantPreference } from '../radio/model/variants';
@@ -88,10 +92,12 @@ export default function RadioSettings({ store: givenStore, device: givenDevice, 
   const model = RADIO_MODELS[variant ?? 'q4'];
   const store = stores[variant ?? 'q4'];
   // [UX4] Con los modelos del juego, la descarga es una sola en toda la página: al volver a los ajustes se ve la misma.
-  const download = useMemo(() => (givenStore ? createModelDownload({ store, totalBytes: model.bytes, estimate, persist: persistStorage })
-    : browserModelDownload(`radio-${model.modelId}`, { store, totalBytes: model.bytes, estimate, persist: persistStorage })), [givenStore, store, model, estimate]);
+  const download = useMemo(() => (givenStore ? createModelDownload({ store, totalBytes: model.bytes, estimate, persist: persistAndKeepAi })
+    : browserModelDownload(`radio-${model.modelId}`, { store, totalBytes: model.bytes, estimate, persist: persistAndKeepAi })), [givenStore, store, model, estimate]);
   const [state, setState] = useState<DownloadState>(download.state());
   const [outdated, setOutdated] = useState(false);
+  // [OF1] Con el modelo ya guardado (también si se bajó antes de existir el service worker), la librería de IA también.
+  useEffect(() => { if (state.status === 'completa') cacheAiLibrary(); }, [state.status]);
   useEffect(() => {
     if (givenStore || !variant) { setOutdated(false); return; }
     let alive = true;
@@ -229,8 +235,8 @@ const realWhisperStore = createWhisperStore();
 function ModelBlock({ store, bytes, estimate, saveData, label, onReady, onReadyChange, race = false }: { store: ModelStore; bytes: number; estimate?: () => Promise<{ quota?: number; usage?: number }>; saveData: boolean; label: string; onReady?: () => void; onReadyChange?: (ready: boolean) => void; race?: boolean }) {
   // [UX4] Con las tiendas reales (voz y micro), la descarga es una sola en toda la página.
   const shareKey = store === realPiperStore ? "voz-piper" : store === realKokoroStore ? "voz-kokoro" : store === realWhisperStore ? "micro-whisper" : null;
-  const download = useMemo(() => (shareKey ? browserModelDownload(shareKey, { store, totalBytes: bytes, estimate, persist: persistStorage })
-    : createModelDownload({ store, totalBytes: bytes, estimate, persist: persistStorage })), [shareKey, store, bytes, estimate]);
+  const download = useMemo(() => (shareKey ? browserModelDownload(shareKey, { store, totalBytes: bytes, estimate, persist: persistAndKeepAi })
+    : createModelDownload({ store, totalBytes: bytes, estimate, persist: persistAndKeepAi })), [shareKey, store, bytes, estimate]);
   const [state, setState] = useState<DownloadState>(download.state());
   const [confirming, setConfirming] = useState(false);
   useEffect(() => { const stop = download.subscribe(setState); void download.refresh(); return stop; }, [download]);

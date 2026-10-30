@@ -225,8 +225,10 @@ export interface PitStopState {
   infractions?: PitInfraction[];
   /** [R08] Registro de cada parada con tiempos separados. */
   stopLog?: PitStopLog[];
-  /** [R08] Paradas programadas pendientes (vuelta y compuesto). */
-  plannedStops?: { lap: number; compound: TireCompound }[];
+  /** [R08] Paradas programadas pendientes (vuelta y compuesto). [OF4] Compuesto null: lo elige el muro al llegar. */
+  plannedStops?: { lap: number; compound: TireCompound | null }[];
+  /** [OF4] Orden de boxes que ha salido del programa (para saber si una parada era la programada). */
+  planOrderId?: string;
   /** [R08] Contadores de la parada en curso. */
   laneTimer?: number;
   releaseHoldSec?: number;

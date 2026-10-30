@@ -137,6 +137,10 @@ import { nextAlerts, wallAlerts } from './simulation/Wall';
 import type { WallReading } from './simulation/Wall';
 import { CAMERA_LABELS as CAMERA_LABELS_3D } from './scene3d/cameras';
 import { cameraFor, hasMouse, nextCameraFor } from './scene3d/cameraInput';
+// [OF2] Guardar una partida pide al navegador que no borre los datos.
+import { ensurePersistent } from './offline/persist';
+// [OF3] El aviso de versión nueva no deja actualizar durante una carrera.
+import { updateStore } from './offline/updateStore';
 
 // R32: estado de carrera siempre visible en la barra.
 const FLAG_CHIPS: Record<RaceFlagState, { label: string; className: string }> = {
@@ -362,6 +366,7 @@ export const App: React.FC<{ startAt?: 'menu' }> = ({ startAt }) => {
   });
   const [saveMessage, setSaveMessage] = useState<SaveGameMessage | null>(null);
   const [raceLive, setRaceLive] = useState(false);
+  useEffect(() => { updateStore.getState().setInRace(raceLive || currentView === 'race'); }, [raceLive, currentView]);
   // [T4.7] El motor forma la parrilla con la alineación de la temporada (nunca con una carrera a medias).
   useEffect(() => {
     if (raceLive || currentView === 'race') return;
@@ -1082,6 +1087,7 @@ export const App: React.FC<{ startAt?: 'menu' }> = ({ startAt }) => {
     if (outcome.ok) {
       setSaveName(save.name);
       try { localStorage.setItem(SAVE_NAME_KEY, save.name); } catch (e) { console.error(e); }
+      void ensurePersistent();
     }
     const text = outcome.ok ? `Partida guardada: ${save.name}` : outcome.error ?? 'No se pudo guardar la partida';
     setSaveMessage({ tone: outcome.ok ? 'ok' : 'error', text });

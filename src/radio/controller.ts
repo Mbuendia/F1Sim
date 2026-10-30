@@ -10,6 +10,7 @@ import type { TireCompound } from '../types/f1';
 import { driverRadio } from '../data/driverRadio';
 import type { RadioStore } from '../state/radioStore';
 import { createChooser, replyKindOf, type Chooser, type TemplateVars } from './replies/chooser';
+import { lapsLeftText } from './scheduled';
 import type { LineKind } from './replies/templates';
 import type { VoiceItem } from './voice/voiceQueue';
 import { MAX_REPLY_AGE_SEC } from './voice/voiceQueue';
@@ -68,10 +69,13 @@ export async function submitRadio(args: {
       const mate = context.cars.find(c => c.id !== carId);
       const intent = parse.intent;
       const compound = intent?.kind === 'boxes' ? intent.compound : undefined;
+      const planLap = intent?.kind !== 'boxes' ? undefined : intent.lap ?? (intent.inLaps !== undefined ? (context.lap ?? 0) + intent.inLaps : undefined);
       const vars: TemplateVars = {
         compuesto: compound ? COMPOUND_NAME[compound] : undefined,
         companero: mate?.displayName,
-        vuelta: context.lap,
+        // [OF4] En una parada programada, {vuelta} es la de la parada y {faltan}, cuántas vueltas quedan.
+        vuelta: planLap ?? context.lap,
+        faltan: planLap !== undefined ? lapsLeftText(planLap - (context.lap ?? 0)) : undefined,
         motivo: reason ? reason.charAt(0).toLowerCase() + reason.slice(1) : undefined,
       };
       const temperament = driverRadio(driverId).temperament;
