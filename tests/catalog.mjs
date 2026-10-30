@@ -622,5 +622,6 @@ export const modules = [
   { "id": "landing-lcp-pf8", "tasks": ["PF8"], "sprint": "8", "kind": "contract" },
   { "id": "landing-hero-pf9", "tasks": ["PF9"], "sprint": "8", "kind": "contract" },
   { "id": "circuit-kit-ck2", "tasks": ["CK2"], "sprint": "10", "kind": "contract" },
+  { "id": "circuit-kit-ck3", "tasks": ["CK3"], "sprint": "10", "kind": "contract" },
   { "id": "viewport-movil", "tasks": [], "sprint": null, "kind": "regression" }
 ];

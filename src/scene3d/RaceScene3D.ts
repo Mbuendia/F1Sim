@@ -19,7 +19,9 @@ import { disposeModel, dressCar, dressSafetyCar, loadModel } from '../renderer/m
 import { liveryFor } from '../data/liveries';
 import { compoundStyle } from '../utils/compounds';
 import { calculateCarWorldPosition, isCarVisible } from '../utils/carPosition';
-import { runoffZones3d, sceneryFor, type PitBuilding, type SceneBarrier, type SceneItem } from './scenery';
+import { KIT_CIRCUIT, runoffZones3d, sceneryFor, type PitBuilding, type SceneBarrier, type SceneItem } from './scenery';
+import { kitGroups, kitPlacementFor, type KitPlacement } from './kitPlacement';
+import { buildKit, KIT_STRIP_COLORS } from './kitMeshes';
 import { RUNOFF_LOOK, runoffColor } from './runoff';
 import { KERB_WIDTH } from '../utils/scenarioGeometry';
 import { SPONSOR_COLORS, type Sponsor } from './sponsors';
@@ -105,6 +107,8 @@ export class RaceScene3D {
   private readonly carLevels = new Map<number, CarLevel>();
   /** Torres de luz del circuito y las luces de verdad que se encienden en las ocho más cercanas (de noche). */
   private floodlights: SceneItem[] = [];
+  /** [CK3] Grupos de dibujo del kit en el circuito cargado (para el contador de rendimiento). */
+  kitDrawGroups = 0;
   private readonly lampLights: THREE.PointLight[] = [];
   /** Halos y conos de luz de las torres (solo de noche). */
   private lampFx: THREE.Group | null = null;
@@ -170,19 +174,28 @@ export class RaceScene3D {
     this.track = track; this.circuitId = circuitId; this.lap = track.lapLengthMeters || 5000;
     this.world.clear();
     const scenery = sceneryFor(track, circuitId);
-    this.floodlights = scenery.items.filter(it => it.kind === 'floodlight');
-    this.world.add(buildGround(track, circuitId, scenery.infield, scenery.water, scenery.street));
+    // [CK3] Kit común de piezas de circuito (menos Mónaco): models/kit/, colocado por kitPlacementFor; un grupo de dibujo
+    // por pieza (kitGroups). En calidad baja, sin árboles, grúas ni farolas.
+    const level = (Object.entries(QUALITY_PROFILES).find(([, prof]) => prof === this.quality)?.[0] ?? 'alto') as 'alto' | 'medio' | 'bajo';
+    const kit: KitPlacement | null = KIT_CIRCUIT(circuitId) ? kitPlacementFor(track, circuitId, { quality: level }) : null;
+    this.kitDrawGroups = kit ? kitGroups(kit).length : 0;
+    this.floodlights = kit
+      ? kit.pieces.filter(p => p.piece === 'poste_luz').map(p => ({ kind: 'floodlight', model: 'kit', x: p.x, y: p.y, heading: p.heading, length: 1, width: 1, height: 6.1 }))
+      : scenery.items.filter(it => it.kind === 'floodlight');
+    this.world.add(buildGround(track, circuitId, scenery.infield, scenery.water, scenery.street, kit));
     this.world.add(buildWalls(track, circuitId, scenery.barriers));
     if (scenery.pitBuilding) this.world.add(buildPitBuildingMesh(scenery.pitBuilding));
     if (this.floodlights.length) { this.lampFx = buildLampFx(this.floodlights, track); this.world.add(this.lampFx); }
     const o = overpassFor(circuitId);
     if (o) this.world.add(buildElevatedRoad(track, o));
-    const [items, car, lod] = await Promise.all([
+    const [items, kitGroup, car, lod] = await Promise.all([
       buildScenery(scenery.items, track, base).catch(error => { console.error('Escenario 3D', error); return null; }),
+      kit ? buildKit(kit, base).catch(error => { console.error('Kit de circuito', error); return null; }) : Promise.resolve(null),
       loadModel(modelUrl(base, CAR_MODEL.file)).catch(() => null),
       loadModel(modelUrl(base, LOD_FILE)).catch(() => null),
     ]);
-    if (this.disposed) { if (items) disposeModel(items); return; }
+    if (this.disposed) { if (items) disposeModel(items); if (kitGroup) disposeModel(kitGroup); return; }
+    if (kitGroup) this.world.add(kitGroup);
     if (items) {
       this.world.add(items);
       const seen = new Set<THREE.Material>();
@@ -515,7 +528,7 @@ function setLayer(root: THREE.Object3D, layer: number): void {
   root.traverse(o => o.layers.set(layer));
 }
 
-function buildGround(track: TrackDefinition, circuitId: string, infield: { x: number; y: number }[][], water: { x: number; y: number }[][], street: boolean): THREE.Mesh {
+function buildGround(track: TrackDefinition, circuitId: string, infield: { x: number; y: number }[][], water: { x: number; y: number }[][], street: boolean, kit: KitPlacement | null = null): THREE.Mesh {
   const b = track.bounds, pad = 3000;
   const flat = new FlatBuilder();
   const layers = getTrackLayers(track, circuitId);
@@ -532,7 +545,9 @@ function buildGround(track: TrackDefinition, circuitId: string, infield: { x: nu
   shapes.forEach((s, i) => {
     if (i === bands) {
       for (const poly of water) flat.fill(poly, col('#2b6f9e'));
-      paintRunoffs(flat, track, circuitId, runoffZones3d(track, circuitId));
+      // [CK3] Con kit, las escapatorias son las suyas (asfalto y luego grava; asfalto pintado en el estadio).
+      if (kit) for (const strip of kit.strips) flat.fill(strip.points, col(KIT_STRIP_COLORS[strip.surface]));
+      else paintRunoffs(flat, track, circuitId, runoffZones3d(track, circuitId));
     }
     if (bands >= 0 && i >= bands && i < bands + runoffFills) return;
     if (s.kind === 'stroke' && s.color === '#5a4f3a' && s.width >= layers.trackWidthM + 10) return;
