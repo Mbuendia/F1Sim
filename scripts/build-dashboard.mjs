@@ -26,6 +26,8 @@ const sprintOf = id => {
   if (/^OF\d/.test(id)) return 'Sprint 13';
   if (/^UN\d/.test(id)) return 'Sprint 14';
   if (/^MJ\d/.test(id)) return 'Sprint 15';
+  // Sprint 16: estrategia antes de la carrera (planificado el 29/10/2026).
+  if (/^ES\d/.test(id)) return 'Sprint 16';
   if (/^G\d/.test(id)) return 'Sprint 4.5';
   if (/^T4\./.test(id)) return 'Sprint 4';
   if (/^T3\./.test(id)) return 'Sprint 3';
