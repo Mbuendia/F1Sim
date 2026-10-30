@@ -11,7 +11,7 @@
     "carTriangles": 135000,
     "carLodTriangles": 10500,
     "raceSimulationLines": 1900,
-    "offlineCoreKB": 7200
+    "offlineCoreKB": 7900
   },
   "measured": {
     "fecha": "29/10/2026, al acabar PF2 a PF6; paquete inicial tras la mejora del LCP",
@@ -27,5 +27,9 @@
     "movilS": 2.5,
     "medidoMovilS": 1.43,
     "nota": "LCP de la portada en móvil (procesador 4× más lento y 4G lenta), medido con Chrome sin ventana; ver docs/perf/linea-base.md."
+  },
+  "offline": {
+    "nota": "[30/10/2026] El usuario sube offlineCoreKB de 7.200 a 7.900 KB al entrar el kit común de circuitos (CK2/CK3): la instalación pasa a unos 7.630 KB (modelos del kit ~270 KB y atlas WebP ~850 KB). Alternativa descartada: guardar el kit al usarse (sin conexión, un circuito no abierto antes saldría sin kit).",
+    "medidoKB": 7629
   }
 }
