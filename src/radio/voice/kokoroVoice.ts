@@ -47,6 +47,11 @@ export function kokoroVoiceFor(driverId: string): KokoroPilotVoice {
   return { voice: KOKORO_MALE_VOICES[index], speed: Math.round((1 / piper.lengthScale) * 1000) / 1000 };
 }
 
+/** Radio eufórica: la frase se genera más lenta (`stretch` > 1) para que, al subirle el tono, no se acelere de más. */
+export function withStretch(voice: KokoroPilotVoice, stretch: number | undefined): KokoroPilotVoice {
+  return stretch ? { ...voice, speed: voice.speed / stretch } : voice;
+}
+
 /** Parte del estilo de la voz que toca según la longitud de la frase (como hace el modelo original). */
 export function styleSlice(voice: Float32Array, tokens: number): Float32Array {
   const offset = 256 * Math.min(Math.max(tokens - 2, 0), 509);

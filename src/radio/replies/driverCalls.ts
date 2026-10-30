@@ -18,6 +18,8 @@ export interface CallCar {
   /** Llueve en el tramo donde está. */
   rain: boolean;
   running: boolean;
+  /** Ha cruzado la meta (radio eufórica: si va primero, mensaje de victoria). */
+  finished?: boolean;
 }
 export interface CallSnapshot {
   timeSec: number;
@@ -33,7 +35,7 @@ export const CALL_GAP_SEC = 30;
 export const WEAR_CALL_PCT = 70;
 export const OVERTAKE_GAP_LAPS = 2;
 
-interface Memory { position: number; stops: number; wearCalled: boolean; puncture: boolean; rain: boolean; lastCallAt: number; lastOvertakeLap: number }
+interface Memory { won?: boolean; position: number; stops: number; wearCalled: boolean; puncture: boolean; rain: boolean; lastCallAt: number; lastOvertakeLap: number }
 
 export function createCallDetector() {
   const cars = new Map<number, Memory>();
@@ -48,6 +50,8 @@ export function createCallDetector() {
         const memory: Memory = seen ?? { position: car.position, stops: car.stops, wearCalled: false, puncture: car.puncture, rain: car.rain, lastCallAt: -Infinity, lastOvertakeLap: -Infinity };
         if (car.stops !== memory.stops) memory.wearCalled = false;
         const wanted: { kind: CallKind; priority?: boolean }[] = [];
+        // Al ganar, una vez y con prioridad, aunque acabe de hablar.
+        if (seen && car.finished && car.position === 1 && !memory.won) { memory.won = true; wanted.push({ kind: 'victoria', priority: true }); }
         if (seen && car.running) {
           if (car.puncture && !memory.puncture) wanted.push({ kind: 'pinchazo', priority: true });
           if (!memory.wearCalled && car.tireWear >= WEAR_CALL_PCT) wanted.push({ kind: 'desgaste' });

@@ -2659,6 +2659,11 @@ Lo que el usuario dejó aparcado el 13/10/2026, con las opciones que se le prese
 * **PF10 — Pantalla de carga para teléfonos lentos:** `[ ] PENDIENTE — PLANIFICADA 29/10/2026; CONTRATO DE TESTS POR PROPONER`
   * *Qué:* pedida por el usuario el 29/10/2026 como tarea aparte: en un teléfono lento, que al pulsar «Jugar» (mientras baja el juego) o al entrar en carrera (modelos y escenario) se vea una pantalla de carga con lo que se está descargando, en vez del «Cargando el paddock…» actual o una pantalla quieta.
 
+* **PF11 — Radio eufórica: voz retocada al adelantar y mensaje al ganar:** `[ ] EN REVISIÓN LOCAL — IMPLEMENTADO 30/10/2026 CON CONTRATO DE TESTS ACORDADO (17 PASS); FALTA ESCUCHARLO EN UNA CARRERA`
+  * *Origen (30/10/2026):* el usuario prueba VoiceStudio (voz local con MCP) para voces más naturales. Ni VoiceStudio ni Kokoro controlan la emoción, y al ganar la radio no sonaba eufórica. De las pruebas elige «clon + retoque»: +2 semitonos y un 6 % más rápido. Pide meter el retoque en el juego con la opción A + B (retoque en las frases eufóricas y mensaje al ganar). Las voces de los 20 pilotos con VoiceStudio quedan para más adelante; la de Alonso está guardada en su VoiceStudio.
+  * *Contrato (`tests/modules/radio-euforia.mjs`):* (1) las frases de adelantamiento y de victoria son eufóricas y el resto no; (2) con el retoque, la voz queda 2 semitonos más aguda y un 6 % más rápida, en Piper (reproducción y length_scale) y en Kokoro (reproducción y velocidad); (3) el altavoz retoca solo las frases eufóricas; (4) el mensaje de victoria sale una vez, con prioridad, cuando el coche del jugador termina primero; suena aunque el coche haya terminado; hay al menos tres frases por carácter.
+  * *Entregado el 30/10/2026:* `src/radio/voice/mood.ts` (tono de cada frase y voz retocada: el motor genera la frase un poco más lenta y el altavoz la reproduce más rápido, así sube el tono sin acelerarla de más); la cola de voz lleva el tono y deja pasar la victoria de un coche ya terminado; llamada `victoria` en el detector, solo en las plantillas (como las de OF4), con tres frases por carácter. Módulos de radio en verde (12 módulos, 422 aserciones). Límite conocido: si la carrera acaba con bandera roja, la radio se corta antes y no hay mensaje de victoria.
+
 ---
 
 ### 7.11 Sprint 9 — Coche de 2025 y ruedas propias (planificado el 24/10/2026)

@@ -627,5 +627,6 @@ export const modules = [
   { "id": "storage-of2", "tasks": ["OF2"], "sprint": "13", "kind": "contract" },
   { "id": "updates-of3", "tasks": ["OF3"], "sprint": "13", "kind": "contract" },
   { "id": "pit-schedule-of4", "tasks": ["OF4"], "sprint": "13", "kind": "contract" },
+  { "id": "radio-euforia", "tasks": ["PF11"], "sprint": "8", "kind": "contract" },
   { "id": "viewport-movil", "tasks": [], "sprint": null, "kind": "regression" }
 ];

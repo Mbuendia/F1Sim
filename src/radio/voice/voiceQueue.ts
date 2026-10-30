@@ -4,10 +4,12 @@
  * sonido apagado o sin voces en el sistema, nada.
  */
 import type { Speaker } from './systemVoice';
+import type { VoiceMood } from './mood';
 
 export const MAX_REPLY_AGE_SEC = 8;
 
-export interface VoiceItem { carId: number; text: string; requestedAt: number; pitch: number; rate: number; priority?: boolean; /** [IA6] Quién habla. */ driverId?: string }
+export interface VoiceItem { carId: number; text: string; requestedAt: number; pitch: number; rate: number; priority?: boolean; /** [IA6] Quién habla. */ driverId?: string;
+  /** Radio eufórica: el tono de la frase. */ mood?: VoiceMood; /** Se dice aunque el coche ya haya terminado (la victoria). */ afterFinish?: boolean }
 
 export function createVoiceQueue(deps: {
   speaker: Speaker;
@@ -21,7 +23,7 @@ export function createVoiceQueue(deps: {
   const items: VoiceItem[] = [];
   let running: Promise<void> | null = null;
   let busy = false;
-  const fresh = (item: VoiceItem) => deps.now() - item.requestedAt <= MAX_REPLY_AGE_SEC && deps.isRunning(item.carId);
+  const fresh = (item: VoiceItem) => deps.now() - item.requestedAt <= MAX_REPLY_AGE_SEC && (item.afterFinish === true || deps.isRunning(item.carId));
   const silent = () => { try { return deps.level() <= 0 || !deps.speaker.available(); } catch { return true; } };
   // [UX13] Con una voz que pone sus propios sonidos de apertura y cierre (Piper), la cola no los repite.
   const sound = () => { if (deps.speaker.ownCues) return; try { deps.playSound('radio'); } catch { /* sin audio */ } };
@@ -32,7 +34,7 @@ export function createVoiceQueue(deps: {
       const item = items.shift()!;
       if (silent() || !fresh(item)) continue;
       sound();
-      await deps.speaker.speak(item.text, { pitch: item.pitch, rate: item.rate, volume: Math.min(1, deps.level()), driverId: item.driverId, carId: item.carId });
+      await deps.speaker.speak(item.text, { pitch: item.pitch, rate: item.rate, volume: Math.min(1, deps.level()), driverId: item.driverId, carId: item.carId, mood: item.mood });
       sound();
     }
     busy = false;
