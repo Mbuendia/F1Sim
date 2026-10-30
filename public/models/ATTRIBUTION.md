@@ -37,6 +37,19 @@ los coches y el Safety Car en la pista. El crédito visible va junto al visor de
 Los archivos se preparan en Blender y se terminan con `node scripts/finalize-models.mjs`, que une la animación de las
 ruedas en un clip y escribe esta atribución dentro de cada `.glb`.
 
+## Kit de piezas de circuito (`kit/`)
+
+- **Obra original:** «Shanghai International Circuit 2018 layout»
+- **Autor:** Dave Love — https://sketchfab.com/Tyler_Dave
+- **Origen:** https://sketchfab.com/3d-models/shanghai-international-circuit-2018-layout-4d3365f4de6442a5ae56e8807c518c4f
+- **Licencia:** CC BY 4.0 — https://creativecommons.org/licenses/by/4.0/
+- **Cambios (CK2, 29–30/10/2026):** el circuito se parte en Blender en 31 piezas sueltas (23 comunes para todos los
+  circuitos y 8 propias de Shanghái): guardarraíl, muro de neumáticos, valla alta, gradas, grúa, farolas, torre de
+  posiciones, vehículos, árboles y edificios del paddock, entre otras. Se limpian (fuera trozos de piezas vecinas y las
+  letras del distrito), se reducen, se ponen con el origen en el centro de la base y el largo en X, y sus texturas se
+  hornean en dos atlas propios (`kit-comun.webp` y `kit-shanghai.webp`). Toda la publicidad real se sustituye por
+  patrocinadores de parodia. La grada pequeña y el cartel de metros son nuevos, hechos para F1Sim.
+
 ## Imágenes del centro de temporada (`public/hub/`)
 
 `tunel.webp`, `simulador.webp`, `produccion.webp`, `banco.webp` y `sede.webp` están hechas para F1Sim en Blender
