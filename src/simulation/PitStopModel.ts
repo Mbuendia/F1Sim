@@ -7,13 +7,14 @@ import { TrackDefinition } from '../data/barcelonaTrack';
 import { TEAMS } from '../data/teams';
 import { nextCrossing, orderIsActive, updateOrderCommitment } from './BoxOrders';
 import { SafetyCarModel } from './SafetyCarModel';
+import { defaultLimitFractions, LIMIT_LINE_M, pitLaneZones } from '../utils/pitLaneZones';
 
 export class PitStopModel {
   /** [R01] Límite del pit lane (decisión de Dirección de Carrera), del perfil por defecto. */
   static readonly PIT_SPEED_LIMIT_KMH = DEFAULT_RULES.pitLaneSpeedKmh;
   // [R08] Líneas del limitador a esta distancia de la entrada y de la salida (m), frenada máxima (km/h/s), frenada
   // hacia el cajón (m/s²) y distancia de tráfico que retiene la liberación (m). Calibración del juego.
-  static readonly LIMIT_LINE_M = 60;
+  static readonly LIMIT_LINE_M = LIMIT_LINE_M;
   static readonly MAX_BRAKE_KMH_S = 180;
   static readonly BOX_BRAKE_MS2 = 12;
   static readonly RELEASE_CLEARANCE_M = 15;
@@ -33,15 +34,16 @@ export class PitStopModel {
     return len * track.lapLengthMeters;
   }
 
-  /** Fracciones del pit lane donde empieza y termina el límite de velocidad. */
-  static limitFractions(laneMeters: number): { start: number; end: number } {
-    const f = Math.min(0.3, this.LIMIT_LINE_M / Math.max(1, laneMeters));
-    return { start: f, end: 1 - f };
+  /** Fracciones del pit lane donde empieza y termina el límite de velocidad ([CR2] las de la pista: en Yas Marina acaba
+   * antes del túnel). Sin pista, las de siempre. */
+  static limitFractions(laneMeters: number, track?: TrackDefinition): { start: number; end: number } {
+    if (track) { const z = pitLaneZones(track); return { start: z.limitStart, end: z.limitEnd }; }
+    return defaultLimitFractions(laneMeters);
   }
 
   /** Coche que circula por el carril hacia el cajón de `car` a menos de RELEASE_CLEARANCE_M (bloquea su salida). */
-  static releaseBlockedBy(car: CarState, allCars: CarState[], laneMeters: number): CarState | null {
-    const box = this.getBoxProgress(car);
+  static releaseBlockedBy(car: CarState, allCars: CarState[], laneMeters: number, track?: TrackDefinition): CarState | null {
+    const box = this.getBoxProgress(car, track);
     for (const other of allCars) {
       if (other.id === car.id || !other.isInPitLane || other.currentSpeedKmh <= 0 || other.pitStop.waitingForBox) continue;
       const gap = (box - other.pitStop.pitLaneProgress) * laneMeters;
@@ -104,14 +106,14 @@ export class PitStopModel {
 
   // [Q11] Check if a teammate is currently being serviced at the shared box.
   // Returns the teammate CarState if they are occupying the box, or null if box is free.
-  static getTeammateInBox(car: CarState, allCars: CarState[]): CarState | null {
+  static getTeammateInBox(car: CarState, allCars: CarState[], track?: TrackDefinition): CarState | null {
     const teamId = car.driver?.teamId;
     if (!teamId) return null;
     for (const other of allCars) {
       if (other.id === car.id) continue;
       if (other.driver?.teamId !== teamId) continue;
       if (!other.isInPitLane || !other.pitStop.isPitting) continue;
-      const otherBoxProgress = this.getBoxProgress(other);
+      const otherBoxProgress = this.getBoxProgress(other, track);
       // Teammate is at or past the box, not waiting in queue, and still being serviced
       if (other.pitStop.pitLaneProgress >= otherBoxProgress &&
           !other.pitStop.waitingForBox &&
@@ -125,7 +127,7 @@ export class PitStopModel {
       if (other.id === car.id) continue;
       if (other.driver?.teamId !== teamId) continue;
       if (!other.isInPitLane || !other.pitStop.isPitting) continue;
-      const otherBoxProgress = this.getBoxProgress(other);
+      const otherBoxProgress = this.getBoxProgress(other, track);
       if (other.pitStop.pitLaneProgress >= otherBoxProgress &&
           other.pitStop.currentStopTimer < other.pitStop.stopDuration) {
          // Tie-breaker: if both are at the box and neither has started service (timer === 0),
@@ -183,7 +185,7 @@ export class PitStopModel {
         const dtLaneMeters = pitLength * lapDistanceMeters;
         let dtDistance = pit.entryProgress !== undefined ? Math.max(0, car.progress - pit.entryProgress) : 0;
         pit.pitLaneProgress = Math.min(1, dtDistance / pitLength);
-        const { start: dtStart, end: dtEnd } = this.limitFractions(dtLaneMeters);
+        const { start: dtStart, end: dtEnd } = this.limitFractions(dtLaneMeters, track);
         if (pit.pitLaneProgress < dtStart) car.currentSpeedKmh = Math.max(this.PIT_SPEED_LIMIT_KMH, car.currentSpeedKmh - dt * this.MAX_BRAKE_KMH_S);
         else if (pit.pitLaneProgress < dtEnd) car.currentSpeedKmh = Math.min(this.PIT_SPEED_LIMIT_KMH, Math.max(car.currentSpeedKmh, 20));
         else car.currentSpeedKmh = this.exitSpeed(car.currentSpeedKmh, dt, raceFlagState, scMode);
@@ -207,13 +209,13 @@ export class PitStopModel {
 
 
       // [Q11] Box específico por equipo en lugar de 0.45 fijo
-      const boxProgress = this.getBoxProgress(car);
+      const boxProgress = this.getBoxProgress(car, track);
 
       if (pit.pitLaneProgress < boxProgress) {
 
         // [R08] Entrando al cajón: frenada real hasta la línea del limitador, limitador hasta el cajón y frenada final.
         const laneMeters = pitLength * lapDistanceMeters;
-        const { start } = this.limitFractions(laneMeters);
+        const { start } = this.limitFractions(laneMeters, track);
         const limit = this.PIT_SPEED_LIMIT_KMH;
         if (pit.pitLaneProgress < start) {
           car.currentSpeedKmh = Math.max(limit, car.currentSpeedKmh - dt * this.MAX_BRAKE_KMH_S);
@@ -234,7 +236,7 @@ export class PitStopModel {
       } 
       else if (pit.pitLaneProgress >= boxProgress && (pit.currentStopTimer < pit.stopDuration || (pit.penaltyHoldSec ?? 0) > 0)) {
         // [Q11] Check if teammate is occupying the box
-        const teammateInBox = allCars ? this.getTeammateInBox(car, allCars) : null;
+        const teammateInBox = allCars ? this.getTeammateInBox(car, allCars, track) : null;
         if (teammateInBox) {
           // Teammate is being serviced — wait behind the box
           pit.waitingForBox = true;
@@ -348,13 +350,13 @@ export class PitStopModel {
 
         // [R08] Liberación segura: retener mientras otro coche llega por el carril hacia el cajón.
         const laneMetersOut = pitLength * lapDistanceMeters;
-        if (allCars && pit.pitLaneProgress < boxProgress + 0.5 / Math.max(1, laneMetersOut) && this.releaseBlockedBy(car, allCars, laneMetersOut)) {
+        if (allCars && pit.pitLaneProgress < boxProgress + 0.5 / Math.max(1, laneMetersOut) && this.releaseBlockedBy(car, allCars, laneMetersOut, track)) {
           pit.releaseHoldSec = (pit.releaseHoldSec ?? 0) + dt;
           car.currentSpeedKmh = 0;
           return true;
         }
         if (car.currentSpeedKmh === 0) car.currentSpeedKmh = 20;
-        const { end } = this.limitFractions(laneMetersOut);
+        const { end } = this.limitFractions(laneMetersOut, track);
         // Saliendo del pit lane: limitador hasta la línea final; después, aceleración libre.
         if (pit.pitLaneProgress >= end) {
           car.currentSpeedKmh = this.exitSpeed(car.currentSpeedKmh, dt, raceFlagState, scMode);
@@ -383,10 +385,12 @@ export class PitStopModel {
     return false;
   }
 
-  static getBoxProgress(car: CarState): number {
+  /** Punto del carril donde para cada equipo ([CR2] dentro de los cajones de la pista; sin pista, del 30 % al 70 %). */
+  static getBoxProgress(car: Pick<CarState, 'driver'>, track?: TrackDefinition): number {
     const teams = Object.keys(TEAMS);
     const index = teams.indexOf(car.driver?.teamId);
-    return index >= 0 ? 0.3 + 0.4 / teams.length * (index + 0.5) : 0.45;
+    const { boxFrom, boxSpan } = track ? pitLaneZones(track) : { boxFrom: 0.3, boxSpan: 0.4 };
+    return index >= 0 ? boxFrom + boxSpan / teams.length * (index + 0.5) : boxFrom + boxSpan * 0.375;
   }
 
   /**

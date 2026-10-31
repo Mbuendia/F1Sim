@@ -1,8 +1,12 @@
 // Puente y sombras (21/10/2026): el lienzo real de carrera con coches colocados por debajo y por encima del puente de
 // Suzuka. Solo en desarrollo: `?revision=puente`, con `&circuito=` (suzuka), `&hora=` (segundos de carrera, 0),
-// `&nubes=` (0 a 1), `&zoom=` (píxeles por metro, 4) y `&rot=` (giro de la cámara en grados, 0).
+// `&nubes=` (0 a 1), `&zoom=` (píxeles por metro, 4) y `&rot=` (giro de la cámara en grados, 0). [CR2] `&boxes=1` pone a
+// cada coche parado en su cajón del pit lane (para revisar dónde paran).
 import { useEffect, useMemo, useState } from 'react';
 import { RaceSimulation } from '../simulation/RaceSimulation';
+import { PitStopModel } from '../simulation/PitStopModel';
+import { RejoinModel } from '../simulation/RejoinModel';
+import { calculateCarWorldPosition } from '../utils/carPosition';
 import { EngineHost } from '../engine/EngineHost';
 import { rosterOf } from '../engine/RaceSession';
 import { RaceCanvas } from '../components/RaceCanvas';
@@ -20,6 +24,7 @@ const zoom = Number(q.get('zoom') ?? 4);
 const rotation = Number(q.get('rot') ?? 0) * Math.PI / 180;
 const cameraMode = (q.get('camara') ?? undefined) as CameraMode3D | undefined;
 const finished = q.get('fin') === '1';
+const atBoxes = q.get('boxes') === '1';
 
 export default function BridgeReview() {
   const data = useMemo(() => {
@@ -38,6 +43,16 @@ export default function BridgeReview() {
         car.lateralOffset = car.targetLateralOffset = lateral;
       }
       host.advance(0.02);
+    }
+    if (atBoxes) {
+      const track = sim.activeTrack, len = RejoinModel.pitLaneLength(track);
+      for (const car of sim.cars) {
+        car.isInPitLane = true; car.pitStop.isPitting = true;
+        car.progress = Math.floor(car.progress) + track.pitEntryT + PitStopModel.getBoxProgress(car, track) * len;
+        car.trackT = ((car.progress % 1) + 1) % 1; car.lateralOffset = car.targetLateralOffset = 0; car.currentSpeedKmh = 0;
+        const p = calculateCarWorldPosition(car, track);
+        car.worldX = p.worldX; car.worldY = p.worldY; car.worldAngle = p.worldAngle;
+      }
     }
     const target = crossing ?? { x: sim.cars[0].worldX, y: sim.cars[0].worldY };
     const sides = sim.cars.map(c => ({ code: c.driver.code, side: bridgeSide(o, c.trackT, Boolean(c.isInPitLane)) })).filter(c => c.side);

@@ -16,6 +16,7 @@ import spielberg from '../data/elevation/spielberg.json';
 import interlagos from '../data/elevation/interlagos.json';
 import suzuka from '../data/elevation/suzuka.json';
 import austin from '../data/elevation/austin.json';
+import { pitTunnelFor } from './pitTunnel';
 
 interface ElevationData {
   track: number[];
@@ -104,10 +105,12 @@ function build(circuitId: string, data: ElevationData, track: TrackDefinition): 
   };
 }
 
-/** Altura de un coche: la de la pista (o el suelo, en el pit lane) y, en Suzuka, el puente si va por arriba. */
+/** Altura de un coche: la de la pista (o el suelo, en el pit lane), el túnel del pit lane (Yas Marina, CR2) y, en Suzuka, el puente si va por arriba. */
 export function carHeightAt(circuitId: string, track: TrackDefinition, car: { trackT: number; isInPitLane?: boolean; worldX?: number; worldY?: number }): number {
   const r = reliefFor(circuitId);
   const base = !r ? 0 : car.isInPitLane && car.worldX !== undefined && car.worldY !== undefined ? r.groundHeight(car.worldX, car.worldY) : r.trackHeight(car.trackT);
+  const tunnel = car.isInPitLane && car.worldX !== undefined && car.worldY !== undefined ? pitTunnelFor(circuitId) : null;
+  if (tunnel) return base + tunnel.laneHeightAt(car.worldX!, car.worldY!);
   const o = overpassFor(circuitId);
   if (!o || car.isInPitLane) return base;
   const lap = track.lapLengthMeters || track.points.length * 2;

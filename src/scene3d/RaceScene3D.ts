@@ -33,6 +33,7 @@ import { planCars, shadowSource, type CarLevel } from './carDots';
 import { itemTransform, planInstances } from './instancing';
 import { QUALITY_PROFILES, type QualityProfile } from '../settings/quality';
 import { carHeightAt, reliefFor, terrainSize, type Relief } from './relief';
+import { pitTunnelFor, type PitTunnel } from './pitTunnel';
 
 const W = (x: number, y: number, z = 0) => new THREE.Vector3(x, z, y);
 const LOD_FILE = 'models/f1-car-lod.glb';
@@ -189,6 +190,9 @@ export class RaceScene3D {
     if (this.floodlights.length) { this.lampFx = buildLampFx(this.floodlights, track); this.world.add(this.lampFx); }
     const o = overpassFor(circuitId);
     if (o) this.world.add(buildElevatedRoad(track, o, circuitId));
+    // [CR2] Yas Marina: la salida de boxes pasa por un túnel bajo la pista.
+    const pitTunnel = pitTunnelFor(circuitId);
+    if (pitTunnel) this.world.add(buildPitTunnel(pitTunnel));
     const [items, kitGroup, car, lod] = await Promise.all([
       buildScenery(scenery.items, track, base, circuitId).catch(error => { console.error('Escenario 3D', error); return null; }),
       kit ? buildKit(kit, base).catch(error => { console.error('Kit de circuito', error); return null; }) : Promise.resolve(null),
@@ -305,9 +309,16 @@ export class RaceScene3D {
   }
 
   /** [CK5] Cabeceo del coche en las cuestas (rad): la pendiente de la pista en su punto. */
-  private pitchAt(car: { trackT: number; isInPitLane?: boolean }): number {
+  private pitchAt(car: { trackT: number; isInPitLane?: boolean; worldX?: number; worldY?: number; worldAngle?: number }): number {
+    if (car.isInPitLane) {
+      // [CR2] En las rampas del túnel del pit lane (Yas Marina), la pendiente del carril en la dirección del coche.
+      const tunnel = pitTunnelFor(this.circuitId);
+      if (!tunnel || car.worldX === undefined || car.worldY === undefined || car.worldAngle === undefined) return 0;
+      const dx = Math.cos(car.worldAngle) * 3, dy = Math.sin(car.worldAngle) * 3;
+      return Math.atan((tunnel.laneHeightAt(car.worldX + dx, car.worldY + dy) - tunnel.laneHeightAt(car.worldX - dx, car.worldY - dy)) / 6);
+    }
     const r = reliefFor(this.circuitId);
-    if (!r || car.isInPitLane) return 0;
+    if (!r) return 0;
     const d = 4 / this.lap;
     return Math.atan((r.trackHeight(car.trackT + d) - r.trackHeight(car.trackT - d)) / 8);
   }
@@ -457,7 +468,7 @@ export class RaceScene3D {
     const pos = calculateCarWorldPosition({ progress: sc.progress, isInPitLane: Boolean(sc.isInPitLane), lateralOffset: 0 }, this.track!);
     const root = this.safetyRoot!;
     root.visible = true;
-    const scPose = { trackT: ((sc.progress % 1) + 1) % 1, isInPitLane: Boolean(sc.isInPitLane), worldX: pos.worldX, worldY: pos.worldY };
+    const scPose = { trackT: ((sc.progress % 1) + 1) % 1, isInPitLane: Boolean(sc.isInPitLane), worldX: pos.worldX, worldY: pos.worldY, worldAngle: pos.worldAngle };
     root.position.copy(W(pos.worldX, pos.worldY, this.carHeight(scPose)));
     root.rotation.set(0, -pos.worldAngle, this.pitchAt(scPose), 'YZX');
   }
@@ -560,6 +571,9 @@ function buildGround(track: TrackDefinition, circuitId: string, infield: { x: nu
     flat.fill([{ x: b.minX - pad, y: b.minY - pad }, { x: b.maxX + pad, y: b.minY - pad }, { x: b.maxX + pad, y: b.maxY + pad }, { x: b.minX - pad, y: b.maxY + pad }], col(outside));
     for (const poly of infield) flat.fill(poly, col(street ? '#464a51' : '#4a7a3c'));
   }
+  // [CR2] El carril de superficie y sus líneas no se pintan sobre la zanja del túnel ni en su tramo tapado.
+  const tunnel = pitTunnelFor(circuitId), pitGeo = getPitLaneGeometry(track);
+  const tunnelShapes = new Set<unknown>(tunnel ? [pitGeo.fastLane, ...pitGeo.fastLaneEdges, ...pitGeo.walls] : []);
   const shapes: TrackShape[] = layers.shapes;
   // El agua va encima de las bandas anchas de terreno de la pista y debajo de escapatorias, pianos y asfalto.
   const bands = shapes.findIndex(s => !(s.kind === 'stroke' && s.width >= layers.trackWidthM + 10));
@@ -577,6 +591,7 @@ function buildGround(track: TrackDefinition, circuitId: string, infield: { x: nu
     if (bands >= 0 && i >= bands && i < bands + runoffFills) return;
     if (s.kind === 'stroke' && s.color === '#5a4f3a' && s.width >= layers.trackWidthM + 10) return;
     if (s.kind === 'fill') flat.fill(s.points, col(s.color, s.alpha ?? 1));
+    else if (tunnel && tunnelShapes.has(s.points)) for (const run of uncoveredRuns(s.points, tunnel)) flat.ribbon(run, Math.max(s.width, s.hairline ? 0.2 : 0), col(s.color, s.alpha ?? 1));
     else flat.ribbon(s.points, Math.max(s.width, s.hairline ? 0.2 : 0), col(s.color, s.alpha ?? 1), s.closed);
   });
   const o = overpassFor(circuitId);
@@ -733,7 +748,8 @@ function buildWalls(track: TrackDefinition, circuitId: string, barriers: SceneBa
     }
   };
   for (const barrier of barriers) if (barrier.kind !== 'tecpro') wall(barrier.points, barrier.kind === 'armco' ? 0.8 : 1.1, Math.max(0.4, barrier.width), barrier.color);
-  for (const w of pit.walls) wall(w, 1.0, pit.wallWidth, '#aeb9c8');
+  const tunnel = pitTunnelFor(circuitId);
+  for (const w of pit.walls) for (const run of tunnel ? uncoveredRuns(w, tunnel) : [w]) wall(run, 1.0, pit.wallWidth, '#aeb9c8');
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
   g.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
@@ -743,6 +759,77 @@ function buildWalls(track: TrackDefinition, circuitId: string, barriers: SceneBa
   const group = new THREE.Group();
   group.add(mesh);
   for (const b of barriers) if (b.kind === 'tecpro') group.add(buildTecpro(b));
+  return group;
+}
+
+/** [CR2] Tramos de una línea del pit lane que quedan fuera de la zanja y del tramo tapado (covered) del túnel. */
+function uncoveredRuns(points: { x: number; y: number }[], tunnel: PitTunnel): { x: number; y: number }[][] {
+  const runs: { x: number; y: number }[][] = [];
+  let run: { x: number; y: number }[] = [];
+  for (const p of points) {
+    if (tunnel.inSpan(p)) { if (run.length > 1) runs.push(run); run = []; }
+    else run.push(p);
+  }
+  if (run.length > 1) runs.push(run);
+  return runs;
+}
+
+/**
+ * [CR2] Túnel del pit lane (Yas Marina): zanja con suelo de asfalto y muros de hormigón en las rampas, techo y bocas en
+ * el tramo tapado. Un tapón invisible a ras de suelo (solo profundidad) a los lados y sobre el tramo tapado esconde lo
+ * que queda bajo tierra: la pista se sigue viendo encima y los coches del túnel desaparecen bajo ella.
+ */
+function buildPitTunnel(t: PitTunnel): THREE.Group {
+  const group = new THREE.Group();
+  const [first, last] = t.span, [c0, c1] = t.covered, hw = t.laneWidth / 2 + 1, lane = t.lane;
+  const normal = (k: number) => { const a = lane[Math.max(0, k - 1)], b = lane[Math.min(lane.length - 1, k + 1)], l = Math.hypot(b.x - a.x, b.y - a.y) || 1; return { x: -(b.y - a.y) / l, y: (b.x - a.x) / l }; };
+  const at = (k: number, d: number, z: number) => { const nn = normal(k); return W(lane[k].x + nn.x * d, lane[k].y + nn.y * d, z); };
+  const pos: number[] = [], colors: number[] = [];
+  const quad = (a: THREE.Vector3, b: THREE.Vector3, c: THREE.Vector3, d: THREE.Vector3, color: string) => {
+    const cc = new THREE.Color(color);
+    for (const p of [a, b, c, a, c, d]) { pos.push(p.x, p.y, p.z); colors.push(cc.r, cc.g, cc.b); }
+  };
+  const lo = Math.max(0, first - 1), hi = Math.min(lane.length - 1, last + 1), h = (k: number) => t.laneHeights[k];
+  for (let k = lo; k < hi; k++) {
+    // Suelo del carril con sus bordes blancos.
+    quad(at(k, -hw, h(k) + 0.02), at(k + 1, -hw, h(k + 1) + 0.02), at(k + 1, hw, h(k + 1) + 0.02), at(k, hw, h(k) + 0.02), ASPHALT_DRY);
+    for (const sd of [-1, 1]) {
+      const e = sd * (t.laneWidth / 2 - 0.2);
+      quad(at(k, e - 0.1, h(k) + 0.04), at(k + 1, e - 0.1, h(k + 1) + 0.04), at(k + 1, e + 0.1, h(k + 1) + 0.04), at(k, e + 0.1, h(k) + 0.04), '#d9dde5');
+      // Muros de la zanja con pretil; el pretil baja con la rampa hasta el suelo (si no, al final de la rampa el carril
+      // parece una plataforma levantada). Bajo la losa, solo hasta el techo: la pista va encima.
+      const covered = k >= c0 - 2 && k < c1 + 2;
+      const top = (kk: number) => (covered ? -0.6 : Math.min(0.9, Math.max(0, -h(kk) * 0.4)));
+      if (top(k) - h(k) > 0.05 || top(k + 1) - h(k + 1) > 0.05) quad(at(k, sd * hw, h(k)), at(k + 1, sd * hw, h(k + 1)), at(k + 1, sd * hw, top(k + 1)), at(k, sd * hw, top(k)), '#a9adb3');
+    }
+    // Techo del tramo tapado (la losa que lleva la pista).
+    if (k >= c0 - 2 && k < c1 + 2) quad(at(k, -hw, -0.6), at(k + 1, -hw, -0.6), at(k + 1, hw, -0.6), at(k, hw, -0.6), '#3a3e45');
+  }
+  // Bocas: el dintel de hormigón sobre la entrada y la salida del tramo tapado.
+  for (const k of [Math.max(0, c0 - 2), Math.min(lane.length - 1, c1 + 2)]) quad(at(k, -hw - 1.5, -0.6), at(k, hw + 1.5, -0.6), at(k, hw + 1.5, 0.9), at(k, -hw - 1.5, 0.9), '#8f949b');
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+  g.computeVertexNormals();
+  const trench = new THREE.Mesh(g, new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide }));
+  trench.receiveShadow = true;
+  // Tapón invisible: a los lados de la zanja (40 m) y sobre el tramo tapado, justo bajo el suelo.
+  const plug: number[] = [];
+  const push = (a: THREE.Vector3, b: THREE.Vector3, c: THREE.Vector3, d: THREE.Vector3) => { for (const p of [a, b, c, a, c, d]) plug.push(p.x, p.y, p.z); };
+  // Cada banda llega hasta 40 m, pero se para antes de la otra rampa: el carril da la vuelta y la rampa de subida corre
+  // al lado de la de bajada, y el tapón de una no puede tapar la zanja de la otra.
+  const open = (q: THREE.Vector3, k: number) => { for (let j = lo; j <= hi; j++) if (Math.abs(j - k) > 12 && Math.hypot(lane[j].x - q.x, lane[j].y - q.z) < hw + 0.5) return false; return true; };
+  const reach = (k: number, sd: number) => { let d = hw; while (d < hw + 40 && open(at(k, sd * (d + 1), 0), k)) d += 1; return d; };
+  const bands = Array.from({ length: hi - lo + 1 }, (_, i) => ({ [-1]: reach(lo + i, -1), [1]: reach(lo + i, 1) }) as Record<number, number>);
+  for (let k = lo; k < hi; k++) {
+    for (const sd of [-1, 1]) { const d0 = bands[k - lo][sd], d1 = bands[k + 1 - lo][sd]; if (d0 > hw + 0.5 && d1 > hw + 0.5) push(at(k, sd * hw, -0.05), at(k + 1, sd * hw, -0.05), at(k + 1, sd * d1, -0.05), at(k, sd * d0, -0.05)); }
+    if (k >= c0 - 2 && k < c1 + 2) push(at(k, -hw, -0.05), at(k + 1, -hw, -0.05), at(k + 1, hw, -0.05), at(k, hw, -0.05));
+  }
+  const pg = new THREE.BufferGeometry();
+  pg.setAttribute('position', new THREE.Float32BufferAttribute(plug, 3));
+  const occluder = new THREE.Mesh(pg, new THREE.MeshBasicMaterial({ colorWrite: false, side: THREE.DoubleSide }));
+  occluder.renderOrder = -9;
+  group.add(occluder, trench);
   return group;
 }
 
