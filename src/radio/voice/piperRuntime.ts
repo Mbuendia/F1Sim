@@ -33,7 +33,7 @@ async function loadSynth(kind: 'kokoro' | 'piper'): Promise<Synth> {
   if (kind === 'piper') return createPiperSynth();
   const k = await import('./kokoroVoice');
   const kokoro = await k.createKokoroSynth(undefined, { device: k.KOKORO_VOICE.device, dtype: k.KOKORO_VOICE.dtype }, true);
-  return (text, _voice, driverId) => kokoro(text, k.kokoroVoiceFor(driverId ?? ''));
+  return (text, voice, driverId) => kokoro(text, k.withStretch(k.kokoroVoiceFor(driverId ?? ''), voice.stretch));
 }
 
 /** Pone la voz que toca; devuelve cuál queda. */

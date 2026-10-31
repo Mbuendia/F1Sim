@@ -430,7 +430,7 @@ export function updateRedFlagLane(sim: RaceSimulation, car: CarState, dt: number
   const len = track.pitExitT > track.pitEntryT ? track.pitExitT - track.pitEntryT : 1 - track.pitEntryT + track.pitExitT;
   const laneM = len * lapDistanceMeters;
   pit.pitLaneProgress = Math.min(1, Math.max(0, (car.progress - (pit.entryProgress ?? car.progress)) / len));
-  const { start, end } = PitStopModel.limitFractions(laneM);
+  const { start, end } = PitStopModel.limitFractions(laneM, track);
   const limit = PitStopModel.PIT_SPEED_LIMIT_KMH;
   let v = car.currentSpeedKmh;
   if (car.redFlagRelease) {

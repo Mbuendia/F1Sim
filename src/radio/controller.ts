@@ -14,6 +14,7 @@ import { lapsLeftText } from './scheduled';
 import type { LineKind } from './replies/templates';
 import type { VoiceItem } from './voice/voiceQueue';
 import { MAX_REPLY_AGE_SEC } from './voice/voiceQueue';
+import { moodOf } from './voice/mood';
 import type { RadioContext, RadioInterpreter, RadioParse } from './types';
 
 export interface RadioAck { ok: boolean; reason?: string; /** [IA3] Desenlace de una orden de equipo (obedece, tarde, protesta, desobedece). */ compliance?: string }
@@ -28,16 +29,20 @@ const COMPOUND_NAME: Record<TireCompound, string> = { soft: 'blandos', medium: '
 /** La cola de voz, o lo mínimo que necesita la radio de ella. */
 export interface VoiceSink { push(item: VoiceItem): boolean }
 
-/** El piloto dice algo: siempre se escribe; a la voz solo va si es reciente y su coche sigue en carrera. */
+/**
+ * El piloto dice algo: siempre se escribe; a la voz solo va si es reciente y su coche sigue en carrera (la victoria,
+ * aunque haya terminado). Adelantar y ganar suenan eufóricos.
+ */
 export function driverSays(args: {
   store: RadioStore; queue?: VoiceSink; carId: number; driverId: string; text: string; kind?: LineKind;
   requestedAt: number; now: number; running: boolean; lap?: number; priority?: boolean;
 }): void {
   const { store, queue, carId, driverId, text, kind, requestedAt, now, running, lap, priority } = args;
   store.getState().add(carId, { author: 'piloto', text, kind, lap, timeSec: requestedAt });
-  if (!queue || !running || now - requestedAt > MAX_REPLY_AGE_SEC) return;
+  const afterFinish = kind === 'victoria';
+  if (!queue || (!running && !afterFinish) || now - requestedAt > MAX_REPLY_AGE_SEC) return;
   const { pitch, rate } = driverRadio(driverId).voice;
-  queue.push({ carId, text, requestedAt, pitch, rate, priority, driverId });
+  queue.push({ carId, text, requestedAt, pitch, rate, priority, driverId, mood: moodOf(kind), ...(afterFinish ? { afterFinish } : {}) });
 }
 
 const sharedChooser = createChooser();

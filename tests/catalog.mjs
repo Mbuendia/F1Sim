@@ -621,9 +621,17 @@ export const modules = [
   { "id": "budget-pf8", "tasks": ["PF8"], "sprint": "8", "kind": "contract" },
   { "id": "landing-lcp-pf8", "tasks": ["PF8"], "sprint": "8", "kind": "contract" },
   { "id": "landing-hero-pf9", "tasks": ["PF9"], "sprint": "8", "kind": "contract" },
+  { "id": "circuit-kit-ck2", "tasks": ["CK2"], "sprint": "10", "kind": "contract" },
+  { "id": "circuit-kit-ck3", "tasks": ["CK3"], "sprint": "10", "kind": "contract" },
+  { "id": "shanghai-ck4", "tasks": ["CK4"], "sprint": "10", "kind": "contract" },
+  { "id": "relief-ck5", "tasks": ["CK5"], "sprint": "10", "kind": "contract" },
+  { "id": "heights-cr8", "tasks": ["CR8"], "sprint": "10.5", "kind": "contract" },
+  { "id": "yas-tunnel-cr2", "tasks": ["CR2"], "sprint": "10.5", "kind": "contract" },
+  { "id": "yas-pit-exit-cr2", "tasks": ["CR2"], "sprint": "10.5", "kind": "contract" },
   { "id": "offline-of1", "tasks": ["OF1"], "sprint": "13", "kind": "contract" },
   { "id": "storage-of2", "tasks": ["OF2"], "sprint": "13", "kind": "contract" },
   { "id": "updates-of3", "tasks": ["OF3"], "sprint": "13", "kind": "contract" },
   { "id": "pit-schedule-of4", "tasks": ["OF4"], "sprint": "13", "kind": "contract" },
+  { "id": "radio-euforia", "tasks": ["PF11"], "sprint": "8", "kind": "contract" },
   { "id": "viewport-movil", "tasks": [], "sprint": null, "kind": "regression" }
 ];

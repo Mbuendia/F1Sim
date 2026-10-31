@@ -17,8 +17,10 @@ export const CALL_KINDS = [
 ] as const;
 /** [OF4] Respuestas nuevas que solo están en las plantillas (el banco de IA9 no las tiene: se usan estas). */
 export const TEMPLATE_ONLY_KINDS = ['ok-boxes-programada'] as const;
+/** Radio eufórica (30/10/2026): llamada al ganar la carrera; solo en las plantillas, como las de OF4. */
+export const TEMPLATE_ONLY_CALL_KINDS = ['victoria'] as const;
 export type ReplyKind = (typeof REPLY_KINDS)[number] | (typeof TEMPLATE_ONLY_KINDS)[number];
-export type CallKind = (typeof CALL_KINDS)[number];
+export type CallKind = (typeof CALL_KINDS)[number] | (typeof TEMPLATE_ONLY_CALL_KINDS)[number];
 export type LineKind = ReplyKind | CallKind;
 
 export const TEMPLATES: Record<Temperament, Record<LineKind, string[]>> = {
@@ -48,6 +50,7 @@ export const TEMPLATES: Record<Temperament, Record<LineKind, string[]>> = {
     'orden-cumplida': ['Hecho, {companero} ha pasado.', 'Posiciones cambiadas.', 'Orden cumplida.'],
     adelanta: ['Pasado.', 'Uno menos.', 'Adelantamiento hecho.'],
     adelantado: ['Me han pasado.', 'He perdido una posición.', 'Me ha pasado, no podía cubrir.'],
+    victoria: ['¡Sí! ¡Ganamos! Gracias, chicos, gran trabajo.', '¡Victoria! Carrera perfecta, gracias a todos.', '¡Lo tenemos! ¡Ganamos, equipo!'],
   },
   competitivo: {
     'ok-boxes': ['¡Vamos! Entro, {compuesto}.', 'Box, box, {compuesto}. ¡A por ellos!', 'Perfecto, {compuesto} y a atacar.'],
@@ -75,6 +78,7 @@ export const TEMPLATES: Record<Temperament, Record<LineKind, string[]>> = {
     'orden-cumplida': ['Hecho, aunque me duele.', 'Ya ha pasado {companero}.', 'Cumplido. Me lo debéis.'],
     adelanta: ['¡Fuera! ¡Pasado!', '¡Vamos! Uno más.', '¡Toma! A por el siguiente.'],
     adelantado: ['¡Me ha cerrado la puerta!', '¡Me han pasado, maldita sea!', 'Lo recupero, tranquilos.'],
+    victoria: ['¡Sííí! ¡Ganamos, chicos, ganamos! ¡Vamos!', '¡Victoria! ¡Os lo dije, os lo dije!', '¡Vamos, vamos, vamos! ¡Primeros!'],
   },
   quejica: {
     'ok-boxes': ['Vale, entro... {compuesto}, espero que funcione.', 'Box con {compuesto}. Ojalá no perdamos tiempo.', 'Bueno, {compuesto}. Ya veremos.'],
@@ -102,6 +106,7 @@ export const TEMPLATES: Record<Temperament, Record<LineKind, string[]>> = {
     'orden-cumplida': ['Hecho, ya ha pasado {companero}.', 'Ya está, contentos.', 'Cumplido, como siempre.'],
     adelanta: ['Pasado, por fin.', 'Uno menos, costó.', 'Ya está, pasado.'],
     adelantado: ['Me han pasado, no tengo velocidad.', 'Otro que me pasa.', 'Con este coche no puedo defenderme.'],
+    victoria: ['¡Ganamos! ¡Y con este coche, increíble!', '¡Sí! ¡Al final lo hemos conseguido, chicos!', '¡Victoria! Ha sido durísimo, pero ¡ganamos!'],
   },
   bromista: {
     'ok-boxes': ['¡Marchando unos {compuesto}!', 'Box, box. Que estén calentitos esos {compuesto}.', 'Voy, poned la mesa: {compuesto}.'],
@@ -129,5 +134,6 @@ export const TEMPLATES: Record<Temperament, Record<LineKind, string[]>> = {
     'orden-cumplida': ['Hecho, {companero} ya ha pasado. De nada.', 'Cumplido, me merezco un premio.', 'Ya está, qué generoso soy.'],
     adelanta: ['¡Adiós, adiós!', '¡Pasado! Ni lo ha visto.', '¡Uno menos, saludad!'],
     adelantado: ['Me han pasado, iba mirando el paisaje.', 'Vaya, se me ha escapado uno.', 'Me pasan, pero vuelvo.'],
+    victoria: ['¡Sí, sí, sí! ¡Que empiece la fiesta!', '¡Ganamos! ¡Champán para todos!', '¡Victoria! ¡Hoy invito yo, chicos!'],
   },
 };

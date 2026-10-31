@@ -59,8 +59,12 @@ export default async function run({ server, assert, test }) {
     return best;
   };
 
+  // [CK3, autorizado por el usuario el 30/10/2026] con el kit común, las TecPro solo quedan en Mónaco; en el resto mandan
+  // los muros de neumáticos del kit, y la publicidad de parodia la llevan sus vallas y carteles.
+  const { kitPlacementFor } = await load('/src/scene3d/kitPlacement.ts');
+  const kits = Object.fromEntries(ids.map(id => [id, kitPlacementFor(tracks[id], id)]));
   await test('Barreras TecPro con patrocinadores de parodia', () => {
-    const few = ids.filter(id => scenes[id].barriers.filter(b => b.kind === 'tecpro').length < 3);
+    const few = ids.filter(id => id === 'monaco' ? scenes[id].barriers.filter(b => b.kind === 'tecpro').length < 3 : kits[id].pieces.filter(p => p.piece === 'muro_neumaticos').length < 3);
     assert(few.length === 0, 'TecPro: al menos tres tramos en cada circuito', few.join(', '));
     const onTrack = [];
     for (const id of ids) {
@@ -68,7 +72,7 @@ export default async function run({ server, assert, test }) {
       for (const b of scenes[id].barriers.filter(b => b.kind === 'tecpro')) if (b.points.some(p => axisDistance(tracks[id], p) < half + 1.5)) onTrack.push(id);
     }
     assert(onTrack.length === 0, 'TecPro: siempre fuera del asfalto', [...new Set(onTrack)].join(', '));
-    const used = new Set(ids.flatMap(id => scenes[id].barriers.filter(b => b.kind === 'tecpro').map(b => b.sponsor)));
+    const used = new Set([...ids.flatMap(id => scenes[id].barriers.filter(b => b.kind === 'tecpro').map(b => b.sponsor)), ...ids.flatMap(id => kits[id].pieces.filter(p => p.sponsor).map(p => p.sponsor))]);
     assert([...used].every(s => SPONSORS.includes(s)) && used.size >= 6, 'TecPro: cada tramo lleva un patrocinador de la lista, y hay variedad', [...used].join(', '));
     const real = SPONSORS.filter(s => REAL_SPONSORS.some(r => word(r).test(s)));
     assert(SPONSORS.length >= 10 && real.length === 0, 'TecPro: diez o más patrocinadores, todos de parodia', real.join(', '));
@@ -91,7 +95,8 @@ export default async function run({ server, assert, test }) {
     assert(tower && tower.kind === 'landmark' && Math.hypot(tower.x - start.x, tower.y - start.y) <= 400, 'Abu Dabi: la torre de control junto a la meta');
     const yachts = scene.items.filter(it => it.kind === 'yacht');
     assert(scene.water.length > 0 && yachts.length >= 8 && yachts.every(y => scene.water.some(poly => inside(y, poly))), 'Abu Dabi: puerto deportivo con barcos', String(yachts.length));
-    const lit = [...NIGHT_RACES, 'yas-marina'].filter(id => scenes[id].items.filter(it => it.kind === 'floodlight' && it.height >= 15 && it.height <= 40).length < 40);
+    // [CK3, autorizado por el usuario el 30/10/2026] las luces de la noche son los postes de luz del kit.
+    const lit = [...NIGHT_RACES, 'yas-marina'].filter(id => kits[id].pieces.filter(p => p.piece === 'poste_luz').length < 40);
     assert(lit.length === 0, 'Focos: cuarenta o más torres de luz en Abu Dabi y en las carreras de noche', lit.join(', '));
     assert(FIREWORK_CIRCUITS.includes('yas-marina') && FIREWORK_CIRCUITS.length === 1, 'Fuegos: solo en Abu Dabi', FIREWORK_CIRCUITS.join(', '));
     assert(fireworkBursts('yas-marina', track, null).length === 0, 'Fuegos: nada mientras no acaba la carrera');

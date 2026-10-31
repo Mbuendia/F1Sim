@@ -6,6 +6,7 @@ import type { TrackDefinition } from '../data/barcelonaTrack';
 import type { CarState } from '../types/f1';
 import { isCarVisible } from '../utils/carPosition';
 import { TvDirector, cenitalGiroView, cenitalView, chaseView, helicopterView, onboardView, overviewView, type CameraMode3D, type CameraView, type CarPose, type V3 } from './cameras';
+import { cameraFloor, reliefFor } from './relief';
 
 export interface Orbit { x: number; y: number; distance: number; azimuth: number; elevation: number }
 
@@ -80,6 +81,13 @@ export class CameraDirector3D {
         radius = Math.max(b.maxX - b.minX, b.maxY - b.minY) * 0.6;
       }
     }
+    // [CK5] Con relieve: las cámaras fijas de la tele y la mirada del helicóptero y de la libre suben con el suelo.
+    const relief = reliefFor(this.circuitId);
+    if (relief) {
+      if (this.mode === 'tv') wanted.position.z += relief.groundHeight(wanted.position.x, wanted.position.y);
+      if (this.mode === 'helicoptero' || this.mode === 'libre') wanted.target.z += relief.groundHeight(wanted.target.x, wanted.target.y);
+      if (this.mode === 'libre') wanted.position.z += relief.groundHeight(wanted.target.x, wanted.target.y);
+    }
     this.lastMode = this.mode;
     if (cut || !this.smooth) {
       this.smooth = clone(wanted);
@@ -94,6 +102,8 @@ export class CameraDirector3D {
       // Las cenitales van clavadas al coche (como la vista de siempre): sin retraso.
       if (this.mode === 'cenital' || this.mode === 'cenital-giro') this.smooth = clone(wanted);
     }
+    // [CK5] Ninguna cámara queda bajo el suelo (persecución, a bordo, tele y helicóptero).
+    if (relief) this.smooth.position.z = Math.max(this.smooth.position.z, cameraFloor(this.circuitId, this.smooth.position.x, this.smooth.position.y));
     return { view: clone(this.smooth), shadowRadius: radius };
   }
 }

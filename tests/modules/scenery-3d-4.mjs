@@ -40,7 +40,8 @@ export default async function run({ server, assert, test }) {
     for (const id of ids) {
       const track = tracks[id], lane = getPitLaneGeometry(track).fastLane, half = (track.trackWidthMeters || 12) / 2;
       if (lane.length < 2) continue;
-      const pb = scenes[id].pitBuilding;
+      // [CK4, autorizado por el usuario el 31/10/2026] En Shanghái el edificio es el del modelo original (kit): se mide su sitio (pitRow).
+      const pb = scenes[id].pitBuilding ?? scenes[id].pitRow;
       if (!pb || pb.points.length < 2) { bad.push(`${id}: sin edificio`); continue; }
       if (scenes[id].items.some(it => it.kind === 'pit-building')) bad.push(`${id}: aún en bloques sueltos`);
       let length = 0, worstGap = 0, laneLength = 0;

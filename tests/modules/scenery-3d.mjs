@@ -60,6 +60,9 @@ export default async function run({ server, assert, test }) {
   const ids = Object.keys(OFFICIAL_CIRCUITS);
   const tracks = Object.fromEntries(ids.map(id => [id, new RaceSimulation(id).activeTrack]));
   const scenes = Object.fromEntries(ids.map(id => [id, sceneryFor(tracks[id], id)]));
+  // [CK3, autorizado por el usuario el 30/10/2026] en los circuitos con kit, las gradas de la meta son las del kit.
+  const { kitPlacementFor } = await load('/src/scene3d/kitPlacement.ts');
+  const kits = Object.fromEntries(ids.map(id => [id, kitPlacementFor(tracks[id], id)]));
   /** Distancia mínima de un punto al eje de la pista (muestreado cada pocos metros). */
   const axisDistance = (track, p) => {
     let best = Infinity;
@@ -75,7 +78,8 @@ export default async function run({ server, assert, test }) {
       const track = tracks[id], start = track.points[0], items = scenes[id].items;
       const near = (kind, m, from) => items.filter(it => it.kind === kind && from.some(p => Math.hypot(it.x - p.x, it.y - p.y) <= m)).length;
       const pit = getPitLaneGeometry(track).fastLane;
-      if (near('grandstand', 300, [start]) < 2) missing.push(`${id}: gradas en la meta`);
+      const kitStands = kits[id].pieces.filter(p => p.piece.startsWith('grada_') && Math.hypot(p.x - start.x, p.y - start.y) <= 300).length;
+      if ((id === 'monaco' ? near('grandstand', 300, [start]) : kitStands) < 2) missing.push(`${id}: gradas en la meta`);
       if (near('vip', 200, pit.length ? pit : [start]) < 1) missing.push(`${id}: zona VIP`);
       if (near('paddock', 150, pit.length ? pit : [start]) < 1) missing.push(`${id}: paddock`);
     }

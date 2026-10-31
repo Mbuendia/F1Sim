@@ -10,6 +10,7 @@ import type { ModelStore } from '../model/ModelStore';
 import { ModelError } from '../model/ModelStore';
 import type { Speaker } from './systemVoice';
 import { buildRadioChain, type AudioContextLike, type EngineInfo, type RadioChain } from './radioFilter';
+import { euphoricVoice } from './mood';
 
 export const PIPER_VOICE = {
   id: 'es_ES-sharvard-medium' as const,
@@ -20,7 +21,7 @@ export const PIPER_VOICE = {
   bytes: 76_733_615 + 18_077_249 + 635_212 + 11_000_000,
 };
 
-export interface PilotVoice { speaker: 0 | 1; lengthScale: number; playback: number }
+export interface PilotVoice { speaker: 0 | 1; lengthScale: number; playback: number; /** Radio eufórica: cuánto más larga se genera la frase (Kokoro la aplica a su velocidad). */ stretch?: number }
 
 /** Dos números estables en [0, 1) a partir del nombre del piloto (FNV-1a). */
 function unitPair(text: string): [number, number] {
@@ -83,10 +84,12 @@ export function createPiperSpeaker(deps: { synth: Synth; context: () => AudioCon
     // [UX13] La apertura y el cierre los pone la radio (con el mismo pitido que el sonido «radio»): la cola no los repite.
     ownCues: true,
     available: () => { try { return Boolean(deps.context()); } catch { return false; } },
-    async speak(text, { volume = 1, driverId, carId }) {
+    async speak(text, { volume = 1, driverId, carId, mood }) {
       const ctx = deps.context();
       if (!ctx) return;
-      const voice = voiceOf(driverId ?? '');
+      const own = voiceOf(driverId ?? '');
+      // Radio eufórica: más aguda y algo más rápida.
+      const voice = mood === 'euforico' ? euphoricVoice(own) : own;
       let audio: Synthesized;
       try { audio = await deps.synth(text, voice, driverId); } catch { return; }
       const radio = chainFor(ctx);

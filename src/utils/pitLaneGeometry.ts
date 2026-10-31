@@ -1,6 +1,7 @@
 import type { TrackDefinition } from '../data/barcelonaTrack';
 import type { Point2D } from './spline';
 import { TEAMS } from '../data/teams';
+import { pitLaneZones } from './pitLaneZones';
 
 export interface PitTeam { id: string; shortName: string; color: string }
 export interface PitBox {
@@ -124,11 +125,13 @@ export function buildPitLaneGeometry(track: TrackDefinition, teams: PitTeam[]): 
   result.fastLane = pit;
   result.fastLaneEdges = [-1, 1].map(side => pit.map((p, i) => offset(p, normals[i], side * FAST_LANE_WIDTH / 2)));
 
+  // [CR2] Zona de trabajo y cajones de pitLaneZones, la misma fuente que el motor (en Yas Marina, en la recta y antes del túnel).
+  const zones = pitLaneZones(track), serviceFrom = zones.serviceFrom, serviceSpan = zones.serviceTo - zones.serviceFrom;
   // La plataforma de trabajo se abre gradualmente, lejos de las incorporaciones.
   const inner: Point2D[] = [], outer: Point2D[] = [];
   for (let i = 0; i <= 60; i++) {
     const u = i / 60;
-    const { point, normal } = sample(total * (0.22 + 0.56 * u));
+    const { point, normal } = sample(total * (serviceFrom + serviceSpan * u));
     const taper = Math.min(1, u / 0.12, (1 - u) / 0.12);
     inner.push(offset(point, normal, serviceSide * FAST_LANE_WIDTH / 2));
     outer.push(offset(point, normal, serviceSide * (FAST_LANE_WIDTH / 2 + SERVICE_WIDTH * taper)));
@@ -146,10 +149,12 @@ export function buildPitLaneGeometry(track: TrackDefinition, teams: PitTeam[]): 
     }
   }
 
-  const pitch = total * 0.4 / Math.max(1, teams.length);
+  // Cajones en la parte central de la zona de trabajo (del 30 % al 70 % del carril sin túnel).
+  const boxFrom = zones.boxFrom, boxSpan = zones.boxSpan;
+  const pitch = total * boxSpan / Math.max(1, teams.length);
   const halfLength = Math.min(6, pitch * 0.35);
   for (const [index, team] of teams.entries()) {
-    const { point, normal, angle } = sample(total * 0.3 + pitch * (index + 0.5));
+    const { point, normal, angle } = sample(total * boxFrom + pitch * (index + 0.5));
     const center = offset(point, normal, serviceSide * (FAST_LANE_WIDTH / 2 + SERVICE_WIDTH / 2));
     const tangent = { x: normal.y, y: -normal.x };
     const corners = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([x, y]) => ({

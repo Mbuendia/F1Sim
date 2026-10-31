@@ -91,7 +91,7 @@ export function placePitLaneStarters(sim: RaceSimulation) {
   if (!waiting.length) return;
   const len = RejoinModel.pitLaneLength(sim.activeTrack), laneM = len * sim.activeTrack.lapLengthMeters;
   const entry = sim.pitExitProgress() - len;
-  const { start, end } = PitStopModel.limitFractions(laneM);
+  const { start, end } = PitStopModel.limitFractions(laneM, sim.activeTrack);
   waiting.forEach((car, index) => {
     const slot = Math.max(start + 0.01, end - (index + 1) * RaceSimulation.PIT_START_SLOT_M / laneM);
     car.pitLaneStart = 'espera';
@@ -118,7 +118,7 @@ export function updatePitLaneStart(sim: RaceSimulation, car: CarState, dt: numbe
     }
     car.pitLaneStart = 'saliendo';
   }
-  const { end } = PitStopModel.limitFractions(laneM);
+  const { end } = PitStopModel.limitFractions(laneM, sim.activeTrack);
   const lane = Math.min(1, Math.max(0, (car.progress - entry) / len));
   const v = lane >= end ? PitStopModel.exitSpeed(car.currentSpeedKmh, dt, sim.raceFlagState, sim.safetyCar.mode) : Math.min(PitStopModel.PIT_SPEED_LIMIT_KMH, car.currentSpeedKmh + dt * 100);
   car.currentSpeedKmh = v;
