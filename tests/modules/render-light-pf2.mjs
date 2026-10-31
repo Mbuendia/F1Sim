@@ -31,6 +31,8 @@ export default async function run({ server, assert, test }) {
   const load = p => server.ssrLoadModule(p);
   // Se carga dentro de cada caso: si falta, falla el caso, no el módulo entero.
   const instP = load('/src/scene3d/instancing.ts'); instP.catch(() => {});
+  // [CK3, autorizado por el usuario el 30/10/2026] los árboles y lo repetido del kit común van en sus propios grupos.
+  const kitP = load('/src/scene3d/kitPlacement.ts'); kitP.catch(() => {});
   const { sceneryFor } = await load('/src/scene3d/scenery.ts');
   const { RaceSimulation } = await load('/src/simulation/RaceSimulation.ts');
   const { OFFICIAL_CIRCUITS } = await load('/src/data/circuits.ts');
@@ -47,8 +49,11 @@ export default async function run({ server, assert, test }) {
     assert(grouped.length + plan.singles.length === scenery.items.length && new Set([...grouped, ...plan.singles]).size === scenery.items.length, 'PF2: cada objeto en un solo sitio (grupo o suelto)');
     assert(plan.singles.every(it => counts.get(it.model) === 1) && grouped.every(it => counts.get(it.model) > 1), 'PF2: lo repetido va en grupos; lo único, suelto');
     assert(plan.groups.every(g => g.items.every(it => it.model === g.model && inst.variantKey(it) === inst.variantKey(g.items[0]))), 'PF2: un grupo por modelo y variante (patrocinador o color)');
-    const trees = plan.groups.filter(g => g.model === 'tree').reduce((s, g) => s + g.items.length, 0);
-    assert(trees === counts.get('tree'), 'PF2: todos los árboles de Barcelona van en instancias', `${trees} de ${counts.get('tree')}`);
+    // [CK3, autorizado por el usuario el 30/10/2026] los árboles de Barcelona son ahora del kit: un grupo por pieza.
+    const kit = await kitP, kplan = kit.kitPlacementFor(sceneOf('barcelona').track, 'barcelona');
+    const kitTrees = kplan.pieces.filter(p => p.piece.startsWith('arbol_')).length;
+    const grouped3 = kit.kitGroups(kplan).filter(g => g.piece.startsWith('arbol_')).reduce((s, g) => s + g.count, 0);
+    assert(kitTrees > 0 && grouped3 === kitTrees, 'PF2: todos los árboles de Barcelona van en instancias', `${grouped3} de ${kitTrees}`);
     assert(/new THREE\.InstancedMesh\(/.test(source) && /planInstances\(/.test(source), 'PF2: la escena dibuja los grupos con InstancedMesh');
   });
 
@@ -77,8 +82,12 @@ export default async function run({ server, assert, test }) {
       }
     }
     let before = 0, after = 0;
+    const kit = await kitP;
     for (const id of Object.keys(OFFICIAL_CIRCUITS)) {
       const items = sceneOf(id).scenery.items;
+      // [CK3, autorizado por el usuario el 30/10/2026] el kit común cuenta: una llamada por pieza sin instancias, una por grupo con ellas.
+      const kplan = kit.kitPlacementFor(sceneOf(id).track, id);
+      before += kplan.pieces.length; after += kit.kitGroups(kplan).length;
       const plan = inst.planInstances(items);
       const now = items.reduce((s, it) => s + primsOf(it.model), 0);
       const next = plan.groups.reduce((s, g) => s + primsOf(g.model), 0) + plan.singles.reduce((s, it) => s + primsOf(it.model), 0);

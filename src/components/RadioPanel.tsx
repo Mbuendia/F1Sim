@@ -237,6 +237,7 @@ export function useDriverCalls(cars: CarState[], team: TeamView | null | undefin
           id: car.id, position: view?.position ?? car.currentPosition, tireWear: 100 - (car.tires?.health ?? 100), stops: view?.totalPitStops ?? 0,
           puncture: Boolean(view?.hasPuncture) || (car.tires?.health ?? 100) <= 0, rain: (rain[at] ?? 0) >= RAIN_CALL_MMH,
           running: (view?.status ?? car.status) !== 'out' && (view?.status ?? car.status) !== 'finished',
+          finished: (view?.status ?? car.status) === 'finished',
         };
       }),
     };

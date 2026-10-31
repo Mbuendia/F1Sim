@@ -13,10 +13,10 @@
     <script id="project-task-index" type="application/json">
 {
   "source": "DASHBOARD.md",
-  "sha256": "6d02874b1a4de5ab0e4d1110711dbdf809257ee8a43e9752cee4030ee528f907",
-  "activeSprint": "8",
-  "currentTask": "PF9",
-  "nextTask": "PF10",
+  "sha256": "ee7d1a692a8da800bd4e58900415edfd1b26889344712d0cd36972332c7d4f9a",
+  "activeSprint": "9",
+  "currentTask": "PF10",
+  "nextTask": "CA1",
   "sprints": [
     {
       "name": "Sprint 1",
@@ -96,22 +96,22 @@
     {
       "name": "Sprint 8",
       "scope": "Rendimiento y deuda técnica: medición base, renderizado 3D más ligero, modelos y texturas comprimidos, calidad según el dispositivo, motor de carrera partido en módulos, limpieza, pruebas más rápidas y presupuesto vigilado (PF1-PF8)",
-      "status": "⏳ EN REVISIÓN LOCAL — PR #33 fusionado en main el 29/10/2026 (PF1 a PF9); PF10 pendiente; PF1 a PF8 entregadas el 29/10/2026 en la rama sprint/8 (suite completa en verde, 5,5 min); falta que el usuario mida los fps en sus dispositivos y dé el sprint por bueno; informe en `docs/informe-sprint-8.md`"
+      "status": "✅ COMPLETADO — PF1 a PF9 en main con el PR #33 (29/10/2026) y PF11 con el PR #35 (31/10/2026); PF10 pasa al Sprint 9 por decisión del usuario; siguen pendientes del usuario las medidas de fps en sus dispositivos (PF1) y escuchar la radio eufórica en una carrera (PF11)"
     },
     {
       "name": "Sprint 9",
       "scope": "Coche de 2025 y ruedas propias: licencias y marcas de los assets del usuario, coche de 2025 reducido y por piezas, ruedas Pirulí con los cinco compuestos en todo el juego y cambio de ruedas en 3D según la parada (CA1-CA6)",
-      "status": "⏳ PLANIFICADO el 24/10/2026"
+      "status": "⏳ PLANIFICADO el 24/10/2026; desde el 31/10/2026 incluye PF10, la pantalla de carga para teléfonos lentos, que viene del Sprint 8"
     },
     {
       "name": "Sprint 10",
       "scope": "Circuitos: kit común y relieve: análisis del modelo de Shanghái, kit de piezas de circuito, kit en los 23 circuitos, Shanghái de referencia, relieve punto a punto y pendientes en el motor (CK1-CK6)",
-      "status": "⏳ PLANIFICADO el 24/10/2026"
+      "status": "✅ COMPLETADO — CK1 a CK5 en main con el PR #35 (31/10/2026); CK6 aparcada por decisión del usuario (opción A de CR8)"
     },
     {
       "name": "Sprint 10.5",
       "scope": "Circuitos fieles al real: referencias geográficas de cada circuito, trazado y pit lane fieles, kit de piezas sacado del modelo de Montreal, Mónaco con túnel y edificios, Shanghái y Yas Marina con sus edificios emblemáticos, el resto de circuitos y la revisión del usuario (CR1-CR7)",
-      "status": "⏳ PLANIFICADO el 26/10/2026"
+      "status": "⏳ EN CURSO — CR8 y las dos partes de Yas Marina de CR2 (túnel del pit lane y salida de boxes) en main con el PR #35 (31/10/2026); falta el resto de CR2 y CR1, CR3 a CR7"
     },
     {
       "name": "Sprint 11",
@@ -126,7 +126,7 @@
     {
       "name": "Sprint 13",
       "scope": "Jugar sin internet y paradas programadas: juego instalable (PWA), datos persistentes, avisos de versión y paradas programadas en el motor (OF1-OF4)",
-      "status": "⏳ EN REVISIÓN LOCAL — OF1 a OF4 implementadas el 29 y 30/10/2026 con contrato de tests acordado"
+      "status": "✅ COMPLETADO — OF1 a OF4 en main con el PR #34 (30/10/2026)"
     },
     {
       "name": "Sprint 14",
@@ -136,6 +136,11 @@
     {
       "name": "Sprint 15",
       "scope": "Multijugador jugable en el móvil y preparación de la carrera: orientación fija, pausa que se cumple, información completa para el invitado (tiempo y vueltas), paneles sin redundancia ni scroll, selección de pilotos, zoom con el gesto, menú de carrera sin reinicio, salida sin errores, primera configuración, planificación previa y semáforo nuevos en Blender (MJ1-MJ12)",
+      "status": "⏳ PLANIFICADO el 29/10/2026; ninguna tarea con contrato de tests"
+    },
+    {
+      "name": "Sprint 16",
+      "scope": "Estrategia antes de la carrera: curvas de neumático medidas en el motor, pérdida en boxes en verde, VSC y Safety Car, optimizador con la estrategia óptima marcada, riesgo de Safety Car, neumático de salida, planes B a D, plan de lluvia, carga de combustible, undercut y overcut, pantalla de ajuste, estrategias de los rivales y comprobación en el motor (ES1-ES12)",
       "status": "⏳ PLANIFICADO el 29/10/2026; ninguna tarea con contrato de tests"
     }
   ],
@@ -1193,52 +1198,52 @@
     {
       "id": "PF1",
       "title": "Medición base y contador de rendimiento",
-      "status": "review"
+      "status": "completed"
     },
     {
       "id": "PF2",
       "title": "Renderizado 3D más ligero",
-      "status": "review"
+      "status": "completed"
     },
     {
       "id": "PF3",
       "title": "Modelos y texturas comprimidos",
-      "status": "review"
+      "status": "completed"
     },
     {
       "id": "PF4",
       "title": "Calidad automática según el dispositivo",
-      "status": "review"
+      "status": "completed"
     },
     {
       "id": "PF5",
       "title": "Partir el motor de carrera",
-      "status": "review"
+      "status": "completed"
     },
     {
       "id": "PF6",
       "title": "Limpieza de código sobrante",
-      "status": "review"
+      "status": "completed"
     },
     {
       "id": "PF7",
       "title": "Batería de pruebas más rápida",
-      "status": "review"
+      "status": "completed"
     },
     {
       "id": "PF8",
       "title": "Presupuesto vigilado",
-      "status": "review"
+      "status": "completed"
     },
     {
       "id": "PF9",
       "title": "Portada ligera con una escena de Blender",
-      "status": "review"
+      "status": "completed"
     },
     {
-      "id": "PF10",
-      "title": "Pantalla de carga para teléfonos lentos",
-      "status": "pending"
+      "id": "PF11",
+      "title": "Radio eufórica: voz retocada al adelantar y mensaje al ganar",
+      "status": "completed"
     },
     {
       "id": "CA1",
@@ -1271,34 +1276,39 @@
       "status": "pending"
     },
     {
+      "id": "PF10",
+      "title": "Pantalla de carga para teléfonos lentos",
+      "status": "pending"
+    },
+    {
       "id": "CK1",
       "title": "Análisis del modelo de Shanghái",
-      "status": "pending"
+      "status": "completed"
     },
     {
       "id": "CK2",
       "title": "Kit común de piezas de circuito",
-      "status": "pending"
+      "status": "completed"
     },
     {
       "id": "CK3",
       "title": "El kit en los 23 circuitos",
-      "status": "pending"
+      "status": "completed"
     },
     {
       "id": "CK4",
       "title": "Shanghái, circuito de referencia",
-      "status": "pending"
+      "status": "completed"
     },
     {
       "id": "CK5",
       "title": "Relieve de los circuitos",
-      "status": "pending"
+      "status": "completed"
     },
     {
       "id": "CK6",
       "title": "Pendientes en el motor",
-      "status": "pending"
+      "status": "completed"
     },
     {
       "id": "CR1",
@@ -1338,7 +1348,7 @@
     {
       "id": "CR8",
       "title": "Valorar las alturas de cada circuito",
-      "status": "pending"
+      "status": "completed"
     },
     {
       "id": "VS1",
@@ -1393,22 +1403,22 @@
     {
       "id": "OF1",
       "title": "Juego instalable y sin conexión (PWA)",
-      "status": "review"
+      "status": "completed"
     },
     {
       "id": "OF2",
       "title": "Datos que no se borran",
-      "status": "review"
+      "status": "completed"
     },
     {
       "id": "OF3",
       "title": "Avisos de versión nueva",
-      "status": "review"
+      "status": "completed"
     },
     {
       "id": "OF4",
       "title": "Paradas programadas en el motor",
-      "status": "review"
+      "status": "completed"
     },
     {
       "id": "UN1",
@@ -1478,6 +1488,66 @@
     {
       "id": "MJ12",
       "title": "Semáforo nuevo",
+      "status": "pending"
+    },
+    {
+      "id": "ES1",
+      "title": "Curva de cada compuesto en cada circuito",
+      "status": "pending"
+    },
+    {
+      "id": "ES2",
+      "title": "Pérdida en boxes en verde, con VSC y con Safety Car",
+      "status": "pending"
+    },
+    {
+      "id": "ES3",
+      "title": "Optimizador de estrategia y estrategia óptima marcada",
+      "status": "pending"
+    },
+    {
+      "id": "ES4",
+      "title": "Riesgo de Safety Car y estrategia robusta",
+      "status": "pending"
+    },
+    {
+      "id": "ES5",
+      "title": "Neumático de salida y posición en pista",
+      "status": "pending"
+    },
+    {
+      "id": "ES6",
+      "title": "Planes B, C y D",
+      "status": "pending"
+    },
+    {
+      "id": "ES7",
+      "title": "Plan de lluvia",
+      "status": "pending"
+    },
+    {
+      "id": "ES8",
+      "title": "Carga de combustible",
+      "status": "pending"
+    },
+    {
+      "id": "ES9",
+      "title": "Undercut y overcut contra un rival",
+      "status": "pending"
+    },
+    {
+      "id": "ES10",
+      "title": "Pantalla de ajuste de la estrategia",
+      "status": "pending"
+    },
+    {
+      "id": "ES11",
+      "title": "Estrategias de los rivales",
+      "status": "pending"
+    },
+    {
+      "id": "ES12",
+      "title": "Comprobar que la óptima gana de verdad",
       "status": "pending"
     }
   ]

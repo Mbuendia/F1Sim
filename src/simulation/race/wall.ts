@@ -95,7 +95,7 @@ export function rejoinContext(sim: RaceSimulation, car: CarState) {
   let queueSec = 0;
   const teammate = sim.cars.find(c => c.driver.teamId === car.driver.teamId && c.id !== car.id);
   if (teammate) {
-    const teammateInBox = PitStopModel.getTeammateInBox(car, sim.cars);
+    const teammateInBox = PitStopModel.getTeammateInBox(car, sim.cars, sim.activeTrack);
     if (teammateInBox) {
       queueSec = Math.max(0, teammateInBox.pitStop.stopDuration - teammateInBox.pitStop.currentStopTimer);
     } else if (teammate.pitStop.activeBoxOrder && teammate.pitStop.activeBoxOrder.status === 'committed') {

@@ -172,14 +172,15 @@ export class RejoinModel {
     // velocidad límite, frena hasta el límite y luego hasta el cajón, y acelera a fondo solo tras la línea final.
     const len = this.pitLaneLength(track), entry = track.pitEntryT, finish = entry + len + this.MEASURE_AFTER_EXIT;
     const L = track.lapLengthMeters, laneMeters = len * L;
-    const { start: limitStart, end: limitEnd } = PitStopModel.limitFractions(laneMeters);
+    // [CR2] Mismas líneas y cajones que el motor (pitLaneZones): en Yas Marina el limitador acaba antes del túnel.
+    const { start: limitStart, end: limitEnd } = PitStopModel.limitFractions(laneMeters, track);
     const points = track.points, n = points.length;
     const from = entry - 600 / L;
     let startSpeed = targetKmh(points[Math.floor((((from % 1) + 1) % 1) * n) % n].speedLimitFactor, aero, pace);
     if (capKmh !== null) startSpeed = Math.min(startSpeed, capKmh);
     const ghost = { p: from, v: startSpeed };
     const pit = { p: from, v: startSpeed };
-    const box = PitStopModel.getBoxProgress(car as CarState);
+    const box = PitStopModel.getBoxProgress(car as CarState, track);
     const limit = PitStopModel.PIT_SPEED_LIMIT_KMH, limitMs = limit / 3.6;
     let stopped = 0, served = false, inLane = false, done = false, t = 0, ghostAt: number | null = null, pitAt: number | null = null;
     while ((ghostAt === null || pitAt === null) && t < 600) {
@@ -203,7 +204,8 @@ export class RejoinModel {
           if (!served) { served = true; pit.v = 0; }
           else {
             if (pit.v === 0) pit.v = 20;
-            pit.v = laneProgress >= limitEnd ? Math.min(260, pit.v + DT * 200) : Math.min(limit, pit.v + DT * 100);
+            // Tras la línea final, a fondo como en el motor (exitSpeed): con VSC o SC, sin pasar de su velocidad.
+            pit.v = laneProgress >= limitEnd ? Math.min(capKmh ?? 260, pit.v + DT * 200) : Math.min(limit, pit.v + DT * 100);
           }
         }
         if (inLane) pit.p += DT * pit.v / 3.6 / L;

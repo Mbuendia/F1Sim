@@ -55,13 +55,18 @@ export interface Scenery {
   items: SceneItem[];
   barriers: SceneBarrier[];
   pitBuilding: PitBuilding | null;
+  /** [CK4] Shanghái: sitio del edificio de boxes, que pone el kit con el módulo del modelo original en vez del genérico. */
+  pitRow?: PitBuilding;
   /** Circuito urbano: suelo de ciudad en vez de hierba. */
   street: boolean;
 }
 
 /** Circuitos de calor (palmeras) y de montaña (coníferas). */
-const HOT = new Set(['bahrain', 'jeddah', 'yas-marina', 'lusail', 'miami', 'marina-bay', 'las-vegas']);
-const MOUNTAIN = new Set(['spielberg', 'spa', 'hungaroring', 'montreal']);
+export const HOT = new Set(['bahrain', 'jeddah', 'yas-marina', 'lusail', 'miami', 'marina-bay', 'las-vegas']);
+export const MOUNTAIN = new Set(['spielberg', 'spa', 'hungaroring', 'montreal']);
+
+/** [CK3] Circuitos con el kit común (Mónaco queda aparte): gradas, focos, vallas, árboles y barreras son del kit. */
+export const KIT_CIRCUIT = (circuitId: string) => circuitId !== 'monaco';
 
 const STREET = new Set(['monaco', 'baku', 'marina-bay', 'las-vegas', 'jeddah', 'miami', 'melbourne', 'montreal']);
 /** Separación mínima entre un objeto y el borde del asfalto (m). */
@@ -109,7 +114,8 @@ function build(track: TrackDefinition, circuitId: string): Scenery {
   const inInfield = (p: Pt) => infield.some(poly => pointInPoly(p, poly));
 
   // ── Muros del escenario y barreras TecPro con patrocinador en el exterior de las curvas. ──
-  const barriers = buildBarriers(track, circuitId, half, lap, pitPts, street);
+  const kit = KIT_CIRCUIT(circuitId);
+  const barriers = kit ? [] : buildBarriers(track, circuitId, half, lap, pitPts, street);
   const tecproPts = barriers.filter(b => b.kind === 'tecpro').flatMap(b => b.points);
   let pitBuilding: PitBuilding | null = null;
   let pbPts: Pt[] = [];
@@ -194,14 +200,14 @@ function build(track: TrackDefinition, circuitId: string): Scenery {
 
   // ── Kit común: gradas en la meta, zona VIP y paddock junto al pit lane. ──
   const stand = (t: number) => placeBeside({ kind: 'grandstand', model: 'grandstand', length: 60, width: 14, height: 12 }, t, -pitSide, half + MARGIN + 8, half + 90);
-  let stands = 0;
+  let stands = kit ? 3 : 0;
   for (const m of [40, -60, 140, -160, 240, -260, 90, -110]) {
     if (stands >= 3) break;
     if (stand(dt(m))) stands++;
   }
   // Si al otro lado no caben (urbanos), en el lado del pit, por detrás de los boxes.
   for (const m of [60, -80, 160, -180]) {
-    if (stands >= 2) break;
+    if (kit || stands >= 2) break;
     if (placeBeside({ kind: 'grandstand', model: 'grandstand', length: 50, width: 12, height: 12 }, dt(m), pitSide, pitOffset + 10, pitOffset + 120)) stands++;
   }
   // ── Iconos que van en el interior (después del kit, que ya ocupa la zona de boxes). ──
@@ -214,7 +220,7 @@ function build(track: TrackDefinition, circuitId: string): Scenery {
   detailIcons({ track, circuitId, half, lap, pitSide, items, water, infield, inInfield, fits, placeBeside, rand });
 
   // ── Torres de luz: en las carreras de noche y en Abu Dabi (que acaba de noche). ──
-  if (NIGHT_RACES.has(circuitId) || circuitId === 'yas-marina') {
+  if (!kit && (NIGHT_RACES.has(circuitId) || circuitId === 'yas-marina')) {
     const count = Math.max(48, Math.round(lap / 90));
     for (let k = 0; k < count; k++) {
       const t = (k + 0.5) / count, side = k % 2 ? 1 : -1;
@@ -227,7 +233,7 @@ function build(track: TrackDefinition, circuitId: string): Scenery {
   // ── Vallas publicitarias con patrocinadores de parodia, detrás de las barreras. ──
   {
     let boards = 0, k = 0;
-    for (let i = 0; i < 40 && boards < 10; i++) {
+    for (let i = 0; i < 40 && boards < 10 && !kit; i++) {
       const t = (i * 0.137 + 0.05) % 1, side = i % 2 ? 1 : -1;
       const off = barrierOffset(track, circuitId, half, t, side);
       const board = placeBeside({ kind: 'billboard', model: 'billboard', length: 12, width: 1.2, height: 4.5, sponsor: SPONSORS[(k + boards) % SPONSORS.length] },
@@ -238,9 +244,11 @@ function build(track: TrackDefinition, circuitId: string): Scenery {
   }
 
   // ── Árboles (pocos en los urbanos) y edificios de ciudad en los urbanos. ──
-  const trees = street ? 12 : (circuitId === 'spa' || circuitId === 'hungaroring') ? 170 : 60;
+  // [CK3] Con kit, los árboles son del kit; las palmeras (calor) y los pinos (montaña) se quedan (decisión del usuario).
+  const trees = kit && !HOT.has(circuitId) && !MOUNTAIN.has(circuitId) ? 0 : street ? 12 : (circuitId === 'spa' || circuitId === 'hungaroring') ? 170 : 60;
   for (let k = 0, placed = 0; k < trees * 8 && placed < trees; k++) {
-    const t = rand(), side = rand() < 0.5 ? -1 : 1, d = half + 20 + rand() * (trees > 100 ? 160 : 70);
+    // Con kit, lejos de las escapatorias del kit (que llegan a unos 60 m en las frenadas fuertes).
+    const t = rand(), side = rand() < 0.5 ? -1 : 1, d = half + (kit ? 62 : 20) + rand() * (trees > 100 ? 160 : 70);
     const p = besideTrack(track, t, side, d);
     const size = 6 + rand() * 6;
     const model = HOT.has(circuitId) ? 'palm' : MOUNTAIN.has(circuitId) ? 'pine' : 'tree';
@@ -255,6 +263,8 @@ function build(track: TrackDefinition, circuitId: string): Scenery {
       if (placeBeside({ kind: 'building', model: 'building', length: w, width: 16 + rand() * 10, height: h, tint: '#9aa3ad' }, t, side, half + MARGIN + 14, half + 60, 8)) placed++;
     }
   }
+  // [CK4] En Shanghái el edificio de boxes es el del modelo original (kit): aquí solo queda su sitio.
+  if (circuitId === 'shanghai' && pitBuilding) return { infield, water, items, street, barriers, pitBuilding: null, pitRow: pitBuilding };
   return { infield, water, items, street, barriers, pitBuilding };
 }
 
@@ -287,7 +297,7 @@ function deepestPoint(track: TrackDefinition, infield: Poly[]): Pt | null {
   return best;
 }
 
-/** Shanghái: puente sobre la recta de meta y pabellones de los equipos en el lago, detrás del paddock. */
+/** Shanghái: puente sobre la recta de meta y el lago detrás del paddock (los pabellones y carpas del lago son del kit, CK4). */
 function shanghai(track: TrackDefinition, items: SceneItem[], water: Poly[], half: number, pitSide: number, dt: (m: number) => number) {
   const t = dt(70);
   const f = frameAt(track, t);
@@ -299,10 +309,6 @@ function shanghai(track: TrackDefinition, items: SceneItem[], water: Poly[], hal
   for (let m = -120; m <= 220; m += 20) { const p = besideTrack(track, dt(m), pitSide, from); lake.push({ x: p.x, y: p.y }); }
   for (let m = 220; m >= -120; m -= 20) { const p = besideTrack(track, dt(m), pitSide, to); lake.push({ x: p.x, y: p.y }); }
   water.push(lake);
-  for (let k = 0; k < 10; k++) {
-    const p = besideTrack(track, dt(-100 + k * 32), pitSide, (from + to) / 2);
-    items.push({ kind: 'building', model: 'pavilion', x: p.x, y: p.y, heading: p.angle, length: 18, width: 18, height: 9, t: dt(-100 + k * 32), tint: '#d6d9de' });
-  }
 }
 
 /** Mónaco: el puerto con barcos junto a Tabac y la Piscina, el casino en la plaza y edificios a ambos lados. */
@@ -783,9 +789,7 @@ function detailIcons(c: IconCtx) {
     case 'lusail':
       many(10, () => ({ kind: 'dune', model: 'dune', length: 60 + rand() * 40, width: 34, height: 7, tint: '#d8bd8c' }), 0, 1, half + 60, half + 300);
       break;
-    case 'mexico-city':
-      icon({ id: 'foro-sol', kind: 'landmark', model: 'foro-sol', length: 160, width: 120, height: 26 }, [0.85, 0.88, 0.8, 0.92], half + 15, half + 200);
-      break;
+    // México: el estadio (Foro Sol) lo genera el kit (CK3, kitPlacement.ts) a lo largo de la sección que pasa por dentro.
     case 'montreal':
       icon({ id: 'biosfera', kind: 'landmark', model: 'biosfera', length: 76, width: 76, height: 62 }, [0.15, 0.1, 0.2, 0.7], half + 60, half + 320);
       break;

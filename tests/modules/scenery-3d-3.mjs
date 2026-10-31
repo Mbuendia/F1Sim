@@ -55,6 +55,9 @@ export default async function run({ server, assert, test }) {
   const ids = Object.keys(OFFICIAL_CIRCUITS);
   const tracks = Object.fromEntries(ids.map(id => [id, new RaceSimulation(id).activeTrack]));
   const scenes = Object.fromEntries(ids.map(id => [id, sceneryFor(tracks[id], id)]));
+  // [CK3, autorizado por el usuario el 30/10/2026] luces de noche y publicidad del kit común en los circuitos con kit.
+  const { kitPlacementFor } = await load('/src/scene3d/kitPlacement.ts');
+  const kits = Object.fromEntries(ids.map(id => [id, kitPlacementFor(tracks[id], id)]));
   const axisDistance = (track, p) => {
     let best = Infinity;
     for (let i = 0; i < track.points.length; i += 2) best = Math.min(best, Math.hypot(track.points[i].x - p.x, track.points[i].y - p.y));
@@ -98,7 +101,7 @@ export default async function run({ server, assert, test }) {
     assert(night.hemi * 3 <= day.hemi && night.hemi <= 0.35, 'Noche: la luz ambiente, tres veces más baja que de día', `${day.hemi} → ${night.hemi}`);
     assert(luminance(night.sky) <= 0.08 && luminance(day.sky) >= 0.3, 'Noche: cielo oscuro (y de día, claro)', `${luminance(day.sky).toFixed(2)} → ${luminance(night.sky).toFixed(2)}`);
     assert(night.floodlights > 0 && day.floodlights === 0, 'Noche: los focos se encienden solo de noche');
-    const lights = scenes.jeddah.items.filter(it => it.kind === 'floodlight');
+    const lights = kits.jeddah.pieces.filter(p => p.piece === 'poste_luz').map(p => ({ kind: 'floodlight', x: p.x, y: p.y, height: 6.1 }));
     const near = nearestFloodlights(lights, lights[0].x, lights[0].y, 8);
     assert(near.length === 8 && near[0] === lights[0] && near.every((l, i) => i === 0 || Math.hypot(l.x - lights[0].x, l.y - lights[0].y) >= Math.hypot(near[i - 1].x - lights[0].x, near[i - 1].y - lights[0].y)),
       'Noche: se encienden los ocho focos más cercanos a la cámara, ordenados por distancia');
@@ -113,14 +116,15 @@ export default async function run({ server, assert, test }) {
         for (let i = 1; i < pit.length; i++) laneLength += Math.hypot(pit[i].x - pit[i - 1].x, pit[i].y - pit[i - 1].y);
         // Cambiado con autorización del usuario (23/10/2026): el edificio de boxes es ahora una pieza continua
         // (scenery-3d-4), no bloques sueltos; se mide el largo de esa pieza junto al pit lane.
-        const pb = scenes[id].pitBuilding;
+        // [CK4, autorizado por el usuario el 31/10/2026] En Shanghái el edificio es el del modelo original (kit): se mide su sitio (pitRow).
+        const pb = scenes[id].pitBuilding ?? scenes[id].pitRow;
         let built = 0;
         if (pb) for (let i = 1; i < pb.points.length; i++) if (pit.some(p => Math.hypot(p.x - pb.points[i].x, p.y - pb.points[i].y) <= 60)) built += Math.hypot(pb.points[i].x - pb.points[i - 1].x, pb.points[i].y - pb.points[i - 1].y);
         if (built < 0.5 * laneLength) missing.push(`${id}: edificio de boxes`);
       }
       const gantry = items.find(it => it.kind === 'bridge' && it.id === 'portico-salida');
       if (!gantry || Math.hypot(gantry.x - start.x, gantry.y - start.y) > 40 || !(gantry.clearance >= 6)) missing.push(`${id}: pórtico de salida`);
-      const boards = items.filter(it => it.kind === 'billboard');
+      const boards = id === 'monaco' ? items.filter(it => it.kind === 'billboard') : kits[id].pieces.filter(p => p.piece === 'valla_publi');
       if (boards.length < 6 || !boards.every(b => SPONSORS.includes(b.sponsor))) missing.push(`${id}: vallas publicitarias`);
       const trees = items.filter(it => it.kind === 'tree');
       if (HOT.includes(id) && trees.filter(t => t.model === 'palm').length < 10) missing.push(`${id}: palmeras`);

@@ -19,7 +19,7 @@ const ICONS = {
   suzuka: ['noria'], monza: ['peralte', 'podio-monza'], silverstone: ['the-wing'], spa: ['tribuna-eau-rouge'],
   interlagos: ['rascacielos-sp'], zandvoort: [], 'las-vegas': ['esfera', 'torre-eiffel'], bahrain: ['torre-sakhir'],
   baku: ['torre-doncella', 'flame-towers'], melbourne: [], miami: ['estadio-miami'], jeddah: ['fuente-fahd'],
-  'marina-bay': ['marina-bay-sands', 'noria-singapur'], lusail: [], hungaroring: [], 'mexico-city': ['foro-sol'],
+  'marina-bay': ['marina-bay-sands', 'noria-singapur'], lusail: [], hungaroring: [], 'mexico-city': [],
   montreal: ['biosfera'], austin: ['torre-cota'], barcelona: ['torre-control'],
 };
 /** Circuitos con agua (mar, lago, canal o puerto). */
@@ -58,7 +58,7 @@ export default async function run({ server, assert, test }) {
     assert(missing.length === 0, 'Escapatorias: en los permanentes y mixtos, todas las curvas con su escapatoria', missing.slice(0, 10).join(' | '));
   });
 
-  await test('Iconos de los circuitos que faltaban', () => {
+  await test('Iconos de los circuitos que faltaban', async () => {
     const absent = [], onTrack = [];
     for (const [id, icons] of Object.entries(ICONS)) {
       const half = (tracks[id].trackWidthMeters || 12) / 2;
@@ -68,6 +68,9 @@ export default async function run({ server, assert, test }) {
         if (item.kind !== 'bridge' && axisDistance(tracks[id], item) < half + 3) onTrack.push(`${id}: ${icon}`);
       }
     }
+    // [CK3, autorizado por el usuario el 30/10/2026] el Foro Sol de México lo hace ahora el kit: el estadio de su sección.
+    const { kitPlacementFor } = await load('/src/scene3d/kitPlacement.ts');
+    if (!kitPlacementFor(tracks['mexico-city'], 'mexico-city').stadium?.sections?.length) absent.push('mexico-city: estadio del Foro Sol');
     assert(absent.length === 0, 'Iconos: cada circuito con los suyos', absent.join(', '));
     assert(onTrack.length === 0, 'Iconos: ninguno encima de la pista (salvo los puentes)', onTrack.join(', '));
     const dry = WATER.filter(id => scenes[id].water.length === 0);
