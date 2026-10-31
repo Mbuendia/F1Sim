@@ -2736,10 +2736,12 @@ Lo que el usuario dejó aparcado el 13/10/2026, con las opciones que se le prese
 * **CK5 — Relieve de los circuitos:** `[ ] PENDIENTE — PLANIFICADA 24/10/2026; CONTRATO DE TESTS POR PROPONER`
   * *Qué:* hoy cada circuito tiene un solo número de desnivel (`elevationChangeMeters`, 25 m en todos). Se añade la altura punto a punto de cada trazado, de datos abiertos con licencia, y se ve en 3D.
   * *28/10/2026:* el usuario pide valorar antes si los circuitos deben tener alturas y hasta dónde: lo hace CR8 (Sprint 10.5, en la sección 7.12.1), y su recomendación decide el alcance de esta tarea y de CK6.
+  * *Decisión del usuario (CR8, 31/10/2026):* opción A. Relieve solo en 3D y solo en los seis circuitos de mucho desnivel (Spa, Mónaco, Spielberg, Interlagos, Suzuka y Austin), con el proceso de la prueba de CR8 (`scratch/cr8/`, SRTM y EU-DEM por OpenTopoData) y unos pocos puntos de control a mano en Mónaco. Los demás circuitos siguen planos.
 
 * **CK6 — Pendientes en el motor:** `[ ] PENDIENTE — PLANIFICADA 24/10/2026; CONTRATO DE TESTS POR PROPONER`
   * *Qué:* subidas, bajadas y crestas cambian velocidad, frenada y agarre. Toca el motor: misma semilla, misma carrera, y guardado compatible.
   * *28/10/2026:* depende de la valoración de CR8 (si las alturas entran en el motor o solo se ven en 3D).
+  * *Decisión del usuario (CR8, 31/10/2026):* opción A. Se aparca: el motor no lleva pendientes por ahora (cambiarlo rehace el banco R27 y reajusta curvas y estrategia, y en un juego de gestión casi no se nota).
 
 ---
 
@@ -2777,9 +2779,13 @@ Lo que el usuario dejó aparcado el 13/10/2026, con las opciones que se le prese
 * **CR7 — Revisión del usuario:** `[ ] PENDIENTE — PLANIFICADA 26/10/2026; LA HACE EL USUARIO CON UNA LISTA PREPARADA`
   * *Qué:* una lista por circuito con capturas de antes y después; lo que falle vuelve como tarea.
 
-* **CR8 — Valorar las alturas de cada circuito:** `[ ] PENDIENTE — PLANIFICADA 28/10/2026; CONTRATO DE TESTS POR PROPONER`
+* **CR8 — Valorar las alturas de cada circuito:** `[ ] EN REVISIÓN LOCAL — HECHA 31/10/2026; 20 DE 20 EN VERDE`
   * *Origen:* el usuario, el 28/10/2026: valorar en este sprint y en el del 3D que los circuitos tengan alturas.
   * *Qué:* antes de hacer CK5 (relieve en 3D) y CK6 (pendientes en el motor) del Sprint 10, una valoración por circuito: desnivel real (hoy todos tienen 25 m en `elevationChangeMeters`, inventado), de qué datos abiertos sale la altura punto a punto y con qué licencia, qué circuitos ganan de verdad (los de mucho desnivel, como Spa, Interlagos, Austin, Suzuka o Mónaco) y cuáles casi no cambian, cómo encaja con lo que ya hay (puentes, túneles, pit lane, gradas y edificios a pie de pista) y cuánto cuesta en el 3D y en el motor. Con una prueba en un circuito (recomendado: Spa) y la recomendación al usuario de dónde ponerlo y hasta dónde llegar.
+  * *Contrato (`tests/modules/heights-cr8.mjs`, acordado el 31/10/2026; la prueba en Mónaco en vez de Spa, por petición del usuario):* (1) `docs/design/alturas-circuitos.md` con una fila por cada uno de los 23 circuitos: desnivel medido y publicado, categoría (mucho, 40 m o más; medio, 15–40 m; casi plano, menos de 15 m) y lo que chocaría con el relieve (puentes, túneles, pit lane, gradas y edificios); (2) fuentes con licencia citadas: trazado del GeoJSON de `bacinger/f1-circuits` (MIT) y altura de un modelo de elevación abierto (SRTM de 30 m o EU-DEM de 25 m, por la API pública de OpenTopoData), nada de Google ni de modelos de pago; (3) prueba en Mónaco: perfil de alturas de la vuelta en `docs/design/cr8/monaco-perfil.json` con su gráfica, desnivel a ±15 % del real (unos 42 m), subida de Sainte Dévote al Casino de 25 m como mínimo y bajada hacia el túnel y el puerto, el tramo del túnel interpolado y marcado (la medida da el hotel de encima), los picos de los tejados suavizados, y el perfil llevado al trazado del juego por proporción de la vuelta; (4) coste estimado en el 3D (suelo, gradas y kit en pendiente, triángulos y llamadas) y en el motor (misma semilla, misma carrera, guardado compatible y banco R27), y qué circuitos merecen el gasto; (5) recomendación con opciones para CK5 y CK6, y la decisión del usuario anotada en sus fichas. CR8 no cambia `src/`: los scripts de medición van a `scratch/`.
+  * *Permiso del usuario (31/10/2026):* al aprobar el contrato, bajar los GeoJSON de `bacinger/f1-circuits` y consultar la API pública de OpenTopoData (unas 25 consultas de 100 puntos).
+  * *Entrega (31/10/2026):* `docs/design/alturas-circuitos.md` con los 23 circuitos medidos con SRTM (Spa, 103 m frente a 102 reales); ganan de verdad Spa, Mónaco, Spielberg, Interlagos, Suzuka y Austin; en los urbanos el dato sube de más por los edificios. Prueba en Mónaco (`docs/design/cr8/monaco-perfil.*`): 45,6 m frente a 42, subida al Casino de 39 m, túnel interpolado y perfil llevado a los 1.757 puntos del trazado del juego (error del encaje, 4,9 m); con datos abiertos basta para el aspecto general, y Mónaco necesita unos pocos puntos de control a mano. Recomendación: opción A (CK5 solo en 3D en esos seis circuitos y CK6 aparcada).
+  * *Decisión del usuario (31/10/2026):* opción A, anotada en las fichas de CK5 y CK6.
 
 **Orden propuesto:** CR1 → CR8 → CR3 → CR2 → CR4 → CR5 → CR6 → CR7 (CR8, añadida el 28/10/2026, decide antes de CK5 y CK6 cómo poner las alturas).
 
