@@ -14,6 +14,7 @@ import { SPONSORS, type Sponsor } from './sponsors';
 import { HOT, MOUNTAIN, sceneryFor } from './scenery';
 import { pointInPoly, rngFor, type Pt, type Poly } from './trackSpace';
 import { NIGHT_RACES } from '../renderer/lighting';
+import { reliefFor } from './relief';
 
 export type Braking = 'fuerte' | 'media' | 'rapida';
 export interface KitInstance { piece: string; x: number; y: number; heading: number; t: number; side: 1 | -1; sponsor?: Sponsor; label?: string; z?: number }
@@ -493,6 +494,9 @@ function build(track: TrackDefinition, circuitId: string, quality: 'alto' | 'med
   const full = new Grid(track.points.map(q => ({ x: q.x, y: q.y })), 12);
   const clean = pieces.filter(p => p.piece === 'pancarta' || kitFootprint(p).every(q => full.nearest(q).d >= half + KIT_RULES.trackClearanceM
     && (p.piece === 'edificio_boxes' ? laneGrid : pitGrid).nearest(q, 8).d >= 2.5 && !inMonument(q, 0)));
+  // [CK5] Con relieve, cada pieza apoya en el punto más bajo del suelo bajo su planta (el techo, sobre su grada).
+  const relief = reliefFor(circuitId);
+  if (relief) for (const p of clean) p.z = round(Math.min(...kitFootprint(p).map(q => relief.groundHeight(q.x, q.y))) + (p.z ?? 0));
   return { circuitId, pieces: clean, runoff, strips, stadium: zone ? stadium(C, N, T, n, half, verge, walls, maxoff, asph, stadiumZone, stadiumOut, pit.fastLane) : null };
 }
 

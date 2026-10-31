@@ -624,6 +624,7 @@ export const modules = [
   { "id": "circuit-kit-ck2", "tasks": ["CK2"], "sprint": "10", "kind": "contract" },
   { "id": "circuit-kit-ck3", "tasks": ["CK3"], "sprint": "10", "kind": "contract" },
   { "id": "shanghai-ck4", "tasks": ["CK4"], "sprint": "10", "kind": "contract" },
+  { "id": "relief-ck5", "tasks": ["CK5"], "sprint": "10", "kind": "contract" },
   { "id": "heights-cr8", "tasks": ["CR8"], "sprint": "10.5", "kind": "contract" },
   { "id": "offline-of1", "tasks": ["OF1"], "sprint": "13", "kind": "contract" },
   { "id": "storage-of2", "tasks": ["OF2"], "sprint": "13", "kind": "contract" },

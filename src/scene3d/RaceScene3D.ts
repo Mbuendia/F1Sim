@@ -32,6 +32,7 @@ import { perfStats } from '../dev/perfStats';
 import { planCars, shadowSource, type CarLevel } from './carDots';
 import { itemTransform, planInstances } from './instancing';
 import { QUALITY_PROFILES, type QualityProfile } from '../settings/quality';
+import { carHeightAt, reliefFor, terrainSize, type Relief } from './relief';
 
 const W = (x: number, y: number, z = 0) => new THREE.Vector3(x, z, y);
 const LOD_FILE = 'models/f1-car-lod.glb';
@@ -184,12 +185,12 @@ export class RaceScene3D {
       : scenery.items.filter(it => it.kind === 'floodlight');
     this.world.add(buildGround(track, circuitId, scenery.infield, scenery.water, scenery.street, kit));
     this.world.add(buildWalls(track, circuitId, scenery.barriers));
-    if (scenery.pitBuilding) this.world.add(buildPitBuildingMesh(scenery.pitBuilding));
+    if (scenery.pitBuilding) this.world.add(buildPitBuildingMesh(scenery.pitBuilding, circuitId));
     if (this.floodlights.length) { this.lampFx = buildLampFx(this.floodlights, track); this.world.add(this.lampFx); }
     const o = overpassFor(circuitId);
-    if (o) this.world.add(buildElevatedRoad(track, o));
+    if (o) this.world.add(buildElevatedRoad(track, o, circuitId));
     const [items, kitGroup, car, lod] = await Promise.all([
-      buildScenery(scenery.items, track, base).catch(error => { console.error('Escenario 3D', error); return null; }),
+      buildScenery(scenery.items, track, base, circuitId).catch(error => { console.error('Escenario 3D', error); return null; }),
       kit ? buildKit(kit, base).catch(error => { console.error('Kit de circuito', error); return null; }) : Promise.resolve(null),
       loadModel(modelUrl(base, CAR_MODEL.file)).catch(() => null),
       loadModel(modelUrl(base, LOD_FILE)).catch(() => null),
@@ -298,13 +299,17 @@ export class RaceScene3D {
     return ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), hit) ? { x: hit.x, y: hit.z } : null;
   }
 
-  /** Altura del coche (m): en Suzuka, los que van por la carretera de arriba suben al puente. */
-  carHeight(car: { trackT: number; isInPitLane?: boolean }): number {
-    const o = overpassFor(this.circuitId);
-    if (!o || car.isInPitLane) return 0;
-    const near = Math.abs(((car.trackT - o.upperT + 1.5) % 1) - 0.5) * this.lap;
-    if (near > DECK_HALF_M + RAMP_M) return 0;
-    return bridgeSide({ ...o, halfWindowT: (DECK_HALF_M + RAMP_M) / this.lap }, car.trackT) === 'over' ? bridgeRoadHeight(o, car.trackT, this.lap) : 0;
+  /** Altura del coche (m): la del relieve (CK5) y, en Suzuka, el puente para los que van por la carretera de arriba. */
+  carHeight(car: { trackT: number; isInPitLane?: boolean; worldX?: number; worldY?: number }): number {
+    return this.track ? carHeightAt(this.circuitId, this.track, car) : 0;
+  }
+
+  /** [CK5] Cabeceo del coche en las cuestas (rad): la pendiente de la pista en su punto. */
+  private pitchAt(car: { trackT: number; isInPitLane?: boolean }): number {
+    const r = reliefFor(this.circuitId);
+    if (!r || car.isInPitLane) return 0;
+    const d = 4 / this.lap;
+    return Math.atan((r.trackHeight(car.trackT + d) - r.trackHeight(car.trackT - d)) / 8);
   }
 
   private placeCars(cars: CarState[], view: { fovDeg: number; viewportHeightPx: number; pixelRatio: number; playerTeamId: string | null; followedCarId: number | null; focusCarId: number | null }): void {
@@ -374,7 +379,7 @@ export class RaceScene3D {
       }
       const z = this.carHeight(car);
       holder.position.copy(W(car.worldX, car.worldY, z));
-      holder.rotation.y = -car.worldAngle;
+      holder.rotation.set(0, -car.worldAngle, this.pitchAt(car), 'YZX');
       // En desarrollo, `window.__forceLod = true` enseña el coche ligero de cerca (para revisarlo).
       const forceLod = import.meta.env.DEV && (globalThis as { __forceLod?: boolean }).__forceLod === true;
       const planned = plan?.level ?? 'completo';
@@ -452,8 +457,9 @@ export class RaceScene3D {
     const pos = calculateCarWorldPosition({ progress: sc.progress, isInPitLane: Boolean(sc.isInPitLane), lateralOffset: 0 }, this.track!);
     const root = this.safetyRoot!;
     root.visible = true;
-    root.position.copy(W(pos.worldX, pos.worldY, this.carHeight({ trackT: ((sc.progress % 1) + 1) % 1, isInPitLane: Boolean(sc.isInPitLane) })));
-    root.rotation.y = -pos.worldAngle;
+    const scPose = { trackT: ((sc.progress % 1) + 1) % 1, isInPitLane: Boolean(sc.isInPitLane), worldX: pos.worldX, worldY: pos.worldY };
+    root.position.copy(W(pos.worldX, pos.worldY, this.carHeight(scPose)));
+    root.rotation.set(0, -pos.worldAngle, this.pitchAt(scPose), 'YZX');
   }
 
   destroy(): void {
@@ -475,8 +481,22 @@ export class RaceScene3D {
 class FlatBuilder {
   readonly positions: number[] = [];
   readonly colors: number[] = [];
+  /** [CK5] Altura del suelo: si la hay, todo se pega a él (un poco por encima); `level`, para el agua (horizontal). */
+  ground: ((x: number, y: number) => number) | null = null;
+  level: number | null = null;
   private tri(a: THREE.Vector3, b: THREE.Vector3, c: THREE.Vector3, color: THREE.Color) {
-    for (const p of [a, b, c]) { this.positions.push(p.x, p.y, p.z); this.colors.push(color.r, color.g, color.b); }
+    if (this.ground && this.level === null) { this.drape(a, b, c, color, 0); return; }
+    for (const p of [a, b, c]) { this.positions.push(p.x, this.level ?? p.y, p.z); this.colors.push(color.r, color.g, color.b); }
+  }
+  private drape(a: THREE.Vector3, b: THREE.Vector3, c: THREE.Vector3, color: THREE.Color, depth: number) {
+    const ab = Math.hypot(a.x - b.x, a.z - b.z), bc = Math.hypot(b.x - c.x, b.z - c.z), ca = Math.hypot(c.x - a.x, c.z - a.z), m = Math.max(ab, bc, ca);
+    if (m > 10 && depth < 10) {
+      if (m === ab) { const k = a.clone().lerp(b, 0.5); this.drape(a, k, c, color, depth + 1); this.drape(k, b, c, color, depth + 1); }
+      else if (m === bc) { const k = b.clone().lerp(c, 0.5); this.drape(a, b, k, color, depth + 1); this.drape(a, k, c, color, depth + 1); }
+      else { const k = c.clone().lerp(a, 0.5); this.drape(a, b, k, color, depth + 1); this.drape(k, b, c, color, depth + 1); }
+      return;
+    }
+    for (const p of [a, b, c]) { this.positions.push(p.x, this.ground!(p.x, p.z) + p.y + 0.15, p.z); this.colors.push(color.r, color.g, color.b); }
   }
   fill(points: { x: number; y: number }[], color: THREE.Color, z = 0) {
     if (points.length < 3) return;
@@ -528,13 +548,18 @@ function setLayer(root: THREE.Object3D, layer: number): void {
   root.traverse(o => o.layers.set(layer));
 }
 
-function buildGround(track: TrackDefinition, circuitId: string, infield: { x: number; y: number }[][], water: { x: number; y: number }[][], street: boolean, kit: KitPlacement | null = null): THREE.Mesh {
+function buildGround(track: TrackDefinition, circuitId: string, infield: { x: number; y: number }[][], water: { x: number; y: number }[][], street: boolean, kit: KitPlacement | null = null): THREE.Object3D {
   const b = track.bounds, pad = 3000;
   const flat = new FlatBuilder();
   const layers = getTrackLayers(track, circuitId);
   const outside = street ? '#3b3f46' : '#3f6a34';
-  flat.fill([{ x: b.minX - pad, y: b.minY - pad }, { x: b.maxX + pad, y: b.minY - pad }, { x: b.maxX + pad, y: b.maxY + pad }, { x: b.minX - pad, y: b.maxY + pad }], col(outside));
-  for (const poly of infield) flat.fill(poly, col(street ? '#464a51' : '#4a7a3c'));
+  // [CK5] Con relieve, el terreno es una malla con alturas (y su color de dentro y fuera); lo demás se pega encima.
+  const relief = reliefFor(circuitId);
+  if (relief) flat.ground = relief.groundHeight;
+  else {
+    flat.fill([{ x: b.minX - pad, y: b.minY - pad }, { x: b.maxX + pad, y: b.minY - pad }, { x: b.maxX + pad, y: b.maxY + pad }, { x: b.minX - pad, y: b.maxY + pad }], col(outside));
+    for (const poly of infield) flat.fill(poly, col(street ? '#464a51' : '#4a7a3c'));
+  }
   const shapes: TrackShape[] = layers.shapes;
   // El agua va encima de las bandas anchas de terreno de la pista y debajo de escapatorias, pianos y asfalto.
   const bands = shapes.findIndex(s => !(s.kind === 'stroke' && s.width >= layers.trackWidthM + 10));
@@ -544,7 +569,7 @@ function buildGround(track: TrackDefinition, circuitId: string, infield: { x: nu
   const runoffFills = buildScenarioGeometry(track, scenario).runoffPolygons.length;
   shapes.forEach((s, i) => {
     if (i === bands) {
-      for (const poly of water) flat.fill(poly, col('#2b6f9e'));
+      for (const poly of water) { if (relief) flat.level = relief.waterLevel(poly) + 0.05; flat.fill(poly, col('#2b6f9e')); flat.level = null; }
       // [CK3] Con kit, las escapatorias son las suyas (asfalto y luego grava; asfalto pintado en el estadio).
       if (kit) for (const strip of kit.strips) flat.fill(strip.points, col(KIT_STRIP_COLORS[strip.surface]));
       else paintRunoffs(flat, track, circuitId, runoffZones3d(track, circuitId));
@@ -570,8 +595,51 @@ function buildGround(track: TrackDefinition, circuitId: string, infield: { x: nu
       flat.ribbon(line, 0.25, col('#ffffff', 0.75));
     }
   }
+  if (relief) {
+    // El terreno escribe profundidad (tapa lo que queda detrás de una loma); la pista y las pinturas, encima, sin escribirla.
+    const group = new THREE.Group();
+    const terrain = buildTerrain(track, relief, infield, street ? '#3b3f46' : '#3f6a34', street ? '#464a51' : '#4a7a3c');
+    terrain.renderOrder = -11;
+    const decals = flat.mesh(new THREE.MeshLambertMaterial({ vertexColors: true, depthWrite: false, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4 }));
+    decals.renderOrder = -10;
+    decals.receiveShadow = true;
+    group.add(terrain, decals);
+    return group;
+  }
   const mesh = flat.mesh(new THREE.MeshLambertMaterial({ vertexColors: true, depthTest: false, depthWrite: false, side: THREE.DoubleSide }));
   mesh.renderOrder = -10;
+  mesh.receiveShadow = true;
+  return mesh;
+}
+
+/** [CK5] Terreno con relieve: rejilla de `terrainSize` (150.000 triángulos como mucho) con el color de dentro y fuera. */
+function buildTerrain(track: TrackDefinition, relief: Relief, infield: { x: number; y: number }[][], outside: string, inside: string): THREE.Mesh {
+  const { x0, y0, cell, cols, rows } = terrainSize(track);
+  const pos = new Float32Array(cols * rows * 3), colors = new Float32Array(cols * rows * 3);
+  const out = new THREE.Color(outside), inn = new THREE.Color(inside);
+  const boxes = infield.map(poly => ({ poly, minX: Math.min(...poly.map(p => p.x)), maxX: Math.max(...poly.map(p => p.x)), minY: Math.min(...poly.map(p => p.y)), maxY: Math.max(...poly.map(p => p.y)) }));
+  const inPoly = (x: number, y: number, poly: { x: number; y: number }[]) => { let c = false; for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) if ((poly[i].y > y) !== (poly[j].y > y) && x < (poly[j].x - poly[i].x) * (y - poly[i].y) / (poly[j].y - poly[i].y) + poly[i].x) c = !c; return c; };
+  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+    const k = r * cols + c, x = x0 + c * cell, y = y0 + r * cell, p = W(x, y, relief.groundHeight(x, y));
+    pos.set([p.x, p.y, p.z], k * 3);
+    const tint = boxes.some(bx => x >= bx.minX && x <= bx.maxX && y >= bx.minY && y <= bx.maxY && inPoly(x, y, bx.poly)) ? inn : out;
+    colors.set([tint.r, tint.g, tint.b], k * 3);
+  }
+  const index: number[] = [];
+  for (let r = 0; r + 1 < rows; r++) for (let c = 0; c + 1 < cols; c++) { const a = r * cols + c, b = a + 1, d = a + cols, e = d + 1; index.push(a, d, b, b, d, e); }
+  // Faldón hasta el horizonte (3 km), a la altura más baja del borde de la rejilla: que no se vea el final del terreno.
+  let edge = Infinity;
+  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) if (r === 0 || c === 0 || r === rows - 1 || c === cols - 1) edge = Math.min(edge, pos[(r * cols + c) * 3 + 1]);
+  const far = 3000, x1 = x0 + (cols - 1) * cell, y1 = y0 + (rows - 1) * cell, ring = [[x0, y0], [x1, y0], [x1, y1], [x0, y1]];
+  const allPos = Array.from(pos), allCol = Array.from(colors), base = cols * rows;
+  for (const [x, y] of [...ring, [x0 - far, y0 - far], [x1 + far, y0 - far], [x1 + far, y1 + far], [x0 - far, y1 + far]]) { const p = W(x, y, edge - 0.3); allPos.push(p.x, p.y, p.z); allCol.push(out.r, out.g, out.b); }
+  for (let k = 0; k < 4; k++) { const i0 = base + k, i1 = base + (k + 1) % 4, o0 = base + 4 + k, o1 = base + 4 + (k + 1) % 4; index.push(i0, o0, i1, i1, o0, o1); }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(allPos, 3));
+  g.setAttribute('color', new THREE.Float32BufferAttribute(allCol, 3));
+  g.setIndex(index);
+  g.computeVertexNormals();
+  const mesh = new THREE.Mesh(g, new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide }));
   mesh.receiveShadow = true;
   return mesh;
 }
@@ -634,6 +702,7 @@ function buildTecpro(b: SceneBarrier): THREE.Mesh {
 
 function buildWalls(track: TrackDefinition, circuitId: string, barriers: SceneBarrier[]): THREE.Group {
   const pit = getPitLaneGeometry(track);
+  const relief = reliefFor(circuitId);
   const positions: number[] = [], colors: number[] = [];
   // Bajo el tablero de un puente, los muros de la carretera de arriba no van a ras de suelo (ya los lleva el puente).
   const o = overpassFor(circuitId);
@@ -656,8 +725,9 @@ function buildWalls(track: TrackDefinition, circuitId: string, barriers: SceneBa
       const len = Math.hypot(b.x - a.x, b.y - a.y);
       if (len < 1e-3 || underDeck(a, b, len)) continue;
       const nx = -(b.y - a.y) / len * thick / 2, ny = (b.x - a.x) / len * thick / 2;
-      const q = [W(a.x + nx, a.y + ny), W(b.x + nx, b.y + ny), W(b.x - nx, b.y - ny), W(a.x - nx, a.y - ny)];
-      const up = q.map(p => p.clone().setY(h));
+      const gz = (x: number, y: number) => (relief ? relief.groundHeight(x, y) : 0);
+      const q = [W(a.x + nx, a.y + ny, gz(a.x + nx, a.y + ny)), W(b.x + nx, b.y + ny, gz(b.x + nx, b.y + ny)), W(b.x - nx, b.y - ny, gz(b.x - nx, b.y - ny)), W(a.x - nx, a.y - ny, gz(a.x - nx, a.y - ny))];
+      const up = q.map(p => p.clone().setY(p.y + h));
       const quads = [[q[0], q[1], up[1], up[0]], [q[2], q[3], up[3], up[2]], [up[0], up[1], up[2], up[3]]];
       for (const [p0, p1, p2, p3] of quads) for (const p of [p0, p1, p2, p0, p2, p3]) { positions.push(p.x, p.y, p.z); colors.push(c.r, c.g, c.b); }
     }
@@ -677,16 +747,18 @@ function buildWalls(track: TrackDefinition, circuitId: string, barriers: SceneBa
 }
 
 /** Suzuka: la carretera de arriba como rampa maciza, tablero sobre la de abajo, pretiles y pilas. */
-function buildElevatedRoad(track: TrackDefinition, o: { upperT: number }): THREE.Group {
+function buildElevatedRoad(track: TrackDefinition, o: { upperT: number }, circuitId: string): THREE.Group {
+  const relief = reliefFor(circuitId);
   const group = new THREE.Group();
   const pts = track.points, n = pts.length, lap = track.lapLengthMeters || n;
   const spacing = lap / n, width = track.trackWidthMeters || 12;
   const center = Math.round(o.upperT * n), half = Math.round(DECK_HALF_M / spacing), ramp = Math.round(RAMP_M / spacing);
-  const span: { x: number; y: number; angle: number; h: number; deck: boolean }[] = [];
+  const span: { x: number; y: number; angle: number; h: number; deck: boolean; g: number }[] = [];
   for (let k = -half - ramp; k <= half + ramp; k++) {
     const p = pts[((center + k) % n + n) % n];
     const d = Math.abs(k) - half;
-    span.push({ x: p.x, y: p.y, angle: p.angle, h: d <= 0 ? DECK_HEIGHT_M : DECK_HEIGHT_M * Math.max(0, 1 - d / ramp), deck: d <= 0 });
+    const idx = ((center + k) % n + n) % n;
+    span.push({ x: p.x, y: p.y, angle: p.angle, h: d <= 0 ? DECK_HEIGHT_M : DECK_HEIGHT_M * Math.max(0, 1 - d / ramp), deck: d <= 0, g: relief ? relief.trackHeight(idx / n) : 0 });
   }
   const outer = width / 2 + SIDE_M;
   const add = (positions: number[], color: string, opts: { cast?: boolean; double?: boolean } = {}) => {
@@ -697,7 +769,7 @@ function buildElevatedRoad(track: TrackDefinition, o: { upperT: number }): THREE
     m.castShadow = opts.cast ?? true; m.receiveShadow = true;
     group.add(m);
   };
-  const at = (s: typeof span[number], d: number, z: number) => W(s.x + Math.cos(s.angle + Math.PI / 2) * d, s.y + Math.sin(s.angle + Math.PI / 2) * d, z);
+  const at = (s: typeof span[number], d: number, z: number) => W(s.x + Math.cos(s.angle + Math.PI / 2) * d, s.y + Math.sin(s.angle + Math.PI / 2) * d, z + s.g);
   const quad = (out: number[], a: THREE.Vector3, b: THREE.Vector3, c: THREE.Vector3, d: THREE.Vector3) => { for (const p of [a, b, c, a, c, d]) out.push(p.x, p.y, p.z); };
   const road: number[] = [], sides: number[] = [], lines: number[] = [], rails: number[] = [];
   for (let i = 0; i + 1 < span.length; i++) {
@@ -732,7 +804,8 @@ function buildElevatedRoad(track: TrackDefinition, o: { upperT: number }): THREE
  * sigue siendo una copia del modelo. Así el escenario pasa de una llamada de dibujo por pieza de cada objeto a una por
  * pieza de cada grupo, y three descarta los trozos que no se ven.
  */
-async function buildScenery(items: SceneItem[], track: TrackDefinition, base: string): Promise<THREE.Group> {
+async function buildScenery(items: SceneItem[], track: TrackDefinition, base: string, circuitId: string): Promise<THREE.Group> {
+  const relief = reliefFor(circuitId);
   const group = new THREE.Group();
   const models = [...new Set(items.map(it => it.model))];
   const loaded = new Map<string, { scene: THREE.Object3D; size: THREE.Vector3 }>();
@@ -762,7 +835,7 @@ async function buildScenery(items: SceneItem[], track: TrackDefinition, base: st
   };
   const matrixOf = (it: SceneItem, size: THREE.Vector3) => {
     const t = itemTransform(it, size, track);
-    return new THREE.Matrix4().compose(W(t.x, t.y, 0), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), -t.heading), new THREE.Vector3(t.sx, t.sy, t.sz));
+    return new THREE.Matrix4().compose(W(t.x, t.y, relief ? relief.groundHeight(t.x, t.y) : 0), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), -t.heading), new THREE.Vector3(t.sx, t.sy, t.sz));
   };
   const plan = planInstances(items);
   for (const it of plan.singles) {
@@ -849,14 +922,15 @@ function garageTextureOf(): THREE.CanvasTexture {
 }
 
 /** Edificio de boxes continuo: garajes abajo, planta acristalada encima, cubierta que vuela hacia el carril. */
-function buildPitBuildingMesh(pb: PitBuilding): THREE.Group {
+function buildPitBuildingMesh(pb: PitBuilding, circuitId: string): THREE.Group {
   const group = new THREE.Group();
   const pts = pb.points, n = pts.length, half = pb.depth / 2, f = pb.front;
+  const relief = reliefFor(circuitId), base = pts.map(p => (relief ? relief.groundHeight(p.x, p.y) : 0));
   const normals = pts.map((p, i) => {
     const a = pts[Math.max(0, i - 1)], b = pts[Math.min(n - 1, i + 1)], l = Math.hypot(b.x - a.x, b.y - a.y) || 1;
     return { x: -(b.y - a.y) / l, y: (b.x - a.x) / l };
   });
-  const off = (i: number, d: number, z: number) => W(pts[i].x + normals[i].x * d * f, pts[i].y + normals[i].y * d * f, z);
+  const off = (i: number, d: number, z: number) => W(pts[i].x + normals[i].x * d * f, pts[i].y + normals[i].y * d * f, z + base[i]);
   const run: number[] = [0];
   for (let i = 1; i < n; i++) run.push(run[i - 1] + Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y));
   const make = (build: (pos: number[], uv: number[]) => void, material: THREE.Material) => {

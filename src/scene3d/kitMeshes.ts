@@ -9,6 +9,7 @@ import { kitFront, type KitInstance, type KitPlacement, type Stadium } from './k
 import { SPONSOR_COLORS, type Sponsor } from './sponsors';
 import { loadModel } from '../renderer/modelScene';
 import { modelUrl } from '../renderer/carModel3d';
+import { reliefFor } from './relief';
 
 const W = (x: number, y: number, z = 0) => new THREE.Vector3(x, z, y);
 const BY_ID = Object.fromEntries(CIRCUIT_KIT.map(p => [p.id, p]));
@@ -107,22 +108,26 @@ function buildSigns(plan: KitPlacement): THREE.Mesh | null {
     add(corners, [[u0, v0], [u1, v0], [u1, v1], [u0, v1]]);
     if (both) add([corners[1], corners[0], corners[3], corners[2]], [[u0, v0], [u1, v0], [u1, v1], [u0, v1]]);
   };
+  // [CK5] Con relieve, los rótulos suben con su pieza; la pancarta pintada sigue el suelo en cada esquina.
+  const relief = reliefFor(plan.circuitId);
   for (const p of signed) {
     const def = BY_ID[p.piece], L = def.dims[0], c = Math.cos(p.heading), s = Math.sin(p.heading);
+    const z0 = p.z ?? 0, Wz = (x: number, y: number, z: number) => W(x, y, z + z0);
+    const Wg = (x: number, y: number, z: number) => W(x, y, z + (relief ? relief.groundHeight(x, y) : 0));
     const along = (d: number) => ({ x: c * d, y: s * d });
     if (p.piece === 'valla_publi') {
       const a = along(-L / 2), b = along(L / 2);
-      quad([W(p.x + a.x, p.y + a.y, 0.1), W(p.x + b.x, p.y + b.y, 0.1), W(p.x + b.x, p.y + b.y, def.dims[2]), W(p.x + a.x, p.y + a.y, def.dims[2])], cells.get(`s|${p.sponsor}`));
+      quad([Wz(p.x + a.x, p.y + a.y, 0.1), Wz(p.x + b.x, p.y + b.y, 0.1), Wz(p.x + b.x, p.y + b.y, def.dims[2]), Wz(p.x + a.x, p.y + a.y, def.dims[2])], cells.get(`s|${p.sponsor}`));
     } else if (p.piece === 'pancarta') {
       const hw = def.dims[1] / 2, a = along(-L / 2), b = along(L / 2), nx = -s * hw, ny = c * hw;
-      quad([W(p.x + a.x - nx, p.y + a.y - ny, 0.06), W(p.x + b.x - nx, p.y + b.y - ny, 0.06), W(p.x + b.x + nx, p.y + b.y + ny, 0.06), W(p.x + a.x + nx, p.y + a.y + ny, 0.06)], cells.get(`s|${p.sponsor}`), false);
+      quad([Wg(p.x + a.x - nx, p.y + a.y - ny, 0.06), Wg(p.x + b.x - nx, p.y + b.y - ny, 0.06), Wg(p.x + b.x + nx, p.y + b.y + ny, 0.06), Wg(p.x + a.x + nx, p.y + a.y + ny, 0.06)], cells.get(`s|${p.sponsor}`), false);
     } else if (p.piece === 'cartel_metros') {
       const a = along(-0.5), b = along(0.5);
-      quad([W(p.x + a.x, p.y + a.y, 0.75), W(p.x + b.x, p.y + b.y, 0.75), W(p.x + b.x, p.y + b.y, 2.15), W(p.x + a.x, p.y + a.y, 2.15)], cells.get(`b|${p.label}|${p.sponsor}`));
+      quad([Wz(p.x + a.x, p.y + a.y, 0.75), Wz(p.x + b.x, p.y + b.y, 0.75), Wz(p.x + b.x, p.y + b.y, 2.15), Wz(p.x + a.x, p.y + a.y, 2.15)], cells.get(`b|${p.label}|${p.sponsor}`));
     } else if (p.piece === 'torre_posiciones') {
       // Nombre del circuito en lo alto de la torre, delante del panel.
       const f = kitFront(p.piece, p.heading), a = along(-3.4), b = along(3.4), o = { x: p.x + f.x * 1.2, y: p.y + f.y * 1.2 };
-      quad([W(o.x + a.x, o.y + a.y, 20.2), W(o.x + b.x, o.y + b.y, 20.2), W(o.x + b.x, o.y + b.y, 22.0), W(o.x + a.x, o.y + a.y, 22.0)], cells.get('torre'));
+      quad([Wz(o.x + a.x, o.y + a.y, 20.2), Wz(o.x + b.x, o.y + b.y, 20.2), Wz(o.x + b.x, o.y + b.y, 22.0), Wz(o.x + a.x, o.y + a.y, 22.0)], cells.get('torre'));
     }
   }
   const geo = new THREE.BufferGeometry();
