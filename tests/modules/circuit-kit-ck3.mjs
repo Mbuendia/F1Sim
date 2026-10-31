@@ -66,7 +66,9 @@ export default async function run({ server, assert, test }) {
     const again = Object.fromEntries(kitIds.map(id => [id, JSON.stringify(kitPlacementFor(tracks[id], id))]));
     const diff = kitIds.filter(id => again[id] !== JSON.stringify(plans[id]));
     assert(diff.length === 0, 'CK3: la misma colocación en cada llamada', diff.join(', ') || 'ok');
-    const foreign = kitIds.flatMap(id => plans[id].pieces.filter(p => !common.has(p.piece)).map(p => `${id}: ${p.piece}`));
+    // [CK4, autorizado por el usuario el 30/10/2026] En Shanghái van también sus piezas propias (las comprueba shanghai-ck4).
+    const shanghaiOwn = new Set(CIRCUIT_KIT.filter(p => p.scope === 'shanghai').map(p => p.id));
+    const foreign = kitIds.flatMap(id => plans[id].pieces.filter(p => !common.has(p.piece) && !(id === 'shanghai' && shanghaiOwn.has(p.piece))).map(p => `${id}: ${p.piece}`));
     assert(kitIds.every(id => plans[id].pieces.length > 200) && foreign.length === 0, 'CK3: cada circuito (menos Mónaco) lleva el kit y solo piezas comunes', foreign.slice(0, 5).join(', ') || kitIds.map(id => plans[id].pieces.length).join(' '));
     assert(plans.monaco.pieces.length === 0, 'CK3: Mónaco queda aparte', `${plans.monaco.pieces.length} piezas`);
   });
@@ -153,7 +155,8 @@ export default async function run({ server, assert, test }) {
         const corners = kitFootprint(p);
         if (corners.some(q => nearestAxis(track, q).d < half(id) + KIT_RULES.trackClearanceM)) { fails.push(`${id}: ${p.piece} pisa el asfalto`); continue; }
         if (pitPts.length && Math.hypot(pitPts[0].x - p.x, pitPts[0].y - p.y) < 3000 && corners.some(q => pitPts.some(s => Math.abs(s.x - q.x) < 2.5 && Math.abs(s.y - q.y) < 2.5 && Math.hypot(s.x - q.x, s.y - q.y) < 2.5))) { fails.push(`${id}: ${p.piece} pisa el pit lane`); continue; }
-        if (scene.water.some(poly => inPoly(p, poly))) { fails.push(`${id}: ${p.piece} en el agua`); continue; }
+        // [CK4, autorizado por el usuario el 30/10/2026] Los pabellones y carpas de Shanghái van sobre el lago, como en el real.
+        if (!(id === 'shanghai' && ['pabellon', 'carpa'].includes(p.piece)) && scene.water.some(poly => inPoly(p, poly))) { fails.push(`${id}: ${p.piece} en el agua`); continue; }
         if (monuments.some(m => Math.abs(m.x - p.x) < m.length / 2 && Math.abs(m.y - p.y) < m.length / 2 && Math.hypot(m.x - p.x, m.y - p.y) < Math.min(m.length, m.width) / 2)) { fails.push(`${id}: ${p.piece} dentro de un monumento`); continue; }
       }
     }

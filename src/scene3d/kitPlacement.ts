@@ -3,6 +3,8 @@
  * aprobó el 30/10/2026 (`KIT_RULES`). Todo en metros y coordenadas del mundo del juego; mismo resultado en cada llamada.
  * Mónaco queda aparte (circuito especial). El giro `heading` es el ángulo del eje largo de la pieza (X del modelo); el
  * Z del modelo cae sobre la normal izquierda de ese eje, como en `itemTransform`.
+ * [CK4] En Shanghái van además sus piezas propias (edificio de boxes, pabellones y carpas del lago, techos de la tribuna,
+ * marquesina, garajes, escalera y pórtico); ningún otro circuito las lleva.
  */
 import type { TrackDefinition } from '../data/barcelonaTrack';
 import { getPitLaneGeometry } from '../utils/pitLaneGeometry';
@@ -14,7 +16,7 @@ import { pointInPoly, rngFor, type Pt, type Poly } from './trackSpace';
 import { NIGHT_RACES } from '../renderer/lighting';
 
 export type Braking = 'fuerte' | 'media' | 'rapida';
-export interface KitInstance { piece: string; x: number; y: number; heading: number; t: number; side: 1 | -1; sponsor?: Sponsor; label?: string }
+export interface KitInstance { piece: string; x: number; y: number; heading: number; t: number; side: 1 | -1; sponsor?: Sponsor; label?: string; z?: number }
 export interface KitRunoff { corner: number; t: number; side: 1 | -1; braking: Braking | 'estadio'; asphalt: number; gravel: number }
 /** Franja de suelo (escapatoria o asfalto pintado del estadio) como polígono, para el suelo de la escena. */
 export interface KitStrip { surface: 'asfalto' | 'grava' | 'azul' | 'verde'; points: Pt[] }
@@ -109,8 +111,11 @@ function build(track: TrackDefinition, circuitId: string, quality: 'alto' | 'med
   const grid = new Grid(C);
   const scene = sceneryFor(track, circuitId);
   const pit = getPitLaneGeometry(track);
-  const pitPts: Pt[] = [...pit.fastLane, ...pit.walls.flat(), ...(scene.pitBuilding?.points ?? [])];
+  const row = scene.pitBuilding ?? scene.pitRow ?? null;
+  const lanePts: Pt[] = [...pit.fastLane, ...pit.walls.flat()];
+  const pitPts: Pt[] = [...lanePts, ...(row?.points ?? [])];
   const pitGrid = new Grid(pitPts.length ? pitPts : [{ x: 1e9, y: 1e9 }]);
+  const laneGrid = new Grid(lanePts.length ? lanePts : [{ x: 1e9, y: 1e9 }]);
   const monuments = scene.items.filter(it => it.kind !== 'bridge' && it.kind !== 'yacht');
   const monPts: Pt[] = [];
   for (const it of monuments) {
@@ -290,6 +295,56 @@ function build(track: TrackDefinition, circuitId: string, quality: 'alto' | 'med
     for (let a = 0; a < groups.length; a++) for (let b = a + 1; b < groups.length; b++) if (groups[a].d.x * groups[b].d.x + groups[a].d.y * groups[b].d.y < -0.5) return true;
     return false;
   };
+  let pitSide0: 1 | -1 = 1;
+  if (pit.fastLane.length) { const q = pit.fastLane[Math.floor(pit.fastLane.length / 2)]; const j = grid.nearest(q).i; pitSide0 = ((q.x - C[j].x) * N[j].x + (q.y - C[j].y) * N[j].y) > 0 ? 1 : -1; }
+  // ── [CK4] Shanghái: sus piezas propias ──
+  // Ocupa el sitio con círculos a lo largo de una pieza larga, para que las demás la esquiven.
+  const occupy = (p: Pt, heading: number, L: number, r: number) => {
+    const c = Math.cos(heading), s = Math.sin(heading);
+    for (let u = -L / 2 + r; u <= L / 2 - r + 0.1; u += r) placed.push({ p: { x: p.x + u * c, y: p.y + u * s }, r });
+  };
+  const fitsShanghai = (piece: string, p: Pt, heading: number) =>
+    kitFootprint({ piece, x: p.x, y: p.y, heading }).every(q => grid.nearest(q).d >= half + verge && laneGrid.nearest(q, 8).d >= 2.5 && !inMonument(q, 1) && !wet(q));
+  if (circuitId === 'shanghai' && row) {
+    // Edificio de boxes: módulos del modelo original seguidos a lo largo del sitio del genérico, con el frente al carril.
+    const P = row.points, cum = [0];
+    for (let k = 1; k < P.length; k++) cum.push(cum[k - 1] + Math.hypot(P[k].x - P[k - 1].x, P[k].y - P[k - 1].y));
+    const pointAt = (d: number): Pt => { let k = 1; while (k < P.length - 1 && cum[k] < d) k++; const a = P[k - 1], b = P[k], f = (d - cum[k - 1]) / ((cum[k] - cum[k - 1]) || 1); return { x: a.x + (b.x - a.x) * f, y: a.y + (b.y - a.y) * f }; };
+    const [ML, MW] = BY_ID.edificio_boxes.dims, total = cum[cum.length - 1], count = Math.floor(total / ML), pad = (total - count * ML) / 2;
+    for (let k = 0; k < count; k++) {
+      const a = pointAt(pad + k * ML), b = pointAt(pad + (k + 1) * ML), h = Math.atan2(b.y - a.y, b.x - a.x);
+      const left = { x: -Math.sin(h), y: Math.cos(h) }, back = -row.front;              // el carril queda del lado «front»
+      const p = { x: (a.x + b.x) / 2 + left.x * back * (MW / 2 - row.depth / 2), y: (a.y + b.y) / 2 + left.y * back * (MW / 2 - row.depth / 2) };
+      const heading = row.front > 0 ? h : h + Math.PI;                                  // +Z del módulo hacia el carril
+      put('edificio_boxes', p, heading, grid.nearest(p).i, pitSide0, {}); occupy(p, heading, ML, MW / 2);
+    }
+    // Pabellones y carpas del paddock sobre el lago, a lo largo de su eje.
+    if (water.length) {
+      const lakeSide = ([1, -1] as const).find(sd => wet(at(Math.round(60 / step) % n, sd, half + 127))) ?? pitSide0;
+      let m = -116;
+      for (const piece of ['carpa', 'pabellon', 'carpa', 'pabellon', 'carpa', 'pabellon', 'carpa', 'pabellon', 'carpa', 'carpa']) {
+        const L = BY_ID[piece].dims[0];
+        m += L / 2;
+        const i = ((Math.round(m / step) % n) + n) % n, p = at(i, lakeSide, half + 127.5), h = Math.atan2(T[i].y, T[i].x);
+        if (wet(p)) { put(piece, p, h, i, lakeSide, {}); occupy(p, h, L, BY_ID[piece].dims[1] / 2); }
+        m += L / 2 + 1.2;
+      }
+    }
+    // Garajes y pórtico en el paddock, entre los boxes y el lago (o pasado el lago).
+    const paddock = (piece: string, ms: number[], offs: number[], max: number) => {
+      const [L, Wd] = BY_ID[piece].dims; let got = 0;
+      for (const mm of ms) {
+        if (got >= max) return;
+        for (const o of offs) {
+          const i = ((Math.round(mm / step) % n) + n) % n, p = at(i, pitSide0, half + o), h = Math.atan2(T[i].y, T[i].x);
+          if (!fitsShanghai(piece, p, h) || pitGrid.nearest(p, 64).d < Wd / 2 + 3 || placed.some(q => Math.hypot(q.p.x - p.x, q.p.y - p.y) < q.r + Wd / 2 + 2)) continue;
+          put(piece, p, h, i, pitSide0, {}); occupy(p, h, L, Wd / 2); got++; break;
+        }
+      }
+    };
+    paddock('edificio_b', [10, 60, -40, 110, -90], [70, 64, 78, 84, 58], 2);
+    paddock('estructura_b', [250, -170, 280, -200, 160], [40, 50, 60, 70, 30], 1);
+  }
   // Torre de posiciones: entre la meta y la salida del pit lane, enfrente de los boxes, mirando a los que llegan.
   {
     const exit = pit.fastLane[pit.fastLane.length - 1];
@@ -353,6 +408,27 @@ function build(track: TrackDefinition, circuitId: string, quality: 'alto' | 'med
       }
     }
   }
+  if (circuitId === 'shanghai') {
+    // [CK4] Tribuna principal enfrente de los boxes: los dos techos sobre las gradas rojas más cerca de la meta, la
+    // marquesina detrás de una de ellas y la escalera junto a una punta.
+    const mainStands = pieces.filter(p => p.piece === 'grada_roja' && p.side === -pitSide).sort((a, b) => Math.min(a.t, 1 - a.t) - Math.min(b.t, 1 - b.t));
+    const [GL, GW, GH] = BY_ID.grada_roja.dims;
+    for (const g of mainStands.slice(0, 2)) put('techo_tribuna', g, g.heading, Math.round(g.t * n) % n, g.side, { z: GH });
+    const [QL, QW] = BY_ID.marquesina.dims;
+    for (const g of mainStands) {
+      const f = kitFront('grada_roja', g.heading), d = GW / 2 + 3 + QW / 2, p = { x: g.x - f.x * d, y: g.y - f.y * d };
+      if (!fitsShanghai('marquesina', p, g.heading) || placed.some(q => Math.hypot(q.p.x - p.x, q.p.y - p.y) < q.r + QW / 2 && Math.hypot(q.p.x - g.x, q.p.y - g.y) > 1)) continue;
+      put('marquesina', p, g.heading, Math.round(g.t * n) % n, g.side, {}); occupy(p, g.heading, QL, QW / 2); break;
+    }
+    // Escalera de acceso por detrás de una grada, a un cuarto de su largo.
+    const SW = BY_ID.estructura_c.dims[1];
+    stairs: for (const g of mainStands) for (const sg of [1, -1]) {
+      const f = kitFront('grada_roja', g.heading), u = sg * GL / 4, d = GW / 2 + SW / 2 + 1;
+      const p = { x: g.x + Math.cos(g.heading) * u - f.x * d, y: g.y + Math.sin(g.heading) * u - f.y * d };
+      if (!fitsShanghai('estructura_c', p, g.heading) || placed.some(q => Math.hypot(q.p.x - p.x, q.p.y - p.y) < q.r + SW / 2 && Math.hypot(q.p.x - g.x, q.p.y - g.y) > 1)) continue;
+      put('estructura_c', p, g.heading, Math.round(g.t * n) % n, g.side, {}, 6); break stairs;
+    }
+  }
   // Publicidad en la recta de meta (el patrocinador cambia cada dos vallas).
   const order = [...SPONSORS].sort(() => rand() - 0.5);
   const sp = (k: number) => order[k % order.length];
@@ -383,8 +459,8 @@ function build(track: TrackDefinition, circuitId: string, quality: 'alto' | 'med
     if (freeSpot(p, 4, verge) && clearOfWalls(p, 1)) put('refugio_comisarios', p, Math.atan2(T[ip].y, T[ip].x), ip, (-out) as 1 | -1, {}, 4);
   });
   // Farolas detrás del edificio de boxes; postes de luz por la vuelta en las carreras de noche.
-  if (quality !== 'bajo' && scene.pitBuilding && scene.pitBuilding.points.length > 1) {
-    const pb = scene.pitBuilding; let acc = 0;
+  if (quality !== 'bajo' && row && row.points.length > 1) {
+    const pb = row; let acc = 0;
     for (let k = 1; k < pb.points.length; k++) {
       const a = pb.points[k - 1], b = pb.points[k], L = Math.hypot(b.x - a.x, b.y - a.y); if (L < 0.5) continue;
       acc += L; if (acc < 28) continue; acc = 0;
@@ -415,7 +491,8 @@ function build(track: TrackDefinition, circuitId: string, quality: 'alto' | 'med
   }
   // Nada toca el circuito: comprobación final.
   const full = new Grid(track.points.map(q => ({ x: q.x, y: q.y })), 12);
-  const clean = pieces.filter(p => p.piece === 'pancarta' || kitFootprint(p).every(q => full.nearest(q).d >= half + KIT_RULES.trackClearanceM && pitGrid.nearest(q, 8).d >= 2.5 && !inMonument(q, 0)));
+  const clean = pieces.filter(p => p.piece === 'pancarta' || kitFootprint(p).every(q => full.nearest(q).d >= half + KIT_RULES.trackClearanceM
+    && (p.piece === 'edificio_boxes' ? laneGrid : pitGrid).nearest(q, 8).d >= 2.5 && !inMonument(q, 0)));
   return { circuitId, pieces: clean, runoff, strips, stadium: zone ? stadium(C, N, T, n, half, verge, walls, maxoff, asph, stadiumZone, stadiumOut, pit.fastLane) : null };
 }
 

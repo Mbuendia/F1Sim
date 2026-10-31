@@ -116,7 +116,8 @@ export default async function run({ server, assert, test }) {
         for (let i = 1; i < pit.length; i++) laneLength += Math.hypot(pit[i].x - pit[i - 1].x, pit[i].y - pit[i - 1].y);
         // Cambiado con autorización del usuario (23/10/2026): el edificio de boxes es ahora una pieza continua
         // (scenery-3d-4), no bloques sueltos; se mide el largo de esa pieza junto al pit lane.
-        const pb = scenes[id].pitBuilding;
+        // [CK4, autorizado por el usuario el 31/10/2026] En Shanghái el edificio es el del modelo original (kit): se mide su sitio (pitRow).
+        const pb = scenes[id].pitBuilding ?? scenes[id].pitRow;
         let built = 0;
         if (pb) for (let i = 1; i < pb.points.length; i++) if (pit.some(p => Math.hypot(p.x - pb.points[i].x, p.y - pb.points[i].y) <= 60)) built += Math.hypot(pb.points[i].x - pb.points[i - 1].x, pb.points[i].y - pb.points[i - 1].y);
         if (built < 0.5 * laneLength) missing.push(`${id}: edificio de boxes`);

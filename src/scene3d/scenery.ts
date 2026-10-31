@@ -55,6 +55,8 @@ export interface Scenery {
   items: SceneItem[];
   barriers: SceneBarrier[];
   pitBuilding: PitBuilding | null;
+  /** [CK4] Shanghái: sitio del edificio de boxes, que pone el kit con el módulo del modelo original en vez del genérico. */
+  pitRow?: PitBuilding;
   /** Circuito urbano: suelo de ciudad en vez de hierba. */
   street: boolean;
 }
@@ -261,6 +263,8 @@ function build(track: TrackDefinition, circuitId: string): Scenery {
       if (placeBeside({ kind: 'building', model: 'building', length: w, width: 16 + rand() * 10, height: h, tint: '#9aa3ad' }, t, side, half + MARGIN + 14, half + 60, 8)) placed++;
     }
   }
+  // [CK4] En Shanghái el edificio de boxes es el del modelo original (kit): aquí solo queda su sitio.
+  if (circuitId === 'shanghai' && pitBuilding) return { infield, water, items, street, barriers, pitBuilding: null, pitRow: pitBuilding };
   return { infield, water, items, street, barriers, pitBuilding };
 }
 
@@ -293,7 +297,7 @@ function deepestPoint(track: TrackDefinition, infield: Poly[]): Pt | null {
   return best;
 }
 
-/** Shanghái: puente sobre la recta de meta y pabellones de los equipos en el lago, detrás del paddock. */
+/** Shanghái: puente sobre la recta de meta y el lago detrás del paddock (los pabellones y carpas del lago son del kit, CK4). */
 function shanghai(track: TrackDefinition, items: SceneItem[], water: Poly[], half: number, pitSide: number, dt: (m: number) => number) {
   const t = dt(70);
   const f = frameAt(track, t);
@@ -305,10 +309,6 @@ function shanghai(track: TrackDefinition, items: SceneItem[], water: Poly[], hal
   for (let m = -120; m <= 220; m += 20) { const p = besideTrack(track, dt(m), pitSide, from); lake.push({ x: p.x, y: p.y }); }
   for (let m = 220; m >= -120; m -= 20) { const p = besideTrack(track, dt(m), pitSide, to); lake.push({ x: p.x, y: p.y }); }
   water.push(lake);
-  for (let k = 0; k < 10; k++) {
-    const p = besideTrack(track, dt(-100 + k * 32), pitSide, (from + to) / 2);
-    items.push({ kind: 'building', model: 'pavilion', x: p.x, y: p.y, heading: p.angle, length: 18, width: 18, height: 9, t: dt(-100 + k * 32), tint: '#d6d9de' });
-  }
 }
 
 /** Mónaco: el puerto con barcos junto a Tabac y la Piscina, el casino en la plaza y edificios a ambos lados. */

@@ -15,7 +15,7 @@ const BY_ID = Object.fromEntries(CIRCUIT_KIT.map(p => [p.id, p]));
 const SIGNED = new Set(['valla_publi', 'pancarta', 'cartel_metros']);
 /** Piezas que proyectan sombra (las grandes). */
 const BRIGHTEN: Record<string, number> = { guardarrail: 2.4 };
-const SHADOW = new Set(['grada_comun', 'grada_roja', 'grada_pequena', 'torre_posiciones', 'grua', 'muro_neumaticos', 'bloque_hormigon', 'refugio_comisarios', 'camion']);
+const SHADOW = new Set(['edificio_boxes', 'edificio_b', 'pabellon', 'carpa', 'marquesina', 'techo_tribuna', 'estructura_b', 'grada_comun', 'grada_roja', 'grada_pequena', 'torre_posiciones', 'grua', 'muro_neumaticos', 'bloque_hormigon', 'refugio_comisarios', 'camion']);
 
 export async function buildKit(plan: KitPlacement, base: string): Promise<THREE.Group> {
   const group = new THREE.Group();
@@ -34,7 +34,7 @@ export async function buildKit(plan: KitPlacement, base: string): Promise<THREE.
         if (BRIGHTEN[piece]) { material = material.clone(); material.color.setScalar(BRIGHTEN[piece]); }
         const inst = new THREE.InstancedMesh(mesh.geometry, material, list.length);
         const m = new THREE.Matrix4(), q = new THREE.Quaternion(), up = new THREE.Vector3(0, 1, 0), one = new THREE.Vector3(1, 1, 1);
-        list.forEach((p, k) => { q.setFromAxisAngle(up, -p.heading); inst.setMatrixAt(k, m.compose(W(p.x, p.y, 0), q, one).multiply(mesh.matrixWorld)); });
+        list.forEach((p, k) => { q.setFromAxisAngle(up, -p.heading); inst.setMatrixAt(k, m.compose(W(p.x, p.y, p.z ?? 0), q, one).multiply(mesh.matrixWorld)); });
         inst.instanceMatrix.needsUpdate = true;
         inst.computeBoundingSphere();
         inst.castShadow = SHADOW.has(piece); inst.receiveShadow = true;

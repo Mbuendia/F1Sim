@@ -623,6 +623,7 @@ export const modules = [
   { "id": "landing-hero-pf9", "tasks": ["PF9"], "sprint": "8", "kind": "contract" },
   { "id": "circuit-kit-ck2", "tasks": ["CK2"], "sprint": "10", "kind": "contract" },
   { "id": "circuit-kit-ck3", "tasks": ["CK3"], "sprint": "10", "kind": "contract" },
+  { "id": "shanghai-ck4", "tasks": ["CK4"], "sprint": "10", "kind": "contract" },
   { "id": "offline-of1", "tasks": ["OF1"], "sprint": "13", "kind": "contract" },
   { "id": "storage-of2", "tasks": ["OF2"], "sprint": "13", "kind": "contract" },
   { "id": "updates-of3", "tasks": ["OF3"], "sprint": "13", "kind": "contract" },
