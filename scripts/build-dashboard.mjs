@@ -16,6 +16,8 @@ const sprintOf = id => {
   if (/^IA\d/.test(id)) return 'Sprint 6';
   // Sprints 7 a 14 (planificados el 24/10/2026).
   if (/^UX\d/.test(id)) return 'Sprint 7';
+  // PF10 pasa del Sprint 8 al 9 por decisión del usuario (31/10/2026); conserva su identificador.
+  if (id === 'PF10') return 'Sprint 9';
   if (/^PF\d/.test(id)) return 'Sprint 8';
   if (/^CA\d/.test(id)) return 'Sprint 9';
   if (/^CK\d/.test(id)) return 'Sprint 10';
