@@ -11,6 +11,7 @@ import { axisDistance, besideTrack, distanceTo, frameAt, pointInPoly, polyArea, 
 import { getScenario } from '../data/scenarioRegistry';
 import { buildScenarioGeometry } from '../utils/scenarioGeometry';
 import { NIGHT_RACES } from '../renderer/lighting';
+import { ROAD_TUNNELS } from './roadTunnel';
 import { SPONSORS, type Sponsor } from './sponsors';
 
 export type SceneKind = 'grandstand' | 'vip' | 'paddock' | 'tree' | 'building' | 'yacht' | 'landmark' | 'bridge' | 'floodlight'
@@ -263,6 +264,15 @@ function build(track: TrackDefinition, circuitId: string): Scenery {
       if (placeBeside({ kind: 'building', model: 'building', length: w, width: 16 + rand() * 10, height: h, tint: '#9aa3ad' }, t, side, half + MARGIN + 14, half + 60, 8)) placed++;
     }
   }
+  // [CR4] Junto a las bocas del túnel de la pista (Mónaco) no queda nada del escenario: ni vallas ni edificios.
+  const roadTunnel = ROAD_TUNNELS[circuitId];
+  if (roadTunnel) {
+    const portals = [roadTunnel.from, roadTunnel.to].map(t => frameAt(track, t));
+    for (let k = items.length - 1; k >= 0; k--) {
+      const it = items[k];
+      if (it.id !== 'hotel-tunel' && portals.some(p => Math.hypot(it.x - p.x, it.y - p.y) < 16 + Math.max(it.length, it.width) / 2)) items.splice(k, 1);
+    }
+  }
   // [CK4] En Shanghái el edificio de boxes es el del modelo original (kit): aquí solo queda su sitio.
   if (circuitId === 'shanghai' && pitBuilding) return { infield, water, items, street, barriers, pitBuilding: null, pitRow: pitBuilding };
   return { infield, water, items, street, barriers, pitBuilding };
@@ -350,10 +360,15 @@ function monaco(track: TrackDefinition, items: SceneItem[], water: Poly[], half:
     const casino: SceneItem = { id: 'casino', kind: 'landmark', model: 'casino', x: p.x, y: p.y, heading: p.angle, length: 46, width: 30, height: 22, t: casinoT, tint: '#e9dcc0' };
     if (fits(casino)) { items.push(casino); break; }
   }
-  // Edificios por toda la vuelta, a ambos lados (menos donde está el puerto).
+  // [CR4] El hotel sobre el túnel (de estilo propio), del lado de la ladera, pegado a la losa.
+  const tunnel = ROAD_TUNNELS.monaco, midT = (tunnel.from + tunnel.to) / 2, hill = -outside(midT);
+  const hp = besideTrack(track, midT, hill, half + 32);
+  items.push({ id: 'hotel-tunel', kind: 'building', model: 'building', x: hp.x, y: hp.y, heading: hp.angle, length: 110, width: 44, height: 30, t: midT, tint: '#efe9dd' });
+  // Edificios por toda la vuelta, a ambos lados (menos donde está el puerto y junto al túnel y sus bocas).
   let placed = 0;
   for (let k = 0; k < 400 && placed < 40; k++) {
     const t = (k * 0.0237) % 1, side = k % 2 ? 1 : -1;
+    if (t > tunnel.from - 0.025 && t < tunnel.to + 0.025) continue;
     for (let d = half + 9; d <= half + 40; d += 6) {
       const p = besideTrack(track, t, side, d);
       const h = 14 + ((k * 7) % 30);

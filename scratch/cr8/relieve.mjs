@@ -123,6 +123,13 @@ for (const [id, gid] of Object.entries(GEO)) {
     const excess = track[il] - track[iu];
     if (excess > -0.5) for (let k = -w; k <= w; k++) { const i = (il + k + nG) % nG; track[i] -= (excess + 0.5) * Math.cos((k / w) * Math.PI / 2) ** 2; }
   }
+  // [CR4] Mónaco: dentro del túnel de la pista (46,33 % a 59 % de la vuelta, src/scene3d/roadTunnel.ts) la altura va en
+  // línea recta de la entrada a la salida; el punto de control de la salida dejaba una joroba de 4 m (autorizado por el
+  // usuario el 04/11/2026).
+  if (id === 'monaco') {
+    const a0 = Math.round(0.4633 * nG), a1 = Math.round(0.59 * nG);
+    for (let i = a0 + 1; i < a1; i++) track[i] = track[a0] + (track[a1] - track[a0]) * (i - a0) / (a1 - a0);
+  }
   const base = Math.min(...track);
   track = track.map(v => +(v - base).toFixed(2));
 
@@ -140,6 +147,8 @@ for (const [id, gid] of Object.entries(GEO)) {
   const pass = (arr, f) => arr.map((_, i) => { const r = Math.floor(i / cols), c = i % cols, v = []; for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) v.push(at(arr, r + dr, c + dc)); return f(v); });
   gz = pass(pass(gz, v => Math.min(...v)), v => Math.max(...v));
   gz = pass(gz, mean);
+  // [CK5, paredes] En Mónaco (edificios) y Spa (bosque) quedan bultos: dos medias más (31/10/2026).
+  if (id === 'monaco' || id === 'spa') { gz = pass(gz, mean); gz = pass(gz, mean); }
   const grid = { x0, y0, cell, cols, rows, z: gz.map(v => +(v - base).toFixed(1)) };
 
   mkdirSync('src/data/elevation', { recursive: true });

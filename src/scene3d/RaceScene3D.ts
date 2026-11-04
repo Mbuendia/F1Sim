@@ -32,8 +32,9 @@ import { perfStats } from '../dev/perfStats';
 import { planCars, shadowSource, type CarLevel } from './carDots';
 import { itemTransform, planInstances } from './instancing';
 import { QUALITY_PROFILES, type QualityProfile } from '../settings/quality';
-import { carHeightAt, reliefFor, terrainSize, type Relief } from './relief';
+import { carHeightAt, reliefFor, terrainSize, WALL_SLOPE, type Relief } from './relief';
 import { pitTunnelFor, type PitTunnel } from './pitTunnel';
+import { roadTunnelFor, type RoadTunnel } from './roadTunnel';
 
 const W = (x: number, y: number, z = 0) => new THREE.Vector3(x, z, y);
 const LOD_FILE = 'models/f1-car-lod.glb';
@@ -193,6 +194,9 @@ export class RaceScene3D {
     // [CR2] Yas Marina: la salida de boxes pasa por un túnel bajo la pista.
     const pitTunnel = pitTunnelFor(circuitId);
     if (pitTunnel) this.world.add(buildPitTunnel(pitTunnel));
+    // [CR4] Mónaco: el túnel bajo el hotel, del Portier a la nueva chicane.
+    const roadTunnel = roadTunnelFor(circuitId);
+    if (roadTunnel) this.world.add(buildRoadTunnel(roadTunnel, track, circuitId));
     const [items, kitGroup, car, lod] = await Promise.all([
       buildScenery(scenery.items, track, base, circuitId).catch(error => { console.error('Escenario 3D', error); return null; }),
       kit ? buildKit(kit, base).catch(error => { console.error('Kit de circuito', error); return null; }) : Promise.resolve(null),
@@ -613,7 +617,7 @@ function buildGround(track: TrackDefinition, circuitId: string, infield: { x: nu
   if (relief) {
     // El terreno escribe profundidad (tapa lo que queda detrás de una loma); la pista y las pinturas, encima, sin escribirla.
     const group = new THREE.Group();
-    const terrain = buildTerrain(track, relief, infield, street ? '#3b3f46' : '#3f6a34', street ? '#464a51' : '#4a7a3c');
+    const terrain = buildTerrain(track, relief, infield, street ? '#3b3f46' : '#3f6a34', street ? '#464a51' : '#4a7a3c', street ? '#8b8a85' : '#7a7062');
     terrain.renderOrder = -11;
     const decals = flat.mesh(new THREE.MeshLambertMaterial({ vertexColors: true, depthWrite: false, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4 }));
     decals.renderOrder = -10;
@@ -628,7 +632,7 @@ function buildGround(track: TrackDefinition, circuitId: string, infield: { x: nu
 }
 
 /** [CK5] Terreno con relieve: rejilla de `terrainSize` (150.000 triángulos como mucho) con el color de dentro y fuera. */
-function buildTerrain(track: TrackDefinition, relief: Relief, infield: { x: number; y: number }[][], outside: string, inside: string): THREE.Mesh {
+function buildTerrain(track: TrackDefinition, relief: Relief, infield: { x: number; y: number }[][], outside: string, inside: string, wall: string): THREE.Mesh {
   const { x0, y0, cell, cols, rows } = terrainSize(track);
   const pos = new Float32Array(cols * rows * 3), colors = new Float32Array(cols * rows * 3);
   const out = new THREE.Color(outside), inn = new THREE.Color(inside);
@@ -639,6 +643,13 @@ function buildTerrain(track: TrackDefinition, relief: Relief, infield: { x: numb
     pos.set([p.x, p.y, p.z], k * 3);
     const tint = boxes.some(bx => x >= bx.minX && x <= bx.maxX && y >= bx.minY && y <= bx.maxY && inPoly(x, y, bx.poly)) ? inn : out;
     colors.set([tint.r, tint.g, tint.b], k * 3);
+  }
+  // [CK5, paredes] Donde el terreno pasa del 45 % (rampas entre dos tramos a distinta altura), muro de hormigón en la
+  // ciudad y roca en el campo, como en el real.
+  const wallTint = new THREE.Color(wall), hAt = (r: number, c: number) => pos[(Math.min(rows - 1, Math.max(0, r)) * cols + Math.min(cols - 1, Math.max(0, c))) * 3 + 1];
+  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+    const h = hAt(r, c), slope = Math.max(Math.abs(hAt(r, c + 1) - h), Math.abs(hAt(r, c - 1) - h), Math.abs(hAt(r + 1, c) - h), Math.abs(hAt(r - 1, c) - h)) / cell;
+    if (slope > WALL_SLOPE) colors.set([wallTint.r, wallTint.g, wallTint.b], (r * cols + c) * 3);
   }
   const index: number[] = [];
   for (let r = 0; r + 1 < rows; r++) for (let c = 0; c + 1 < cols; c++) { const a = r * cols + c, b = a + 1, d = a + cols, e = d + 1; index.push(a, d, b, b, d, e); }
@@ -759,6 +770,64 @@ function buildWalls(track: TrackDefinition, circuitId: string, barriers: SceneBa
   const group = new THREE.Group();
   group.add(mesh);
   for (const b of barriers) if (b.kind === 'tecpro') group.add(buildTecpro(b));
+  return group;
+}
+
+/**
+ * [CR4] Túnel de la pista (Mónaco): muros, bóveda achaflanada y losa sobre la pista, con la ladera encima a los dos
+ * lados, un dintel y unas aletas en cada boca y una línea de luces en el techo. La losa da sombra y tapa los coches
+ * desde arriba. Dos llamadas de dibujo: la estructura y las luces.
+ */
+function buildRoadTunnel(t: RoadTunnel, track: TrackDefinition, circuitId: string): THREE.Group {
+  const group = new THREE.Group();
+  const relief = reliefFor(circuitId), pts = track.points, n = pts.length, half = (track.trackWidthMeters || 12) / 2;
+  const hw = half + 1.5, C = t.clearanceM, SLAB = 0.8, MOUND = 13;
+  const h = (i: number) => (relief ? relief.trackHeight(i / n) : 0);
+  const normal = (i: number) => { const a = pts[Math.max(0, i - 1)], b = pts[Math.min(n - 1, i + 1)], l = Math.hypot(b.x - a.x, b.y - a.y) || 1; return { x: -(b.y - a.y) / l, y: (b.x - a.x) / l }; };
+  const off = (i: number, d: number) => { const nn = normal(i); return { x: pts[i].x + nn.x * d, y: pts[i].y + nn.y * d }; };
+  const at = (i: number, d: number, z: number) => { const p = off(i, d); return W(p.x, p.y, z); };
+  const ground = (i: number, d: number) => { const p = off(i, d); return relief ? relief.groundHeight(p.x, p.y) : 0; };
+  const pos: number[] = [], colors: number[] = [];
+  const quad = (a: THREE.Vector3, b: THREE.Vector3, c: THREE.Vector3, d: THREE.Vector3, color: string) => {
+    const cc = new THREE.Color(color);
+    for (const p of [a, b, c, a, c, d]) { pos.push(p.x, p.y, p.z); colors.push(cc.r, cc.g, cc.b); }
+  };
+  for (let i = t.first; i < t.last; i++) {
+    const j = i + 1, hi = h(i), hj = h(j);
+    for (const sd of [-1, 1]) {
+      // Muro, chaflán de la bóveda y, por fuera, la ladera que baja de la losa al suelo.
+      quad(at(i, sd * hw, hi), at(j, sd * hw, hj), at(j, sd * hw, hj + C - 0.8), at(i, sd * hw, hi + C - 0.8), '#4a4d52');
+      quad(at(i, sd * hw, hi + C - 0.8), at(j, sd * hw, hj + C - 0.8), at(j, sd * (hw - 1.5), hj + C), at(i, sd * (hw - 1.5), hi + C), '#3e4146');
+      quad(at(i, sd * (hw + 1), hi + C + SLAB), at(j, sd * (hw + 1), hj + C + SLAB), at(j, sd * (hw + 1 + MOUND), ground(j, sd * (hw + 1 + MOUND))), at(i, sd * (hw + 1 + MOUND), ground(i, sd * (hw + 1 + MOUND))), '#5d6066');
+    }
+    // Techo por dentro y losa por fuera.
+    quad(at(i, -(hw - 1.5), hi + C), at(j, -(hw - 1.5), hj + C), at(j, hw - 1.5, hj + C), at(i, hw - 1.5, hi + C), '#2f3236');
+    quad(at(i, -(hw + 1), hi + C + SLAB), at(j, -(hw + 1), hj + C + SLAB), at(j, hw + 1, hj + C + SLAB), at(i, hw + 1, hi + C + SLAB), '#6a6d72');
+  }
+  // Bocas: dintel sobre la entrada y aletas de hormigón que cierran la ladera.
+  for (const i of [t.first, t.last]) {
+    const hi = h(i);
+    quad(at(i, -(hw + 1), hi + C - 0.8), at(i, hw + 1, hi + C - 0.8), at(i, hw + 1, hi + C + SLAB), at(i, -(hw + 1), hi + C + SLAB), '#8d8a83');
+    for (const sd of [-1, 1]) quad(at(i, sd * hw, hi), at(i, sd * hw, hi + C + SLAB), at(i, sd * (hw + 1 + MOUND), ground(i, sd * (hw + 1 + MOUND)) + 0.2), at(i, sd * (hw + 1 + MOUND), ground(i, sd * (hw + 1 + MOUND))), '#7d7a73');
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+  g.computeVertexNormals();
+  const structure = new THREE.Mesh(g, new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide }));
+  structure.castShadow = true; structure.receiveShadow = true;
+  // Luces del techo: una cada 20 m, en el centro.
+  const lights: number[] = [];
+  for (let k = 0; k < t.lights; k++) {
+    const i = Math.round(t.first + (t.last - t.first) * (k + 0.5) / t.lights), hi = h(i) + C - 0.05;
+    const nn = normal(i), tx = -nn.y, ty = nn.x, c = pts[i];
+    const corner = (u: number, v: number) => W(c.x + tx * u + nn.x * v, c.y + ty * u + nn.y * v, hi);
+    for (const p of [corner(-0.8, -0.25), corner(0.8, -0.25), corner(0.8, 0.25), corner(-0.8, -0.25), corner(0.8, 0.25), corner(-0.8, 0.25)]) lights.push(p.x, p.y, p.z);
+  }
+  const lg = new THREE.BufferGeometry();
+  lg.setAttribute('position', new THREE.Float32BufferAttribute(lights, 3));
+  const lamps = new THREE.Mesh(lg, new THREE.MeshBasicMaterial({ color: '#fff3c4', side: THREE.DoubleSide }));
+  group.add(structure, lamps);
   return group;
 }
 

@@ -6,7 +6,7 @@ import type { TrackDefinition } from '../data/barcelonaTrack';
 import type { CarState } from '../types/f1';
 import { isCarVisible } from '../utils/carPosition';
 import { TvDirector, cenitalGiroView, cenitalView, chaseView, helicopterView, onboardView, overviewView, type CameraMode3D, type CameraView, type CarPose, type V3 } from './cameras';
-import { cameraFloor, reliefFor } from './relief';
+import { cameraCeiling, cameraFloor, reliefFor } from './relief';
 
 export interface Orbit { x: number; y: number; distance: number; azimuth: number; elevation: number }
 
@@ -104,6 +104,8 @@ export class CameraDirector3D {
     }
     // [CK5] Ninguna cámara queda bajo el suelo (persecución, a bordo, tele y helicóptero).
     if (relief) this.smooth.position.z = Math.max(this.smooth.position.z, cameraFloor(this.circuitId, this.smooth.position.x, this.smooth.position.y));
+    // [CR4] En el túnel de Mónaco, la persecución y la de a bordo van por debajo del techo.
+    if (this.mode === 'persecucion' || this.mode === 'a-bordo') this.smooth.position.z = Math.min(this.smooth.position.z, cameraCeiling(this.circuitId, this.smooth.position.x, this.smooth.position.y));
     return { view: clone(this.smooth), shadowRadius: radius };
   }
 }
