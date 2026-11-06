@@ -56,7 +56,9 @@ export function createModelDownload(deps: ModelDownloadDeps) {
     /** Mira qué hay en el disco (al abrir los ajustes). Con la descarga en marcha no toca nada: la barra sigue. */
     async refresh() {
       if (busy()) return;
-      const [has, onDisk] = await Promise.all([deps.store.has(), deps.store.bytesOnDisk()]);
+      // Una comprobación por modelo: si está bajado, no se pregunta además cuánto ocupa (puede leer la caché entera).
+      const has = await deps.store.has();
+      const onDisk = has ? state.total : await deps.store.bytesOnDisk();
       if (busy()) return;
       set({ status: has ? 'completa' : onDisk > 0 ? 'cancelada' : 'inactiva', loaded: has ? state.total : onDisk });
     },
