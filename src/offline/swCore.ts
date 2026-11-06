@@ -110,8 +110,10 @@ export function createOfflineWorker(deps: OfflineWorkerDeps) {
 
   async function cacheAi(): Promise<void> {
     const cache = await caches.open(AI_CACHE);
+    // Lo que ya tiene, por la lista de la caché: abrir cada archivo (unos 70 MB en total) gasta memoria para nada.
+    const stored = new Set((await cache.keys()).map(r => r.url));
     await inBatches([...aiUrls], async url => {
-      if (ok(await cache.match(url))) return;
+      if (stored.has(url)) return;
       try {
         const res = await deps.fetch(new Request(url));
         if (ok(res)) await cache.put(url, res);

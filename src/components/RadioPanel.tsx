@@ -271,8 +271,12 @@ export function useRadioModeCheck() {
     // [IA9] El banco de respuestas, con las dos radios; si no carga, siguen las plantillas de IA2.
     void import('../radio/replies/bankLoader').then(m => m.loadReplyBank()).catch(() => {});
     // [IA6] La voz de los pilotos: Piper si está descargada y encendida; si no, la del sistema.
-    void Promise.all([import('../radio/voice/piperRuntime'), import('../radio/model/storage'), import('../radio/model/variants')])
-      .then(([voice, storage, variants]) => voice.applyRadioVoice(voice.readVoicePref(storage.browserStorage(), variants.browserVariantEnv().mobile)))
+    // [OF5] Un solo modelo grande a la vez: con la radio con IA encendida, la voz realista no se carga (voz del sistema).
+    void Promise.all([import('../radio/voice/piperRuntime'), import('../radio/model/storage'), import('../radio/model/variants'), import('../radio/model/modelList')])
+      .then(([voice, storage, variants, models]) => {
+        const kept = models.activeFromPrefs({ radioMode: storage.readRadioMode(storage.browserStorage()), voicePref: voice.readVoicePref(storage.browserStorage(), variants.browserVariantEnv().mobile) });
+        return voice.applyRadioVoice(kept.voz ? 'piper' : 'sistema');
+      })
       .then(engine => { if (alive) set({ voice: engine }); }).catch(() => {});
     // [UX8] El micro que se usará (Chrome con red, Whisper sin red o ninguno), para el estado de la IA.
     void (async () => {
