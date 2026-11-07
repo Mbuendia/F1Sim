@@ -50,6 +50,17 @@ const MODELS = [
       changes: 'Modificado para F1Sim: sin texturas ni emblemas de marcas, materiales planos, ruedas y barra de luces como piezas aparte con animación de giro y superficies para rótulos. Esta versión se distribuye con la misma licencia CC BY-NC-SA 4.0.',
     },
   },
+  // [CR3, 07/11/2026] Piezas del kit sacadas del modelo de Montreal.
+  ...['guardarrail', 'valla_alta', 'pianos', 'muro_neumaticos', 'grava', 'escapatoria', 'grada_comun', 'arbol_a', 'arbol_b', 'arbol_c', 'marcas_suelo'].map(id => ({
+    file: `../public/models/kit/${id}.glb`,
+    extras: {
+      title: 'Circuit Gilles Villeneuve Montreal 2019 layout',
+      author: 'Dave Love (https://sketchfab.com/Tyler_Dave)',
+      license: 'CC BY 4.0 (http://creativecommons.org/licenses/by/4.0/)',
+      source: 'https://sketchfab.com/3d-models/circuit-gilles-villeneuve-montreal-2019-layout-5875d33d5ddb44f4a6c1188ed6776fa8',
+      changes: 'F1Sim: pieza recortada, en metros, aligerada; textura de 512 px como mucho y sin marcas.',
+    },
+  })),
 ];
 
 for (const model of MODELS) {

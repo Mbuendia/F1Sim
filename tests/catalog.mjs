@@ -634,6 +634,8 @@ export const modules = [
   { "id": "monaco-tunnel-cr4", "tasks": ["CR4"], "sprint": "10.5", "kind": "contract" },
   { "id": "monaco-detail-cr4", "tasks": ["CR4"], "sprint": "10.5", "kind": "contract" },
   { "id": "map-editor-cr9", "tasks": ["CR9"], "sprint": "10.5", "kind": "contract" },
+  { "id": "circuit-references-cr1", "tasks": ["CR1"], "sprint": "10.5", "kind": "contract" },
+  { "id": "montreal-kit-cr3", "tasks": ["CR3"], "sprint": "10.5", "kind": "contract" },
   { "id": "offline-of1", "tasks": ["OF1"], "sprint": "13", "kind": "contract" },
   { "id": "storage-of2", "tasks": ["OF2"], "sprint": "13", "kind": "contract" },
   { "id": "updates-of3", "tasks": ["OF3"], "sprint": "13", "kind": "contract" },

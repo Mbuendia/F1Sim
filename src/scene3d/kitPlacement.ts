@@ -15,6 +15,7 @@ import { HOT, MOUNTAIN, sceneryFor } from './scenery';
 import { pointInPoly, rngFor, type Pt, type Poly } from './trackSpace';
 import { NIGHT_RACES } from '../renderer/lighting';
 import { reliefFor } from './relief';
+import { buildScenarioGeometry } from '../utils/scenarioGeometry';
 
 export type Braking = 'fuerte' | 'media' | 'rapida';
 export interface KitInstance { piece: string; x: number; y: number; heading: number; t: number; side: 1 | -1; sponsor?: Sponsor; label?: string; z?: number }
@@ -497,6 +498,44 @@ function build(track: TrackDefinition, circuitId: string, quality: 'alto' | 'med
   // [CK5] Con relieve, cada pieza apoya en el punto más bajo del suelo bajo su planta (el techo, sobre su grada).
   const relief = reliefFor(circuitId);
   if (relief) for (const p of clean) p.z = round(Math.min(...kitFootprint(p).map(q => relief.groundHeight(q.x, q.y))) + (p.z ?? 0));
+  // [CR3] Piezas del modelo de Montreal que van pegadas al asfalto (el filtro de arriba las quitaría): bloques de piano a lo
+  // largo de cada piano pintado y una línea pintada en el borde entre el asfalto y la grava de las escapatorias. Ninguna
+  // pisa el pit lane, y con relieve apoyan en el punto más bajo del suelo bajo su planta, como las demás.
+  const nearPit = (q: Pt) => pitGrid.nearest(q, 64).d < 2.6;
+  const along = (path: Pt[], piece: string, tile: number, skip: (p: Pt) => boolean = () => false) => {
+    for (let k = 1, carry = tile / 2; k < path.length; k++) {
+      const a = path[k - 1], b = path[k], L = Math.hypot(b.x - a.x, b.y - a.y);
+      if (L < 1e-6) continue;
+      for (; carry <= L; carry += tile) {
+        const p = { x: a.x + (b.x - a.x) * carry / L, y: a.y + (b.y - a.y) * carry / L };
+        if (skip(p)) continue;
+        const { i } = grid.nearest(p);
+        const inst: KitInstance = { piece, x: round(p.x), y: round(p.y), heading: round(Math.atan2(b.y - a.y, b.x - a.x), 4), t: round(Math.max(0, i) / n, 5), side: 1 };
+        // Separada lo justo del asfalto (KIT_RULES.trackClearanceM), como el resto del kit.
+        const gap = half + KIT_RULES.trackClearanceM + 0.02 - Math.min(...kitFootprint(inst).map(q => full.nearest(q).d));
+        if (gap > 0) {
+          const c = track.points[full.nearest(p).i] ?? p, L = Math.hypot(p.x - c.x, p.y - c.y) || 1;
+          inst.x = round(p.x + (p.x - c.x) / L * gap); inst.y = round(p.y + (p.y - c.y) / L * gap);
+        }
+        const foot = kitFootprint(inst);
+        if (foot.some(q => nearPit(q) || wet(q) || inMonument(q, 0) || full.nearest(q).d < half + KIT_RULES.trackClearanceM)) continue;
+        if (relief) inst.z = round(Math.min(...foot.map(q => relief.groundHeight(q.x, q.y))));
+        clean.push(inst);
+      }
+      carry -= L;
+    }
+  };
+  const kerbTile = BY_ID.pianos?.tile, markTile = BY_ID.marcas_suelo?.tile;
+  if (kerbTile) for (const seg of buildScenarioGeometry(track, getScenario(circuitId)).kerbSegments) along(seg.points, 'pianos', kerbTile);
+  if (markTile) for (const side of [1, -1] as const) {
+    let run: Pt[] = [];
+    const flush = () => { if (run.length > 2) along(run, 'marcas_suelo', markTile); run = []; };
+    for (let i = 0; i < n; i++) {
+      if (asph[side][i] > 4 && grav[side][i] > 4 && lim(side, i) - aEnd(side, i) > 1) run.push(at(i, side, aEnd(side, i)));
+      else flush();
+    }
+    flush();
+  }
   return { circuitId, pieces: clean, runoff, strips, stadium: zone ? stadium(C, N, T, n, half, verge, walls, maxoff, asph, stadiumZone, stadiumOut, pit.fastLane) : null };
 }
 

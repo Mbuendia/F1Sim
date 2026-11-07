@@ -6,15 +6,19 @@ import { parseGlb } from './compress-models.mjs';
 
 const COMMON = ['guardarrail', 'muro_neumaticos', 'valla_alta', 'valla_publi', 'bloque_hormigon', 'poste_luz', 'farola', 'pancarta',
   'cartel_pequeno', 'marcador', 'torre_posiciones', 'grada_comun', 'grada_roja', 'grada_pequena', 'cartel_metros', 'grua',
-  'arbol_a', 'arbol_b', 'arbol_c', 'coche_medico', 'coche_aparcado', 'camion', 'refugio_comisarios'];
+  'arbol_a', 'arbol_b', 'arbol_c', 'coche_medico', 'coche_aparcado', 'camion', 'refugio_comisarios',
+  'pianos', 'grava', 'escapatoria', 'marcas_suelo'];
 const SHANGHAI = ['edificio_boxes', 'edificio_b', 'pabellon', 'carpa', 'marquesina', 'techo_tribuna', 'estructura_b', 'estructura_c'];
-const TILE = new Set(['guardarrail', 'muro_neumaticos', 'valla_alta', 'valla_publi', 'bloque_hormigon']);
+const TILE = new Set(['guardarrail', 'muro_neumaticos', 'valla_alta', 'valla_publi', 'bloque_hormigon', 'pianos', 'marcas_suelo']);
+/** [CR3] Piezas sacadas del modelo de Montreal (Dave Love, CC BY 4.0) y su papel en el kit. */
+const MONTREAL = { guardarrail: 'guardarrail', valla_alta: 'valla', pianos: 'pianos', muro_neumaticos: 'muro_neumaticos', grava: 'grava',
+  escapatoria: 'escapatoria', grada_comun: 'grada', arbol_a: 'arbol', arbol_b: 'arbol', arbol_c: 'arbol', marcas_suelo: 'marcas_suelo' };
 /** Hacia dónde mira la cara útil (eje de glTF): las gradas, sus asientos; carteles y torre, su cara legible. */
 const FRONT = { grada_comun: '-z', grada_roja: '-z', grada_pequena: '-z', valla_publi: '+z', cartel_pequeno: '+z', cartel_metros: '+z', torre_posiciones: '+z' };
 const NOTES = {
-  guardarrail: 'Guardarraíl de tres bandas; interiores de curva y rectas.',
-  muro_neumaticos: 'Muro de neumáticos de dos filas; al final de las escapatorias de curva.',
-  valla_alta: 'Panel de valla alta de malla; detrás de los muros donde hay público, y encima del hormigón en urbanos.',
+  guardarrail: 'Guardarraíl (Montreal); interiores de curva y rectas.',
+  muro_neumaticos: 'Muro de neumáticos rojos y blancos (Montreal); al final de las escapatorias de curva.',
+  valla_alta: 'Valla de malla con postes (Montreal); detrás de los muros donde hay público, y encima del hormigón en urbanos.',
   valla_publi: 'Valla publicitaria; el patrocinador lo pinta CK3 (de sponsors.ts).',
   bloque_hormigon: 'Bloque de hormigón; muros de urbanos y zonas de servicio.',
   poste_luz: 'Poste de luz.',
@@ -23,12 +27,16 @@ const NOTES = {
   cartel_pequeno: 'Cartel pequeño de patrocinador.',
   marcador: 'Marcador de tiempos.',
   torre_posiciones: 'Torre de posiciones; el cartel de arriba lleva el nombre del circuito (CK3).',
-  grada_comun: 'Grada de celosía (la blanca); en el vértice de las curvas.',
+  grada_comun: 'Grada de tubo metálico (Montreal); en el vértice de las curvas.',
   grada_roja: 'Módulo de grada roja; se encadena por las rectas y el arco de las curvas.',
   grada_pequena: 'Grada pequeña; huecos dentro de las curvas cerradas.',
   cartel_metros: 'Cartel de metros (200, 150, 100 y 50) antes de las curvas; el número y el patrocinador los pinta CK3.',
   grua: 'Grúa móvil; detrás de los muros de neumáticos de las curvas de frenada.',
-  arbol_a: 'Árbol (planos cruzados).', arbol_b: 'Árbol (planos cruzados).', arbol_c: 'Árbol (planos cruzados).',
+  arbol_a: 'Árbol (Montreal, planos cruzados).', arbol_b: 'Árbol (Montreal, planos cruzados).', arbol_c: 'Árbol (Montreal, planos cruzados).',
+  pianos: 'Bloque de piano (Montreal); a lo largo de cada piano pintado.',
+  grava: 'Loseta de grava (Montreal); su material pinta las franjas de grava de las escapatorias.',
+  escapatoria: 'Franja de escapatoria pintada (Montreal); su material pinta el asfalto pintado del estadio.',
+  marcas_suelo: 'Línea pintada (Montreal); en el borde entre el asfalto y la grava de las escapatorias.',
   coche_medico: 'Furgoneta del equipo de seguridad.', coche_aparcado: 'Furgoneta aparcada.', camion: 'Camión del paddock.',
   refugio_comisarios: 'Puesto de comisarios.',
   edificio_boxes: 'Módulo del edificio de boxes de Shanghái (87 m).', edificio_b: 'Garajes de Shanghái.', pabellon: 'Pabellón de equipo de Shanghái.',
@@ -51,6 +59,7 @@ for (const [scope, ids] of [['comun', COMMON], ['shanghai', SHANGHAI]]) for (con
   const e = { id, file: `models/kit/${id}.glb`, scope, dims, tris, alpha };
   if (TILE.has(id)) e.tile = dims[0];
   if (FRONT[id]) e.front = FRONT[id];
+  if (MONTREAL[id]) { e.origin = 'montreal'; e.role = MONTREAL[id]; }
   e.note = NOTES[id];
   entries.push(e);
 }
@@ -58,7 +67,9 @@ const fmt = e => `  { ${Object.entries(e).map(([k, v]) => `${k}: ${JSON.stringif
 const src = `/**
  * [CK2] Kit común de piezas de circuito (Sprint 10): sacadas del modelo de Shanghái del usuario (crédito en
  * public/models/ATTRIBUTION.md), limpias, sin marcas reales y con dos atlas compartidos (kit-comun.webp y
- * kit-shanghai.webp). Generado por scripts/kit-catalog.mjs a partir de los .glb: no se edita a mano.
+ * kit-shanghai.webp). [CR3] Las de \`origin: 'montreal'\` salen del modelo de Montreal (Dave Love, CC BY 4.0), con su
+ * textura propia (montreal-*.webp) y su papel en el kit (\`role\`); sustituyen a las de CK2 que hacían lo mismo.
+ * Generado por scripts/kit-catalog.mjs a partir de los .glb: no se edita a mano.
  * Medidas en metros: [largo (X), ancho (Z), alto (Y)]; origen en el centro de la base. \`tile\`: largo de las piezas que se
  * encadenan. \`front\`: eje de glTF hacia el que mira la cara útil. Las de ámbito «shanghai» son solo para ese circuito (CK4).
  */
@@ -72,6 +83,8 @@ export interface KitPiece {
   alpha: 'mask' | 'opaque';
   tile?: number;
   front?: '+z' | '-z';
+  origin?: 'montreal';
+  role?: string;
   note: string;
 }
 

@@ -62,7 +62,21 @@ ruedas en un clip y escribe esta atribución dentro de cada `.glb`.
   letras del distrito), se reducen, se ponen con el origen en el centro de la base y el largo en X, y sus texturas se
   hornean en dos atlas propios (`kit-comun.webp` y `kit-shanghai.webp`). Toda la publicidad real se sustituye por
   patrocinadores de parodia. La grada pequeña y el cartel de metros son nuevos, hechos para F1Sim.
-- **Archivos:** `arbol_a.glb`, `arbol_b.glb`, `arbol_c.glb`, `bloque_hormigon.glb`, `camion.glb`, `carpa.glb`, `cartel_metros.glb`, `cartel_pequeno.glb`, `coche_aparcado.glb`, `coche_medico.glb`, `edificio_b.glb`, `edificio_boxes.glb`, `estructura_b.glb`, `estructura_c.glb`, `farola.glb`, `grada_comun.glb`, `grada_pequena.glb`, `grada_roja.glb`, `grua.glb`, `guardarrail.glb`, `marcador.glb`, `marquesina.glb`, `muro_neumaticos.glb`, `pabellon.glb`, `pancarta.glb`, `poste_luz.glb`, `refugio_comisarios.glb`, `techo_tribuna.glb`, `torre_posiciones.glb`, `valla_alta.glb`, `valla_publi.glb`.
+- **Archivos:** `bloque_hormigon.glb`, `camion.glb`, `carpa.glb`, `cartel_metros.glb`, `cartel_pequeno.glb`, `coche_aparcado.glb`, `coche_medico.glb`, `edificio_b.glb`, `edificio_boxes.glb`, `estructura_b.glb`, `estructura_c.glb`, `farola.glb`, `grada_pequena.glb`, `grada_roja.glb`, `grua.glb`, `marcador.glb`, `marquesina.glb`, `pabellon.glb`, `pancarta.glb`, `poste_luz.glb`, `refugio_comisarios.glb`, `techo_tribuna.glb`, `torre_posiciones.glb`, `valla_publi.glb`. Desde CR3 (07/11/2026), el guardarraíl, la valla alta, el muro de neumáticos, la grada común y los tres árboles salen del modelo de Montreal (abajo).
+
+## Kit de piezas de circuito sacadas del modelo de Montreal (`kit/`, CR3)
+
+- **Obra original:** «Circuit Gilles Villeneuve Montreal 2019 layout»
+- **Autor:** Dave Love — https://sketchfab.com/Tyler_Dave
+- **Origen:** https://sketchfab.com/3d-models/circuit-gilles-villeneuve-montreal-2019-layout-5875d33d5ddb44f4a6c1188ed6776fa8
+- **Licencia:** CC BY 4.0 — https://creativecommons.org/licenses/by/4.0/
+- **Cambios (CR3, 07/11/2026):** de una copia del modelo del usuario se recortan en Blender once piezas de tramos rectos
+  (guardarraíl, valla de malla, muro de neumáticos, bloque de piano, grava, escapatoria pintada, línea pintada, un módulo
+  de grada y tres árboles), en metros y con el origen en la base; la grada se aligera de 6.027 a 876 triángulos. Cada
+  pieza lleva su textura reducida a 512 px como mucho (`montreal-*.webp`). El modelo trae una textura con logotipos de
+  patrocinadores reales: no se usa; de ella solo sale un recorte de chapa sin marcas para la grada. Revisión de las 23
+  texturas en `docs/design/kit-montreal.md`.
+- **Archivos:** `arbol_a.glb`, `arbol_b.glb`, `arbol_c.glb`, `escapatoria.glb`, `grada_comun.glb`, `grava.glb`, `guardarrail.glb`, `marcas_suelo.glb`, `muro_neumaticos.glb`, `pianos.glb`, `valla_alta.glb`.
 
 ## Modelos propios (`kit/` y `scenery/`)
 

@@ -27,6 +27,7 @@ import { compoundStyle } from '../utils/compounds';
 import { calculateCarWorldPosition, isCarVisible } from '../utils/carPosition';
 import { KIT_CIRCUIT, runoffZones3d, sceneryFor, type PitBuilding, type SceneBarrier, type SceneItem } from './scenery';
 import { kitGroups, kitPlacementFor, type KitPlacement } from './kitPlacement';
+import { CIRCUIT_KIT } from './circuitKit';
 import { buildKit, KIT_STRIP_COLORS } from './kitMeshes';
 import { RUNOFF_LOOK, runoffColor } from './runoff';
 import { KERB_WIDTH } from '../utils/scenarioGeometry';
@@ -261,6 +262,9 @@ export class RaceScene3D {
     ]);
     if (this.disposed) { if (items) disposeModel(items); if (kitGroup) disposeModel(kitGroup); return; }
     if (kitGroup) this.world.add(kitGroup);
+    // [CR3] Grava y asfalto pintado de verde de las escapatorias del kit, con el material de su pieza de Montreal (encima
+    // del color liso, que se queda debajo por si la textura no llega).
+    if (kit) buildKitSurfaces(kit, base, circuitId).then(g => { if (g && !this.disposed) this.world.add(g); }).catch(() => undefined);
     if (items) {
       this.world.add(items);
       const seen = new Set<THREE.Material>();
@@ -787,6 +791,40 @@ function buildGround(track: TrackDefinition, circuitId: string, infield: { x: nu
   mesh.renderOrder = -10;
   mesh.receiveShadow = true;
   return mesh;
+}
+
+/** [CR3] Franjas de suelo del kit con el material de su pieza del modelo de Montreal: la grava y el asfalto pintado de
+ *  verde del estadio. La textura se repite cada 5 m. */
+async function buildKitSurfaces(kit: KitPlacement, base: string, circuitId: string): Promise<THREE.Group | null> {
+  const group = new THREE.Group();
+  group.name = 'kit-suelos';
+  const relief = reliefFor(circuitId);
+  for (const [surface, piece] of [['grava', 'grava'], ['verde', 'escapatoria']] as const) {
+    const strips = kit.strips.filter(st => st.surface === surface && st.points.length >= 3);
+    const def = CIRCUIT_KIT.find(p => p.id === piece);
+    if (!strips.length || !def) continue;
+    const gltf = await loadModel(modelUrl(base, def.file)).catch(() => null);
+    let source: THREE.MeshStandardMaterial | null = null;
+    gltf?.scene.traverse(o => { const m = o as THREE.Mesh; if (m.isMesh && !source) source = m.material as THREE.MeshStandardMaterial; });
+    if (!source) continue;
+    const pos: number[] = [], uv: number[] = [];
+    for (const st of strips) for (let k = 1; k < st.points.length - 1; k++) for (const p of [st.points[0], st.points[k], st.points[k + 1]]) {
+      const v = W(p.x, p.y, (relief ? relief.groundHeight(p.x, p.y) : 0) + 0.03);
+      pos.push(v.x, v.y, v.z); uv.push(p.x / 5, p.y / 5);
+    }
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+    geometry.computeVertexNormals();
+    const material = (source as THREE.MeshStandardMaterial).clone();
+    material.side = THREE.DoubleSide; material.depthWrite = false;
+    material.polygonOffset = true; material.polygonOffsetFactor = -3; material.polygonOffsetUnits = -6;
+    if (!relief) material.depthTest = false;
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.renderOrder = -9; mesh.receiveShadow = true; mesh.name = `kit-suelo:${piece}`;
+    group.add(mesh);
+  }
+  return group.children.length ? group : null;
 }
 
 /** [CK5] Terreno con relieve: rejilla de `terrainSize` (150.000 triángulos como mucho) con el color de dentro y fuera. */
