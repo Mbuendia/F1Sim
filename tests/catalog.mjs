@@ -647,5 +647,7 @@ export const modules = [
   { "id": "car-2025-ca2", "tasks": ["CA2"], "sprint": "9", "kind": "contract" },
   { "id": "tyres-everywhere-ca4", "tasks": ["CA4"], "sprint": "9", "kind": "contract" },
   { "id": "pit-3d-ca5", "tasks": ["CA5"], "sprint": "9", "kind": "contract" },
+  { "id": "chase-camera-ca8", "tasks": ["CA8"], "sprint": "9", "kind": "contract" },
+  { "id": "pit-crew-3d-ca7", "tasks": ["CA7"], "sprint": "9", "kind": "contract" },
   { "id": "viewport-movil", "tasks": [], "sprint": null, "kind": "regression" }
 ];

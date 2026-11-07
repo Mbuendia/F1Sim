@@ -5,7 +5,11 @@
  */
 import * as THREE from 'three';
 import { syncCompound } from './compoundMount';
-import { pitStopPose, pitStopTimeline, type PitPose } from './pitStopAnimation';
+import { pitStopPose, pitStopTimeline, type PitPose, type PitTimeline } from './pitStopAnimation';
+import { CREW_MODEL, CREW_RETURN_SEC, PIT_CREW_ROLES, crewPhase, crewPose, dressCrew, type CrewPhase, type CrewRole } from './pitCrew3d';
+import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
+import { PitStopModel } from '../simulation/PitStopModel';
+import { RejoinModel } from '../simulation/RejoinModel';
 import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import type { TrackDefinition } from '../data/barcelonaTrack';
 import type { CarState, SafetyCarState } from '../types/f1';
@@ -118,6 +122,7 @@ function applyPitPose(root: THREE.Object3D, pose: PitPose | null): void {
     if (!w.node) return;
     const p = pose?.wheels[k];
     w.node.position.copy(w.base);
+    w.node.visible = !(p && p.off > 0.97);
     if (!p) return;
     w.node.position.z += (Math.sign(w.base.z) || 1) * p.off * PIT_WHEEL_OUT_M;
     for (const m of w.bands) m.color.set(compoundStyle(p.compound).color);
@@ -126,12 +131,22 @@ function applyPitPose(root: THREE.Object3D, pose: PitPose | null): void {
   if (!pose) data.compound = undefined;
 }
 
+/** [CA7] El equipo de mecánicos de un coche: su grupo en el box y cada mecánico con sus animaciones. */
+interface CrewMember { role: CrewRole; root: THREE.Object3D; mixer: THREE.AnimationMixer; actions: Map<string, THREE.AnimationAction>; clip: string; wheel: THREE.Group; band: THREE.MeshLambertMaterial }
+interface CrewTeam { phase: CrewPhase; since: number; group: THREE.Group; members: CrewMember[]; garageSide: number; timeline: PitTimeline | null; from: string; to: string }
+
 interface CarSlot { full: THREE.Object3D | null; lod: THREE.Object3D | null; proxy: THREE.Mesh; release: (() => void) | null; key: string }
 
 export class RaceScene3D {
   readonly renderer: THREE.WebGLRenderer;
   /** [CA5] Tiempo de carrera del último fotograma. */
   private raceTimeSec = 0;
+  /** [CA7] Mecánicos: el modelo (se carga la primera vez que hace falta) y el equipo de cada coche que entra, para o sale. */
+  private crewModel: GLTF | null = null;
+  private crewLoading = false;
+  private crewDt = 0;
+  private readonly crews = new Map<number, CrewTeam>();
+  private crewWheel: { tyre: THREE.CylinderGeometry; band: THREE.TorusGeometry; rubber: THREE.MeshLambertMaterial } | null = null;
   private readonly scene = new THREE.Scene();
   private readonly camera = new THREE.PerspectiveCamera(55, 16 / 9, 0.3, 30000);
   private readonly sunLight = new THREE.DirectionalLight(0xffffff, 2.2);
@@ -269,6 +284,7 @@ export class RaceScene3D {
     if (canvas.width !== w || canvas.height !== h) this.renderer.setSize(w, h, false);
 
     const { view, sun } = frame;
+    this.crewDt = Math.min(0.1, Math.max(0, (frame.raceTimeSec ?? this.raceTimeSec) - this.raceTimeSec));
     this.raceTimeSec = frame.raceTimeSec ?? this.raceTimeSec;
     this.camera.fov = view.fov;
     this.camera.aspect = width / height;
@@ -350,6 +366,89 @@ export class RaceScene3D {
   }
 
   /** Altura del coche (m): la del relieve (CK5) y, en Suzuka, el puente para los que van por la carretera de arriba. */
+  /** [CA7] Pone, mueve y quita los mecánicos del box de un coche según su parada. */
+  private updateCrew(car: CarState, stop: CarState['pitStop']['serviceStop'] | null): void {
+    const prev = this.crews.get(car.id) ?? null;
+    let phase = crewPhase(car, prev?.phase ?? null);
+    if (phase === 'saliendo' && prev?.phase === 'saliendo' && this.raceTimeSec - prev.since > CREW_RETURN_SEC) phase = null;
+    if (!phase) {
+      if (prev) { this.world.remove(prev.group); prev.members.forEach(m => m.mixer.stopAllAction()); this.crews.delete(car.id); }
+      return;
+    }
+    if (!this.crewModel) {
+      if (!this.crewLoading) {
+        this.crewLoading = true;
+        loadModel(modelUrl(import.meta.env.BASE_URL, CREW_MODEL)).then(g => { this.crewModel = g; }).catch(() => { this.crewLoading = false; });
+      }
+      return;
+    }
+    const team = prev ?? this.createCrew(car, phase);
+    if (!team) return;
+    if (team.phase !== phase) { team.phase = phase; team.since = this.raceTimeSec; }
+    if (stop) { team.timeline = pitStopTimeline(stop); team.from = stop.from; team.to = stop.to; team.since = stop.start; }
+    const t = this.raceTimeSec - team.since;
+    for (const m of team.members) {
+      const pose = crewPose(m.role, { phase, t, timeline: team.timeline, from: team.from, to: team.to, garageSide: team.garageSide });
+      m.root.visible = pose.visible;
+      m.root.position.set(pose.x, 0, pose.z);
+      m.root.rotation.y = Math.atan2(-pose.fz, pose.fx);
+      if (pose.clip !== m.clip) {
+        const next = m.actions.get(pose.clip), last = m.actions.get(m.clip);
+        if (next) { next.reset().play(); if (last) next.crossFadeFrom(last, 0.15, false); }
+        m.clip = pose.clip;
+      }
+      m.wheel.visible = Boolean(pose.carrying);
+      if (pose.carrying) m.band.color.set(compoundStyle(pose.carrying.compound).color);
+      m.mixer.update(this.crewDt);
+    }
+  }
+
+  /** [CA7] Crea el equipo en el box del coche: 16 mecánicos con los colores del equipo, mirando como el coche parado. */
+  private createCrew(car: CarState, phase: CrewPhase): CrewTeam | null {
+    const track = this.track, model = this.crewModel;
+    if (!track || !model) return null;
+    const progress = track.pitEntryT + PitStopModel.getBoxProgress(car, track) * RejoinModel.pitLaneLength(track);
+    const at = calculateCarWorldPosition({ progress, isInPitLane: true, lateralOffset: 0 }, track);
+    const group = new THREE.Group();
+    group.position.copy(W(at.worldX, at.worldY, this.carHeight({ trackT: ((progress % 1) + 1) % 1, worldX: at.worldX, worldY: at.worldY, isInPitLane: true })));
+    group.rotation.set(0, -at.worldAngle, 0, 'YZX');
+    group.updateMatrixWorld(true);
+    // El garaje, al otro lado de la pista.
+    let near = track.points[0], best = Infinity;
+    for (const p of track.points) { const d = (p.x - at.worldX) ** 2 + (p.y - at.worldY) ** 2; if (d < best) { best = d; near = p; } }
+    const garageSide = group.worldToLocal(W(near.x, near.y, 0)).z > 0 ? -1 : 1;
+    this.crewWheel ??= { tyre: new THREE.CylinderGeometry(0.34, 0.34, 0.32, 18), band: new THREE.TorusGeometry(0.3, 0.018, 6, 24), rubber: new THREE.MeshLambertMaterial({ color: '#141414' }) };
+    const livery = liveryFor(car.team.id);
+    const members: CrewMember[] = PIT_CREW_ROLES.map(role => {
+      const root = cloneSkinned(model.scene);
+      root.traverse(o => {
+        const mesh = o as THREE.Mesh;
+        if (!mesh.isMesh) return;
+        mesh.material = Array.isArray(mesh.material) ? mesh.material.map(x => x.clone()) : mesh.material.clone();
+        mesh.castShadow = true; mesh.frustumCulled = false;
+      });
+      dressCrew(root, livery);
+      const mixer = new THREE.AnimationMixer(root);
+      const actions = new Map(model.animations.map(clip => {
+        const a = mixer.clipAction(clip);
+        if (clip.name === 'quitar_rueda' || clip.name === 'poner_rueda') { a.setLoop(THREE.LoopOnce, 1); a.clampWhenFinished = true; }
+        return [clip.name, a] as const;
+      }));
+      const wheel = new THREE.Group();
+      const band = new THREE.MeshLambertMaterial({ color: '#ffd400' });
+      const tyre = new THREE.Mesh(this.crewWheel!.tyre, this.crewWheel!.rubber); tyre.rotation.x = Math.PI / 2;
+      const ring = new THREE.Mesh(this.crewWheel!.band, band); ring.position.z = 0.165;
+      wheel.add(tyre, ring); wheel.position.set(0.42, 0.95, 0); wheel.visible = false;
+      root.add(wheel);
+      group.add(root);
+      return { role, root, mixer, actions, clip: '', wheel, band };
+    });
+    this.world.add(group);
+    const team: CrewTeam = { phase, since: this.raceTimeSec, group, members, garageSide, timeline: null, from: car.tires.compound, to: car.pitStop.targetCompound ?? car.tires.compound };
+    this.crews.set(car.id, team);
+    return team;
+  }
+
   carHeight(car: { trackT: number; isInPitLane?: boolean; worldX?: number; worldY?: number }): number {
     return this.track ? carHeightAt(this.circuitId, this.track, car) : 0;
   }
@@ -442,6 +541,8 @@ export class RaceScene3D {
       const pitPose = stop ? pitStopPose(pitStopTimeline(stop), this.raceTimeSec - stop.start, stop.from, stop.to) : null;
       if (slot.full) applyPitPose(slot.full, pitPose);
       if (slot.lod) applyPitPose(slot.lod, pitPose);
+      // [CA7] Los mecánicos de su box: salen al entrar el coche en el pit lane, hacen la parada y vuelven al garaje.
+      this.updateCrew(car, stop);
       const z = this.carHeight(car);
       holder.position.copy(W(car.worldX, car.worldY, z));
       if (pitPose) holder.position.y += pitPose.jack * PIT_LIFT_M;

@@ -27,6 +27,13 @@ const cameraMode = (q.get('camara') ?? undefined) as CameraMode3D | undefined;
 const finished = q.get('fin') === '1';
 const atBoxes = q.get('boxes') === '1';
 const stopAt = q.has('parada') ? Number(q.get('parada')) : null;
+// [CA7] `&vivo=1`: el motor avanza en tiempo real desde `&inicio=` segundos después de cargar (40). `&entrar=1` manda a boxes al
+// coche `&sigue=` (índice, 0), que la cámara sigue; `&atasco=1` hace su parada de 4,6 s con la delantera derecha atascada.
+const live = q.get('vivo') === '1';
+const liveStart = Number(q.get('inicio') ?? 40);
+const followIndex = q.has('sigue') ? Number(q.get('sigue')) : null;
+const sendIn = q.get('entrar') === '1';
+const stuck = q.get('atasco') === '1';
 
 export default function BridgeReview() {
   const data = useMemo(() => {
@@ -48,9 +55,9 @@ export default function BridgeReview() {
     }
     if (atBoxes) {
       const track = sim.activeTrack, len = RejoinModel.pitLaneLength(track);
-      for (const car of sim.cars) {
+      for (const car of (q.get('solo') === '1' ? [sim.cars[followIndex ?? 0]] : sim.cars)) {
         car.isInPitLane = true; car.pitStop.isPitting = true;
-        car.progress = Math.floor(car.progress) + track.pitEntryT + PitStopModel.getBoxProgress(car, track) * len;
+        car.progress = Math.floor(car.progress) + track.pitEntryT + PitStopModel.getBoxProgress(car, track) * len - Number(q.get('antes') ?? 0) / (track.lapLengthMeters || 5000);
         car.trackT = ((car.progress % 1) + 1) % 1; car.lateralOffset = car.targetLateralOffset = 0; car.currentSpeedKmh = 0;
         const p = calculateCarWorldPosition(car, track);
         car.worldX = p.worldX; car.worldY = p.worldY; car.worldAngle = p.worldAngle;
@@ -92,11 +99,36 @@ export default function BridgeReview() {
     raceStore.getState().receive({ type: 'fast', view: fast }, now);
   }, [data]);
 
+  useEffect(() => {
+    if (!live) return;
+    const { sim, host } = data;
+    const car = sim.cars[followIndex ?? 0];
+    (window as unknown as { __bridgeSim: typeof sim }).__bridgeSim = sim;
+    let timer: ReturnType<typeof setInterval> | null = null;
+    const start = setTimeout(() => {
+      if (sendIn && car) {
+        const track = sim.activeTrack;
+        car.progress = Math.max(1, Math.floor(car.progress)) + track.pitEntryT - 0.003; car.currentLap = Math.floor(car.progress);
+        car.pitStop.scheduledLap = car.currentLap; car.pitStop.targetCompound = 'hard';
+      }
+      timer = setInterval(() => {
+        if (stuck && car && car.pitStop.isPitting && car.pitStop.currentStopTimer === 0) {
+          car.pitStop.stopDuration = 4.6; car.pitStop.stopCause = 'rueda-atascada'; car.pitStop.stopWheel = 1;
+        }
+        host.advance(0.1);
+        const now = performance.now();
+        raceStore.getState().receive({ type: 'slow', view: host.slowView() }, now);
+        raceStore.getState().receive({ type: 'fast', view: host.fastView() }, now);
+      }, 100);
+    }, liveStart * 1000);
+    return () => { clearTimeout(start); if (timer) clearInterval(timer); };
+  }, [data]);
+
   const sun = sunAt({ circuitId, raceTimeSec, cloudCover: clouds });
   const hour = (START_HOUR[circuitId] ?? 15) + raceTimeSec / 3600;
   return (
     <div style={{ position: 'fixed', inset: 0, background: '#14181f' }}>
-      <RaceCanvas track={data.sim.activeTrack} circuitId={circuitId} roster={data.roster} camera={camera} selectedCarId={null} onSelectCar={() => {}} initialCameraMode={cameraMode} />
+      <RaceCanvas track={data.sim.activeTrack} circuitId={circuitId} roster={data.roster} camera={camera} selectedCarId={followIndex !== null ? data.sim.cars[followIndex]?.id ?? null : null} onSelectCar={() => {}} initialCameraMode={cameraMode} />
       <div data-bridge-review style={{ position: 'absolute', left: 12, bottom: 12, padding: '6px 10px', background: 'rgba(0,0,0,0.6)', color: '#fff', font: '13px system-ui', borderRadius: 6 }}>
         {circuitId} · {Math.floor(hour)}:{String(Math.round((hour % 1) * 60)).padStart(2, '0')} · nubes {Math.round(clouds * 100)} % · {sun.mode} · sombra ×{sun.length.toFixed(2)} · {data.sides.map(c => `${c.code} ${c.side === 'under' ? 'abajo' : 'arriba'}`).join(', ')}
       </div>

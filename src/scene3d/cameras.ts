@@ -25,8 +25,9 @@ export interface V3 { x: number; y: number; z: number }
 export interface CameraView { position: V3; target: V3; fov: number; up?: V3 }
 export interface CarPose { x: number; y: number; heading: number; t: number; speedMs?: number; z?: number; /** [CA5] Parado en su box, haciendo la parada. */ inBox?: boolean }
 
-export const CHASE_DISTANCE = 12;
-export const CHASE_HEIGHT = 3.5;
+/** [CA8, 07/11/2026] Más cerca del coche (antes 12 m detrás y 3,5 m de alto). */
+export const CHASE_DISTANCE = 6.5;
+export const CHASE_HEIGHT = 2.2;
 export const ONBOARD_HEIGHT = 1.0;
 export const HELICOPTER_HEIGHT = 60;
 /** Duración mínima de un plano de TV (s). */
