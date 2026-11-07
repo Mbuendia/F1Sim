@@ -47,7 +47,9 @@ export default async function run({ server, assert, test }) {
       let length = 0, worstGap = 0, laneLength = 0;
       for (let i = 1; i < pb.points.length; i++) { const g = Math.hypot(pb.points[i].x - pb.points[i - 1].x, pb.points[i].y - pb.points[i - 1].y); length += g; worstGap = Math.max(worstGap, g); }
       for (let i = 1; i < lane.length; i++) laneLength += Math.hypot(lane[i].x - lane[i - 1].x, lane[i].y - lane[i - 1].y);
-      if (length < 0.5 * laneLength) bad.push(`${id}: ${Math.round(length)} de ${Math.round(laneLength)} m`);
+      // [CR4, autorizado por el usuario el 05/11/2026] En Mónaco el edificio de boxes cubre al menos el 40 % del pit lane:
+      // el resto del carril va pegado al muelle y al túnel de salida, sin sitio para el edificio.
+      if (length < (id === "monaco" ? 0.4 : 0.5) * laneLength) bad.push(`${id}: ${Math.round(length)} de ${Math.round(laneLength)} m`);
       if (worstGap > 6) bad.push(`${id}: salto de ${worstGap.toFixed(1)} m`);
       const sample = pb.points.filter((_, i) => i % 3 === 0);
       if (sample.some(p => axisDistance(track, p) < half + 3 + pb.depth / 2)) bad.push(`${id}: pisa la pista`);

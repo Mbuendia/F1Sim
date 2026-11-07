@@ -1,7 +1,8 @@
 // Puente y sombras (21/10/2026): el lienzo real de carrera con coches colocados por debajo y por encima del puente de
 // Suzuka. Solo en desarrollo: `?revision=puente`, con `&circuito=` (suzuka), `&hora=` (segundos de carrera, 0),
 // `&nubes=` (0 a 1), `&zoom=` (píxeles por metro, 4) y `&rot=` (giro de la cámara en grados, 0). [CR2] `&boxes=1` pone a
-// cada coche parado en su cajón del pit lane (para revisar dónde paran).
+// cada coche parado en su cajón del pit lane (para revisar dónde paran). [CA5] `&parada=` (segundos) pone a cada coche en ese
+// momento de una parada de 4,6 s con la rueda delantera derecha atascada, de medios a duros (con `&boxes=1`).
 import { useEffect, useMemo, useState } from 'react';
 import { RaceSimulation } from '../simulation/RaceSimulation';
 import { PitStopModel } from '../simulation/PitStopModel';
@@ -25,6 +26,7 @@ const rotation = Number(q.get('rot') ?? 0) * Math.PI / 180;
 const cameraMode = (q.get('camara') ?? undefined) as CameraMode3D | undefined;
 const finished = q.get('fin') === '1';
 const atBoxes = q.get('boxes') === '1';
+const stopAt = q.has('parada') ? Number(q.get('parada')) : null;
 
 export default function BridgeReview() {
   const data = useMemo(() => {
@@ -52,6 +54,11 @@ export default function BridgeReview() {
         car.trackT = ((car.progress % 1) + 1) % 1; car.lateralOffset = car.targetLateralOffset = 0; car.currentSpeedKmh = 0;
         const p = calculateCarWorldPosition(car, track);
         car.worldX = p.worldX; car.worldY = p.worldY; car.worldAngle = p.worldAngle;
+        if (stopAt !== null) {
+          car.pitStop.pitLaneProgress = PitStopModel.getBoxProgress(car, track); car.pitStop.passMode = 'service';
+          car.pitStop.stopDuration = 4.6; car.pitStop.currentStopTimer = Math.max(0.01, Math.min(4.59, stopAt));
+          car.pitStop.stopCause = 'rueda-atascada'; car.pitStop.stopWheel = 1; car.tires.compound = 'medium'; car.pitStop.targetCompound = 'hard';
+        }
       }
     }
     const target = crossing ?? { x: sim.cars[0].worldX, y: sim.cars[0].worldY };
@@ -75,7 +82,9 @@ export default function BridgeReview() {
   useEffect(() => {
     raceStore.getState().reset(data.roster);
     const fast = { ...data.host.fastView(), t: raceTimeSec };
-    const base = data.host.slowView();
+    const raw = data.host.slowView();
+    // [CA5] La parada se ancla al tiempo de carrera de la foto: así la escena la ve en el segundo `parada`.
+    const base = stopAt === null ? raw : { ...raw, cars: raw.cars.map(c => (c.stop ? { ...c, stop: { ...c.stop, start: raceTimeSec - stopAt } } : c)) };
     const slow = { ...base, t: raceTimeSec, finished: finished || base.finished, weatherScene: { ...base.weatherScene, cloudCover: clouds } };
     const now = performance.now();
     raceStore.getState().receive({ type: 'slow', view: slow }, now);

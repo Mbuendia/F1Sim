@@ -4,6 +4,8 @@
  * El mundo del juego (x, y en metros; y hacia abajo = sur; z hacia arriba) va a three como (x, z, y).
  */
 import * as THREE from 'three';
+import { syncCompound } from './compoundMount';
+import { pitStopPose, pitStopTimeline, type PitPose } from './pitStopAnimation';
 import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import type { TrackDefinition } from '../data/barcelonaTrack';
 import type { CarState, SafetyCarState } from '../types/f1';
@@ -32,7 +34,7 @@ import { perfStats } from '../dev/perfStats';
 import { planCars, shadowSource, type CarLevel } from './carDots';
 import { itemTransform, planInstances } from './instancing';
 import { QUALITY_PROFILES, type QualityProfile } from '../settings/quality';
-import { carHeightAt, reliefFor, terrainSize, WALL_SLOPE, type Relief } from './relief';
+import { carHeightAt, itemBaseHeight, reliefFor, terrainSize, WALL_SLOPE, type Relief } from './relief';
 import { pitTunnelFor, type PitTunnel } from './pitTunnel';
 import { roadTunnelFor, type RoadTunnel } from './roadTunnel';
 
@@ -87,12 +89,49 @@ export interface Frame3D {
   followedCarId?: number | null;
   /** [PF2.7] Coche en foco (persecución o a bordo): él y los cercanos, con el modelo completo. */
   focusCarId?: number | null;
+  /** [CA5] Tiempo de carrera del fotograma, para animar las paradas en boxes. */
+  raceTimeSec?: number;
+}
+
+/** [CA5] Lo que sube el gato el coche (m) y lo que se separa del coche una rueda al sacarla (m). */
+const PIT_LIFT_M = 0.07;
+const PIT_WHEEL_OUT_M = 0.75;
+
+/**
+ * [CA5] Pone un coche 3D en la postura de su parada: cada rueda hacia fuera según lo que va de la parada y su banda con
+ * el compuesto de la rueda que se ve. Sin parada, las ruedas vuelven a su sitio y la banda la vuelve a pintar syncCompound.
+ */
+function applyPitPose(root: THREE.Object3D, pose: PitPose | null): void {
+  const data = root.userData as { pitWheels?: { node: THREE.Object3D | undefined; base: THREE.Vector3; bands: THREE.MeshLambertMaterial[] }[]; pitActive?: boolean; compound?: string };
+  if (!pose && !data.pitActive) return;
+  data.pitWheels ??= CAR_MODEL.wheels.map(name => {
+    const node = root.getObjectByName(name);
+    const bands: THREE.MeshLambertMaterial[] = [];
+    node?.traverse(o => {
+      const mesh = o as THREE.Mesh;
+      if (!mesh.isMesh) return;
+      for (const m of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) if (m.name === CAR_MODEL.materials.band) bands.push(m as THREE.MeshLambertMaterial);
+    });
+    return { node, base: node ? node.position.clone() : new THREE.Vector3(), bands };
+  });
+  data.pitWheels.forEach((w, k) => {
+    if (!w.node) return;
+    const p = pose?.wheels[k];
+    w.node.position.copy(w.base);
+    if (!p) return;
+    w.node.position.z += (Math.sign(w.base.z) || 1) * p.off * PIT_WHEEL_OUT_M;
+    for (const m of w.bands) m.color.set(compoundStyle(p.compound).color);
+  });
+  data.pitActive = Boolean(pose);
+  if (!pose) data.compound = undefined;
 }
 
 interface CarSlot { full: THREE.Object3D | null; lod: THREE.Object3D | null; proxy: THREE.Mesh; release: (() => void) | null; key: string }
 
 export class RaceScene3D {
   readonly renderer: THREE.WebGLRenderer;
+  /** [CA5] Tiempo de carrera del último fotograma. */
+  private raceTimeSec = 0;
   private readonly scene = new THREE.Scene();
   private readonly camera = new THREE.PerspectiveCamera(55, 16 / 9, 0.3, 30000);
   private readonly sunLight = new THREE.DirectionalLight(0xffffff, 2.2);
@@ -172,8 +211,9 @@ export class RaceScene3D {
     }
   }
 
-  /** Monta el circuito: el suelo al momento; escenario y coches en cuanto cargan sus modelos. */
-  async load(track: TrackDefinition, circuitId: string, base: string): Promise<void> {
+  /** Monta el circuito: el suelo al momento; escenario y coches en cuanto cargan sus modelos. [PF10] `onProgress` avisa
+   * de cada pieza que termina: escenario, kit, coche y coche ligero. */
+  async load(track: TrackDefinition, circuitId: string, base: string, onProgress?: (id: 'escenario' | 'kit' | 'coche' | 'coche-ligero') => void): Promise<void> {
     this.track = track; this.circuitId = circuitId; this.lap = track.lapLengthMeters || 5000;
     this.world.clear();
     const scenery = sceneryFor(track, circuitId);
@@ -185,7 +225,7 @@ export class RaceScene3D {
     this.floodlights = kit
       ? kit.pieces.filter(p => p.piece === 'poste_luz').map(p => ({ kind: 'floodlight', model: 'kit', x: p.x, y: p.y, heading: p.heading, length: 1, width: 1, height: 6.1 }))
       : scenery.items.filter(it => it.kind === 'floodlight');
-    this.world.add(buildGround(track, circuitId, scenery.infield, scenery.water, scenery.street, kit));
+    this.world.add(buildGround(track, circuitId, scenery.infield, scenery.water, scenery.street, kit, scenery.escapes ?? []));
     this.world.add(buildWalls(track, circuitId, scenery.barriers));
     if (scenery.pitBuilding) this.world.add(buildPitBuildingMesh(scenery.pitBuilding, circuitId));
     if (this.floodlights.length) { this.lampFx = buildLampFx(this.floodlights, track); this.world.add(this.lampFx); }
@@ -196,12 +236,13 @@ export class RaceScene3D {
     if (pitTunnel) this.world.add(buildPitTunnel(pitTunnel));
     // [CR4] Mónaco: el túnel bajo el hotel, del Portier a la nueva chicane.
     const roadTunnel = roadTunnelFor(circuitId);
-    if (roadTunnel) this.world.add(buildRoadTunnel(roadTunnel, track, circuitId));
+    if (roadTunnel) this.world.add(buildRoadTunnel(roadTunnel, track, circuitId, base));
+    if (scenery.boards?.length) this.world.add(buildDistanceBoards(scenery.boards, circuitId));
     const [items, kitGroup, car, lod] = await Promise.all([
-      buildScenery(scenery.items, track, base, circuitId).catch(error => { console.error('Escenario 3D', error); return null; }),
-      kit ? buildKit(kit, base).catch(error => { console.error('Kit de circuito', error); return null; }) : Promise.resolve(null),
-      loadModel(modelUrl(base, CAR_MODEL.file)).catch(() => null),
-      loadModel(modelUrl(base, LOD_FILE)).catch(() => null),
+      buildScenery(scenery.items, track, base, circuitId, scenery.water).catch(error => { console.error('Escenario 3D', error); return null; }).finally(() => onProgress?.('escenario')),
+      (kit ? buildKit(kit, base).catch(error => { console.error('Kit de circuito', error); return null; }) : Promise.resolve(null)).finally(() => onProgress?.('kit')),
+      loadModel(modelUrl(base, CAR_MODEL.file)).catch(() => null).finally(() => onProgress?.('coche')),
+      loadModel(modelUrl(base, LOD_FILE)).catch(() => null).finally(() => onProgress?.('coche-ligero')),
     ]);
     if (this.disposed) { if (items) disposeModel(items); if (kitGroup) disposeModel(kitGroup); return; }
     if (kitGroup) this.world.add(kitGroup);
@@ -228,6 +269,7 @@ export class RaceScene3D {
     if (canvas.width !== w || canvas.height !== h) this.renderer.setSize(w, h, false);
 
     const { view, sun } = frame;
+    this.raceTimeSec = frame.raceTimeSec ?? this.raceTimeSec;
     this.camera.fov = view.fov;
     this.camera.aspect = width / height;
     this.camera.position.copy(W(view.position.x, view.position.y, view.position.z));
@@ -392,8 +434,17 @@ export class RaceScene3D {
         slot.lod = root;
         holder.add(root);
       }
+      // [CA4] Cada coche monta el compuesto que lleva: cambia al salir de boxes.
+      if (slot.full) syncCompound(slot.full, car.tires.compound);
+      if (slot.lod) syncCompound(slot.lod, car.tires.compound);
+      // [CA5] Cambio de ruedas: levanta el coche y mueve sus ruedas; la posición sigue siendo la del motor.
+      const stop = car.pitStop?.serviceStop ?? null;
+      const pitPose = stop ? pitStopPose(pitStopTimeline(stop), this.raceTimeSec - stop.start, stop.from, stop.to) : null;
+      if (slot.full) applyPitPose(slot.full, pitPose);
+      if (slot.lod) applyPitPose(slot.lod, pitPose);
       const z = this.carHeight(car);
       holder.position.copy(W(car.worldX, car.worldY, z));
+      if (pitPose) holder.position.y += pitPose.jack * PIT_LIFT_M;
       holder.rotation.set(0, -car.worldAngle, this.pitchAt(car), 'YZX');
       // En desarrollo, `window.__forceLod = true` enseña el coche ligero de cerca (para revisarlo).
       const forceLod = import.meta.env.DEV && (globalThis as { __forceLod?: boolean }).__forceLod === true;
@@ -563,7 +614,7 @@ function setLayer(root: THREE.Object3D, layer: number): void {
   root.traverse(o => o.layers.set(layer));
 }
 
-function buildGround(track: TrackDefinition, circuitId: string, infield: { x: number; y: number }[][], water: { x: number; y: number }[][], street: boolean, kit: KitPlacement | null = null): THREE.Object3D {
+function buildGround(track: TrackDefinition, circuitId: string, infield: { x: number; y: number }[][], water: { x: number; y: number }[][], street: boolean, kit: KitPlacement | null = null, escapes: { points: { x: number; y: number }[] }[] = []): THREE.Object3D {
   const b = track.bounds, pad = 3000;
   const flat = new FlatBuilder();
   const layers = getTrackLayers(track, circuitId);
@@ -588,12 +639,16 @@ function buildGround(track: TrackDefinition, circuitId: string, infield: { x: nu
   shapes.forEach((s, i) => {
     if (i === bands) {
       for (const poly of water) { if (relief) flat.level = relief.waterLevel(poly) + 0.05; flat.fill(poly, col('#2b6f9e')); flat.level = null; }
+      // [CR4] Escapatorias de asfalto (Mónaco), debajo de la pista y sus pianos.
+      for (const e of escapes) flat.fill(e.points, col('#33373f'));
       // [CK3] Con kit, las escapatorias son las suyas (asfalto y luego grava; asfalto pintado en el estadio).
       if (kit) for (const strip of kit.strips) flat.fill(strip.points, col(KIT_STRIP_COLORS[strip.surface]));
       else paintRunoffs(flat, track, circuitId, runoffZones3d(track, circuitId));
     }
     if (bands >= 0 && i >= bands && i < bands + runoffFills) return;
     if (s.kind === 'stroke' && s.color === '#5a4f3a' && s.width >= layers.trackWidthM + 10) return;
+    // [CR4] En Mónaco la banda oscura ancha del plano 2D (49 m) se pegaba a las laderas y las dejaba negras: fuera.
+    if (circuitId === 'monaco' && relief && s.kind === 'stroke' && s.width >= layers.trackWidthM + 10) return;
     if (s.kind === 'fill') flat.fill(s.points, col(s.color, s.alpha ?? 1));
     else if (tunnel && tunnelShapes.has(s.points)) for (const run of uncoveredRuns(s.points, tunnel)) flat.ribbon(run, Math.max(s.width, s.hairline ? 0.2 : 0), col(s.color, s.alpha ?? 1));
     else flat.ribbon(s.points, Math.max(s.width, s.hairline ? 0.2 : 0), col(s.color, s.alpha ?? 1), s.closed);
@@ -617,7 +672,9 @@ function buildGround(track: TrackDefinition, circuitId: string, infield: { x: nu
   if (relief) {
     // El terreno escribe profundidad (tapa lo que queda detrás de una loma); la pista y las pinturas, encima, sin escribirla.
     const group = new THREE.Group();
-    const terrain = buildTerrain(track, relief, infield, street ? '#3b3f46' : '#3f6a34', street ? '#464a51' : '#4a7a3c', street ? '#8b8a85' : '#7a7062');
+    // [CR4] Mónaco: piedra clara de ciudad en vez de la ladera oscura (revisión del usuario, 04/11/2026).
+    const monaco = circuitId === 'monaco';
+    const terrain = buildTerrain(track, relief, infield, monaco ? '#8a8378' : street ? '#3b3f46' : '#3f6a34', monaco ? '#7d776d' : street ? '#464a51' : '#4a7a3c', monaco ? '#b3a993' : street ? '#8b8a85' : '#7a7062', monaco ? '#3a362f' : undefined);
     terrain.renderOrder = -11;
     const decals = flat.mesh(new THREE.MeshLambertMaterial({ vertexColors: true, depthWrite: false, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4 }));
     decals.renderOrder = -10;
@@ -632,7 +689,7 @@ function buildGround(track: TrackDefinition, circuitId: string, infield: { x: nu
 }
 
 /** [CK5] Terreno con relieve: rejilla de `terrainSize` (150.000 triángulos como mucho) con el color de dentro y fuera. */
-function buildTerrain(track: TrackDefinition, relief: Relief, infield: { x: number; y: number }[][], outside: string, inside: string, wall: string): THREE.Mesh {
+function buildTerrain(track: TrackDefinition, relief: Relief, infield: { x: number; y: number }[][], outside: string, inside: string, wall: string, glow?: string): THREE.Mesh {
   const { x0, y0, cell, cols, rows } = terrainSize(track);
   const pos = new Float32Array(cols * rows * 3), colors = new Float32Array(cols * rows * 3);
   const out = new THREE.Color(outside), inn = new THREE.Color(inside);
@@ -665,7 +722,8 @@ function buildTerrain(track: TrackDefinition, relief: Relief, infield: { x: numb
   g.setAttribute('color', new THREE.Float32BufferAttribute(allCol, 3));
   g.setIndex(index);
   g.computeVertexNormals();
-  const mesh = new THREE.Mesh(g, new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide }));
+  // [CR4] Con glow (Mónaco) las caras a la sombra no se quedan negras: es piedra clara a pleno sol.
+  const mesh = new THREE.Mesh(g, new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide, ...(glow ? { emissive: new THREE.Color(glow) } : {}) }));
   mesh.receiveShadow = true;
   return mesh;
 }
@@ -696,6 +754,28 @@ function sponsorTexture(name: Sponsor): THREE.CanvasTexture {
   tex.colorSpace = THREE.SRGBColorSpace;
   sponsorTextures.set(name, tex);
   return tex;
+}
+
+/** [CR4] Carteles de metros que faltan para la curva (Mónaco): blancos con la cifra en negro, pegados a la cara de la
+ * pared de la derecha (paralelos a ella, mirando a la pista), por encima del guardarraíl. Una llamada de dibujo por cartel (son cuatro). */
+function buildDistanceBoards(boards: { x: number; y: number; heading: number; label: string }[], circuitId: string): THREE.Group {
+  const relief = reliefFor(circuitId), group = new THREE.Group();
+  group.name = 'carteles-metros';
+  for (const b of boards) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 192; canvas.height = 128;
+    const ctx = canvas.getContext('2d')!;
+    ctx.fillStyle = '#f4f4f0'; ctx.fillRect(0, 0, 192, 128);
+    ctx.strokeStyle = '#1b1b1b'; ctx.lineWidth = 8; ctx.strokeRect(4, 4, 184, 120);
+    ctx.fillStyle = '#111'; ctx.font = "800 84px 'Rajdhani', 'Arial Black', sans-serif"; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(b.label, 96, 68, 172);
+    const tex = new THREE.CanvasTexture(canvas); tex.colorSpace = THREE.SRGBColorSpace;
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 1.2), new THREE.MeshLambertMaterial({ map: tex }));
+    mesh.position.copy(W(b.x, b.y, (relief ? relief.groundHeight(b.x, b.y) : 0) + 2.1));
+    mesh.rotation.y = Math.atan2(Math.sin(b.heading), -Math.cos(b.heading));
+    group.add(mesh);
+  }
+  return group;
 }
 
 /** Barrera TecPro: bloques de 1,2 m de alto con el panel del patrocinador por las dos caras. */
@@ -778,7 +858,7 @@ function buildWalls(track: TrackDefinition, circuitId: string, barriers: SceneBa
  * lados, un dintel y unas aletas en cada boca y una línea de luces en el techo. La losa da sombra y tapa los coches
  * desde arriba. Dos llamadas de dibujo: la estructura y las luces.
  */
-function buildRoadTunnel(t: RoadTunnel, track: TrackDefinition, circuitId: string): THREE.Group {
+function buildRoadTunnel(t: RoadTunnel, track: TrackDefinition, circuitId: string, base = ''): THREE.Group {
   const group = new THREE.Group();
   const relief = reliefFor(circuitId), pts = track.points, n = pts.length, half = (track.trackWidthMeters || 12) / 2;
   const hw = half + 1.5, C = t.clearanceM, SLAB = 0.8, MOUND = 13;
@@ -795,6 +875,8 @@ function buildRoadTunnel(t: RoadTunnel, track: TrackDefinition, circuitId: strin
   for (let i = t.first; i < t.last; i++) {
     const j = i + 1, hi = h(i), hj = h(j);
     for (const sd of [-1, 1]) {
+      // [CR4] Del lado del mar no hay muro ni ladera: van los arcos (arches), por los que se ve el exterior.
+      if (sd === t.seaSide) continue;
       // Muro, chaflán de la bóveda y, por fuera, la ladera que baja de la losa al suelo.
       quad(at(i, sd * hw, hi), at(j, sd * hw, hj), at(j, sd * hw, hj + C - 0.8), at(i, sd * hw, hi + C - 0.8), '#4a4d52');
       quad(at(i, sd * hw, hi + C - 0.8), at(j, sd * hw, hj + C - 0.8), at(j, sd * (hw - 1.5), hj + C), at(i, sd * (hw - 1.5), hi + C), '#3e4146');
@@ -808,7 +890,7 @@ function buildRoadTunnel(t: RoadTunnel, track: TrackDefinition, circuitId: strin
   for (const i of [t.first, t.last]) {
     const hi = h(i);
     quad(at(i, -(hw + 1), hi + C - 0.8), at(i, hw + 1, hi + C - 0.8), at(i, hw + 1, hi + C + SLAB), at(i, -(hw + 1), hi + C + SLAB), '#8d8a83');
-    for (const sd of [-1, 1]) quad(at(i, sd * hw, hi), at(i, sd * hw, hi + C + SLAB), at(i, sd * (hw + 1 + MOUND), ground(i, sd * (hw + 1 + MOUND)) + 0.2), at(i, sd * (hw + 1 + MOUND), ground(i, sd * (hw + 1 + MOUND))), '#7d7a73');
+    for (const sd of [-1, 1]) if (sd !== t.seaSide) quad(at(i, sd * hw, hi), at(i, sd * hw, hi + C + SLAB), at(i, sd * (hw + 1 + MOUND), ground(i, sd * (hw + 1 + MOUND)) + 0.2), at(i, sd * (hw + 1 + MOUND), ground(i, sd * (hw + 1 + MOUND))), '#7d7a73');
   }
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
@@ -828,6 +910,26 @@ function buildRoadTunnel(t: RoadTunnel, track: TrackDefinition, circuitId: strin
   lg.setAttribute('position', new THREE.Float32BufferAttribute(lights, 3));
   const lamps = new THREE.Mesh(lg, new THREE.MeshBasicMaterial({ color: '#fff3c4', side: THREE.DoubleSide }));
   group.add(structure, lamps);
+  // [CR4] Arcos al mar: un módulo de 20 m (models/kit/arcada_tunel.glb, hecho en Blender) por cada uno de `arches`, en el
+  // muro del lado del mar, apoyado en la pista y siguiendo su dirección. Una malla instanciada: una llamada de dibujo.
+  loadModel(modelUrl(base, 'models/kit/arcada_tunel.glb')).then(gltf => {
+    gltf.scene.updateMatrixWorld(true);
+    gltf.scene.traverse(o => {
+      const mesh = o as THREE.Mesh;
+      if (!mesh.isMesh) return;
+      const inst = new THREE.InstancedMesh(mesh.geometry, mesh.material as THREE.Material, t.arches.length);
+      const m = new THREE.Matrix4(), q = new THREE.Quaternion(), up = new THREE.Vector3(0, 1, 0), one = new THREE.Vector3(1, 1, 1);
+      t.arches.forEach((arch, k) => {
+        const a = pts[Math.max(0, arch.i - 3)], b = pts[Math.min(n - 1, arch.i + 3)], heading = Math.atan2(b.y - a.y, b.x - a.x);
+        const p = off(arch.i, t.seaSide * (hw + 0.6));
+        q.setFromAxisAngle(up, -heading);
+        inst.setMatrixAt(k, m.compose(W(p.x, p.y, h(arch.i)), q, one).multiply(mesh.matrixWorld));
+      });
+      inst.instanceMatrix.needsUpdate = true; inst.computeBoundingSphere();
+      inst.castShadow = true; inst.receiveShadow = true; inst.name = 'tunel:arcos';
+      group.add(inst);
+    });
+  }).catch(() => { /* sin la pieza: el lado del mar queda abierto */ });
   return group;
 }
 
@@ -960,7 +1062,7 @@ function buildElevatedRoad(track: TrackDefinition, o: { upperT: number }, circui
  * sigue siendo una copia del modelo. Así el escenario pasa de una llamada de dibujo por pieza de cada objeto a una por
  * pieza de cada grupo, y three descarta los trozos que no se ven.
  */
-async function buildScenery(items: SceneItem[], track: TrackDefinition, base: string, circuitId: string): Promise<THREE.Group> {
+async function buildScenery(items: SceneItem[], track: TrackDefinition, base: string, circuitId: string, water: { x: number; y: number }[][] = []): Promise<THREE.Group> {
   const relief = reliefFor(circuitId);
   const group = new THREE.Group();
   const models = [...new Set(items.map(it => it.model))];
@@ -991,7 +1093,7 @@ async function buildScenery(items: SceneItem[], track: TrackDefinition, base: st
   };
   const matrixOf = (it: SceneItem, size: THREE.Vector3) => {
     const t = itemTransform(it, size, track);
-    return new THREE.Matrix4().compose(W(t.x, t.y, relief ? relief.groundHeight(t.x, t.y) : 0), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), -t.heading), new THREE.Vector3(t.sx, t.sy, t.sz));
+    return new THREE.Matrix4().compose(W(t.x, t.y, relief ? itemBaseHeight(circuitId, { kind: it.kind, x: t.x, y: t.y }, water) : 0), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), -t.heading), new THREE.Vector3(t.sx, t.sy, t.sz));
   };
   const plan = planInstances(items);
   for (const it of plan.singles) {

@@ -5,7 +5,7 @@
 import type { TrackDefinition } from '../data/barcelonaTrack';
 import type { CarState } from '../types/f1';
 import { isCarVisible } from '../utils/carPosition';
-import { TvDirector, cenitalGiroView, cenitalView, chaseView, helicopterView, onboardView, overviewView, type CameraMode3D, type CameraView, type CarPose, type V3 } from './cameras';
+import { TvDirector, cenitalGiroView, cenitalView, chaseView, helicopterView, onboardView, overviewView, pitBoxView, type CameraMode3D, type CameraView, type CarPose, type V3 } from './cameras';
 import { cameraCeiling, cameraFloor, reliefFor } from './relief';
 
 export interface Orbit { x: number; y: number; distance: number; azimuth: number; elevation: number }
@@ -15,7 +15,10 @@ export class CameraDirector3D {
   private tv: TvDirector | null = null;
   private smooth: CameraView | null = null;
   private lastShot = -1;
+  /** [CA5] El coche elegido estaba parado en su box en el fotograma anterior. */
+  private wasInBox = false;
   private lastMode: CameraMode3D | null = null;
+  private lastRadius = 120;
 
   /** El modo vive en la cámara compartida, para que el botón de la barra de arriba sea el único que lo cambia. */
   constructor(private readonly track: TrackDefinition, private readonly circuitId: string,
@@ -45,10 +48,12 @@ export class CameraDirector3D {
     this.mode = 'libre';
   }
 
-  view(cars: CarState[], selectedId: number | null, timeSec: number, dt: number, aspect: number, heightOf: (car: CarState) => number):
+  view(cars: CarState[], selectedId: number | null, timeSec: number, dt: number, aspect: number, heightOf: (car: CarState) => number, paused = false):
     { view: CameraView; shadowRadius: number } {
+    // [PF12] En pausa la cámara se queda donde está (salvo que se cambie de modo): nada se mueve en la imagen.
+    if (paused && this.smooth && this.mode === this.lastMode && this.mode !== 'libre') return { view: clone(this.smooth), shadowRadius: this.lastRadius };
     const car = this.focusCar(cars, selectedId);
-    const pose: CarPose | null = car ? { x: car.worldX, y: car.worldY, heading: car.worldAngle, t: car.trackT, z: heightOf(car) } : null;
+    const pose: CarPose | null = car ? { x: car.worldX, y: car.worldY, heading: car.worldAngle, t: car.trackT, z: heightOf(car), inBox: Boolean(car.pitStop?.serviceStop) } : null;
     let wanted: CameraView;
     let radius = 120;
     let cut = this.mode !== this.lastMode;
@@ -81,6 +86,11 @@ export class CameraDirector3D {
         radius = Math.max(b.maxX - b.minX, b.maxY - b.minY) * 0.6;
       }
     }
+    // [CA5] Con el coche elegido parado en su box, las cámaras que lo siguen pasan a la de boxes para ver el cambio de ruedas.
+    const inBox = Boolean(pose?.inBox) && ['persecucion', 'tv', 'helicoptero', 'a-bordo'].includes(this.mode);
+    if (inBox && pose) { wanted = pitBoxView(pose); radius = 60; if (!this.wasInBox) cut = true; }
+    else if (this.wasInBox) cut = true;
+    this.wasInBox = inBox;
     // [CK5] Con relieve: las cámaras fijas de la tele y la mirada del helicóptero y de la libre suben con el suelo.
     const relief = reliefFor(this.circuitId);
     if (relief) {
@@ -106,6 +116,7 @@ export class CameraDirector3D {
     if (relief) this.smooth.position.z = Math.max(this.smooth.position.z, cameraFloor(this.circuitId, this.smooth.position.x, this.smooth.position.y));
     // [CR4] En el túnel de Mónaco, la persecución y la de a bordo van por debajo del techo.
     if (this.mode === 'persecucion' || this.mode === 'a-bordo') this.smooth.position.z = Math.min(this.smooth.position.z, cameraCeiling(this.circuitId, this.smooth.position.x, this.smooth.position.y));
+    this.lastRadius = radius;
     return { view: clone(this.smooth), shadowRadius: radius };
   }
 }

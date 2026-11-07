@@ -23,7 +23,7 @@ export const CAMERA_LABELS: Record<CameraMode3D, string> = {
 export interface V3 { x: number; y: number; z: number }
 /** `up`: hacia dónde queda la parte de arriba de la pantalla (solo hace falta mirando en vertical). */
 export interface CameraView { position: V3; target: V3; fov: number; up?: V3 }
-export interface CarPose { x: number; y: number; heading: number; t: number; speedMs?: number; z?: number }
+export interface CarPose { x: number; y: number; heading: number; t: number; speedMs?: number; z?: number; /** [CA5] Parado en su box, haciendo la parada. */ inBox?: boolean }
 
 export const CHASE_DISTANCE = 12;
 export const CHASE_HEIGHT = 3.5;
@@ -48,6 +48,16 @@ export function cenitalGiroView(car: CarPose, zoom = 1): CameraView {
   const view = cenitalView(car, zoom);
   view.up = { x: Math.sin(car.heading), y: -Math.cos(car.heading), z: 0 };
   return view;
+}
+
+/** [CA5] Cámara de boxes: a un lado y algo por delante del coche parado, baja, para ver el cambio de ruedas. */
+export function pitBoxView(car: CarPose): CameraView {
+  const c = Math.cos(car.heading), s = Math.sin(car.heading), z = car.z ?? 0;
+  return {
+    position: { x: car.x + c * 4.2 - s * 4.6, y: car.y + s * 4.2 + c * 4.6, z: z + 1.7 },
+    target: { x: car.x, y: car.y, z: z + 0.45 },
+    fov: 50,
+  };
 }
 
 export function chaseView(car: CarPose): CameraView {

@@ -80,7 +80,8 @@ export default async function run({ server, assert, test }) {
       'R55: la carrocería tiene zonas de pintura principal, secundaria y carbono');
     assert(span > 4.6 && span < 5.8, 'R55: el monoplaza mide lo que un F1', `${span.toFixed(2)} m`);
     const extras = car.json.asset?.extras ?? {};
-    assert(/Qvist/i.test(extras.author ?? '') && /CC-BY-4\.0/.test(extras.license ?? '') && /sketchfab\.com/.test(extras.source ?? '') && typeof extras.changes === 'string',
+    // [CA2, autorizado por el usuario el 07/11/2026] El monoplaza es el coche de 2025 de Abu Saif (antes, el de 2026 de Qvist_designs).
+    assert(/Abu Saif/i.test(extras.author ?? '') && /CC-BY-4\.0/.test(extras.license ?? '') && /sketchfab\.com/.test(extras.source ?? '') && typeof extras.changes === 'string',
       'R55: el archivo conserva autor, licencia y origen, y declara que está modificado', JSON.stringify(extras));
   });
 

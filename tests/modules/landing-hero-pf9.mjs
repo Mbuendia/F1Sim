@@ -79,7 +79,8 @@ export default async function run({ server, assert, test }) {
   await test('PF9.6: crédito del modelo', async () => {
     const { LandingPage } = await server.ssrLoadModule('/src/components/LandingPage.tsx');
     const html = renderToStaticMarkup(createElement(LandingPage, { onEnter: () => {} }));
-    assert(/Qvist/.test(html) && /CC-BY-4\.0|CC BY 4\.0/.test(html), 'PF9: el crédito del coche (CC BY 4.0) se ve en la portada');
+    // [CA2/CA4, autorizado por el usuario el 07/11/2026] La portada enseña el coche de 2025 de Abu Saif (antes, el de Qvist_designs).
+    assert(/Abu Saif/.test(html) && /CC-BY-4\.0|CC BY 4\.0/.test(html), 'PF9: el crédito del coche (CC BY 4.0) se ve en la portada');
   });
 
   await test('PF9.7: medido después', () => {

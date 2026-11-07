@@ -15,11 +15,11 @@ export interface CompoundStyle {
 }
 
 export const COMPOUND_STYLES: Record<TireCompound, CompoundStyle> = {
-  soft: { color: '#e10600', letter: 'S', name: 'Soft', label: 'Blando (Soft) · P Zero rojo' },
-  medium: { color: '#ffd700', letter: 'M', name: 'Medium', label: 'Medio (Medium) · P Zero amarillo' },
-  hard: { color: '#ffffff', letter: 'H', name: 'Hard', label: 'Duro (Hard) · P Zero blanco' },
-  intermediate: { color: '#22c55e', letter: 'I', name: 'Intermediate', label: 'Intermedio (Intermediate) · Cinturato verde' },
-  wet: { color: '#3b82f6', letter: 'W', name: 'Wet', label: 'Lluvia (Wet) · Cinturato azul' },
+  soft: { color: '#e10600', letter: 'S', name: 'Soft', label: 'Blando (Soft) · Pirulí rojo' },
+  medium: { color: '#ffd700', letter: 'M', name: 'Medium', label: 'Medio (Medium) · Pirulí amarillo' },
+  hard: { color: '#ffffff', letter: 'H', name: 'Hard', label: 'Duro (Hard) · Pirulí blanco' },
+  intermediate: { color: '#22c55e', letter: 'I', name: 'Intermediate', label: 'Intermedio (Intermediate) · Pirulí verde' },
+  wet: { color: '#3b82f6', letter: 'W', name: 'Wet', label: 'Lluvia (Wet) · Pirulí azul' },
 };
 
 export const TIRE_COMPOUNDS = Object.keys(COMPOUND_STYLES) as TireCompound[];

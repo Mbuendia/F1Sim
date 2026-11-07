@@ -11,7 +11,7 @@ export const CAR_LENGTH_M = 5.4;
 export const DOT_PX = 8;
 /** Margen para volver del punto al coche: tiene que medir un 20 % más (así no parpadea al cruzar el límite). */
 export const DOT_HYSTERESIS = 0.2;
-/** [PF2] El modelo completo (127.000 triángulos) solo cuando el coche mide al menos esto en pantalla (píxeles CSS). */
+/** [PF2] El modelo completo (unos 94.000 triángulos desde CA2) solo cuando el coche mide al menos esto en pantalla (píxeles CSS). */
 export const FULL_PX = 150;
 /** [PF2] Margen para dejar el completo: quien lo lleva sigue con él hasta bajar un 20 % del corte (120 px). */
 export const FULL_HYSTERESIS = 0.2;

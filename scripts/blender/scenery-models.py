@@ -705,7 +705,7 @@ def torre_control():
 
 MODELS = {
     "grandstand": grandstand, "vip-lounge": vip_lounge, "paddock": paddock, "tree": tree, "building": building,
-    "yacht": yacht, "yacht-large": yacht_large, "casino": casino, "red-bull": red_bull,
+    "yacht": yacht, "yacht-large": yacht_large, "casino": casino, "toro": red_bull,
     "shanghai-bridge": shanghai_bridge, "pavilion": pavilion,
     "floodlight": floodlight, "yas-hotel": yas_hotel, "yas-tower": yas_tower,
     "pit-building": pit_building, "start-gantry": start_gantry, "billboard": billboard, "pine": pine, "palm": palm,

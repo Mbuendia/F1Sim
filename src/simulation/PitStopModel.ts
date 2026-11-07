@@ -1,7 +1,7 @@
 import { random } from './Random';
 import { mountSet, pickSet, COMPOUND_LABEL, tireCompliance } from './TireInventory';
 import { DEFAULT_RULES } from '../rules/ruleSets';
-import { CarState, TireCompound } from '../types/f1';
+import { CarState, StopCause, TireCompound } from '../types/f1';
 import { TireModel } from './TireModel';
 import { TrackDefinition } from '../data/barcelonaTrack';
 import { TEAMS } from '../data/teams';
@@ -328,7 +328,13 @@ export class PitStopModel {
           else if (!inventory) car.tires = TireModel.createFreshTire(nextCompound);
           car.hasPuncture = false; // [FIX A5] Clear puncture after tires are changed
           pit.totalPitStops += 1;
-          pit.pendingLog = { lap: car.currentLap, setId: car.tireInventory?.mountedId ?? null, compound: nextCompound, serviceSec: pit.currentStopTimer, penaltySec: pit.penaltyPlannedSec ?? 0 };
+          // [CA6] Motivo, mecánicos y media de la carrera hasta esta parada (incluida).
+          const raceStops = (allCars ?? [car]).flatMap(c => c.pitStop.stopLog ?? []);
+          const serviceSec = pit.currentStopTimer, order = raceStops.length + 1;
+          const averageSec = Number(((raceStops.reduce((t, s) => t + s.serviceSec, 0) + serviceSec) / order).toFixed(2));
+          pit.pendingLog = { lap: car.currentLap, setId: car.tireInventory?.mountedId ?? null, compound: nextCompound, serviceSec, penaltySec: pit.penaltyPlannedSec ?? 0,
+            order, averageSec, cause: pit.stopCause ?? 'normal', ...(pit.stopWheel !== undefined ? { wheel: pit.stopWheel } : {}),
+            crew: { timeFactor: pit.crew?.timeFactor ?? 1, errorFactor: pit.crew?.errorFactor ?? 1 } };
           this.openLog(car);
 
           // [FIX A6] Cerrar el stint anterior
@@ -399,6 +405,18 @@ export class PitStopModel {
    * 15 % y 10 %). [T4.6] Con él, `errorFactor` escala la parte de paradas lentas y fallidas (las limpias conservan su
    * reparto entre rápidas y normales) y `timeFactor` el tiempo de una parada limpia.
    */
+  /** [CA6] Tiempo y motivo de un servicio: el tiempo es exactamente el de serviceTime y el motivo, la franja de la tirada. */
+  static serviceOutcome(roll: number, spread: number, crew?: { timeFactor: number; errorFactor: number }): { seconds: number; cause: StopCause; wheel?: number } {
+    const error = Math.min(2.4, Math.max(0, crew?.errorFactor ?? 1));
+    const normalEnd = error === 1 ? .75 : 1 - .25 * error, slowEnd = error === 1 ? .9 : 1 - .1 * error;
+    const fastEnd = error === 1 ? .2 : normalEnd * (.2 / .75);
+    const seconds = PitStopModel.serviceTime(roll, spread, crew);
+    if (roll < fastEnd) return { seconds, cause: 'rapida' };
+    if (roll < normalEnd) return { seconds, cause: 'normal' };
+    if (roll < slowEnd) return { seconds, cause: 'error' };
+    return { seconds, cause: 'rueda-atascada', wheel: Math.min(3, Math.floor(spread * 4)) };
+  }
+
   static serviceTime(roll: number, spread: number, crew?: { timeFactor: number; errorFactor: number }): number {
     const error = Math.min(2.4, Math.max(0, crew?.errorFactor ?? 1)), time = crew?.timeFactor ?? 1;
     const normalEnd = error === 1 ? .75 : 1 - .25 * error, slowEnd = error === 1 ? .9 : 1 - .1 * error;
@@ -444,12 +462,14 @@ export class PitStopModel {
     pit.boxWaitTimer = 0;
     pit.laneTimer = 0; pit.releaseHoldSec = 0; pit.limitStartChecked = false; pit.limitEndFlagged = false; pit.pendingLog = null;
     const roll = random();
-    pit.stopDuration = PitStopModel.serviceTime(roll, random(), pit.crew);
+    const outcome = PitStopModel.serviceOutcome(roll, random(), pit.crew);
+    pit.stopDuration = outcome.seconds; pit.stopCause = outcome.cause; pit.stopWheel = outcome.wheel;
     // [Q17] Beneficio D20 de preparación del box: acota solo el servicio de esta parada si sigue vigente.
     const benefit = pit.crewBenefit;
     if (benefit && car.currentLap > benefit.expiresLap) pit.crewBenefit = null;
     else if (benefit) {
       pit.stopDuration = Number((benefit.minSec + (benefit.maxSec - benefit.minSec) * roll).toFixed(2));
+      pit.stopCause = 'normal'; pit.stopWheel = undefined;
       benefit.inUse = true;
     }
     if (orderIsActive(order)) {

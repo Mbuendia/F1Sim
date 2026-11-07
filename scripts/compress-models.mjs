@@ -17,11 +17,12 @@ export const MODELS = [
   'public/models/f1-car-piezas.glb',
   'public/models/f1-car-lod.glb',
   'public/models/safety-car.glb',
-  'public/models/scenery/red-bull.glb',
+  'public/models/scenery/toro.glb',
   'public/models/scenery/torre-cota.glb',
   'public/models/scenery/torre-eiffel.glb',
   'public/models/scenery/biosfera.glb',
   'public/models/scenery/noria.glb',
+  'public/models/ruedas.glb',
 ];
 
 const COMPONENTS = { SCALAR: 1, VEC2: 2, VEC3: 3, VEC4: 4, MAT4: 16 };

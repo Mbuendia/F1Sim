@@ -54,13 +54,14 @@ export interface ModelCredit {
 
 /** Atribución de los modelos 3D de terceros (ambos modificados para el juego). */
 export const MODEL_CREDITS: Record<'car' | 'safetyCar', ModelCredit> = {
+  // [CA2, 07/11/2026] El coche de 2025 sustituye al de 2026 (F1 2026 concept, de Qvist_designs, guardado aparte para las temporadas largas).
   car: {
-    title: 'F1 2026 concept (polygon model)',
-    author: 'Qvist_designs',
+    title: '2025 F1 CAR',
+    author: 'Abu Saif',
     license: 'CC BY 4.0',
     licenseUrl: 'https://creativecommons.org/licenses/by/4.0/',
-    source: 'https://sketchfab.com/3d-models/f1-2026-concept-polygon-model-ea3bde709b1e4dc9b0ec8557d106ed42',
-    changes: 'Reducido de 1,16 millones a unos 127 000 triángulos; ruedas separadas y animadas; zonas de pintura, banda del compuesto y superficies para dorsal y patrocinadores.',
+    source: 'https://sketchfab.com/3d-models/2025-f1-car-8e323bae81574816be809ea4a63f9898',
+    changes: 'Reducido de 3,1 millones a unos 94 000 triángulos; ruedas separadas y animadas; zonas de pintura, banda del compuesto y superficies para dorsal y patrocinadores.',
   },
   safetyCar: {
     title: '2019 Mercedes-Benz AMG GTR Safety Car',

@@ -15,11 +15,14 @@ import { MeshoptDecoder } from 'meshoptimizer/decoder';
 
 /** Medidas de los originales (29/10/2026, antes de PF3). */
 const ORIGINAL = {
-  'public/models/f1-car.glb': { kb: 3187, triangles: 126720, vertices: 69645 },
-  'public/models/f1-car-piezas.glb': { kb: 2091, triangles: 66886, vertices: 39590 },
-  'public/models/f1-car-lod.glb': { kb: 344, triangles: 9583, vertices: 6547 },
+  // [CA2, autorizado por el usuario el 07/11/2026] El coche de 2025 sustituye al de 2026: triángulos y vértices son los del coche
+  // nuevo; los KB siguen siendo los del coche antes de PF3, así que el nuevo pesa como mucho la mitad que el de antes.
+  'public/models/f1-car.glb': { kb: 3187, triangles: 93762, vertices: 71489 },
+  'public/models/f1-car-piezas.glb': { kb: 2091, triangles: 54133, vertices: 54425 },
+  'public/models/f1-car-lod.glb': { kb: 344, triangles: 8014, vertices: 9732 },
   'public/models/safety-car.glb': { kb: 1871, triangles: 52122, vertices: 50739 },
-  'public/models/scenery/red-bull.glb': { kb: 588, triangles: 8524, vertices: 17080 },
+  // [CA1, autorizado por el usuario el 07/11/2026] El toro de Spielberg pasa de scenery/red-bull.glb a scenery/toro.glb (sin marcas reales en los nombres).
+  'public/models/scenery/toro.glb': { kb: 588, triangles: 8524, vertices: 17080 },
   'public/models/scenery/torre-cota.glb': { kb: 333, triangles: 4868, vertices: 9672 },
   'public/models/scenery/torre-eiffel.glb': { kb: 288, triangles: 4748, vertices: 8283 },
   'public/models/scenery/biosfera.glb': { kb: 265, triangles: 3852, vertices: 7704 },

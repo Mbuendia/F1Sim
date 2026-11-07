@@ -12,6 +12,7 @@ import { getScenario } from '../data/scenarioRegistry';
 import { buildScenarioGeometry } from '../utils/scenarioGeometry';
 import { NIGHT_RACES } from '../renderer/lighting';
 import { ROAD_TUNNELS } from './roadTunnel';
+import { reliefFor } from './relief';
 import { SPONSORS, type Sponsor } from './sponsors';
 
 export type SceneKind = 'grandstand' | 'vip' | 'paddock' | 'tree' | 'building' | 'yacht' | 'landmark' | 'bridge' | 'floodlight'
@@ -53,6 +54,10 @@ export interface Scenery {
   infield: Poly[];
   /** Mar, lagos y puertos. */
   water: Poly[];
+  /** [CR4] Carteles de metros que faltan para la curva (Mónaco), en la pared. */
+  boards?: { x: number; y: number; heading: number; label: string }[];
+  /** [CR4] Escapatorias de asfalto (Mónaco): vías rectas al fondo de las curvas, sin muros dentro. */
+  escapes?: { name: string; points: Pt[] }[];
   items: SceneItem[];
   barriers: SceneBarrier[];
   pitBuilding: PitBuilding | null;
@@ -157,12 +162,12 @@ function build(track: TrackDefinition, circuitId: string): Scenery {
   const dt = (m: number) => m / lap;
 
   // ── Edificio de boxes antes que nada: los iconos y la ciudad (Mónaco) lo esquivan. ──
-  pitBuilding = buildPitBuilding(track, pit.fastLane, half, pitPts, water, items);
+  pitBuilding = buildPitBuilding(track, pit.fastLane, half, pitPts, water, items, circuitId === 'monaco');
   pbPts = pitBuilding?.points ?? [];
 
   // ── Iconos que van antes que el kit (ocupan su sitio). ──
   if (circuitId === 'shanghai') shanghai(track, items, water, half, pitSide, dt);
-  if (circuitId === 'monaco') monaco(track, items, water, half, dt, inInfield, fits);
+  const boards = circuitId === 'monaco' ? monaco(track, items, water, half, dt, inInfield, fits) : undefined;
   if (circuitId === 'yas-marina') yasMarina(track, items, water, half, pitSide, fits, inInfield);
 
   // ── Edificio de boxes a lo largo del pit lane (del lado contrario a la pista) y pórtico de salida sobre la meta. ──
@@ -214,7 +219,7 @@ function build(track: TrackDefinition, circuitId: string): Scenery {
   // ── Iconos que van en el interior (después del kit, que ya ocupa la zona de boxes). ──
   if (circuitId === 'spielberg') {
     const spot = deepestPoint(track, infield);
-    if (spot) items.push({ id: 'toro', kind: 'landmark', model: 'red-bull', x: spot.x, y: spot.y, heading: -Math.PI / 4, length: 18, width: 5.6, height: 17.2, tint: '#8a4b2a' });
+    if (spot) items.push({ id: 'toro', kind: 'landmark', model: 'toro', x: spot.x, y: spot.y, heading: -Math.PI / 4, length: 18, width: 5.6, height: 17.2, tint: '#8a4b2a' });
   }
 
   // ── Iconos de cada circuito (lista aprobada el 23/10/2026). ──
@@ -264,18 +269,50 @@ function build(track: TrackDefinition, circuitId: string): Scenery {
       if (placeBeside({ kind: 'building', model: 'building', length: w, width: 16 + rand() * 10, height: h, tint: '#9aa3ad' }, t, side, half + MARGIN + 14, half + 60, 8)) placed++;
     }
   }
+  // [CR4] Escapatorias de Mónaco (referencias: vídeo de una vuelta que pasa el usuario y fotos públicas): la de la nueva
+  // chicane sigue recta desde la bajada del túnel; las de Sainte Dévote y la Piscina, al fondo de cada curva. Se quitan
+  // los muros y los edificios que caen dentro.
+  let escapes: { name: string; points: Pt[] }[] | undefined;
+  if (circuitId === 'monaco') {
+    const lapM = track.lapLengthMeters || track.points.length * 2;
+    const cornerT = (num: number, fallback: number) => track.corners.find(c => c.number === num)?.t ?? fallback;
+    const straightOn = (name: string, tStart: number, len: number, width = 2 * half + 6) => {
+      const f = frameAt(track, tStart), dx = Math.cos(f.angle), dy = Math.sin(f.angle);
+      let l = len;
+      while (l > 30 && water.some(poly => pointInPoly({ x: f.x + dx * l, y: f.y + dy * l }, poly))) l -= 5;
+      const w = width / 2, p = (u: number, v: number) => ({ x: f.x + dx * u + f.nx * v, y: f.y + dy * u + f.ny * v });
+      return { name, points: [p(0, -w), p(l, -w), p(l, w), p(0, w)] };
+    };
+    const tunnelExit = ROAD_TUNNELS.monaco.to;
+    escapes = [
+      straightOn('nueva-chicane', tunnelExit + 40 / lapM, 120),
+      straightOn('sainte-devote', cornerT(1, 0.062) - 30 / lapM, 60),
+      straightOn('piscina-1', cornerT(13, 0.7615) - 25 / lapM, 55),
+      straightOn('piscina-2', cornerT(15, 0.8162) - 25 / lapM, 55),
+    ];
+    const inside = (q: Pt) => escapes!.some(e => pointInPoly(q, e.points));
+    const kept: SceneBarrier[] = [];
+    for (const b of barriers) {
+      let run: Pt[] = [];
+      const flush = () => { if (run.length > 1) kept.push({ ...b, points: run }); run = []; };
+      for (const q of b.points) { if (inside(q)) flush(); else run.push(q); }
+      flush();
+    }
+    barriers.length = 0; barriers.push(...kept);
+    for (let k = items.length - 1; k >= 0; k--) if (items[k].kind !== 'yacht' && inside(items[k])) items.splice(k, 1);
+  }
   // [CR4] Junto a las bocas del túnel de la pista (Mónaco) no queda nada del escenario: ni vallas ni edificios.
   const roadTunnel = ROAD_TUNNELS[circuitId];
   if (roadTunnel) {
     const portals = [roadTunnel.from, roadTunnel.to].map(t => frameAt(track, t));
     for (let k = items.length - 1; k >= 0; k--) {
       const it = items[k];
-      if (it.id !== 'hotel-tunel' && portals.some(p => Math.hypot(it.x - p.x, it.y - p.y) < 16 + Math.max(it.length, it.width) / 2)) items.splice(k, 1);
+      if (it.id !== 'hotel-tunel' && it.id !== 'puente-peatones' && portals.some(p => Math.hypot(it.x - p.x, it.y - p.y) < 16 + Math.max(it.length, it.width) / 2)) items.splice(k, 1);
     }
   }
   // [CK4] En Shanghái el edificio de boxes es el del modelo original (kit): aquí solo queda su sitio.
   if (circuitId === 'shanghai' && pitBuilding) return { infield, water, items, street, barriers, pitBuilding: null, pitRow: pitBuilding };
-  return { infield, water, items, street, barriers, pitBuilding };
+  return { infield, water, items, street, barriers, pitBuilding, ...(escapes ? { escapes } : {}), ...(boards ? { boards } : {}) };
 }
 
 type Box = Pick<SceneItem, 'x' | 'y' | 'heading' | 'length' | 'width'>;
@@ -323,7 +360,7 @@ function shanghai(track: TrackDefinition, items: SceneItem[], water: Poly[], hal
 
 /** Mónaco: el puerto con barcos junto a Tabac y la Piscina, el casino en la plaza y edificios a ambos lados. */
 function monaco(track: TrackDefinition, items: SceneItem[], water: Poly[], half: number, dt: (m: number) => number,
-  inInfield: (p: Pt) => boolean, fits: (item: SceneItem, opts?: { onWater?: boolean }) => boolean) {
+  inInfield: (p: Pt) => boolean, fits: (item: SceneItem, opts?: { onWater?: boolean }) => boolean): NonNullable<Scenery["boards"]> {
   // El puerto queda por fuera del lazo, entre la salida del túnel (Nouvelle chicane) y la Piscina.
   const outside = (t: number) => {
     const f = frameAt(track, t);
@@ -342,7 +379,14 @@ function monaco(track: TrackDefinition, items: SceneItem[], water: Poly[], half:
   const sea = quay.map(p => ({ x: p.x + ox / on * 520, y: p.y + oy / on * 520 })).reverse();
   const harbour = [...quay, ...sea];
   water.push(harbour);
-  // Barcos amarrados en el agua.
+  // Barcos amarrados en el agua (y por debajo del tramo de pista más cercano: el agua va 0,6 m bajo el muelle).
+  const seaRelief = reliefFor('monaco'), seaLevel = seaRelief ? seaRelief.waterLevel(harbour) : -Infinity;
+  const belowTrack = (p: Pt) => {
+    if (!seaRelief) return true;
+    let bi = 0, bd = Infinity;
+    for (let i = 0; i < track.points.length; i += 3) { const q = track.points[i], d = (q.x - p.x) ** 2 + (q.y - p.y) ** 2; if (d < bd) { bd = d; bi = i; } }
+    return seaLevel < seaRelief.trackHeight(bi / track.points.length) - 0.8;
+  };
   let yachts = 0;
   for (let k = 0; k < 240 && yachts < 30; k++) {
     const t = t0 + (t1 - t0) * ((k * 0.37) % 1), d = half + 30 + (k % 9) * 40;
@@ -350,7 +394,7 @@ function monaco(track: TrackDefinition, items: SceneItem[], water: Poly[], half:
     const big = k % 4 === 0;
     const yacht: SceneItem = { kind: 'yacht', model: big ? 'yacht-large' : 'yacht', x: p.x, y: p.y, heading: p.angle + Math.PI / 2,
       length: big ? 45 : 22, width: big ? 9 : 6, height: big ? 10 : 6, t, tint: '#f4f4f2' };
-    if (fits(yacht, { onWater: true })) { items.push(yacht); yachts++; }
+    if (belowTrack(yacht) && fits(yacht, { onWater: true })) { items.push(yacht); yachts++; }
   }
   // El casino junto a Casino (T4).
   const casinoT = track.corners.find(c => c.number === 4)?.t ?? 0.268;
@@ -364,19 +408,112 @@ function monaco(track: TrackDefinition, items: SceneItem[], water: Poly[], half:
   const tunnel = ROAD_TUNNELS.monaco, midT = (tunnel.from + tunnel.to) / 2, hill = -outside(midT);
   const hp = besideTrack(track, midT, hill, half + 32);
   items.push({ id: 'hotel-tunel', kind: 'building', model: 'building', x: hp.x, y: hp.y, heading: hp.angle, length: 110, width: 44, height: 30, t: midT, tint: '#efe9dd' });
+  // [CR4] Referencias de la vuelta (vídeo del usuario): muros de piedra lisos a la izquierda en la bajada de Mirabeau al
+  // Portier, un puente de peatones antes de la boca del túnel y, a la izquierda de la recta de meta y enfrente de la
+  // entrada del pit lane, edificios, terrazas y gradas. A la izquierda es el lado −1 (en el mundo la y va hacia abajo).
+  const lapM = track.lapLengthMeters || track.points.length * 2, LEFT = -1;
+  const cornerT = (num: number, fallback: number) => track.corners.find(c => c.number === num)?.t ?? fallback;
+  for (let m = cornerT(5, 0.339) * lapM; m < cornerT(8, 0.429) * lapM; m += 10) {
+    // Detrás del guardarraíl: el muro deja 1,5 m libres hasta el borde del asfalto en toda su planta.
+    const p = besideTrack(track, (m + 5) / lapM, LEFT, half + 2.2);
+    const wall: SceneItem = { kind: 'wall', model: 'muro-piedra', x: p.x, y: p.y, heading: p.angle, length: 10, width: 0.6, height: 3.2, t: (m + 5) / lapM, tint: '#a89e8c' };
+    const c = Math.cos(p.angle), s = Math.sin(p.angle);
+    if ([-5, 0, 5].every(u => [1.9, 2.5].every(v => axisDistance(track, { x: p.x + c * u - s * LEFT * (v - 2.2), y: p.y + s * u + c * LEFT * (v - 2.2) }, half + 4) >= half + 1.6))) items.push(wall);
+  }
+  const bridgeT = tunnel.from - 30 / lapM, bf = frameAt(track, bridgeT);
+  items.push({ id: 'puente-peatones', kind: 'bridge', model: 'pasarela', x: bf.x, y: bf.y, heading: bf.angle + Math.PI / 2, length: 2 * half + 10, width: 3, height: 8.3, clearance: 6.5, t: bridgeT, tint: '#9a9a9a', sponsor: SPONSORS[(SPONSORS.length - 3) % SPONSORS.length] });
+  const terraces = [0.965, 0.02];
+  terraces.forEach((t, k) => { for (let d = half + 8; d <= half + 30; d += 3) { const p = besideTrack(track, t, LEFT, d); const g: SceneItem = { id: `terraza-${k + 1}`, kind: 'grandstand', model: 'grandstand', x: p.x, y: p.y, heading: p.angle + Math.PI, length: 40, width: 12, height: 10, t }; if (fits(g)) { items.push(g); break; } } });
+  for (let t = 0.85; t < 1.07; t += 0.012) {
+    const tt = t % 1;
+    for (let d = half + 10; d <= half + 40; d += 5) {
+      const p = besideTrack(track, tt, LEFT, d), h = 18 + Math.round(((t * 1000) % 7) * 3);
+      const b: SceneItem = { kind: 'building', model: 'building', x: p.x, y: p.y, heading: p.angle, length: 18, width: 14, height: h, t: tt, tint: ['#e6d3b3', '#d9c2a0', '#efe6d8', '#c8b49a'][Math.round(t * 100) % 4] };
+      if (fits(b)) { items.push(b); break; }
+    }
+  }
+  // [CR4, revisión del usuario] Pared de piedra junto a la barrera a la altura de la meseta de la terraza (relief.ts: el
+  // suelo sube casi en vertical a 13 m del borde), para que desde la pista pared y meseta sean una sola cosa, y a la derecha de la salida del túnel a la
+  // nueva chicane, donde van los carteles de metros; farolas, grúas y una ciudad más densa.
+  const relief = reliefFor('monaco'), RIGHT = 1;
+  for (let m = 0; m < lapM; m += 10) {
+    const t = (m + 5) / lapM;
+    if (t > tunnel.from - 0.012 && t < tunnel.to + 0.004) continue;
+    for (const side of [LEFT, RIGHT]) {
+      const near = besideTrack(track, t, side, half + 2.2), far = besideTrack(track, t, side, half + 22);
+      const rise = relief ? relief.groundHeight(far.x, far.y) - relief.trackHeight(t) : 0;
+      const chicane = side === RIGHT && t >= tunnel.to && t <= cornerT(10, 0.635);
+      if (rise < 2.5 && !chicane) continue;
+      if (side === LEFT && t >= tunnel.to && t <= tunnel.to + 0.12) continue; // a la izquierda queda el puerto
+      if (items.some(it => it.model === 'muro-piedra' && Math.hypot(it.x - near.x, it.y - near.y) < 7)) continue;
+      const c = Math.cos(near.angle), s = Math.sin(near.angle);
+      if (![-5, 0, 5].every(u => [1.9, 2.5].every(v => axisDistance(track, { x: near.x + c * u - s * side * (v - 2.2), y: near.y + s * u + c * side * (v - 2.2) }, half + 4) >= half + 1.6))) continue;
+      items.push({ kind: 'wall', model: 'muro-piedra', x: near.x, y: near.y, heading: near.angle, length: 10, width: 0.6, height: Math.min(14, Math.max(chicane ? 3 : 0, rise + 0.3)), t, tint: '#a89e8c' });
+      // Fachadas en la meseta, detrás de la pared (cada 30 m): la ciudad tapa la ladera.
+      if (rise >= 2.5 && Math.round(m / 10) % 3 === 0) {
+        const back = besideTrack(track, t, side, half + 24);
+        const facade: SceneItem = { kind: 'building', model: 'building', x: back.x, y: back.y, heading: back.angle, length: 24, width: 14, height: 18 + (m % 4) * 5, t, tint: '#e6d3b3' };
+        if (fits(facade)) items.push(facade);
+      }
+    }
+  }
+  // Carteles de metros en la pared de la derecha antes de la nueva chicane (como en la referencia).
+  const boards: { x: number; y: number; heading: number; label: string }[] = [];
+  for (const metres of [200, 150, 100, 50]) {
+    const t = cornerT(10, 0.635) - (metres + 20) / lapM, p = besideTrack(track, t, RIGHT, half + 1.85);
+    if (t < tunnel.to + 0.002) continue; // dentro del túnel no hay pared de piedra
+    boards.push({ x: p.x, y: p.y, heading: p.angle, label: String(metres) });
+  }
+  // Muelle a la izquierda de la bajada del túnel (referencia del usuario): motorhomes y sombrillas rojas entre la pista y
+  // el agua, con los barcos detrás.
+  for (let m = tunnel.to * lapM + 20, k = 0; m < 0.72 * lapM; m += 12, k++) {
+    const t = m / lapM, motor = k % 3 === 0;
+    const p = besideTrack(track, t, LEFT, half + (motor ? 5.4 : 4.9));
+    const it: SceneItem = motor
+      ? { kind: 'building', model: 'motorhome', x: p.x, y: p.y, heading: p.angle, length: 13.7, width: 2.55, height: 3.5, t }
+      : { kind: 'tree', model: 'sombrilla', x: p.x, y: p.y, heading: p.angle, length: 3.2, width: 3.2, height: 2.8, t };
+    if (fits(it)) items.push(it);
+  }
+  // Farolas cada 40 m a los dos lados, detrás de las barreras.
+  for (let m = 0; m < lapM; m += 40) for (const side of [LEFT, RIGHT]) {
+    const t = m / lapM; if (t > tunnel.from - 0.005 && t < tunnel.to + 0.005) continue;
+    const p = besideTrack(track, t, side, half + 4.2);
+    const lamp: SceneItem = { kind: 'floodlight', model: 'farola', x: p.x, y: p.y, heading: p.angle, length: 0.5, width: 1.92, height: 10, t };
+    if (fits(lamp)) items.push(lamp);
+  }
+  // Grúas junto al puerto y detrás de los boxes.
+  let cranes = 0;
+  for (const [t, side] of [[0.66, LEFT], [0.72, LEFT], [0.985, RIGHT], [0.03, RIGHT]] as const) {
+    for (let d = half + 30; d <= half + 110 && cranes < 4; d += 8) {
+      const p = besideTrack(track, t, side, d);
+      const crane: SceneItem = { kind: 'landmark', model: 'grua', x: p.x, y: p.y, heading: p.angle, length: 29, width: 4, height: 34.65, t };
+      if (fits(crane)) { items.push(crane); cranes++; break; }
+    }
+  }
+  // Ciudad al otro lado del puerto: una fila de edificios altos pasado el agua.
+  {
+    const farEdge = quay.map(p => ({ x: p.x + ox / on * 560, y: p.y + oy / on * 560 }));
+    farEdge.forEach((q, k) => {
+      if (k % 2) return;
+      const h = 30 + ((k * 13) % 35);
+      const tower: SceneItem = { kind: 'building', model: 'building', x: q.x, y: q.y, heading: 0, length: 26, width: 20, height: h, t: 0.7, tint: '#e6d3b3' };
+      if (fits(tower)) items.push(tower);
+    });
+  }
   // Edificios por toda la vuelta, a ambos lados (menos donde está el puerto y junto al túnel y sus bocas).
   let placed = 0;
-  for (let k = 0; k < 400 && placed < 40; k++) {
+  for (let k = 0; k < 1200 && placed < 120; k++) {
     const t = (k * 0.0237) % 1, side = k % 2 ? 1 : -1;
     if (t > tunnel.from - 0.025 && t < tunnel.to + 0.025) continue;
-    for (let d = half + 9; d <= half + 40; d += 6) {
+    for (let d = half + 9; d <= half + 70; d += 6) {
       const p = besideTrack(track, t, side, d);
-      const h = 14 + ((k * 7) % 30);
-      const b: SceneItem = { kind: 'building', model: 'building', x: p.x, y: p.y, heading: p.angle, length: 20 + (k % 3) * 6, width: 14, height: h, t, tint: ['#e6d3b3', '#d9c2a0', '#efe6d8', '#c8b49a'][k % 4] };
+      const h = 14 + ((k * 7) % 34);
+      const b: SceneItem = { kind: 'building', model: 'building', x: p.x, y: p.y, heading: p.angle, length: 20 + (k % 3) * 6, width: 14, height: h, t, tint: ['#e6d3b3', '#efe6d8'][k % 2] };
       if (fits(b)) { items.push(b); placed++; break; }
     }
   }
   void dt;
+  return boards;
 }
 
 /** Muros del escenario y barreras TecPro en el exterior de las curvas, cada una con un patrocinador de parodia. */
@@ -554,7 +691,7 @@ function placePitBuildings(track: TrackDefinition, lane: Pt[], half: number, ite
  * Edificio de boxes continuo (23/10/2026): una sola pieza que sigue al carril rápido por el lado contrario a la pista.
  * Donde no cabe pegado (curvas de entrada y salida), se retrasa poco a poco; se queda con el tramo continuo más largo.
  */
-function buildPitBuilding(track: TrackDefinition, lane: Pt[], half: number, pitPts: Pt[], water: Poly[], items: SceneItem[]): PitBuilding | null {
+function buildPitBuilding(track: TrackDefinition, lane: Pt[], half: number, pitPts: Pt[], water: Poly[], items: SceneItem[], keepSide = false): PitBuilding | null {
   // En los boxes apretados (Mónaco) el edificio normal no cabe a lo largo de medio carril: se prueba uno menos profundo.
   let laneLength = 0;
   for (let i = 1; i < lane.length; i++) laneLength += Math.hypot(lane[i].x - lane[i - 1].x, lane[i].y - lane[i - 1].y);
@@ -568,9 +705,11 @@ function buildPitBuilding(track: TrackDefinition, lane: Pt[], half: number, pitP
   }
   const preferred = votes >= 0 ? 1 : -1;
   const longest = (depth: number) => {
-    const main = pitBuildingOf(track, lane, half, pitPts, water, items, depth, preferred);
+    const main = pitBuildingOf(track, lane, half, pitPts, water, items, depth, preferred, keepSide);
     const other = pitBuildingOf(track, lane, half, pitPts, water, items, depth, -preferred);
-    return len(other) > 1.5 * len(main) ? other : main;
+    // [CR4] En Mónaco el edificio va siempre del lado del pit lane que se aleja de la pista (los boxes miran al puerto);
+    // el del otro lado quedaba al otro lado de la recta, enfrente del pit lane.
+    return !keepSide && len(other) > 1.5 * len(main) ? other : main;
   };
   const deep = longest(14);
   if (len(deep) >= 0.55 * laneLength) return deep;
@@ -578,7 +717,7 @@ function buildPitBuilding(track: TrackDefinition, lane: Pt[], half: number, pitP
   return len(shallow) > len(deep) ? shallow : deep;
 }
 
-function pitBuildingOf(track: TrackDefinition, lane: Pt[], half: number, pitPts: Pt[], water: Poly[], items: SceneItem[], DEPTH: number, side: number): PitBuilding | null {
+function pitBuildingOf(track: TrackDefinition, lane: Pt[], half: number, pitPts: Pt[], water: Poly[], items: SceneItem[], DEPTH: number, side: number, perPoint = false): PitBuilding | null {
   if (lane.length < 2) return null;
   const HEIGHT = 11, STEP = 3;
   // Carril remuestreado cada 3 m, con su normal.
@@ -604,7 +743,8 @@ function pitBuildingOf(track: TrackDefinition, lane: Pt[], half: number, pitPts:
   // Un solo lado para todo el carril (el que dice la mayoría): si el pit lane pasa entre dos partes de la pista, el
   // lado de cada punto suelto cambia a mitad y partiría el edificio en dos.
   void awayOf;
-  const away = samples.map(() => side);
+  // [CR4] En Mónaco el carril se curva hacia la entrada: cada tramo va del lado que se aleja de la pista.
+  const away = perPoint ? samples.map(awayOf) : samples.map(() => side);
   const at = (i: number, d: number) => ({ x: samples[i].x + samples[i].nx * away[i] * d, y: samples[i].y + samples[i].ny * away[i] * d });
   // Distancia mínima que cabe en cada punto; luego suavizada (máximo y media en ventana) para que no dé saltos.
   const raw = samples.map((_, i) => { for (let d = DEPTH / 2 + 7; d <= 60; d += 2) if (valid(at(i, d))) return d; return NaN; });

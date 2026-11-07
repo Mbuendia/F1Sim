@@ -1,0 +1,17 @@
+/* [PF10] Pantalla de carga. */
+.ls { position: fixed; inset: 0; z-index: 50; display: grid; place-content: center; gap: 10px; padding: 24px;
+  background: #0b0e13; color: #c6ccd6; font: 600 14px 'Rajdhani', system-ui, sans-serif; transition: opacity .45s ease; }
+.ls-out { opacity: 0; pointer-events: none; }
+.ls-phase { margin: 0; font-size: 18px; color: #fff; text-align: center; }
+.ls-bar { position: relative; width: min(320px, 80vw); height: 6px; border-radius: 3px; background: #1d232d; overflow: hidden; }
+.ls-bar span { position: absolute; inset: 0 auto 0 0; background: #e10600; transition: width .3s ease; }
+/* Brillo continuo: la barra nunca parece parada. */
+.ls-bar::after { content: ''; position: absolute; inset: 0; width: 40%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.35), transparent); animation: ls-run 1.4s linear infinite; }
+@keyframes ls-run { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
+.ls-pct { margin: 0; text-align: center; color: #8d96a3; }
+.ls-list { margin: 6px 0 0; padding: 0; list-style: none; font-size: 13px; color: #8d96a3; }
+.ls-list .ok { color: #c6ccd6; }
+.ls-list b { display: inline-block; width: 1em; color: #e10600; }
+.ls-slow { margin: 4px 0 0; max-width: 320px; text-align: center; color: #eab308; }
+@media (prefers-reduced-motion: reduce) { .ls-bar::after { animation: none; display: none; } .ls, .ls-bar span { transition: none; } }
