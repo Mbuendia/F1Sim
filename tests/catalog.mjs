@@ -635,5 +635,7 @@ export const modules = [
   { "id": "updates-of3", "tasks": ["OF3"], "sprint": "13", "kind": "contract" },
   { "id": "pit-schedule-of4", "tasks": ["OF4"], "sprint": "13", "kind": "contract" },
   { "id": "radio-euforia", "tasks": ["PF11"], "sprint": "8", "kind": "contract" },
+  { "id": "settings-memory-ios", "tasks": ["OF1", "UX15"], "sprint": "13", "kind": "contract" },
+  { "id": "ai-models-of5", "tasks": ["OF5"], "sprint": "13", "kind": "contract" },
   { "id": "viewport-movil", "tasks": [], "sprint": null, "kind": "regression" }
 ];

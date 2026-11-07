@@ -25,3 +25,15 @@
 .action:hover { background: var(--panel); }
 .primary { border-color: var(--accion, #38bdf8); color: #fff; }
 @media (prefers-reduced-motion: reduce) { .bar span { transition: none; } }
+/* [OF5] Lista de modelos de IA: una fila por modelo, con su estado y su botón. */
+.list { display: flex; flex-direction: column; gap: 6px; }
+.rows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.row { display: flex; flex-direction: column; gap: 6px; padding: 10px 0; border-top: 1px solid var(--line-strong); min-width: 0; }
+.rowHead { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 10px; padding: 0 10px; }
+.rowName { font-size: 16px; font-weight: 700; color: var(--text); }
+.rowName small { margin-left: 4px; font-size: 13px; font-weight: 500; color: var(--text-2); }
+.rowHead .ok, .rowHead .note { padding: 0; }
+.rowActions { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 10px; }
+.rowActions .note, .rowActions .warn { flex-basis: 100%; padding: 0; }
+.action:disabled { opacity: 0.45; cursor: not-allowed; }
+.action[role='switch'][aria-checked='true'] { box-shadow: inset 3px 0 0 var(--accion); background: var(--panel); }

@@ -21,7 +21,9 @@ export async function cachedBytes(prefix: string, caches: CachesLike | undefined
   if (!caches) return 0;
   let total = 0;
   try {
+    // Solo las cachés de WebLLM: las del juego y las de otros modelos no pueden tener sus archivos.
     for (const name of await caches.keys()) {
+      if (!name.startsWith('webllm/')) continue;
       const cache = await caches.open(name);
       for (const request of await cache.keys()) {
         if (!request.url?.startsWith(prefix)) continue;

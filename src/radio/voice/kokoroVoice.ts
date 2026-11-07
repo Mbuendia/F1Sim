@@ -72,7 +72,7 @@ export async function hasWebGPU(nav: { gpu?: { requestAdapter(): Promise<unknown
   try { return Boolean(nav?.gpu && (await nav.gpu.requestAdapter())); } catch { return false; }
 }
 
-interface CacheLike { match(key: string): Promise<Response | undefined>; put(key: string, res: Response): Promise<void>; delete(key: string): Promise<boolean> }
+interface CacheLike { match(key: string): Promise<Response | undefined>; put(key: string, res: Response): Promise<void>; delete(key: string): Promise<boolean>; keys?(): Promise<readonly { url: string }[]> }
 interface CachesLike { open(name: string): Promise<CacheLike> }
 type FetchLike = (url: string, init?: { signal?: AbortSignal }) => Promise<Response>;
 
@@ -85,8 +85,14 @@ export function createKokoroStore(deps: { fetch?: FetchLike; caches?: CachesLike
   const cachesApi = () => deps.caches ?? (globalThis as unknown as { caches?: CachesLike }).caches;
   let partial = 0;
   const open = async () => { const c = cachesApi(); if (!c) throw new ModelError('no-disponible', 'Este navegador no guarda modelos'); return c.open(KOKORO_CACHE); };
+  // Mirando solo la lista de la caché: pedir los archivos (el modelo pesa ~300 MB) puede cargarlos enteros en memoria.
   const has = async () => {
-    try { const cache = await open(); for (const f of KOKORO_FILES) if (!(await cache.match(kokoroUrl(f)))) return false; return true; } catch { return false; }
+    try {
+      const cache = await open();
+      if (typeof cache.keys !== 'function') { for (const f of KOKORO_FILES) if (!(await cache.match(kokoroUrl(f)))) return false; return true; }
+      const stored = new Set((await cache.keys()).map(r => r.url));
+      return KOKORO_FILES.every(f => stored.has(kokoroUrl(f)));
+    } catch { return false; }
   };
   return {
     has,
