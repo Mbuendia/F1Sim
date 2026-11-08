@@ -636,6 +636,7 @@ export const modules = [
   { "id": "map-editor-cr9", "tasks": ["CR9"], "sprint": "10.5", "kind": "contract" },
   { "id": "circuit-references-cr1", "tasks": ["CR1"], "sprint": "10.5", "kind": "contract" },
   { "id": "montreal-kit-cr3", "tasks": ["CR3"], "sprint": "10.5", "kind": "contract" },
+  { "id": "track-fidelity-cr2", "tasks": ["CR2"], "sprint": "10.5", "kind": "contract" },
   { "id": "offline-of1", "tasks": ["OF1"], "sprint": "13", "kind": "contract" },
   { "id": "storage-of2", "tasks": ["OF2"], "sprint": "13", "kind": "contract" },
   { "id": "updates-of3", "tasks": ["OF3"], "sprint": "13", "kind": "contract" },

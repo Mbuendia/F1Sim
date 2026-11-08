@@ -9,6 +9,7 @@ import { closedFrames, closedLength, resampleClosed, smoothClosed, type AxisFram
 import pitLaneRoutes from '../data/pitLaneRoutes.json';
 import circuitReferences from '../data/circuitReferences.json';
 import { pitLaneClearance } from './pitLaneGeometry';
+import { AXIS_CORRECTIONS, applyAxisCorrections } from './axisCorrections';
 import { BRAKE_LOOKAHEAD_M, DEFAULT_CURVATURE_GAIN, LAP_REFERENCES } from '../data/lapReferences';
 
 const svgPathsMap: Record<string, string> = svgPathsJson as any;
@@ -160,6 +161,8 @@ function bakeAxis(circuit: CircuitSpec, trackWidthMeters: number): AxisBake {
   // Ajuste final exacto de la escala sobre el eje ya remuestreado.
   const exact = circuit.lapLengthMeters / closedLength(worldPoints);
   worldPoints = worldPoints.map(p => ({ x: (p.x - WORLD_MARGIN_M) * exact + WORLD_MARGIN_M, y: (p.y - WORLD_MARGIN_M) * exact + WORLD_MARGIN_M }));
+  // [CR2] Correcciones locales (tramos llevados al trazado real y curvas abiertas); sin correcciones, el eje no cambia.
+  worldPoints = applyAxisCorrections(worldPoints, AXIS_CORRECTIONS[circuit.id], circuit.lapLengthMeters / worldPoints.length);
   const finalScale = scale * exact;
   const bake: AxisBake = {
     worldPoints, frames: closedFrames(worldPoints),
