@@ -26,7 +26,9 @@ import { liveryFor } from '../data/liveries';
 import { compoundStyle } from '../utils/compounds';
 import { calculateCarWorldPosition, isCarVisible } from '../utils/carPosition';
 import { KIT_CIRCUIT, runoffZones3d, sceneryFor, type PitBuilding, type SceneBarrier, type SceneItem } from './scenery';
-import { kitGroups, kitPlacementFor, type KitPlacement } from './kitPlacement';
+import { portalItems } from './osmCrossings';
+import { kitGroups, kitPlacementFor, realBuildingsClearOfKit, type KitPlacement } from './kitPlacement';
+import { buildRealBuildings } from './realBuildings';
 import { CIRCUIT_KIT } from './circuitKit';
 import { buildKit, KIT_STRIP_COLORS } from './kitMeshes';
 import { RUNOFF_LOOK, runoffColor } from './runoff';
@@ -38,7 +40,12 @@ import type { CameraView } from './cameras';
 import { perfStats } from '../dev/perfStats';
 import { planCars, shadowSource, type CarLevel } from './carDots';
 import { itemTransform, planInstances } from './instancing';
-import { QUALITY_PROFILES, type QualityProfile } from '../settings/quality';
+import { QUALITY_PROFILES, bloomEnabled, type QualityLevel, type QualityProfile } from '../settings/quality';
+import { canopyPanels, canopyTint, panelColor } from './yasCanopy';
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { carHeightAt, itemBaseHeight, reliefFor, terrainSize, WALL_SLOPE, type Relief } from './relief';
 import { pitTunnelFor, type PitTunnel } from './pitTunnel';
 import { roadTunnelFor, type RoadTunnel } from './roadTunnel';
@@ -168,6 +175,13 @@ export class RaceScene3D {
   /** [CK3] Grupos de dibujo del kit en el circuito cargado (para el contador de rendimiento). */
   kitDrawGroups = 0;
   private readonly lampLights: THREE.PointLight[] = [];
+  /** [CR5] Paneles de LED de la cubierta del hotel de Yas Marina y la luz que echan sobre la pista y los coches. */
+  private canopy: THREE.InstancedMesh | null = null;
+  private canopyLight: THREE.PointLight | null = null;
+  private canopyAt = -1;
+  private canopyCenter = { x: 0, y: 0 };
+  /** [CR5] Resplandor de las luces de noche (solo en calidad alta): se crea la primera vez que hace falta. */
+  private composer: { composer: EffectComposer; bloom: UnrealBloomPass } | null = null;
   /** Halos y conos de luz de las torres (solo de noche). */
   private lampFx: THREE.Group | null = null;
   private safetyModel: GLTF | null = null;
@@ -254,8 +268,28 @@ export class RaceScene3D {
     const roadTunnel = roadTunnelFor(circuitId);
     if (roadTunnel) this.world.add(buildRoadTunnel(roadTunnel, track, circuitId, base));
     if (scenery.boards?.length) this.world.add(buildDistanceBoards(scenery.boards, circuitId));
+    // [CR6] Edificios reales de OpenStreetMap (scenery.realBuildings): una sola malla, apoyada en el suelo.
+    if (scenery.realBuildings?.length) {
+      const relief = reliefFor(circuitId);
+      // Menos los que tapan las gradas de la recta y la torre del kit (están donde estaban las gradas reales).
+      const mesh = buildRealBuildings(realBuildingsClearOfKit(kit, scenery.realBuildings), scenery.buildingStyle ?? 'norteamericano', (x, y) => (relief ? relief.groundHeight(x, y) : 0), W);
+      // En calidad media o baja (móvil) no proyectan sombra: un pase menos en el mapa de sombras.
+      if (mesh) { if (level !== 'alto') mesh.castShadow = false; this.world.add(mesh); }
+    }
+    // [CR5] Yas Marina: los paneles de LED de la cubierta del hotel, uno por rombo, y su luz sobre la pista.
+    if (this.canopyLight) { this.scene.remove(this.canopyLight); this.canopyLight = null; }
+    this.canopy = null;
+    const canopyItem = scenery.items.find(it => it.id === 'yas-hotel-cubierta');
+    if (canopyItem) {
+      this.canopyCenter = { x: canopyItem.x, y: canopyItem.y };
+      this.canopy = buildCanopyPanels();
+      this.world.add(this.canopy);
+      this.canopyLight = new THREE.PointLight('#ffffff', 0, 90, 1.6);
+      this.scene.add(this.canopyLight);
+      this.canopyAt = -1;
+    }
     const [items, kitGroup, car, lod] = await Promise.all([
-      buildScenery(scenery.items, track, base, circuitId, scenery.water).catch(error => { console.error('Escenario 3D', error); return null; }).finally(() => onProgress?.('escenario')),
+      buildScenery([...scenery.items, ...portalItems(scenery.portals ?? [])], track, base, circuitId, scenery.water, level !== 'alto').catch(error => { console.error('Escenario 3D', error); return null; }).finally(() => onProgress?.('escenario')),
       (kit ? buildKit(kit, base).catch(error => { console.error('Kit de circuito', error); return null; }) : Promise.resolve(null)).finally(() => onProgress?.('kit')),
       loadModel(modelUrl(base, CAR_MODEL.file)).catch(() => null).finally(() => onProgress?.('coche')),
       loadModel(modelUrl(base, LOD_FILE)).catch(() => null).finally(() => onProgress?.('coche-ligero')),
@@ -345,8 +379,51 @@ export class RaceScene3D {
     this.placeCars(frame.cars, { fovDeg: view.fov, viewportHeightPx: height, pixelRatio: Math.min(pixelRatio, 2), playerTeamId: frame.playerTeamId ?? null, followedCarId: frame.followedCarId ?? null, focusCarId: frame.focusCarId ?? null });
     this.placeSafetyCar(frame.safetyCar);
     // [PF1] Con el contador abierto, la gráfica se cronometra alrededor del pintado.
+    // [CR5] Cubierta del hotel: cada panel con su color (diez veces por segundo basta: las secuencias son lentas) y su luz
+    // sobre la pista y los coches que pasan por debajo (canopyTint en el punto que mira la cámara).
+    // En calidad media o baja (móvil) la luz no se enciende (cuesta en todos los materiales) y, lejos del hotel, los paneles
+    // se repintan cinco veces por segundo.
+    const level = (Object.entries(QUALITY_PROFILES).find(([, prof]) => prof === this.quality)?.[0] ?? 'alto') as QualityLevel;
+    if (this.canopy) {
+      const s = performance.now() / 1000;
+      const near = Math.hypot(view.target.x - this.canopyCenter.x, view.target.y - this.canopyCenter.y) < 700;
+      if (Math.abs(s - this.canopyAt) >= (near ? 0.1 : 0.2)) {
+        this.canopyAt = s;
+        const k = night ? 1 : 0.55, col = new THREE.Color();
+        for (let i = 0; i < this.canopy.count; i++) { const c = panelColor(i, s); this.canopy.setColorAt(i, col.setRGB(c.r * k, c.g * k, c.b * k)); }
+        if (this.canopy.instanceColor) this.canopy.instanceColor.needsUpdate = true;
+      }
+      if (this.canopyLight) this.canopyLight.visible = level === 'alto';
+      if (this.canopyLight?.visible) {
+        const tint = canopyTint(view.target.x, view.target.y, s);
+        this.canopyLight.color.setRGB(tint.r, tint.g, tint.b);
+        this.canopyLight.intensity = tint.intensity * (night ? 900 : 250);
+        this.canopyLight.position.copy(W(view.target.x, view.target.y, 30));
+      }
+    }
+    // [CR6] De noche, en calidad media (móvil), el sol no echa sombra: a un cuarto de fuerza apenas se ve y se ahorra la
+    // pasada de sombras entera (Marina Bay con sus iconos y 190 palmeras). Al cambiar, three recompila una vez.
+    if (this.renderer.shadowMap.enabled) {
+      const sunShadow = !(night && level !== 'alto');
+      if (this.sunLight.castShadow !== sunShadow) this.sunLight.castShadow = sunShadow;
+    }
     perfStats.gpuTimer?.begin();
-    this.renderer.render(this.scene, this.camera);
+    // [CR5] Resplandor de las luces de noche solo en calidad alta (en móvil la recomendada nunca lo es).
+    if (bloomEnabled(level, night)) {
+      if (!this.composer) {
+        const composer = new EffectComposer(this.renderer);
+        composer.addPass(new RenderPass(this.scene, this.camera));
+        const bloom = new UnrealBloomPass(new THREE.Vector2(w, h), 0.55, 0.45, 0.82);
+        composer.addPass(bloom);
+        composer.addPass(new OutputPass());
+        this.composer = { composer, bloom };
+      }
+      this.composer.composer.setPixelRatio(1);
+      this.composer.composer.setSize(w, h);
+      this.composer.composer.render();
+    } else {
+      this.renderer.render(this.scene, this.camera);
+    }
     perfStats.gpuTimer?.end();
     // [UX16] Para el contador de rendimiento (UX3). [PF1] Y la memoria de la gráfica y su contexto.
     perfStats.drawCalls = this.renderer.info.render.calls; perfStats.triangles = this.renderer.info.render.triangles;
@@ -1089,6 +1166,29 @@ function uncoveredRuns(points: { x: number; y: number }[], tunnel: PitTunnel): {
  * el tramo tapado. Un tapón invisible a ras de suelo (solo profundidad) a los lados y sobre el tramo tapado esconde lo
  * que queda bajo tierra: la pista se sigue viendo encima y los coches del túnel desaparecen bajo ella.
  */
+/**
+ * [CR5] Paneles de LED de la cubierta del hotel de Yas Marina: un rombo por celda de la malla (canopyPanels), todos en
+ * una sola llamada de dibujo; el color de cada uno lo pone `render` con panelColor. Sin luz propia del material (se
+ * ven encendidos) y por las dos caras (se miran desde abajo, desde la pista).
+ */
+function buildCanopyPanels(): THREE.InstancedMesh {
+  const panels = canopyPanels();
+  const geo = new THREE.PlaneGeometry(1, 1);
+  geo.rotateX(-Math.PI / 2);
+  const mat = new THREE.MeshBasicMaterial({ color: '#ffffff', side: THREE.DoubleSide, toneMapped: false, transparent: true, opacity: 0.92 });
+  const mesh = new THREE.InstancedMesh(geo, mat, panels.length);
+  const m = new THREE.Matrix4(), q = new THREE.Quaternion(), up = new THREE.Vector3(0, 1, 0);
+  panels.forEach((p, i) => {
+    q.setFromAxisAngle(up, -p.heading);
+    m.compose(W(p.x, p.y, p.z - 0.05), q, new THREE.Vector3(p.size, 1, p.size));
+    mesh.setMatrixAt(i, m);
+    mesh.setColorAt(i, new THREE.Color('#3050ff'));
+  });
+  mesh.name = 'cubierta-led';
+  mesh.frustumCulled = false;
+  return mesh;
+}
+
 function buildPitTunnel(t: PitTunnel): THREE.Group {
   const group = new THREE.Group();
   const [first, last] = t.span, [c0, c1] = t.covered, hw = t.laneWidth / 2 + 1, lane = t.lane;
@@ -1201,7 +1301,9 @@ function buildElevatedRoad(track: TrackDefinition, o: { upperT: number }, circui
  * sigue siendo una copia del modelo. Así el escenario pasa de una llamada de dibujo por pieza de cada objeto a una por
  * pieza de cada grupo, y three descarta los trozos que no se ven.
  */
-async function buildScenery(items: SceneItem[], track: TrackDefinition, base: string, circuitId: string, water: { x: number; y: number }[][] = []): Promise<THREE.Group> {
+
+/** [CR6] `cheap` (calidad media y baja): los árboles y palmeras no echan sombra (en Marina Bay ya son 190, los de OpenStreetMap). */
+async function buildScenery(items: SceneItem[], track: TrackDefinition, base: string, circuitId: string, water: { x: number; y: number }[][] = [], cheap = false): Promise<THREE.Group> {
   const relief = reliefFor(circuitId);
   const group = new THREE.Group();
   const models = [...new Set(items.map(it => it.model))];
@@ -1242,7 +1344,7 @@ async function buildScenery(items: SceneItem[], track: TrackDefinition, base: st
     root.traverse(o => {
       const mesh = o as THREE.Mesh;
       if (!mesh.isMesh) return;
-      mesh.castShadow = true; mesh.receiveShadow = true;
+      mesh.castShadow = !(cheap && it.kind === 'tree'); mesh.receiveShadow = true;
       mesh.material = materialFor(it, mesh.material as THREE.Material);
     });
     root.matrixAutoUpdate = false;
@@ -1263,7 +1365,7 @@ async function buildScenery(items: SceneItem[], track: TrackDefinition, base: st
       placed.forEach((at, i) => instanced.setMatrixAt(i, m.multiplyMatrices(at, local)));
       instanced.instanceMatrix.needsUpdate = true;
       instanced.computeBoundingSphere();
-      instanced.castShadow = true; instanced.receiveShadow = true;
+      instanced.castShadow = !(cheap && g.items[0].kind === 'tree'); instanced.receiveShadow = true;
       group.add(instanced);
     });
   }
@@ -1374,7 +1476,18 @@ function buildLampFx(lights: SceneItem[], track: TrackDefinition): THREE.Group {
   grad.addColorStop(0, 'rgba(255,250,235,1)'); grad.addColorStop(0.25, 'rgba(255,240,200,0.6)'); grad.addColorStop(1, 'rgba(255,230,180,0)');
   ctx.fillStyle = grad; ctx.fillRect(0, 0, 64, 64);
   const haloMat = new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(canvas), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, fog: false });
-  const beamMat = new THREE.MeshBasicMaterial({ color: '#fff1d0', transparent: true, opacity: 0.07, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false });
+  // El cono se difumina hacia el suelo y hacia sus bordes (se ve de canto): con una opacidad igual en todo él se
+  // veían triángulos de bordes duros desde las cámaras de persecución.
+  const beamMat = new THREE.ShaderMaterial({
+    uniforms: { color: { value: new THREE.Color('#fff1d0') }, opacity: { value: 0.11 } },
+    vertexShader: `varying float vAlong; varying vec3 vN; varying vec3 vV;
+      void main() { vAlong = uv.y; vec4 mv = modelViewMatrix * vec4(position, 1.0);
+        vN = normalize(normalMatrix * normal); vV = normalize(-mv.xyz); gl_Position = projectionMatrix * mv; }`,
+    fragmentShader: `uniform vec3 color; uniform float opacity; varying float vAlong; varying vec3 vN; varying vec3 vV;
+      void main() { float facing = abs(dot(normalize(vN), normalize(vV)));
+        float a = opacity * pow(vAlong, 1.6) * pow(facing, 2.5); gl_FragColor = vec4(color, a); }`,
+    transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide,
+  });
   const down = new THREE.Vector3(0, -1, 0);
   for (const light of lights) {
     const head = W(light.x, light.y, light.height - 2);

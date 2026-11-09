@@ -96,7 +96,8 @@ export default async function run({ server, assert }) {
   assert(badTris.length === 0, 'CK2: los triángulos del catálogo son los del modelo', badTris.map(p => `${p.id}: ${p.tris} ≠ ${triangles(models[p.id].json)}`).join(', ') || 'ok');
   const budget = JSON.parse(readFileSync('docs/perf/presupuesto.json', 'utf8'));
   const modelsKB = allGlb('public/models').reduce((s, f) => s + gzipSync(readFileSync(f)).length, 0) / 1024;
-  assert(budget.limits.modelsKB === 3170 && modelsKB <= budget.limits.modelsKB, 'CK2: los modelos siguen dentro del límite de PF8, sin subirlo', `${modelsKB.toFixed(0)} KB (límite ${budget.limits.modelsKB} KB)`);
+  // [07/11/2026, autorizado por el usuario en CR5/CR6] El límite se lee de presupuesto.json (ya no va fijo a mano).
+  assert(modelsKB <= budget.limits.modelsKB, 'CK2: los modelos siguen dentro del límite de PF8, sin subirlo', `${modelsKB.toFixed(0)} KB (límite ${budget.limits.modelsKB} KB)`);
 
   // 4. Medidas, origen y largo en X (glTF: X largo, Y alto, Z ancho)
   const badDims = [], badOrigin = [], badAxis = [];

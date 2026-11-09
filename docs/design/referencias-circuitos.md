@@ -7,6 +7,10 @@ CR6: el resto de cada circuito). Lo pinta cada imagen de `docs/design/cr1/`: en 
 su pit lane); en rojo, el real; en azul discontinuo, el agua que pinta el juego; y de OpenStreetMap, bosque (verde),
 edificios (gris), agua (azul), gradas (naranja), edificio de boxes (morado), túneles (negro discontinuo) y puentes (rojo).
 
+Vuelto a medir tras CR6 (09/11/2026): el juego ya cuenta el agua real, los edificios reales de OpenStreetMap,
+los puentes que cruzan la pista y los pasos con sus bocas que pone CR6. Lo que CR6 deja sin hacer en cada circuito está
+justificado en `docs/design/circuitos-cr6.md`.
+
 ## Fuentes y licencias
 
 - **Trazado real:** GeoJSON de [bacinger/f1-circuits](https://github.com/bacinger/f1-circuits), licencia MIT (el mismo
@@ -47,7 +51,7 @@ Los trazados del juego salen de los reales y casi coinciden: entre 0,7 y 4,2 m d
 tramo que se aparta más de 15 m. Lo que más falta es el entorno: agua que el juego no pinta (Montreal, Melbourne, Marina
 Bay, Miami, Las Vegas), objetos puestos sobre agua real, pasos bajo la pista y puentes, y edificios a pie de pista.
 
-En total, 2 puntos de prioridad alta, 58 de media y 34 de baja; 0 para CR2, 2 para CR5 y 92 para CR6.
+En total, 2 puntos de prioridad alta, 9 de media y 18 de baja; 0 para CR2, 2 para CR5 y 27 para CR6.
 
 | Circuito | real (m) | juego (m) | media (m) | máxima (m) | tramos > 15 m | pit lane |
 |---|---|---|---|---|---|---|
@@ -83,9 +87,7 @@ En total, 2 puntos de prioridad alta, 58 de media y 34 de baja; 0 para CR2, 2 pa
 - **Pit lane:** comparado con el de OpenStreetMap, 0.5 m de media y 3 m como mucho.
 - **Alrededores** (OpenStreetMap, franja de 300 m): árboles y bosque, 40 zonas o ejemplares (unos 321.000 m²); edificios, 89; agua, 0; túneles bajo la pista, 6; puentes sobre la pista, 2; gradas, 18 (Graderia principal, Tribuna B, Tribuna K, Tribuna E, Tribuna F); edificio de boxes, 2 (Boxes, Pit Lane Lounge); pit lane, 3 tramos.
 - **Lo que no cuadra:**
-  - **media** (CR6) — Túneles: 6 pasos bajo la pista en la realidad, 0 en el juego
-  - **baja** (CR6) — Puentes: 2 cruzan la pista en la realidad, 1 en el juego
-  - **baja** (CR6) — Edificios: 60 a menos de 150 m de la pista en la realidad, 1 en el juego
+  - **baja** (CR6) — Sin diferencias grandes medidas: repaso a ojo con el kit de CR3
 
 ## `monza` — Autodromo Nazionale Monza
 
@@ -93,11 +95,9 @@ En total, 2 puntos de prioridad alta, 58 de media y 34 de baja; 0 para CR2, 2 pa
 
 - **Trazado real:** GeoJSON de bacinger/f1-circuits (`it-1922`), 5787 m; en el juego, 5793 m. Encajado sobre el del juego, se aparta 1.4 m de media y 6.7 m como mucho; ningún tramo pasa de 15 m.
 - **Pit lane:** comparado con el de OpenStreetMap, 1.6 m de media y 4.8 m como mucho.
-- **Alrededores** (OpenStreetMap, franja de 300 m): árboles y bosque, 24 zonas o ejemplares (unos 2.114.000 m²); edificios, 118; agua, 4 (Lambro); túneles bajo la pista, 9; puentes sobre la pista, 4 (Autodromo nazionale di Monza - anello alta velocità); gradas, 43 (Tribuna Laterale Destra, Tribuna Parabolica, Tribuna Laterale Sinistra, Tribuna Centrale, Tribune); edificio de boxes, 2 (Palazzina Box, Hospitality Building); pit lane, 1 tramo.
+- **Alrededores** (OpenStreetMap, franja de 300 m): árboles y bosque, 122 zonas o ejemplares (unos 2.114.000 m²); edificios, 118; agua, 4 (Lambro); túneles bajo la pista, 9; puentes sobre la pista, 4 (Autodromo nazionale di Monza - anello alta velocità); gradas, 43 (Tribuna Laterale Destra, Tribuna Parabolica, Tribuna Laterale Sinistra, Tribuna Centrale, Tribune); edificio de boxes, 2 (Palazzina Box, Hospitality Building); pit lane, 1 tramo.
 - **Lo que no cuadra:**
-  - **media** (CR6) — Túneles: 9 pasos bajo la pista en la realidad, 0 en el juego
-  - **baja** (CR6) — Puentes: 4 cruzan la pista en la realidad, 2 en el juego
-  - **baja** (CR6) — Edificios: 38 a menos de 150 m de la pista en la realidad, 1 en el juego
+  - **baja** (CR6) — Sin diferencias grandes medidas: repaso a ojo con el kit de CR3
 
 ## `silverstone` — Silverstone Circuit
 
@@ -105,12 +105,9 @@ En total, 2 puntos de prioridad alta, 58 de media y 34 de baja; 0 para CR2, 2 pa
 
 - **Trazado real:** GeoJSON de bacinger/f1-circuits (`gb-1948`), 5877 m; en el juego, 5891 m. Encajado sobre el del juego, se aparta 2 m de media y 8.8 m como mucho; ningún tramo pasa de 15 m.
 - **Pit lane:** comparado con el de OpenStreetMap, 1.1 m de media y 5 m como mucho.
-- **Alrededores** (OpenStreetMap, franja de 300 m): árboles y bosque, 34 zonas o ejemplares (unos 843.000 m²); edificios, 189; agua, 10; túneles bajo la pista, 2; puentes sobre la pista, 6; gradas, 22 (Copse A, Copse B, Copse C, Becketts, Village B); edificio de boxes, 3 (Silverstone Wing); pit lane, 5 tramos.
+- **Alrededores** (OpenStreetMap, franja de 300 m): árboles y bosque, 60 zonas o ejemplares (unos 843.000 m²); edificios, 189; agua, 10; túneles bajo la pista, 2; puentes sobre la pista, 6; gradas, 22 (Copse A, Copse B, Copse C, Becketts, Village B); edificio de boxes, 3 (Silverstone Wing); pit lane, 5 tramos.
 - **Lo que no cuadra:**
-  - **media** (CR6) — Escenario: 4 objetos del juego caen donde en la realidad hay agua
-  - **media** (CR6) — Puentes: 6 cruzan la pista en la realidad, 1 en el juego
-  - **baja** (CR6) — Túneles: 2 pasos bajo la pista en la realidad, 0 en el juego
-  - **baja** (CR6) — Edificios: 124 a menos de 150 m de la pista en la realidad, 1 en el juego
+  - **baja** (CR6) — Sin diferencias grandes medidas: repaso a ojo con el kit de CR3
 
 ## `spa` — Circuit de Spa-Francorchamps
 
@@ -118,10 +115,9 @@ En total, 2 puntos de prioridad alta, 58 de media y 34 de baja; 0 para CR2, 2 pa
 
 - **Trazado real:** GeoJSON de bacinger/f1-circuits (`be-1925`), 6978 m; en el juego, 7004 m. Encajado sobre el del juego, se aparta 3.7 m de media y 13.7 m como mucho; ningún tramo pasa de 15 m.
 - **Pit lane:** comparado con el de OpenStreetMap, 1.5 m de media y 9.3 m como mucho.
-- **Alrededores** (OpenStreetMap, franja de 300 m): árboles y bosque, 53 zonas o ejemplares (unos 5.382.000 m²); edificios, 149; agua, 14 (l'Eau Rouge, Le Rohon); túneles bajo la pista, 9 (Tunnel de Blanchimont, Tunnel de Ster, Tunnel Raidillon, Tunnel); puentes sobre la pista, 1; gradas, 10 (Stand F1, Stand Endurance, Tribune F1, Tribune RX, Tribune Raidillon); edificio de boxes, 0; pit lane, 3 tramos.
+- **Alrededores** (OpenStreetMap, franja de 300 m): árboles y bosque, 61 zonas o ejemplares (unos 5.382.000 m²); edificios, 149; agua, 14 (l'Eau Rouge, Le Rohon); túneles bajo la pista, 9 (Tunnel de Blanchimont, Tunnel de Ster, Tunnel Raidillon, Tunnel); puentes sobre la pista, 1; gradas, 10 (Stand F1, Stand Endurance, Tribune F1, Tribune RX, Tribune Raidillon); edificio de boxes, 0; pit lane, 3 tramos.
 - **Lo que no cuadra:**
-  - **media** (CR6) — Túneles: 9 pasos bajo la pista en la realidad (Tunnel de Blanchimont, Tunnel de Ster, Tunnel Raidillon), 0 en el juego
-  - **baja** (CR6) — Edificios: 131 a menos de 150 m de la pista en la realidad, 1 en el juego
+  - **baja** (CR6) — Túneles: 9 pasos bajo la pista en la realidad (Tunnel de Blanchimont, Tunnel de Ster, Tunnel Raidillon), 8 en el juego
 
 ## `monaco` — Circuit de Monaco
 
@@ -142,10 +138,9 @@ En total, 2 puntos de prioridad alta, 58 de media y 34 de baja; 0 para CR2, 2 pa
 
 - **Trazado real:** GeoJSON de bacinger/f1-circuits (`at-1969`), 4302 m; en el juego, 4318 m. Encajado sobre el del juego, se aparta 0.8 m de media y 2.6 m como mucho; ningún tramo pasa de 15 m.
 - **Pit lane:** OpenStreetMap no marca el pit lane de este circuito (highway=raceway con service=pit_lane); queda para revisarlo a mano en CR2.
-- **Alrededores** (OpenStreetMap, franja de 300 m): árboles y bosque, 20 zonas o ejemplares (unos 1.713.000 m²); edificios, 45; agua, 15 (Spielbergbach, Schönbergbach); túneles bajo la pista, 4 (Red-Bull-Ring-Straße); puentes sobre la pista, 0; gradas, 9 (Red Bull Tribüne, Steiermark Tribüne, Start/Ziel Tribüne, Tribüne Nord, Tribüne Ost); edificio de boxes, 0; pit lane, 0 tramos.
+- **Alrededores** (OpenStreetMap, franja de 300 m): árboles y bosque, 22 zonas o ejemplares (unos 1.713.000 m²); edificios, 45; agua, 15 (Spielbergbach, Schönbergbach); túneles bajo la pista, 4 (Red-Bull-Ring-Straße); puentes sobre la pista, 0; gradas, 9 (Red Bull Tribüne, Steiermark Tribüne, Start/Ziel Tribüne, Tribüne Nord, Tribüne Ost); edificio de boxes, 0; pit lane, 0 tramos.
 - **Lo que no cuadra:**
-  - **media** (CR6) — Túneles: 4 pasos bajo la pista en la realidad (Red-Bull-Ring-Straße), 0 en el juego
-  - **baja** (CR6) — Edificios: 20 a menos de 150 m de la pista en la realidad, 1 en el juego
+  - **baja** (CR6) — Sin diferencias grandes medidas: repaso a ojo con el kit de CR3
 
 ## `interlagos` — Autódromo José Carlos Pace - Interlagos
 
@@ -153,13 +148,9 @@ En total, 2 puntos de prioridad alta, 58 de media y 34 de baja; 0 para CR2, 2 pa
 
 - **Trazado real:** GeoJSON de bacinger/f1-circuits (`br-1940`), 4298 m; en el juego, 4309 m. Encajado sobre el del juego, se aparta 2.6 m de media y 9.5 m como mucho; ningún tramo pasa de 15 m.
 - **Pit lane:** comparado con el de OpenStreetMap, 4.8 m de media y 8.2 m como mucho.
-- **Alrededores** (OpenStreetMap, franja de 300 m): árboles y bosque, 29 zonas o ejemplares (unos 66.000 m²); edificios, 1665; agua, 6; túneles bajo la pista, 2; puentes sobre la pista, 1; gradas, 3 (M); edificio de boxes, 1; pit lane, 2 tramos.
+- **Alrededores** (OpenStreetMap, franja de 300 m): árboles y bosque, 165 zonas o ejemplares (unos 66.000 m²); edificios, 1665; agua, 6; túneles bajo la pista, 2; puentes sobre la pista, 1; gradas, 3 (M); edificio de boxes, 1; pit lane, 2 tramos.
 - **Lo que no cuadra:**
-  - **media** (CR6) — Agua: hay unos 28000 m² de agua a menos de 300 m de la pista y el juego pinta el 0 %
-  - **media** (CR6) — Agua: el juego pinta unos 53000 m² de agua donde en la realidad no hay
-  - **media** (CR6) — Escenario: 9 objetos del juego caen donde en la realidad hay agua
-  - **baja** (CR6) — Túneles: 2 pasos bajo la pista en la realidad, 0 en el juego
-  - **baja** (CR6) — Edificios: 313 a menos de 150 m de la pista en la realidad, 9 en el juego
+  - **baja** (CR6) — Sin diferencias grandes medidas: repaso a ojo con el kit de CR3
 
 ## `suzuka` — Suzuka International Racing Course
 
@@ -167,12 +158,9 @@ En total, 2 puntos de prioridad alta, 58 de media y 34 de baja; 0 para CR2, 2 pa
 
 - **Trazado real:** GeoJSON de bacinger/f1-circuits (`jp-1962`), 5812 m; en el juego, 5807 m. Encajado sobre el del juego, se aparta 2.3 m de media y 13.3 m como mucho; ningún tramo pasa de 15 m.
 - **Pit lane:** comparado con el de OpenStreetMap, 1.4 m de media y 7.3 m como mucho.
-- **Alrededores** (OpenStreetMap, franja de 300 m): árboles y bosque, 113 zonas o ejemplares (unos 856.000 m²); edificios, 172; agua, 10 (丸竹池, アドベンボート フロンティア); túneles bajo la pista, 12 (三行庄野線); puentes sobre la pista, 1; gradas, 0; edificio de boxes, 1 (ピットビル); pit lane, 2 tramos.
+- **Alrededores** (OpenStreetMap, franja de 300 m): árboles y bosque, 120 zonas o ejemplares (unos 856.000 m²); edificios, 172; agua, 10 (丸竹池, アドベンボート フロンティア); túneles bajo la pista, 12 (三行庄野線); puentes sobre la pista, 1; gradas, 0; edificio de boxes, 1 (ピットビル); pit lane, 2 tramos.
 - **Lo que no cuadra:**
-  - **media** (CR6) — Agua: hay unos 41000 m² de agua a menos de 300 m de la pista y el juego pinta el 0 %
-  - **media** (CR6) — Escenario: 10 objetos del juego caen donde en la realidad hay agua
-  - **media** (CR6) — Túneles: 12 pasos bajo la pista en la realidad (三行庄野線), 0 en el juego
-  - **baja** (CR6) — Edificios: 124 a menos de 150 m de la pista en la realidad, 1 en el juego
+  - **media** (CR6) — Túneles: 12 pasos bajo la pista en la realidad (三行庄野線), 8 en el juego
 
 ## `zandvoort` — Circuit Zandvoort
 
@@ -182,11 +170,7 @@ En total, 2 puntos de prioridad alta, 58 de media y 34 de baja; 0 para CR2, 2 pa
 - **Pit lane:** comparado con el de OpenStreetMap, 2 m de media y 4.7 m como mucho.
 - **Alrededores** (OpenStreetMap, franja de 300 m): árboles y bosque, 54 zonas o ejemplares (unos 391.000 m²); edificios, 530; agua, 17; túneles bajo la pista, 3; puentes sobre la pista, 1; gradas, 1 (Hoofdtribune); edificio de boxes, 1 (Pitgebouw); pit lane, 1 tramo.
 - **Lo que no cuadra:**
-  - **media** (CR6) — Agua: hay unos 58000 m² de agua a menos de 300 m de la pista y el juego pinta el 37 %
-  - **media** (CR6) — Agua: el juego pinta unos 205000 m² de agua donde en la realidad no hay
-  - **media** (CR6) — Escenario: 12 objetos del juego caen donde en la realidad hay agua
-  - **baja** (CR6) — Túneles: 3 pasos bajo la pista en la realidad, 0 en el juego
-  - **baja** (CR6) — Edificios: 63 a menos de 150 m de la pista en la realidad, 0 en el juego
+  - **baja** (CR6) — Sin diferencias grandes medidas: repaso a ojo con el kit de CR3
 
 ## `las-vegas` — Las Vegas Street Circuit
 
@@ -194,12 +178,9 @@ En total, 2 puntos de prioridad alta, 58 de media y 34 de baja; 0 para CR2, 2 pa
 
 - **Trazado real:** GeoJSON de bacinger/f1-circuits (`us-2023`), 6221 m; en el juego, 6201 m. Encajado sobre el del juego, se aparta 1.8 m de media y 7.8 m como mucho; ningún tramo pasa de 15 m.
 - **Pit lane:** comparado con el de OpenStreetMap, 3.9 m de media y 14.7 m como mucho.
-- **Alrededores** (OpenStreetMap, franja de 300 m): árboles y bosque, 25 zonas o ejemplares (unos 34.000 m²); edificios, 377; agua, 22 (Fountains of Bellagio, Lake of Dreams, Flamingo Wash, Tropicana Wash); túneles bajo la pista, 0; puentes sobre la pista, 10 (Las Vegas Boulevard Overpass, Las Vegas Monorail, CityCenter Pedestrian Bridge); gradas, 1 (MGM Grand Garden Arena); edificio de boxes, 1 (Grand Prix Plaza); pit lane, 1 tramo.
+- **Alrededores** (OpenStreetMap, franja de 300 m): árboles y bosque, 152 zonas o ejemplares (unos 34.000 m²); edificios, 377; agua, 22 (Fountains of Bellagio, Lake of Dreams, Flamingo Wash, Tropicana Wash); túneles bajo la pista, 0; puentes sobre la pista, 10 (Las Vegas Boulevard Overpass, Las Vegas Monorail, CityCenter Pedestrian Bridge); gradas, 1 (MGM Grand Garden Arena); edificio de boxes, 1 (Grand Prix Plaza); pit lane, 1 tramo.
 - **Lo que no cuadra:**
-  - **media** (CR6) — Agua: hay unos 53000 m² de agua a menos de 300 m de la pista y el juego pinta el 0 %
-  - **media** (CR6) — Escenario: 9 objetos del juego caen donde en la realidad hay agua
-  - **media** (CR6) — Puentes: 10 cruzan la pista en la realidad, 1 en el juego
-  - **media** (CR6) — Edificios: 204 a menos de 150 m de la pista en la realidad, 26 en el juego
+  - **media** (CR6) — Escenario: 1 objeto del juego cae donde en la realidad hay agua
 
 ## `bahrain` — Bahrain International Circuit
 
@@ -207,11 +188,9 @@ En total, 2 puntos de prioridad alta, 58 de media y 34 de baja; 0 para CR2, 2 pa
 
 - **Trazado real:** GeoJSON de bacinger/f1-circuits (`bh-2002`), 5418 m; en el juego, 5412 m. Encajado sobre el del juego, se aparta 0.8 m de media y 6.3 m como mucho; ningún tramo pasa de 15 m.
 - **Pit lane:** comparado con el de OpenStreetMap, 2.9 m de media y 7.1 m como mucho.
-- **Alrededores** (OpenStreetMap, franja de 300 m): árboles y bosque, 70 zonas o ejemplares (unos 0 m²); edificios, 195; agua, 3; túneles bajo la pista, 6 (Drag Strip); puentes sobre la pista, 0; gradas, 9 (Batelco, Main Grandstand, University Grandstand 2, University Grandstand 3, Victory Grandstand 1); edificio de boxes, 0; pit lane, 1 tramo.
+- **Alrededores** (OpenStreetMap, franja de 300 m): árboles y bosque, 989 zonas o ejemplares (unos 0 m²); edificios, 195; agua, 3; túneles bajo la pista, 6 (Drag Strip); puentes sobre la pista, 0; gradas, 9 (Batelco, Main Grandstand, University Grandstand 2, University Grandstand 3, Victory Grandstand 1); edificio de boxes, 0; pit lane, 1 tramo.
 - **Lo que no cuadra:**
-  - **media** (CR6) — Escenario: 1 objeto del juego cae donde en la realidad hay agua
-  - **media** (CR6) — Túneles: 6 pasos bajo la pista en la realidad (Drag Strip), 0 en el juego
-  - **baja** (CR6) — Edificios: 144 a menos de 150 m de la pista en la realidad, 1 en el juego
+  - **baja** (CR6) — Sin diferencias grandes medidas: repaso a ojo con el kit de CR3
 
 ## `baku` — Baku City Circuit
 
@@ -219,14 +198,9 @@ En total, 2 puntos de prioridad alta, 58 de media y 34 de baja; 0 para CR2, 2 pa
 
 - **Trazado real:** GeoJSON de bacinger/f1-circuits (`az-2016`), 5986 m; en el juego, 6003 m. Encajado sobre el del juego, se aparta 1.9 m de media y 11.8 m como mucho; ningún tramo pasa de 15 m.
 - **Pit lane:** comparado con el de OpenStreetMap, 3.8 m de media y 8.3 m como mucho.
-- **Alrededores** (OpenStreetMap, franja de 300 m): árboles y bosque, 129 zonas o ejemplares (unos 104.000 m²); edificios, 918; agua, 46 (Kiçik Venesiya, Каспий теңізі - Hazar deňzi - دریای خزر - Xəzər dənizi - Каспийское море - دریای مازندران, mar (línea de costa)); túneles bajo la pista, 7; puentes sobre la pista, 2; gradas, 0; edificio de boxes, 3 (Hilton, Baku City Circuit, Sərhəd Qoşunları Xidməti); pit lane, 1 tramo.
+- **Alrededores** (OpenStreetMap, franja de 300 m): árboles y bosque, 419 zonas o ejemplares (unos 104.000 m²); edificios, 918; agua, 46 (Kiçik Venesiya, Каспий теңізі - Hazar deňzi - دریای خزر - Xəzər dənizi - Каспийское море - دریای مازندران, mar (línea de costa)); túneles bajo la pista, 7; puentes sobre la pista, 2; gradas, 0; edificio de boxes, 3 (Hilton, Baku City Circuit, Sərhəd Qoşunları Xidməti); pit lane, 1 tramo.
 - **Lo que no cuadra:**
-  - **media** (CR6) — Agua: hay unos 257000 m² de agua a menos de 300 m de la pista y el juego pinta el 40 %
-  - **media** (CR6) — Agua: el juego pinta unos 140000 m² de agua donde en la realidad no hay
-  - **media** (CR6) — Escenario: 3 objetos del juego caen donde en la realidad hay agua
-  - **media** (CR6) — Túneles: 7 pasos bajo la pista en la realidad, 0 en el juego
-  - **media** (CR6) — Edificios: 574 a menos de 150 m de la pista en la realidad, 18 en el juego
-  - **baja** (CR6) — Puentes: 2 cruzan la pista en la realidad, 1 en el juego
+  - **baja** (CR6) — Túneles: 7 pasos bajo la pista en la realidad, 4 en el juego
 
 ## `melbourne` — Albert Park Circuit
 
@@ -234,13 +208,9 @@ En total, 2 puntos de prioridad alta, 58 de media y 34 de baja; 0 para CR2, 2 pa
 
 - **Trazado real:** GeoJSON de bacinger/f1-circuits (`au-1953`), 5273 m; en el juego, 5278 m. Encajado sobre el del juego, se aparta 1.3 m de media y 8.4 m como mucho; ningún tramo pasa de 15 m.
 - **Pit lane:** OpenStreetMap no marca el pit lane de este circuito (highway=raceway con service=pit_lane); queda para revisarlo a mano en CR2.
-- **Alrededores** (OpenStreetMap, franja de 300 m): árboles y bosque, 7 zonas o ejemplares (unos 6000 m²); edificios, 984; agua, 1 (Albert Park Lake); túneles bajo la pista, 2; puentes sobre la pista, 0; gradas, 4 (Blackie Ironmonger Stand); edificio de boxes, 0; pit lane, 0 tramos.
+- **Alrededores** (OpenStreetMap, franja de 300 m): árboles y bosque, 1860 zonas o ejemplares (unos 6000 m²); edificios, 984; agua, 1 (Albert Park Lake); túneles bajo la pista, 2; puentes sobre la pista, 0; gradas, 4 (Blackie Ironmonger Stand); edificio de boxes, 0; pit lane, 0 tramos.
 - **Lo que no cuadra:**
-  - **media** (CR6) — Agua: hay unos 461000 m² de agua a menos de 300 m de la pista y el juego pinta el 14 %
-  - **media** (CR6) — Agua: el juego pinta unos 50000 m² de agua donde en la realidad no hay
-  - **media** (CR6) — Escenario: 41 objetos del juego caen donde en la realidad hay agua
-  - **media** (CR6) — Edificios: 125 a menos de 150 m de la pista en la realidad, 24 en el juego
-  - **baja** (CR6) — Túneles: 2 pasos bajo la pista en la realidad, 0 en el juego
+  - **baja** (CR6) — Sin diferencias grandes medidas: repaso a ojo con el kit de CR3
 
 ## `miami` — Miami International Autodrome
 
@@ -248,14 +218,9 @@ En total, 2 puntos de prioridad alta, 58 de media y 34 de baja; 0 para CR2, 2 pa
 
 - **Trazado real:** GeoJSON de bacinger/f1-circuits (`us-2022`), 5415 m; en el juego, 5412 m. Encajado sobre el del juego, se aparta 0.9 m de media y 3.8 m como mucho; ningún tramo pasa de 15 m.
 - **Pit lane:** comparado con el de OpenStreetMap, 1.1 m de media y 4.3 m como mucho.
-- **Alrededores** (OpenStreetMap, franja de 300 m): árboles y bosque, 16 zonas o ejemplares (unos 135.000 m²); edificios, 402; agua, 11 (Snake Creek Canal); túneles bajo la pista, 0; puentes sobre la pista, 5; gradas, 3 (Hard Rock Stadium, Grandstand Stadium, Butch Buchholz); edificio de boxes, 1 (Paddock/Garage); pit lane, 1 tramo.
+- **Alrededores** (OpenStreetMap, franja de 300 m): árboles y bosque, 368 zonas o ejemplares (unos 135.000 m²); edificios, 402; agua, 11 (Snake Creek Canal); túneles bajo la pista, 0; puentes sobre la pista, 5; gradas, 3 (Hard Rock Stadium, Grandstand Stadium, Butch Buchholz); edificio de boxes, 1 (Paddock/Garage); pit lane, 1 tramo.
 - **Lo que no cuadra:**
-  - **media** (CR6) — Agua: hay unos 95000 m² de agua a menos de 300 m de la pista y el juego pinta el 0 %
-  - **media** (CR6) — Agua: el juego pinta unos 28000 m² de agua donde en la realidad no hay
-  - **media** (CR6) — Escenario: 2 objetos del juego caen donde en la realidad hay agua
-  - **media** (CR6) — Puentes: 5 cruzan la pista en la realidad, 1 en el juego
-  - **media** (CR6) — Árboles: unos 135000 m² de bosque o arbolado junto a la pista y 12 árboles en el juego
-  - **baja** (CR6) — Escenario: 8 barcos del juego no están sobre el agua real
+  - **baja** (CR6) — Sin diferencias grandes medidas: repaso a ojo con el kit de CR3
 
 ## `shanghai` — Shanghai International Circuit
 
@@ -263,13 +228,10 @@ En total, 2 puntos de prioridad alta, 58 de media y 34 de baja; 0 para CR2, 2 pa
 
 - **Trazado real:** GeoJSON de bacinger/f1-circuits (`cn-2004`), 5448 m; en el juego, 5451 m. Encajado sobre el del juego, se aparta 0.8 m de media y 3.1 m como mucho; ningún tramo pasa de 15 m.
 - **Pit lane:** OpenStreetMap no marca el pit lane de este circuito (highway=raceway con service=pit_lane); queda para revisarlo a mano en CR2.
-- **Alrededores** (OpenStreetMap, franja de 300 m): árboles y bosque, 20 zonas o ejemplares (unos 0 m²); edificios, 84; agua, 86; túneles bajo la pista, 2; puentes sobre la pista, 0; gradas, 17 (A看台, B1看台, B2看台, B3看台, H看台); edificio de boxes, 0; pit lane, 0 tramos.
+- **Alrededores** (OpenStreetMap, franja de 300 m): árboles y bosque, 36 zonas o ejemplares (unos 0 m²); edificios, 84; agua, 86; túneles bajo la pista, 2; puentes sobre la pista, 0; gradas, 17 (A看台, B1看台, B2看台, B3看台, H看台); edificio de boxes, 0; pit lane, 0 tramos.
 - **Lo que no cuadra:**
   - **alta** (CR5) — Edificios emblemáticos: tribuna principal con sus dos alas y edificios de los equipos sobre el agua
-  - **media** (CR6) — Agua: hay unos 65000 m² de agua a menos de 300 m de la pista y el juego pinta el 9 %
-  - **media** (CR6) — Escenario: 16 objetos del juego caen donde en la realidad hay agua
-  - **baja** (CR6) — Túneles: 2 pasos bajo la pista en la realidad, 0 en el juego
-  - **baja** (CR6) — Árboles: el juego pone 220 y en la realidad casi no hay arbolado junto a la pista
+  - **media** (CR6) — Escenario: 10 objetos del juego caen donde en la realidad hay agua
 
 ## `jeddah` — Jeddah Corniche Circuit
 
@@ -279,11 +241,8 @@ En total, 2 puntos de prioridad alta, 58 de media y 34 de baja; 0 para CR2, 2 pa
 - **Pit lane:** OpenStreetMap no marca el pit lane de este circuito (highway=raceway con service=pit_lane); queda para revisarlo a mano en CR2.
 - **Alrededores** (OpenStreetMap, franja de 300 m): árboles y bosque, 0 zonas o ejemplares (unos 0 m²); edificios, 20; agua, 4 (mar (línea de costa)); túneles bajo la pista, 1; puentes sobre la pista, 3; gradas, 4; edificio de boxes, 0; pit lane, 0 tramos.
 - **Lo que no cuadra:**
-  - **media** (CR6) — Agua: hay unos 839000 m² de agua a menos de 300 m de la pista y el juego pinta el 35 %
-  - **media** (CR6) — Agua: el juego pinta unos 137000 m² de agua donde en la realidad no hay
-  - **media** (CR6) — Escenario: 2 objetos del juego caen donde en la realidad hay agua
+  - **media** (CR6) — Escenario: 1 objeto del juego cae donde en la realidad hay agua
   - **baja** (CR6) — Túneles: 1 pasos bajo la pista en la realidad, 0 en el juego
-  - **baja** (CR6) — Puentes: 3 cruzan la pista en la realidad, 1 en el juego
 
 ## `marina-bay` — Marina Bay Street Circuit
 
@@ -291,13 +250,9 @@ En total, 2 puntos de prioridad alta, 58 de media y 34 de baja; 0 para CR2, 2 pa
 
 - **Trazado real:** GeoJSON de bacinger/f1-circuits (`sg-2008`), 4943 m; en el juego, 4940 m. Encajado sobre el del juego, se aparta 3.8 m de media y 12.5 m como mucho; ningún tramo pasa de 15 m.
 - **Pit lane:** comparado con el de OpenStreetMap, 2.8 m de media y 5.3 m como mucho.
-- **Alrededores** (OpenStreetMap, franja de 300 m): árboles y bosque, 18 zonas o ejemplares (unos 2000 m²); edificios, 236; agua, 15 (Fountain of Wealth, Marina Reservoir, Kallang Basin, Singapore River, Stamford Canal); túneles bajo la pista, 23 (The Esplanade, North Boat Quay, CityLink Mall, Esplanade Xchange, Fullerton Promenade); puentes sobre la pista, 15 (East Coast Parkway); gradas, 0; edificio de boxes, 3 (F1 Pit Building, Singapore Flyer); pit lane, 1 tramo.
+- **Alrededores** (OpenStreetMap, franja de 300 m): árboles y bosque, 379 zonas o ejemplares (unos 2000 m²); edificios, 239; agua, 15 (Fountain of Wealth, Marina Reservoir, Kallang Basin, Singapore River, Stamford Canal); túneles bajo la pista, 23 (The Esplanade, North Boat Quay, CityLink Mall, Esplanade Xchange, Fullerton Promenade); puentes sobre la pista, 15 (East Coast Parkway); gradas, 0; edificio de boxes, 3 (F1 Pit Building, Singapore Flyer); pit lane, 1 tramo.
 - **Lo que no cuadra:**
-  - **media** (CR6) — Agua: hay unos 645000 m² de agua a menos de 300 m de la pista y el juego pinta el 6 %
-  - **media** (CR6) — Agua: el juego pinta unos 164000 m² de agua donde en la realidad no hay
-  - **media** (CR6) — Escenario: 1 objeto del juego cae donde en la realidad hay agua
-  - **media** (CR6) — Túneles: 23 pasos bajo la pista en la realidad (The Esplanade, North Boat Quay, CityLink Mall), 0 en el juego
-  - **media** (CR6) — Puentes: 15 cruzan la pista en la realidad, 1 en el juego
+  - **media** (CR6) — Túneles: 23 pasos bajo la pista en la realidad (The Esplanade, North Boat Quay, CityLink Mall), 13 en el juego
 
 ## `lusail` — Losail International Circuit
 
@@ -305,10 +260,9 @@ En total, 2 puntos de prioridad alta, 58 de media y 34 de baja; 0 para CR2, 2 pa
 
 - **Trazado real:** GeoJSON de bacinger/f1-circuits (`qa-2004`), 5421 m; en el juego, 5419 m. Encajado sobre el del juego, se aparta 1.9 m de media y 7.2 m como mucho; ningún tramo pasa de 15 m.
 - **Pit lane:** comparado con el de OpenStreetMap, 2.9 m de media y 7.9 m como mucho.
-- **Alrededores** (OpenStreetMap, franja de 300 m): árboles y bosque, 4 zonas o ejemplares (unos 0 m²); edificios, 148; agua, 0; túneles bajo la pista, 3; puentes sobre la pista, 0; gradas, 1; edificio de boxes, 0; pit lane, 4 tramos.
+- **Alrededores** (OpenStreetMap, franja de 300 m): árboles y bosque, 1349 zonas o ejemplares (unos 0 m²); edificios, 148; agua, 0; túneles bajo la pista, 3; puentes sobre la pista, 0; gradas, 1; edificio de boxes, 0; pit lane, 4 tramos.
 - **Lo que no cuadra:**
-  - **baja** (CR6) — Túneles: 3 pasos bajo la pista en la realidad, 0 en el juego
-  - **baja** (CR6) — Edificios: 103 a menos de 150 m de la pista en la realidad, 0 en el juego
+  - **baja** (CR6) — Sin diferencias grandes medidas: repaso a ojo con el kit de CR3
 
 ## `yas-marina` — Yas Marina Circuit
 
@@ -316,15 +270,10 @@ En total, 2 puntos de prioridad alta, 58 de media y 34 de baja; 0 para CR2, 2 pa
 
 - **Trazado real:** GeoJSON de bacinger/f1-circuits (`ae-2009`), 5293 m; en el juego, 5281 m. Encajado sobre el del juego, se aparta 2.2 m de media y 14.5 m como mucho; ningún tramo pasa de 15 m.
 - **Pit lane:** comparado con el de OpenStreetMap, 4.9 m de media y 8.5 m como mucho.
-- **Alrededores** (OpenStreetMap, franja de 300 m): árboles y bosque, 59 zonas o ejemplares (unos 4000 m²); edificios, 179; agua, 14 (mar (línea de costa)); túneles bajo la pista, 9 (Pit Lane, Access to Main Grandstand); puentes sobre la pista, 5 (Marina Walk Bridge); gradas, 7 (Marina Grandstand, South Grandstand, West Grandstand, North Grandstand, Main Grandstand); edificio de boxes, 1; pit lane, 5 tramos.
+- **Alrededores** (OpenStreetMap, franja de 300 m): árboles y bosque, 585 zonas o ejemplares (unos 4000 m²); edificios, 179; agua, 14 (mar (línea de costa)); túneles bajo la pista, 9 (Pit Lane, Access to Main Grandstand); puentes sobre la pista, 5 (Marina Walk Bridge); gradas, 7 (Marina Grandstand, South Grandstand, West Grandstand, North Grandstand, Main Grandstand); edificio de boxes, 1; pit lane, 5 tramos.
 - **Lo que no cuadra:**
   - **alta** (CR5) — Edificios emblemáticos: hotel con la cubierta de luces sobre la pista, puente sobre el pit lane y puerto deportivo
-  - **media** (CR6) — Agua: hay unos 336000 m² de agua a menos de 300 m de la pista y el juego pinta el 0 %
-  - **media** (CR6) — Escenario: 14 objetos del juego caen donde en la realidad hay agua
-  - **media** (CR6) — Túneles: 9 pasos bajo la pista en la realidad (Pit Lane, Access to Main Grandstand), 1 en el juego
-  - **media** (CR6) — Puentes: 5 cruzan la pista en la realidad, 2 en el juego
-  - **baja** (CR6) — Escenario: 14 barcos del juego no están sobre el agua real
-  - **baja** (CR6) — Edificios: 102 a menos de 150 m de la pista en la realidad, 1 en el juego
+  - **media** (CR6) — Escenario: 7 objetos del juego caen donde en la realidad hay agua
 
 ## `hungaroring` — Hungaroring
 
@@ -332,11 +281,9 @@ En total, 2 puntos de prioridad alta, 58 de media y 34 de baja; 0 para CR2, 2 pa
 
 - **Trazado real:** GeoJSON de bacinger/f1-circuits (`hu-1986`), 4376 m; en el juego, 4381 m. Encajado sobre el del juego, se aparta 1.5 m de media y 4 m como mucho; ningún tramo pasa de 15 m.
 - **Pit lane:** OpenStreetMap no marca el pit lane de este circuito (highway=raceway con service=pit_lane); queda para revisarlo a mano en CR2.
-- **Alrededores** (OpenStreetMap, franja de 300 m): árboles y bosque, 55 zonas o ejemplares (unos 1.049.000 m²); edificios, 42; agua, 1; túneles bajo la pista, 1; puentes sobre la pista, 2; gradas, 1 (Hungaroring); edificio de boxes, 0; pit lane, 0 tramos.
+- **Alrededores** (OpenStreetMap, franja de 300 m): árboles y bosque, 118 zonas o ejemplares (unos 1.049.000 m²); edificios, 42; agua, 1; túneles bajo la pista, 1; puentes sobre la pista, 2; gradas, 1 (Hungaroring); edificio de boxes, 0; pit lane, 0 tramos.
 - **Lo que no cuadra:**
-  - **baja** (CR6) — Túneles: 1 pasos bajo la pista en la realidad, 0 en el juego
-  - **baja** (CR6) — Puentes: 2 cruzan la pista en la realidad, 1 en el juego
-  - **baja** (CR6) — Edificios: 28 a menos de 150 m de la pista en la realidad, 0 en el juego
+  - **baja** (CR6) — Sin diferencias grandes medidas: repaso a ojo con el kit de CR3
 
 ## `mexico-city` — Autódromo Hermanos Rodríguez
 
@@ -344,11 +291,9 @@ En total, 2 puntos de prioridad alta, 58 de media y 34 de baja; 0 para CR2, 2 pa
 
 - **Trazado real:** GeoJSON de bacinger/f1-circuits (`mx-1962`), 4302 m; en el juego, 4304 m. Encajado sobre el del juego, se aparta 0.9 m de media y 3.2 m como mucho; ningún tramo pasa de 15 m.
 - **Pit lane:** comparado con el de OpenStreetMap, 1 m de media y 4.1 m como mucho.
-- **Alrededores** (OpenStreetMap, franja de 300 m): árboles y bosque, 74 zonas o ejemplares (unos 32.000 m²); edificios, 479; agua, 3 (Río de la Piedad, Río Churubusco); túneles bajo la pista, 1; puentes sobre la pista, 6 (Calle 63); gradas, 29 (Estadio Alfredo Harp Helú, Platea Alta Izquierda, Palco Central, Dugout Local, Dugout Visitante); edificio de boxes, 1 (Paddock); pit lane, 2 tramos.
+- **Alrededores** (OpenStreetMap, franja de 300 m): árboles y bosque, 1098 zonas o ejemplares (unos 32.000 m²); edificios, 479; agua, 3 (Río de la Piedad, Río Churubusco); túneles bajo la pista, 1; puentes sobre la pista, 6 (Calle 63); gradas, 29 (Estadio Alfredo Harp Helú, Platea Alta Izquierda, Palco Central, Dugout Local, Dugout Visitante); edificio de boxes, 1 (Paddock); pit lane, 2 tramos.
 - **Lo que no cuadra:**
-  - **media** (CR6) — Puentes: 6 cruzan la pista en la realidad, 1 en el juego
-  - **baja** (CR6) — Túneles: 1 pasos bajo la pista en la realidad, 0 en el juego
-  - **baja** (CR6) — Edificios: 119 a menos de 150 m de la pista en la realidad, 0 en el juego
+  - **baja** (CR6) — Sin diferencias grandes medidas: repaso a ojo con el kit de CR3
 
 ## `montreal` — Circuit Gilles-Villeneuve
 
@@ -356,12 +301,9 @@ En total, 2 puntos de prioridad alta, 58 de media y 34 de baja; 0 para CR2, 2 pa
 
 - **Trazado real:** GeoJSON de bacinger/f1-circuits (`ca-1978`), 4365 m; en el juego, 4361 m. Encajado sobre el del juego, se aparta 1 m de media y 4.3 m como mucho; ningún tramo pasa de 15 m.
 - **Pit lane:** OpenStreetMap no marca el pit lane de este circuito (highway=raceway con service=pit_lane); queda para revisarlo a mano en CR2.
-- **Alrededores** (OpenStreetMap, franja de 300 m): árboles y bosque, 36 zonas o ejemplares (unos 498.000 m²); edificios, 63; agua, 11 (Bassin olympique, Lac des régates); túneles bajo la pista, 0; puentes sobre la pista, 6 (Avenue Pierre-Dupuy, Pont des Iles); gradas, 5; edificio de boxes, 0; pit lane, 0 tramos.
+- **Alrededores** (OpenStreetMap, franja de 300 m): árboles y bosque, 116 zonas o ejemplares (unos 498.000 m²); edificios, 63; agua, 11 (Bassin olympique, Lac des régates); túneles bajo la pista, 0; puentes sobre la pista, 6 (Avenue Pierre-Dupuy, Pont des Iles); gradas, 5; edificio de boxes, 0; pit lane, 0 tramos.
 - **Lo que no cuadra:**
-  - **media** (CR6) — Agua: hay unos 1212000 m² de agua a menos de 300 m de la pista y el juego pinta el 6 %
-  - **media** (CR6) — Escenario: 36 objetos del juego caen donde en la realidad hay agua
-  - **media** (CR6) — Puentes: 6 cruzan la pista en la realidad, 1 en el juego
-  - **media** (CR6) — Árboles: unos 498000 m² de bosque o arbolado junto a la pista y 12 árboles en el juego
+  - **baja** (CR6) — Sin diferencias grandes medidas: repaso a ojo con el kit de CR3
 
 ## `austin` — Circuit of the Americas
 
@@ -371,7 +313,4 @@ En total, 2 puntos de prioridad alta, 58 de media y 34 de baja; 0 para CR2, 2 pa
 - **Pit lane:** comparado con el de OpenStreetMap, 0.9 m de media y 3.4 m como mucho.
 - **Alrededores** (OpenStreetMap, franja de 300 m): árboles y bosque, 3 zonas o ejemplares (unos 769.000 m²); edificios, 45; agua, 19 (Jenkins and White Pond); túneles bajo la pista, 3; puentes sobre la pista, 3; gradas, 8 (Turn 15 Grandstands); edificio de boxes, 2 (Pit Garages); pit lane, 1 tramo.
 - **Lo que no cuadra:**
-  - **media** (CR6) — Escenario: 1 objeto del juego cae donde en la realidad hay agua
-  - **baja** (CR6) — Túneles: 3 pasos bajo la pista en la realidad, 0 en el juego
-  - **baja** (CR6) — Puentes: 3 cruzan la pista en la realidad, 1 en el juego
-  - **baja** (CR6) — Edificios: 31 a menos de 150 m de la pista en la realidad, 1 en el juego
+  - **baja** (CR6) — Sin diferencias grandes medidas: repaso a ojo con el kit de CR3

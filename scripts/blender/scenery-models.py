@@ -532,30 +532,8 @@ def podio_monza():
         cyl(x, -5, 10.4, 0.3, 5.6, white, 6)
 
 
-def peralte():
-    """Peralte del antiguo óvalo de Monza: curva de hormigón muy inclinada sobre pilares (largo en X)."""
-    concrete, pillar = mat("tint", "#b9b6ae"), mat("pillar", "#8f8c86")
-    L, n = 260.0, 26
-    for k in range(n):
-        x = -L / 2 + L * (k + 0.5) / n
-        y = 0.0009 * x * x - 15
-        ang = math.atan2(0.0018 * x, 1)
-        o = box(x, y, 3, L / n + 0.6, 20, 0.8, concrete)
-        o.rotation_euler = (math.radians(32), 0, ang)
-        for sy in (-6, 6):
-            cyl(x, y + sy, 0, 0.6, 3 + (sy + 6) / 12 * 10, pillar, 6)
-
-
-def the_wing():
-    """The Wing de Silverstone: edificio largo acristalado con una cubierta ondulada en forma de ala."""
-    white, glass = mat("tint", "#e9edf1"), mat("glass", "#2f455c", 0.3, 0.15)
-    box(0, 0, 0, 200, 34, 6, white)
-    box(0, 0, 6, 196, 32, 8, glass)
-    for k in range(20):
-        x = -95 + k * 10
-        z = 14 + 4 * math.sin(k / 19 * math.pi) + 2 * k / 19
-        o = box(x, 0, z, 10.4, 40, 0.8, white)
-        o.rotation_euler = (math.radians(4), math.radians(-6 if k < 10 else 6), 0)
+# [CR6, tanda 4] El peralte de una pieza y The Wing antiguo los sustituyen `peralte-tramo` y `ala-silverstone`
+# (cr6-models.py), colocados en su sitio real.
 
 
 def dune():
@@ -586,16 +564,6 @@ def torre_eiffel():
     for z, s in ((28, 34), (60, 16)):
         box(0, 0, z, s, s, 1.6, bronze)
     limb((0, 0, 110), (0, 0, 138), 1.2, 0.2, bronze, 6)
-
-
-def torre_sakhir():
-    """Torre de Sakhir (Baréin): fuste claro y remate escalonado de varios pisos que se abren hacia arriba."""
-    sand, glass = mat("tint", "#e8dcc4"), mat("glass", "#2f455c", 0.3, 0.15)
-    cyl(0, 0, 0, 7, 40, sand, 16)
-    for k, (r, z) in enumerate(((9, 40), (11, 45), (13, 50))):
-        cyl(0, 0, z, r, 3.2, glass, 16)
-        cyl(0, 0, z + 3.2, r + 0.6, 1.0, sand, 16)
-    cyl(0, 0, 55, 6, 5, sand, 16, r2=0.5)
 
 
 def torre_doncella():
@@ -680,20 +648,6 @@ def biosfera():
     box(0, 0, 0, 60, 60, 0.5, mat("plinth", "#9da1a6"))
 
 
-def torre_cota():
-    """Torre de observación de COTA: fuste blanco con el velo rojo de cables y el mirador arriba."""
-    white, red = mat("steel", "#e9ecef", 0.4, 0.4), mat("tint", "#c8102e", 0.2, 0.5)
-    cyl(0, 0, 0, 2.5, 70, white, 12)
-    cyl(0, 0, 66, 9, 3, white, 16)
-    cyl(0, 0, 69, 9.5, 1.0, white, 16)
-    bpy.ops.mesh.primitive_cone_add(vertices=28, radius1=18, radius2=8, depth=64, location=(0, 0, 33))
-    o = _link(bpy.context.active_object, red)
-    bpy.ops.object.mode_set(mode="EDIT")
-    bpy.ops.mesh.subdivide(number_cuts=2)
-    bpy.ops.object.mode_set(mode="OBJECT")
-    wire(o, 0.35)
-
-
 def torre_control():
     """Torre de control (Barcelona): fuste con la cabina acristalada arriba."""
     white, glass = mat("tint", "#e9ecef"), mat("glass", "#2f455c", 0.3, 0.15)
@@ -706,13 +660,15 @@ def torre_control():
 MODELS = {
     "grandstand": grandstand, "vip-lounge": vip_lounge, "paddock": paddock, "tree": tree, "building": building,
     "yacht": yacht, "yacht-large": yacht_large, "casino": casino, "toro": red_bull,
-    "shanghai-bridge": shanghai_bridge, "pavilion": pavilion,
-    "floodlight": floodlight, "yas-hotel": yas_hotel, "yas-tower": yas_tower,
+    # [CR5] shanghai-bridge y yas-hotel ya no se generan: los sustituyen los modelos de cr5-models.py.
+    "pavilion": pavilion,
+    "floodlight": floodlight, "yas-tower": yas_tower,
     "pit-building": pit_building, "start-gantry": start_gantry, "billboard": billboard, "pine": pine, "palm": palm,
-    "noria": noria, "podio-monza": podio_monza, "peralte": peralte, "the-wing": the_wing, "dune": dune, "esfera": esfera,
-    "torre-eiffel": torre_eiffel, "torre-sakhir": torre_sakhir, "torre-doncella": torre_doncella, "flame-towers": flame_towers,
+    "noria": noria, "podio-monza": podio_monza, "dune": dune, "esfera": esfera,
+    "torre-eiffel": torre_eiffel,  # [CR6, tanda 5] torre-sakhir y torre-cota, en cr6-models.py.
+    "torre-doncella": torre_doncella, "flame-towers": flame_towers,
     "city-wall": city_wall, "estadio": estadio, "fuente": fuente, "marina-bay-sands": marina_bay_sands, "foro-sol": foro_sol,
-    "biosfera": biosfera, "torre-cota": torre_cota, "torre-control": torre_control,
+    "biosfera": biosfera, "torre-control": torre_control,
 }
 
 

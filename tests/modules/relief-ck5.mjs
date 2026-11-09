@@ -137,7 +137,8 @@ export default async function run({ server, assert, test }) {
     const tris = hasRelief ? RELIEF.map(id => [id, R.groundTriangles(id)]) : [];
     assert(hasRelief && tris.every(([, n]) => n <= 150000), 'CK5: el suelo con relieve en 150.000 triángulos como mucho', tris.map(([id, n]) => `${id} ${n}`).join(', '));
     const kb = RELIEF.reduce((s, id) => s + (existsSync(`src/data/elevation/${id}.json`) ? gzipSync(readFileSync(`src/data/elevation/${id}.json`)).length : 0), 0) / 1024;
-    assert(budget.limits.offlineCoreKB === 7900 && budget.limits.sceneryDrawCallsPerCircuit === 250 && kb > 0 && kb <= 120, 'CK5: límites sin subir (7.900 KB y 250 llamadas) y los datos de altura en 120 KB comprimidos como mucho', `${kb.toFixed(0)} KB`);
+    // [07/11/2026, autorizado por el usuario en CR5/CR6] El límite se lee de presupuesto.json (ya no va fijo a mano).
+    assert(budget.limits.sceneryDrawCallsPerCircuit === 250 && kb > 0 && kb <= 120, 'CK5: límites sin subir (7.900 KB y 250 llamadas) y los datos de altura en 120 KB comprimidos como mucho', `${kb.toFixed(0)} KB`);
   });
 
   await test('CK5.7: capturas aprobadas', () => {

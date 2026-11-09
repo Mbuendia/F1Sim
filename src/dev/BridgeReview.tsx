@@ -34,6 +34,7 @@ const liveStart = Number(q.get('inicio') ?? 40);
 const followIndex = q.has('sigue') ? Number(q.get('sigue')) : null;
 const sendIn = q.get('entrar') === '1';
 const stuck = q.get('atasco') === '1';
+const placeAt = q.has('en') ? Number(q.get('en')) : null;
 
 export default function BridgeReview() {
   const data = useMemo(() => {
@@ -50,6 +51,21 @@ export default function BridgeReview() {
         const car = sim.cars[i];
         car.progress = Math.floor(car.progress) + t;
         car.lateralOffset = car.targetLateralOffset = lateral;
+      }
+      host.advance(0.02);
+    }
+    // [CR5] `&en=` (fracción de vuelta): el coche seguido (`&sigue=`, 0) y los tres siguientes, en fila, en ese punto
+    // de la pista (para las capturas de persecución y a bordo junto a los edificios emblemáticos).
+    if (placeAt !== null) {
+      const track = sim.activeTrack, lapM = track.lapLengthMeters || 5000;
+      for (let j = 0; j < 4; j++) {
+        const car = sim.cars[(followIndex ?? 0) + j];
+        if (!car) continue;
+        const t = (((placeAt - (j * 16) / lapM) % 1) + 1) % 1;
+        car.progress = Math.max(1, Math.floor(car.progress)) + t; car.trackT = t;
+        car.lateralOffset = car.targetLateralOffset = j % 2 ? 0.35 : -0.25;
+        const p = calculateCarWorldPosition(car, track);
+        car.worldX = p.worldX; car.worldY = p.worldY; car.worldAngle = p.worldAngle;
       }
       host.advance(0.02);
     }

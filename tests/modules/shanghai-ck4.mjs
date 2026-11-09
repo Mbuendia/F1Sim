@@ -8,11 +8,14 @@
 //  3. Nada toca el circuito (los pabellones y las carpas pueden ir sobre el lago, como en el real).
 //  4. Sin subir límites: 250 llamadas de dibujo como mucho y modelos dentro del presupuesto.
 //  5. Capturas del juego frente al modelo original de Shanghái en Blender, con el visto bueno del usuario.
+// [CR6, autorizado por el usuario el 09/11/2026] Los dos techos de la tribuna (`techo_tribuna`) se quitan: desde lejos
+// se veían como esferas blancas. El catálogo los conserva; el plan ya no los lleva y el test pide que no estén.
 import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { gzipSync } from 'node:zlib';
 
 const OWN = ['edificio_boxes', 'edificio_b', 'pabellon', 'carpa', 'marquesina', 'techo_tribuna', 'estructura_b', 'estructura_c'];
+const IN_PLAN = OWN.filter(id => id !== 'techo_tribuna');   // [CR6] sin los techos
 const STANDS = ['grada_comun', 'grada_roja', 'grada_pequena'];
 const SHOTS = 'docs/design/ck4-capturas';
 const allGlb = dir => readdirSync(dir).flatMap(name => { const p = join(dir, name); return statSync(p).isDirectory() ? allGlb(p) : /\.glb$/i.test(name) ? [p] : []; });
@@ -46,8 +49,8 @@ export default async function run({ server, assert, test }) {
   await test('CK4.1: las piezas propias de Shanghái, en su sitio y solo allí', () => {
     const own = new Set(CIRCUIT_KIT.filter(p => p.scope === 'shanghai').map(p => p.id));
     assert(OWN.every(id => own.has(id)), 'CK4: el catálogo tiene las 8 piezas de Shanghái', [...own].join(', '));
-    const missing = OWN.filter(id => of(id).length === 0);
-    assert(missing.length === 0, 'CK4: el plan de Shanghái lleva sus 8 piezas', missing.join(', ') || 'ok');
+    const missing = IN_PLAN.filter(id => of(id).length === 0);
+    assert(missing.length === 0, 'CK4: el plan de Shanghái lleva sus 7 piezas (sin los techos)', missing.join(', ') || 'ok');
     const boxes = of('edificio_boxes');
     assert(boxes.length >= 4 && boxes.every(b => nearPit(b, 45) && side(b) === pitSide), 'CK4: el edificio de boxes se repite a lo largo del pit lane, de su lado', `${boxes.length} módulos`);
     assert(!scene.pitBuilding && !scene.items.some(it => it.kind === 'pit-building'), 'CK4: sin el edificio de boxes genérico', scene.pitBuilding ? 'sigue el continuo' : 'ok');
@@ -55,7 +58,7 @@ export default async function run({ server, assert, test }) {
     assert(lake.length >= 10 && lake.every(p => scene.water.some(poly => inPoly(p, poly))), 'CK4: pabellones y carpas en el lago', `${lake.length} en total, ${lake.filter(p => scene.water.some(poly => inPoly(p, poly))).length} en el agua`);
     assert(!scene.items.some(it => it.model === 'pavilion'), 'CK4: sin los pabellones genéricos', `${scene.items.filter(it => it.model === 'pavilion').length} genéricos`);
     const roofs = of('techo_tribuna');
-    assert(roofs.length === 2 && roofs.every(r => side(r) === -pitSide && dist(nearestStand(r), r) < 25), 'CK4: dos techos sobre la tribuna principal, enfrente de los boxes', roofs.map(r => `${side(r)} a ${dist(nearestStand(r), r).toFixed(0)} m`).join(', ') || 'ninguno');
+    assert(roofs.length === 0, 'CK4 (CR6): sin los techos de la tribuna (se veían como esferas blancas)', `${roofs.length}`);
     const canopy = of('marquesina');
     assert(canopy.length >= 1 && canopy.every(c => { const s = nearestStand(c); return dist(s, c) < 40 && nearestAxis(c).d > nearestAxis(s).d; }), 'CK4: la marquesina detrás de una grada de la recta', `${canopy.length}`);
     const garages = of('edificio_b');
@@ -94,7 +97,8 @@ export default async function run({ server, assert, test }) {
     const calls = inst.groups.reduce((s, g) => s + prims(g.model), 0) + inst.singles.reduce((s, it) => s + prims(it.model), 0) + kitGroups(plan).length;
     assert(budget.limits.sceneryDrawCallsPerCircuit === 250 && calls <= 250, 'CK4: Shanghái dentro de 250 llamadas de dibujo', `${calls}`);
     const modelsKB = allGlb('public/models').reduce((s, f) => s + gzipSync(readFileSync(f)).length, 0) / 1024;
-    assert(budget.limits.modelsKB === 3170 && modelsKB <= 3170, 'CK4: modelos dentro de 3.170 KB', `${modelsKB.toFixed(0)} KB`);
+    // [07/11/2026, autorizado por el usuario en CR5/CR6] El límite se lee de presupuesto.json (ya no va fijo a mano).
+    assert(modelsKB <= budget.limits.modelsKB, 'CK4: modelos dentro de 3.170 KB', `${modelsKB.toFixed(0)} KB`);
   });
 
   await test('CK4.5: capturas frente al modelo original, aprobadas', () => {

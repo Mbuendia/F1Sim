@@ -23,7 +23,8 @@ const ORIGINAL = {
   'public/models/safety-car.glb': { kb: 1871, triangles: 52122, vertices: 50739 },
   // [CA1, autorizado por el usuario el 07/11/2026] El toro de Spielberg pasa de scenery/red-bull.glb a scenery/toro.glb (sin marcas reales en los nombres).
   'public/models/scenery/toro.glb': { kb: 588, triangles: 8524, vertices: 17080 },
-  'public/models/scenery/torre-cota.glb': { kb: 333, triangles: 4868, vertices: 9672 },
+  // [CR6, autorizado por el usuario el 09/11/2026] torre de Austin rehecha en la tanda 5 (antes 4868 triángulos y 9672 vértices).
+  'public/models/scenery/torre-cota.glb': { kb: 333, triangles: 1012, vertices: 1716 },
   'public/models/scenery/torre-eiffel.glb': { kb: 288, triangles: 4748, vertices: 8283 },
   'public/models/scenery/biosfera.glb': { kb: 265, triangles: 3852, vertices: 7704 },
   'public/models/scenery/noria.glb': { kb: 125, triangles: 1532, vertices: 2768 },
