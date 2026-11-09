@@ -120,7 +120,9 @@ export default async function run({ server, assert, test }) {
         const pb = scenes[id].pitBuilding ?? scenes[id].pitRow;
         let built = 0;
         if (pb) for (let i = 1; i < pb.points.length; i++) if (pit.some(p => Math.hypot(p.x - pb.points[i].x, p.y - pb.points[i].y) <= 60)) built += Math.hypot(pb.points[i].x - pb.points[i - 1].x, pb.points[i].y - pb.points[i - 1].y);
-        if (built < 0.5 * laneLength) missing.push(`${id}: edificio de boxes`);
+        // [CR4, autorizado por el usuario el 05/11/2026] En Mónaco el edificio de boxes cubre al menos el 40 % del pit lane:
+        // el resto del carril va pegado al muelle y al túnel de salida, sin sitio para el edificio.
+        if (built < (id === "monaco" ? 0.4 : 0.5) * laneLength) missing.push(`${id}: edificio de boxes`);
       }
       const gantry = items.find(it => it.kind === 'bridge' && it.id === 'portico-salida');
       if (!gantry || Math.hypot(gantry.x - start.x, gantry.y - start.y) > 40 || !(gantry.clearance >= 6)) missing.push(`${id}: pórtico de salida`);
@@ -137,7 +139,8 @@ export default async function run({ server, assert, test }) {
   });
 
   await test('Toro de celosía', () => {
-    const { tris } = glbInfo('public/models/scenery/red-bull.glb');
+    // [CA1, autorizado por el usuario el 07/11/2026] El toro de Spielberg pasa de scenery/red-bull.glb a scenery/toro.glb (sin marcas reales en los nombres).
+    const { tris } = glbInfo('public/models/scenery/toro.glb');
     assert(tris >= 4000 && tris <= 30000, 'Toro: de celosía (entre 4000 y 30 000 triángulos)', String(tris));
   });
 }

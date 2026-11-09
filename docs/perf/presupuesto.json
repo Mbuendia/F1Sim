@@ -6,17 +6,18 @@
   },
   "limits": {
     "mainBundleKB": 85,
-    "modelsKB": 3170,
+    "modelsKB": 3660,
     "sceneryDrawCallsPerCircuit": 250,
     "carTriangles": 135000,
     "carLodTriangles": 10500,
     "raceSimulationLines": 1900,
-    "offlineCoreKB": 7900
+    "offlineCoreKB": 8690
   },
   "measured": {
     "fecha": "29/10/2026, al acabar PF2 a PF6; paquete inicial tras la mejora del LCP",
     "mainBundleKB": 78,
-    "modelsKB": 2885,
+    "modelsKB": 3645,
+    "modelsKBFecha": "09/11/2026, al acabar la tanda 5 de CR6 (el resto de cifras siguen siendo las del 29/10)",
     "sceneryDrawCallsPerCircuit": 229,
     "carTriangles": 126720,
     "carLodTriangles": 9583,
@@ -30,6 +31,9 @@
   },
   "offline": {
     "nota": "[30/10/2026] El usuario sube offlineCoreKB de 7.200 a 7.900 KB al entrar el kit común de circuitos (CK2/CK3): la instalación pasa a unos 7.630 KB (modelos del kit ~270 KB y atlas WebP ~850 KB). Alternativa descartada: guardar el kit al usarse (sin conexión, un circuito no abierto antes saldría sin kit).",
-    "medidoKB": 7629
-  }
+    "medidoKB": 8058,
+    "notaCR6": "[08/11/2026] CR6 (tandas 0 y 1): el agua, los edificios, los árboles sueltos, los puentes, los pasos y los iconos reales de OpenStreetMap de los 22 circuitos (src/data/osmScenery, 1 MB sin comprimir, ahora en un trozo por circuito) y los modelos nuevos de Blender (puentes, boca de paso, casino de Montreal, cobertizo de remo, cúpulas de la Esplanade, estadio de Miami) suben la instalación sin conexión a 8.344 KB: el límite pasa de 8.250 a 8.500 KB, lo justo con margen para las tandas 2 a 5. Los modelos siguen dentro de 3.480 KB. Tanda 2: con la noria de Suzuka, el globo, el hotel y las fuentes del lago de Las Vegas, la Casa de Gobierno y el museo de la alfombra de Bakú y el radar de Zandvoort (comprimidos), los modelos pasan a 3.534 KB: el límite de modelos sube de 3.480 a 3.560 KB, lo justo. Tanda 3: con los tres módulos de grada (cubierta de Shanghái, sombrillas en flor de loto y velas de Yas), el kartódromo de Interlagos y la mezquita flotante de Yeda (comprimida), los modelos pasan a 3.599 KB: el límite sube de 3.560 a 3.620 KB, lo justo; la instalación sin conexión pasa a 8.563 KB y su límite, de 8.500 a 8.600 KB. Tanda 4: The Wing de Silverstone, el peralte de Monza por tramos y cinco módulos de grada (Silverstone, Spa, Monza y dos de Barcelona), todos comprimidos; salen el peralte de una pieza y The Wing antiguo, que ya no se usan. Los modelos pasan a 3.626 KB: el límite sube de 3.620 a 3.640 KB, lo justo; la instalación sin conexión sigue dentro de 8.600 KB. Tanda 5 [09/11/2026]: la torre de Sakhir, el Palacio de los Deportes, la torre de Austin rehecha (33 KB frente a 121 KB de la anterior) y cinco módulos de grada (Spielberg, Baréin, Lusail, Hungaroring y Austin), todos comprimidos; sale la torre de Sakhir antigua. Los modelos pasan a 3.645 KB: el límite sube de 3.640 a 3.660 KB, lo justo (y la cifra medida de modelos se pone al día, que seguía en la de CR5); la instalación sin conexión pasa a 8.622 KB y su límite, de 8.600 a 8.650 KB.",
+    "notaCR5": "[07/11/2026] CR5: el usuario pide todo en Blender con detalle y subir los límites lo justo. Con los modelos de Shanghái (tribuna, alas, pabellones) y Yas Marina (hotel en dos edificios, cubierta de rejilla, pantalanes) los modelos pasan de 2.885 a 3.316 KB, ya sin el puente viejo de Shanghái ni el hotel de una pieza (límite 3.170 → 3.480) y la instalación sin conexión a 8.058 KB (límite 7.900 → 8.250). El juego sin conexión se replanteará más adelante."
+  },
+  "notaCR6": "undefined [09/11/2026, cierre de CR6] Shanghái sin los techos de la tribuna; se probó un árbol 3D y se quitó (el usuario prefiere los del kit): límite de modelos de nuevo a 3660 KB. [09/11/2026] El usuario prefiere los árboles del kit: se rehacen en Blender (scripts/blender/kit-arboles.py: tres planos cruzados, dos de copa para verlos desde arriba, cara y revés con normales de copa; 20 triángulos) y su foto pasa de 256 a 512 px (montreal-arboles.webp, 86 KB): lo que baja el juego al instalarse queda en 8676 KB y su límite sube a 8690 KB (lo justo)."
 }

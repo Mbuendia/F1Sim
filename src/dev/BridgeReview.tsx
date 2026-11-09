@@ -1,7 +1,8 @@
 // Puente y sombras (21/10/2026): el lienzo real de carrera con coches colocados por debajo y por encima del puente de
 // Suzuka. Solo en desarrollo: `?revision=puente`, con `&circuito=` (suzuka), `&hora=` (segundos de carrera, 0),
 // `&nubes=` (0 a 1), `&zoom=` (píxeles por metro, 4) y `&rot=` (giro de la cámara en grados, 0). [CR2] `&boxes=1` pone a
-// cada coche parado en su cajón del pit lane (para revisar dónde paran).
+// cada coche parado en su cajón del pit lane (para revisar dónde paran). [CA5] `&parada=` (segundos) pone a cada coche en ese
+// momento de una parada de 4,6 s con la rueda delantera derecha atascada, de medios a duros (con `&boxes=1`).
 import { useEffect, useMemo, useState } from 'react';
 import { RaceSimulation } from '../simulation/RaceSimulation';
 import { PitStopModel } from '../simulation/PitStopModel';
@@ -25,6 +26,15 @@ const rotation = Number(q.get('rot') ?? 0) * Math.PI / 180;
 const cameraMode = (q.get('camara') ?? undefined) as CameraMode3D | undefined;
 const finished = q.get('fin') === '1';
 const atBoxes = q.get('boxes') === '1';
+const stopAt = q.has('parada') ? Number(q.get('parada')) : null;
+// [CA7] `&vivo=1`: el motor avanza en tiempo real desde `&inicio=` segundos después de cargar (40). `&entrar=1` manda a boxes al
+// coche `&sigue=` (índice, 0), que la cámara sigue; `&atasco=1` hace su parada de 4,6 s con la delantera derecha atascada.
+const live = q.get('vivo') === '1';
+const liveStart = Number(q.get('inicio') ?? 40);
+const followIndex = q.has('sigue') ? Number(q.get('sigue')) : null;
+const sendIn = q.get('entrar') === '1';
+const stuck = q.get('atasco') === '1';
+const placeAt = q.has('en') ? Number(q.get('en')) : null;
 
 export default function BridgeReview() {
   const data = useMemo(() => {
@@ -44,14 +54,34 @@ export default function BridgeReview() {
       }
       host.advance(0.02);
     }
+    // [CR5] `&en=` (fracción de vuelta): el coche seguido (`&sigue=`, 0) y los tres siguientes, en fila, en ese punto
+    // de la pista (para las capturas de persecución y a bordo junto a los edificios emblemáticos).
+    if (placeAt !== null) {
+      const track = sim.activeTrack, lapM = track.lapLengthMeters || 5000;
+      for (let j = 0; j < 4; j++) {
+        const car = sim.cars[(followIndex ?? 0) + j];
+        if (!car) continue;
+        const t = (((placeAt - (j * 16) / lapM) % 1) + 1) % 1;
+        car.progress = Math.max(1, Math.floor(car.progress)) + t; car.trackT = t;
+        car.lateralOffset = car.targetLateralOffset = j % 2 ? 0.35 : -0.25;
+        const p = calculateCarWorldPosition(car, track);
+        car.worldX = p.worldX; car.worldY = p.worldY; car.worldAngle = p.worldAngle;
+      }
+      host.advance(0.02);
+    }
     if (atBoxes) {
       const track = sim.activeTrack, len = RejoinModel.pitLaneLength(track);
-      for (const car of sim.cars) {
+      for (const car of (q.get('solo') === '1' ? [sim.cars[followIndex ?? 0]] : sim.cars)) {
         car.isInPitLane = true; car.pitStop.isPitting = true;
-        car.progress = Math.floor(car.progress) + track.pitEntryT + PitStopModel.getBoxProgress(car, track) * len;
+        car.progress = Math.floor(car.progress) + track.pitEntryT + PitStopModel.getBoxProgress(car, track) * len - Number(q.get('antes') ?? 0) / (track.lapLengthMeters || 5000);
         car.trackT = ((car.progress % 1) + 1) % 1; car.lateralOffset = car.targetLateralOffset = 0; car.currentSpeedKmh = 0;
         const p = calculateCarWorldPosition(car, track);
         car.worldX = p.worldX; car.worldY = p.worldY; car.worldAngle = p.worldAngle;
+        if (stopAt !== null) {
+          car.pitStop.pitLaneProgress = PitStopModel.getBoxProgress(car, track); car.pitStop.passMode = 'service';
+          car.pitStop.stopDuration = 4.6; car.pitStop.currentStopTimer = Math.max(0.01, Math.min(4.59, stopAt));
+          car.pitStop.stopCause = 'rueda-atascada'; car.pitStop.stopWheel = 1; car.tires.compound = 'medium'; car.pitStop.targetCompound = 'hard';
+        }
       }
     }
     const target = crossing ?? { x: sim.cars[0].worldX, y: sim.cars[0].worldY };
@@ -75,7 +105,9 @@ export default function BridgeReview() {
   useEffect(() => {
     raceStore.getState().reset(data.roster);
     const fast = { ...data.host.fastView(), t: raceTimeSec };
-    const base = data.host.slowView();
+    const raw = data.host.slowView();
+    // [CA5] La parada se ancla al tiempo de carrera de la foto: así la escena la ve en el segundo `parada`.
+    const base = stopAt === null ? raw : { ...raw, cars: raw.cars.map(c => (c.stop ? { ...c, stop: { ...c.stop, start: raceTimeSec - stopAt } } : c)) };
     const slow = { ...base, t: raceTimeSec, finished: finished || base.finished, weatherScene: { ...base.weatherScene, cloudCover: clouds } };
     const now = performance.now();
     raceStore.getState().receive({ type: 'slow', view: slow }, now);
@@ -83,11 +115,36 @@ export default function BridgeReview() {
     raceStore.getState().receive({ type: 'fast', view: fast }, now);
   }, [data]);
 
+  useEffect(() => {
+    if (!live) return;
+    const { sim, host } = data;
+    const car = sim.cars[followIndex ?? 0];
+    (window as unknown as { __bridgeSim: typeof sim }).__bridgeSim = sim;
+    let timer: ReturnType<typeof setInterval> | null = null;
+    const start = setTimeout(() => {
+      if (sendIn && car) {
+        const track = sim.activeTrack;
+        car.progress = Math.max(1, Math.floor(car.progress)) + track.pitEntryT - 0.003; car.currentLap = Math.floor(car.progress);
+        car.pitStop.scheduledLap = car.currentLap; car.pitStop.targetCompound = 'hard';
+      }
+      timer = setInterval(() => {
+        if (stuck && car && car.pitStop.isPitting && car.pitStop.currentStopTimer === 0) {
+          car.pitStop.stopDuration = 4.6; car.pitStop.stopCause = 'rueda-atascada'; car.pitStop.stopWheel = 1;
+        }
+        host.advance(0.1);
+        const now = performance.now();
+        raceStore.getState().receive({ type: 'slow', view: host.slowView() }, now);
+        raceStore.getState().receive({ type: 'fast', view: host.fastView() }, now);
+      }, 100);
+    }, liveStart * 1000);
+    return () => { clearTimeout(start); if (timer) clearInterval(timer); };
+  }, [data]);
+
   const sun = sunAt({ circuitId, raceTimeSec, cloudCover: clouds });
   const hour = (START_HOUR[circuitId] ?? 15) + raceTimeSec / 3600;
   return (
     <div style={{ position: 'fixed', inset: 0, background: '#14181f' }}>
-      <RaceCanvas track={data.sim.activeTrack} circuitId={circuitId} roster={data.roster} camera={camera} selectedCarId={null} onSelectCar={() => {}} initialCameraMode={cameraMode} />
+      <RaceCanvas track={data.sim.activeTrack} circuitId={circuitId} roster={data.roster} camera={camera} selectedCarId={followIndex !== null ? data.sim.cars[followIndex]?.id ?? null : null} onSelectCar={() => {}} initialCameraMode={cameraMode} />
       <div data-bridge-review style={{ position: 'absolute', left: 12, bottom: 12, padding: '6px 10px', background: 'rgba(0,0,0,0.6)', color: '#fff', font: '13px system-ui', borderRadius: 6 }}>
         {circuitId} · {Math.floor(hour)}:{String(Math.round((hour % 1) * 60)).padStart(2, '0')} · nubes {Math.round(clouds * 100)} % · {sun.mode} · sombra ×{sun.length.toFixed(2)} · {data.sides.map(c => `${c.code} ${c.side === 'under' ? 'abajo' : 'arriba'}`).join(', ')}
       </div>

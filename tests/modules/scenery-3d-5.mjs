@@ -27,9 +27,12 @@ const WATER = ['interlagos', 'zandvoort', 'baku', 'melbourne', 'miami', 'jeddah'
 /** Mínimos de objetos de un tipo por circuito. */
 const MINIMUM = {
   'las-vegas': { kind: 'building', min: 6, height: 80 }, interlagos: { kind: 'building', min: 6, height: 60 },
-  melbourne: { kind: 'building', min: 6, height: 60 }, zandvoort: { kind: 'dune', min: 6 }, lusail: { kind: 'dune', min: 6 },
-  baku: { kind: 'wall', min: 3 }, spa: { kind: 'tree', min: 120 }, hungaroring: { kind: 'tree', min: 120 }, miami: { kind: 'yacht', min: 6 },
+  zandvoort: { kind: 'dune', min: 6 }, lusail: { kind: 'dune', min: 6 },
+  baku: { kind: 'wall', min: 3 }, spa: { kind: 'tree', min: 120 }, hungaroring: { kind: 'tree', min: 120 },
 };
+// [CR6, autorizado por el usuario el 08/11/2026] Melbourne ya no lleva torres inventadas junto al lago sino sus edificios
+// reales de OpenStreetMap (scene.realBuildings), y Miami no lleva yates: OpenStreetMap no tiene puerto junto al estadio.
+const REAL_BUILDINGS_MIN = { melbourne: 100 };
 
 export default async function run({ server, assert, test }) {
   const load = path => server.ssrLoadModule(path);
@@ -75,7 +78,8 @@ export default async function run({ server, assert, test }) {
     assert(onTrack.length === 0, 'Iconos: ninguno encima de la pista (salvo los puentes)', onTrack.join(', '));
     const dry = WATER.filter(id => scenes[id].water.length === 0);
     assert(dry.length === 0, 'Iconos: mar, lago, canal o puerto donde lo hay', dry.join(', '));
-    const short = Object.entries(MINIMUM).filter(([id, m]) => scenes[id].items.filter(it => it.kind === m.kind && (!m.height || it.height >= m.height)).length < m.min).map(([id, m]) => `${id}: ${m.kind}`);
+    const short = [...Object.entries(MINIMUM).filter(([id, m]) => scenes[id].items.filter(it => it.kind === m.kind && (!m.height || it.height >= m.height)).length < m.min).map(([id, m]) => `${id}: ${m.kind}`),
+      ...Object.entries(REAL_BUILDINGS_MIN).filter(([id, min]) => (scenes[id].realBuildings ?? []).length < min).map(([id]) => `${id}: edificios reales`)];
     assert(short.length === 0, 'Iconos: rascacielos, dunas, murallas, bosque y barcos donde tocan', short.join(', '));
     const monza = scenes.monza.items.find(it => it.id === 'podio-monza'), start = tracks.monza.points[0];
     assert(monza && monza.kind === 'bridge' && Math.hypot(monza.x - start.x, monza.y - start.y) <= 300, 'Iconos: el podio de Monza vuela sobre la recta de meta');

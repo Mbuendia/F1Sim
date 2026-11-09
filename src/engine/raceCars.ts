@@ -56,8 +56,8 @@ export function carViews({ roster, fast, slow, teams, drsChangedAt = {}, circuit
         ? { ...(ownState.tires ?? {}), ...own.tyres }
         : { compound: pub?.compound ?? 'medium', lapsOnTire: pub?.tyreLaps ?? 0 },
       pitStop: own
-        ? { ...(ownState.pitStop ?? {}), ...own.pit, activeBoxOrder: own.boxOrder, stints: pub?.stints ?? ownState.pitStop?.stints ?? [] }
-        : { isPitting: pub?.isPitting ?? false, waitingForBox: pub?.waitingForBox ?? false, totalPitStops: pub?.totalPitStops ?? 0, stints: pub?.stints ?? [] },
+        ? { ...(ownState.pitStop ?? {}), ...own.pit, activeBoxOrder: own.boxOrder, stints: pub?.stints ?? ownState.pitStop?.stints ?? [], serviceStop: pub?.stop ?? null }
+        : { isPitting: pub?.isPitting ?? false, waitingForBox: pub?.waitingForBox ?? false, totalPitStops: pub?.totalPitStops ?? 0, stints: pub?.stints ?? [], serviceStop: pub?.stop ?? null },
       ...(own ? {
         energy: { ...(ownState.energy ?? {}), percent: own.energy?.percent ?? 0 }, drsStatus: own.drsStatus, drsUses: own.drsUses, wallProposals: own.proposals,
         wallDelegated: own.delegated, paceMode: own.paceMode, offTrack: own.offTrack ?? undefined, pitLaneStart: own.pitLaneStart ?? undefined,

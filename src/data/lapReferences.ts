@@ -22,15 +22,15 @@ export const LAP_REFERENCES: Record<string, LapReference> = {
   barcelona: { referenceLapSec: 75.743, curvatureGain: 9.66 },
   monza: { referenceLapSec: 80.901, curvatureGain: 6.73 },
   silverstone: { referenceLapSec: 89.337, curvatureGain: 7.47 },
-  spa: { referenceLapSec: 104.861, curvatureGain: 7.47 },
+  spa: { referenceLapSec: 104.861, curvatureGain: 8.0 },   // [CR2] antes 7,47: La Source abierta y dos tramos llevados al real
   monaco: { referenceLapSec: 73.221, curvatureGain: 6.84 },
   spielberg: { referenceLapSec: 67.924, curvatureGain: 9.08 },
   interlagos: { referenceLapSec: 72.4, curvatureGain: 7.96 },
-  suzuka: { referenceLapSec: 90.965, curvatureGain: 9.06 },
+  suzuka: { referenceLapSec: 90.965, curvatureGain: 9.6 },   // [CR2] antes 9,06: horquilla abierta
   zandvoort: { referenceLapSec: 72.271, curvatureGain: 7.11 },
   'las-vegas': { referenceLapSec: 93.365, curvatureGain: 8.2 },
   bahrain: { referenceLapSec: 95.14, curvatureGain: 9.37 },
-  baku: { referenceLapSec: 103.388, curvatureGain: 17.17 },
+  baku: { referenceLapSec: 103.388, curvatureGain: 15.3 },   // [CR2] antes 17,17: tramo del 67,8 % llevado al real
   melbourne: { referenceLapSec: 82.167, curvatureGain: 5.86 },
   miami: { referenceLapSec: 89.746, curvatureGain: 7.77 },
   shanghai: { referenceLapSec: 95.454, curvatureGain: 8.79 },

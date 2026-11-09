@@ -205,6 +205,11 @@ export interface PitStopState {
   isPitting: boolean;
   pitLaneProgress: number;
   stopDuration: number;
+  /** [CA5] Parada en curso, tal como la manda la vista de la carrera a la escena 3D (null fuera del cajón). */
+  serviceStop?: ServiceStop | null;
+  /** [CA6] Motivo y rueda atascada de la parada en curso (salen de la misma tirada que su duración). */
+  stopCause?: StopCause;
+  stopWheel?: number;
   currentStopTimer: number;
   totalPitStops: number;
   lastStopDuration: number | null;
@@ -255,8 +260,23 @@ export interface PitInfraction {
 }
 
 /** [R08] Parada registrada: la pérdida sale de tránsito, servicio, cola y retención, no de una cifra fija. */
+/** [CA5] Parada en curso: inicio (tiempo de carrera), duración, motivo, rueda atascada y compuesto que sale y que entra. */
+export interface ServiceStop { start: number; duration: number; cause: StopCause; wheel?: number; from: TireCompound; to: TireCompound }
+
+/** [CA6] Cómo fue el servicio: rápido, normal, lento por un error del equipo o por una rueda que se atasca. */
+export type StopCause = 'rapida' | 'normal' | 'error' | 'rueda-atascada';
+
 export interface PitStopLog {
   lap: number;
+  /** [CA6] Número de la parada en la carrera (todas las de todos los coches, en orden). */
+  order?: number;
+  /** [CA6] Motivo del servicio y rueda atascada (0 delantera izquierda, 1 delantera derecha, 2 trasera izquierda, 3 trasera derecha). */
+  cause?: StopCause;
+  wheel?: number;
+  /** [CA6] Media del servicio de todas las paradas de la carrera hasta esta, incluida. */
+  averageSec?: number;
+  /** [CA6] Efecto de los mecánicos con que se hizo la parada. */
+  crew?: { timeFactor: number; errorFactor: number };
   /** [R13] Segundos de sanción cumplidos en el cajón antes del servicio. */
   penaltySec?: number;
   setId: string | null;

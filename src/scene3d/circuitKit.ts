@@ -1,7 +1,9 @@
 /**
  * [CK2] Kit común de piezas de circuito (Sprint 10): sacadas del modelo de Shanghái del usuario (crédito en
  * public/models/ATTRIBUTION.md), limpias, sin marcas reales y con dos atlas compartidos (kit-comun.webp y
- * kit-shanghai.webp). Generado por scripts/kit-catalog.mjs a partir de los .glb: no se edita a mano.
+ * kit-shanghai.webp). [CR3] Las de `origin: 'montreal'` salen del modelo de Montreal (Dave Love, CC BY 4.0), con su
+ * textura propia (montreal-*.webp) y su papel en el kit (`role`); sustituyen a las de CK2 que hacían lo mismo.
+ * Generado por scripts/kit-catalog.mjs a partir de los .glb: no se edita a mano.
  * Medidas en metros: [largo (X), ancho (Z), alto (Y)]; origen en el centro de la base. `tile`: largo de las piezas que se
  * encadenan. `front`: eje de glTF hacia el que mira la cara útil. Las de ámbito «shanghai» son solo para ese circuito (CK4).
  */
@@ -15,13 +17,15 @@ export interface KitPiece {
   alpha: 'mask' | 'opaque';
   tile?: number;
   front?: '+z' | '-z';
+  origin?: 'montreal';
+  role?: string;
   note: string;
 }
 
 export const CIRCUIT_KIT: KitPiece[] = [
-  { id: "guardarrail", file: "models/kit/guardarrail.glb", scope: "comun", dims: [8,0.25,1.14], tris: 68, alpha: "opaque", tile: 8, note: "Guardarraíl de tres bandas; interiores de curva y rectas." },
-  { id: "muro_neumaticos", file: "models/kit/muro_neumaticos.glb", scope: "comun", dims: [11.58,1.12,1.15], tris: 1220, alpha: "opaque", tile: 11.58, note: "Muro de neumáticos de dos filas; al final de las escapatorias de curva." },
-  { id: "valla_alta", file: "models/kit/valla_alta.glb", scope: "comun", dims: [7.22,0.71,6.09], tris: 4, alpha: "mask", tile: 7.22, note: "Panel de valla alta de malla; detrás de los muros donde hay público, y encima del hormigón en urbanos." },
+  { id: "guardarrail", file: "models/kit/guardarrail.glb", scope: "comun", dims: [8,0.15,1.11], tris: 160, alpha: "opaque", tile: 8, origin: "montreal", role: "guardarrail", note: "Guardarraíl (Montreal); interiores de curva y rectas." },
+  { id: "muro_neumaticos", file: "models/kit/muro_neumaticos.glb", scope: "comun", dims: [10,1.4,1.17], tris: 58, alpha: "opaque", tile: 10, origin: "montreal", role: "muro_neumaticos", note: "Muro de neumáticos rojos y blancos (Montreal); al final de las escapatorias de curva." },
+  { id: "valla_alta", file: "models/kit/valla_alta.glb", scope: "comun", dims: [8,0.79,3.65], tris: 168, alpha: "mask", tile: 8, origin: "montreal", role: "valla", note: "Valla de malla con postes (Montreal); detrás de los muros donde hay público, y encima del hormigón en urbanos." },
   { id: "valla_publi", file: "models/kit/valla_publi.glb", scope: "comun", dims: [10,0.31,2.53], tris: 4, alpha: "opaque", tile: 10, front: "+z", note: "Valla publicitaria; el patrocinador lo pinta CK3 (de sponsors.ts)." },
   { id: "bloque_hormigon", file: "models/kit/bloque_hormigon.glb", scope: "comun", dims: [2.02,0.53,0.98], tris: 94, alpha: "opaque", tile: 2.02, note: "Bloque de hormigón; muros de urbanos y zonas de servicio." },
   { id: "poste_luz", file: "models/kit/poste_luz.glb", scope: "comun", dims: [0.84,0.14,6.13], tris: 58, alpha: "opaque", note: "Poste de luz." },
@@ -30,18 +34,22 @@ export const CIRCUIT_KIT: KitPiece[] = [
   { id: "cartel_pequeno", file: "models/kit/cartel_pequeno.glb", scope: "comun", dims: [1.2,0.08,0.67], tris: 12, alpha: "opaque", front: "+z", note: "Cartel pequeño de patrocinador." },
   { id: "marcador", file: "models/kit/marcador.glb", scope: "comun", dims: [9.06,0.77,0.84], tris: 348, alpha: "opaque", note: "Marcador de tiempos." },
   { id: "torre_posiciones", file: "models/kit/torre_posiciones.glb", scope: "comun", dims: [12.21,11.06,23.49], tris: 1377, alpha: "opaque", front: "+z", note: "Torre de posiciones; el cartel de arriba lleva el nombre del circuito (CK3)." },
-  { id: "grada_comun", file: "models/kit/grada_comun.glb", scope: "comun", dims: [42.14,30.21,18.72], tris: 682, alpha: "opaque", front: "-z", note: "Grada de celosía (la blanca); en el vértice de las curvas." },
+  { id: "grada_comun", file: "models/kit/grada_comun.glb", scope: "comun", dims: [33.08,28.98,17.12], tris: 876, alpha: "opaque", front: "-z", origin: "montreal", role: "grada", note: "Grada de tubo metálico (Montreal); en el vértice de las curvas." },
   { id: "grada_roja", file: "models/kit/grada_roja.glb", scope: "comun", dims: [38.94,21.91,15.99], tris: 383, alpha: "opaque", front: "-z", note: "Módulo de grada roja; se encadena por las rectas y el arco de las curvas." },
   { id: "grada_pequena", file: "models/kit/grada_pequena.glb", scope: "comun", dims: [18,8.5,6.2], tris: 88, alpha: "opaque", front: "-z", note: "Grada pequeña; huecos dentro de las curvas cerradas." },
   { id: "cartel_metros", file: "models/kit/cartel_metros.glb", scope: "comun", dims: [1,0.1,2.15], tris: 36, alpha: "opaque", front: "+z", note: "Cartel de metros (200, 150, 100 y 50) antes de las curvas; el número y el patrocinador los pinta CK3." },
   { id: "grua", file: "models/kit/grua.glb", scope: "comun", dims: [14.03,11.21,33.5], tris: 943, alpha: "opaque", note: "Grúa móvil; detrás de los muros de neumáticos de las curvas de frenada." },
-  { id: "arbol_a", file: "models/kit/arbol_a.glb", scope: "comun", dims: [12.71,12.07,15.3], tris: 9, alpha: "mask", note: "Árbol (planos cruzados)." },
-  { id: "arbol_b", file: "models/kit/arbol_b.glb", scope: "comun", dims: [14.37,16.24,20.94], tris: 9, alpha: "mask", note: "Árbol (planos cruzados)." },
-  { id: "arbol_c", file: "models/kit/arbol_c.glb", scope: "comun", dims: [12.83,11.72,15.3], tris: 9, alpha: "mask", note: "Árbol (planos cruzados)." },
+  { id: "arbol_a", file: "models/kit/arbol_a.glb", scope: "comun", dims: [12.47,11.93,18], tris: 20, alpha: "mask", origin: "montreal", role: "arbol", note: "Árbol (foto del de Montreal; rehecho en Blender el 09/11/2026 con tres planos cruzados y dos de copa para verlo desde arriba, con cara y revés y normales de copa)." },
+  { id: "arbol_b", file: "models/kit/arbol_b.glb", scope: "comun", dims: [17.6,16.83,14.86], tris: 20, alpha: "mask", origin: "montreal", role: "arbol", note: "Árbol (foto del de Montreal; rehecho en Blender el 09/11/2026 con tres planos cruzados y dos de copa para verlo desde arriba, con cara y revés y normales de copa)." },
+  { id: "arbol_c", file: "models/kit/arbol_c.glb", scope: "comun", dims: [15.58,14.9,15.97], tris: 20, alpha: "mask", origin: "montreal", role: "arbol", note: "Árbol (foto del de Montreal; rehecho en Blender el 09/11/2026 con tres planos cruzados y dos de copa para verlo desde arriba, con cara y revés y normales de copa)." },
   { id: "coche_medico", file: "models/kit/coche_medico.glb", scope: "comun", dims: [4.96,2.09,1.89], tris: 670, alpha: "opaque", note: "Furgoneta del equipo de seguridad." },
   { id: "coche_aparcado", file: "models/kit/coche_aparcado.glb", scope: "comun", dims: [5.52,2.39,2.11], tris: 167, alpha: "opaque", note: "Furgoneta aparcada." },
   { id: "camion", file: "models/kit/camion.glb", scope: "comun", dims: [13.63,2.6,3.07], tris: 216, alpha: "opaque", note: "Camión del paddock." },
   { id: "refugio_comisarios", file: "models/kit/refugio_comisarios.glb", scope: "comun", dims: [8.07,2.51,1.24], tris: 50, alpha: "opaque", note: "Puesto de comisarios." },
+  { id: "pianos", file: "models/kit/pianos.glb", scope: "comun", dims: [2.18,0.74,0.05], tris: 64, alpha: "opaque", tile: 2.18, origin: "montreal", role: "pianos", note: "Bloque de piano (Montreal); a lo largo de cada piano pintado." },
+  { id: "grava", file: "models/kit/grava.glb", scope: "comun", dims: [10,10,0], tris: 2, alpha: "opaque", origin: "montreal", role: "grava", note: "Loseta de grava (Montreal); su material pinta las franjas de grava de las escapatorias." },
+  { id: "escapatoria", file: "models/kit/escapatoria.glb", scope: "comun", dims: [10,2.61,0], tris: 10, alpha: "opaque", origin: "montreal", role: "escapatoria", note: "Franja de escapatoria pintada (Montreal); su material pinta el asfalto pintado del estadio." },
+  { id: "marcas_suelo", file: "models/kit/marcas_suelo.glb", scope: "comun", dims: [10,0.6,0.03], tris: 10, alpha: "opaque", tile: 10, origin: "montreal", role: "marcas_suelo", note: "Línea pintada (Montreal); en el borde entre el asfalto y la grava de las escapatorias." },
   { id: "edificio_boxes", file: "models/kit/edificio_boxes.glb", scope: "shanghai", dims: [86.86,24.64,11.7], tris: 1298, alpha: "opaque", note: "Módulo del edificio de boxes de Shanghái (87 m)." },
   { id: "edificio_b", file: "models/kit/edificio_b.glb", scope: "shanghai", dims: [42.85,16.08,6.07], tris: 190, alpha: "opaque", note: "Garajes de Shanghái." },
   { id: "pabellon", file: "models/kit/pabellon.glb", scope: "shanghai", dims: [42.14,40.19,8.49], tris: 924, alpha: "opaque", note: "Pabellón de equipo de Shanghái." },

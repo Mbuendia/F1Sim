@@ -2,6 +2,8 @@ import { lazy, Suspense, useEffect, useState } from 'react';
 import { LandingPage } from './components/LandingPage';
 import { codeFromLink } from './net/roomCode';
 import { markLoad } from './perf/loadMarks';
+import { LoadingScreen } from './components/LoadingScreen';
+import { useBootProgress } from './utils/bootProgress';
 
 /**
  * [PF8, LCP] Arranque ligero: lo primero que se pinta es la portada, que solo necesita React y su propio código; el
@@ -33,6 +35,12 @@ function onFirstIntent(fn: () => void): () => void {
   return off;
 }
 
+/** [PF10] Mientras baja el juego: la pantalla de carga con los archivos que van llegando. */
+function BootLoading() {
+  const { items, slow } = useBootProgress();
+  return <LoadingScreen phase="Bajando el juego" items={items} slow={slow} />;
+}
+
 export default function Root() {
   const [inGame, setInGame] = useState(() => typeof location !== 'undefined' && startsInGame(location.href));
   // [PF1] Marca de carga: la primera pantalla del juego está lista.
@@ -40,7 +48,7 @@ export default function Root() {
   useEffect(() => onFirstIntent(() => { void import('./App'); }), []);
   if (!inGame) return <><LandingPage onEnter={() => setInGame(true)} />{notice}</>;
   return (
-    <Suspense fallback={<div role="status" style={{ position: 'fixed', inset: 0, display: 'grid', placeItems: 'center', background: '#0b0e13', color: '#9aa4b2', font: '600 14px system-ui' }}>Cargando el paddock…</div>}>
+    <Suspense fallback={<BootLoading />}>
       <App startAt="menu" />
       {notice}
     </Suspense>

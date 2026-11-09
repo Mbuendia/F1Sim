@@ -13,6 +13,15 @@ export default defineConfig({
   define: { __APP_VERSION__: JSON.stringify(version) },
   // GitHub Pages sirve el juego en /F1Sim/; Firebase Hosting, en la raíz (BASE_PATH=/).
   base: process.env.BASE_PATH ?? '/F1Sim/',
+  // [CR6] Los datos de OpenStreetMap de cada circuito (1 MB entre todos) en su propio trozo, para que el de la escena 3D
+  // no pase de 1 MB (OF1.2). Se siguen cargando todos con la escena; solo cambia cómo se parten.
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: id => { const m = id.match(/data[\\/]osmScenery[\\/]([\w-]+)\.json/); return m ? `osm-${m[1]}` : undefined; },
+      },
+    },
+  },
   server: {
     port: 3000,
     open: true

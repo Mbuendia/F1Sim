@@ -8,7 +8,8 @@ import { Camera } from '../renderer/Camera';
 import { raceStore } from '../state/raceStore';
 import type { CameraMode3D } from '../scene3d/cameras';
 import { loadTimes } from '../perf/loadMarks';
-import { BENCH_SCENARIO, benchSummary, benchText, type BenchSummary } from './perfBench';
+import { benchScenarioFor, benchSummary, benchText, type BenchSummary } from './perfBench';
+import { START_HOUR } from '../renderer/lighting';
 import { PerfPanel, EMPTY_SNAPSHOT, startPerfSampler, type PerfSnapshot, type PerfStageId } from './PerfOverlay';
 
 /**
@@ -18,7 +19,7 @@ import { PerfPanel, EMPTY_SNAPSHOT, startPerfSampler, type PerfSnapshot, type Pe
 type Phase = { kind: 'warmup'; left: number } | { kind: 'measuring'; left: number } | { kind: 'done'; summary: BenchSummary };
 
 export default function PerfBench() {
-  const sc = BENCH_SCENARIO;
+  const [sc] = useState(() => benchScenarioFor(typeof location !== 'undefined' ? location.search : '', id => id in START_HOUR));
   const data = useMemo(() => {
     const sim = new RaceSimulation(sc.circuitId);
     sim.setSeed(sc.seed); sim.setFixedStep(0.02); sim.lightState = 'racing';
@@ -68,7 +69,7 @@ export default function PerfBench() {
         device: deviceRef.current, userAgent: navigator.userAgent, frames, stages,
         gpuMs: mean(s => s.gpuMs), heapMb: last?.heapMb ?? null, gpuGeometries: last?.gpuGeometries ?? null, gpuTextures: last?.gpuTextures ?? null,
         menuMs: load.menuMs, firstFrameMs: load.firstFrameMs,
-      }) });
+      }, sc) });
     });
     return stop;
   }, [sc]);

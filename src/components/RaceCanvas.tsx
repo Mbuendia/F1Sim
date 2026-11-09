@@ -17,6 +17,8 @@ import { bridgePaintOrder, bridgeSide, overpassFor } from '../renderer/overpass'
 import { renderBridge } from '../renderer/BridgeRenderer';
 import { sunAt } from '../renderer/lighting';
 import type { RaceScene3D } from '../scene3d/RaceScene3D';
+import { LoadingScreen } from './LoadingScreen';
+import { SLOW_LOADING_MS, type LoadItem } from '../utils/loadingProgress';
 import { CameraDirector3D, drawLabels3D } from '../scene3d/director3d';
 import type { CameraMode3D } from '../scene3d/cameras';
 import { WEATHER_TESTS } from '../data/weatherScenarios';
@@ -103,6 +105,8 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
   // [PF4] Calidad en uso, vigilante de fotogramas y cuenta del segundo en curso.
   const qualityRef = useRef<{ profile: QualityProfile; governor: ReturnType<typeof createQualityGovernor>; frames: number; windowStart: number } | null>(null);
   const [view3d, setView3d] = useState(false);
+  // [PF10] Pantalla de carga al entrar en carrera (motor 3D, escenario, kit y coches); se va con un fundido al estar todo.
+  const [loading3d, setLoading3d] = useState<{ items: LoadItem[]; leaving: boolean; slow: boolean } | null>(null);
   // El modo de la cámara 3D vive en `camera` (la compartida con la barra de arriba, cuyo botón lo cambia).
   const director = useMemo(() => {
     const d = new CameraDirector3D(track, circuitId, camera);
@@ -134,18 +138,28 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
     const setting = readQuality(browserSettingsStorage());
     const level = effectiveQuality(setting, browserDevice());
     qualityRef.current = { profile: QUALITY_PROFILES[level], governor: createQualityGovernor({ start: level, auto: setting === 'auto' }), frames: 0, windowStart: performance.now() };
+    const items: LoadItem[] = [
+      { id: 'motor3d', label: 'Motor 3D', done: false }, { id: 'escenario', label: 'Escenario del circuito', done: false },
+      { id: 'kit', label: 'Kit del circuito', done: false }, { id: 'coche', label: 'Coche', done: false }, { id: 'coche-ligero', label: 'Coche ligero', done: false },
+    ];
+    const mark = (id: string) => { if (cancelled) return; const i = items.find(x => x.id === id); if (i) i.done = true; setLoading3d(prev => (prev ? { ...prev, items: items.map(x => ({ ...x })) } : prev)); };
+    setLoading3d({ items: items.map(x => ({ ...x })), leaving: false, slow: false });
+    const slowTimer = setTimeout(() => setLoading3d(prev => (prev ? { ...prev, slow: true } : prev)), SLOW_LOADING_MS);
+    const finish = () => { clearTimeout(slowTimer); if (cancelled) return; setLoading3d(prev => (prev ? { ...prev, leaving: true } : prev)); setTimeout(() => { if (!cancelled) setLoading3d(null); }, 450); };
     import('../scene3d/RaceScene3D')
       .then(async module => {
+        mark('motor3d');
         created = module.RaceScene3D.create(QUALITY_PROFILES[level].antialias);
         if (!created || cancelled) { created?.destroy(); created = null; return; }
         created.setQuality(QUALITY_PROFILES[level]);
         scene3dRef.current = created;
         camera.view3d = true;
         setView3d(true);
-        await created.load(track, circuitId, import.meta.env.BASE_URL);
+        await created.load(track, circuitId, import.meta.env.BASE_URL, mark);
       })
-      .catch(error => { console.error('Vista 3D no disponible', error); scene3dRef.current = null; setView3d(false); });
-    return () => { cancelled = true; scene3dRef.current = null; camera.view3d = false; setView3d(false); created?.destroy(); };
+      .catch(error => { console.error('Vista 3D no disponible', error); scene3dRef.current = null; setView3d(false); })
+      .finally(finish);
+    return () => { cancelled = true; clearTimeout(slowTimer); setLoading3d(null); scene3dRef.current = null; camera.view3d = false; setView3d(false); created?.destroy(); };
   }, [track, circuitId, camera]);
 
   // Sincronizar el seguimiento de la cámara cuando cambia selectedCarId
@@ -305,7 +319,8 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
       if (scene3d) {
         const w = camera.screenWidth, h = camera.screenHeight;
         const sun3 = sunAt({ circuitId, raceTimeSec: frame.raceTimeSec, cloudCover: frame.cloudCover });
-        const shot = director.view(frame.cars, selectedCarId, frame.raceTimeSec, dtRaw, w / h, car => scene3d.carHeight(car));
+        // [PF12] En pausa la cámara tampoco se mueve (la de persecución seguía acercándose y el coche parecía ir hacia atrás).
+        const shot = director.view(frame.cars, selectedCarId, frame.raceTimeSec, dtRaw, w / h, car => scene3d.carHeight(car), Boolean(raceStore.getState().slow?.paused));
         const finished = Boolean(raceStore.getState().slow?.finished);
         if (finished && finishedAt === null) finishedAt = performance.now();
         if (!finished) finishedAt = null;
@@ -322,7 +337,7 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
           }
         }
         const pixelRatioMax = q?.profile.pixelRatioMax ?? 1.5;
-        const image = scene3d.render({ cars: frame.cars, safetyCar: frame.safetyCar, view: shot.view, sun: sun3, shadowRadius: shot.shadowRadius, fireworksSec, playerTeamId, followedCarId: selectedCarId,
+        const image = scene3d.render({ cars: frame.cars, safetyCar: frame.safetyCar, raceTimeSec: frame.raceTimeSec, view: shot.view, sun: sun3, shadowRadius: shot.shadowRadius, fireworksSec, playerTeamId, followedCarId: selectedCarId,
           // [PF2.7] Con las cámaras pegadas al coche, él y los cercanos van con el modelo completo.
           focusCarId: director.mode === 'persecucion' || director.mode === 'a-bordo' ? selectedCarId : null }, w, h, Math.min(dpr, pixelRatioMax));
         ctx.drawImage(image, 0, 0, w, h);
@@ -569,6 +584,8 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
         onDoubleClick={handleDoubleClick}
         onContextMenu={(e) => e.preventDefault()}
       />
+
+      {loading3d && <LoadingScreen phase={loading3d.items[0].done ? 'Cargando coches y escenario' : 'Preparando el circuito'} items={loading3d.items} slow={loading3d.slow} leaving={loading3d.leaving} />}
 
       {weatherTest && (
         <button type="button" onClick={nextWeatherTest} title="Cambia el tiempo de esta carrera libre para probar la lluvia y el spray"

@@ -4,6 +4,12 @@
  * El mundo del juego (x, y en metros; y hacia abajo = sur; z hacia arriba) va a three como (x, z, y).
  */
 import * as THREE from 'three';
+import { syncCompound } from './compoundMount';
+import { pitStopPose, pitStopTimeline, type PitPose, type PitTimeline } from './pitStopAnimation';
+import { CREW_MODEL, CREW_RETURN_SEC, PIT_CREW_ROLES, crewPhase, crewPose, dressCrew, type CrewPhase, type CrewRole } from './pitCrew3d';
+import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
+import { PitStopModel } from '../simulation/PitStopModel';
+import { RejoinModel } from '../simulation/RejoinModel';
 import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import type { TrackDefinition } from '../data/barcelonaTrack';
 import type { CarState, SafetyCarState } from '../types/f1';
@@ -20,7 +26,10 @@ import { liveryFor } from '../data/liveries';
 import { compoundStyle } from '../utils/compounds';
 import { calculateCarWorldPosition, isCarVisible } from '../utils/carPosition';
 import { KIT_CIRCUIT, runoffZones3d, sceneryFor, type PitBuilding, type SceneBarrier, type SceneItem } from './scenery';
-import { kitGroups, kitPlacementFor, type KitPlacement } from './kitPlacement';
+import { portalItems } from './osmCrossings';
+import { kitGroups, kitPlacementFor, realBuildingsClearOfKit, type KitPlacement } from './kitPlacement';
+import { buildRealBuildings } from './realBuildings';
+import { CIRCUIT_KIT } from './circuitKit';
 import { buildKit, KIT_STRIP_COLORS } from './kitMeshes';
 import { RUNOFF_LOOK, runoffColor } from './runoff';
 import { KERB_WIDTH } from '../utils/scenarioGeometry';
@@ -31,9 +40,15 @@ import type { CameraView } from './cameras';
 import { perfStats } from '../dev/perfStats';
 import { planCars, shadowSource, type CarLevel } from './carDots';
 import { itemTransform, planInstances } from './instancing';
-import { QUALITY_PROFILES, type QualityProfile } from '../settings/quality';
-import { carHeightAt, reliefFor, terrainSize, type Relief } from './relief';
+import { QUALITY_PROFILES, bloomEnabled, type QualityLevel, type QualityProfile } from '../settings/quality';
+import { canopyPanels, canopyTint, panelColor } from './yasCanopy';
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
+import { carHeightAt, itemBaseHeight, reliefFor, terrainSize, WALL_SLOPE, type Relief } from './relief';
 import { pitTunnelFor, type PitTunnel } from './pitTunnel';
+import { roadTunnelFor, type RoadTunnel } from './roadTunnel';
 
 const W = (x: number, y: number, z = 0) => new THREE.Vector3(x, z, y);
 const LOD_FILE = 'models/f1-car-lod.glb';
@@ -86,12 +101,60 @@ export interface Frame3D {
   followedCarId?: number | null;
   /** [PF2.7] Coche en foco (persecución o a bordo): él y los cercanos, con el modelo completo. */
   focusCarId?: number | null;
+  /** [CA5] Tiempo de carrera del fotograma, para animar las paradas en boxes. */
+  raceTimeSec?: number;
 }
+
+/** [CA5] Lo que sube el gato el coche (m) y lo que se separa del coche una rueda al sacarla (m). */
+const PIT_LIFT_M = 0.07;
+const PIT_WHEEL_OUT_M = 0.75;
+
+/**
+ * [CA5] Pone un coche 3D en la postura de su parada: cada rueda hacia fuera según lo que va de la parada y su banda con
+ * el compuesto de la rueda que se ve. Sin parada, las ruedas vuelven a su sitio y la banda la vuelve a pintar syncCompound.
+ */
+function applyPitPose(root: THREE.Object3D, pose: PitPose | null): void {
+  const data = root.userData as { pitWheels?: { node: THREE.Object3D | undefined; base: THREE.Vector3; bands: THREE.MeshLambertMaterial[] }[]; pitActive?: boolean; compound?: string };
+  if (!pose && !data.pitActive) return;
+  data.pitWheels ??= CAR_MODEL.wheels.map(name => {
+    const node = root.getObjectByName(name);
+    const bands: THREE.MeshLambertMaterial[] = [];
+    node?.traverse(o => {
+      const mesh = o as THREE.Mesh;
+      if (!mesh.isMesh) return;
+      for (const m of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) if (m.name === CAR_MODEL.materials.band) bands.push(m as THREE.MeshLambertMaterial);
+    });
+    return { node, base: node ? node.position.clone() : new THREE.Vector3(), bands };
+  });
+  data.pitWheels.forEach((w, k) => {
+    if (!w.node) return;
+    const p = pose?.wheels[k];
+    w.node.position.copy(w.base);
+    w.node.visible = !(p && p.off > 0.97);
+    if (!p) return;
+    w.node.position.z += (Math.sign(w.base.z) || 1) * p.off * PIT_WHEEL_OUT_M;
+    for (const m of w.bands) m.color.set(compoundStyle(p.compound).color);
+  });
+  data.pitActive = Boolean(pose);
+  if (!pose) data.compound = undefined;
+}
+
+/** [CA7] El equipo de mecánicos de un coche: su grupo en el box y cada mecánico con sus animaciones. */
+interface CrewMember { role: CrewRole; root: THREE.Object3D; mixer: THREE.AnimationMixer; actions: Map<string, THREE.AnimationAction>; clip: string; wheel: THREE.Group; band: THREE.MeshLambertMaterial }
+interface CrewTeam { phase: CrewPhase; since: number; group: THREE.Group; members: CrewMember[]; garageSide: number; timeline: PitTimeline | null; from: string; to: string }
 
 interface CarSlot { full: THREE.Object3D | null; lod: THREE.Object3D | null; proxy: THREE.Mesh; release: (() => void) | null; key: string }
 
 export class RaceScene3D {
   readonly renderer: THREE.WebGLRenderer;
+  /** [CA5] Tiempo de carrera del último fotograma. */
+  private raceTimeSec = 0;
+  /** [CA7] Mecánicos: el modelo (se carga la primera vez que hace falta) y el equipo de cada coche que entra, para o sale. */
+  private crewModel: GLTF | null = null;
+  private crewLoading = false;
+  private crewDt = 0;
+  private readonly crews = new Map<number, CrewTeam>();
+  private crewWheel: { tyre: THREE.CylinderGeometry; band: THREE.TorusGeometry; rubber: THREE.MeshLambertMaterial } | null = null;
   private readonly scene = new THREE.Scene();
   private readonly camera = new THREE.PerspectiveCamera(55, 16 / 9, 0.3, 30000);
   private readonly sunLight = new THREE.DirectionalLight(0xffffff, 2.2);
@@ -112,6 +175,13 @@ export class RaceScene3D {
   /** [CK3] Grupos de dibujo del kit en el circuito cargado (para el contador de rendimiento). */
   kitDrawGroups = 0;
   private readonly lampLights: THREE.PointLight[] = [];
+  /** [CR5] Paneles de LED de la cubierta del hotel de Yas Marina y la luz que echan sobre la pista y los coches. */
+  private canopy: THREE.InstancedMesh | null = null;
+  private canopyLight: THREE.PointLight | null = null;
+  private canopyAt = -1;
+  private canopyCenter = { x: 0, y: 0 };
+  /** [CR5] Resplandor de las luces de noche (solo en calidad alta): se crea la primera vez que hace falta. */
+  private composer: { composer: EffectComposer; bloom: UnrealBloomPass } | null = null;
   /** Halos y conos de luz de las torres (solo de noche). */
   private lampFx: THREE.Group | null = null;
   private safetyModel: GLTF | null = null;
@@ -171,8 +241,9 @@ export class RaceScene3D {
     }
   }
 
-  /** Monta el circuito: el suelo al momento; escenario y coches en cuanto cargan sus modelos. */
-  async load(track: TrackDefinition, circuitId: string, base: string): Promise<void> {
+  /** Monta el circuito: el suelo al momento; escenario y coches en cuanto cargan sus modelos. [PF10] `onProgress` avisa
+   * de cada pieza que termina: escenario, kit, coche y coche ligero. */
+  async load(track: TrackDefinition, circuitId: string, base: string, onProgress?: (id: 'escenario' | 'kit' | 'coche' | 'coche-ligero') => void): Promise<void> {
     this.track = track; this.circuitId = circuitId; this.lap = track.lapLengthMeters || 5000;
     this.world.clear();
     const scenery = sceneryFor(track, circuitId);
@@ -184,7 +255,7 @@ export class RaceScene3D {
     this.floodlights = kit
       ? kit.pieces.filter(p => p.piece === 'poste_luz').map(p => ({ kind: 'floodlight', model: 'kit', x: p.x, y: p.y, heading: p.heading, length: 1, width: 1, height: 6.1 }))
       : scenery.items.filter(it => it.kind === 'floodlight');
-    this.world.add(buildGround(track, circuitId, scenery.infield, scenery.water, scenery.street, kit));
+    this.world.add(buildGround(track, circuitId, scenery.infield, scenery.water, scenery.street, kit, scenery.escapes ?? []));
     this.world.add(buildWalls(track, circuitId, scenery.barriers));
     if (scenery.pitBuilding) this.world.add(buildPitBuildingMesh(scenery.pitBuilding, circuitId));
     if (this.floodlights.length) { this.lampFx = buildLampFx(this.floodlights, track); this.world.add(this.lampFx); }
@@ -193,14 +264,41 @@ export class RaceScene3D {
     // [CR2] Yas Marina: la salida de boxes pasa por un túnel bajo la pista.
     const pitTunnel = pitTunnelFor(circuitId);
     if (pitTunnel) this.world.add(buildPitTunnel(pitTunnel));
+    // [CR4] Mónaco: el túnel bajo el hotel, del Portier a la nueva chicane.
+    const roadTunnel = roadTunnelFor(circuitId);
+    if (roadTunnel) this.world.add(buildRoadTunnel(roadTunnel, track, circuitId, base));
+    if (scenery.boards?.length) this.world.add(buildDistanceBoards(scenery.boards, circuitId));
+    // [CR6] Edificios reales de OpenStreetMap (scenery.realBuildings): una sola malla, apoyada en el suelo.
+    if (scenery.realBuildings?.length) {
+      const relief = reliefFor(circuitId);
+      // Menos los que tapan las gradas de la recta y la torre del kit (están donde estaban las gradas reales).
+      const mesh = buildRealBuildings(realBuildingsClearOfKit(kit, scenery.realBuildings), scenery.buildingStyle ?? 'norteamericano', (x, y) => (relief ? relief.groundHeight(x, y) : 0), W);
+      // En calidad media o baja (móvil) no proyectan sombra: un pase menos en el mapa de sombras.
+      if (mesh) { if (level !== 'alto') mesh.castShadow = false; this.world.add(mesh); }
+    }
+    // [CR5] Yas Marina: los paneles de LED de la cubierta del hotel, uno por rombo, y su luz sobre la pista.
+    if (this.canopyLight) { this.scene.remove(this.canopyLight); this.canopyLight = null; }
+    this.canopy = null;
+    const canopyItem = scenery.items.find(it => it.id === 'yas-hotel-cubierta');
+    if (canopyItem) {
+      this.canopyCenter = { x: canopyItem.x, y: canopyItem.y };
+      this.canopy = buildCanopyPanels();
+      this.world.add(this.canopy);
+      this.canopyLight = new THREE.PointLight('#ffffff', 0, 90, 1.6);
+      this.scene.add(this.canopyLight);
+      this.canopyAt = -1;
+    }
     const [items, kitGroup, car, lod] = await Promise.all([
-      buildScenery(scenery.items, track, base, circuitId).catch(error => { console.error('Escenario 3D', error); return null; }),
-      kit ? buildKit(kit, base).catch(error => { console.error('Kit de circuito', error); return null; }) : Promise.resolve(null),
-      loadModel(modelUrl(base, CAR_MODEL.file)).catch(() => null),
-      loadModel(modelUrl(base, LOD_FILE)).catch(() => null),
+      buildScenery([...scenery.items, ...portalItems(scenery.portals ?? [])], track, base, circuitId, scenery.water, level !== 'alto').catch(error => { console.error('Escenario 3D', error); return null; }).finally(() => onProgress?.('escenario')),
+      (kit ? buildKit(kit, base).catch(error => { console.error('Kit de circuito', error); return null; }) : Promise.resolve(null)).finally(() => onProgress?.('kit')),
+      loadModel(modelUrl(base, CAR_MODEL.file)).catch(() => null).finally(() => onProgress?.('coche')),
+      loadModel(modelUrl(base, LOD_FILE)).catch(() => null).finally(() => onProgress?.('coche-ligero')),
     ]);
     if (this.disposed) { if (items) disposeModel(items); if (kitGroup) disposeModel(kitGroup); return; }
     if (kitGroup) this.world.add(kitGroup);
+    // [CR3] Grava y asfalto pintado de verde de las escapatorias del kit, con el material de su pieza de Montreal (encima
+    // del color liso, que se queda debajo por si la textura no llega).
+    if (kit) buildKitSurfaces(kit, base, circuitId).then(g => { if (g && !this.disposed) this.world.add(g); }).catch(() => undefined);
     if (items) {
       this.world.add(items);
       const seen = new Set<THREE.Material>();
@@ -224,6 +322,8 @@ export class RaceScene3D {
     if (canvas.width !== w || canvas.height !== h) this.renderer.setSize(w, h, false);
 
     const { view, sun } = frame;
+    this.crewDt = Math.min(0.1, Math.max(0, (frame.raceTimeSec ?? this.raceTimeSec) - this.raceTimeSec));
+    this.raceTimeSec = frame.raceTimeSec ?? this.raceTimeSec;
     this.camera.fov = view.fov;
     this.camera.aspect = width / height;
     this.camera.position.copy(W(view.position.x, view.position.y, view.position.z));
@@ -279,8 +379,51 @@ export class RaceScene3D {
     this.placeCars(frame.cars, { fovDeg: view.fov, viewportHeightPx: height, pixelRatio: Math.min(pixelRatio, 2), playerTeamId: frame.playerTeamId ?? null, followedCarId: frame.followedCarId ?? null, focusCarId: frame.focusCarId ?? null });
     this.placeSafetyCar(frame.safetyCar);
     // [PF1] Con el contador abierto, la gráfica se cronometra alrededor del pintado.
+    // [CR5] Cubierta del hotel: cada panel con su color (diez veces por segundo basta: las secuencias son lentas) y su luz
+    // sobre la pista y los coches que pasan por debajo (canopyTint en el punto que mira la cámara).
+    // En calidad media o baja (móvil) la luz no se enciende (cuesta en todos los materiales) y, lejos del hotel, los paneles
+    // se repintan cinco veces por segundo.
+    const level = (Object.entries(QUALITY_PROFILES).find(([, prof]) => prof === this.quality)?.[0] ?? 'alto') as QualityLevel;
+    if (this.canopy) {
+      const s = performance.now() / 1000;
+      const near = Math.hypot(view.target.x - this.canopyCenter.x, view.target.y - this.canopyCenter.y) < 700;
+      if (Math.abs(s - this.canopyAt) >= (near ? 0.1 : 0.2)) {
+        this.canopyAt = s;
+        const k = night ? 1 : 0.55, col = new THREE.Color();
+        for (let i = 0; i < this.canopy.count; i++) { const c = panelColor(i, s); this.canopy.setColorAt(i, col.setRGB(c.r * k, c.g * k, c.b * k)); }
+        if (this.canopy.instanceColor) this.canopy.instanceColor.needsUpdate = true;
+      }
+      if (this.canopyLight) this.canopyLight.visible = level === 'alto';
+      if (this.canopyLight?.visible) {
+        const tint = canopyTint(view.target.x, view.target.y, s);
+        this.canopyLight.color.setRGB(tint.r, tint.g, tint.b);
+        this.canopyLight.intensity = tint.intensity * (night ? 900 : 250);
+        this.canopyLight.position.copy(W(view.target.x, view.target.y, 30));
+      }
+    }
+    // [CR6] De noche, en calidad media (móvil), el sol no echa sombra: a un cuarto de fuerza apenas se ve y se ahorra la
+    // pasada de sombras entera (Marina Bay con sus iconos y 190 palmeras). Al cambiar, three recompila una vez.
+    if (this.renderer.shadowMap.enabled) {
+      const sunShadow = !(night && level !== 'alto');
+      if (this.sunLight.castShadow !== sunShadow) this.sunLight.castShadow = sunShadow;
+    }
     perfStats.gpuTimer?.begin();
-    this.renderer.render(this.scene, this.camera);
+    // [CR5] Resplandor de las luces de noche solo en calidad alta (en móvil la recomendada nunca lo es).
+    if (bloomEnabled(level, night)) {
+      if (!this.composer) {
+        const composer = new EffectComposer(this.renderer);
+        composer.addPass(new RenderPass(this.scene, this.camera));
+        const bloom = new UnrealBloomPass(new THREE.Vector2(w, h), 0.55, 0.45, 0.82);
+        composer.addPass(bloom);
+        composer.addPass(new OutputPass());
+        this.composer = { composer, bloom };
+      }
+      this.composer.composer.setPixelRatio(1);
+      this.composer.composer.setSize(w, h);
+      this.composer.composer.render();
+    } else {
+      this.renderer.render(this.scene, this.camera);
+    }
     perfStats.gpuTimer?.end();
     // [UX16] Para el contador de rendimiento (UX3). [PF1] Y la memoria de la gráfica y su contexto.
     perfStats.drawCalls = this.renderer.info.render.calls; perfStats.triangles = this.renderer.info.render.triangles;
@@ -304,6 +447,89 @@ export class RaceScene3D {
   }
 
   /** Altura del coche (m): la del relieve (CK5) y, en Suzuka, el puente para los que van por la carretera de arriba. */
+  /** [CA7] Pone, mueve y quita los mecánicos del box de un coche según su parada. */
+  private updateCrew(car: CarState, stop: CarState['pitStop']['serviceStop'] | null): void {
+    const prev = this.crews.get(car.id) ?? null;
+    let phase = crewPhase(car, prev?.phase ?? null);
+    if (phase === 'saliendo' && prev?.phase === 'saliendo' && this.raceTimeSec - prev.since > CREW_RETURN_SEC) phase = null;
+    if (!phase) {
+      if (prev) { this.world.remove(prev.group); prev.members.forEach(m => m.mixer.stopAllAction()); this.crews.delete(car.id); }
+      return;
+    }
+    if (!this.crewModel) {
+      if (!this.crewLoading) {
+        this.crewLoading = true;
+        loadModel(modelUrl(import.meta.env.BASE_URL, CREW_MODEL)).then(g => { this.crewModel = g; }).catch(() => { this.crewLoading = false; });
+      }
+      return;
+    }
+    const team = prev ?? this.createCrew(car, phase);
+    if (!team) return;
+    if (team.phase !== phase) { team.phase = phase; team.since = this.raceTimeSec; }
+    if (stop) { team.timeline = pitStopTimeline(stop); team.from = stop.from; team.to = stop.to; team.since = stop.start; }
+    const t = this.raceTimeSec - team.since;
+    for (const m of team.members) {
+      const pose = crewPose(m.role, { phase, t, timeline: team.timeline, from: team.from, to: team.to, garageSide: team.garageSide });
+      m.root.visible = pose.visible;
+      m.root.position.set(pose.x, 0, pose.z);
+      m.root.rotation.y = Math.atan2(-pose.fz, pose.fx);
+      if (pose.clip !== m.clip) {
+        const next = m.actions.get(pose.clip), last = m.actions.get(m.clip);
+        if (next) { next.reset().play(); if (last) next.crossFadeFrom(last, 0.15, false); }
+        m.clip = pose.clip;
+      }
+      m.wheel.visible = Boolean(pose.carrying);
+      if (pose.carrying) m.band.color.set(compoundStyle(pose.carrying.compound).color);
+      m.mixer.update(this.crewDt);
+    }
+  }
+
+  /** [CA7] Crea el equipo en el box del coche: 16 mecánicos con los colores del equipo, mirando como el coche parado. */
+  private createCrew(car: CarState, phase: CrewPhase): CrewTeam | null {
+    const track = this.track, model = this.crewModel;
+    if (!track || !model) return null;
+    const progress = track.pitEntryT + PitStopModel.getBoxProgress(car, track) * RejoinModel.pitLaneLength(track);
+    const at = calculateCarWorldPosition({ progress, isInPitLane: true, lateralOffset: 0 }, track);
+    const group = new THREE.Group();
+    group.position.copy(W(at.worldX, at.worldY, this.carHeight({ trackT: ((progress % 1) + 1) % 1, worldX: at.worldX, worldY: at.worldY, isInPitLane: true })));
+    group.rotation.set(0, -at.worldAngle, 0, 'YZX');
+    group.updateMatrixWorld(true);
+    // El garaje, al otro lado de la pista.
+    let near = track.points[0], best = Infinity;
+    for (const p of track.points) { const d = (p.x - at.worldX) ** 2 + (p.y - at.worldY) ** 2; if (d < best) { best = d; near = p; } }
+    const garageSide = group.worldToLocal(W(near.x, near.y, 0)).z > 0 ? -1 : 1;
+    this.crewWheel ??= { tyre: new THREE.CylinderGeometry(0.34, 0.34, 0.32, 18), band: new THREE.TorusGeometry(0.3, 0.018, 6, 24), rubber: new THREE.MeshLambertMaterial({ color: '#141414' }) };
+    const livery = liveryFor(car.team.id);
+    const members: CrewMember[] = PIT_CREW_ROLES.map(role => {
+      const root = cloneSkinned(model.scene);
+      root.traverse(o => {
+        const mesh = o as THREE.Mesh;
+        if (!mesh.isMesh) return;
+        mesh.material = Array.isArray(mesh.material) ? mesh.material.map(x => x.clone()) : mesh.material.clone();
+        mesh.castShadow = true; mesh.frustumCulled = false;
+      });
+      dressCrew(root, livery);
+      const mixer = new THREE.AnimationMixer(root);
+      const actions = new Map(model.animations.map(clip => {
+        const a = mixer.clipAction(clip);
+        if (clip.name === 'quitar_rueda' || clip.name === 'poner_rueda') { a.setLoop(THREE.LoopOnce, 1); a.clampWhenFinished = true; }
+        return [clip.name, a] as const;
+      }));
+      const wheel = new THREE.Group();
+      const band = new THREE.MeshLambertMaterial({ color: '#ffd400' });
+      const tyre = new THREE.Mesh(this.crewWheel!.tyre, this.crewWheel!.rubber); tyre.rotation.x = Math.PI / 2;
+      const ring = new THREE.Mesh(this.crewWheel!.band, band); ring.position.z = 0.165;
+      wheel.add(tyre, ring); wheel.position.set(0.42, 0.95, 0); wheel.visible = false;
+      root.add(wheel);
+      group.add(root);
+      return { role, root, mixer, actions, clip: '', wheel, band };
+    });
+    this.world.add(group);
+    const team: CrewTeam = { phase, since: this.raceTimeSec, group, members, garageSide, timeline: null, from: car.tires.compound, to: car.pitStop.targetCompound ?? car.tires.compound };
+    this.crews.set(car.id, team);
+    return team;
+  }
+
   carHeight(car: { trackT: number; isInPitLane?: boolean; worldX?: number; worldY?: number }): number {
     return this.track ? carHeightAt(this.circuitId, this.track, car) : 0;
   }
@@ -388,8 +614,19 @@ export class RaceScene3D {
         slot.lod = root;
         holder.add(root);
       }
+      // [CA4] Cada coche monta el compuesto que lleva: cambia al salir de boxes.
+      if (slot.full) syncCompound(slot.full, car.tires.compound);
+      if (slot.lod) syncCompound(slot.lod, car.tires.compound);
+      // [CA5] Cambio de ruedas: levanta el coche y mueve sus ruedas; la posición sigue siendo la del motor.
+      const stop = car.pitStop?.serviceStop ?? null;
+      const pitPose = stop ? pitStopPose(pitStopTimeline(stop), this.raceTimeSec - stop.start, stop.from, stop.to) : null;
+      if (slot.full) applyPitPose(slot.full, pitPose);
+      if (slot.lod) applyPitPose(slot.lod, pitPose);
+      // [CA7] Los mecánicos de su box: salen al entrar el coche en el pit lane, hacen la parada y vuelven al garaje.
+      this.updateCrew(car, stop);
       const z = this.carHeight(car);
       holder.position.copy(W(car.worldX, car.worldY, z));
+      if (pitPose) holder.position.y += pitPose.jack * PIT_LIFT_M;
       holder.rotation.set(0, -car.worldAngle, this.pitchAt(car), 'YZX');
       // En desarrollo, `window.__forceLod = true` enseña el coche ligero de cerca (para revisarlo).
       const forceLod = import.meta.env.DEV && (globalThis as { __forceLod?: boolean }).__forceLod === true;
@@ -559,7 +796,7 @@ function setLayer(root: THREE.Object3D, layer: number): void {
   root.traverse(o => o.layers.set(layer));
 }
 
-function buildGround(track: TrackDefinition, circuitId: string, infield: { x: number; y: number }[][], water: { x: number; y: number }[][], street: boolean, kit: KitPlacement | null = null): THREE.Object3D {
+function buildGround(track: TrackDefinition, circuitId: string, infield: { x: number; y: number }[][], water: { x: number; y: number }[][], street: boolean, kit: KitPlacement | null = null, escapes: { points: { x: number; y: number }[] }[] = []): THREE.Object3D {
   const b = track.bounds, pad = 3000;
   const flat = new FlatBuilder();
   const layers = getTrackLayers(track, circuitId);
@@ -584,12 +821,16 @@ function buildGround(track: TrackDefinition, circuitId: string, infield: { x: nu
   shapes.forEach((s, i) => {
     if (i === bands) {
       for (const poly of water) { if (relief) flat.level = relief.waterLevel(poly) + 0.05; flat.fill(poly, col('#2b6f9e')); flat.level = null; }
+      // [CR4] Escapatorias de asfalto (Mónaco), debajo de la pista y sus pianos.
+      for (const e of escapes) flat.fill(e.points, col('#33373f'));
       // [CK3] Con kit, las escapatorias son las suyas (asfalto y luego grava; asfalto pintado en el estadio).
       if (kit) for (const strip of kit.strips) flat.fill(strip.points, col(KIT_STRIP_COLORS[strip.surface]));
       else paintRunoffs(flat, track, circuitId, runoffZones3d(track, circuitId));
     }
     if (bands >= 0 && i >= bands && i < bands + runoffFills) return;
     if (s.kind === 'stroke' && s.color === '#5a4f3a' && s.width >= layers.trackWidthM + 10) return;
+    // [CR4] En Mónaco la banda oscura ancha del plano 2D (49 m) se pegaba a las laderas y las dejaba negras: fuera.
+    if (circuitId === 'monaco' && relief && s.kind === 'stroke' && s.width >= layers.trackWidthM + 10) return;
     if (s.kind === 'fill') flat.fill(s.points, col(s.color, s.alpha ?? 1));
     else if (tunnel && tunnelShapes.has(s.points)) for (const run of uncoveredRuns(s.points, tunnel)) flat.ribbon(run, Math.max(s.width, s.hairline ? 0.2 : 0), col(s.color, s.alpha ?? 1));
     else flat.ribbon(s.points, Math.max(s.width, s.hairline ? 0.2 : 0), col(s.color, s.alpha ?? 1), s.closed);
@@ -613,7 +854,9 @@ function buildGround(track: TrackDefinition, circuitId: string, infield: { x: nu
   if (relief) {
     // El terreno escribe profundidad (tapa lo que queda detrás de una loma); la pista y las pinturas, encima, sin escribirla.
     const group = new THREE.Group();
-    const terrain = buildTerrain(track, relief, infield, street ? '#3b3f46' : '#3f6a34', street ? '#464a51' : '#4a7a3c');
+    // [CR4] Mónaco: piedra clara de ciudad en vez de la ladera oscura (revisión del usuario, 04/11/2026).
+    const monaco = circuitId === 'monaco';
+    const terrain = buildTerrain(track, relief, infield, monaco ? '#8a8378' : street ? '#3b3f46' : '#3f6a34', monaco ? '#7d776d' : street ? '#464a51' : '#4a7a3c', monaco ? '#b3a993' : street ? '#8b8a85' : '#7a7062', monaco ? '#3a362f' : undefined);
     terrain.renderOrder = -11;
     const decals = flat.mesh(new THREE.MeshLambertMaterial({ vertexColors: true, depthWrite: false, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4 }));
     decals.renderOrder = -10;
@@ -627,8 +870,42 @@ function buildGround(track: TrackDefinition, circuitId: string, infield: { x: nu
   return mesh;
 }
 
+/** [CR3] Franjas de suelo del kit con el material de su pieza del modelo de Montreal: la grava y el asfalto pintado de
+ *  verde del estadio. La textura se repite cada 5 m. */
+async function buildKitSurfaces(kit: KitPlacement, base: string, circuitId: string): Promise<THREE.Group | null> {
+  const group = new THREE.Group();
+  group.name = 'kit-suelos';
+  const relief = reliefFor(circuitId);
+  for (const [surface, piece] of [['grava', 'grava'], ['verde', 'escapatoria']] as const) {
+    const strips = kit.strips.filter(st => st.surface === surface && st.points.length >= 3);
+    const def = CIRCUIT_KIT.find(p => p.id === piece);
+    if (!strips.length || !def) continue;
+    const gltf = await loadModel(modelUrl(base, def.file)).catch(() => null);
+    let source: THREE.MeshStandardMaterial | null = null;
+    gltf?.scene.traverse(o => { const m = o as THREE.Mesh; if (m.isMesh && !source) source = m.material as THREE.MeshStandardMaterial; });
+    if (!source) continue;
+    const pos: number[] = [], uv: number[] = [];
+    for (const st of strips) for (let k = 1; k < st.points.length - 1; k++) for (const p of [st.points[0], st.points[k], st.points[k + 1]]) {
+      const v = W(p.x, p.y, (relief ? relief.groundHeight(p.x, p.y) : 0) + 0.03);
+      pos.push(v.x, v.y, v.z); uv.push(p.x / 5, p.y / 5);
+    }
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+    geometry.computeVertexNormals();
+    const material = (source as THREE.MeshStandardMaterial).clone();
+    material.side = THREE.DoubleSide; material.depthWrite = false;
+    material.polygonOffset = true; material.polygonOffsetFactor = -3; material.polygonOffsetUnits = -6;
+    if (!relief) material.depthTest = false;
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.renderOrder = -9; mesh.receiveShadow = true; mesh.name = `kit-suelo:${piece}`;
+    group.add(mesh);
+  }
+  return group.children.length ? group : null;
+}
+
 /** [CK5] Terreno con relieve: rejilla de `terrainSize` (150.000 triángulos como mucho) con el color de dentro y fuera. */
-function buildTerrain(track: TrackDefinition, relief: Relief, infield: { x: number; y: number }[][], outside: string, inside: string): THREE.Mesh {
+function buildTerrain(track: TrackDefinition, relief: Relief, infield: { x: number; y: number }[][], outside: string, inside: string, wall: string, glow?: string): THREE.Mesh {
   const { x0, y0, cell, cols, rows } = terrainSize(track);
   const pos = new Float32Array(cols * rows * 3), colors = new Float32Array(cols * rows * 3);
   const out = new THREE.Color(outside), inn = new THREE.Color(inside);
@@ -639,6 +916,13 @@ function buildTerrain(track: TrackDefinition, relief: Relief, infield: { x: numb
     pos.set([p.x, p.y, p.z], k * 3);
     const tint = boxes.some(bx => x >= bx.minX && x <= bx.maxX && y >= bx.minY && y <= bx.maxY && inPoly(x, y, bx.poly)) ? inn : out;
     colors.set([tint.r, tint.g, tint.b], k * 3);
+  }
+  // [CK5, paredes] Donde el terreno pasa del 45 % (rampas entre dos tramos a distinta altura), muro de hormigón en la
+  // ciudad y roca en el campo, como en el real.
+  const wallTint = new THREE.Color(wall), hAt = (r: number, c: number) => pos[(Math.min(rows - 1, Math.max(0, r)) * cols + Math.min(cols - 1, Math.max(0, c))) * 3 + 1];
+  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+    const h = hAt(r, c), slope = Math.max(Math.abs(hAt(r, c + 1) - h), Math.abs(hAt(r, c - 1) - h), Math.abs(hAt(r + 1, c) - h), Math.abs(hAt(r - 1, c) - h)) / cell;
+    if (slope > WALL_SLOPE) colors.set([wallTint.r, wallTint.g, wallTint.b], (r * cols + c) * 3);
   }
   const index: number[] = [];
   for (let r = 0; r + 1 < rows; r++) for (let c = 0; c + 1 < cols; c++) { const a = r * cols + c, b = a + 1, d = a + cols, e = d + 1; index.push(a, d, b, b, d, e); }
@@ -654,7 +938,8 @@ function buildTerrain(track: TrackDefinition, relief: Relief, infield: { x: numb
   g.setAttribute('color', new THREE.Float32BufferAttribute(allCol, 3));
   g.setIndex(index);
   g.computeVertexNormals();
-  const mesh = new THREE.Mesh(g, new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide }));
+  // [CR4] Con glow (Mónaco) las caras a la sombra no se quedan negras: es piedra clara a pleno sol.
+  const mesh = new THREE.Mesh(g, new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide, ...(glow ? { emissive: new THREE.Color(glow) } : {}) }));
   mesh.receiveShadow = true;
   return mesh;
 }
@@ -685,6 +970,28 @@ function sponsorTexture(name: Sponsor): THREE.CanvasTexture {
   tex.colorSpace = THREE.SRGBColorSpace;
   sponsorTextures.set(name, tex);
   return tex;
+}
+
+/** [CR4] Carteles de metros que faltan para la curva (Mónaco): blancos con la cifra en negro, pegados a la cara de la
+ * pared de la derecha (paralelos a ella, mirando a la pista), por encima del guardarraíl. Una llamada de dibujo por cartel (son cuatro). */
+function buildDistanceBoards(boards: { x: number; y: number; heading: number; label: string }[], circuitId: string): THREE.Group {
+  const relief = reliefFor(circuitId), group = new THREE.Group();
+  group.name = 'carteles-metros';
+  for (const b of boards) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 192; canvas.height = 128;
+    const ctx = canvas.getContext('2d')!;
+    ctx.fillStyle = '#f4f4f0'; ctx.fillRect(0, 0, 192, 128);
+    ctx.strokeStyle = '#1b1b1b'; ctx.lineWidth = 8; ctx.strokeRect(4, 4, 184, 120);
+    ctx.fillStyle = '#111'; ctx.font = "800 84px 'Rajdhani', 'Arial Black', sans-serif"; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(b.label, 96, 68, 172);
+    const tex = new THREE.CanvasTexture(canvas); tex.colorSpace = THREE.SRGBColorSpace;
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 1.2), new THREE.MeshLambertMaterial({ map: tex }));
+    mesh.position.copy(W(b.x, b.y, (relief ? relief.groundHeight(b.x, b.y) : 0) + 2.1));
+    mesh.rotation.y = Math.atan2(Math.sin(b.heading), -Math.cos(b.heading));
+    group.add(mesh);
+  }
+  return group;
 }
 
 /** Barrera TecPro: bloques de 1,2 m de alto con el panel del patrocinador por las dos caras. */
@@ -762,6 +1069,86 @@ function buildWalls(track: TrackDefinition, circuitId: string, barriers: SceneBa
   return group;
 }
 
+/**
+ * [CR4] Túnel de la pista (Mónaco): muros, bóveda achaflanada y losa sobre la pista, con la ladera encima a los dos
+ * lados, un dintel y unas aletas en cada boca y una línea de luces en el techo. La losa da sombra y tapa los coches
+ * desde arriba. Dos llamadas de dibujo: la estructura y las luces.
+ */
+function buildRoadTunnel(t: RoadTunnel, track: TrackDefinition, circuitId: string, base = ''): THREE.Group {
+  const group = new THREE.Group();
+  const relief = reliefFor(circuitId), pts = track.points, n = pts.length, half = (track.trackWidthMeters || 12) / 2;
+  const hw = half + 1.5, C = t.clearanceM, SLAB = 0.8, MOUND = 13;
+  const h = (i: number) => (relief ? relief.trackHeight(i / n) : 0);
+  const normal = (i: number) => { const a = pts[Math.max(0, i - 1)], b = pts[Math.min(n - 1, i + 1)], l = Math.hypot(b.x - a.x, b.y - a.y) || 1; return { x: -(b.y - a.y) / l, y: (b.x - a.x) / l }; };
+  const off = (i: number, d: number) => { const nn = normal(i); return { x: pts[i].x + nn.x * d, y: pts[i].y + nn.y * d }; };
+  const at = (i: number, d: number, z: number) => { const p = off(i, d); return W(p.x, p.y, z); };
+  const ground = (i: number, d: number) => { const p = off(i, d); return relief ? relief.groundHeight(p.x, p.y) : 0; };
+  const pos: number[] = [], colors: number[] = [];
+  const quad = (a: THREE.Vector3, b: THREE.Vector3, c: THREE.Vector3, d: THREE.Vector3, color: string) => {
+    const cc = new THREE.Color(color);
+    for (const p of [a, b, c, a, c, d]) { pos.push(p.x, p.y, p.z); colors.push(cc.r, cc.g, cc.b); }
+  };
+  for (let i = t.first; i < t.last; i++) {
+    const j = i + 1, hi = h(i), hj = h(j);
+    for (const sd of [-1, 1]) {
+      // [CR4] Del lado del mar no hay muro ni ladera: van los arcos (arches), por los que se ve el exterior.
+      if (sd === t.seaSide) continue;
+      // Muro, chaflán de la bóveda y, por fuera, la ladera que baja de la losa al suelo.
+      quad(at(i, sd * hw, hi), at(j, sd * hw, hj), at(j, sd * hw, hj + C - 0.8), at(i, sd * hw, hi + C - 0.8), '#4a4d52');
+      quad(at(i, sd * hw, hi + C - 0.8), at(j, sd * hw, hj + C - 0.8), at(j, sd * (hw - 1.5), hj + C), at(i, sd * (hw - 1.5), hi + C), '#3e4146');
+      quad(at(i, sd * (hw + 1), hi + C + SLAB), at(j, sd * (hw + 1), hj + C + SLAB), at(j, sd * (hw + 1 + MOUND), ground(j, sd * (hw + 1 + MOUND))), at(i, sd * (hw + 1 + MOUND), ground(i, sd * (hw + 1 + MOUND))), '#5d6066');
+    }
+    // Techo por dentro y losa por fuera.
+    quad(at(i, -(hw - 1.5), hi + C), at(j, -(hw - 1.5), hj + C), at(j, hw - 1.5, hj + C), at(i, hw - 1.5, hi + C), '#2f3236');
+    quad(at(i, -(hw + 1), hi + C + SLAB), at(j, -(hw + 1), hj + C + SLAB), at(j, hw + 1, hj + C + SLAB), at(i, hw + 1, hi + C + SLAB), '#6a6d72');
+  }
+  // Bocas: dintel sobre la entrada y aletas de hormigón que cierran la ladera.
+  for (const i of [t.first, t.last]) {
+    const hi = h(i);
+    quad(at(i, -(hw + 1), hi + C - 0.8), at(i, hw + 1, hi + C - 0.8), at(i, hw + 1, hi + C + SLAB), at(i, -(hw + 1), hi + C + SLAB), '#8d8a83');
+    for (const sd of [-1, 1]) if (sd !== t.seaSide) quad(at(i, sd * hw, hi), at(i, sd * hw, hi + C + SLAB), at(i, sd * (hw + 1 + MOUND), ground(i, sd * (hw + 1 + MOUND)) + 0.2), at(i, sd * (hw + 1 + MOUND), ground(i, sd * (hw + 1 + MOUND))), '#7d7a73');
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+  g.computeVertexNormals();
+  const structure = new THREE.Mesh(g, new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide }));
+  structure.castShadow = true; structure.receiveShadow = true;
+  // Luces del techo: una cada 20 m, en el centro.
+  const lights: number[] = [];
+  for (let k = 0; k < t.lights; k++) {
+    const i = Math.round(t.first + (t.last - t.first) * (k + 0.5) / t.lights), hi = h(i) + C - 0.05;
+    const nn = normal(i), tx = -nn.y, ty = nn.x, c = pts[i];
+    const corner = (u: number, v: number) => W(c.x + tx * u + nn.x * v, c.y + ty * u + nn.y * v, hi);
+    for (const p of [corner(-0.8, -0.25), corner(0.8, -0.25), corner(0.8, 0.25), corner(-0.8, -0.25), corner(0.8, 0.25), corner(-0.8, 0.25)]) lights.push(p.x, p.y, p.z);
+  }
+  const lg = new THREE.BufferGeometry();
+  lg.setAttribute('position', new THREE.Float32BufferAttribute(lights, 3));
+  const lamps = new THREE.Mesh(lg, new THREE.MeshBasicMaterial({ color: '#fff3c4', side: THREE.DoubleSide }));
+  group.add(structure, lamps);
+  // [CR4] Arcos al mar: un módulo de 20 m (models/kit/arcada_tunel.glb, hecho en Blender) por cada uno de `arches`, en el
+  // muro del lado del mar, apoyado en la pista y siguiendo su dirección. Una malla instanciada: una llamada de dibujo.
+  loadModel(modelUrl(base, 'models/kit/arcada_tunel.glb')).then(gltf => {
+    gltf.scene.updateMatrixWorld(true);
+    gltf.scene.traverse(o => {
+      const mesh = o as THREE.Mesh;
+      if (!mesh.isMesh) return;
+      const inst = new THREE.InstancedMesh(mesh.geometry, mesh.material as THREE.Material, t.arches.length);
+      const m = new THREE.Matrix4(), q = new THREE.Quaternion(), up = new THREE.Vector3(0, 1, 0), one = new THREE.Vector3(1, 1, 1);
+      t.arches.forEach((arch, k) => {
+        const a = pts[Math.max(0, arch.i - 3)], b = pts[Math.min(n - 1, arch.i + 3)], heading = Math.atan2(b.y - a.y, b.x - a.x);
+        const p = off(arch.i, t.seaSide * (hw + 0.6));
+        q.setFromAxisAngle(up, -heading);
+        inst.setMatrixAt(k, m.compose(W(p.x, p.y, h(arch.i)), q, one).multiply(mesh.matrixWorld));
+      });
+      inst.instanceMatrix.needsUpdate = true; inst.computeBoundingSphere();
+      inst.castShadow = true; inst.receiveShadow = true; inst.name = 'tunel:arcos';
+      group.add(inst);
+    });
+  }).catch(() => { /* sin la pieza: el lado del mar queda abierto */ });
+  return group;
+}
+
 /** [CR2] Tramos de una línea del pit lane que quedan fuera de la zanja y del tramo tapado (covered) del túnel. */
 function uncoveredRuns(points: { x: number; y: number }[], tunnel: PitTunnel): { x: number; y: number }[][] {
   const runs: { x: number; y: number }[][] = [];
@@ -779,6 +1166,29 @@ function uncoveredRuns(points: { x: number; y: number }[], tunnel: PitTunnel): {
  * el tramo tapado. Un tapón invisible a ras de suelo (solo profundidad) a los lados y sobre el tramo tapado esconde lo
  * que queda bajo tierra: la pista se sigue viendo encima y los coches del túnel desaparecen bajo ella.
  */
+/**
+ * [CR5] Paneles de LED de la cubierta del hotel de Yas Marina: un rombo por celda de la malla (canopyPanels), todos en
+ * una sola llamada de dibujo; el color de cada uno lo pone `render` con panelColor. Sin luz propia del material (se
+ * ven encendidos) y por las dos caras (se miran desde abajo, desde la pista).
+ */
+function buildCanopyPanels(): THREE.InstancedMesh {
+  const panels = canopyPanels();
+  const geo = new THREE.PlaneGeometry(1, 1);
+  geo.rotateX(-Math.PI / 2);
+  const mat = new THREE.MeshBasicMaterial({ color: '#ffffff', side: THREE.DoubleSide, toneMapped: false, transparent: true, opacity: 0.92 });
+  const mesh = new THREE.InstancedMesh(geo, mat, panels.length);
+  const m = new THREE.Matrix4(), q = new THREE.Quaternion(), up = new THREE.Vector3(0, 1, 0);
+  panels.forEach((p, i) => {
+    q.setFromAxisAngle(up, -p.heading);
+    m.compose(W(p.x, p.y, p.z - 0.05), q, new THREE.Vector3(p.size, 1, p.size));
+    mesh.setMatrixAt(i, m);
+    mesh.setColorAt(i, new THREE.Color('#3050ff'));
+  });
+  mesh.name = 'cubierta-led';
+  mesh.frustumCulled = false;
+  return mesh;
+}
+
 function buildPitTunnel(t: PitTunnel): THREE.Group {
   const group = new THREE.Group();
   const [first, last] = t.span, [c0, c1] = t.covered, hw = t.laneWidth / 2 + 1, lane = t.lane;
@@ -891,7 +1301,9 @@ function buildElevatedRoad(track: TrackDefinition, o: { upperT: number }, circui
  * sigue siendo una copia del modelo. Así el escenario pasa de una llamada de dibujo por pieza de cada objeto a una por
  * pieza de cada grupo, y three descarta los trozos que no se ven.
  */
-async function buildScenery(items: SceneItem[], track: TrackDefinition, base: string, circuitId: string): Promise<THREE.Group> {
+
+/** [CR6] `cheap` (calidad media y baja): los árboles y palmeras no echan sombra (en Marina Bay ya son 190, los de OpenStreetMap). */
+async function buildScenery(items: SceneItem[], track: TrackDefinition, base: string, circuitId: string, water: { x: number; y: number }[][] = [], cheap = false): Promise<THREE.Group> {
   const relief = reliefFor(circuitId);
   const group = new THREE.Group();
   const models = [...new Set(items.map(it => it.model))];
@@ -922,7 +1334,7 @@ async function buildScenery(items: SceneItem[], track: TrackDefinition, base: st
   };
   const matrixOf = (it: SceneItem, size: THREE.Vector3) => {
     const t = itemTransform(it, size, track);
-    return new THREE.Matrix4().compose(W(t.x, t.y, relief ? relief.groundHeight(t.x, t.y) : 0), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), -t.heading), new THREE.Vector3(t.sx, t.sy, t.sz));
+    return new THREE.Matrix4().compose(W(t.x, t.y, relief ? itemBaseHeight(circuitId, { kind: it.kind, x: t.x, y: t.y }, water) : 0), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), -t.heading), new THREE.Vector3(t.sx, t.sy, t.sz));
   };
   const plan = planInstances(items);
   for (const it of plan.singles) {
@@ -932,7 +1344,7 @@ async function buildScenery(items: SceneItem[], track: TrackDefinition, base: st
     root.traverse(o => {
       const mesh = o as THREE.Mesh;
       if (!mesh.isMesh) return;
-      mesh.castShadow = true; mesh.receiveShadow = true;
+      mesh.castShadow = !(cheap && it.kind === 'tree'); mesh.receiveShadow = true;
       mesh.material = materialFor(it, mesh.material as THREE.Material);
     });
     root.matrixAutoUpdate = false;
@@ -953,7 +1365,7 @@ async function buildScenery(items: SceneItem[], track: TrackDefinition, base: st
       placed.forEach((at, i) => instanced.setMatrixAt(i, m.multiplyMatrices(at, local)));
       instanced.instanceMatrix.needsUpdate = true;
       instanced.computeBoundingSphere();
-      instanced.castShadow = true; instanced.receiveShadow = true;
+      instanced.castShadow = !(cheap && g.items[0].kind === 'tree'); instanced.receiveShadow = true;
       group.add(instanced);
     });
   }
@@ -1064,7 +1476,18 @@ function buildLampFx(lights: SceneItem[], track: TrackDefinition): THREE.Group {
   grad.addColorStop(0, 'rgba(255,250,235,1)'); grad.addColorStop(0.25, 'rgba(255,240,200,0.6)'); grad.addColorStop(1, 'rgba(255,230,180,0)');
   ctx.fillStyle = grad; ctx.fillRect(0, 0, 64, 64);
   const haloMat = new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(canvas), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, fog: false });
-  const beamMat = new THREE.MeshBasicMaterial({ color: '#fff1d0', transparent: true, opacity: 0.07, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false });
+  // El cono se difumina hacia el suelo y hacia sus bordes (se ve de canto): con una opacidad igual en todo él se
+  // veían triángulos de bordes duros desde las cámaras de persecución.
+  const beamMat = new THREE.ShaderMaterial({
+    uniforms: { color: { value: new THREE.Color('#fff1d0') }, opacity: { value: 0.11 } },
+    vertexShader: `varying float vAlong; varying vec3 vN; varying vec3 vV;
+      void main() { vAlong = uv.y; vec4 mv = modelViewMatrix * vec4(position, 1.0);
+        vN = normalize(normalMatrix * normal); vV = normalize(-mv.xyz); gl_Position = projectionMatrix * mv; }`,
+    fragmentShader: `uniform vec3 color; uniform float opacity; varying float vAlong; varying vec3 vN; varying vec3 vV;
+      void main() { float facing = abs(dot(normalize(vN), normalize(vV)));
+        float a = opacity * pow(vAlong, 1.6) * pow(facing, 2.5); gl_FragColor = vec4(color, a); }`,
+    transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide,
+  });
   const down = new THREE.Vector3(0, -1, 0);
   for (const light of lights) {
     const head = W(light.x, light.y, light.height - 2);

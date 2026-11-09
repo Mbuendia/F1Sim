@@ -11,10 +11,13 @@
 import { readFileSync, existsSync } from 'node:fs';
 import { raceFingerprints } from '../support/race-fingerprint.mjs';
 
+// [CA6, autorizado por el usuario el 07/11/2026] Cada parada guarda además su motivo, la media de la carrera y los mecánicos:
+// cambian las huellas de Mónaco y Spa. Quitando esos campos salen bit a bit las de antes (f37fa7c0… y fa37c2c9…): las carreras son
+// idénticas.
 const BEFORE = {
   'monza-seco': '3382658b1c9db1acd54b9eb48a29cc79c9ad99212858fcf0edae9e80bcdd05db',
-  'monaco-lluvia-sc': 'f37fa7c0884063863b23835bed167fe41c5bee075beefde32dd15365227a3926',
-  'spa-vsc-roja-ordenes': 'fa37c2c934a2a4995f0593f554cef4909fbc9829d260acb4308a613142d3e52a',
+  'monaco-lluvia-sc': '5ac23726459d2c8ef7f4f172a3e505cb5dec90b28eb2329b65e68fe3718830ab',
+  'spa-vsc-roja-ordenes': 'e75544a576a41be45b1ae66bce05e9ee46cb0c28ea5c3cf0ce2e2a85e8832225',
 };
 const MODULES = ['carStep', 'neutralization', 'weather', 'teamOrders', 'wall', 'startAndResult'];
 

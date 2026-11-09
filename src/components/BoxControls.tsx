@@ -15,6 +15,7 @@ import { PaceControls, paceNote } from './PaceControls';
 import { CompoundBadge } from './CompoundBadge';
 import { COMPOUND_STYLES, TIRE_COMPOUNDS } from '../utils/compounds';
 import { WallProposals } from './WallProposals';
+import { PitStopSummary, lastStop } from './PitStopSummary';
 import { PitWindowLine } from './WallPanel';
 import { Segmented } from './ui/Segmented';
 import { Meter, meterTone } from './ui/Meter';
@@ -265,6 +266,8 @@ export function BoxControls({ car, teamCars, team, race, send, slow, focusId }: 
                     {p.pitStop.crewBenefit.label}: servicio {decimal(p.pitStop.crewBenefit.minSec)}–{decimal(p.pitStop.crewBenefit.maxSec)} s hasta V{p.pitStop.crewBenefit.expiresLap}
                   </Chip>
                 )}
+                {/* [CA6] Última parada: tiempo, diferencia con la media y motivo si fue lenta. */}
+                <PitStopSummary log={lastStop(p.pitStop.stopLog)} />
                 {isWaiting && <Chip tone="warn" icon={<Hourglass size={15} aria-hidden="true" />}>Esperando cajón ({p.pitStop.boxWaitTimer.toFixed(1)}s)</Chip>}
                 {pace && <Chip tone="warn" icon={<Gauge size={15} aria-hidden="true" />} title={`Ritmo: ${pace}`}>{pace}</Chip>}
                 {(message || order) && (

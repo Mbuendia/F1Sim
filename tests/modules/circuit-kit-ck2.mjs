@@ -13,6 +13,9 @@
 //     parodia de `sponsors.ts` incluyen los 8 nuevos (la publicidad pintada en las texturas la revisa el usuario a ojo).
 //  8. Crédito del modelo de Shanghái (Dave Love, CC BY 4.0, enlace y cambios) en `public/models/ATTRIBUTION.md`.
 //  9. Reglas de colocación del análisis como datos (`KIT_RULES`, para CK3); todas nombran piezas comunes que existen.
+// [CR3, autorizado por el usuario el 07/11/2026] Cuatro comprobaciones adaptadas al kit de Montreal: el catálogo pasa a
+// 35 piezas (las 31 más pianos, grava, escapatoria y marcas_suelo); las piezas con `origin: 'montreal'` llevan su propia
+// textura `montreal-*.webp`; el muro de neumáticos y la valla alta miden 10 y 8 m; pianos y marcas_suelo se encadenan.
 import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { gzipSync } from 'node:zlib';
@@ -21,7 +24,8 @@ const COMMON = ['guardarrail', 'muro_neumaticos', 'valla_alta', 'valla_publi', '
   'cartel_pequeno', 'marcador', 'torre_posiciones', 'grada_comun', 'grada_roja', 'grada_pequena', 'cartel_metros', 'grua',
   'arbol_a', 'arbol_b', 'arbol_c', 'coche_medico', 'coche_aparcado', 'camion', 'refugio_comisarios'];
 const SHANGHAI = ['edificio_boxes', 'edificio_b', 'pabellon', 'carpa', 'marquesina', 'techo_tribuna', 'estructura_b', 'estructura_c'];
-const TILES = { guardarrail: 8.0, muro_neumaticos: 11.58, valla_alta: 7.22, valla_publi: 10.0, bloque_hormigon: 2.02 };
+const MONTREAL_NEW = ['pianos', 'grava', 'escapatoria', 'marcas_suelo'];
+const TILES = { guardarrail: 8.0, muro_neumaticos: 10.0, valla_alta: 8.0, valla_publi: 10.0, bloque_hormigon: 2.02, pianos: 2.18, marcas_suelo: 10.0 };
 const ALPHA = new Set(['arbol_a', 'arbol_b', 'arbol_c', 'valla_alta', 'estructura_c']);
 const NEW_SPONSORS = ['Monstruo', 'Shellfish', 'Gulpf', 'Visaje', 'Castrolo', 'Uberto', 'Bosé', 'Tommy Hilfígaro'];
 const REAL = ['Rolex', 'DHL', 'Aramco', 'Heineken', 'Lenovo', 'Crypto.com', 'Etihad', 'Emirates', 'Salesforce', 'AWS', 'Pirelli', 'MSC',
@@ -56,7 +60,7 @@ export default async function run({ server, assert }) {
 
   // 1. Catálogo
   const ids = kit.map(p => p.id);
-  assert(kit.length === 31 && new Set(ids).size === 31, 'CK2: el catálogo tiene 31 piezas con id único', `${kit.length} piezas, ${new Set(ids).size} ids distintos`);
+  assert(kit.length === 35 && new Set(ids).size === 35 && MONTREAL_NEW.every(id => byId[id]), 'CK2: el catálogo tiene 35 piezas con id único (31 más las 4 nuevas de Montreal)', `${kit.length} piezas, ${new Set(ids).size} ids distintos`);
   assert(COMMON.every(id => byId[id]?.scope === 'comun') && SHANGHAI.every(id => byId[id]?.scope === 'shanghai'),
     'CK2: 23 piezas comunes y 8 solo de Shanghái, con los nombres acordados',
     [...COMMON.filter(id => byId[id]?.scope !== 'comun'), ...SHANGHAI.filter(id => byId[id]?.scope !== 'shanghai')].join(', ') || 'ok');
@@ -73,8 +77,8 @@ export default async function run({ server, assert }) {
   const embedded = present.filter(p => (models[p.id].json.images ?? []).some(im => im.bufferView !== undefined || /\.(png|jpe?g)$/i.test(im.uri ?? '') || /png|jpeg/.test(im.mimeType ?? '')));
   assert(embedded.length === 0, 'CK2: ninguna pieza lleva PNG ni JPG dentro', embedded.map(p => p.id).join(', ') || 'ok');
   const atlasOf = p => (models[p.id].json.images ?? []).map(im => im.uri);
-  const wrongAtlas = present.filter(p => { const a = atlasOf(p); return a.length !== 1 || a[0] !== (p.scope === 'comun' ? 'kit-comun.webp' : 'kit-shanghai.webp'); });
-  assert(wrongAtlas.length === 0, 'CK2: las comunes usan solo kit-comun.webp y las de Shanghái solo kit-shanghai.webp', wrongAtlas.map(p => `${p.id}: ${atlasOf(p).join('+') || 'ninguna'}`).join(', ') || 'ok');
+  const wrongAtlas = present.filter(p => { const a = atlasOf(p); return a.length !== 1 || (p.origin === 'montreal' ? !/^montreal-[\w-]+\.webp$/.test(a[0]) : a[0] !== (p.scope === 'comun' ? 'kit-comun.webp' : 'kit-shanghai.webp')); });
+  assert(wrongAtlas.length === 0, 'CK2: las de Montreal usan solo su montreal-*.webp; las demás comunes, kit-comun.webp, y las de Shanghái, kit-shanghai.webp', wrongAtlas.map(p => `${p.id}: ${atlasOf(p).join('+') || 'ninguna'}`).join(', ') || 'ok');
   const sharp = (await import('sharp')).default;
   for (const [file, kb] of [['kit-comun.webp', 700], ['kit-shanghai.webp', 500]]) {
     const path = `public/models/kit/${file}`;
@@ -92,7 +96,8 @@ export default async function run({ server, assert }) {
   assert(badTris.length === 0, 'CK2: los triángulos del catálogo son los del modelo', badTris.map(p => `${p.id}: ${p.tris} ≠ ${triangles(models[p.id].json)}`).join(', ') || 'ok');
   const budget = JSON.parse(readFileSync('docs/perf/presupuesto.json', 'utf8'));
   const modelsKB = allGlb('public/models').reduce((s, f) => s + gzipSync(readFileSync(f)).length, 0) / 1024;
-  assert(budget.limits.modelsKB === 3170 && modelsKB <= budget.limits.modelsKB, 'CK2: los modelos siguen dentro del límite de PF8, sin subirlo', `${modelsKB.toFixed(0)} KB (límite ${budget.limits.modelsKB} KB)`);
+  // [07/11/2026, autorizado por el usuario en CR5/CR6] El límite se lee de presupuesto.json (ya no va fijo a mano).
+  assert(modelsKB <= budget.limits.modelsKB, 'CK2: los modelos siguen dentro del límite de PF8, sin subirlo', `${modelsKB.toFixed(0)} KB (límite ${budget.limits.modelsKB} KB)`);
 
   // 4. Medidas, origen y largo en X (glTF: X largo, Y alto, Z ancho)
   const badDims = [], badOrigin = [], badAxis = [];

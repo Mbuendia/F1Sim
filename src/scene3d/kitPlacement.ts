@@ -15,6 +15,10 @@ import { HOT, MOUNTAIN, sceneryFor } from './scenery';
 import { pointInPoly, rngFor, type Pt, type Poly } from './trackSpace';
 import { NIGHT_RACES } from '../renderer/lighting';
 import { reliefFor } from './relief';
+import { buildScenarioGeometry } from '../utils/scenarioGeometry';
+import { buildingIndex } from './osmRules';
+import { woodSpots } from './osmScenery';
+import { portalItems } from './osmCrossings';
 
 export type Braking = 'fuerte' | 'media' | 'rapida';
 export interface KitInstance { piece: string; x: number; y: number; heading: number; t: number; side: 1 | -1; sponsor?: Sponsor; label?: string; z?: number }
@@ -70,6 +74,15 @@ export function kitFootprint(p: Pick<KitInstance, 'piece' | 'x' | 'y' | 'heading
   for (const u of [-1, -0.5, 0, 0.5, 1]) for (const v of [-1, 0, 1]) out.push({ x: p.x + u * L * c - v * W * s, y: p.y + u * L * s + v * W * c });
   return out;
 }
+/** [CR6] Edificios reales que no quedan debajo de una pieza del kit (la torre o una grada de la recta los tapan). */
+export function realBuildingsClearOfKit<B extends { points: Pt[] }>(plan: KitPlacement | null, buildings: B[]): B[] {
+  if (!plan) return buildings;
+  const big = plan.pieces.filter(p => p.piece === 'grada_roja' || p.piece === 'torre_posiciones');
+  return buildings.filter(b => !big.some(p => {
+    const f = kitFootprint(p), rect = [f[0], f[2], f[14], f[12]];
+    return f.some(q => pointInPoly(q, b.points)) || b.points.some(q => pointInPoly(q, rect));
+  }));
+}
 /** Hacia dónde mira la cara útil de la pieza (su `front`), en el plano del juego. */
 export function kitFront(piece: string, heading: number): Pt {
   const left = { x: -Math.sin(heading), y: Math.cos(heading) };
@@ -117,18 +130,24 @@ function build(track: TrackDefinition, circuitId: string, quality: 'alto' | 'med
   const pitPts: Pt[] = [...lanePts, ...(row?.points ?? [])];
   const pitGrid = new Grid(pitPts.length ? pitPts : [{ x: 1e9, y: 1e9 }]);
   const laneGrid = new Grid(lanePts.length ? lanePts : [{ x: 1e9, y: 1e9 }]);
-  const monuments = scene.items.filter(it => it.kind !== 'bridge' && it.kind !== 'yacht');
+  // [CR6] Las bocas de los pasos bajo la pista cuentan como monumentos: ni gradas ni carteles encima.
+  const monuments = [...scene.items, ...portalItems(scene.portals ?? [])].filter(it => it.kind !== 'bridge' && it.kind !== 'yacht');
   const monPts: Pt[] = [];
   for (const it of monuments) {
     const c = Math.cos(it.heading), s = Math.sin(it.heading);
     for (let u = -1; u <= 1; u += 0.25) for (let v = -1; v <= 1; v += 0.25) monPts.push({ x: it.x + u * it.length / 2 * c - v * it.width / 2 * s, y: it.y + u * it.length / 2 * s + v * it.width / 2 * c });
   }
   const monGrid = new Grid(monPts.length ? monPts : [{ x: 1e9, y: 1e9 }]);
+  // [CR6] Edificios reales de OpenStreetMap: las piezas del kit no se meten dentro.
+  const inReal = buildingIndex(scene.realBuildings ?? []);
   /** Dentro de la planta de un monumento o edificio (con margen). */
-  const inMonument = (p: Pt, m = 2) => monuments.some(it => {
+  let ignoreReal = false;
+  const inMonument = (p: Pt, m = 2) => (!ignoreReal && inReal(p, m)) || monuments.some(it => {
     const dx = p.x - it.x, dy = p.y - it.y, c = Math.cos(it.heading), s = Math.sin(it.heading);
     return Math.abs(dx * c + dy * s) < it.length / 2 + m && Math.abs(-dx * s + dy * c) < it.width / 2 + m;
   });
+  /** La torre de posiciones puede quedar sobre un edificio real (segunda pasada de su sitio); el resto, no. */
+  const inMonumentFor = (piece: string, q: Pt) => { ignoreReal = piece === 'torre_posiciones' || piece === 'grada_roja'; const r = inMonument(q, 0); ignoreReal = false; return r; };
   const water: Poly[] = scene.water;
   const wet = (p: Pt) => water.some(poly => pointInPoly(p, poly));
   const near = Math.round(70 / step);
@@ -140,7 +159,7 @@ function build(track: TrackDefinition, circuitId: string, quality: 'alto' | 'med
   };
   // Sitio para la escapatoria: otro tramo, el pit lane y los monumentos la cortan; el agua y las dunas de decoración no
   // (la escapatoria se pinta encima del suelo; las piezas sí esquivan el agua).
-  const solid = monuments.filter(it => it.kind !== 'dune' && it.kind !== 'tree');
+  const solid = monuments.filter(it => it.kind !== 'dune' && it.kind !== 'tree' && !it.id?.startsWith('boca-'));
   const inSolid = (p: Pt) => solid.some(it => {
     const dx = p.x - it.x, dy = p.y - it.y, c = Math.cos(it.heading), s = Math.sin(it.heading);
     return Math.abs(dx * c + dy * s) < it.length / 2 + 3 && Math.abs(-dx * s + dy * c) < it.width / 2 + 3;
@@ -319,18 +338,8 @@ function build(track: TrackDefinition, circuitId: string, quality: 'alto' | 'med
       const heading = row.front > 0 ? h : h + Math.PI;                                  // +Z del módulo hacia el carril
       put('edificio_boxes', p, heading, grid.nearest(p).i, pitSide0, {}); occupy(p, heading, ML, MW / 2);
     }
-    // Pabellones y carpas del paddock sobre el lago, a lo largo de su eje.
-    if (water.length) {
-      const lakeSide = ([1, -1] as const).find(sd => wet(at(Math.round(60 / step) % n, sd, half + 127))) ?? pitSide0;
-      let m = -116;
-      for (const piece of ['carpa', 'pabellon', 'carpa', 'pabellon', 'carpa', 'pabellon', 'carpa', 'pabellon', 'carpa', 'carpa']) {
-        const L = BY_ID[piece].dims[0];
-        m += L / 2;
-        const i = ((Math.round(m / step) % n) + n) % n, p = at(i, lakeSide, half + 127.5), h = Math.atan2(T[i].y, T[i].x);
-        if (wet(p)) { put(piece, p, h, i, lakeSide, {}); occupy(p, h, L, BY_ID[piece].dims[1] / 2); }
-        m += L / 2 + 1.2;
-      }
-    }
+    // [CR5] Los pabellones de los equipos sobre el lago real son del escenario (pabellon-equipo-N): el kit ya no pone
+    // los suyos sobre el lago inventado.
     // Garajes y pórtico en el paddock, entre los boxes y el lago (o pasado el lago).
     const paddock = (piece: string, ms: number[], offs: number[], max: number) => {
       const [L, Wd] = BY_ID[piece].dims; let got = 0;
@@ -353,6 +362,8 @@ function build(track: TrackDefinition, circuitId: string, quality: 'alto' | 'med
     if (ahead > n / 2 || ahead < Math.round(40 / step)) ahead = Math.round(120 / step);
     const mid = pit.fastLane[Math.floor(pit.fastLane.length / 2)];
     let done = false;
+    // [CR6] Si los edificios reales no dejan sitio (Suzuka), segunda pasada sin mirarlos: la torre va siempre.
+    for (const pass of [0, 1]) { if (done) break; ignoreReal = pass === 1;
     for (const f of [0.6, 0.45, 0.75, 0.3, 0.9, 0.15]) {
       const i = Math.floor(ahead * f) % n;
       // Enfrente de los boxes, con la normal de este mismo punto (en Yas Marina el pit lane cruza la pista por un túnel).
@@ -368,6 +379,8 @@ function build(track: TrackDefinition, circuitId: string, quality: 'alto' | 'med
       }
       if (done) break;
     }
+    }
+    ignoreReal = false;
   }
   // Grúas detrás de los muros de neumáticos de las curvas de frenada (antes que las gradas).
   if (!street && quality !== 'bajo') for (const { kind, i0, out } of corners) {
@@ -378,12 +391,13 @@ function build(track: TrackDefinition, circuitId: string, quality: 'alto' | 'med
   // Gradas: la blanca en el vértice, rojas por el arco y la recta de meta, pequeña donde quedaría encajonada.
   const GR: Record<string, [number, number]> = {};
   for (const id of ['grada_comun', 'grada_roja', 'grada_pequena']) GR[id] = [BY_ID[id].dims[0] / 2, BY_ID[id].dims[1] / 2];
-  const grada = (i: number, side: 1 | -1, piece = 'grada_comun'): boolean => {
+  const grada = (i: number, side: 1 | -1, piece = 'grada_comun', gap = 6, moved = false): boolean => {
     if (stadiumZone[i]) return false;
     const [hl, hw] = GR[piece], wall = walls[side][i] ?? half + verge;
-    const p = at(i, side, wall + 6 + hw);
+    const p = at(i, side, wall + gap + hw);
     if (piece !== 'grada_pequena' && boxedIn(p)) return grada(i, side, 'grada_pequena');
-    if (!freeSpot(p, hl * 0.9, 6 + hw)) return false;
+    if (gap > 2 && wet(p)) return grada(i, side, piece, 2, moved);
+    if (!freeSpot(p, hl * 0.9, gap + hw)) return false;
     // Tiene que mirar a su tramo: si otro tramo le queda más cerca, no va; y se orienta hacia su punto más cercano.
     const nearOwn = grid.nearest(p);
     if (nearOwn.i < 0 || cyc(nearOwn.i, i) > near) return false;
@@ -391,10 +405,22 @@ function build(track: TrackDefinition, circuitId: string, quality: 'alto' | 'med
     let rot = Math.atan2(to.y, to.x) - Math.PI / 2;
     const f = kitFront(piece, rot); if (f.x * to.x + f.y * to.y < 0) rot += Math.PI;
     const c = Math.cos(rot), s = Math.sin(rot);
-    for (const [u, v] of [[-hl, -hw], [hl, -hw], [-hl, hw], [hl, hw], [0, hw], [0, -hw]]) if (!clearOfWalls({ x: p.x + u * c - v * s, y: p.y + u * s + v * c }, 2)) return false;
+    const foot = [[-hl, -hw], [hl, -hw], [-hl, hw], [hl, hw], [0, hw], [0, -hw]].map(([u, v]) => ({ x: p.x + u * c - v * s, y: p.y + u * s + v * c }));
+    if (foot.some(q => !clearOfWalls(q, 2))) return false;
+    // [CR6] Con el agua real detrás (Montreal, Melbourne, Miami): más pegada al muro y, si aún no cabe, la pequeña.
+    if (foot.some(wet)) {
+      if (gap > 2) return grada(i, side, piece, 2, moved);
+      // Un poco más adelante o más atrás por la recta, donde la orilla se abre.
+      if (!moved) for (const m of [12, -12, 24, -24]) if (grada((i + Math.round(m / step) + n) % n, side, piece, 6, true)) return true;
+      return !moved && piece !== 'grada_pequena' && grada(i, side, 'grada_pequena');
+    }
     put(piece, p, rot, i, side, {}, hl); return true;
   };
+  // [CR6] En la recta de meta las gradas rojas van aunque haya un edificio real (las gradas reales de la recta suelen
+  // estar en OpenStreetMap como edificios): la escena no dibuja los edificios que quedan debajo (realBuildingsClearOfKit).
+  ignoreReal = true;
   if (main) { const [L, s] = main; for (let k = Math.round(10 / step); k < L - Math.round(20 / step); k += Math.round(38 / step)) grada((s + k) % n, (-pitSide) as 1 | -1, 'grada_roja'); }
+  ignoreReal = false;
   const second = runs.find(r => r !== main);
   if (second) { const [L, s] = second; const sd = (corners.length % 2 ? 1 : -1) as 1 | -1; for (let k = Math.floor(L / 4); k < (3 * L) / 4; k += Math.round(38 / step)) grada((s + k) % n, sd, 'grada_roja'); }
   for (const { kind, i0, out } of corners) {
@@ -410,11 +436,11 @@ function build(track: TrackDefinition, circuitId: string, quality: 'alto' | 'med
     }
   }
   if (circuitId === 'shanghai') {
-    // [CK4] Tribuna principal enfrente de los boxes: los dos techos sobre las gradas rojas más cerca de la meta, la
-    // marquesina detrás de una de ellas y la escalera junto a una punta.
+    // [CK4] Tribuna principal enfrente de los boxes: la marquesina detrás de una de las gradas rojas más cerca de la
+    // meta y la escalera junto a una punta.
     const mainStands = pieces.filter(p => p.piece === 'grada_roja' && p.side === -pitSide).sort((a, b) => Math.min(a.t, 1 - a.t) - Math.min(b.t, 1 - b.t));
-    const [GL, GW, GH] = BY_ID.grada_roja.dims;
-    for (const g of mainStands.slice(0, 2)) put('techo_tribuna', g, g.heading, Math.round(g.t * n) % n, g.side, { z: GH });
+    const [GL, GW] = BY_ID.grada_roja.dims;
+    // [CR6, 09/11/2026] Sin los techos `techo_tribuna`: desde lejos se veían como esferas blancas (decisión del usuario).
     const [QL, QW] = BY_ID.marquesina.dims;
     for (const g of mainStands) {
       const f = kitFront('grada_roja', g.heading), d = GW / 2 + 3 + QW / 2, p = { x: g.x - f.x * d, y: g.y - f.y * d };
@@ -480,23 +506,70 @@ function build(track: TrackDefinition, circuitId: string, quality: 'alto' | 'med
   }
   // Árboles fuera de la pista y de las escapatorias.
   // En los de calor y de montaña se quedan las palmeras y los pinos del escenario (decisión del usuario).
+  // [CR6] Donde OpenStreetMap tiene bosque, arbolado o hileras de árboles (a 170 m de la pista o menos), y no en otro sitio.
   if (quality !== 'bajo' && !HOT.has(circuitId) && !MOUNTAIN.has(circuitId)) {
-    const b = track.bounds, want = street ? 60 : quality === 'medio' ? 120 : 220;
-    for (let k = 0, got = 0; k < want * 30 && got < want; k++) {
-      const p = { x: b.minX - 150 + rand() * (b.maxX - b.minX + 300), y: b.minY - 150 + rand() * (b.maxY - b.minY + 300) };
-      const { i, d } = grid.nearest(p); if (i < 0) continue;
-      if (d < half + 45 + Math.max(asph[1][i] + grav[1][i], asph[-1][i] + grav[-1][i])) continue;
-      if (!freeSpot(p, 8, 45)) continue;
-      put(['arbol_a', 'arbol_b', 'arbol_c'][Math.floor(rand() * 3)], p, rand() * Math.PI * 2, i, 1, {}, 6); got++;
+    const spots = woodSpots(circuitId, quality === 'medio' ? 40 : 30), cap = quality === 'medio' ? 500 : 1000;
+    // Primero los más cercanos a la pista, que son los que se ven desde las cámaras (hasta el tope de la calidad).
+    const near = spots.map(p => ({ p, ...grid.nearest(p) })).filter(s => s.i >= 0 && s.d <= 170).sort((a, b) => a.d - b.d);
+    let count = 0;
+    for (const { p, i, d } of near) {
+      if (count >= cap) break;
+      if (d < half + 8 + Math.max(asph[1][i] + grav[1][i], asph[-1][i] + grav[-1][i])) continue;
+      if (!freeSpot(p, 4, 8)) continue;
+      const tree = ['arbol_a', 'arbol_b', 'arbol_c'][Math.floor(rand() * 3)], turn = rand() * Math.PI * 2;
+      // [CR6, 09/11/2026] Con la copa entera (los árboles rehechos son más anchos), y un 30 % de margen: el agua del
+      // juego no calca del todo la de OpenStreetMap.
+      if (kitFootprint({ piece: tree, x: p.x, y: p.y, heading: turn }).some(q => wet(q) || wet({ x: p.x + (q.x - p.x) * 1.3, y: p.y + (q.y - p.y) * 1.3 }))) continue;
+      put(tree, p, turn, i, 1, {}, 4);
+      count++;
     }
   }
   // Nada toca el circuito: comprobación final.
   const full = new Grid(track.points.map(q => ({ x: q.x, y: q.y })), 12);
-  const clean = pieces.filter(p => p.piece === 'pancarta' || kitFootprint(p).every(q => full.nearest(q).d >= half + KIT_RULES.trackClearanceM
-    && (p.piece === 'edificio_boxes' ? laneGrid : pitGrid).nearest(q, 8).d >= 2.5 && !inMonument(q, 0)));
+  // [CR6] Y ninguna pieza (ni sus esquinas) sobre el agua real.
+  const clean = pieces.filter(p => !kitFootprint(p).some(wet) && (p.piece === 'pancarta' || kitFootprint(p).every(q => full.nearest(q).d >= half + KIT_RULES.trackClearanceM
+    && (p.piece === 'edificio_boxes' ? laneGrid : pitGrid).nearest(q, 8).d >= 2.5 && !inMonumentFor(p.piece, q))));
   // [CK5] Con relieve, cada pieza apoya en el punto más bajo del suelo bajo su planta (el techo, sobre su grada).
   const relief = reliefFor(circuitId);
   if (relief) for (const p of clean) p.z = round(Math.min(...kitFootprint(p).map(q => relief.groundHeight(q.x, q.y))) + (p.z ?? 0));
+  // [CR3] Piezas del modelo de Montreal que van pegadas al asfalto (el filtro de arriba las quitaría): bloques de piano a lo
+  // largo de cada piano pintado y una línea pintada en el borde entre el asfalto y la grava de las escapatorias. Ninguna
+  // pisa el pit lane, y con relieve apoyan en el punto más bajo del suelo bajo su planta, como las demás.
+  const nearPit = (q: Pt) => pitGrid.nearest(q, 64).d < 2.6;
+  const along = (path: Pt[], piece: string, tile: number, skip: (p: Pt) => boolean = () => false) => {
+    for (let k = 1, carry = tile / 2; k < path.length; k++) {
+      const a = path[k - 1], b = path[k], L = Math.hypot(b.x - a.x, b.y - a.y);
+      if (L < 1e-6) continue;
+      for (; carry <= L; carry += tile) {
+        const p = { x: a.x + (b.x - a.x) * carry / L, y: a.y + (b.y - a.y) * carry / L };
+        if (skip(p)) continue;
+        const { i } = grid.nearest(p);
+        const inst: KitInstance = { piece, x: round(p.x), y: round(p.y), heading: round(Math.atan2(b.y - a.y, b.x - a.x), 4), t: round(Math.max(0, i) / n, 5), side: 1 };
+        // Separada lo justo del asfalto (KIT_RULES.trackClearanceM), como el resto del kit.
+        const gap = half + KIT_RULES.trackClearanceM + 0.02 - Math.min(...kitFootprint(inst).map(q => full.nearest(q).d));
+        if (gap > 0) {
+          const c = track.points[full.nearest(p).i] ?? p, L = Math.hypot(p.x - c.x, p.y - c.y) || 1;
+          inst.x = round(p.x + (p.x - c.x) / L * gap); inst.y = round(p.y + (p.y - c.y) / L * gap);
+        }
+        const foot = kitFootprint(inst);
+        if (foot.some(q => nearPit(q) || wet(q) || inMonument(q, 0) || full.nearest(q).d < half + KIT_RULES.trackClearanceM)) continue;
+        if (relief) inst.z = round(Math.min(...foot.map(q => relief.groundHeight(q.x, q.y))));
+        clean.push(inst);
+      }
+      carry -= L;
+    }
+  };
+  const kerbTile = BY_ID.pianos?.tile, markTile = BY_ID.marcas_suelo?.tile;
+  if (kerbTile) for (const seg of buildScenarioGeometry(track, getScenario(circuitId)).kerbSegments) along(seg.points, 'pianos', kerbTile);
+  if (markTile) for (const side of [1, -1] as const) {
+    let run: Pt[] = [];
+    const flush = () => { if (run.length > 2) along(run, 'marcas_suelo', markTile); run = []; };
+    for (let i = 0; i < n; i++) {
+      if (asph[side][i] > 4 && grav[side][i] > 4 && lim(side, i) - aEnd(side, i) > 1) run.push(at(i, side, aEnd(side, i)));
+      else flush();
+    }
+    flush();
+  }
   return { circuitId, pieces: clean, runoff, strips, stadium: zone ? stadium(C, N, T, n, half, verge, walls, maxoff, asph, stadiumZone, stadiumOut, pit.fastLane) : null };
 }
 

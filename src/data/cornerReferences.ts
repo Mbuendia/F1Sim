@@ -4,7 +4,8 @@
  * el 29/10/2026; el usuario eligió esa telemetría en lugar de las fichas de Brembo). `at` es el punto de la vuelta (0..1,
  * por distancia desde la línea de meta). Muestreo de unos 3,7 Hz: el mínimo real puede ser algo más bajo.
  */
-/** `laterIn`: tarea que la comprueba más adelante (el trazado del juego aún no la permite; UX18 la deja apuntada). */
+/** `laterIn`: tarea que la comprueba más adelante (el trazado del juego aún no la permite; UX18 la deja apuntada).
+ *  [CR2, 07/11/2026] La Source y la horquilla de Suzuka ya no la llevan: CR2 abre las dos curvas y UX18 las mide. */
 export interface CornerReference { name: string; at: number; kmh: number; gear: number; laterIn?: 'CR2' }
 
 export const CORNER_REFERENCES: Record<string, CornerReference[]> = {
@@ -13,7 +14,7 @@ export const CORNER_REFERENCES: Record<string, CornerReference[]> = {
     { name: 'Rascasse', at: 0.88, kmh: 65, gear: 2 },
   ],
   monza: [{ name: 'Primera chicane (Variante del Rettifilo)', at: 0.16, kmh: 73, gear: 2 }],
-  spa: [{ name: 'La Source', at: 0.05, kmh: 83, gear: 2, laterIn: 'CR2' }],
-  suzuka: [{ name: 'Horquilla', at: 0.5, kmh: 77, gear: 3, laterIn: 'CR2' }],
+  spa: [{ name: 'La Source', at: 0.05, kmh: 83, gear: 2 }],
+  suzuka: [{ name: 'Horquilla', at: 0.5, kmh: 77, gear: 3 }],
   montreal: [{ name: 'Horquilla (L\'Épingle)', at: 0.62, kmh: 65, gear: 2 }],
 };

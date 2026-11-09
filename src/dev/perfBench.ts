@@ -16,6 +16,13 @@ export const BENCH_SCENARIO = Object.freeze({
   warmupS: 5,
 });
 
+/** [CR5] `&circuito=` cambia solo el circuito (para medir los emblemáticos); lo demás de la prueba es igual. */
+export type BenchScenario = Omit<typeof BENCH_SCENARIO, 'circuitId'> & { readonly circuitId: string };
+export function benchScenarioFor(search: string, known: (id: string) => boolean): BenchScenario {
+  const id = new URLSearchParams(search).get('circuito');
+  return id && known(id) ? Object.freeze({ ...BENCH_SCENARIO, circuitId: id }) : BENCH_SCENARIO;
+}
+
 export interface BenchInput {
   device: string; userAgent: string; frames: readonly number[];
   stages: Record<string, number>;
@@ -35,9 +42,8 @@ export interface BenchSummary {
 }
 
 /** Resumen de una prueba: el mismo resultado da siempre el mismo resumen; lo que no se midió sale «n/d». */
-export function benchSummary(input: BenchInput): BenchSummary {
+export function benchSummary(input: BenchInput, sc: BenchScenario = BENCH_SCENARIO): BenchSummary {
   const f = summarizeFrames(input.frames);
-  const sc = BENCH_SCENARIO;
   return {
     scenario: `${sc.circuitId} · semilla ${sc.seed} · cámara ${sc.camera} · ${sc.durationS} s`,
     device: input.device, userAgent: input.userAgent,

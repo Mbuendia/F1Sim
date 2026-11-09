@@ -8,6 +8,8 @@
 // De los rivales se ve el compuesto y las vueltas que lleva; su desgaste solo se estima en el muro (T4.15).
 import type { CarState, DnfNotification, SafetyCarState } from '../types/f1';
 import type { RaceSimulation } from '../simulation/RaceSimulation';
+import { PitStopModel } from '../simulation/PitStopModel';
+import type { ServiceStop } from '../types/f1';
 
 const STATUSES: CarState['status'][] = ['running', 'pit', 'out', 'finished'];
 const SC_MODES: SafetyCarState['mode'][] = ['idle', 'deploying', 'leading', 'returning', 'in'];
@@ -69,6 +71,8 @@ export interface SlowCar {
   /** Quién va delante y detrás y a cuánto (lo que da la tele). */
   aheadInfo: unknown; behindInfo: unknown;
   sectors: unknown; laps: unknown[];
+  /** [CA5] Parada en curso en su cajón (null fuera de él). */
+  stop?: ServiceStop | null;
 }
 export interface SlowView {
   t: number; lap: number; totalLaps: number; light: string; flag: string; paused: boolean; finished: boolean; speed: number;
@@ -97,6 +101,16 @@ const plain = <T>(value: T): T => (value === undefined || value === null ? (null
 const rounded = (values: readonly number[]) => values.map(v => round(v, 2));
 
 /** [N6] En una partida compartida (privateTeams) la tirada de suerte no va en la foto común: va en la del equipo afortunado. */
+/** [CA5] La parada que hace un coche en su cajón ahora mismo (lo que necesita la escena para animarla), o null. */
+export function serviceStop(sim: RaceSimulation, car: CarState): ServiceStop | null {
+  const pit = car.pitStop;
+  if (!pit.isPitting || !car.isInPitLane || (pit.passMode && pit.passMode !== 'service')) return null;
+  if (pit.pitLaneProgress < PitStopModel.getBoxProgress(car, sim.activeTrack) || pit.currentStopTimer <= 0 || pit.currentStopTimer >= pit.stopDuration) return null;
+  const to = pit.activeBoxOrder?.compound ?? pit.targetCompound ?? car.tires.compound;
+  return { start: round(sim.raceTimeSec - pit.currentStopTimer, 3), duration: pit.stopDuration, cause: pit.stopCause ?? 'normal',
+    ...(pit.stopWheel !== undefined ? { wheel: pit.stopWheel } : {}), from: car.tires.compound, to };
+}
+
 export function slowView(sim: RaceSimulation, notices: string[] = [], { privateTeams = false } = {}): SlowView {
   const sc = sim.safetyCar;
   const w = sim.weather;
@@ -132,6 +146,7 @@ export function slowView(sim: RaceSimulation, notices: string[] = [], { privateT
       sectors: plain(car.sectors ?? null),
       laps: (car.lapHistory ?? []).map(lap => ({ lap: lap.lap, lapTime: lap.lapTime, sector1: lap.sector1, sector2: lap.sector2, sector3: lap.sector3, compound: lap.compound })),
       retireTimer: round(car.retireTimer, 2), smokeOpacity: round(car.smokeOpacity, 3),
+      stop: serviceStop(sim, car),
     })),
   };
 }

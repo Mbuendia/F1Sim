@@ -5,15 +5,38 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 const MODELS = [
+  // [CA2, 07/11/2026] El coche de 2025 sustituye al de 2026 (guardado en assets/epoca-2026/).
   {
     file: '../public/models/f1-car.glb',
     clip: 'WheelSpin',
     extras: {
-      title: 'F1 2026 concept (polygon model)',
-      author: 'Qvist_designs (https://sketchfab.com/Qvist_Designs)',
+      title: '2025 F1 CAR',
+      author: 'Abu Saif (https://sketchfab.com/abuhossain844)',
       license: 'CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)',
-      source: 'https://sketchfab.com/3d-models/f1-2026-concept-polygon-model-ea3bde709b1e4dc9b0ec8557d106ed42',
-      changes: 'Modificado para F1Sim: reducido de 1,16 millones a unos 127 000 triángulos, ruedas separadas con animación de giro, zonas de pintura por material, banda del compuesto y superficies para dorsal y patrocinadores.',
+      source: 'https://sketchfab.com/3d-models/2025-f1-car-8e323bae81574816be809ea4a63f9898',
+      changes: 'Modificado para F1Sim: reducido de 3,1 millones a unos 94 000 triángulos, girado con el morro hacia +X y escalado a 5,7 m, sin luces LED; ruedas separadas con animación de giro, zonas de pintura por material (principal, secundaria y carbono), banda del compuesto y superficies para dorsal y patrocinadores.',
+    },
+  },
+  {
+    file: '../public/models/f1-car-lod.glb',
+    clip: 'WheelSpin',
+    extras: {
+      title: '2025 F1 CAR',
+      author: 'Abu Saif (https://sketchfab.com/abuhossain844)',
+      license: 'CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)',
+      source: 'https://sketchfab.com/3d-models/2025-f1-car-8e323bae81574816be809ea4a63f9898',
+      changes: 'Versión lejana para F1Sim: unos 9 000 triángulos con las mismas zonas de pintura, banda del compuesto y superficies de rótulos.',
+    },
+  },
+  {
+    file: '../public/models/f1-car-piezas.glb',
+    clip: 'WheelSpin',
+    extras: {
+      title: '2025 F1 CAR',
+      author: 'Abu Saif (https://sketchfab.com/abuhossain844)',
+      license: 'CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)',
+      source: 'https://sketchfab.com/3d-models/2025-f1-car-8e323bae81574816be809ea4a63f9898',
+      changes: 'Versión por piezas para el centro de temporada de F1Sim: ala_delantera, ala_trasera, suelo, pontones, tapa_motor y chasis, con las ruedas bajo ruedas y sin rótulos.',
     },
   },
   {
@@ -27,6 +50,17 @@ const MODELS = [
       changes: 'Modificado para F1Sim: sin texturas ni emblemas de marcas, materiales planos, ruedas y barra de luces como piezas aparte con animación de giro y superficies para rótulos. Esta versión se distribuye con la misma licencia CC BY-NC-SA 4.0.',
     },
   },
+  // [CR3, 07/11/2026] Piezas del kit sacadas del modelo de Montreal.
+  ...['guardarrail', 'valla_alta', 'pianos', 'muro_neumaticos', 'grava', 'escapatoria', 'grada_comun', 'arbol_a', 'arbol_b', 'arbol_c', 'marcas_suelo'].map(id => ({
+    file: `../public/models/kit/${id}.glb`,
+    extras: {
+      title: 'Circuit Gilles Villeneuve Montreal 2019 layout',
+      author: 'Dave Love (https://sketchfab.com/Tyler_Dave)',
+      license: 'CC BY 4.0 (http://creativecommons.org/licenses/by/4.0/)',
+      source: 'https://sketchfab.com/3d-models/circuit-gilles-villeneuve-montreal-2019-layout-5875d33d5ddb44f4a6c1188ed6776fa8',
+      changes: 'F1Sim: pieza recortada, en metros, aligerada; textura de 512 px como mucho y sin marcas.',
+    },
+  })),
 ];
 
 for (const model of MODELS) {

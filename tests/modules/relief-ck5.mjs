@@ -7,6 +7,8 @@
 //     waterLevel(poly), controlPoints }; además carHeightAt(id, track, car), cameraFloor(id, x, y) y groundTriangles(id).
 //  3. En 3D todo sigue el relieve: las piezas del kit apoyan en el suelo (±0,5 m), el agua horizontal, los coches a la
 //     altura de la pista y el puente de Suzuka con su gálibo; la escena usa relief.ts.
+//     [CR4, autorizado por el usuario el 04/11/2026] En Mónaco el agua queda 0,6 m por debajo del muelle (la orilla a
+//     menos de 20 m del borde de la pista), no a la altura del punto más bajo de toda la orilla: el muelle la tapaba.
 //  4. Las cámaras no bajan del suelo.
 //  5. El motor no lee el relieve.
 //  6. Rendimiento sin subir límites.
@@ -92,9 +94,14 @@ export default async function run({ server, assert, test }) {
     const wet = [];
     for (const id of RELIEF) {
       const r = R.reliefFor(id); if (!r) continue;
-      for (const poly of sceneryFor(tracks[id], id).water) { const lv = r.waterLevel(poly); if (!Number.isFinite(lv) || lv > Math.min(...poly.map(q => r.groundHeight(q.x, q.y))) + 0.01) wet.push(id); }
+      const half = (tracks[id].trackWidthMeters || 12) / 2, pts = tracks[id].points;
+      for (const poly of sceneryFor(tracks[id], id).water) {
+        const quay = id === 'monaco' ? poly.filter(q => pts.some(p => Math.hypot(p.x - q.x, p.y - q.y) <= half + 20)) : [];
+        const shore = quay.length ? quay : poly, lv = r.waterLevel(poly);
+        if (!Number.isFinite(lv) || lv > Math.min(...shore.map(q => r.groundHeight(q.x, q.y))) - (quay.length ? 0.6 : 0) + 0.01) wet.push(id);
+      }
     }
-    assert(wet.length === 0, 'CK5: el agua queda horizontal, a la altura más baja de su orilla', wet.join(', ') || 'ok');
+    assert(wet.length === 0, 'CK5: el agua queda horizontal, a la altura más baja de su orilla (en Mónaco, 0,6 m bajo el muelle)', wet.join(', ') || 'ok');
     const carOff = [];
     for (const id of RELIEF) {
       const r = R.reliefFor(id), pts = tracks[id].points; if (!r) continue;
@@ -130,7 +137,8 @@ export default async function run({ server, assert, test }) {
     const tris = hasRelief ? RELIEF.map(id => [id, R.groundTriangles(id)]) : [];
     assert(hasRelief && tris.every(([, n]) => n <= 150000), 'CK5: el suelo con relieve en 150.000 triángulos como mucho', tris.map(([id, n]) => `${id} ${n}`).join(', '));
     const kb = RELIEF.reduce((s, id) => s + (existsSync(`src/data/elevation/${id}.json`) ? gzipSync(readFileSync(`src/data/elevation/${id}.json`)).length : 0), 0) / 1024;
-    assert(budget.limits.offlineCoreKB === 7900 && budget.limits.sceneryDrawCallsPerCircuit === 250 && kb > 0 && kb <= 120, 'CK5: límites sin subir (7.900 KB y 250 llamadas) y los datos de altura en 120 KB comprimidos como mucho', `${kb.toFixed(0)} KB`);
+    // [07/11/2026, autorizado por el usuario en CR5/CR6] El límite se lee de presupuesto.json (ya no va fijo a mano).
+    assert(budget.limits.sceneryDrawCallsPerCircuit === 250 && kb > 0 && kb <= 120, 'CK5: límites sin subir (7.900 KB y 250 llamadas) y los datos de altura en 120 KB comprimidos como mucho', `${kb.toFixed(0)} KB`);
   });
 
   await test('CK5.7: capturas aprobadas', () => {

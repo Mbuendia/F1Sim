@@ -47,6 +47,9 @@ const PREFIX: Record<TireCompound, string> = { hard: 'H', medium: 'M', soft: 'S'
 export const COMPOUND_LABEL: Record<TireCompound, string> = {
   hard: 'DURO', medium: 'MEDIO', soft: 'BLANDO', intermediate: 'INTERMEDIO', wet: 'LLUVIA',
 };
+/** [CA1] Proveedor de neumáticos (parodia): el mismo en los cinco compuestos. */
+export const TYRE_BRAND = 'Pirulí';
+export function tyreBrand(_compound: TireCompound): string { return TYRE_BRAND; }
 const SLICKS: TireCompound[] = ['soft', 'medium', 'hard'];
 
 /** Juegos nuevos de una asignación (la normal o la de un fin de semana sprint). */

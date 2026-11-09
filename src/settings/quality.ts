@@ -39,6 +39,14 @@ export function recommendedQuality({ mobile, deviceMemory, cores }: DeviceInfo):
   return tight ? 'medio' : 'alto';
 }
 
+/**
+ * [CR5] Resplandor (bloom) de las luces de noche (la cubierta del hotel de Yas Marina, las torres de luz): solo de
+ * noche y en calidad alta, que en móvil nunca es la recomendada (decisión del usuario: bloom solo en PC).
+ */
+export function bloomEnabled(level: QualityLevel, night: boolean): boolean {
+  return night && level === 'alto';
+}
+
 export function effectiveQuality(setting: QualitySetting, device: DeviceInfo): QualityLevel {
   return setting === 'auto' ? recommendedQuality(device) : setting;
 }
