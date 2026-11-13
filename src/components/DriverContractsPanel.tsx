@@ -14,7 +14,7 @@ export function Helmet({ teamId, number, size = 52 }: { teamId: string; number: 
       <path d="M5 30C5 17 14 8 26 8s18 8 18 19v7c0 3-2 5-5 5H13c-5 0-8-4-8-9z" fill={TEAMS[teamId]?.color ?? '#888'} stroke="rgba(255,255,255,.3)" />
       <path d="M5 30C7 18 15 10 27 8 18 12 13 19 12 30z" fill={teamAccent(teamId)} opacity=".9" />
       <path d="M25 21h19v8H29c-3 0-4-2-4-4z" fill="#0b0e13" stroke="rgba(255,255,255,.4)" />
-      <text x="17" y="38" fontSize="9" fontFamily="Orbitron, sans-serif" fontWeight="700" textAnchor="middle" fill="#fff" stroke="#000" strokeWidth=".4" paintOrder="stroke">{number}</text>
+      <text x="17" y="38" fontSize="9" fontFamily="Barlow Condensed, sans-serif" fontWeight="700" textAnchor="middle" fill="#fff" stroke="#000" strokeWidth=".4" paintOrder="stroke">{number}</text>
     </svg>
   );
 }

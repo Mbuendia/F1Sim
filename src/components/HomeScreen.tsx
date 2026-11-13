@@ -581,7 +581,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                     <CheckCircle2 size={15} />
                     <span>{selectedDriverId === inspectedDriver.id ? 'PILOTO ACTIVO' : 'SELECCIONAR'}</span>
                   </button>
-                  <span style={{ fontFamily: 'Orbitron', fontSize: '24px', fontWeight: 900, color: inspectedTeam.color }}>
+                  <span style={{ fontFamily: 'Barlow Condensed', fontSize: '24px', fontWeight: 900, color: inspectedTeam.color }}>
                     #{inspectedDriver.number}
                   </span>
                 </div>
@@ -1222,7 +1222,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 <div className={styles.summaryCardMain}>
                   <FlagIcon country={selectedDriver.country} emoji={selectedDriver.countryFlag} size={16} />
                   <span>{selectedDriver.firstName} {selectedDriver.lastName}</span>
-                  <span style={{ color: selectedTeam.color, marginLeft: 'auto', fontFamily: 'Orbitron' }}>#{selectedDriver.number}</span>
+                  <span style={{ color: selectedTeam.color, marginLeft: 'auto', fontFamily: 'Barlow Condensed' }}>#{selectedDriver.number}</span>
                 </div>
                 <div className={styles.summaryCardSub}>{selectedTeam.name}</div>
                 <div className={styles.summaryCardExtra}>

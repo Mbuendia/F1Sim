@@ -105,7 +105,7 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
         ctx.stroke();
 
         ctx.fillStyle = 'rgba(56, 189, 248, 0.45)';
-        ctx.font = '8px Orbitron';
+        ctx.font = '8px Barlow Condensed';
         ctx.fillText(`${(idx + 1) * 5}km`, cx + 3, cy - r + 9);
       });
 
@@ -348,13 +348,13 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
                 {[0, 20, 40, 66].map(l => (
                   <g key={l}>
                     <line x1={getX(l)} y1={chartH - padBottom} x2={getX(l)} y2={chartH - padBottom + 4} stroke="rgba(255,255,255,0.3)" strokeWidth="1" />
-                    <text x={getX(l)} y={chartH - 4} fill="#64748b" fontSize="8" fontFamily="Orbitron" textAnchor="middle">L{l}</text>
+                    <text x={getX(l)} y={chartH - 4} fill="#64748b" fontSize="8" fontFamily="Barlow Condensed" textAnchor="middle">L{l}</text>
                   </g>
                 ))}
 
-                <text x={padLeft - 4} y={getY(100) + 3} fill="#64748b" fontSize="8" fontFamily="Orbitron" textAnchor="end">100%</text>
-                <text x={padLeft - 4} y={getY(50) + 3} fill="#64748b" fontSize="8" fontFamily="Orbitron" textAnchor="end">50%</text>
-                <text x={padLeft - 4} y={getY(0) + 3} fill="#64748b" fontSize="8" fontFamily="Orbitron" textAnchor="end">0%</text>
+                <text x={padLeft - 4} y={getY(100) + 3} fill="#64748b" fontSize="8" fontFamily="Barlow Condensed" textAnchor="end">100%</text>
+                <text x={padLeft - 4} y={getY(50) + 3} fill="#64748b" fontSize="8" fontFamily="Barlow Condensed" textAnchor="end">50%</text>
+                <text x={padLeft - 4} y={getY(0) + 3} fill="#64748b" fontSize="8" fontFamily="Barlow Condensed" textAnchor="end">0%</text>
 
                 <line x1={padLeft} y1={getY(20)} x2={chartW - padRight} y2={getY(20)} stroke="#ef4444" strokeWidth="0.8" strokeDasharray="3,3" opacity="0.5" />
 

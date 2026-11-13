@@ -4,33 +4,70 @@
   box-sizing: border-box;
 }
 
-/* R33: sistema visual del rediseño de escritorio. Grafito, texto marfil y un solo rojo para la acción principal;
-   los colores de compuestos, equipos y banderas conservan su significado propio. */
+/* [VS1] Tipografías servidas por el juego (subconjunto latino; SIL Open Font License, ver public/fonts/LICENCIA.md). */
+@font-face { font-family: 'Barlow'; font-style: normal; font-weight: 400; font-display: swap; src: url('/fonts/barlow-400.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow'; font-style: normal; font-weight: 500; font-display: swap; src: url('/fonts/barlow-500.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow'; font-style: normal; font-weight: 600; font-display: swap; src: url('/fonts/barlow-600.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow'; font-style: normal; font-weight: 700; font-display: swap; src: url('/fonts/barlow-700.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow Condensed'; font-style: normal; font-weight: 600; font-display: swap; src: url('/fonts/barlow-condensed-600.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow Condensed'; font-style: normal; font-weight: 700; font-display: swap; src: url('/fonts/barlow-condensed-700.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow Condensed'; font-style: normal; font-weight: 800; font-display: swap; src: url('/fonts/barlow-condensed-800.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow Condensed'; font-style: italic; font-weight: 800; font-display: swap; src: url('/fonts/barlow-condensed-800i.woff2') format('woff2'); }
+
+/* [VS1, 13/11/2026] Sistema visual, dirección «Cartel de carrera» (elegida por el usuario): negro y rojo, títulos en
+   condensada cursiva y esquinas rectas. Este archivo es el único sitio donde se escriben colores, tipografías, tamaños de
+   letra, radios y duraciones; los componentes usan estas variables (lo vigila tests/modules/visual-system-vs1.mjs).
+   Los colores de equipos, compuestos y banderas conservan su significado propio y salen de los datos del juego. */
 :root {
-  --bg: #0d1117;
-  --panel: #171d26;
-  --panel-2: #222a35;
-  --line: #2e3746;
-  --line-strong: #3a4556;
-  --text: #f2f4f7;
-  --text-2: #b4becc;
-  --text-3: #8a95a6;
+  /* Superficies y texto */
+  --bg: #050505;
+  --panel: #101010;
+  --panel-2: #1a1a1a;
+  --line: #2a2a2a;
+  --line-strong: #3d3d3d;
+  --text: #ffffff;
+  --text-2: #b5b5b5;
+  --text-3: #8f8f8f;
+  --negro: #000000;
+  /* El rojo es la acción principal; el oscuro, su sombra en cortes y degradados */
   --accion: #e10600;
   --accion-hover: #ff1a0f;
+  --accion-oscuro: #8f0400;
   --foco: #5aa9ff;
-  /* Sprint 4 (gestión): importes positivos y negativos (el rojo queda para la acción principal), avisos y acento del
-     equipo del jugador, que la aplicación sustituye por el de su equipo. */
+  /* Significados: mejora, pérdida, aviso, información, mejor registro y el acento del equipo del jugador */
   --positivo: #57d9a3;
   --negativo: #ff9b8a;
-  --aviso: #f5c451;
+  --aviso: #ffd23f;
+  --info: #5aa9ff;
+  --morado: #b678ff;
   --equipo: #5aa9ff;
 
-  --font-marca: 'Orbitron', sans-serif;
-  --font-ui: 'Rajdhani', system-ui, sans-serif;
+  /* Tipografías: títulos, texto y cifras */
+  --font-marca: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+  --font-ui: 'Barlow', system-ui, sans-serif;
+  --font-datos: 'Barlow Condensed', 'Arial Narrow', sans-serif;
 
-  --radio-s: 6px;
-  --radio-m: 8px;
-  --radio-l: 10px;
+  /* Escala de letra cerrada: ocho tamaños, ninguno por debajo de 14 px */
+  --letra-1: 14px;
+  --letra-2: 16px;
+  --letra-3: 18px;
+  --letra-4: 22px;
+  --letra-5: 28px;
+  --letra-6: 36px;
+  --letra-7: clamp(36px, 5vw, 56px);
+  --letra-8: clamp(48px, 5.2vw, 84px);
+
+  /* Esquinas rectas; la píldora queda para etiquetas y los círculos se hacen con 50 % */
+  --radio-s: 0px;
+  --radio-m: 0px;
+  --radio-l: 0px;
+  --radio-pill: 999px;
+
+  /* Duraciones del movimiento de la interfaz (los bucles de ambiente, de más de un segundo, llevan la suya) */
+  --t-rapido: 150ms;
+  --t-medio: 250ms;
+  --t-lento: 400ms;
+  --t-pausado: 800ms;
 
   /* [V1] Medidas mínimas del rediseño: lo que se toca mide 44 px y el texto que se lee, 14 px. Puntos de corte comunes
      (no pueden ser variables dentro de @media): móvil hasta 767 px, tableta hasta 1023 px, escritorio desde 1024 px. */

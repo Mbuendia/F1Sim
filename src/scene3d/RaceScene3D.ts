@@ -963,7 +963,7 @@ function sponsorTexture(name: Sponsor): THREE.CanvasTexture {
   const { bg, fg } = SPONSOR_COLORS[name];
   ctx.fillStyle = bg; ctx.fillRect(0, 0, 512, 96);
   ctx.fillStyle = 'rgba(255,255,255,0.18)'; ctx.fillRect(0, 0, 512, 6); ctx.fillRect(0, 90, 512, 6);
-  ctx.fillStyle = fg; ctx.font = "800 58px 'Rajdhani', 'Arial Black', sans-serif"; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = fg; ctx.font = "800 58px 'Barlow Condensed', 'Arial Black', sans-serif"; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.fillText(name.toUpperCase(), 256, 52, 480);
   tex = new THREE.CanvasTexture(canvas);
   tex.wrapS = THREE.RepeatWrapping;
@@ -983,7 +983,7 @@ function buildDistanceBoards(boards: { x: number; y: number; heading: number; la
     const ctx = canvas.getContext('2d')!;
     ctx.fillStyle = '#f4f4f0'; ctx.fillRect(0, 0, 192, 128);
     ctx.strokeStyle = '#1b1b1b'; ctx.lineWidth = 8; ctx.strokeRect(4, 4, 184, 120);
-    ctx.fillStyle = '#111'; ctx.font = "800 84px 'Rajdhani', 'Arial Black', sans-serif"; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#111'; ctx.font = "800 84px 'Barlow Condensed', 'Arial Black', sans-serif"; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(b.label, 96, 68, 172);
     const tex = new THREE.CanvasTexture(canvas); tex.colorSpace = THREE.SRGBColorSpace;
     const mesh = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 1.2), new THREE.MeshLambertMaterial({ map: tex }));

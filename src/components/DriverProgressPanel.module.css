@@ -2,16 +2,16 @@
   width: 100%;
   margin: 0 0 16px;
   text-align: left;
-  color: #e2e8f0;
-  font-size: 14px;
+  color: var(--text);
+  font-size: var(--letra-1);
 }
 
 .title {
   margin: 0 0 8px;
-  font-size: 14px;
+  font-size: var(--letra-1);
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #ffd700;
+  color: var(--aviso);
 }
 
 .drivers {
@@ -23,9 +23,9 @@
 .driver {
   flex: 1 1 300px;
   padding: 10px 12px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid color-mix(in srgb, var(--text) 12%, transparent);
+  border-radius: var(--radio-l);
+  background: color-mix(in srgb, var(--text) 3%, transparent);
 }
 
 .header {
@@ -38,15 +38,15 @@
 }
 
 .focus {
-  color: #94a3b8;
+  color: var(--text-2);
 }
 
 .focus select {
   font: inherit;
-  color: #e2e8f0;
-  background: #131728;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  border-radius: 6px;
+  color: var(--text);
+  background: var(--panel-2);
+  border: 1px solid color-mix(in srgb, var(--text) 25%, transparent);
+  border-radius: var(--radio-m);
   padding: 2px 6px;
 }
 
@@ -66,11 +66,11 @@
   align-items: baseline;
   gap: 6px;
   padding: 2px 6px;
-  border-radius: 6px;
+  border-radius: var(--radio-m);
 }
 
 .label {
-  color: #94a3b8;
+  color: var(--text-2);
 }
 
 .value {
@@ -78,15 +78,15 @@
 }
 
 .gain {
-  color: #4ade80;
+  color: var(--positivo);
   font-weight: 700;
 }
 
 .gained {
-  background: rgba(74, 222, 128, 0.12);
+  background: color-mix(in srgb, var(--positivo) 12%, transparent);
 }
 
 .none {
   margin: 8px 0 0;
-  color: #94a3b8;
+  color: var(--text-2);
 }

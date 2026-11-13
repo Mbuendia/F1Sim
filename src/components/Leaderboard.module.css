@@ -5,33 +5,33 @@
   display: flex;
   flex-direction: column;
   background: var(--panel);
-  border-right: 2px solid #1a2236;
-  box-shadow: 4px 0 25px rgba(0, 0, 0, 0.6);
+  border-right: 2px solid var(--line);
+  box-shadow: 4px 0 25px color-mix(in srgb, var(--negro) 60%, transparent);
   z-index: 30;
   overflow: hidden;
 }
 
 .header {
   padding: 14px 16px;
-  background: linear-gradient(135deg, #182032 0%, #0d1220 100%);
-  border-bottom: 2px solid rgba(255, 255, 255, 0.12);
+  background: linear-gradient(135deg, var(--line) 0%, var(--panel-2) 100%);
+  border-bottom: 2px solid color-mix(in srgb, var(--text) 12%, transparent);
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
 .f1Brand {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 14px;
+  font-family: var(--font-marca);
+  font-size: var(--letra-1);
   font-weight: 900;
-  color: #e10600;
+  color: var(--accion);
   letter-spacing: 2px;
 }
 
 .headerTitle {
-  font-family: 'Rajdhani', sans-serif;
-  font-size: 14px;
-  color: #cbd5e1;
+  font-family: var(--font-ui);
+  font-size: var(--letra-1);
+  color: var(--text-2);
   font-weight: 800;
   letter-spacing: 1px;
 }
@@ -49,34 +49,34 @@
   width: 5px;
 }
 .tableList::-webkit-scrollbar-thumb {
-  background: #27354f;
-  border-radius: 3px;
+  background: var(--line-strong);
+  border-radius: var(--radio-s);
 }
 
 .row {
   display: flex;
   align-items: center;
   padding: 6px 8px;
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 6px;
+  background: color-mix(in srgb, var(--text) 3%, transparent);
+  border-radius: var(--radio-m);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all var(--t-rapido) ease;
   border-left: 4px solid transparent;
 }
 
 .row:hover {
-  background: rgba(255, 255, 255, 0.09);
+  background: color-mix(in srgb, var(--text) 9%, transparent);
   transform: translateX(2px);
 }
 
 .selected {
-  background: rgba(225, 6, 0, 0.25) !important;
-  border-left-color: #e10600 !important;
-  box-shadow: 0 0 12px rgba(225, 6, 0, 0.3);
+  background: color-mix(in srgb, var(--accion) 25%, transparent) !important;
+  border-left-color: var(--accion) !important;
+  box-shadow: 0 0 12px color-mix(in srgb, var(--accion) 30%, transparent);
 }
 
 .leaderRow .posNum {
-  color: #ffd700;
+  color: var(--aviso);
   font-weight: 900;
 }
 
@@ -88,7 +88,7 @@
 
 .posNum {
   font-family: var(--font-ui);
-  font-size: 16px;
+  font-size: var(--letra-2);
   font-weight: 800;
   color: var(--text-2);
 }
@@ -96,7 +96,7 @@
 .teamBar {
   width: 4px;
   height: 20px;
-  border-radius: 2px;
+  border-radius: var(--radio-s);
   margin: 0 8px;
   flex-shrink: 0;
 }
@@ -114,14 +114,14 @@
 
 .driverCode {
   font-family: var(--font-ui);
-  font-size: 16px;
+  font-size: var(--letra-2);
   font-weight: 800;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .driverLastName {
-  font-size: 13.5px;
-  font-family: 'Rajdhani', sans-serif;
+  font-size: var(--letra-1);
+  font-family: var(--font-ui);
   color: var(--text);
   font-weight: 700;
   white-space: nowrap;
@@ -146,14 +146,14 @@
   height: 9px;
   border-radius: 50%;
   display: inline-block;
-  box-shadow: 0 0 4px rgba(255,255,255,0.4);
+  box-shadow: 0 0 4px color-mix(in srgb, var(--text) 40%, transparent);
 }
 
 .pitCountBadge {
-  font-size: 13px;
-  background: rgba(255, 255, 255, 0.12);
+  font-size: var(--letra-1);
+  background: color-mix(in srgb, var(--text) 12%, transparent);
   padding: 2px 5px;
-  border-radius: 3px;
+  border-radius: var(--radio-s);
   color: var(--text);
   font-family: var(--font-ui);
   font-weight: 700;
@@ -166,13 +166,13 @@
 
 .gapText {
   font-family: var(--font-ui);
-  font-size: 15px;
-  color: #ffffff;
+  font-size: var(--letra-2);
+  color: var(--text);
   font-weight: 700;
 }
 
 .leaderText {
-  color: #ffd700;
+  color: var(--aviso);
   font-weight: 900;
 }
 
@@ -187,33 +187,33 @@
   white-space: nowrap;
   pointer-events: none;
   font-family: var(--font-ui);
-  font-size: 13px;
+  font-size: var(--letra-1);
   font-weight: 900;
   line-height: 1;
 }
 
 .posUp {
-  color: #22c55e;
+  color: var(--positivo);
 }
 
 .posDown {
-  color: #ef4444;
+  color: var(--accion);
 }
 
 .pitPulse {
   font-family: var(--font-ui);
-  font-size: 13px;
+  font-size: var(--letra-1);
   font-weight: 900;
-  color: #0b0f17;
-  background: #facc15;
-  border-radius: 3px;
+  color: var(--panel);
+  background: var(--aviso);
+  border-radius: var(--radio-s);
   padding: 1px 5px;
   animation: pitPulse 1.1s ease-in-out infinite;
 }
 
 @keyframes pitPulse {
-  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(250, 204, 21, 0.6); }
-  50% { opacity: 0.55; box-shadow: 0 0 6px 2px rgba(250, 204, 21, 0.35); }
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 color-mix(in srgb, var(--aviso) 60%, transparent); }
+  50% { opacity: 0.55; box-shadow: 0 0 6px 2px color-mix(in srgb, var(--aviso) 35%, transparent); }
 }
 
 /* [Q13] Fila fantasma de reincorporación estimada */
@@ -222,18 +222,18 @@
   align-items: center;
   gap: 6px;
   padding: 3px 8px;
-  border: 1px dashed rgba(255, 255, 255, 0.35);
-  border-left: 4px dashed #ffffff;
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.02);
-  font-size: 10px;
-  color: #cbd5e1;
+  border: 1px dashed color-mix(in srgb, var(--text) 35%, transparent);
+  border-left: 4px dashed var(--text);
+  border-radius: var(--radio-m);
+  background: color-mix(in srgb, var(--text) 2%, transparent);
+  font-size: var(--letra-1);
+  color: var(--text-2);
 }
 
 .rejoinPos {
-  font-family: 'Orbitron', sans-serif;
+  font-family: var(--font-marca);
   font-weight: 900;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .rejoinLabel {
@@ -243,33 +243,33 @@
 }
 
 .rejoinRange {
-  font-family: 'Orbitron', sans-serif;
+  font-family: var(--font-marca);
   color: var(--text-2);
 }
 
 .rejoinUnavailable {
   padding: 4px 10px 6px;
-  font-size: 10px;
+  font-size: var(--letra-1);
   color: var(--text-2);
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid color-mix(in srgb, var(--text) 8%, transparent);
 }
 
 /* R30/R33: clasificación compacta en su columna fija (248 px): cifras legibles en Rajdhani, sin apellido, filas de 30 px. */
 .towerContainer { width: 100%; min-width: 0; background: var(--panel); border-right: none; box-shadow: none; }
 .header { padding: 8px 12px; background: var(--panel); border-bottom: 1px solid var(--line); }
-.headerTitle { font-size: 14px; color: var(--text-2); }
+.headerTitle { font-size: var(--letra-1); color: var(--text-2); }
 .tableList { padding: 4px 6px; gap: 1px; }
 .row { min-height: 30px; padding: 2px 6px; background: transparent; }
 .row:hover { background: var(--panel-2); transform: none; }
 .selected { background: var(--panel-2) !important; border-left-color: var(--accion) !important; box-shadow: none; }
-.posNum { font-family: var(--font-ui); font-size: 16px; font-weight: 700; color: var(--text-2); }
+.posNum { font-family: var(--font-ui); font-size: var(--letra-2); font-weight: 700; color: var(--text-2); }
 .teamBar { margin: 0 6px; height: 18px; }
-.driverCode { font-family: var(--font-ui); font-size: 16px; font-weight: 700; color: var(--text); }
+.driverCode { font-family: var(--font-ui); font-size: var(--letra-2); font-weight: 700; color: var(--text); }
 .driverLastName { display: none; }
-.gapText { font-family: var(--font-ui); font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
-.pitPulse { font-family: var(--font-ui); font-size: 13px; }
-.pitCountBadge { font-family: var(--font-ui); font-size: 12px; }
-.posChange { font-family: var(--font-ui); font-size: 11px; }
-.rejoinGhost { font-size: 13px; }
+.gapText { font-family: var(--font-ui); font-size: var(--letra-2); font-weight: 600; font-variant-numeric: tabular-nums; }
+.pitPulse { font-family: var(--font-ui); font-size: var(--letra-1); }
+.pitCountBadge { font-family: var(--font-ui); font-size: var(--letra-1); }
+.posChange { font-family: var(--font-ui); font-size: var(--letra-1); }
+.rejoinGhost { font-size: var(--letra-1); }
 .rejoinPos, .rejoinRange { font-family: var(--font-ui); }
-.rejoinUnavailable { font-size: 13px; color: var(--text-2); }
+.rejoinUnavailable { font-size: var(--letra-1); color: var(--text-2); }

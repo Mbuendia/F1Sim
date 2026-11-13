@@ -285,7 +285,7 @@ export class CarRenderer {
     // Etiqueta prominente del Safety Car
     ctx.save();
     const scLabel = `🚨 SAFETY CAR (${sc.mode.toUpperCase()})`;
-    ctx.font = `bold ${Math.max(8, 9 * scale)}px 'Orbitron', sans-serif`;
+    ctx.font = `bold ${Math.max(8, 9 * scale)}px 'Barlow Condensed', sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'bottom';
     ctx.strokeStyle = '#000000';

@@ -1,7 +1,7 @@
 .header {
   padding: 16px 20px;
-  background: linear-gradient(135deg, #161a29 0%, #0c0e18 100%);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(135deg, var(--panel-2) 0%, var(--panel) 100%);
+  border-bottom: 1px solid color-mix(in srgb, var(--text) 8%, transparent);
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -14,23 +14,23 @@
 }
 
 .gpFlag {
-  font-size: 28px;
+  font-size: var(--letra-5);
   line-height: 1;
 }
 
 .title {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 14px;
+  font-family: var(--font-marca);
+  font-size: var(--letra-1);
   font-weight: 900;
-  color: #ffffff;
+  color: var(--text);
   letter-spacing: 2px;
   margin: 0;
 }
 
 .subTitle {
-  font-family: 'Rajdhani', sans-serif;
-  font-size: 12px;
-  color: #94a3b8;
+  font-family: var(--font-ui);
+  font-size: var(--letra-1);
+  color: var(--text-2);
   margin: 2px 0 0 0;
   letter-spacing: 0.5px;
 }
@@ -42,13 +42,13 @@
 }
 
 .infoBadge {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: color-mix(in srgb, var(--text) 4%, transparent);
+  border: 1px solid color-mix(in srgb, var(--text) 8%, transparent);
   padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 10px;
-  font-family: 'Rajdhani', sans-serif;
-  color: #cbd5e1;
+  border-radius: var(--radio-s);
+  font-size: var(--letra-1);
+  font-family: var(--font-ui);
+  color: var(--text-2);
   display: inline-flex;
   align-items: center;
   gap: 4px;

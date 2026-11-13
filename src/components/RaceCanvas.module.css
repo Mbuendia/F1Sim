@@ -2,7 +2,7 @@
   flex: 1;
   position: relative;
   overflow: hidden;
-  background: #0b0e14;
+  background: var(--panel);
 }
 
 .canvas {
@@ -20,28 +20,28 @@
   position: absolute;
   top: 14px;
   left: 16px;
-  background: rgba(11, 15, 25, 0.88);
+  background: color-mix(in srgb, var(--panel) 88%, transparent);
   backdrop-filter: blur(8px);
-  border: 1px solid rgba(56, 189, 248, 0.35);
-  color: #38bdf8;
+  border: 1px solid color-mix(in srgb, var(--info) 35%, transparent);
+  color: var(--info);
   font-family: var(--font-ui);
-  font-size: 14px;
+  font-size: var(--letra-1);
   font-weight: 700;
   padding: 5px 10px;
-  border-radius: 6px;
+  border-radius: var(--radio-m);
   display: flex;
   align-items: center;
   gap: 6px;
   cursor: pointer;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6);
-  transition: all 0.2s ease;
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--negro) 60%, transparent);
+  transition: all var(--t-medio) ease;
   z-index: 20;
 }
 
 .orbitBadge:hover {
-  background: rgba(56, 189, 248, 0.2);
-  border-color: #38bdf8;
-  color: #ffffff;
+  background: color-mix(in srgb, var(--info) 20%, transparent);
+  border-color: var(--info);
+  color: var(--text);
   transform: translateY(-1px);
 }
 
@@ -64,18 +64,18 @@
   flex: 0 0 auto;
   min-height: 36px;
   padding: 6px 12px;
-  border-radius: 6px;
-  background: rgba(11, 15, 25, 0.86);
-  border: 1px solid rgba(56, 189, 248, 0.3);
-  color: #cfe9f7;
+  border-radius: var(--radio-m);
+  background: color-mix(in srgb, var(--panel) 86%, transparent);
+  border: 1px solid color-mix(in srgb, var(--info) 30%, transparent);
+  color: var(--info);
   font-family: var(--font-ui);
-  font-size: 14px;
+  font-size: var(--letra-1);
   font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--negro) 50%, transparent);
 }
-.cameraMode:hover { border-color: #38bdf8; color: #ffffff; }
-.cameraModeOn { background: #38bdf8; border-color: #38bdf8; color: #0b0f19; }
+.cameraMode:hover { border-color: var(--info); color: var(--text); }
+.cameraModeOn { background: var(--info); border-color: var(--info); color: var(--panel); }
 @media (pointer: coarse) {
   .cameraMode, .cameraModeOn { min-height: 44px; }
 }
@@ -85,18 +85,18 @@
   top: 14px;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(11, 15, 25, 0.82);
+  background: color-mix(in srgb, var(--panel) 82%, transparent);
   backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid color-mix(in srgb, var(--text) 12%, transparent);
   color: var(--text-2);
-  font-family: 'Rajdhani', sans-serif;
-  font-size: 14px;
+  font-family: var(--font-ui);
+  font-size: var(--letra-1);
   font-weight: 600;
   white-space: nowrap;
   padding: 4px 14px;
-  border-radius: 20px;
+  border-radius: var(--radio-l);
   pointer-events: none;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--negro) 50%, transparent);
   display: flex;
   align-items: center;
   gap: 6px;
@@ -106,7 +106,7 @@
 .cameraHint strong {
   color: var(--text);
   font-family: var(--font-ui);
-  font-size: 14px;
+  font-size: var(--letra-1);
 }
 
 /* [V2] El recordatorio de ratón solo tiene sentido con ratón y sitio: fuera en tableta y móvil. */
@@ -120,12 +120,12 @@
   bottom: 12px;
   min-height: var(--toque);
   padding: 6px 12px;
-  border-radius: 6px;
+  border-radius: var(--radio-m);
   cursor: pointer;
-  background: rgba(20, 24, 31, 0.92);
-  border: 1px solid rgba(56, 189, 248, 0.6);
-  color: #e8e6df;
-  font: 700 14px 'Rajdhani', sans-serif;
+  background: color-mix(in srgb, var(--panel-2) 92%, transparent);
+  border: 1px solid color-mix(in srgb, var(--info) 60%, transparent);
+  color: var(--aviso);
+  font: 700 var(--letra-1) var(--font-ui);
   display: inline-flex;
   align-items: center;
   gap: 6px;

@@ -134,7 +134,7 @@ export function drawLabels3D(
     .filter(({ p, car }) => p.visible && p.x > 0 && p.x < width && p.y > 0 && p.y < height && (compact || car.id === selectedId || p.distance < 140))
     .sort((a, b) => Number(b.car.id === selectedId) - Number(a.car.id === selectedId) || a.car.currentPosition - b.car.currentPosition);
   ctx.save();
-  ctx.font = `700 ${compact ? 10 : 12}px 'Rajdhani', sans-serif`;
+  ctx.font = `700 ${compact ? 10 : 12}px 'Barlow Condensed', sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   for (const { car, p } of list) {

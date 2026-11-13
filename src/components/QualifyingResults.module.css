@@ -6,7 +6,7 @@
   display: flex;
   align-items: safe center;
   justify-content: center;
-  background: rgba(4, 7, 15, 0.9);
+  background: color-mix(in srgb, var(--bg) 90%, transparent);
   backdrop-filter: blur(8px);
   overflow-y: auto;
 }
@@ -17,35 +17,35 @@
   display: flex;
   flex-direction: column;
   padding: 22px 26px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 16px;
-  background: linear-gradient(180deg, #131728 0%, #080a14 100%);
-  color: #e2e8f0;
-  font-size: 14px;
+  border: 1px solid color-mix(in srgb, var(--text) 18%, transparent);
+  border-radius: var(--radio-l);
+  background: linear-gradient(180deg, var(--panel-2) 0%, var(--panel) 100%);
+  color: var(--text);
+  font-size: var(--letra-1);
 }
 
 .title {
   margin: 0 0 4px;
-  font-size: 20px;
+  font-size: var(--letra-4);
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
 .pole {
   margin: 0 0 12px;
-  color: #94a3b8;
+  color: var(--text-2);
 }
 
 .pole strong {
-  color: #ffd700;
+  color: var(--aviso);
 }
 
 .scroll {
   flex: 1 1 auto;
   min-height: 120px;
   overflow-y: auto;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--text) 12%, transparent);
+  border-radius: var(--radio-l);
 }
 
 .table {
@@ -69,8 +69,8 @@
 .table th {
   position: sticky;
   top: 0;
-  background: #131728;
-  color: #94a3b8;
+  background: var(--panel-2);
+  color: var(--text-2);
   font-weight: 600;
 }
 
@@ -83,13 +83,13 @@
 }
 
 .outQ2 td {
-  background: rgba(250, 204, 21, 0.07);
-  color: #cbd5e1;
+  background: color-mix(in srgb, var(--aviso) 7%, transparent);
+  color: var(--text-2);
 }
 
 .outQ1 td {
-  background: rgba(239, 68, 68, 0.09);
-  color: #94a3b8;
+  background: color-mix(in srgb, var(--accion) 9%, transparent);
+  color: var(--text-2);
 }
 
 /* [R49] Setup en parc fermé bajo la tabla. */
@@ -98,8 +98,8 @@
   margin-top: 12px;
   max-height: 46vh;
   overflow-y: auto;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--text) 12%, transparent);
+  border-radius: var(--radio-l);
 }
 
 .extraTitle {
@@ -113,9 +113,9 @@
   margin-top: 14px;
   padding: 9px 20px;
   border: 0;
-  border-radius: 10px;
-  background: #e10600;
-  color: #fff;
+  border-radius: var(--radio-l);
+  background: var(--accion);
+  color: var(--text);
   font: inherit;
   font-weight: 700;
   cursor: pointer;
@@ -123,11 +123,11 @@
 
 .continue:hover,
 .continue:focus-visible {
-  background: #ff1e17;
+  background: var(--accion);
 }
 
 .penalty {
-  color: #f87171;
+  color: var(--accion);
   font-weight: 600;
 }
 

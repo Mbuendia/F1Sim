@@ -10,7 +10,7 @@
   height: 100vh; height: 100dvh;
   position: relative;
   overflow: hidden;
-  background: #050405;
+  background: var(--bg);
   color: var(--text);
   font-family: var(--font-ui);
   user-select: none;
@@ -87,7 +87,7 @@
   transform-origin: var(--vp-x) var(--vp-y);
   translate: calc(var(--px) * 10px) calc(var(--py) * 5px);
   opacity: 0;
-  animation: cameraPush 16s ease-in-out infinite alternate, wheelSpin 0.14s steps(1, end) infinite;
+  animation: cameraPush 16s ease-in-out infinite alternate, wheelSpin var(--t-rapido) steps(1, end) infinite;
 }
 
 .wheel1 { animation-delay: 0s, -0.035s; }
@@ -120,7 +120,7 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: linear-gradient(90deg, rgba(5, 4, 5, 0.86) 0%, rgba(5, 4, 5, 0.62) 30%, rgba(5, 4, 5, 0) 55%);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--bg) 86%, transparent) 0%, color-mix(in srgb, var(--bg) 62%, transparent) 30%, color-mix(in srgb, var(--bg) 1%, transparent) 55%);
 }
 
 /* ── Marca ── */
@@ -136,14 +136,14 @@
 
 .logoMark {
   font-family: var(--font-marca);
-  font-size: 22px;
+  font-size: var(--letra-4);
   font-weight: 900;
   color: var(--accion);
 }
 
 .logoText {
   font-family: var(--font-marca);
-  font-size: 13px;
+  font-size: var(--letra-1);
   font-weight: 700;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -161,7 +161,7 @@
   display: flex;
   flex-direction: column;
   gap: 22px;
-  animation: brandReveal 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: brandReveal var(--t-pausado) cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 @keyframes brandReveal {
@@ -172,22 +172,22 @@
 .headline {
   margin: 0;
   font-family: var(--font-marca);
-  font-size: clamp(40px, 5.2vw, 84px);
+  font-size: var(--letra-8);
   font-weight: 900;
   line-height: 0.98;
   letter-spacing: -0.01em;
   text-transform: uppercase;
-  color: #ffffff;
-  text-shadow: 0 4px 24px rgba(0, 0, 0, 0.55);
+  color: var(--text);
+  text-shadow: 0 4px 24px color-mix(in srgb, var(--negro) 55%, transparent);
 }
 
 .subtitleText {
   margin: 0;
   max-width: 34ch;
-  font-size: clamp(17px, 1.5vw, 21px);
+  font-size: var(--letra-4);
   font-weight: 500;
   line-height: 1.4;
-  color: #e3e7ee;
+  color: var(--text);
 }
 
 .actionRow {
@@ -206,29 +206,29 @@
   border: none;
   border-radius: var(--radio-l);
   background: var(--accion);
-  color: #ffffff;
-  font-size: 20px;
+  color: var(--text);
+  font-size: var(--letra-4);
   font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 10px 28px rgba(225, 6, 0, 0.35);
-  transition: background 0.2s ease, transform 0.2s ease;
+  box-shadow: 0 10px 28px color-mix(in srgb, var(--accion) 35%, transparent);
+  transition: background var(--t-medio) ease, transform var(--t-medio) ease;
 }
 
 .enterButton:hover { background: var(--accion-hover); transform: translateY(-1px); }
-.enterButton:focus-visible { outline: 3px solid #ffffff; outline-offset: 3px; }
+.enterButton:focus-visible { outline: 3px solid var(--text); outline-offset: 3px; }
 
 .enterHint {
-  font-size: 15px;
-  color: #c4cad4;
+  font-size: var(--letra-2);
+  color: var(--text-2);
 }
 
 .key {
   padding: 2px 8px;
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  border-radius: 4px;
+  border: 1px solid color-mix(in srgb, var(--text) 35%, transparent);
+  border-radius: var(--radio-s);
   font-family: var(--font-ui);
-  font-size: 14px;
-  color: #ffffff;
+  font-size: var(--letra-1);
+  color: var(--text);
 }
 
 /* ── Tarjeta flotante ── */
@@ -242,12 +242,12 @@
   align-items: center;
   gap: 14px;
   padding: 14px 18px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 14px;
-  background: rgba(14, 12, 14, 0.62);
+  border: 1px solid color-mix(in srgb, var(--text) 14%, transparent);
+  border-radius: var(--radio-l);
+  background: color-mix(in srgb, var(--panel) 62%, transparent);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 12px 32px color-mix(in srgb, var(--negro) 40%, transparent);
 }
 
 .cardIcon {
@@ -258,21 +258,21 @@
   place-items: center;
   border-radius: 50%;
   background: var(--accion);
-  color: #ffffff;
+  color: var(--text);
 }
 
 .cardText {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  font-size: 14px;
+  font-size: var(--letra-1);
   line-height: 1.35;
-  color: #d5dbe4;
+  color: var(--text-2);
 }
 
 .cardText strong {
-  font-size: 15px;
-  color: #ffffff;
+  font-size: var(--letra-2);
+  color: var(--text);
 }
 
 .credit {
@@ -285,7 +285,7 @@
 }
 
 .landingTransitionOut {
-  animation: zoomThroughOut 0.45s cubic-bezier(0.8, 0, 0.2, 1) forwards;
+  animation: zoomThroughOut var(--t-lento) cubic-bezier(0.8, 0, 0.2, 1) forwards;
   pointer-events: none;
 }
 
@@ -297,15 +297,15 @@
 /* [UX1] Descarga antes de jugar: barra bajo el botón, que espera a que acabe. */
 .enterButton:disabled { opacity: 0.55; cursor: progress; }
 .loading { display: flex; flex-direction: column; gap: 8px; width: min(420px, 100%); margin-top: 18px; }
-.loadingBar { height: 6px; border-radius: 99px; background: rgba(255, 255, 255, 0.12); overflow: hidden; }
-.loadingBar span { display: block; height: 100%; background: var(--accion, #e10600); transition: width 300ms ease; }
-.loadingText { font-size: 15px; color: var(--text-2, #9aa4b2); }
+.loadingBar { height: 6px; border-radius: var(--radio-pill); background: color-mix(in srgb, var(--text) 12%, transparent); overflow: hidden; }
+.loadingBar span { display: block; height: 100%; background: var(--accion, var(--accion)); transition: width var(--t-medio) ease; }
+.loadingText { font-size: var(--letra-2); color: var(--text-2, var(--text-2)); }
 
 /* ── Móvil en vertical: encuadre propio; el texto arriba y el coche en la mitad de abajo. ── */
 @media (orientation: portrait) {
   .landingContainer { --vp-x: -11.6%; --vp-y: 63.3%; }
   .scene img { object-position: 50% 100%; }
-  .readingShade { background: linear-gradient(180deg, rgba(5, 4, 5, 0.85) 0%, rgba(5, 4, 5, 0.55) 34%, rgba(5, 4, 5, 0) 52%); }
+  .readingShade { background: linear-gradient(180deg, color-mix(in srgb, var(--bg) 85%, transparent) 0%, color-mix(in srgb, var(--bg) 55%, transparent) 34%, color-mix(in srgb, var(--bg) 1%, transparent) 52%); }
   .brandGroup {
     top: clamp(72px, 12vh, 120px);
     transform: none;
@@ -313,7 +313,7 @@
     max-width: none;
     gap: 16px;
   }
-  .headline { font-size: clamp(34px, 10vw, 54px); }
+  .headline { font-size: var(--letra-7); }
   .heroCard { right: 20px; max-width: none; bottom: 46px; padding: 12px 14px; }
   .credit { left: 20px; right: 20px; bottom: 6px; max-width: none; }
   .enterHint { display: none; }

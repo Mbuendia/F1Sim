@@ -17,16 +17,16 @@
   padding: 8px 12px;
   border-radius: var(--radio-m);
   border: 1px solid var(--line-strong);
-  background: rgba(23, 29, 38, 0.94);
+  background: color-mix(in srgb, var(--panel-2) 94%, transparent);
   color: var(--text);
-  font-size: 15px;
+  font-size: var(--letra-2);
   line-height: 1.3;
-  animation: noticeIn 0.25s ease-out both;
+  animation: noticeIn var(--t-medio) ease-out both;
 }
 
 .tag {
   flex-shrink: 0;
-  font-size: 13px;
+  font-size: var(--letra-1);
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -37,19 +37,19 @@
 }
 
 .info .tag { color: var(--text-2); }
-.ok { border-color: #1f5c3a; }
-.ok .tag { color: #7be3a2; }
-.warning { border-color: #6b5710; background: rgba(42, 34, 6, 0.94); }
-.warning .tag { color: #ffe070; }
-.danger { border-color: #7f1d1d; background: rgba(60, 12, 12, 0.94); }
-.danger .tag { color: #fca5a5; }
+.ok { border-color: var(--positivo); }
+.ok .tag { color: var(--positivo); }
+.warning { border-color: var(--aviso); background: color-mix(in srgb, var(--aviso) 94%, transparent); }
+.warning .tag { color: var(--aviso); }
+.danger { border-color: var(--accion-oscuro); background: color-mix(in srgb, var(--accion-oscuro) 94%, transparent); }
+.danger .tag { color: var(--negativo); }
 
 /* Móvil: los avisos van bajo la brújula y a la izquierda de las herramientas de cámara; con el aviso de vuelta de
    formación a la vista, debajo de él. */
 @media (max-width: 767px) {
   .zone { top: 52px; left: 8px; right: 60px; width: auto; }
   [data-formation] .zone { top: 96px; }
-  .notice { padding: 6px 10px; font-size: 14px; }
+  .notice { padding: 6px 10px; font-size: var(--letra-1); }
 }
 
 @keyframes noticeIn {

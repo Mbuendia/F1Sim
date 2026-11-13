@@ -5,15 +5,11 @@
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23e10600'><path d='M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5'/></svg>" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>F-Uno Sim - Gran Premio de España (Barcelona)</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <!-- [PF8, LCP] Las fuentes no bloquean el primer pintado: se pide su CSS aparte y se aplica al llegar (display=swap). -->
-    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" onload="this.onload=null;this.rel='stylesheet'">
-    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@500;600;700&family=Inter:wght@300;400;500;600;700&display=swap"></noscript>
+    <!-- [VS1] Las tipografías las sirve el propio juego (public/fonts, declaradas en src/index.css con font-display: swap): no bloquean el primer pintado ni piden nada a Google. -->
     <script id="project-task-index" type="application/json">
 {
   "source": "DASHBOARD.md",
-  "sha256": "d4c440639759921a7d52427336022e6571b77da5ca40ca29adf6f0ba54a92409",
+  "sha256": "84ffcbd5f55e1238c098caefafe8ae0342f3196c2106d26ffee87172fd8c0705",
   "activeSprint": "11",
   "currentTask": "VS1",
   "nextTask": "VS2",
@@ -111,7 +107,7 @@
     {
       "name": "Sprint 10.5",
       "scope": "Circuitos fieles al real: referencias geográficas de cada circuito, trazado y pit lane fieles, kit de piezas sacado del modelo de Montreal, Mónaco con túnel y edificios, Shanghái y Yas Marina con sus edificios emblemáticos, el resto de circuitos y la revisión del usuario (CR1-CR7)",
-      "status": "✅ COMPLETADO — CR1 a CR12 dadas por válidas por el usuario (CR10 y CR12, el 13/11/2026); CR1 a CR9 en main con el PR #39; CR7, CR10, CR11 y CR12 sin commit todavía"
+      "status": "✅ COMPLETADO — CR1 a CR12 dadas por válidas por el usuario (CR10 y CR12, el 13/11/2026); en main con los PR #39 y #40 (13/11/2026)"
     },
     {
       "name": "Sprint 11",
@@ -1388,7 +1384,7 @@
     {
       "id": "VS1",
       "title": "Sistema visual y menús rediseñados",
-      "status": "pending"
+      "status": "in_progress"
     },
     {
       "id": "VS2",

@@ -12,44 +12,44 @@
   gap: 5px;
   padding: 3px 8px;
   border: 1px solid transparent;
-  border-radius: 5px;
-  font-size: 14px;
+  border-radius: var(--radio-m);
+  font-size: var(--letra-1);
   font-weight: 900;
   text-transform: uppercase;
 }
 
 .abierto {
-  background: rgba(34, 197, 94, 0.25);
-  border-color: #22c55e;
-  color: #22c55e;
+  background: color-mix(in srgb, var(--positivo) 25%, transparent);
+  border-color: var(--positivo);
+  color: var(--positivo);
 }
 
 .permiso {
-  background: rgba(56, 189, 248, 0.18);
-  border-color: #38bdf8;
-  color: #7dd3fc;
+  background: color-mix(in srgb, var(--info) 18%, transparent);
+  border-color: var(--info);
+  color: var(--info);
 }
 
 .sin-permiso {
-  background: rgba(255, 255, 255, 0.08);
+  background: color-mix(in srgb, var(--text) 8%, transparent);
   color: var(--text-2);
 }
 
 .bloqueado {
-  background: rgba(245, 158, 11, 0.16);
-  border-color: #f59e0b;
-  color: #fbbf24;
+  background: color-mix(in srgb, var(--aviso) 16%, transparent);
+  border-color: var(--aviso);
+  color: var(--aviso);
 }
 
 .uses {
-  font-size: 13px;
+  font-size: var(--letra-1);
   font-weight: 700;
   color: var(--text-2);
 }
 
 .reason {
   flex-basis: 100%;
-  font-size: 13px;
+  font-size: var(--letra-1);
   font-weight: 500;
   color: var(--text-2);
 }

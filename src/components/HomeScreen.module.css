@@ -2,9 +2,9 @@
   width: 100vw;
   height: 100vh; height: 100dvh;
   overflow: hidden;
-  background: radial-gradient(circle at 50% 10%, #111728 0%, #060912 100%);
+  background: radial-gradient(circle at 50% 10%, var(--panel-2) 0%, var(--panel) 100%);
   color: var(--text);
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--font-ui);
   padding: 12px 20px 14px;
   display: flex;
   flex-direction: column;
@@ -17,7 +17,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1.5px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1.5px solid color-mix(in srgb, var(--text) 10%, transparent);
   padding-bottom: 8px;
   flex-shrink: 0;
 }
@@ -29,25 +29,25 @@
 }
 
 .f1Logo {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 22px;
+  font-family: var(--font-marca);
+  font-size: var(--letra-4);
   font-weight: 900;
-  color: #e10600;
+  color: var(--accion);
   letter-spacing: 4px;
 }
 
 .headerTitles h1 {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 14px;
+  font-family: var(--font-marca);
+  font-size: var(--letra-1);
   font-weight: 900;
-  color: #ffffff;
+  color: var(--text);
   margin: 0;
   letter-spacing: 1px;
 }
 
 .headerTitles p {
-  font-family: 'Rajdhani', sans-serif;
-  font-size: 14px;
+  font-family: var(--font-ui);
+  font-size: var(--letra-1);
   font-weight: 700;
   color: var(--text-2);
   margin: 1px 0 0;
@@ -55,9 +55,9 @@
 
 /* Historial Superior */
 .historySection {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 8px;
+  background: color-mix(in srgb, var(--text) 3%, transparent);
+  border: 1px solid color-mix(in srgb, var(--text) 8%, transparent);
+  border-radius: var(--radio-m);
   padding: 5px 10px;
   display: flex;
   flex-direction: column;
@@ -67,9 +67,9 @@
 
 .historyTitle {
   font-family: var(--font-ui);
-  font-size: 14px;
+  font-size: var(--letra-1);
   font-weight: 900;
-  color: #ffd700;
+  color: var(--aviso);
   letter-spacing: 1px;
   display: flex;
   align-items: center;
@@ -87,15 +87,15 @@
   height: 3px;
 }
 .historyCardsList::-webkit-scrollbar-thumb {
-  background: #334155;
-  border-radius: 2px;
+  background: var(--line-strong);
+  border-radius: var(--radio-s);
 }
 
 .historyCard {
-  background: rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-left: 3px solid #ffd700;
-  border-radius: 5px;
+  background: color-mix(in srgb, var(--negro) 50%, transparent);
+  border: 1px solid color-mix(in srgb, var(--text) 8%, transparent);
+  border-left: 3px solid var(--aviso);
+  border-radius: var(--radio-m);
   padding: 4px 8px;
   min-width: 210px;
   display: flex;
@@ -106,24 +106,24 @@
 .historyHeaderRow {
   display: flex;
   justify-content: space-between;
-  font-size: 8.5px;
-  font-family: 'Rajdhani', sans-serif;
+  font-size: var(--letra-1);
+  font-family: var(--font-ui);
   font-weight: 700;
   color: var(--text-2);
 }
 
 .historyWinner {
   font-family: var(--font-ui);
-  font-size: 14px;
+  font-size: var(--letra-1);
   font-weight: 900;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .historyPodiumSub {
-  font-size: 14px;
-  font-family: 'Rajdhani', sans-serif;
+  font-size: var(--letra-1);
+  font-family: var(--font-ui);
   font-weight: 700;
-  color: #cbd5e1;
+  color: var(--text-2);
 }
 
 /* ════ LAYOUT 3 COLUMNAS ════ */
@@ -146,10 +146,10 @@
 .tabButtonsRow {
   display: flex;
   gap: 6px;
-  background: rgba(0, 0, 0, 0.4);
+  background: color-mix(in srgb, var(--negro) 40%, transparent);
   padding: 3px;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radio-m);
+  border: 1px solid color-mix(in srgb, var(--text) 8%, transparent);
   flex-shrink: 0;
 }
 
@@ -159,9 +159,9 @@
   border: none;
   color: var(--text-2);
   padding: 6px 8px;
-  border-radius: 6px;
+  border-radius: var(--radio-m);
   font-family: var(--font-ui);
-  font-size: 14px;
+  font-size: var(--letra-1);
   font-weight: 800;
   letter-spacing: 1px;
   cursor: pointer;
@@ -169,13 +169,13 @@
   align-items: center;
   justify-content: center;
   gap: 5px;
-  transition: all 0.2s;
+  transition: all var(--t-medio);
 }
 
 .tabBtnActive {
-  background: #e10600;
-  color: #ffffff;
-  box-shadow: 0 2px 10px rgba(225, 6, 0, 0.4);
+  background: var(--accion);
+  color: var(--text);
+  box-shadow: 0 2px 10px color-mix(in srgb, var(--accion) 40%, transparent);
 }
 
 .scrollableListWrapper {
@@ -191,32 +191,32 @@
   width: 4px;
 }
 .scrollableListWrapper::-webkit-scrollbar-thumb {
-  background: #27354f;
-  border-radius: 2px;
+  background: var(--line-strong);
+  border-radius: var(--radio-s);
 }
 
 .driverListItem {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1.5px solid rgba(255, 255, 255, 0.08);
-  border-left: 4px solid #64748b;
-  border-radius: 6px;
+  background: color-mix(in srgb, var(--text) 4%, transparent);
+  border: 1.5px solid color-mix(in srgb, var(--text) 8%, transparent);
+  border-left: 4px solid var(--text-3);
+  border-radius: var(--radio-m);
   padding: 6px 8px;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all var(--t-rapido) ease;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
 .driverListItem:hover {
-  background: rgba(255, 255, 255, 0.10);
+  background: color-mix(in srgb, var(--text) 10%, transparent);
   transform: translateX(3px);
 }
 
 .driverListItemSelected {
-  background: rgba(225, 6, 0, 0.22) !important;
-  border-color: #e10600 !important;
-  box-shadow: 0 0 10px rgba(225, 6, 0, 0.35);
+  background: color-mix(in srgb, var(--accion) 22%, transparent) !important;
+  border-color: var(--accion) !important;
+  box-shadow: 0 0 10px color-mix(in srgb, var(--accion) 35%, transparent);
 }
 
 .driverListLeft {
@@ -226,107 +226,107 @@
 }
 
 .driverListName {
-  font-family: 'Rajdhani', sans-serif;
-  font-size: 14px;
+  font-family: var(--font-ui);
+  font-size: var(--letra-1);
   font-weight: 800;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .driverListTeam {
-  font-size: 14px;
-  font-family: 'Rajdhani', sans-serif;
+  font-size: var(--letra-1);
+  font-family: var(--font-ui);
   font-weight: 600;
   color: var(--text-2);
 }
 
 .driverListNum {
   font-family: var(--font-ui);
-  font-size: 16px;
+  font-size: var(--letra-2);
   font-weight: 900;
 }
 
 .circuitListItem {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1.5px solid rgba(255, 255, 255, 0.08);
-  border-left: 4px solid #e10600;
-  border-radius: 6px;
+  background: color-mix(in srgb, var(--text) 4%, transparent);
+  border: 1.5px solid color-mix(in srgb, var(--text) 8%, transparent);
+  border-left: 4px solid var(--accion);
+  border-radius: var(--radio-m);
   padding: 7px 9px;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all var(--t-rapido) ease;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
 .circuitListItem:hover {
-  background: rgba(255, 255, 255, 0.10);
+  background: color-mix(in srgb, var(--text) 10%, transparent);
   transform: translateX(3px);
 }
 
 .circuitListItemSelected {
-  background: rgba(56, 189, 248, 0.20) !important;
-  border-color: #38bdf8 !important;
-  box-shadow: 0 0 10px rgba(56, 189, 248, 0.35);
+  background: color-mix(in srgb, var(--info) 20%, transparent) !important;
+  border-color: var(--info) !important;
+  box-shadow: 0 0 10px color-mix(in srgb, var(--info) 35%, transparent);
 }
 
 .circuitListName {
-  font-family: 'Rajdhani', sans-serif;
-  font-size: 14px;
+  font-family: var(--font-ui);
+  font-size: var(--letra-1);
   font-weight: 800;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .circuitListSub {
-  font-size: 14px;
-  font-family: 'Rajdhani', sans-serif;
+  font-size: var(--letra-1);
+  font-family: var(--font-ui);
   font-weight: 600;
   color: var(--text-2);
 }
 
 /* ── 2. COLUMNA CENTRAL (FICHA TÉCNICA Y PALMARÉS GRANDE) ── */
 .centerColumn {
-  background: linear-gradient(145deg, #111827 0%, #090e1a 100%);
-  border: 1.5px solid rgba(255, 255, 255, 0.12);
-  border-radius: 12px;
+  background: linear-gradient(145deg, var(--panel-2) 0%, var(--panel) 100%);
+  border: 1.5px solid color-mix(in srgb, var(--text) 12%, transparent);
+  border-radius: var(--radio-l);
   padding: 16px 20px;
   display: flex;
   flex-direction: column;
   gap: 12px;
   min-height: 0;
   overflow-y: auto;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 10px 30px color-mix(in srgb, var(--negro) 60%, transparent);
 }
 
 .centerColumn::-webkit-scrollbar {
   width: 5px;
 }
 .centerColumn::-webkit-scrollbar-thumb {
-  background: #27354f;
-  border-radius: 3px;
+  background: var(--line-strong);
+  border-radius: var(--radio-s);
 }
 
 .detailHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1.5px solid rgba(255, 255, 255, 0.12);
+  border-bottom: 1.5px solid color-mix(in srgb, var(--text) 12%, transparent);
   padding-bottom: 10px;
   flex-shrink: 0;
 }
 
 .detailTitleBig {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 19px;
+  font-family: var(--font-marca);
+  font-size: var(--letra-3);
   font-weight: 900;
-  color: #ffffff;
+  color: var(--text);
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
 .detailSubtitle {
-  font-family: 'Rajdhani', sans-serif;
-  font-size: 14px;
+  font-family: var(--font-ui);
+  font-size: var(--letra-1);
   font-weight: 700;
   color: var(--text-2);
 }
@@ -338,9 +338,9 @@
 }
 
 .detailCardBox {
-  background: rgba(0, 0, 0, 0.45);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 10px;
+  background: color-mix(in srgb, var(--negro) 45%, transparent);
+  border: 1px solid color-mix(in srgb, var(--text) 8%, transparent);
+  border-radius: var(--radio-l);
   padding: 12px 14px;
   display: flex;
   flex-direction: column;
@@ -349,14 +349,14 @@
 
 .detailCardTitle {
   font-family: var(--font-ui);
-  font-size: 14px;
+  font-size: var(--letra-1);
   font-weight: 900;
-  color: #38bdf8;
+  color: var(--info);
   letter-spacing: 1px;
   display: flex;
   align-items: center;
   gap: 6px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid color-mix(in srgb, var(--text) 8%, transparent);
   padding-bottom: 6px;
 }
 
@@ -367,9 +367,9 @@
 }
 
 .specItem {
-  background: rgba(255, 255, 255, 0.035);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  border-radius: 6px;
+  background: color-mix(in srgb, var(--text) 4%, transparent);
+  border: 1px solid color-mix(in srgb, var(--text) 7%, transparent);
+  border-radius: var(--radio-m);
   padding: 6px 8px;
   display: flex;
   flex-direction: column;
@@ -377,17 +377,17 @@
 }
 
 .specItemLabel {
-  font-size: 14px;
-  font-family: 'Rajdhani', sans-serif;
+  font-size: var(--letra-1);
+  font-family: var(--font-ui);
   font-weight: 700;
   color: var(--text-2);
 }
 
 .specItemVal {
   font-family: var(--font-ui);
-  font-size: 15px;
+  font-size: var(--letra-2);
   font-weight: 800;
-  color: #ffffff;
+  color: var(--text);
 }
 
 /* Radar & Atributos simétricos de barra ancha */
@@ -409,33 +409,33 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 14px;
-  font-family: 'Rajdhani', sans-serif;
+  font-size: var(--letra-1);
+  font-family: var(--font-ui);
   font-weight: 700;
-  color: #e2e8f0;
+  color: var(--text);
   min-width: 140px;
 }
 
 .radarBarWrapper {
   flex: 1;
   height: 8px;
-  background: rgba(255, 255, 255, 0.12);
-  border-radius: 4px;
+  background: color-mix(in srgb, var(--text) 12%, transparent);
+  border-radius: var(--radio-s);
   overflow: hidden;
   position: relative;
 }
 
 .radarBarFill {
   height: 100%;
-  border-radius: 4px;
-  transition: width 0.4s ease;
+  border-radius: var(--radio-s);
+  transition: width var(--t-lento) ease;
 }
 
 .radarValueBadge {
   font-family: var(--font-ui);
-  font-size: 14px;
+  font-size: var(--letra-1);
   font-weight: 900;
-  color: #ffffff;
+  color: var(--text);
   min-width: 38px;
   text-align: right;
 }
@@ -445,16 +445,16 @@
   position: relative;
   width: 100%;
   height: 205px;
-  background-color: #0c1622;
-  background-image: radial-gradient(rgba(34, 211, 238, 0.14) 1.5px, transparent 1.5px);
+  background-color: var(--panel-2);
+  background-image: radial-gradient(color-mix(in srgb, var(--info) 14%, transparent) 1.5px, transparent 1.5px);
   background-size: 16px 16px;
-  border-radius: 10px;
-  border: 1.5px solid rgba(34, 211, 238, 0.35);
+  border-radius: var(--radio-l);
+  border: 1.5px solid color-mix(in srgb, var(--info) 35%, transparent);
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.9), 0 0 15px rgba(34, 211, 238, 0.15);
+  box-shadow: inset 0 0 30px color-mix(in srgb, var(--negro) 90%, transparent), 0 0 15px color-mix(in srgb, var(--info) 15%, transparent);
 }
 
 .svgMotionCanvas {
@@ -464,71 +464,71 @@
 }
 
 .mapsLinkBtn {
-  background: rgba(56, 189, 248, 0.15);
-  border: 1px solid rgba(56, 189, 248, 0.4);
-  color: #38bdf8;
+  background: color-mix(in srgb, var(--info) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--info) 40%, transparent);
+  color: var(--info);
   padding: 4px 8px;
-  border-radius: 5px;
-  font-family: 'Rajdhani', sans-serif;
-  font-size: 14px;
+  border-radius: var(--radio-m);
+  font-family: var(--font-ui);
+  font-size: var(--letra-1);
   font-weight: 700;
   text-decoration: none;
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  transition: all 0.2s;
+  transition: all var(--t-medio);
 }
 
 .mapsLinkBtn:hover {
-  background: rgba(56, 189, 248, 0.3);
-  border-color: #38bdf8;
-  color: #ffffff;
+  background: color-mix(in srgb, var(--info) 30%, transparent);
+  border-color: var(--info);
+  color: var(--text);
 }
 
 .selectItemConfirmBtn {
-  background: linear-gradient(135deg, #e10600 0%, #a80400 100%);
-  color: #ffffff;
+  background: linear-gradient(135deg, var(--accion) 0%, var(--accion-oscuro) 100%);
+  color: var(--text);
   border: none;
   padding: 7px 16px;
-  border-radius: 6px;
+  border-radius: var(--radio-m);
   font-family: var(--font-ui);
-  font-size: 14px;
+  font-size: var(--letra-1);
   font-weight: 800;
   letter-spacing: 1px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  transition: all 0.2s;
+  transition: all var(--t-medio);
 }
 
 .selectItemConfirmBtn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 18px rgba(225, 6, 0, 0.5);
+  box-shadow: 0 4px 18px color-mix(in srgb, var(--accion) 50%, transparent);
 }
 
 /* ── 3. COLUMNA DERECHA ── */
 .rightSidePanel {
-  background: linear-gradient(180deg, #131c31 0%, #0a0f1d 100%);
-  border: 2px solid rgba(225, 6, 0, 0.4);
-  border-radius: 12px;
+  background: linear-gradient(180deg, var(--line) 0%, var(--panel) 100%);
+  border: 2px solid color-mix(in srgb, var(--accion) 40%, transparent);
+  border-radius: var(--radio-l);
   padding: 14px 16px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), 0 0 20px rgba(225, 6, 0, 0.15);
+  box-shadow: 0 10px 30px color-mix(in srgb, var(--negro) 80%, transparent), 0 0 20px color-mix(in srgb, var(--accion) 15%, transparent);
 }
 
 .sidePanelTitle {
   font-family: var(--font-ui);
-  font-size: 14px;
+  font-size: var(--letra-1);
   font-weight: 900;
-  color: #ffd700;
+  color: var(--aviso);
   letter-spacing: 1.5px;
   display: flex;
   align-items: center;
   gap: 6px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
   padding-bottom: 6px;
 }
 
@@ -540,9 +540,9 @@
 }
 
 .selectedSummaryCard {
-  background: rgba(0, 0, 0, 0.45);
-  border: 1.5px solid rgba(255, 255, 255, 0.12);
-  border-radius: 8px;
+  background: color-mix(in srgb, var(--negro) 45%, transparent);
+  border: 1.5px solid color-mix(in srgb, var(--text) 12%, transparent);
+  border-radius: var(--radio-m);
   padding: 9px;
   display: flex;
   flex-direction: column;
@@ -551,48 +551,48 @@
 
 .summaryCardBadge {
   font-family: var(--font-ui);
-  font-size: 14px;
+  font-size: var(--letra-1);
   font-weight: 900;
   letter-spacing: 1px;
 }
 
 .summaryCardMain {
-  font-family: 'Rajdhani', sans-serif;
-  font-size: 14px;
+  font-family: var(--font-ui);
+  font-size: var(--letra-1);
   font-weight: 800;
-  color: #ffffff;
+  color: var(--text);
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
 .summaryCardSub {
-  font-size: 14px;
-  font-family: 'Rajdhani', sans-serif;
+  font-size: var(--letra-1);
+  font-family: var(--font-ui);
   font-weight: 600;
   color: var(--text-2);
 }
 
 .summaryCardExtra {
-  font-size: 14px;
-  font-family: 'Rajdhani', sans-serif;
+  font-size: var(--letra-1);
+  font-family: var(--font-ui);
   font-weight: 700;
-  color: #38bdf8;
-  background: rgba(56, 189, 248, 0.1);
+  color: var(--info);
+  background: color-mix(in srgb, var(--info) 10%, transparent);
   padding: 2px 5px;
-  border-radius: 4px;
+  border-radius: var(--radio-s);
   align-self: flex-start;
   margin-top: 1px;
 }
 
 .launchBigButton {
-  background: linear-gradient(135deg, #e10600 0%, #9e0400 100%);
-  color: #ffffff;
+  background: linear-gradient(135deg, var(--accion) 0%, var(--accion-oscuro) 100%);
+  color: var(--text);
   border: none;
   padding: 12px 14px;
-  border-radius: 8px;
+  border-radius: var(--radio-m);
   font-family: var(--font-ui);
-  font-size: 15px;
+  font-size: var(--letra-2);
   font-weight: 900;
   letter-spacing: 1.5px;
   cursor: pointer;
@@ -601,25 +601,25 @@
   align-items: center;
   justify-content: center;
   gap: 3px;
-  box-shadow: 0 8px 30px rgba(225, 6, 0, 0.6);
-  transition: all 0.2s ease;
+  box-shadow: 0 8px 30px color-mix(in srgb, var(--accion) 60%, transparent);
+  transition: all var(--t-medio) ease;
   text-align: center;
 }
 
 .launchBigButton:hover {
   transform: translateY(-2px);
-  box-shadow: 0 12px 38px rgba(225, 6, 0, 0.8);
-  background: linear-gradient(135deg, #ff1a14 0%, #b80500 100%);
+  box-shadow: 0 12px 38px color-mix(in srgb, var(--accion) 80%, transparent);
+  background: linear-gradient(135deg, var(--accion) 0%, var(--accion) 100%);
 }
 
 /* ── 4. SUB-TABS Y TOGGLES INFORMATIVOS EN EL PANEL CENTRAL ── */
 .subTabBar {
   display: flex;
   gap: 8px;
-  background: rgba(0, 0, 0, 0.35);
+  background: color-mix(in srgb, var(--negro) 35%, transparent);
   padding: 4px;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radio-m);
+  border: 1px solid color-mix(in srgb, var(--text) 8%, transparent);
   margin-bottom: 6px;
 }
 
@@ -629,9 +629,9 @@
   border: none;
   color: var(--text-2);
   padding: 6px 10px;
-  border-radius: 6px;
+  border-radius: var(--radio-m);
   font-family: var(--font-ui);
-  font-size: 14px;
+  font-size: var(--letra-1);
   font-weight: 800;
   letter-spacing: 0.8px;
   cursor: pointer;
@@ -639,19 +639,19 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  transition: all 0.2s ease;
+  transition: all var(--t-medio) ease;
 }
 
 .subTabBtn:hover {
   color: var(--text);
-  background: rgba(255, 255, 255, 0.05);
+  background: color-mix(in srgb, var(--text) 5%, transparent);
 }
 
 .subTabBtnActive {
-  background: rgba(56, 189, 248, 0.2) !important;
-  color: #38bdf8 !important;
-  border: 1px solid rgba(56, 189, 248, 0.4);
-  box-shadow: 0 0 12px rgba(56, 189, 248, 0.25);
+  background: color-mix(in srgb, var(--info) 20%, transparent) !important;
+  color: var(--info) !important;
+  border: 1px solid color-mix(in srgb, var(--info) 40%, transparent);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--info) 25%, transparent);
 }
 
 .drsListGrid {
@@ -661,10 +661,10 @@
 }
 
 .drsCardItem {
-  background: rgba(0, 255, 102, 0.05);
-  border: 1px solid rgba(0, 255, 102, 0.2);
-  border-left: 4px solid #00ff66;
-  border-radius: 6px;
+  background: color-mix(in srgb, var(--positivo) 5%, transparent);
+  border: 1px solid color-mix(in srgb, var(--positivo) 20%, transparent);
+  border-left: 4px solid var(--positivo);
+  border-radius: var(--radio-m);
   padding: 8px 12px;
   display: flex;
   justify-content: space-between;
@@ -672,23 +672,23 @@
 }
 
 .drsZoneName {
-  font-family: 'Rajdhani', sans-serif;
-  font-size: 14px;
+  font-family: var(--font-ui);
+  font-size: var(--letra-1);
   font-weight: 800;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .drsZoneRange {
   font-family: var(--font-ui);
-  font-size: 14px;
-  color: #00ff66;
+  font-size: var(--letra-1);
+  color: var(--positivo);
   font-weight: 700;
 }
 
 .strategyHighlightBox {
-  background: rgba(255, 215, 0, 0.08);
-  border: 1px solid rgba(255, 215, 0, 0.3);
-  border-radius: 8px;
+  background: color-mix(in srgb, var(--aviso) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--aviso) 30%, transparent);
+  border-radius: var(--radio-m);
   padding: 10px 14px;
   display: flex;
   flex-direction: column;
@@ -697,45 +697,45 @@
 
 .strategyHighlightTitle {
   font-family: var(--font-ui);
-  font-size: 14px;
+  font-size: var(--letra-1);
   font-weight: 800;
-  color: #ffd700;
+  color: var(--aviso);
   letter-spacing: 0.5px;
 }
 
 .strategyHighlightVal {
-  font-family: 'Rajdhani', sans-serif;
-  font-size: 14px;
+  font-family: var(--font-ui);
+  font-size: var(--letra-1);
   font-weight: 800;
-  color: #ffffff;
+  color: var(--text);
 }
 /* R30/R33: paddock con la paleta y la tipografía del rediseño. Texto operativo ≥ 14 px, Orbitron solo en la marca. */
 .homeContainer { background: var(--bg); color: var(--text); font-family: var(--font-ui); }
 .header { background: var(--panel); border-bottom: 1px solid var(--line); }
-.headerTitles h1 { font-family: var(--font-marca); font-size: 18px; letter-spacing: 0.04em; }
-.headerTitles p { font-family: var(--font-ui); font-size: 15px; letter-spacing: 0; text-transform: none; color: var(--text-2); }
+.headerTitles h1 { font-family: var(--font-marca); font-size: var(--letra-3); letter-spacing: 0.04em; }
+.headerTitles p { font-family: var(--font-ui); font-size: var(--letra-2); letter-spacing: 0; text-transform: none; color: var(--text-2); }
 .historySection { cursor: default; }
-.historyTitle { cursor: pointer; font-family: var(--font-ui); font-size: 15px; font-weight: 700; letter-spacing: 0; text-transform: none; color: var(--text-2); list-style: revert; }
+.historyTitle { cursor: pointer; font-family: var(--font-ui); font-size: var(--letra-2); font-weight: 700; letter-spacing: 0; text-transform: none; color: var(--text-2); list-style: revert; }
 .mainLayout3Col { grid-template-columns: 320px minmax(0, 1fr) 320px; }
-.tabBtn { font-family: var(--font-ui); font-size: 16px; font-weight: 700; letter-spacing: 0; }
-.driverListName, .circuitListName { font-size: 17px; }
-.driverListTeam, .circuitListSub { font-size: 14px; color: var(--text-2); }
-.driverListNum { font-family: var(--font-ui); font-size: 16px; font-weight: 700; }
+.tabBtn { font-family: var(--font-ui); font-size: var(--letra-2); font-weight: 700; letter-spacing: 0; }
+.driverListName, .circuitListName { font-size: var(--letra-3); }
+.driverListTeam, .circuitListSub { font-size: var(--letra-1); color: var(--text-2); }
+.driverListNum { font-family: var(--font-ui); font-size: var(--letra-2); font-weight: 700; }
 .driverListItem:focus-visible, .circuitListItem:focus-visible { outline: 3px solid var(--foco); outline-offset: 2px; }
-.activeMark { font-size: 14px; font-weight: 700; color: var(--text); }
-.circuitLaps { font-size: 15px; font-weight: 700; color: var(--text-2); }
-.sidePanelTitle { font-family: var(--font-ui); font-size: 15px; font-weight: 700; letter-spacing: 0.06em; }
-.summaryCardBadge { font-family: var(--font-ui); font-size: 14px; font-weight: 700; letter-spacing: 0.06em; }
-.summaryCardMain { font-size: 18px; font-weight: 700; }
-.summaryCardSub { font-size: 15px; color: var(--text-2); }
-.summaryCardExtra { font-size: 14px; }
+.activeMark { font-size: var(--letra-1); font-weight: 700; color: var(--text); }
+.circuitLaps { font-size: var(--letra-2); font-weight: 700; color: var(--text-2); }
+.sidePanelTitle { font-family: var(--font-ui); font-size: var(--letra-2); font-weight: 700; letter-spacing: 0.06em; }
+.summaryCardBadge { font-family: var(--font-ui); font-size: var(--letra-1); font-weight: 700; letter-spacing: 0.06em; }
+.summaryCardMain { font-size: var(--letra-3); font-weight: 700; }
+.summaryCardSub { font-size: var(--letra-2); color: var(--text-2); }
+.summaryCardExtra { font-size: var(--letra-1); }
 .summaryTrack { margin-top: 8px; height: 140px; display: flex; align-items: center; justify-content: center; }
-.launchBigButton { font-family: var(--font-ui); font-size: 20px; font-weight: 700; letter-spacing: 0.02em; min-height: 64px; background: var(--accion); box-shadow: none; }
+.launchBigButton { font-family: var(--font-ui); font-size: var(--letra-4); font-weight: 700; letter-spacing: 0.02em; min-height: 64px; background: var(--accion); box-shadow: none; }
 .launchBigButton:hover { background: var(--accion-hover); }
-.launchSub { font-size: 14px; font-weight: 600; opacity: 0.9; letter-spacing: 0; }
+.launchSub { font-size: var(--letra-1); font-weight: 600; opacity: 0.9; letter-spacing: 0; }
 
 /* R01: perfil de reglas activo */
-.rulesProfile { margin-top: auto; margin-bottom: 12px; padding: 10px 12px; border-radius: var(--radio-m); background: var(--panel-2); font-size: 15px; color: var(--text-2); }
+.rulesProfile { margin-top: auto; margin-bottom: 12px; padding: 10px 12px; border-radius: var(--radio-m); background: var(--panel-2); font-size: var(--letra-2); color: var(--text-2); }
 .rulesProfile strong { color: var(--text); font-weight: 700; }
 
 /* Sprint 4: menú del paddock. Una pestaña por sección y «Correr» la última; la sección elegida ocupa la página, que
@@ -745,14 +745,14 @@
 .header { flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
 .sectionNav { display: flex; gap: 4px; flex-wrap: wrap; }
 .sectionNav button { min-height: 38px; padding: 6px 16px; background: transparent; border: 1px solid transparent; border-bottom: 3px solid transparent; border-radius: var(--radio-s);
-  color: var(--text-2); font-family: var(--font-ui); font-size: 16px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; cursor: pointer; }
+  color: var(--text-2); font-family: var(--font-ui); font-size: var(--letra-2); font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; cursor: pointer; }
 .sectionNav button:hover { color: var(--text); background: var(--panel-2); }
-.sectionNav button[aria-pressed="true"] { color: #fff; border-bottom-color: var(--equipo); background: var(--panel-2); }
-.sectionNav .sectionNavRace { background: var(--accion); border-color: var(--accion); color: #fff; margin-left: 8px; }
+.sectionNav button[aria-pressed="true"] { color: var(--text); border-bottom-color: var(--equipo); background: var(--panel-2); }
+.sectionNav .sectionNavRace { background: var(--accion); border-color: var(--accion); color: var(--text); margin-left: 8px; }
 .sectionNav .sectionNavRace:hover { background: var(--accion-hover); }
-.sectionNav .sectionNavRace[aria-pressed="true"] { background: var(--accion); border-bottom-color: #fff; }
+.sectionNav .sectionNavRace[aria-pressed="true"] { background: var(--accion); border-bottom-color: var(--text); }
 .sectionBlock { flex-shrink: 0; display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radio-l); }
-.sectionHeading { display: flex; align-items: center; gap: 8px; font-family: var(--font-ui); font-size: 17px; font-weight: 700; color: var(--text); }
+.sectionHeading { display: flex; align-items: center; gap: 8px; font-family: var(--font-ui); font-size: var(--letra-3); font-weight: 700; color: var(--text); }
 /* En «Correr» el botón de entrar a pista queda siempre a la vista: el panel derecho se desplaza por dentro y el botón se
    queda fijo al pie. */
 .mainLayout3Col { overflow: hidden; }
@@ -778,7 +778,7 @@
   .leftColumn { max-height: 300px; }
   .centerColumn { padding: 12px; }
   .detailContentGrid { grid-template-columns: minmax(0, 1fr); }
-  .detailTitleBig { font-size: 22px; }
+  .detailTitleBig { font-size: var(--letra-4); }
   .subTabBar { overflow-x: auto; scrollbar-width: none; }
   .subTabBtn { flex-shrink: 0; }
   .specItem { flex-wrap: wrap; }

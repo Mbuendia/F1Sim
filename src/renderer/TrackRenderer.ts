@@ -389,7 +389,7 @@ export class TrackRenderer {
         ctx.translate(label.x, label.y);
         const angle = box.angle + camera.rotation;
         ctx.rotate(Math.cos(angle) < 0 ? angle + Math.PI : angle);
-        ctx.font = `700 ${2.6 * zoom}px 'Rajdhani', sans-serif`;
+        ctx.font = `700 ${2.6 * zoom}px 'Barlow Condensed', sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = box.team.color;
@@ -400,7 +400,7 @@ export class TrackRenderer {
 
     const entryPt = camera.worldToScreen(pitPts[0].x, pitPts[0].y);
     ctx.fillStyle = 'rgba(234, 179, 8, 0.95)';
-    ctx.font = `bold ${Math.max(9, 9 * zoom)}px 'Orbitron', sans-serif`;
+    ctx.font = `bold ${Math.max(9, 9 * zoom)}px 'Barlow Condensed', sans-serif`;
     ctx.textAlign = 'center';
     ctx.fillText('PIT IN · 80 KM/H', entryPt.x, entryPt.y - 12 * zoom);
     const exitPt = camera.worldToScreen(pitPts[pitPts.length - 1].x, pitPts[pitPts.length - 1].y);
@@ -495,7 +495,7 @@ export class TrackRenderer {
 
     // Letrero de lectura: tipografía acotada en pantalla, independiente del asfalto.
     const centerScreen = camera.worldToScreen(startPoint.x, startPoint.y);
-    ctx.font = `900 ${Math.max(9, Math.min(14, 10 * zoom))}px 'Orbitron', sans-serif`;
+    ctx.font = `900 ${Math.max(9, Math.min(14, 10 * zoom))}px 'Barlow Condensed', sans-serif`;
     ctx.fillStyle = '#ffffff';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'bottom';
@@ -529,7 +529,7 @@ export class TrackRenderer {
     const side = (p: { x: number; y: number; angle: number }, distance: number) =>
       camera.worldToScreen(p.x + Math.cos(p.angle + Math.PI / 2) * distance, p.y + Math.sin(p.angle + Math.PI / 2) * distance);
     const label = (text: string, x: number, y: number, color: string) => {
-      ctx.font = `800 ${fontSize}px 'Rajdhani', sans-serif`;
+      ctx.font = `800 ${fontSize}px 'Barlow Condensed', sans-serif`;
       const width = ctx.measureText(text).width;
       ctx.fillStyle = 'rgba(10, 15, 25, 0.88)';
       ctx.beginPath();
@@ -589,7 +589,7 @@ export class TrackRenderer {
       const labelPos = camera.worldToScreen(pt.x - nx * hw, pt.y - ny * hw);
 
       const fontSize = Math.max(8.5, Math.min(12, 10 * zoom));
-      ctx.font = `800 ${fontSize}px 'Rajdhani', sans-serif`;
+      ctx.font = `800 ${fontSize}px 'Barlow Condensed', sans-serif`;
       
       const labelText = `T${corner.number}`;
       const textWidth = ctx.measureText(labelText).width;
