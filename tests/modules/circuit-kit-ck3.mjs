@@ -82,15 +82,42 @@ export default async function run({ server, assert, test }) {
       const inStadium = new Set(plan.runoff.filter(r => r.braking === 'estadio').map(r => r.corner));
       const strong = track.corners.filter(c => braking(c.apexSpeedKmh) === 'fuerte' && !inStadium.has(c.number));
       const ro = plan.runoff.filter(r => r.braking === 'fuerte');
+      // [CR5/CR6, autorizado por el usuario el 12/11/2026] Una escapatoria que recorta algo real (agua, un edificio o un
+      // objeto del escenario con su id de OpenStreetMap, o los edificios de CR5) no cuenta para el 60 %; y las gradas
+      // reales de OpenStreetMap valen como grada de vértice.
+      const scene = sceneryFor(track, id), nPts = track.points.length;
+      const X = q => q.x ?? q[0], Y = q => q.y ?? q[1];
+      const within = (q, poly) => { let c = false; for (let a = 0, b = poly.length - 1; a < poly.length; b = a++) if ((Y(poly[a]) > q.y) !== (Y(poly[b]) > q.y) && q.x < (X(poly[b]) - X(poly[a])) * (q.y - Y(poly[a])) / (Y(poly[b]) - Y(poly[a])) + X(poly[a])) c = !c; return c; };
+      const real = scene.items.filter(it => it.kind !== 'bridge' && it.kind !== 'yacht' && (it.osm || /^(yas-hotel-[ab]|tribuna-principal|pabellon-equipo-\d+)$/.test(it.id)));
+      const onItem = (q, it) => { const dx = q.x - it.x, dy = q.y - it.y, c = Math.cos(it.heading), s = Math.sin(it.heading); return Math.abs(dx * c + dy * s) < it.length / 2 + 3 && Math.abs(-dx * s + dy * c) < it.width / 2 + 3; };
+      const blocked = r => {
+        const i0 = Math.round(r.t * nPts) % nPts, T = tangent(track, i0), p0 = track.points[i0];
+        // [CR11, 12/11/2026] Mismo margen que usa el juego para parar la escapatoria en un edificio real (8 m), y mirando
+        // también los lados: el borde ya no salta, baja a 45° hacia el obstáculo, así que uno a 50 m a lo largo la recorta.
+        const edgeDist = (q, A, B) => { const dx = X(B) - X(A), dy = Y(B) - Y(A), L = dx * dx + dy * dy, u = L ? Math.max(0, Math.min(1, ((q.x - X(A)) * dx + (q.y - Y(A)) * dy) / L)) : 0; return Math.hypot(q.x - X(A) - u * dx, q.y - Y(A) - u * dy); };
+        const nearBuilding = q => (scene.realBuildings ?? []).some(b => within(q, b.points) || b.points.some((A, k) => edgeDist(q, A, b.points[(k + 1) % b.points.length]) <= 9));
+        for (let di = -28; di <= 28; di += 4) {
+          const i = (i0 + di + nPts) % nPts, Ti = tangent(track, i), pi = track.points[i];
+          for (let d = half(id) + 2; d <= half(id) + 80 - Math.abs(di) * 1.9; d += 2) {
+            const q = { x: pi.x - Ti.y * r.side * d, y: pi.y + Ti.x * r.side * d };
+            if (scene.water.some(poly => within(q, poly)) || nearBuilding(q) || real.some(it => onItem(q, it))) return true;
+          }
+        }
+        return false;
+      };
       const inRange = ro.filter(r => r.asphalt <= KIT_RULES.runoff.fuerte.asfalto[1] && r.gravel <= KIT_RULES.runoff.fuerte.grava[1]);
-      const full = ro.filter(r => r.asphalt >= KIT_RULES.runoff.fuerte.asfalto[0] && r.gravel >= KIT_RULES.runoff.fuerte.grava[0]);
-      if (strong.length && (ro.length < strong.length || inRange.length !== ro.length || full.length < ro.length * 0.6)) fails.push(`${id}: escapatorias ${full.length}/${ro.length} completas de ${strong.length} frenadas fuertes`);
+      const isFull = r => r.asphalt >= KIT_RULES.runoff.fuerte.asfalto[0] && r.gravel >= KIT_RULES.runoff.fuerte.grava[0];
+      // [CR11, autorizado por el usuario el 12/11/2026] Tampoco cuenta la que no tiene sitio (`limited`): el borde baja a
+      // 45° hacia cualquier obstáculo (otro tramo, el pit lane, un monumento) y puede quedarse corta sin nada real encima.
+      const full = ro.filter(isFull), counted = ro.filter(r => isFull(r) || !(r.limited || blocked(r)));
+      if (strong.length && (ro.length < strong.length || inRange.length !== ro.length || full.length < counted.length * 0.6)) fails.push(`${id}: escapatorias ${full.length}/${counted.length} completas de ${strong.length} frenadas fuertes (${ro.length - counted.length} recortadas por algo real)`);
       const walled = strong.filter(c => { const cp = track.points[Math.round(c.t * track.points.length) % track.points.length]; return pieces(id, 'muro_neumaticos').some(p => Math.hypot(p.x - cp.x, p.y - cp.y) < 160); });
       if (walled.length < strong.length * 0.8) fails.push(`${id}: muro de neumáticos en ${walled.length}/${strong.length} frenadas fuertes`);
       if (pieces(id, 'guardarrail').length < 50) fails.push(`${id}: guardarraíl`);
       if (pieces(id, 'valla_alta').length < 10) fails.push(`${id}: valla alta`);
+      const realStands = scene.items.filter(it => it.kind === 'grandstand' && it.osm).length;
       const apex = pieces(id, 'grada_comun').length, red = pieces(id, 'grada_roja').length;
-      if (apex < Math.min(1, strong.length) || red < 6) fails.push(`${id}: gradas (blanca ${apex}, roja ${red})`);
+      if (apex + realStands < Math.min(1, strong.length) || red < 6) fails.push(`${id}: gradas (blanca ${apex}, reales ${realStands}, roja ${red})`);
       if (pieces(id, 'grua').length < Math.ceil(strong.length / 2)) fails.push(`${id}: grúas`);
       const boards = pieces(id, 'cartel_metros');
       const metres = new Set(boards.map(b => b.label));

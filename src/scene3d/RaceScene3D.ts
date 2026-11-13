@@ -27,7 +27,7 @@ import { compoundStyle } from '../utils/compounds';
 import { calculateCarWorldPosition, isCarVisible } from '../utils/carPosition';
 import { KIT_CIRCUIT, runoffZones3d, sceneryFor, type PitBuilding, type SceneBarrier, type SceneItem } from './scenery';
 import { portalItems } from './osmCrossings';
-import { kitGroups, kitPlacementFor, realBuildingsClearOfKit, type KitPlacement } from './kitPlacement';
+import { drawnScenery, kitGroups, kitPlacementFor, realBuildingsClearOfKit, type KitPlacement } from './kitPlacement';
 import { buildRealBuildings } from './realBuildings';
 import { CIRCUIT_KIT } from './circuitKit';
 import { buildKit, KIT_STRIP_COLORS } from './kitMeshes';
@@ -289,7 +289,7 @@ export class RaceScene3D {
       this.canopyAt = -1;
     }
     const [items, kitGroup, car, lod] = await Promise.all([
-      buildScenery([...scenery.items, ...portalItems(scenery.portals ?? [])], track, base, circuitId, scenery.water, level !== 'alto').catch(error => { console.error('Escenario 3D', error); return null; }).finally(() => onProgress?.('escenario')),
+      buildScenery([...drawnScenery(kit, scenery), ...portalItems(scenery.portals ?? [])], track, base, circuitId, scenery.water, level !== 'alto').catch(error => { console.error('Escenario 3D', error); return null; }).finally(() => onProgress?.('escenario')),
       (kit ? buildKit(kit, base).catch(error => { console.error('Kit de circuito', error); return null; }) : Promise.resolve(null)).finally(() => onProgress?.('kit')),
       loadModel(modelUrl(base, CAR_MODEL.file)).catch(() => null).finally(() => onProgress?.('coche')),
       loadModel(modelUrl(base, LOD_FILE)).catch(() => null).finally(() => onProgress?.('coche-ligero')),

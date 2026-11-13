@@ -10,12 +10,15 @@
 //  5. Capturas del juego frente al modelo original de Shanghái en Blender, con el visto bueno del usuario.
 // [CR6, autorizado por el usuario el 09/11/2026] Los dos techos de la tribuna (`techo_tribuna`) se quitan: desde lejos
 // se veían como esferas blancas. El catálogo los conserva; el plan ya no los lleva y el test pide que no estén.
+// [CR5, autorizado por el usuario el 12/11/2026] CR5 cambió el puente sobre la meta por la tribuna con sus dos alas, y los
+// pabellones y carpas del kit por los pabellones de equipo del escenario (`pabellon-equipo-N`) sobre el lago real: el plan
+// ya no lleva `pabellon` ni `carpa` (el catálogo los conserva) y el test comprueba las piezas nuevas.
 import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { gzipSync } from 'node:zlib';
 
 const OWN = ['edificio_boxes', 'edificio_b', 'pabellon', 'carpa', 'marquesina', 'techo_tribuna', 'estructura_b', 'estructura_c'];
-const IN_PLAN = OWN.filter(id => id !== 'techo_tribuna');   // [CR6] sin los techos
+const IN_PLAN = OWN.filter(id => !['techo_tribuna', 'pabellon', 'carpa'].includes(id));   // [CR6] sin los techos; [CR5] sin pabellones ni carpas
 const STANDS = ['grada_comun', 'grada_roja', 'grada_pequena'];
 const SHOTS = 'docs/design/ck4-capturas';
 const allGlb = dir => readdirSync(dir).flatMap(name => { const p = join(dir, name); return statSync(p).isDirectory() ? allGlb(p) : /\.glb$/i.test(name) ? [p] : []; });
@@ -50,12 +53,12 @@ export default async function run({ server, assert, test }) {
     const own = new Set(CIRCUIT_KIT.filter(p => p.scope === 'shanghai').map(p => p.id));
     assert(OWN.every(id => own.has(id)), 'CK4: el catálogo tiene las 8 piezas de Shanghái', [...own].join(', '));
     const missing = IN_PLAN.filter(id => of(id).length === 0);
-    assert(missing.length === 0, 'CK4: el plan de Shanghái lleva sus 7 piezas (sin los techos)', missing.join(', ') || 'ok');
+    assert(missing.length === 0, 'CK4: el plan de Shanghái lleva sus 5 piezas (sin los techos, los pabellones ni las carpas)', missing.join(', ') || 'ok');
     const boxes = of('edificio_boxes');
     assert(boxes.length >= 4 && boxes.every(b => nearPit(b, 45) && side(b) === pitSide), 'CK4: el edificio de boxes se repite a lo largo del pit lane, de su lado', `${boxes.length} módulos`);
     assert(!scene.pitBuilding && !scene.items.some(it => it.kind === 'pit-building'), 'CK4: sin el edificio de boxes genérico', scene.pitBuilding ? 'sigue el continuo' : 'ok');
-    const lake = [...of('pabellon'), ...of('carpa')];
-    assert(lake.length >= 10 && lake.every(p => scene.water.some(poly => inPoly(p, poly))), 'CK4: pabellones y carpas en el lago', `${lake.length} en total, ${lake.filter(p => scene.water.some(poly => inPoly(p, poly))).length} en el agua`);
+    const lake = scene.items.filter(it => /^pabellon-equipo-\d+$/.test(it.id));   // [CR5] los del escenario
+    assert(lake.length >= 10 && lake.every(p => scene.water.some(poly => inPoly(p, poly))), 'CK4 (CR5): pabellones de equipo en el lago', `${lake.length} en total, ${lake.filter(p => scene.water.some(poly => inPoly(p, poly))).length} en el agua`);
     assert(!scene.items.some(it => it.model === 'pavilion'), 'CK4: sin los pabellones genéricos', `${scene.items.filter(it => it.model === 'pavilion').length} genéricos`);
     const roofs = of('techo_tribuna');
     assert(roofs.length === 0, 'CK4 (CR6): sin los techos de la tribuna (se veían como esferas blancas)', `${roofs.length}`);
@@ -70,7 +73,7 @@ export default async function run({ server, assert, test }) {
   });
 
   await test('CK4.2: se conservan el puente, el lago y lo de CK3', () => {
-    assert(scene.items.some(it => it.id === 'puente-meta' && it.model === 'shanghai-bridge'), 'CK4: el puente sobre la meta sigue');
+    assert(['ala-1', 'ala-2'].every(id => scene.items.some(it => it.id === id && it.kind === 'bridge' && it.model === 'shanghai-ala')), 'CK4 (CR5): las dos alas de la tribuna cruzan la meta en lugar del puente');
     assert(scene.water.length >= 1, 'CK4: el lago sigue', `${scene.water.length} polígonos de agua`);
     const common = plan.pieces.filter(p => !OWN.includes(p.piece));
     const need = ['torre_posiciones', 'guardarrail', 'muro_neumaticos', 'cartel_metros', 'grada_comun'];

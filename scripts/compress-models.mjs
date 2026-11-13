@@ -31,6 +31,8 @@ export const MODELS = [
   'public/models/scenery/yas-hotel-cubierta.glb',
   // [CR6] Modelos propios de cada circuito.
   'public/models/scenery/casino-montreal.glb',
+  // [CR12] No llega a 100 KB, pero comprimido ahorra 2 KB de la instalación sin conexión, que iba al límite.
+  'public/models/scenery/centro-acuatico-melbourne.glb',
   'public/models/scenery/esplanade-domo.glb',
   'public/models/scenery/estadio-miami.glb',
   'public/models/scenery/noria-suzuka.glb',

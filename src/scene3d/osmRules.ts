@@ -75,7 +75,8 @@ export function realBuildingsFor(track: TrackDefinition, circuitId: string, lane
       for (let s = 0; s < L; s += 4) edge.push({ x: a.x + (d.x - a.x) * s / L, y: a.y + (d.y - a.y) * s / L });
     }
     // Las gradas de OpenStreetMap las pone el kit, con sus modelos de grada (una caja con ventanas no es una grada).
-    if (b.type === 'grandstand') { dropped.push({ osm: b.osm, why: 'grada' }); continue; }
+    // [CR12] También las que OpenStreetMap marca como graderío sin ser `building=grandstand` (`use`): el escenario las pone.
+    if (b.type === 'grandstand' || b.use === 'grada') { dropped.push({ osm: b.osm, why: 'grada' }); continue; }
     if (edge.some(q => axis(q, half + 3) < half + 2) || inPoly(track.points[0], b.points)) { dropped.push({ osm: b.osm, why: 'pista' }); continue; }
     if (edge.some(q => laneD(q, 12) < 6.5)) { dropped.push({ osm: b.osm, why: 'pit lane' }); continue; }
     if (pitRow && (rowD(c, (pitRow.depth ?? 20) + 8) < (pitRow.depth ?? 20) + 4)) { dropped.push({ osm: b.osm, why: 'boxes' }); continue; }

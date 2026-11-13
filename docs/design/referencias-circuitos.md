@@ -7,7 +7,7 @@ CR6: el resto de cada circuito). Lo pinta cada imagen de `docs/design/cr1/`: en 
 su pit lane); en rojo, el real; en azul discontinuo, el agua que pinta el juego; y de OpenStreetMap, bosque (verde),
 edificios (gris), agua (azul), gradas (naranja), edificio de boxes (morado), túneles (negro discontinuo) y puentes (rojo).
 
-Vuelto a medir tras CR6 (09/11/2026): el juego ya cuenta el agua real, los edificios reales de OpenStreetMap,
+Vuelto a medir tras CR6 (12/11/2026): el juego ya cuenta el agua real, los edificios reales de OpenStreetMap,
 los puentes que cruzan la pista y los pasos con sus bocas que pone CR6. Lo que CR6 deja sin hacer en cada circuito está
 justificado en `docs/design/circuitos-cr6.md`.
 
@@ -51,22 +51,22 @@ Los trazados del juego salen de los reales y casi coinciden: entre 0,7 y 4,2 m d
 tramo que se aparta más de 15 m. Lo que más falta es el entorno: agua que el juego no pinta (Montreal, Melbourne, Marina
 Bay, Miami, Las Vegas), objetos puestos sobre agua real, pasos bajo la pista y puentes, y edificios a pie de pista.
 
-En total, 2 puntos de prioridad alta, 9 de media y 18 de baja; 0 para CR2, 2 para CR5 y 27 para CR6.
+En total, 0 puntos de prioridad alta, 9 de media y 18 de baja; 0 para CR2, 0 para CR5 y 27 para CR6.
 
 | Circuito | real (m) | juego (m) | media (m) | máxima (m) | tramos > 15 m | pit lane |
 |---|---|---|---|---|---|---|
 | `barcelona` | 4664 | 4657 | 0.7 | 3.5 | 0 | 0.5 m de media, 3 m de máxima |
 | `monza` | 5787 | 5793 | 1.4 | 6.7 | 0 | 1.6 m de media, 4.8 m de máxima |
 | `silverstone` | 5877 | 5891 | 2 | 8.8 | 0 | 1.1 m de media, 5 m de máxima |
-| `spa` | 6978 | 7004 | 3.7 | 13.7 | 0 | 1.5 m de media, 9.3 m de máxima |
+| `spa` | 6978 | 7004 | 3.7 | 13.4 | 0 | 1.6 m de media, 9.5 m de máxima |
 | `monaco` | 3324 | 3337 | 1.9 | 10.6 | 0 | sin marcar en OpenStreetMap |
 | `spielberg` | 4302 | 4318 | 0.8 | 2.6 | 0 | sin marcar en OpenStreetMap |
 | `interlagos` | 4298 | 4309 | 2.6 | 9.5 | 0 | 4.8 m de media, 8.2 m de máxima |
-| `suzuka` | 5812 | 5807 | 2.3 | 13.3 | 0 | 1.4 m de media, 7.3 m de máxima |
+| `suzuka` | 5812 | 5807 | 2.3 | 13.2 | 0 | 1.4 m de media, 7.3 m de máxima |
 | `zandvoort` | 4255 | 4259 | 1.4 | 12.2 | 0 | 2 m de media, 4.7 m de máxima |
 | `las-vegas` | 6221 | 6201 | 1.8 | 7.8 | 0 | 3.9 m de media, 14.7 m de máxima |
 | `bahrain` | 5418 | 5412 | 0.8 | 6.3 | 0 | 2.9 m de media, 7.1 m de máxima |
-| `baku` | 5986 | 6003 | 1.9 | 11.8 | 0 | 3.8 m de media, 8.3 m de máxima |
+| `baku` | 5986 | 6003 | 1.9 | 13.1 | 0 | 3.8 m de media, 8.2 m de máxima |
 | `melbourne` | 5273 | 5278 | 1.3 | 8.4 | 0 | sin marcar en OpenStreetMap |
 | `miami` | 5415 | 5412 | 0.9 | 3.8 | 0 | 1.1 m de media, 4.3 m de máxima |
 | `shanghai` | 5448 | 5451 | 0.8 | 3.1 | 0 | sin marcar en OpenStreetMap |
@@ -113,9 +113,9 @@ En total, 2 puntos de prioridad alta, 9 de media y 18 de baja; 0 para CR2, 2 par
 
 ![Circuit de Spa-Francorchamps: trazado del juego, real y alrededores](cr1/spa.svg)
 
-- **Trazado real:** GeoJSON de bacinger/f1-circuits (`be-1925`), 6978 m; en el juego, 7004 m. Encajado sobre el del juego, se aparta 3.7 m de media y 13.7 m como mucho; ningún tramo pasa de 15 m.
-- **Pit lane:** comparado con el de OpenStreetMap, 1.5 m de media y 9.3 m como mucho.
-- **Alrededores** (OpenStreetMap, franja de 300 m): árboles y bosque, 61 zonas o ejemplares (unos 5.382.000 m²); edificios, 149; agua, 14 (l'Eau Rouge, Le Rohon); túneles bajo la pista, 9 (Tunnel de Blanchimont, Tunnel de Ster, Tunnel Raidillon, Tunnel); puentes sobre la pista, 1; gradas, 10 (Stand F1, Stand Endurance, Tribune F1, Tribune RX, Tribune Raidillon); edificio de boxes, 0; pit lane, 3 tramos.
+- **Trazado real:** GeoJSON de bacinger/f1-circuits (`be-1925`), 6978 m; en el juego, 7004 m. Encajado sobre el del juego, se aparta 3.7 m de media y 13.4 m como mucho; ningún tramo pasa de 15 m.
+- **Pit lane:** comparado con el de OpenStreetMap, 1.6 m de media y 9.5 m como mucho.
+- **Alrededores** (OpenStreetMap, franja de 300 m): árboles y bosque, 61 zonas o ejemplares (unos 5.383.000 m²); edificios, 149; agua, 14 (l'Eau Rouge, Le Rohon); túneles bajo la pista, 9 (Tunnel de Blanchimont, Tunnel de Ster, Tunnel Raidillon, Tunnel); puentes sobre la pista, 1; gradas, 10 (Stand F1, Stand Endurance, Tribune F1, Tribune RX, Tribune Raidillon); edificio de boxes, 0; pit lane, 3 tramos.
 - **Lo que no cuadra:**
   - **baja** (CR6) — Túneles: 9 pasos bajo la pista en la realidad (Tunnel de Blanchimont, Tunnel de Ster, Tunnel Raidillon), 8 en el juego
 
@@ -156,9 +156,9 @@ En total, 2 puntos de prioridad alta, 9 de media y 18 de baja; 0 para CR2, 2 par
 
 ![Suzuka International Racing Course: trazado del juego, real y alrededores](cr1/suzuka.svg)
 
-- **Trazado real:** GeoJSON de bacinger/f1-circuits (`jp-1962`), 5812 m; en el juego, 5807 m. Encajado sobre el del juego, se aparta 2.3 m de media y 13.3 m como mucho; ningún tramo pasa de 15 m.
+- **Trazado real:** GeoJSON de bacinger/f1-circuits (`jp-1962`), 5812 m; en el juego, 5807 m. Encajado sobre el del juego, se aparta 2.3 m de media y 13.2 m como mucho; ningún tramo pasa de 15 m.
 - **Pit lane:** comparado con el de OpenStreetMap, 1.4 m de media y 7.3 m como mucho.
-- **Alrededores** (OpenStreetMap, franja de 300 m): árboles y bosque, 120 zonas o ejemplares (unos 856.000 m²); edificios, 172; agua, 10 (丸竹池, アドベンボート フロンティア); túneles bajo la pista, 12 (三行庄野線); puentes sobre la pista, 1; gradas, 0; edificio de boxes, 1 (ピットビル); pit lane, 2 tramos.
+- **Alrededores** (OpenStreetMap, franja de 300 m): árboles y bosque, 120 zonas o ejemplares (unos 855.000 m²); edificios, 172; agua, 10 (丸竹池, アドベンボート フロンティア); túneles bajo la pista, 12 (三行庄野線); puentes sobre la pista, 1; gradas, 0; edificio de boxes, 1 (ピットビル); pit lane, 2 tramos.
 - **Lo que no cuadra:**
   - **media** (CR6) — Túneles: 12 pasos bajo la pista en la realidad (三行庄野線), 8 en el juego
 
@@ -196,8 +196,8 @@ En total, 2 puntos de prioridad alta, 9 de media y 18 de baja; 0 para CR2, 2 par
 
 ![Baku City Circuit: trazado del juego, real y alrededores](cr1/baku.svg)
 
-- **Trazado real:** GeoJSON de bacinger/f1-circuits (`az-2016`), 5986 m; en el juego, 6003 m. Encajado sobre el del juego, se aparta 1.9 m de media y 11.8 m como mucho; ningún tramo pasa de 15 m.
-- **Pit lane:** comparado con el de OpenStreetMap, 3.8 m de media y 8.3 m como mucho.
+- **Trazado real:** GeoJSON de bacinger/f1-circuits (`az-2016`), 5986 m; en el juego, 6003 m. Encajado sobre el del juego, se aparta 1.9 m de media y 13.1 m como mucho; ningún tramo pasa de 15 m.
+- **Pit lane:** comparado con el de OpenStreetMap, 3.8 m de media y 8.2 m como mucho.
 - **Alrededores** (OpenStreetMap, franja de 300 m): árboles y bosque, 419 zonas o ejemplares (unos 104.000 m²); edificios, 918; agua, 46 (Kiçik Venesiya, Каспий теңізі - Hazar deňzi - دریای خزر - Xəzər dənizi - Каспийское море - دریای مازندران, mar (línea de costa)); túneles bajo la pista, 7; puentes sobre la pista, 2; gradas, 0; edificio de boxes, 3 (Hilton, Baku City Circuit, Sərhəd Qoşunları Xidməti); pit lane, 1 tramo.
 - **Lo que no cuadra:**
   - **baja** (CR6) — Túneles: 7 pasos bajo la pista en la realidad, 4 en el juego
@@ -230,7 +230,6 @@ En total, 2 puntos de prioridad alta, 9 de media y 18 de baja; 0 para CR2, 2 par
 - **Pit lane:** OpenStreetMap no marca el pit lane de este circuito (highway=raceway con service=pit_lane); queda para revisarlo a mano en CR2.
 - **Alrededores** (OpenStreetMap, franja de 300 m): árboles y bosque, 36 zonas o ejemplares (unos 0 m²); edificios, 84; agua, 86; túneles bajo la pista, 2; puentes sobre la pista, 0; gradas, 17 (A看台, B1看台, B2看台, B3看台, H看台); edificio de boxes, 0; pit lane, 0 tramos.
 - **Lo que no cuadra:**
-  - **alta** (CR5) — Edificios emblemáticos: tribuna principal con sus dos alas y edificios de los equipos sobre el agua
   - **media** (CR6) — Escenario: 10 objetos del juego caen donde en la realidad hay agua
 
 ## `jeddah` — Jeddah Corniche Circuit
@@ -272,7 +271,6 @@ En total, 2 puntos de prioridad alta, 9 de media y 18 de baja; 0 para CR2, 2 par
 - **Pit lane:** comparado con el de OpenStreetMap, 4.9 m de media y 8.5 m como mucho.
 - **Alrededores** (OpenStreetMap, franja de 300 m): árboles y bosque, 585 zonas o ejemplares (unos 4000 m²); edificios, 179; agua, 14 (mar (línea de costa)); túneles bajo la pista, 9 (Pit Lane, Access to Main Grandstand); puentes sobre la pista, 5 (Marina Walk Bridge); gradas, 7 (Marina Grandstand, South Grandstand, West Grandstand, North Grandstand, Main Grandstand); edificio de boxes, 1; pit lane, 5 tramos.
 - **Lo que no cuadra:**
-  - **alta** (CR5) — Edificios emblemáticos: hotel con la cubierta de luces sobre la pista, puente sobre el pit lane y puerto deportivo
   - **media** (CR6) — Escenario: 7 objetos del juego caen donde en la realidad hay agua
 
 ## `hungaroring` — Hungaroring

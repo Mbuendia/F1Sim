@@ -79,7 +79,10 @@ export default async function run({ server, assert, test }) {
       const near = (kind, m, from) => items.filter(it => it.kind === kind && from.some(p => Math.hypot(it.x - p.x, it.y - p.y) <= m)).length;
       const pit = getPitLaneGeometry(track).fastLane;
       const kitStands = kits[id].pieces.filter(p => p.piece.startsWith('grada_') && Math.hypot(p.x - start.x, p.y - start.y) <= 300).length;
-      if ((id === 'monaco' ? near('grandstand', 300, [start]) : kitStands) < 2) missing.push(`${id}: gradas en la meta`);
+      // [CR11, autorizado por el usuario el 12/11/2026] Cuentan también las gradas reales de OpenStreetMap (CR6): en Austin
+      // la escapatoria de la curva 1 ya no pasa por debajo de la tribuna real y las gradas del kit de detrás no caben.
+      const realStands = items.filter(it => it.kind === 'grandstand' && it.osm && Math.hypot(it.x - start.x, it.y - start.y) <= 300).length;
+      if ((id === 'monaco' ? near('grandstand', 300, [start]) : kitStands + realStands) < 2) missing.push(`${id}: gradas en la meta`);
       if (near('vip', 200, pit.length ? pit : [start]) < 1) missing.push(`${id}: zona VIP`);
       if (near('paddock', 150, pit.length ? pit : [start]) < 1) missing.push(`${id}: paddock`);
     }
@@ -98,7 +101,9 @@ export default async function run({ server, assert, test }) {
   await test('Escenario: iconos de Spielberg, Mónaco y Shanghái', () => {
     const bull = scenes.spielberg.items.find(it => it.id === 'toro');
     assert(bull && bull.kind === 'landmark' && bull.height >= 15 && bull.height <= 20, 'Iconos: el toro de Spielberg, de unos 17 m', JSON.stringify(bull));
-    assert(bull && scenes.spielberg.infield.some(poly => inside(bull, poly)), 'Iconos: el toro está en el centro del circuito');
+    // [CR6, autorizado por el usuario el 12/11/2026] El toro va en su sitio real de OpenStreetMap (node/5443064309), en la
+    // ladera junto a la pista; antes se pedía dentro del interior inventado del circuito.
+    assert(bull && bull.osm === 'node/5443064309' && axisDistance(tracks.spielberg, bull) <= 150, 'Iconos: el toro está en su sitio de OpenStreetMap, junto a la pista', JSON.stringify(bull && { osm: bull.osm, metros: Math.round(axisDistance(tracks.spielberg, bull)) }));
 
     const monaco = scenes.monaco;
     assert(monaco.water.length > 0, 'Iconos: Mónaco tiene mar');
@@ -110,10 +115,12 @@ export default async function run({ server, assert, test }) {
     // circuito (la horquilla, al 37,9 %, lo confirma); el 43-50 % venía de los pianos del escenario de Mónaco, desplazados.
     assert(casino && casino.t >= 0.25 && casino.t <= 0.29, 'Iconos: el casino junto a la curva Casino (T4)', JSON.stringify(casino && { t: casino.t }));
 
-    const shanghai = tracks.shanghai, bridge = scenes.shanghai.items.find(it => it.id === 'puente-meta');
+    // [CR5, autorizado por el usuario el 12/11/2026] CR5 cambió el puente único de la meta (`puente-meta`) por la tribuna
+    // principal con sus dos alas, que cruzan la recta en los extremos de la tribuna (5,5 m libres, contrato de CR5).
+    const shanghai = tracks.shanghai, wings = ['ala-1', 'ala-2'].map(id => scenes.shanghai.items.find(it => it.id === id));
     const width = shanghai.trackWidthMeters || 12;
-    assert(bridge && bridge.kind === 'bridge' && (bridge.t <= 0.03 || bridge.t >= 0.97), 'Iconos: en Shanghái, el puente sobre la recta de meta', JSON.stringify(bridge && { t: bridge.t }));
-    assert(bridge && bridge.length >= width + 10 && bridge.clearance >= 6, 'Iconos: el puente cruza toda la recta y deja pasar a los coches por debajo', JSON.stringify(bridge && { length: bridge.length, clearance: bridge.clearance }));
+    assert(wings.every(w => w && w.kind === 'bridge' && (w.t <= 0.08 || w.t >= 0.97)), 'Iconos: en Shanghái, las dos alas de la tribuna sobre la recta de meta', JSON.stringify(wings.map(w => w && { t: w.t })));
+    assert(wings.every(w => w && w.length >= width + 10 && w.clearance >= 5.5), 'Iconos: las alas cruzan toda la recta y dejan pasar a los coches por debajo', JSON.stringify(wings.map(w => w && { length: w.length, clearance: w.clearance })));
   });
 
   await test('Escenario: modelos ligeros', () => {

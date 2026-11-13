@@ -16,7 +16,9 @@ import { join } from 'node:path';
 
 const DOC = 'docs/design/referencias-circuitos.md';
 const DIR = 'docs/design/cr1';
-const KINDS = new Set(['tree', 'building', 'water', 'tunnel', 'bridge', 'grandstand', 'pit-building', 'pit-lane']);
+// [CR6, autorizado por el usuario el 12/11/2026] 'landmark': iconos lejanos que CR6 pone en su sitio real (noria de Suzuka,
+// Flame Towers, fuente de Yeda…). Se guardan aunque estén a más de 300 m, así que no se les mide la franja.
+const KINDS = new Set(['tree', 'building', 'water', 'tunnel', 'bridge', 'grandstand', 'pit-building', 'pit-lane', 'landmark']);
 const INVENTORY_WORDS = [/árbol|bosque/i, /edificio/i, /agua|mar|lago|río/i, /túnel/i, /puente/i, /grada/i, /edificio de boxes/i, /pit lane/i];
 const SECTION_M = 15;
 
@@ -97,7 +99,7 @@ export default async function run({ server, assert, test }) {
       const feats = d.features ?? [];
       if (!feats.length) { bad.push(`${id}: sin huellas`); continue; }
       const wrongKind = feats.filter(f => !KINDS.has(f.kind));
-      const far = feats.filter(f => !f.points?.length || f.points.some(([x, y]) => x < b.minX - pad || x > b.maxX + pad || y < b.minY - pad || y > b.maxY + pad));
+      const far = feats.filter(f => !f.points?.length || f.kind !== 'landmark' && f.points.some(([x, y]) => x < b.minX - pad || x > b.maxX + pad || y < b.minY - pad || y > b.maxY + pad));
       if (wrongKind.length || far.length) bad.push(`${id}: ${wrongKind.length} de tipo desconocido, ${far.length} fuera de la franja`);
       if (feats.some(f => !/^(way|node|relation)\/\d+$/.test(f.osm ?? ''))) bad.push(`${id}: huellas sin su id de OpenStreetMap`);
     }

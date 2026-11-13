@@ -56,6 +56,21 @@ function keyhole(outer, holes) {
 }
 const hash = s => { let h = 2166136261; for (const c of s) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return (h >>> 0) / 4294967296; };
 const meters = v => { const m = /^\s*([\d.]+)\s*(m|ft|')?/.exec(String(v ?? '')); if (!m) return null; const n = parseFloat(m[1]); return m[2] === 'ft' || m[2] === "'" ? n * 0.3048 : n; };
+/**
+ * [CR12] Uso de un edificio, para pintarlo como lo que es: 'grada' (graderío), 'cubierta' (techo sobre pilares),
+ * 'nave' (pabellón, almacén, comercio o cualquier edificio grande y bajo que no sea de viviendas) o 'ciudad' (el resto,
+ * con la fachada de su ciudad).
+ */
+const NAVE = new Set(['industrial', 'warehouse', 'retail', 'commercial', 'sports_hall', 'sports_centre', 'garages', 'hangar', 'supermarket', 'stadium', 'parking', 'factory', 'shed', 'train_station', 'transportation']);
+const HOMES = new Set(['house', 'apartments', 'residential', 'hotel', 'semidetached_house', 'terrace', 'detached', 'dormitory', 'office', 'bungalow']);
+function useOf(tags, areaM2, height) {
+  const b = tags.building;
+  if (tags.leisure === 'bleachers' || tags.grandstand === 'yes' || b === 'grandstand' || b === 'bleachers') return 'grada';
+  if (b === 'roof' || b === 'carport') return 'cubierta';
+  if (NAVE.has(b) || ['sports_centre', 'sports_hall', 'stadium'].includes(tags.leisure) || tags.amenity === 'parking') return 'nave';
+  if (areaM2 >= 2500 && height <= 25 && !HOMES.has(b)) return 'nave';
+  return 'ciudad';
+}
 function heightOf(tags, osm) {
   const h = meters(tags.height) ?? meters(tags['building:height']);
   if (h && h > 1 && h < 450) return Math.round(h * 2) / 2;
@@ -71,8 +86,11 @@ function heightOf(tags, osm) {
  * y la planta del modelo de Blender; los edificios reales que caen debajo no se levantan (el icono los sustituye).
  */
 const LANDMARKS = {
-  montreal: [{ icon: 'biosfera', osm: ['way/26288030'] }, { icon: 'casino-montreal', osm: ['way/26698931'] }],
-  melbourne: [{ icon: 'cobertizo-remo', osm: ['way/208150115'] }],
+  // [CR12] El edificio de los atletas del canal olímpico de remo (Quartier des athlètes), con su modelo propio.
+  montreal: [{ icon: 'biosfera', osm: ['way/26288030'] }, { icon: 'casino-montreal', osm: ['way/26698931'] }, { icon: 'quartier-athletes', osm: ['way/46866696'] },
+    { icon: 'gradas-canal', osm: ['way/115814115'] }],
+  // [CR12] El centro deportivo y acuático de Albert Park (y la cubierta de su piscina exterior), con su modelo propio.
+  melbourne: [{ icon: 'cobertizo-remo', osm: ['way/208150115'] }, { icon: 'centro-acuatico', osm: ['way/154881920', 'way/321791822'] }],
   'marina-bay': [{ icon: 'marina-bay-sands', osm: ['way/116800998', 'way/172307471', 'way/172307472'] }, { icon: 'noria-singapur', osm: ['way/230082125'] },
     { icon: 'esplanade-sala', osm: ['way/256163011'] }, { icon: 'esplanade-teatro', osm: ['way/256163012'] }],
   miami: [{ icon: 'estadio-miami', osm: ['way/171419981'] }],
@@ -258,7 +276,15 @@ for (const file of readdirSync('docs/design/cr1').filter(f => f.endsWith('.json'
     .filter(f => f.kind === 'building' && f.area && f.points.length > 2 && area(f.points) >= 1 && f.points.some(near160) && !underLandmark(f))
     .map(f => {
       const tags = tagsOf.get(f.osm) ?? {};
-      return { osm: f.osm, points: f.points.map(([x, y]) => [Math.round(x * 2) / 2, Math.round(y * 2) / 2]), height: Math.min(400, Math.max(2.5, heightOf(tags, f.osm))), ...(tags.building ? { type: tags.building } : {}), ...(f.name ? { name: f.name } : {}) };
+      const height = Math.min(400, Math.max(2.5, heightOf(tags, f.osm)));
+      return { osm: f.osm, points: f.points.map(([x, y]) => [Math.round(x * 2) / 2, Math.round(y * 2) / 2]), height, ...(tags.building ? { type: tags.building } : {}), ...(useOf(tags, area(f.points), height) !== 'ciudad' ? { use: useOf(tags, area(f.points), height) } : {}), ...(f.name ? { name: f.name } : {}) };   // 'ciudad' es el valor por defecto: no se escribe
+    })
+    // [CR12] Una grada lleva además sus tramos (como las gradas con nombre de los iconos), para ponerla como grada.
+    .map(b => {
+      if (b.use !== 'grada') return b;
+      let segments = [];
+      try { segments = standSegments(b.points); } catch { /* planta rara: sin tramos, no se pone */ }
+      return { ...b, segments };
     });
   // Puentes y pasos bajo la pista: su línea y su tipo (pasarela, carretera, monorraíl, tren).
   const typeOf = tags => tags.railway === 'monorail' ? 'monorrail' : tags.railway ? 'tren'

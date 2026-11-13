@@ -53,9 +53,16 @@ function resampleOpen(pts: Point2D[], count: number): Point2D[] {
   return out;
 }
 
-/** Aplica las correcciones de un circuito al eje ya horneado (puntos a paso fijo). Devuelve un eje nuevo. */
-export function applyAxisCorrections(points: Point2D[], corrections: AxisCorrection[] | undefined, stepM: number): Point2D[] {
-  if (!corrections?.length) return points;
+/** Eje corregido y, con él, cómo pasar una posición de la vuelta de los datos (medida antes de corregir) a la del eje nuevo. */
+export interface CorrectedAxis { points: Point2D[]; mapT: (t: number) => number }
+
+/**
+ * Aplica las correcciones de un circuito al eje ya horneado (puntos a paso fijo). Devuelve un eje nuevo, a paso uniforme.
+ * [CR10] Los datos que van por posición en la vuelta (entrada y salida de boxes, zonas de DRS, curvas) se midieron sobre
+ * el eje sin corregir: `mapT` los lleva al mismo sitio del trazado en el eje nuevo. Sin correcciones no cambia nada.
+ */
+export function correctAxis(points: Point2D[], corrections: AxisCorrection[] | undefined, stepM: number): CorrectedAxis {
+  if (!corrections?.length) return { points, mapT: t => t };
   const out = points.map(p => ({ ...p })), n = out.length;
   for (const c of corrections) {
     const i0 = Math.round(c.t0 * n), i1 = Math.round(c.t1 * n), count = i1 - i0 + 1;
@@ -63,7 +70,17 @@ export function applyAxisCorrections(points: Point2D[], corrections: AxisCorrect
     let seg = idx.map(i => ({ ...out[i] }));
     if (c.target) {
       const s = c.strength ?? 1;
-      seg = seg.map((p, k) => { const w = s * taper(k / (count - 1)), q = nearestOn(p, c.target!); return { x: p.x + (q.x - p.x) * w, y: p.y + (q.y - p.y) * w }; });
+      // [CR10] El trazado real viene en pocos puntos y el más cercano salta de un tramo a otro: el desplazamiento se alisa
+      // (media de unos ±12 m, dos pasadas) para que la curvatura no vaya a saltos (Bakú, salida de la curva del 67,9 %).
+      let move = seg.map((p, k) => { const w = s * taper(k / (count - 1)), q = nearestOn(p, c.target!); return { x: (q.x - p.x) * w, y: (q.y - p.y) * w }; });
+      const r = Math.max(1, Math.round(12 / stepM));
+      for (let pass = 0; pass < 2; pass++) move = move.map((_, k) => {
+        let x = 0, y = 0, m = 0;
+        for (let j = Math.max(0, k - r); j <= Math.min(count - 1, k + r); j++) { x += move[j].x; y += move[j].y; m++; }
+        const edge = Math.min(1, k / r, (count - 1 - k) / r);   // los extremos del tramo no se mueven
+        return { x: (x / m) * edge, y: (y / m) * edge };
+      });
+      seg = seg.map((p, k) => ({ x: p.x + move[k].x, y: p.y + move[k].y }));
     }
     if (c.pushM) {
       const o = apexCentre(seg, Math.max(1, Math.round(10 / stepM)));
@@ -73,6 +90,28 @@ export function applyAxisCorrections(points: Point2D[], corrections: AxisCorrect
       });
     }
     resampleOpen(seg, count).forEach((p, k) => { out[idx[k]] = p; });
+  }
+  // [CR10] Un tramo corregido mide más que antes y sus muestras quedaban más separadas (La Source, 2,20 m frente a 1,90):
+  // el eje entero vuelve a paso uniforme, con la muestra de la meta en su sitio y la misma forma.
+  const cum = [0];
+  for (let i = 0; i < n; i++) cum.push(cum[i] + Math.hypot(out[(i + 1) % n].x - out[i].x, out[(i + 1) % n].y - out[i].y));
+  const mapT = (t: number) => {
+    const x = (((t % 1) + 1) % 1) * n, i = Math.min(n - 1, Math.floor(x));
+    return (cum[i] + (cum[i + 1] - cum[i]) * (x - i)) / cum[n];
+  };
+  return { points: resampleClosed(out), mapT };
+}
+
+/** Remuestrea una polilínea cerrada al mismo número de puntos y paso uniforme por longitud de arco, desde su primer punto. */
+function resampleClosed(pts: Point2D[]): Point2D[] {
+  const n = pts.length, cum = [0];
+  for (let i = 0; i < n; i++) cum.push(cum[i] + Math.hypot(pts[(i + 1) % n].x - pts[i].x, pts[(i + 1) % n].y - pts[i].y));
+  const L = cum[n], out: Point2D[] = [];
+  for (let k = 0, i = 0; k < n; k++) {
+    const s = (k * L) / n;
+    while (i < n - 1 && cum[i + 1] < s) i++;
+    const f = (s - cum[i]) / ((cum[i + 1] - cum[i]) || 1), a = pts[i], b = pts[(i + 1) % n];
+    out.push({ x: a.x + (b.x - a.x) * f, y: a.y + (b.y - a.y) * f });
   }
   return out;
 }

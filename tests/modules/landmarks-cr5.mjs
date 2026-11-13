@@ -28,10 +28,12 @@ const SHOTS_DIR = 'docs/design/cr5-emblematicos';
 const SHOTS = ['shanghai-alas-abordo', 'shanghai-alas-tele', 'shanghai-pabellones-arriba', 'shanghai-general', 'shanghai-persecucion',
   'yas-hotel-abordo', 'yas-hotel-tele', 'yas-hotel-helicoptero', 'yas-puerto', 'yas-pasarela-pit', 'yas-general', 'yas-persecucion'];
 /** Huella de cada circuito antes de CR5 (07/11/2026, `scratch/cr56/huellas.mjs`, la misma de CR2). */
+// [CR10, autorizado por el usuario el 12/11/2026] Spa, Suzuka y Bakú llevan la huella de después de CR10 (eje a paso
+// uniforme y posiciones de boxes, DRS y curvas llevadas al eje nuevo); los otros 20 circuitos, la de siempre.
 const BEFORE = {
-  barcelona: 'be6b79af99aaf557', monza: '5249ee4897bac91e', silverstone: '7a5450633d198889', spa: '4bd21659b7e48c57',
-  monaco: '123f264248e7cbee', spielberg: 'ba60dcd0ca25af21', interlagos: '14789deaa61f1ad9', suzuka: 'f3ead24cfff18e11',
-  zandvoort: '95d1ff598f88900e', 'las-vegas': 'e0c6391536c67548', bahrain: '6db90f315fda3e95', baku: '98c5450c46f72ccc',
+  barcelona: 'be6b79af99aaf557', monza: '5249ee4897bac91e', silverstone: '7a5450633d198889', spa: 'a7eb595246f969ca',
+  monaco: '123f264248e7cbee', spielberg: 'ba60dcd0ca25af21', interlagos: '14789deaa61f1ad9', suzuka: 'f89b8da7161c60e6',
+  zandvoort: '95d1ff598f88900e', 'las-vegas': 'e0c6391536c67548', bahrain: '6db90f315fda3e95', baku: '7903c30e18793a2d',
   melbourne: '8ffefa734082b304', miami: '7d5847647f5729a0', shanghai: '4cddcc8907a03e33', jeddah: 'da0b7163cc463117',
   'marina-bay': '442267e16b45fdb3', lusail: '47e417b0ad6d5b4b', 'yas-marina': 'e135ab113d6ee801', hungaroring: 'edaf6a704bc008df',
   'mexico-city': '522e381d95c87905', montreal: 'a1a6b9637760d522', austin: '5b7469f930d5039f',

@@ -14,10 +14,12 @@ import { raceFingerprints } from '../support/race-fingerprint.mjs';
 // [CA6, autorizado por el usuario el 07/11/2026] Cada parada guarda además su motivo, la media de la carrera y los mecánicos:
 // cambian las huellas de Mónaco y Spa. Quitando esos campos salen bit a bit las de antes (f37fa7c0… y fa37c2c9…): las carreras son
 // idénticas.
+// [CR2/CR10, autorizado por el usuario el 12/11/2026] El trazado de Spa cambió a propósito (La Source abierta y dos tramos
+// llevados al real en CR2; eje a paso uniforme en CR10): cambia la huella de Spa. Monza y Mónaco siguen idénticas.
 const BEFORE = {
   'monza-seco': '3382658b1c9db1acd54b9eb48a29cc79c9ad99212858fcf0edae9e80bcdd05db',
   'monaco-lluvia-sc': '5ac23726459d2c8ef7f4f172a3e505cb5dec90b28eb2329b65e68fe3718830ab',
-  'spa-vsc-roja-ordenes': 'e75544a576a41be45b1ae66bce05e9ee46cb0c28ea5c3cf0ce2e2a85e8832225',
+  'spa-vsc-roja-ordenes': 'cb8d7d78028b264eb889daa7bb3a2132caeeab30c02c6a2f61e1fa7899fef016',
 };
 const MODULES = ['carStep', 'neutralization', 'weather', 'teamOrders', 'wall', 'startAndResult'];
 

@@ -2,6 +2,9 @@
  * [CR6] Edificios reales de OpenStreetMap levantados con su huella y su altura, todos en una sola malla por circuito
  * (una llamada de dibujo). Las fachadas llevan una textura de ventanas por planta (3,2 m) y vano (4 m) según el estilo
  * de la ciudad; el color de cada edificio sale de la paleta del estilo y es fijo para cada edificio (sin azar).
+ * [CR12] Cada edificio se pinta según su uso (`use`, de osm-scenery): solo los de 'ciudad' llevan la fachada de ventanas;
+ * una 'nave' (pabellón, almacén, comercio, edificio grande y bajo) va con paredes de panel liso y cubierta de chapa, y
+ * una 'cubierta' es una losa sobre pilares, sin paredes. Las gradas no llegan aquí: las pone el escenario.
  */
 import * as THREE from 'three';
 import type { OsmBuilding } from './osmScenery';
@@ -22,8 +25,20 @@ const STYLES: Record<string, Style> = {
   // franja de cristal oscuro por planta y las juntas de los paneles; cubiertas de chapa gris.
   circuito: { walls: ['#e9ecef', '#d5dade', '#f4f5f6', '#b9c0c7', '#5f666e', '#cfd8df'], roofs: ['#8e959c', '#a9afb5', '#737a81'], window: 'panel', glass: 0.18 },
 };
+/** [CR12] Naves y cubiertas: panel de chapa clara y cubierta de chapa gris, iguales en cualquier ciudad. */
+const HALL = { walls: ['#e4e7ea', '#cfd5da', '#b8c0c7', '#dcd8cf', '#9aa3ab'], roofs: ['#9aa1a8', '#b4bac0', '#7d858c'], pillar: '#8b9299' };
 
 const hash = (s: string) => { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0) / 4294967296; };
+
+/** Cómo se pinta un edificio: paredes con ventanas (ciudad), de panel liso (nave) o ninguna (cubierta), y sus colores. */
+export interface BuildingLook { walls: 'ventanas' | 'panel' | 'ninguna'; wall: string; roof: string }
+export function buildingLook(b: Pick<OsmBuilding, 'osm' | 'use'>, styleName: string): BuildingLook {
+  const style = STYLES[styleName] ?? STYLES.norteamericano;
+  const pick = (list: string[], salt: string) => list[Math.floor(hash(b.osm + salt) * list.length) % list.length];
+  if (b.use === 'cubierta') return { walls: 'ninguna', wall: HALL.pillar, roof: pick(HALL.roofs, 'r') };
+  if (b.use === 'nave') return { walls: 'panel', wall: pick(HALL.walls, ''), roof: pick(HALL.roofs, 'r') };
+  return { walls: 'ventanas', wall: pick(style.walls, ''), roof: pick(style.roofs, 'r') };
+}
 
 /** Textura de un vano por una planta: pared blanca y ventana oscura (el color lo pone cada edificio). */
 function facadeTexture(style: Style): THREE.Texture {
@@ -51,8 +66,8 @@ function facadeTexture(style: Style): THREE.Texture {
 }
 
 /**
- * Una malla con todos los edificios: paredes con ventanas y tejado plano. `ground` da la altura del suelo en un punto
- * (relieve); `toWorld` pasa del plano del juego (x, y, altura) a la escena.
+ * Una malla con todos los edificios: paredes y tejado plano. `ground` da la altura del suelo en un punto (relieve);
+ * `toWorld` pasa del plano del juego (x, y, altura) a la escena.
  */
 export function buildRealBuildings(buildings: OsmBuilding[], styleName: string, ground: (x: number, y: number) => number,
   toWorld: (x: number, y: number, z: number) => THREE.Vector3): THREE.Mesh | null {
@@ -60,7 +75,17 @@ export function buildRealBuildings(buildings: OsmBuilding[], styleName: string, 
   const style = STYLES[styleName] ?? STYLES.norteamericano;
   const pos: number[] = [], nor: number[] = [], uv: number[] = [], colr: number[] = [];
   const color = new THREE.Color();
-  const BAY = 4, FLOOR = 3.2;
+  const BAY = 4, FLOOR = 3.2, FLAT = 0.016, SLAB = 0.5;
+  const up = new THREE.Vector3().subVectors(toWorld(0, 0, 1), toWorld(0, 0, 0)).normalize();
+  /** Una pared vertical de `a` a `c` entre dos alturas; `u0`/`u1`/`v1` de la textura, o lisa si no se dan. */
+  const quad = (a: { x: number; y: number }, c: { x: number; y: number }, z0: number, z1: number, rgb: number[], tex?: [number, number, number]) => {
+    const A0 = toWorld(a.x, a.y, z0), C0 = toWorld(c.x, c.y, z0), A1 = toWorld(a.x, a.y, z1), C1 = toWorld(c.x, c.y, z1);
+    const n = new THREE.Vector3().subVectors(C0, A0).cross(new THREE.Vector3().subVectors(A1, A0)).normalize();
+    const [u0, u1, v1] = tex ?? [FLAT, FLAT, FLAT], v0 = tex ? 0 : FLAT;
+    for (const [p, u, v] of [[A0, u0, v0], [C0, u1, v0], [C1, u1, v1], [A0, u0, v0], [C1, u1, v1], [A1, u0, v1]] as [THREE.Vector3, number, number][]) {
+      pos.push(p.x, p.y, p.z); nor.push(n.x, n.y, n.z); uv.push(u, v); colr.push(...rgb);
+    }
+  };
   for (const b of buildings) {
     let pts = b.points.slice();
     if (pts.length > 3 && Math.hypot(pts[0].x - pts[pts.length - 1].x, pts[0].y - pts[pts.length - 1].y) < 0.01) pts.pop();
@@ -69,30 +94,41 @@ export function buildRealBuildings(buildings: OsmBuilding[], styleName: string, 
     for (let i = 0; i < pts.length; i++) { const a = pts[i], c = pts[(i + 1) % pts.length]; area += a.x * c.y - c.x * a.y; }
     if (area < 0) pts = pts.reverse();
     const base = Math.min(...pts.map(p => ground(p.x, p.y))), top = base + b.height;
-    const k = hash(b.osm);
-    color.set(style.walls[Math.floor(k * style.walls.length) % style.walls.length]).multiplyScalar(0.92 + 0.16 * hash(b.osm + 'l'));
+    const look = buildingLook(b, styleName);
+    color.set(look.wall).multiplyScalar(0.92 + 0.16 * hash(b.osm + 'l'));
     const wall = [color.r, color.g, color.b];
+    // Una cubierta es solo su losa (medio metro de canto) sobre pilares; el resto, paredes de abajo arriba.
+    const open = look.walls === 'ninguna', wallFrom = open ? Math.max(base, top - SLAB) : base;
     let run = hash(b.osm + 'u') * BAY;
     for (let i = 0; i < pts.length; i++) {
       const a = pts[i], c = pts[(i + 1) % pts.length], L = Math.hypot(c.x - a.x, c.y - a.y);
       if (L < 0.05) continue;
-      const A0 = toWorld(a.x, a.y, base), C0 = toWorld(c.x, c.y, base), A1 = toWorld(a.x, a.y, top), C1 = toWorld(c.x, c.y, top);
-      const n = new THREE.Vector3().subVectors(C0, A0).cross(new THREE.Vector3().subVectors(A1, A0)).normalize();
-      const u0 = run / BAY, u1 = (run + L) / BAY, v1 = b.height / FLOOR;
-      for (const [p, u, v] of [[A0, u0, 0], [C0, u1, 0], [C1, u1, v1], [A0, u0, 0], [C1, u1, v1], [A1, u0, v1]] as [THREE.Vector3, number, number][]) {
-        pos.push(p.x, p.y, p.z); nor.push(n.x, n.y, n.z); uv.push(u, v); colr.push(...wall);
-      }
+      quad(a, c, wallFrom, top, wall, look.walls === 'ventanas' ? [run / BAY, (run + L) / BAY, b.height / FLOOR] : undefined);
       run += L;
     }
+    if (open && wallFrom > base + 0.5) {
+      // Pilares de 0,5 m en las esquinas (doce como mucho, repartidos por el contorno).
+      const every = Math.max(1, Math.ceil(pts.length / 12)), cx = pts.reduce((s, p) => s + p.x, 0) / pts.length, cy = pts.reduce((s, p) => s + p.y, 0) / pts.length;
+      for (let i = 0; i < pts.length; i += every) {
+        // Un poco hacia dentro, para que el pilar quede bajo la losa.
+        const d = Math.hypot(cx - pts[i].x, cy - pts[i].y) || 1, px = pts[i].x + (cx - pts[i].x) / d * 0.6, py = pts[i].y + (cy - pts[i].y) / d * 0.6, h = 0.25;
+        const sq = [{ x: px - h, y: py - h }, { x: px + h, y: py - h }, { x: px + h, y: py + h }, { x: px - h, y: py + h }];
+        for (let k = 0; k < 4; k++) quad(sq[k], sq[(k + 1) % 4], base, wallFrom, wall);
+      }
+    }
     // Tejado plano (el píxel de pared de la textura, con el color del tejado).
-    color.set(style.roofs[Math.floor(hash(b.osm + 'r') * style.roofs.length) % style.roofs.length]);
+    color.set(look.roof);
     const tris = THREE.ShapeUtils.triangulateShape(pts.map(p => new THREE.Vector2(p.x, p.y)), []);
-    const up = new THREE.Vector3().subVectors(toWorld(0, 0, 1), toWorld(0, 0, 0)).normalize();
     for (const tri of tris) {
       // El plano del juego tiene la y hacia abajo: se invierte el orden para que la cara mire arriba.
       for (const idx of [tri[0], tri[2], tri[1]]) {
         const p = toWorld(pts[idx].x, pts[idx].y, top);
-        pos.push(p.x, p.y, p.z); nor.push(up.x, up.y, up.z); uv.push(0.016, 0.016); colr.push(color.r, color.g, color.b);
+        pos.push(p.x, p.y, p.z); nor.push(up.x, up.y, up.z); uv.push(FLAT, FLAT); colr.push(color.r, color.g, color.b);
+      }
+      // La cara de abajo de una cubierta, que se ve desde la pista.
+      if (open) for (const idx of tri) {
+        const p = toWorld(pts[idx].x, pts[idx].y, wallFrom);
+        pos.push(p.x, p.y, p.z); nor.push(-up.x, -up.y, -up.z); uv.push(FLAT, FLAT); colr.push(color.r * 0.8, color.g * 0.8, color.b * 0.8);
       }
     }
   }
