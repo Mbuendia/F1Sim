@@ -273,3 +273,9 @@
 .rejoinGhost { font-size: var(--letra-1); }
 .rejoinPos, .rejoinRange { font-family: var(--font-ui); }
 .rejoinUnavailable { font-size: var(--letra-1); color: var(--text-2); }
+
+/* [VS1 paso 3] Posiciones en letra condensada; la marca de cambio de posición (▲1) vuelve a caber bajo el número. */
+.headerTitle { font-family: var(--font-titular); font-size: var(--letra-2); }
+.posNum, .driverCode, .gapText { font-family: var(--font-datos); }
+.driverCode { font-size: var(--letra-3); letter-spacing: 0.02em; }
+.posChange { font-family: var(--font-datos); scale: 0.72; transform-origin: 50% 100%; }

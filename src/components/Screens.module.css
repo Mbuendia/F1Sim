@@ -196,3 +196,20 @@
 .devTools b { font-weight: 700; }
 .devTools span { grid-column: 1; color: var(--text-3); font-size: var(--letra-1); overflow-wrap: anywhere; }
 .devTools svg { grid-column: 2; grid-row: 1 / span 2; color: var(--text-3); }
+
+/* [VS1 paso 3] Inicio con el carácter de «Cartel de carrera»: titular enorme en cursiva, tarjetas y botones cortados en diagonal. */
+.brand { font-family: var(--font-titular); text-transform: uppercase; letter-spacing: 0; }
+.heroTitle { font-family: var(--font-titular); font-size: var(--letra-8); line-height: 0.92; letter-spacing: 0; text-transform: uppercase; }
+.heroWord { font-family: var(--font-titular); }
+.heroKicker { font-family: var(--font-datos); font-size: var(--letra-2); letter-spacing: 0.1em; }
+.hero { border: 0; }
+.primary { clip-path: polygon(12px 0, 100% 0, calc(100% - 12px) 100%, 0 100%); padding-inline: 28px; border-radius: 0; font-family: var(--font-titular); font-size: var(--letra-3); font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase; }
+.primary:focus-visible { clip-path: none; }
+.modeCard { border: 0; clip-path: polygon(16px 0, 100% 0, calc(100% - 16px) 100%, 0 100%); }
+.modeCard:focus-visible { clip-path: none; }
+.modeCard::after { height: 6px; }
+.modeCard[aria-pressed='true'] { box-shadow: none; }
+.modeCardText { padding-inline: 26px; }
+.modeCardTitle { font-family: var(--font-titular); font-size: var(--letra-4); letter-spacing: 0; }
+.settingsCard { clip-path: polygon(16px 0, 100% 0, calc(100% - 16px) 100%, 0 100%); border: 0; }
+.settingsCard:focus-visible { clip-path: none; }

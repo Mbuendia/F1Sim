@@ -13,6 +13,8 @@
 @font-face { font-family: 'Barlow Condensed'; font-style: normal; font-weight: 700; font-display: swap; src: url('/fonts/barlow-condensed-700.woff2') format('woff2'); }
 @font-face { font-family: 'Barlow Condensed'; font-style: normal; font-weight: 800; font-display: swap; src: url('/fonts/barlow-condensed-800.woff2') format('woff2'); }
 @font-face { font-family: 'Barlow Condensed'; font-style: italic; font-weight: 800; font-display: swap; src: url('/fonts/barlow-condensed-800i.woff2') format('woff2'); }
+/* La letra de titulares es esa misma cursiva, con nombre propio para que un titular no dependa de acordarse de pedirla. */
+@font-face { font-family: 'F-Uno Titular'; font-style: normal; font-weight: 100 900; font-display: swap; src: url('/fonts/barlow-condensed-800i.woff2') format('woff2'); }
 
 /* [VS1, 13/11/2026] Sistema visual, dirección «Cartel de carrera» (elegida por el usuario): negro y rojo, títulos en
    condensada cursiva y esquinas rectas. Este archivo es el único sitio donde se escriben colores, tipografías, tamaños de
@@ -46,6 +48,7 @@
   --font-marca: 'Barlow Condensed', 'Arial Narrow', sans-serif;
   --font-ui: 'Barlow', system-ui, sans-serif;
   --font-datos: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+  --font-titular: 'F-Uno Titular', 'Barlow Condensed', 'Arial Narrow', sans-serif;
 
   /* Escala de letra cerrada: ocho tamaños, ninguno por debajo de 14 px */
   --letra-1: 14px;

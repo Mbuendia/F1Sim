@@ -258,3 +258,26 @@
 .staffBadge { flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 50%; background: var(--panel); border: 2px solid var(--equipo); color: var(--text); font-weight: 700; font-size: var(--letra-2); }
 .staffBody { display: flex; flex-direction: column; gap: 4px; min-width: 0; font-size: var(--letra-2); }
 .staffBody .button { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; }
+
+/* [VS1 paso 3] Temporada con el carácter de «Cartel de carrera»: el nombre del equipo y la próxima carrera mandan. */
+.hubTeam { font-family: var(--font-titular); font-size: var(--letra-5); letter-spacing: 0; line-height: 1; }
+.kpi b { font-family: var(--font-datos); font-size: var(--letra-4); font-weight: 700; }
+.big, .num, .statusValue { font-family: var(--font-datos); }
+.title { font-family: var(--font-titular); letter-spacing: 0; text-transform: uppercase; }
+.hubTabs button { font-family: var(--font-datos); }
+.primary { clip-path: polygon(12px 0, 100% 0, calc(100% - 12px) 100%, 0 100%); padding-inline: 28px; border-radius: 0; font-family: var(--font-titular); font-size: var(--letra-3); font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase; }
+.primary:focus-visible { clip-path: none; }
+/* En móvil las pestañas van abajo y estrechas: el tamaño mayor y el corte del botón, solo desde tableta. */
+@media (min-width: 768px) {
+  .hubTabs button { font-size: var(--letra-3); }
+  .hubTabs .hubTabRace { clip-path: polygon(12px 0, 100% 0, calc(100% - 12px) 100%, 0 100%); padding-inline: 26px; font-family: var(--font-titular); }
+  .hubTabs .hubTabRace:focus-visible { clip-path: none; }
+}
+/* La próxima carrera es el cartel de la pantalla: una plancha roja cortada en diagonal, con el circuito en grande. */
+.nextRace { border: 0; background: linear-gradient(110deg, var(--accion) 0 62%, var(--accion-oscuro) 62%); color: var(--text); }
+.nextRace .label { color: var(--text); }
+.nextRace .title { font-size: var(--letra-7); line-height: 0.95; }
+.nextRace .chip { border-color: color-mix(in srgb, var(--text) 55%, transparent); color: var(--text); background: transparent; }
+.nextRace .muted { color: var(--text); }
+.nextRace .primary { background: var(--text); border-color: var(--text); color: var(--negro); }
+.nextRace .primary:hover { background: var(--text-2); }

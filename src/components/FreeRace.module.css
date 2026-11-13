@@ -135,3 +135,8 @@
 @media (prefers-reduced-motion: reduce) {
   .teamCard, .circuitCard { transition: none; }
 }
+
+/* [VS1 paso 3] Carrera libre con los mismos titulares y el mismo botón principal. */
+.title { font-family: var(--font-titular); font-size: var(--letra-5); text-transform: uppercase; letter-spacing: 0; }
+.primary { clip-path: polygon(12px 0, 100% 0, calc(100% - 12px) 100%, 0 100%); padding-inline: 28px; border-radius: 0; font-family: var(--font-titular); font-size: var(--letra-3); font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase; }
+.primary:focus-visible { clip-path: none; }

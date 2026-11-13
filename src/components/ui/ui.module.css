@@ -37,3 +37,7 @@
 .tile[data-tone='ok'] .tileValue { color:var(--positivo); }
 .tile[data-tone='warn'] .tileValue { color:var(--aviso); }
 .tile[data-tone='bad'] .tileValue { color:var(--negativo); }
+
+/* [VS1 paso 3] Medidores en letra condensada, para que la cifra y su icono no se pisen. */
+.meter { font-family: var(--font-datos); font-size: var(--letra-2); gap: 4px; }
+.meterBar { width: 36px; }

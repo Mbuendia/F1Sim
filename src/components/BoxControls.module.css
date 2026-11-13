@@ -141,3 +141,8 @@
 }
 /* [UX17] Móvil muy estrecho (320–380 px): sin «km/h», para que los dos velocímetros quepan sin cortarse. */
 @media (max-width:380px) { .speedUnit { display:none; } .speedometer { grid-template-columns:max-content max-content 1fr; } .speedCode { width:auto; } }
+
+/* [VS1 paso 3] El botón de parar es la acción del muro: cortado en diagonal y en letra de titular. */
+.gauges { gap: 8px; }
+.orderActions button:first-of-type { clip-path: polygon(12px 0, 100% 0, calc(100% - 12px) 100%, 0 100%); font-family: var(--font-titular); font-size: var(--letra-3); letter-spacing: 0.03em; }
+.orderActions button:first-of-type:focus-visible { clip-path: none; }

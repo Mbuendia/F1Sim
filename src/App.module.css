@@ -267,3 +267,9 @@
 .autoRace span { color: var(--text-2); }
 .autoRaceBar { width: min(420px, 90%); height: 8px; border-radius: var(--radio-s); background: var(--line); overflow: hidden; }
 .autoRaceBar span { display: block; height: 100%; background: var(--accion); }
+
+/* [VS1 paso 3] Barra de carrera: se queda oscura para que el rojo siga señalando solo la acción y la bandera se lea;
+   una línea roja arriba la ata al resto del juego, y la letra condensada le da el ancho que le faltaba. */
+.raceBar { gap: 8px; box-shadow: inset 0 3px 0 var(--accion); }
+.homeBtn, .barBtn { padding: 0 10px; font-family: var(--font-datos); font-weight: 700; letter-spacing: 0.02em; }
+.flagChip { font-family: var(--font-titular); }
