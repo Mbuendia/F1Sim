@@ -88,8 +88,10 @@ export default async function run({ server, assert, test }) {
 
   await test('Abu Dabi: hotel, torre, puerto, focos y fuegos artificiales', () => {
     const track = tracks['yas-marina'], scene = scenes['yas-marina'], half = (track.trackWidthMeters || 12) / 2;
-    const hotel = scene.items.find(it => it.id === 'yas-hotel');
-    assert(hotel && hotel.kind === 'bridge' && hotel.clearance >= 8 && axisDistance(track, hotel) <= half, 'Abu Dabi: el hotel pasa por encima de la pista', JSON.stringify(hotel && { clearance: hotel.clearance }));
+    // [CR5, autorizado por el usuario el 12/11/2026] El hotel de una pieza (`yas-hotel`) pasó a ser dos edificios unidos
+    // por un puente sobre la pista (`yas-hotel-puente`): se comprueba el puente.
+    const hotel = scene.items.find(it => it.id === 'yas-hotel-puente');
+    assert(hotel && hotel.kind === 'bridge' && hotel.clearance >= 8 && axisDistance(track, hotel) <= half, 'Abu Dabi: el puente del hotel pasa por encima de la pista', JSON.stringify(hotel && { clearance: hotel.clearance }));
     const tower = scene.items.find(it => it.id === 'torre-yas');
     const start = track.points[0];
     assert(tower && tower.kind === 'landmark' && Math.hypot(tower.x - start.x, tower.y - start.y) <= 400, 'Abu Dabi: la torre de control junto a la meta');

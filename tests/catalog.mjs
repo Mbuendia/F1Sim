@@ -639,6 +639,8 @@ export const modules = [
   { "id": "track-fidelity-cr2", "tasks": ["CR2"], "sprint": "10.5", "kind": "contract" },
   { "id": "landmarks-cr5", "tasks": ["CR5"], "sprint": "10.5", "kind": "contract" },
   { "id": "circuits-cr6", "tasks": ["CR6"], "sprint": "10.5", "kind": "contract" },
+  { "id": "runoff-clean-cr11", "tasks": ["CR11"], "sprint": "10.5", "kind": "contract" },
+  { "id": "buildings-cr12", "tasks": ["CR12"], "sprint": "10.5", "kind": "contract" },
   { "id": "offline-of1", "tasks": ["OF1"], "sprint": "13", "kind": "contract" },
   { "id": "storage-of2", "tasks": ["OF2"], "sprint": "13", "kind": "contract" },
   { "id": "updates-of3", "tasks": ["OF3"], "sprint": "13", "kind": "contract" },

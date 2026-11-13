@@ -407,6 +407,20 @@ function build(track: TrackDefinition, circuitId: string): Scenery {
   if (kit) {
     items.push(...osmBridgeItems(track, osmBridges(circuitId)));
     dropOnRealWater(items, circuitId);
+    // [CR12] Las gradas de OpenStreetMap que no son iconos con nombre: en tramos que siguen su planta, con la grada
+    // común; cada tramo se recorta por delante si pisa el margen de la pista, y el que no cabe no se pone.
+    for (const b of osmBuildings(circuitId)) {
+      if (b.use !== 'grada' || items.some(it => it.osm === b.osm)) continue;
+      (b.segments ?? []).forEach((s, k) => {
+        const it: SceneItem = { id: `grada-osm-${b.osm.split('/')[1]}-${k + 1}`, kind: 'grandstand', model: 'grandstand', osm: b.osm, ...s, height: Math.min(16, Math.max(6, b.height)) };
+        const nx = -Math.sin(it.heading), ny = Math.cos(it.heading), q = frameAt(track, nearestT(it));
+        const away = nx * (it.x - q.x) + ny * (it.y - q.y) >= 0 ? 1 : -1;
+        for (const f of [1, 0.85, 0.7, 0.55]) {
+          const cut = (it.width * (1 - f)) / 2, t: SceneItem = { ...it, x: it.x + nx * away * cut, y: it.y + ny * away * cut, width: it.width * f };
+          if (fits(t)) { items.push(t); return; }
+        }
+      });
+    }
     const { kept } = realBuildingsFor(track, circuitId, pit.fastLane, items, pitBuilding);
     dropUnderBuildings(items, kept);
     const { portals } = scenePortals(track, circuitId);
@@ -1128,6 +1142,8 @@ function detailIcons(c: IconCtx) {
       // [CR6] Sin las torres inventadas dentro del parque: los edificios son los reales. El cobertizo de remo, en la orilla.
       if (!KIT_CIRCUIT(circuitId)) many(8, k => tall(k, 70), 0, 1, half + 220, half + 520);
       real({ id: 'cobertizo-remo', kind: 'landmark', model: 'cobertizo-remo', length: 30, width: 14, height: 8 });
+      // [CR12] El centro deportivo y acuático de Albert Park, en su huella: antes salía como un bloque de viviendas.
+      real({ id: 'centro-acuatico', kind: 'landmark', model: 'centro-acuatico-melbourne', length: 250, width: 160, height: 31 });
       break;
     case 'miami': {
       // [CR6] El estadio en su sitio (huella de OpenStreetMap) con su modelo propio; sin los yates del puerto falso, que
@@ -1197,6 +1213,10 @@ function detailIcons(c: IconCtx) {
         const bio = { id: 'biosfera', kind: 'landmark' as const, model: 'biosfera', length: 76, width: 76, height: 62 };
         if (!real(bio, { length: 76, width: 76 })) icon(bio, [0.15, 0.1, 0.2, 0.7], half + 160, half + 520);
         real({ id: 'casino-montreal', kind: 'landmark', model: 'casino-montreal', length: 80, width: 60, height: 30 });
+        // [CR12] El edificio de los atletas del canal olímpico de remo, junto a la horquilla.
+        real({ id: 'quartier-athletes', kind: 'landmark', model: 'canal-olimpico-montreal', length: 120, width: 27, height: 12 });
+        // Y las gradas del canal, el edificio largo en dientes de sierra junto a la horquilla (salía como un bloque de pisos).
+        real({ id: 'gradas-canal', kind: 'landmark', model: 'canal-olimpico-montreal', length: 200, width: 30, height: 12 });
       }
       break;
     case 'austin': {

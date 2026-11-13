@@ -9,7 +9,7 @@ import { closedFrames, closedLength, resampleClosed, smoothClosed, type AxisFram
 import pitLaneRoutes from '../data/pitLaneRoutes.json';
 import circuitReferences from '../data/circuitReferences.json';
 import { pitLaneClearance } from './pitLaneGeometry';
-import { AXIS_CORRECTIONS, applyAxisCorrections } from './axisCorrections';
+import { AXIS_CORRECTIONS, correctAxis } from './axisCorrections';
 import { BRAKE_LOOKAHEAD_M, DEFAULT_CURVATURE_GAIN, LAP_REFERENCES } from '../data/lapReferences';
 
 const svgPathsMap: Record<string, string> = svgPathsJson as any;
@@ -100,7 +100,7 @@ export function racingLineCurvatures(points: { x: number; y: number }[], stepM: 
   return raw.map((_, i) => { let s = 0; for (let d = -w; d <= w; d++) s += raw[(i + d + n) % n]; return s / (2 * w + 1); });
 }
 
-interface AxisBake { worldPoints: Point2D[]; frames: AxisFrame[]; toWorld: (p: Point2D) => Point2D }
+interface AxisBake { worldPoints: Point2D[]; frames: AxisFrame[]; toWorld: (p: Point2D) => Point2D; mapT: (t: number) => number }
 const axisCache = new Map<string, AxisBake>();
 const lineCache = new Map<string, number[]>();
 const axisKey = (circuit: CircuitSpec, width: number) =>
@@ -162,11 +162,13 @@ function bakeAxis(circuit: CircuitSpec, trackWidthMeters: number): AxisBake {
   const exact = circuit.lapLengthMeters / closedLength(worldPoints);
   worldPoints = worldPoints.map(p => ({ x: (p.x - WORLD_MARGIN_M) * exact + WORLD_MARGIN_M, y: (p.y - WORLD_MARGIN_M) * exact + WORLD_MARGIN_M }));
   // [CR2] Correcciones locales (tramos llevados al trazado real y curvas abiertas); sin correcciones, el eje no cambia.
-  worldPoints = applyAxisCorrections(worldPoints, AXIS_CORRECTIONS[circuit.id], circuit.lapLengthMeters / worldPoints.length);
+  const corrected = correctAxis(worldPoints, AXIS_CORRECTIONS[circuit.id], circuit.lapLengthMeters / worldPoints.length);
+  worldPoints = corrected.points;
   const finalScale = scale * exact;
   const bake: AxisBake = {
     worldPoints, frames: closedFrames(worldPoints),
     toWorld: p => ({ x: (p.x - minX) * finalScale + WORLD_MARGIN_M, y: (p.y - minY) * finalScale + WORLD_MARGIN_M }),
+    mapT: corrected.mapT,
   };
   axisCache.set(key, bake);
   return bake;
@@ -180,7 +182,9 @@ export function buildTrackFromSvg(circuit: CircuitSpec, _sampleCount?: number): 
   const targetClockwise = circuit.direction === 'clockwise';
   const baseTrackWidthMeters = circuit.trackWidthMeters || 12;
   const baseTrackWidthCars = circuit.trackWidthCars || 3;
-  const { worldPoints, frames, toWorld } = bakeAxis(circuit, baseTrackWidthMeters);
+  const { worldPoints, frames, toWorld, mapT } = bakeAxis(circuit, baseTrackWidthMeters);
+  // [CR10] Zonas de DRS en el eje corregido (en los circuitos sin correcciones, las mismas).
+  const drsSpecs = (circuit.drsZoneSpecs ?? []).map(z => ({ ...z, startT: mapT(z.startT), endT: mapT(z.endT) }));
 
   // ── 3. CURVATURAS, VELOCIDADES Y FRENADAS PREVIAS ──
   const total = worldPoints.length;
@@ -225,8 +229,8 @@ export function buildTrackFromSvg(circuit: CircuitSpec, _sampleCount?: number): 
     let isDrsZone = false;
     let drsZoneId: number | undefined = undefined;
 
-    if (circuit.drsZoneSpecs && circuit.drsZoneSpecs.length > 0) {
-      for (const drs of circuit.drsZoneSpecs) {
+    if (drsSpecs.length > 0) {
+      for (const drs of drsSpecs) {
         let inside = false;
         if (drs.startT > drs.endT) {
           inside = progress >= drs.startT || progress <= drs.endT;
@@ -301,8 +305,8 @@ export function buildTrackFromSvg(circuit: CircuitSpec, _sampleCount?: number): 
   });
 
   // ── 4. GENERACIÓN DEL PIT LANE OFICIAL (CARRIL DE BOXES INTERIOR) ──
-  const pitEntryT = circuit.pitEntryT !== undefined ? circuit.pitEntryT : 0.92;
-  const pitExitT = circuit.pitExitT !== undefined ? circuit.pitExitT : 0.08;
+  const pitEntryT = circuit.pitEntryT !== undefined ? mapT(circuit.pitEntryT) : 0.92;   // [CR10] en el eje corregido
+  const pitExitT = circuit.pitExitT !== undefined ? mapT(circuit.pitExitT) : 0.08;
   const pitOffset = circuit.pitOffset !== undefined ? circuit.pitOffset : 38;
 
   // Q20: trazado real (OSM) cuando existe referencia verificada; si no, carril genérico.
@@ -318,7 +322,7 @@ export function buildTrackFromSvg(circuit: CircuitSpec, _sampleCount?: number): 
   // punto más lento del eje a menos de 40 m. Sin referencia, se detectan por velocidad y curvatura.
   const realCorners = (circuitReferences as Record<string, { corners?: { number: number; letter?: string; t: number }[] }>)[circuit.id]?.corners;
   const corners: CornerMarker[] = realCorners?.length ? realCorners.map(ref => {
-    const centre = Math.round(ref.t * total), reach = Math.round(40 / stepM);
+    const centre = Math.round(mapT(ref.t) * total), reach = Math.round(40 / stepM);
     let best = ((centre % total) + total) % total;
     for (let d = -reach; d <= reach; d++) {
       const i = (((centre + d) % total) + total) % total;
@@ -379,7 +383,7 @@ export function buildTrackFromSvg(circuit: CircuitSpec, _sampleCount?: number): 
     pitTunnel: circuit.pitTunnel,
     pitEntryT,
     // Fallback de decisión táctica a 120 m nominales de la entrada, no línea FIA.
-    pitCommitmentT: circuit.pitCommitmentT ?? ((pitEntryT - 120 / circuit.lapLengthMeters + 1) % 1),
+    pitCommitmentT: circuit.pitCommitmentT !== undefined ? mapT(circuit.pitCommitmentT) : ((pitEntryT - 120 / circuit.lapLengthMeters + 1) % 1),
     pitCommitmentSource: 'calibrated',
     pitExitT,
     pitBoxT: 0.00,

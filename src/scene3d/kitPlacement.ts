@@ -11,7 +11,7 @@ import { getPitLaneGeometry } from '../utils/pitLaneGeometry';
 import { getScenario } from '../data/scenarioRegistry';
 import { CIRCUIT_KIT, KIT_RULES } from './circuitKit';
 import { SPONSORS, type Sponsor } from './sponsors';
-import { HOT, MOUNTAIN, sceneryFor } from './scenery';
+import { HOT, MOUNTAIN, sceneryFor, type Scenery } from './scenery';
 import { pointInPoly, rngFor, type Pt, type Poly } from './trackSpace';
 import { NIGHT_RACES } from '../renderer/lighting';
 import { reliefFor } from './relief';
@@ -22,7 +22,8 @@ import { portalItems } from './osmCrossings';
 
 export type Braking = 'fuerte' | 'media' | 'rapida';
 export interface KitInstance { piece: string; x: number; y: number; heading: number; t: number; side: 1 | -1; sponsor?: Sponsor; label?: string; z?: number }
-export interface KitRunoff { corner: number; t: number; side: 1 | -1; braking: Braking | 'estadio'; asphalt: number; gravel: number }
+/** `limited`: [CR11] no cabe entera, la recorta el sitio que hay (otro tramo, el pit lane, un monumento o un edificio). */
+export interface KitRunoff { corner: number; t: number; side: 1 | -1; braking: Braking | 'estadio'; asphalt: number; gravel: number; limited?: true }
 /** Franja de suelo (escapatoria o asfalto pintado del estadio) como polígono, para el suelo de la escena. */
 export interface KitStrip { surface: 'asfalto' | 'grava' | 'azul' | 'verde'; points: Pt[] }
 export interface StadiumSection { side: 1 | -1; tier: 'grande' | 'palcos'; outline: Pt[]; path: { x: number; y: number; nx: number; ny: number; base: number }[] }
@@ -74,14 +75,63 @@ export function kitFootprint(p: Pick<KitInstance, 'piece' | 'x' | 'y' | 'heading
   for (const u of [-1, -0.5, 0, 0.5, 1]) for (const v of [-1, 0, 1]) out.push({ x: p.x + u * L * c - v * W * s, y: p.y + u * L * s + v * W * c });
   return out;
 }
-/** [CR6] Edificios reales que no quedan debajo de una pieza del kit (la torre o una grada de la recta los tapan). */
+/** [CR10] Un edificio real de menos de esta planta no recorta la escapatoria: si cae dentro de una, no se dibuja. */
+export const SMALL_BUILDING_M2 = 100;
+const polyArea = (pts: Pt[]) => { let a = 0; for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) a += pts[j].x * pts[i].y - pts[i].x * pts[j].y; return Math.abs(a) / 2; };
+/**
+ * [CR6] Edificios reales que no quedan debajo de una pieza del kit (la torre o una grada de la recta los tapan).
+ * [CR10] Ni los pequeños que caen dentro de una escapatoria (una caseta en mitad del asfalto la partía en dos).
+ */
 export function realBuildingsClearOfKit<B extends { points: Pt[] }>(plan: KitPlacement | null, buildings: B[]): B[] {
   if (!plan) return buildings;
   const big = plan.pieces.filter(p => p.piece === 'grada_roja' || p.piece === 'torre_posiciones');
+  const centre = (pts: Pt[]) => ({ x: pts.reduce((s, q) => s + q.x, 0) / pts.length, y: pts.reduce((s, q) => s + q.y, 0) / pts.length });
   return buildings.filter(b => !big.some(p => {
     const f = kitFootprint(p), rect = [f[0], f[2], f[14], f[12]];
     return f.some(q => pointInPoly(q, b.points)) || b.points.some(q => pointInPoly(q, rect));
-  }));
+  }) && !(polyArea(b.points) < SMALL_BUILDING_M2 && nearRunoff(plan, b.points, RUNOFF_BUILDING_GAP_M)));
+}
+/** [CR11] Metros libres entre una escapatoria y un edificio real. */
+export const RUNOFF_BUILDING_GAP_M = 8;
+const segDist = (q: Pt, a: Pt, b: Pt) => { const dx = b.x - a.x, dy = b.y - a.y, L = dx * dx + dy * dy, u = L ? Math.max(0, Math.min(1, ((q.x - a.x) * dx + (q.y - a.y) * dy) / L)) : 0; return Math.hypot(q.x - a.x - u * dx, q.y - a.y - u * dy); };
+const stripsOf = new WeakMap<KitPlacement, { grid: Map<string, KitStrip[]> }>();
+/** Franjas de escapatoria cerca de un punto (rejilla de 40 m). */
+function runoffNear(plan: KitPlacement, q: Pt, reach: number): KitStrip[] {
+  let idx = stripsOf.get(plan);
+  if (!idx) {
+    idx = { grid: new Map() };
+    for (const s of plan.strips) {
+      const xs = s.points.map(q => q.x), ys = s.points.map(q => q.y);
+      for (let x = Math.floor(Math.min(...xs) / 40); x <= Math.floor(Math.max(...xs) / 40); x++)
+        for (let y = Math.floor(Math.min(...ys) / 40); y <= Math.floor(Math.max(...ys) / 40); y++) (idx.grid.get(`${x},${y}`) ?? idx.grid.set(`${x},${y}`, []).get(`${x},${y}`)!).push(s);
+    }
+    stripsOf.set(plan, idx);
+  }
+  const out: KitStrip[] = [], r = Math.ceil(reach / 40) + 1, cx = Math.floor(q.x / 40), cy = Math.floor(q.y / 40);
+  for (let x = cx - r; x <= cx + r; x++) for (let y = cy - r; y <= cy + r; y++) out.push(...(idx.grid.get(`${x},${y}`) ?? []));
+  return out;
+}
+/** Si un punto cae dentro de una escapatoria. */
+const inRunoff = (plan: KitPlacement, q: Pt) => runoffNear(plan, q, 0).some(s => pointInPoly(q, s.points));
+/** Si una planta toca una escapatoria o queda a menos de `gap` metros de ella. */
+function nearRunoff(plan: KitPlacement, poly: Pt[], gap: number): boolean {
+  const c = { x: poly.reduce((s, q) => s + q.x, 0) / poly.length, y: poly.reduce((s, q) => s + q.y, 0) / poly.length };
+  const reach = Math.max(...poly.map(q => Math.hypot(q.x - c.x, q.y - c.y))) + gap;
+  return runoffNear(plan, c, reach).some(s => poly.some(q => pointInPoly(q, s.points))
+    || s.points.some(q => pointInPoly(q, poly) || poly.some((a, k) => segDist(q, a, poly[(k + 1) % poly.length]) < gap)));
+}
+/**
+ * [CR11] Lo que el escenario dibuja de verdad: sin los árboles que caen dentro de una escapatoria (los pinos y palmeras
+ * del escenario se ponían sin mirarla) y sin los tramos de grada que pisan una boca de túnel.
+ */
+export function drawnScenery<S extends { items: Scenery['items']; portals?: Scenery['portals'] }>(plan: KitPlacement | null, scene: S): Scenery['items'] {
+  const mouths = portalItems(scene.portals ?? []);
+  const corners = (it: { x: number; y: number; heading: number; length: number; width: number }, m = 0): Pt[] => {
+    const c = Math.cos(it.heading), s = Math.sin(it.heading), L = it.length / 2 + m, W = it.width / 2 + m;
+    return [[-L, -W], [L, -W], [L, W], [-L, W]].map(([u, v]) => ({ x: it.x + u * c - v * s, y: it.y + u * s + v * c }));
+  };
+  const overMouth = (it: Scenery['items'][number]) => { const r = corners(it, 1); return mouths.some(m => { const q = corners(m); return r.some(p => pointInPoly(p, q)) || q.some(p => pointInPoly(p, r)); }); };
+  return scene.items.filter(it => !(it.kind === 'tree' && plan && inRunoff(plan, it)) && !(it.kind === 'grandstand' && mouths.length && overMouth(it)));
 }
 /** Hacia dónde mira la cara útil de la pieza (su `front`), en el plano del juego. */
 export function kitFront(piece: string, heading: number): Pt {
@@ -140,6 +190,17 @@ function build(track: TrackDefinition, circuitId: string, quality: 'alto' | 'med
   const monGrid = new Grid(monPts.length ? monPts : [{ x: 1e9, y: 1e9 }]);
   // [CR6] Edificios reales de OpenStreetMap: las piezas del kit no se meten dentro.
   const inReal = buildingIndex(scene.realBuildings ?? []);
+  // [CR10] Solo los edificios grandes paran la escapatoria; los pequeños que queden dentro no se dibujan.
+  // [CR11] Con la distancia a sus paredes (antes, solo a sus esquinas) y una rejilla que cuenta el margen.
+  const bigGrid = new Map<string, Pt[][]>();
+  for (const b of scene.realBuildings ?? []) {
+    if (polyArea(b.points) < SMALL_BUILDING_M2) continue;
+    const xs = b.points.map(q => q.x), ys = b.points.map(q => q.y), g = RUNOFF_BUILDING_GAP_M;
+    for (let x = Math.floor((Math.min(...xs) - g) / 40); x <= Math.floor((Math.max(...xs) + g) / 40); x++)
+      for (let y = Math.floor((Math.min(...ys) - g) / 40); y <= Math.floor((Math.max(...ys) + g) / 40); y++) (bigGrid.get(`${x},${y}`) ?? bigGrid.set(`${x},${y}`, []).get(`${x},${y}`)!).push(b.points);
+  }
+  const nearBigBuilding = (p: Pt) => (bigGrid.get(`${Math.floor(p.x / 40)},${Math.floor(p.y / 40)}`) ?? []).some(poly =>
+    pointInPoly(p, poly) || poly.some((a, k) => segDist(p, a, poly[(k + 1) % poly.length]) < RUNOFF_BUILDING_GAP_M));
   /** Dentro de la planta de un monumento o edificio (con margen). */
   let ignoreReal = false;
   const inMonument = (p: Pt, m = 2) => (!ignoreReal && inReal(p, m)) || monuments.some(it => {
@@ -173,6 +234,20 @@ function build(track: TrackDefinition, circuitId: string, quality: 'alto' | 'med
     let o = half + 1;
     while (o < half + 140 && roomFor(at(i, side, o + 2), i, 3)) o += 2;
     maxoff[side].push(o);
+  }
+  // [CR10/CR11] Sitio para el suelo de la escapatoria (los muros siguen con `maxoff`): además se para a 8 m de un
+  // edificio real grande (antes se pintaba por debajo: horquilla de Suzuka, La Source), y no salta de una muestra a la
+  // siguiente: junto a un obstáculo baja como mucho lo que avanza (45°), así lo rodea con un borde seguido, sin cuñas.
+  const room: Record<number, number[]> = { 1: [], [-1]: [] };
+  for (const side of [1, -1]) {
+    for (let i = 0; i < n; i++) {
+      let o = half + 1;
+      while (o < maxoff[side][i] && !nearBigBuilding(at(i, side, o + 2))) o += 2;
+      room[side].push(Math.min(o, maxoff[side][i]));
+    }
+    const m = room[side];
+    for (let k = 1; k <= 2 * n; k++) m[k % n] = Math.min(m[k % n], m[(k - 1) % n] + step);
+    for (let k = 2 * n - 1; k >= 0; k--) m[k % n] = Math.min(m[k % n], m[(k + 1) % n] + step);
   }
   const ttype = getScenario(circuitId).trackType;
   const street = STREET.has(circuitId);
@@ -209,11 +284,12 @@ function build(track: TrackDefinition, circuitId: string, quality: 'alto' | 'med
     for (let i = 0; i < n; i++) if (stadiumZone[i]) for (const sd of [1, -1] as const) asph[sd][i] = sd === stadiumOut ? 16 : 11;
   }
   // Recorte por el sitio que hay (otro tramo, pit lane, monumentos, agua).
-  const lim = (side: number, i: number) => Math.min(maxoff[side][i], half + asph[side][i] + grav[side][i]);
+  const lim = (side: number, i: number) => Math.min(room[side][i], half + asph[side][i] + grav[side][i]);
   const aEnd = (side: number, i: number) => Math.min(lim(side, i), half + 1.2 + asph[side][i]);
   const runoff: KitRunoff[] = corners.filter(k => k.kind && !stadiumZone[k.i0]).map(({ c, kind, i0, out }) => ({
     corner: c.number, t: c.t, side: out, braking: kind as Braking,
     asphalt: Math.max(0, aEnd(out, i0) - half - 1.2), gravel: Math.max(0, lim(out, i0) - aEnd(out, i0)),
+    ...(room[out][i0] < half + asph[out][i0] + grav[out][i0] - 0.5 ? { limited: true as const } : {}),
   }));
   for (const { c, i0, out } of corners) if (stadiumZone[i0]) runoff.push({ corner: c.number, t: c.t, side: out, braking: 'estadio', asphalt: asph[out][i0], gravel: 0 });
   // Franjas de suelo para la escena.
@@ -221,7 +297,7 @@ function build(track: TrackDefinition, circuitId: string, quality: 'alto' | 'med
   for (const side of [1, -1]) for (let i = 0; i < n; i++) {
     const j = (i + 1) % n;
     const quad = (o1: (k: number) => number, o2: (k: number) => number): Pt[] => [at(i, side, o1(i)), at(j, side, o1(j)), at(j, side, o2(j)), at(i, side, o2(i))];
-    if (asph[side][i] > 0.5 && asph[side][j] > 0.5) strips.push({ surface: stadiumZone[i] ? (side === stadiumOut ? 'azul' : 'verde') : 'asfalto', points: quad(() => half + 1.2, k => aEnd(side, k)) });
+    if (asph[side][i] > 0.5 && asph[side][j] > 0.5 && (stadiumZone[i] || (aEnd(side, i) - half - 1.2 > 0.3 && aEnd(side, j) - half - 1.2 > 0.3))) strips.push({ surface: stadiumZone[i] ? (side === stadiumOut ? 'azul' : 'verde') : 'asfalto', points: quad(() => half + 1.2, k => aEnd(side, k)) });
     if (grav[side][i] > 0.5 && grav[side][j] > 0.5 && lim(side, i) - aEnd(side, i) > 0.5) strips.push({ surface: 'grava', points: quad(k => aEnd(side, k), k => lim(side, k)) });
   }
   // ── Barreras ──
@@ -236,7 +312,7 @@ function build(track: TrackDefinition, circuitId: string, quality: 'alto' | 'med
   for (const side of [1, -1] as const) {
     const off: (number | null)[] = [];
     for (let i = 0; i < n; i++) {
-      const r = asph[side][i] + grav[side][i]; let o: number, k: string;
+      const r = Math.max(0, lim(side, i) - half); let o: number, k: string;   // [CR11] lo que mide de verdad la escapatoria
       if (stadiumZone[i]) { o = half + r + 1.2; k = 'bloque_hormigon'; }
       else if (street) { o = half + verge + r; k = 'bloque_hormigon'; }
       else if (r > 3) { o = half + r + 1.5; k = 'muro_neumaticos'; }
@@ -509,13 +585,21 @@ function build(track: TrackDefinition, circuitId: string, quality: 'alto' | 'med
   // [CR6] Donde OpenStreetMap tiene bosque, arbolado o hileras de árboles (a 170 m de la pista o menos), y no en otro sitio.
   if (quality !== 'bajo' && !HOT.has(circuitId) && !MOUNTAIN.has(circuitId)) {
     const spots = woodSpots(circuitId, quality === 'medio' ? 40 : 30), cap = quality === 'medio' ? 500 : 1000;
+    // [CR11] Rejilla de franjas de escapatoria (40 m), para mirar cada árbol solo contra las de su zona.
+    const stripGrid = new Map<string, KitStrip[]>();
+    for (const s of strips) {
+      const xs = s.points.map(q => q.x), ys = s.points.map(q => q.y);
+      for (let x = Math.floor(Math.min(...xs) / 40); x <= Math.floor(Math.max(...xs) / 40); x++)
+        for (let y = Math.floor(Math.min(...ys) / 40); y <= Math.floor(Math.max(...ys) / 40); y++) (stripGrid.get(`${x},${y}`) ?? stripGrid.set(`${x},${y}`, []).get(`${x},${y}`)!).push(s);
+    }
+    const inStrip = (p: Pt) => (stripGrid.get(`${Math.floor(p.x / 40)},${Math.floor(p.y / 40)}`) ?? []).some(s => pointInPoly(p, s.points));
     // Primero los más cercanos a la pista, que son los que se ven desde las cámaras (hasta el tope de la calidad).
     const near = spots.map(p => ({ p, ...grid.nearest(p) })).filter(s => s.i >= 0 && s.d <= 170).sort((a, b) => a.d - b.d);
     let count = 0;
     for (const { p, i, d } of near) {
       if (count >= cap) break;
       if (d < half + 8 + Math.max(asph[1][i] + grav[1][i], asph[-1][i] + grav[-1][i])) continue;
-      if (!freeSpot(p, 4, 8)) continue;
+      if (!freeSpot(p, 4, 8) || inStrip(p)) continue;   // [CR11] ni dentro de una escapatoria
       const tree = ['arbol_a', 'arbol_b', 'arbol_c'][Math.floor(rand() * 3)], turn = rand() * Math.PI * 2;
       // [CR6, 09/11/2026] Con la copa entera (los árboles rehechos son más anchos), y un 30 % de margen: el agua del
       // juego no calca del todo la de OpenStreetMap.

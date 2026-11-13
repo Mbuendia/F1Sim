@@ -77,7 +77,7 @@
     "direction": "clockwise; sentido del pit lane según oneway=yes de OSM, coherente con la pista del juego",
     "svgTransform": "OSM (proyección equirectangular local en 50.4372,5.9714, metros, y hacia abajo) → mundo de spa-francorchamps-4.svg: rotación 0.01°, sin reflexión, escala x0.9973 respecto a lapLengthMeters=7004; ajuste global mediana 4.1 m (cobertura p95 12.7 m)",
     "entryT": 0.9664,
-    "exitT": 0.0774,
+    "exitT": 0.081,
     "evidence": {
       "entry": {
         "t": 0.9664,

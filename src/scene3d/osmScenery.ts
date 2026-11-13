@@ -9,14 +9,17 @@ export interface OsmWater { osm: string; points: Poly; holes?: Poly[] }
 /** Bosque, parque o arbolado (area) o hilera y árbol suelto (sin area). */
 export interface OsmWood { osm: string; area: boolean; points: Poly; holes?: Poly[] }
 /** Edificio con su huella y su altura (de OpenStreetMap o según su tipo). */
-export interface OsmBuilding { osm: string; points: Poly; height: number; type?: string; name?: string }
+/** [CR12] `use`: cómo se pinta ('grada', 'cubierta', 'nave' o 'ciudad'); una grada lleva sus tramos (`segments`). */
+export type BuildingUse = 'grada' | 'cubierta' | 'nave' | 'ciudad';
+export interface StandSegment { x: number; y: number; heading: number; length: number; width: number }
+export interface OsmBuilding { osm: string; points: Poly; height: number; type?: string; name?: string; use?: BuildingUse; segments?: StandSegment[] }
 /** Puente o paso bajo la pista: su línea y su tipo (pasarela, carretera, monorrail, tren). */
 export interface OsmLine { osm: string; points: Poly; type: string; name?: string; layer?: number; way?: string; tunnel?: string }
 interface RawScenery {
   id: string;
   water: { osm: string; points: Raw; holes?: Raw[] }[];
   woods?: { osm: string; area: boolean; points: Raw; holes?: Raw[] }[];
-  buildings?: { osm: string; points: Raw; height: number; type?: string; name?: string }[];
+  buildings?: { osm: string; points: Raw; height: number; type?: string; name?: string; use?: string; segments?: StandSegment[] }[];
   bridges?: (Omit<OsmLine, 'points'> & { points: Raw })[];
   tunnels?: (Omit<OsmLine, 'points'> & { points: Raw })[];
   landmarks?: OsmLandmark[];
@@ -46,7 +49,7 @@ export function osmWoods(circuitId: string): OsmWood[] {
 
 /** Edificios reales a 150 m de la pista o menos. */
 export function osmBuildings(circuitId: string): OsmBuilding[] {
-  return (byId.get(circuitId)?.buildings ?? []).map(b => ({ ...b, points: toPoly(b.points) }));
+  return (byId.get(circuitId)?.buildings ?? []).map(b => ({ ...b, use: (b.use ?? 'ciudad') as BuildingUse, points: toPoly(b.points) }));
 }
 
 /** Puentes de OpenStreetMap que cruzan la pista. */
