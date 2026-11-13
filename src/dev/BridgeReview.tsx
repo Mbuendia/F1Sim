@@ -34,6 +34,9 @@ const liveStart = Number(q.get('inicio') ?? 40);
 const followIndex = q.has('sigue') ? Number(q.get('sigue')) : null;
 const sendIn = q.get('entrar') === '1';
 const stuck = q.get('atasco') === '1';
+// [VS2] Lluvia (mm/h) y agua en pista (mm) en toda la vuelta, para revisar el asfalto mojado y la estela.
+const rainMmH = q.has('lluvia') ? Number(q.get('lluvia')) : null;
+const waterMm = q.has('agua') ? Number(q.get('agua')) : null;
 const placeAt = q.has('en') ? Number(q.get('en')) : null;
 
 export default function BridgeReview() {
@@ -108,7 +111,7 @@ export default function BridgeReview() {
     const raw = data.host.slowView();
     // [CA5] La parada se ancla al tiempo de carrera de la foto: así la escena la ve en el segundo `parada`.
     const base = stopAt === null ? raw : { ...raw, cars: raw.cars.map(c => (c.stop ? { ...c, stop: { ...c.stop, start: raceTimeSec - stopAt } } : c)) };
-    const slow = { ...base, t: raceTimeSec, finished: finished || base.finished, weatherScene: { ...base.weatherScene, cloudCover: clouds } };
+    const slow = { ...base, t: raceTimeSec, finished: finished || base.finished, weatherScene: { ...base.weatherScene, cloudCover: clouds, ...(rainMmH !== null ? { rain: base.weatherScene.rain.map(() => rainMmH) } : {}), ...(waterMm !== null ? { water: base.weatherScene.water.map(() => waterMm) } : {}) } };
     const now = performance.now();
     raceStore.getState().receive({ type: 'slow', view: slow }, now);
     raceStore.getState().receive({ type: 'fast', view: fast }, now - 100);

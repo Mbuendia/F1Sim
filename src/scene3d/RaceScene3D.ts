@@ -36,6 +36,10 @@ import { KERB_WIDTH } from '../utils/scenarioGeometry';
 import { SPONSOR_COLORS, type Sponsor } from './sponsors';
 import { fireworkBursts, yasHotelColor } from './effects';
 import { lampAim, nearestFloodlights, nightLook, sunLightVector } from './sunLight';
+import { SPARKS as SPARK_TRAIL, SPRAY, crowdSeats, skyLook, sparking, standsOf, trailPoints, wetFilm } from './ambience';
+import { createCrowd, createSky, createTrail, createWetFilm, finishTrail, setPointLook, updateSky, writeTrail } from './ambienceMeshes';
+import { sprayLevel } from '../renderer/WeatherRenderer';
+import { TEAMS } from '../data/teams';
 import type { CameraView } from './cameras';
 import { perfStats } from '../dev/perfStats';
 import { planCars, shadowSource, type CarLevel } from './carDots';
@@ -103,7 +107,15 @@ export interface Frame3D {
   focusCarId?: number | null;
   /** [CA5] Tiempo de carrera del fotograma, para animar las paradas en boxes. */
   raceTimeSec?: number;
+  /** [VS2] Nubosidad (0 a 1), para el cielo. */
+  cloudCover?: number;
+  /** [VS2] Lluvia (mm/h) y agua en pista (mm) por tramo, y el agua que pisa un coche; null en seco. */
+  wet?: { rainMmH: readonly number[]; waterMm: readonly number[]; depthAt: (trackT: number) => number } | null;
 }
+
+/** [VS2] Ropa del público: los colores de los equipos y unos cuantos neutros. */
+const CROWD_COLORS = [...Object.values(TEAMS).map(team => team.color), '#f2f2f2', '#d8d8d8', '#2b2f36', '#c9302c', '#e8c547', '#3a6ea5'];
+const SPRAY_COLOR = { r: 0.55, g: 0.6, b: 0.66 }, SPARK_COLOR = { r: 1, g: 0.62, b: 0.18 };
 
 /** [CA5] Lo que sube el gato el coche (m) y lo que se separa del coche una rueda al sacarla (m). */
 const PIT_LIFT_M = 0.07;
@@ -167,6 +179,12 @@ export class RaceScene3D {
   private ledMaterials: THREE.MeshStandardMaterial[] = [];
   private lampMaterials: THREE.MeshStandardMaterial[] = [];
   private fireworks: THREE.Points | null = null;
+  /** [VS2] Ambiente: cielo, película de agua, estela, chispas y público (una llamada de dibujo cada uno). */
+  private sky: THREE.Mesh | null = null;
+  private wetFilmMesh: THREE.Mesh | null = null;
+  private sprayFx: THREE.Points | null = null;
+  private sparkFx: THREE.Points | null = null;
+  private crowd: THREE.Points | null = null;
   /** [UX16] Puntos de los coches lejanos y el nivel de cada coche en el fotograma anterior (para el margen). */
   private dots: THREE.Points | null = null;
   private readonly carLevels = new Map<number, CarLevel>();
@@ -257,6 +275,7 @@ export class RaceScene3D {
       : scenery.items.filter(it => it.kind === 'floodlight');
     this.world.add(buildGround(track, circuitId, scenery.infield, scenery.water, scenery.street, kit, scenery.escapes ?? []));
     this.world.add(buildWalls(track, circuitId, scenery.barriers));
+    this.addAmbience(track, circuitId, drawnScenery(kit, scenery), kit, level);
     if (scenery.pitBuilding) this.world.add(buildPitBuildingMesh(scenery.pitBuilding, circuitId));
     if (this.floodlights.length) { this.lampFx = buildLampFx(this.floodlights, track); this.world.add(this.lampFx); }
     const o = overpassFor(circuitId);
@@ -337,10 +356,14 @@ export class RaceScene3D {
     // Cielo, luz y sombras del sol (o de los focos de noche).
     const night = sun.mode === 'focos';
     const look = nightLook(sun);
-    const sky = new THREE.Color(look.sky.r, look.sky.g, look.sky.b);
+    // [VS2] El cielo es una cúpula con degradado; el fondo y la niebla toman el color de su horizonte.
+    const skyNow = skyLook(sun, frame.cloudCover ?? 0);
+    const sky = new THREE.Color(skyNow.horizon.r, skyNow.horizon.g, skyNow.horizon.b);
     this.scene.background = sky;
     this.scene.fog = new THREE.Fog(sky, this.camera.far * 0.35, this.camera.far * 0.95);
     const v = sunLightVector(sun);
+    if (!this.sky) { this.sky = createSky(); this.scene.add(this.sky); }
+    updateSky(this.sky, skyNow, new THREE.Vector3(v.x, v.z, v.y), this.camera, frame.raceTimeSec ?? 0);
     const target = W(view.target.x, view.target.y, 0);
     const r = frame.shadowRadius;
     this.sunLight.target.position.copy(target);
@@ -375,6 +398,7 @@ export class RaceScene3D {
     for (const m of this.lampMaterials) m.emissiveIntensity = night ? 2.5 : 0;
     if (this.lampFx) this.lampFx.visible = night;
     this.placeFireworks(frame.fireworksSec ?? null);
+    this.placeAmbience(frame, night);
 
     this.placeCars(frame.cars, { fovDeg: view.fov, viewportHeightPx: height, pixelRatio: Math.min(pixelRatio, 2), playerTeamId: frame.playerTeamId ?? null, followedCarId: frame.followedCarId ?? null, focusCarId: frame.focusCarId ?? null });
     this.placeSafetyCar(frame.safetyCar);
@@ -655,6 +679,46 @@ export class RaceScene3D {
   }
 
   /** Fuegos artificiales: un único conjunto de puntos que se rellena con las explosiones vivas. */
+  /** [VS2] Lo que se monta con el circuito: la película de agua sobre el eje, las dos nubes de puntos y el público. */
+  private addAmbience(track: TrackDefinition, circuitId: string, items: readonly SceneItem[], kit: KitPlacement | null, level: QualityLevel): void {
+    const relief = reliefFor(circuitId), n = track.points.length;
+    this.wetFilmMesh = createWetFilm(track.points, track.trackWidthMeters || 12, i => this.carHeight({ trackT: i / n }));
+    this.sprayFx = createTrail('estela', 26 * SPRAY.count, 1.5, 70);
+    this.sparkFx = createTrail('chispas', 26 * SPARK_TRAIL.count, 0.24, 9);
+    const stands = standsOf(items, kit?.pieces ?? [], piece => CIRCUIT_KIT.find(p => p.id === piece)?.dims);
+    const seats = stands.flatMap(stand => crowdSeats(stand, track.points, CROWD_COLORS.length, level === 'bajo' ? 0.5 : 1));
+    this.crowd = createCrowd(seats, CROWD_COLORS, (x, y) => (relief ? relief.groundHeight(x, y) : 0));
+    this.world.add(this.wetFilmMesh, this.sprayFx, this.sparkFx);
+    if (this.crowd) this.world.add(this.crowd);
+  }
+
+  /** [VS2] En cada fotograma: lo mojado que está el asfalto y lo que dejan los coches (agua en mojado; chispas en seco y
+   *  a fondo). En calidad baja no hay partículas. */
+  private placeAmbience(frame: Frame3D, night: boolean): void {
+    const wet = frame.wet ?? null, t = frame.raceTimeSec ?? 0;
+    // Tamaño de los puntos: píxeles que mide un metro a un metro de la cámara.
+    const pxPerM = this.renderer.domElement.height / (2 * Math.tan((this.camera.fov * Math.PI) / 360));
+    if (this.crowd) setPointLook(this.crowd, pxPerM, night ? 0.4 : 1);
+    if (this.sprayFx) setPointLook(this.sprayFx, pxPerM, 0.22);
+    if (this.sparkFx) setPointLook(this.sparkFx, pxPerM, 1);
+    if (this.wetFilmMesh) {
+      const opacity = wet ? wetFilm(wet.waterMm, wet.rainMmH) : 0;
+      this.wetFilmMesh.visible = opacity > 0.01;
+      (this.wetFilmMesh.material as THREE.MeshBasicMaterial).opacity = opacity;
+    }
+    if (!this.sprayFx || !this.sparkFx) return;
+    let spray = 0, sparks = 0;
+    if (this.quality !== QUALITY_PROFILES.bajo) for (const car of frame.cars) {
+      if (car.status !== 'running' || car.isInPitLane) continue;
+      const pose = { id: car.id, x: car.worldX, y: car.worldY, z: this.carHeight(car), angle: car.worldAngle };
+      const level = wet ? sprayLevel(car.currentSpeedKmh, wet.depthAt(car.trackT)) : 0;
+      if (level > 0) spray = writeTrail(this.sprayFx, spray, trailPoints(pose, t, SPRAY, level), SPRAY_COLOR);
+      else if (sparking(car.id, car.currentSpeedKmh, t)) sparks = writeTrail(this.sparkFx, sparks, trailPoints(pose, t, SPARK_TRAIL), SPARK_COLOR);
+    }
+    finishTrail(this.sprayFx, spray);
+    finishTrail(this.sparkFx, sparks);
+  }
+
   private placeFireworks(seconds: number | null): void {
     const bursts = this.track ? fireworkBursts(this.circuitId, this.track, seconds).slice(-MAX_BURSTS) : [];
     if (!bursts.length) { if (this.fireworks) this.fireworks.visible = false; return; }

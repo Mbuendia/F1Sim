@@ -338,6 +338,8 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
         }
         const pixelRatioMax = q?.profile.pixelRatioMax ?? 1.5;
         const image = scene3d.render({ cars: frame.cars, safetyCar: frame.safetyCar, raceTimeSec: frame.raceTimeSec, view: shot.view, sun: sun3, shadowRadius: shot.shadowRadius, fireworksSec, playerTeamId, followedCarId: selectedCarId,
+          // [VS2] Nubosidad para el cielo y agua para el asfalto mojado y la estela de los coches.
+          cloudCover: frame.cloudCover, wet: frame.layers ? { rainMmH: frame.layers.rain, waterMm: frame.layers.water, depthAt: frame.depthAt } : null,
           // [PF2.7] Con las cámaras pegadas al coche, él y los cercanos van con el modelo completo.
           focusCarId: director.mode === 'persecucion' || director.mode === 'a-bordo' ? selectedCarId : null }, w, h, Math.min(dpr, pixelRatioMax));
         ctx.drawImage(image, 0, 0, w, h);

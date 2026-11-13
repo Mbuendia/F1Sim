@@ -642,6 +642,7 @@ export const modules = [
   { "id": "runoff-clean-cr11", "tasks": ["CR11"], "sprint": "10.5", "kind": "contract" },
   { "id": "buildings-cr12", "tasks": ["CR12"], "sprint": "10.5", "kind": "contract" },
   { "id": "visual-system-vs1", "tasks": ["VS1"], "sprint": "11", "kind": "contract" },
+  { "id": "ambience-vs2", "tasks": ["VS2"], "sprint": "11", "kind": "contract" },
   { "id": "offline-of1", "tasks": ["OF1"], "sprint": "13", "kind": "contract" },
   { "id": "storage-of2", "tasks": ["OF2"], "sprint": "13", "kind": "contract" },
   { "id": "updates-of3", "tasks": ["OF3"], "sprint": "13", "kind": "contract" },
