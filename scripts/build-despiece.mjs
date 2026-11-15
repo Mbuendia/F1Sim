@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// [VS6] Prepara lo que la landing del despiece (public/landing/despiece/) necesita y no puede sacar de node_modules,
+// [VS6] Prepara lo que la landing del despiece (public/landing/, la portada de GitHub Pages) necesita y no puede sacar de node_modules,
 // porque esa carpeta se sirve tal cual, sin compilar:
 //  - three.js y los complementos que usa (cargador glTF, descompresor meshopt y entorno de estudio), en vendor/;
 //  - las capturas del juego (de docs/design/), pasadas a WebP en img/;
@@ -10,7 +10,7 @@ import { copyFileSync, mkdirSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import sharp from 'sharp';
 
-const OUT = 'public/landing/despiece';
+const OUT = 'public/landing';
 const THREE = 'node_modules/three';
 const VENDOR = [
   ['build/three.module.min.js', 'vendor/three.module.min.js'],

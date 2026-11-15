@@ -19,7 +19,9 @@ import { readFileSync, existsSync, statSync, readdirSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { resolve } from 'node:path';
 
-const DIR = 'public/landing/despiece';
+// [16/11/2026] El usuario pide que el despiece sea la portada y que se quite la landing del vídeo: la página pasa de
+// public/landing/despiece/ a public/landing/. Solo cambia la carpeta; lo que se comprueba es lo mismo.
+const DIR = 'public/landing';
 const GLB = `${DIR}/f1-despiece.glb`;
 const PIECES = ['ala_delantera', 'ala_trasera', 'drs_flap', 'chasis', 'carroceria_baja', 'pontones', 'tapa_motor', 'suelo',
   'suspension_del', 'suspension_tras', 'motor', 'turbo', 'escape', 'caja_cambios', 'radiadores', 'rueda_FL', 'rueda_FR', 'rueda_RL', 'rueda_RR'];
@@ -46,7 +48,7 @@ function bounds(json, name) {
 
 export default async function run({ assert, test }) {
   await test('VS6.1, 2 y 6: el modelo', () => {
-    assert(existsSync(GLB), 'VS6: el modelo está en public/landing/despiece/');
+    assert(existsSync(GLB), 'VS6: el modelo está en public/landing/');
     if (!existsSync(GLB)) return;
     const json = readGlb(GLB);
     const names = json.nodes.filter(n => n.mesh !== undefined).map(n => n.name);
