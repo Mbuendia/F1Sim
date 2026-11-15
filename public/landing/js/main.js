@@ -11,7 +11,7 @@ const stage = document.querySelector('.escena');
 const canvas = document.querySelector('[data-lienzo]');
 const note = document.querySelector('[data-carga]');
 
-// La dirección del juego vive en un solo sitio (../js/config.js, la misma que usa la otra landing).
+// La dirección del juego vive en un solo sitio (js/config.js).
 const playUrl = window.F1RM_CONFIG && window.F1RM_CONFIG.PLAY_URL;
 if (playUrl) document.querySelectorAll('[data-jugar]').forEach(a => { a.href = playUrl; });
 
