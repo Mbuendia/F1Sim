@@ -2,7 +2,9 @@
 // [VS6] Prepara lo que la landing del despiece (public/landing/despiece/) necesita y no puede sacar de node_modules,
 // porque esa carpeta se sirve tal cual, sin compilar:
 //  - three.js y los complementos que usa (cargador glTF, descompresor meshopt y entorno de estudio), en vendor/;
-//  - las capturas del juego (de docs/design/), pasadas a WebP en img/.
+//  - las capturas del juego (de docs/design/), pasadas a WebP en img/;
+//  - las fuentes que usa (de public/fonts/), en fonts/: la carpeta landing/ se publica sola en GitHub Pages, sin el
+//    resto de public/, así que no puede tomarlas del juego.
 // Se puede repetir. Uso: node scripts/build-despiece.mjs
 import { copyFileSync, mkdirSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -30,6 +32,11 @@ const SHOTS = [
   ['docs/design/vs1-capturas/carrera-escritorio-despues.png', 'img/carrera.webp'],
 ];
 
+const FONTS = ['barlow-400.woff2', 'barlow-600.woff2', 'barlow-condensed-700.woff2', 'barlow-condensed-800i.woff2', 'LICENCIA.md'];
+for (const name of FONTS) {
+  mkdirSync(join(OUT, 'fonts'), { recursive: true });
+  copyFileSync(join('public/fonts', name), join(OUT, 'fonts', name));
+}
 for (const [from, to] of VENDOR) {
   const dest = join(OUT, to);
   mkdirSync(dirname(dest), { recursive: true });

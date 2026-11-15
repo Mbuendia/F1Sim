@@ -1,8 +1,8 @@
 /* [VS6] Landing del despiece. Sistema visual «Cartel de carrera» (VS1): mismas fuentes, colores y medidas que el juego. */
-@font-face { font-family: 'Barlow'; src: url('../../fonts/barlow-400.woff2') format('woff2'); font-weight: 400; font-display: swap; }
-@font-face { font-family: 'Barlow'; src: url('../../fonts/barlow-600.woff2') format('woff2'); font-weight: 600; font-display: swap; }
-@font-face { font-family: 'Barlow Condensed'; src: url('../../fonts/barlow-condensed-700.woff2') format('woff2'); font-weight: 700; font-display: swap; }
-@font-face { font-family: 'F-Uno Titular'; src: url('../../fonts/barlow-condensed-800i.woff2') format('woff2'); font-weight: 800; font-style: italic; font-display: swap; }
+@font-face { font-family: 'Barlow'; src: url('fonts/barlow-400.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Barlow'; src: url('fonts/barlow-600.woff2') format('woff2'); font-weight: 600; font-display: swap; }
+@font-face { font-family: 'Barlow Condensed'; src: url('fonts/barlow-condensed-700.woff2') format('woff2'); font-weight: 700; font-display: swap; }
+@font-face { font-family: 'F-Uno Titular'; src: url('fonts/barlow-condensed-800i.woff2') format('woff2'); font-weight: 800; font-style: italic; font-display: swap; }
 
 :root {
   --bg: #050505;
