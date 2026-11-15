@@ -1,7 +1,7 @@
 .panel {
   padding: 10px 14px 14px;
-  color: #e2e8f0;
-  font-size: 14px;
+  color: var(--text);
+  font-size: var(--letra-1);
 }
 
 .saveRow {
@@ -17,17 +17,17 @@
   gap: 4px;
   flex: 1 1 220px;
   max-width: 340px;
-  color: #94a3b8;
+  color: var(--text-2);
   font-weight: 600;
 }
 
 .nameInput {
   height: 32px;
   padding: 0 10px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 8px;
-  background: rgba(0, 0, 0, 0.25);
-  color: #e2e8f0;
+  border: 1px solid color-mix(in srgb, var(--text) 30%, transparent);
+  border-radius: var(--radio-m);
+  background: color-mix(in srgb, var(--negro) 25%, transparent);
+  color: var(--text);
   font: inherit;
 }
 
@@ -39,7 +39,7 @@
 .action {
   height: 32px;
   padding: 0 12px;
-  border-radius: 8px;
+  border-radius: var(--radio-m);
   font: inherit;
   font-weight: 600;
   cursor: pointer;
@@ -47,41 +47,41 @@
 }
 
 .primary {
-  border: 1px solid #e2e8f0;
-  background: #e2e8f0;
-  color: #0f172a;
+  border: 1px solid var(--text);
+  background: var(--text);
+  color: var(--panel-2);
 }
 
 .action {
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: 1px solid color-mix(in srgb, var(--text) 30%, transparent);
   background: transparent;
-  color: #e2e8f0;
+  color: var(--text);
 }
 
 .primary:hover,
 .primary:focus-visible {
-  background: #ffffff;
+  background: var(--text);
 }
 
 .action:hover,
 .action:focus-visible {
-  background: rgba(255, 255, 255, 0.1);
+  background: color-mix(in srgb, var(--text) 10%, transparent);
 }
 
 .message {
   margin: 10px 0 0;
   padding: 6px 10px;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--radio-m);
+  border: 1px solid color-mix(in srgb, var(--text) 15%, transparent);
 }
 
-.ok { border-color: #1f7a4d; color: #86efac; }
-.error { border-color: #7f1d1d; color: #fca5a5; }
-.info { color: #cbd5e1; }
+.ok { border-color: var(--positivo); color: var(--positivo); }
+.error { border-color: var(--accion-oscuro); color: var(--negativo); }
+.info { color: var(--text-2); }
 
 .empty {
   margin: 12px 0 0;
-  color: #94a3b8;
+  color: var(--text-2);
 }
 
 .list {
@@ -100,9 +100,9 @@
   justify-content: space-between;
   gap: 8px 16px;
   padding: 8px 10px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid color-mix(in srgb, var(--text) 12%, transparent);
+  border-radius: var(--radio-m);
+  background: color-mix(in srgb, var(--text) 4%, transparent);
 }
 
 .info {
@@ -113,7 +113,7 @@
 }
 
 .name {
-  font-size: 14px;
+  font-size: var(--letra-1);
   font-weight: 700;
   overflow-wrap: anywhere;
 }
@@ -121,15 +121,15 @@
 .badge {
   margin-left: 8px;
   padding: 1px 6px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 999px;
-  font-size: 14px;
+  border: 1px solid color-mix(in srgb, var(--text) 30%, transparent);
+  border-radius: var(--radio-pill);
+  font-size: var(--letra-1);
   font-weight: 600;
-  color: #94a3b8;
+  color: var(--text-2);
 }
 
 .meta {
-  color: #94a3b8;
+  color: var(--text-2);
   font-variant-numeric: tabular-nums;
 }
 
@@ -141,5 +141,5 @@
 }
 
 .confirmText {
-  color: #fcd34d;
+  color: var(--aviso);
 }

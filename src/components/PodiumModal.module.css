@@ -5,7 +5,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(4, 7, 15, 0.92);
+  background: color-mix(in srgb, var(--bg) 92%, transparent);
   backdrop-filter: blur(12px);
   display: flex;
   align-items: safe center;
@@ -26,10 +26,10 @@
 }
 
 .podiumContainer {
-  background: linear-gradient(180deg, #131728 0%, #080a14 100%);
-  border: 2px solid rgba(255, 215, 0, 0.45);
-  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.95), 0 0 60px rgba(255, 215, 0, 0.25);
-  border-radius: 24px;
+  background: linear-gradient(180deg, var(--panel-2) 0%, var(--panel) 100%);
+  border: 2px solid color-mix(in srgb, var(--aviso) 45%, transparent);
+  box-shadow: 0 25px 70px color-mix(in srgb, var(--negro) 95%, transparent), 0 0 60px color-mix(in srgb, var(--aviso) 25%, transparent);
+  border-radius: var(--radio-l);
   padding: 32px 42px;
   text-align: center;
   max-width: 920px;
@@ -49,25 +49,25 @@
 }
 
 .f1Logo {
-  font-family: 'Orbitron', sans-serif;
-  color: #e10600;
-  font-size: 14px;
+  font-family: var(--font-marca);
+  color: var(--accion);
+  font-size: var(--letra-1);
   font-weight: 900;
   letter-spacing: 4px;
 }
 
 .title {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 26px;
+  font-family: var(--font-marca);
+  font-size: var(--letra-5);
   font-weight: 900;
-  color: #ffffff;
+  color: var(--text);
   margin: 6px 0;
   letter-spacing: 2px;
 }
 
 .subtitle {
-  font-family: 'Rajdhani', sans-serif;
-  font-size: 14px;
+  font-family: var(--font-ui);
+  font-size: var(--letra-1);
   font-weight: 700;
   color: var(--text-2);
   letter-spacing: 1px;
@@ -102,36 +102,36 @@
 
 .winnerCrown {
   font-family: var(--font-ui);
-  font-size: 14px;
+  font-size: var(--letra-1);
   font-weight: 900;
-  color: #ffd700;
+  color: var(--aviso);
   margin-bottom: 8px;
   display: flex;
   align-items: center;
   gap: 6px;
   letter-spacing: 1.5px;
-  text-shadow: 0 0 10px rgba(255, 215, 0, 0.6);
+  text-shadow: 0 0 10px color-mix(in srgb, var(--aviso) 60%, transparent);
 }
 
 .driverCard {
-  background: rgba(15, 23, 42, 0.85);
+  background: color-mix(in srgb, var(--panel-2) 85%, transparent);
   backdrop-filter: blur(8px);
-  border: 1.5px solid rgba(255, 255, 255, 0.15);
-  border-top: 5px solid #e10600;
-  border-radius: 14px 14px 0 0;
+  border: 1.5px solid color-mix(in srgb, var(--text) 15%, transparent);
+  border-top: 5px solid var(--accion);
+  border-radius: var(--radio-l) var(--radio-l) 0 0;
   padding: 14px 12px;
   width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 6px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--negro) 50%, transparent);
 }
 
 .winnerCard {
-  background: rgba(30, 41, 59, 0.95);
-  border-color: rgba(255, 215, 0, 0.45);
-  box-shadow: 0 0 35px rgba(255, 215, 0, 0.3);
+  background: color-mix(in srgb, var(--line) 95%, transparent);
+  border-color: color-mix(in srgb, var(--aviso) 45%, transparent);
+  box-shadow: 0 0 35px color-mix(in srgb, var(--aviso) 30%, transparent);
   padding: 16px 14px;
 }
 
@@ -141,11 +141,11 @@
   justify-content: center;
   gap: 6px;
   padding: 4px 10px;
-  border-radius: 20px;
+  border-radius: var(--radio-l);
   border: 1px solid;
   margin: 4px 0 2px;
   max-width: 95%;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--negro) 40%, transparent);
 }
 
 .teamColorDot {
@@ -157,8 +157,8 @@
 }
 
 .teamBadgeText {
-  font-family: 'Rajdhani', sans-serif;
-  font-size: 14px;
+  font-family: var(--font-ui);
+  font-size: var(--letra-1);
   font-weight: 800;
   letter-spacing: 0.5px;
   white-space: nowrap;
@@ -174,80 +174,80 @@
 }
 
 .driverName {
-  font-family: 'Rajdhani', sans-serif;
-  font-size: 16px;
+  font-family: var(--font-ui);
+  font-size: var(--letra-2);
   font-weight: 800;
   color: var(--text);
   text-align: center;
 }
 
 .winnerName {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 17px;
+  font-family: var(--font-marca);
+  font-size: var(--letra-3);
   font-weight: 900;
-  color: #ffffff;
+  color: var(--text);
   text-align: center;
 }
 
 .gapText {
   font-family: var(--font-ui);
-  font-size: 15px;
-  color: #38bdf8;
+  font-size: var(--letra-2);
+  color: var(--info);
   font-weight: 800;
   margin-top: 2px;
 }
 
 .winnerTag {
   font-family: var(--font-ui);
-  font-size: 14px;
+  font-size: var(--letra-1);
   font-weight: 900;
-  color: #ffd700;
-  background: rgba(255, 215, 0, 0.2);
-  border: 1px solid rgba(255, 215, 0, 0.4);
+  color: var(--aviso);
+  background: color-mix(in srgb, var(--aviso) 20%, transparent);
+  border: 1px solid color-mix(in srgb, var(--aviso) 40%, transparent);
   padding: 3px 10px;
-  border-radius: 6px;
+  border-radius: var(--radio-m);
   margin-top: 2px;
   letter-spacing: 1px;
 }
 
 .pedestal {
   width: 100%;
-  background: linear-gradient(180deg, #222b40 0%, #0d1220 100%);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: linear-gradient(180deg, var(--line) 0%, var(--panel-2) 100%);
+  border: 1px solid color-mix(in srgb, var(--text) 12%, transparent);
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 0 0 10px 10px;
+  border-radius: 0 0 var(--radio-l) var(--radio-l);
 }
 
 .pedestalNumber {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 42px;
+  font-family: var(--font-marca);
+  font-size: var(--letra-7);
   font-weight: 900;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .restartBtn {
-  background: linear-gradient(135deg, #e10600 0%, #a80400 100%);
-  color: #ffffff;
+  background: linear-gradient(135deg, var(--accion) 0%, var(--accion-oscuro) 100%);
+  color: var(--text);
   border: none;
   padding: 13px 32px;
-  border-radius: 10px;
+  border-radius: var(--radio-l);
   font-family: var(--font-ui);
-  font-size: 16px;
+  font-size: var(--letra-2);
   font-weight: 800;
   letter-spacing: 2px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  transition: all 0.2s;
-  box-shadow: 0 8px 25px rgba(225, 6, 0, 0.5);
+  transition: all var(--t-medio);
+  box-shadow: 0 8px 25px color-mix(in srgb, var(--accion) 50%, transparent);
 }
 
 .restartBtn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 32px rgba(225, 6, 0, 0.7);
+  box-shadow: 0 10px 32px color-mix(in srgb, var(--accion) 70%, transparent);
 }
 
 /* [V6] En móvil la modal ocupa toda la pantalla y se desplaza por dentro. */

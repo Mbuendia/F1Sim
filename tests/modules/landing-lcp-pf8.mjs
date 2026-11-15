@@ -7,6 +7,9 @@
 //  2. Lo primero que se pinta es la portada; con un enlace de sala (?sala=…) se entra directo al juego, como antes.
 //  3. Las fuentes no bloquean el primer pintado: el CSS de Google Fonts se pide sin bloquear (preload + onload, con
 //     <noscript> de respaldo) y con conexión anticipada a fonts.gstatic.com.
+//     [VS1, 13/11/2026] Con autorización del usuario: las tipografías pasan a servirse desde el juego, así que ya no hay
+//     enlace a Google que comprobar; ahora se comprueba que no hay hoja de fuentes externa y que cada tipografía propia
+//     se declara con `font-display: swap` (el texto se pinta con la letra de respaldo mientras llega).
 //  4. La rueda 3D (three.js) se monta cuando la página ha terminado de cargar; hasta entonces, la rueda 2D.
 //     [PF9, 29/10/2026] La rueda 3D se retira a petición del usuario: la portada no carga three.js en ningún momento.
 //  5. Medido después con el mismo método (docs/perf/linea-base.md): LCP en móvil 2,5 s como mucho («bueno») y el
@@ -65,12 +68,10 @@ export default async function run({ server, assert, test }) {
 
   await test('LCP.3: las fuentes no bloquean', () => {
     const html = readFileSync('index.html', 'utf8');
-    // El respaldo de <noscript> sí es una hoja normal (sin JavaScript no hay onload): no cuenta.
-    const links = [...html.replace(/<noscript>[\s\S]*?<\/noscript>/g, '').matchAll(/<link[^>]+fonts\.googleapis\.com\/css2[^>]*>/g)].map(m => m[0]);
-    assert(links.length >= 1, 'LCP: index.html sigue pidiendo las fuentes');
-    assert(links.every(l => /rel="preload"/.test(l) && /as="style"/.test(l) && /onload=/.test(l)), 'LCP: el CSS de las fuentes se pide sin bloquear el primer pintado', links.join(' '));
-    assert(/<noscript>[\s\S]*fonts\.googleapis\.com[\s\S]*<\/noscript>/.test(html), 'LCP: con respaldo sin JavaScript');
-    assert(/rel="preconnect" href="https:\/\/fonts\.gstatic\.com" crossorigin/.test(html), 'LCP: conexión anticipada al servidor de las fuentes');
+    assert(!/<link[^>]+rel="stylesheet"[^>]+href="https?:/.test(html) && !/fonts\.(googleapis|gstatic)\.com/.test(html), 'LCP: index.html no carga ninguna hoja de fuentes externa');
+    const faces = [...readFileSync('src/index.css', 'utf8').matchAll(/@font-face\s*\{[^}]*\}/g)].map(m => m[0]);
+    assert(faces.length >= 2 && faces.every(f => /font-display:\s*swap/.test(f)), 'LCP: las tipografías propias no bloquean el primer pintado (font-display: swap)', `${faces.length} declaraciones`);
+    assert(faces.every(f => /url\('\/fonts\/[^']+\.woff2'\)/.test(f)), 'LCP: las tipografías salen del propio juego');
   });
 
   // [PF9] Sin rueda 3D: la portada no carga three.js ni de forma diferida (antes, la rueda esperaba al final de la carga).

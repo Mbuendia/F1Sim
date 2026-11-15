@@ -149,7 +149,7 @@ export const F1WheelSvg: React.FC<F1WheelSvgProps> = ({ className, style }) => {
       <text
         fill="#e10600"
         fontSize="80"
-        fontFamily="'Orbitron', 'Montserrat', sans-serif"
+        fontFamily="'Barlow Condensed', sans-serif"
         fontWeight="900"
         letterSpacing="18"
       >
@@ -162,7 +162,7 @@ export const F1WheelSvg: React.FC<F1WheelSvgProps> = ({ className, style }) => {
       <text
         fill="#ffffff"
         fontSize="72"
-        fontFamily="'Orbitron', 'Montserrat', sans-serif"
+        fontFamily="'Barlow Condensed', sans-serif"
         fontWeight="900"
         letterSpacing="22"
       >

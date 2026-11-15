@@ -3,8 +3,8 @@
   flex-wrap: wrap;
   gap: 16px;
   padding: 10px 14px 14px;
-  color: #e2e8f0;
-  font-size: 14px;
+  color: var(--text);
+  font-size: var(--letra-1);
 }
 
 .table {
@@ -16,7 +16,7 @@
 .table caption {
   padding-bottom: 6px;
   text-align: left;
-  color: #94a3b8;
+  color: var(--text-2);
   font-weight: 600;
 }
 
@@ -28,28 +28,28 @@
 }
 
 .table th {
-  color: #94a3b8;
+  color: var(--text-2);
   font-weight: 600;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  border-bottom: 1px solid color-mix(in srgb, var(--text) 15%, transparent);
 }
 
 .worn {
-  color: #fbbf24;
+  color: var(--aviso);
 }
 
 .action {
   padding: 3px 10px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 6px;
+  border: 1px solid color-mix(in srgb, var(--text) 30%, transparent);
+  border-radius: var(--radio-m);
   background: transparent;
-  color: #e2e8f0;
+  color: var(--text);
   font: inherit;
   cursor: pointer;
 }
 
 .action:hover,
 .action:focus-visible {
-  background: rgba(255, 255, 255, 0.1);
+  background: color-mix(in srgb, var(--text) 10%, transparent);
 }
 
 /* [V5] En móvil la tabla se desplaza de lado dentro de su tarjeta en vez de ensanchar la página. */
@@ -63,7 +63,7 @@
 }
 
 /* [T4.22] Dossier de la unidad de potencia */
-.dossier { margin: 4px 0 12px; font-size: 15px; color: var(--text-2); }
+.dossier { margin: 4px 0 12px; font-size: var(--letra-2); color: var(--text-2); }
 .dossier summary { min-height: var(--toque); display: flex; align-items: center; cursor: pointer; font-weight: 700; color: var(--text); }
 .dossier ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 6px 14px; }
 .dossier li { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: var(--toque); border-bottom: 1px solid var(--line); }

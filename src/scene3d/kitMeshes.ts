@@ -63,7 +63,7 @@ function signAtlas(plan: KitPlacement) {
   canvas.width = width; canvas.height = Math.max(1, height);
   const ctx = canvas.getContext('2d')!;
   const cells = new Map<string, [number, number, number, number]>();
-  const font = (px: number) => `800 ${px}px 'Rajdhani', 'Arial Black', sans-serif`;
+  const font = (px: number) => `800 ${px}px 'Barlow Condensed', 'Arial Black', sans-serif`;
   sponsors.forEach((s, k) => {
     const x = (k % COLS) * CW, y = Math.floor(k / COLS) * CH, { bg, fg } = SPONSOR_COLORS[s];
     ctx.fillStyle = bg; ctx.fillRect(x, y, CW, CH);

@@ -1,7 +1,7 @@
 .championship {
   padding: 10px 14px 14px;
-  color: #e2e8f0;
-  font-size: 14px;
+  color: var(--text);
+  font-size: var(--letra-1);
 }
 
 .tables {
@@ -20,7 +20,7 @@
 .table caption {
   padding-bottom: 6px;
   text-align: left;
-  color: #94a3b8;
+  color: var(--text-2);
   font-weight: 600;
 }
 
@@ -32,27 +32,27 @@
 }
 
 .table th {
-  color: #94a3b8;
+  color: var(--text-2);
   font-weight: 600;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  border-bottom: 1px solid color-mix(in srgb, var(--text) 15%, transparent);
 }
 
 .table tbody tr:nth-child(even) {
-  background: rgba(255, 255, 255, 0.04);
+  background: color-mix(in srgb, var(--text) 4%, transparent);
 }
 
 .reset {
   margin-top: 12px;
   padding: 5px 12px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--text) 30%, transparent);
+  border-radius: var(--radio-m);
   background: transparent;
-  color: #e2e8f0;
+  color: var(--text);
   font: inherit;
   cursor: pointer;
 }
 
 .reset:hover,
 .reset:focus-visible {
-  background: rgba(255, 255, 255, 0.1);
+  background: color-mix(in srgb, var(--text) 10%, transparent);
 }

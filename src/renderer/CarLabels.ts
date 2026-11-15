@@ -33,7 +33,7 @@ export function renderCarLabels(ctx: CanvasRenderingContext2D, cars: CarState[],
   candidates.sort((a, b) => Number(b.id === selectedId) - Number(a.id === selectedId) || a.currentPosition - b.currentPosition);
   const occupied: Label[] = [];
   ctx.save();
-  ctx.font = `700 ${compact ? 9 : 11}px 'Rajdhani', sans-serif`;
+  ctx.font = `700 ${compact ? 9 : 11}px 'Barlow Condensed', sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   for (const car of candidates) {

@@ -23,7 +23,7 @@ interface LandingPageProps {
 const HERO = (device: 'movil' | 'escritorio', layer: string, ext: 'avif' | 'webp') => `${import.meta.env.BASE_URL}hero/portada-${device}-${layer}.${ext}`;
 const PORTRAIT = '(orientation: portrait)';
 
-type LayerName = 'fondo' | 'estelas' | 'coche' | 'frente' | 'ruedas0' | 'ruedas1' | 'ruedas2' | 'ruedas3';
+type LayerName = 'fondo' | 'estelas' | 'chispas' | 'coche' | 'frente' | 'ruedas0' | 'ruedas1' | 'ruedas2' | 'ruedas3';
 function Layer({ name, className, priority = false, ...rest }: { name: LayerName; className: string; priority?: boolean; 'data-hero-layer': LayerName }) {
   const src = HERO('escritorio', name, 'webp');
   return (
@@ -84,6 +84,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnter, loading = nul
         <Layer name="fondo" data-hero-layer="fondo" className={styles.layerBg} priority />
         <Layer name="estelas" data-hero-layer="estelas" className={`${styles.layerStreaks} ${styles.streaksA}`} />
         <Layer name="estelas" data-hero-layer="estelas" className={`${styles.layerStreaks} ${styles.streaksB}`} />
+        {/* [VS5] Chispas de los bajos, detrás del coche: van con él y el propio coche las tapa donde toca. */}
+        <Layer name="chispas" data-hero-layer="chispas" className={styles.layerSparks} />
         <Layer name="coche" data-hero-layer="coche" className={styles.layerCar} />
         {/* Ruedas: cuatro fotogramas de 15° (con desenfoque de movimiento) que el CSS alterna para que giren. */}
         <Layer name="ruedas0" data-hero-layer="ruedas0" className={`${styles.layerWheels} ${styles.wheel0}`} />

@@ -1,7 +1,7 @@
 .calendar {
   padding: 10px 14px 14px;
-  color: #e2e8f0;
-  font-size: 14px;
+  color: var(--text);
+  font-size: var(--letra-1);
 }
 
 .next {
@@ -14,14 +14,14 @@
 
 .nextTitle {
   margin: 0;
-  font-size: 15px;
+  font-size: var(--letra-2);
   font-weight: 700;
 }
 
 .nextSub {
   display: block;
-  color: #94a3b8;
-  font-size: 14px;
+  color: var(--text-2);
+  font-size: var(--letra-1);
   font-weight: 400;
 }
 
@@ -34,40 +34,40 @@
 
 .button {
   padding: 6px 12px;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.06);
-  color: #e2e8f0;
+  border: 1px solid color-mix(in srgb, var(--text) 22%, transparent);
+  border-radius: var(--radio-m);
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+  color: var(--text);
   font: inherit;
   cursor: pointer;
 }
 
 .button:hover,
 .button:focus-visible {
-  background: rgba(255, 255, 255, 0.14);
+  background: color-mix(in srgb, var(--text) 14%, transparent);
 }
 
 .primary {
-  border-color: #38bdf8;
-  color: #7dd3fc;
+  border-color: var(--info);
+  color: var(--info);
 }
 
 .danger {
-  border-color: #f87171;
-  color: #fca5a5;
+  border-color: var(--accion);
+  color: var(--negativo);
 }
 
 .free {
   margin: 0 0 10px;
   padding: 8px 10px;
-  border-left: 3px solid #f59e0b;
-  background: rgba(245, 158, 11, 0.1);
-  color: #fcd34d;
+  border-left: 3px solid var(--aviso);
+  background: color-mix(in srgb, var(--aviso) 10%, transparent);
+  color: var(--aviso);
 }
 
 .confirm {
   margin: 0 0 10px;
-  color: #fca5a5;
+  color: var(--negativo);
 }
 
 .rounds {
@@ -86,28 +86,28 @@
   gap: 6px;
   padding: 4px 8px;
   border-left: 3px solid transparent;
-  border-radius: 4px;
+  border-radius: var(--radio-s);
   font-variant-numeric: tabular-nums;
 }
 
 .round[data-status='siguiente'] {
-  border-left-color: #38bdf8;
-  background: rgba(56, 189, 248, 0.12);
+  border-left-color: var(--info);
+  background: color-mix(in srgb, var(--info) 12%, transparent);
   font-weight: 700;
 }
 
-.round[data-status='disputada'] { color: #cbd5e1; }
-.round[data-status='saltada'] { color: #64748b; }
-.round[data-status='pendiente'] { color: #94a3b8; }
+.round[data-status='disputada'] { color: var(--text-2); }
+.round[data-status='saltada'] { color: var(--text-3); }
+.round[data-status='pendiente'] { color: var(--text-2); }
 
-.number { color: #64748b; text-align: right; }
-.note { color: #94a3b8; font-size: 14px; font-weight: 400; }
-.state { font-size: 14px; white-space: nowrap; }
+.number { color: var(--text-3); text-align: right; }
+.note { color: var(--text-2); font-size: var(--letra-1); font-weight: 400; }
+.state { font-size: var(--letra-1); white-space: nowrap; }
 
 .history {
   padding: 10px 14px 14px;
-  color: #e2e8f0;
-  font-size: 14px;
+  color: var(--text);
+  font-size: var(--letra-1);
 }
 
 .champions {
@@ -119,27 +119,27 @@
 
 .champion {
   padding: 10px 12px;
-  border: 1px solid rgba(255, 215, 0, 0.3);
-  border-radius: 10px;
-  background: rgba(255, 215, 0, 0.07);
+  border: 1px solid color-mix(in srgb, var(--aviso) 30%, transparent);
+  border-radius: var(--radio-l);
+  background: color-mix(in srgb, var(--aviso) 7%, transparent);
 }
 
 .championLabel {
   display: block;
-  color: #94a3b8;
-  font-size: 14px;
+  color: var(--text-2);
+  font-size: var(--letra-1);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
 .championName {
   display: block;
-  color: #ffd700;
-  font-size: 18px;
+  color: var(--aviso);
+  font-size: var(--letra-3);
   font-weight: 700;
 }
 
-.gain { color: #4ade80; font-weight: 700; }
+.gain { color: var(--positivo); font-weight: 700; }
 
 /* [V5] Controles de 44 px. */
 .button { min-height: var(--toque); }

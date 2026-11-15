@@ -10,17 +10,17 @@
 }
 
 .dnfCard {
-  background: rgba(15, 23, 42, 0.96);
-  border: 1.5px solid #ef4444;
-  border-left: 6px solid #ef4444;
-  box-shadow: 0 10px 30px rgba(239, 68, 68, 0.35), 0 0 25px rgba(0, 0, 0, 0.9);
-  border-radius: 10px;
+  background: color-mix(in srgb, var(--panel-2) 96%, transparent);
+  border: 1.5px solid var(--accion);
+  border-left: 6px solid var(--accion);
+  box-shadow: 0 10px 30px color-mix(in srgb, var(--accion) 35%, transparent), 0 0 25px color-mix(in srgb, var(--negro) 90%, transparent);
+  border-radius: var(--radio-l);
   padding: 12px 16px;
   min-width: 310px;
   max-width: 360px;
-  color: #ffffff;
+  color: var(--text);
   backdrop-filter: blur(14px);
-  animation: slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: slideInRight var(--t-lento) cubic-bezier(0.16, 1, 0.3, 1);
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -41,18 +41,18 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
   padding-bottom: 6px;
 }
 
 .badgeDnf {
-  background: #ef4444;
-  color: #ffffff;
+  background: var(--accion);
+  color: var(--text);
   font-family: var(--font-ui);
-  font-size: 14px;
+  font-size: var(--letra-1);
   font-weight: 900;
   padding: 2px 8px;
-  border-radius: 4px;
+  border-radius: var(--radio-s);
   letter-spacing: 0.8px;
   display: flex;
   align-items: center;
@@ -63,16 +63,16 @@
   background: transparent;
   border: none;
   color: var(--text-2);
-  font-size: 14px;
+  font-size: var(--letra-1);
   cursor: pointer;
   padding: 2px 6px;
-  border-radius: 4px;
-  transition: all 0.2s;
+  border-radius: var(--radio-s);
+  transition: all var(--t-medio);
 }
 
 .closeBtn:hover {
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.1);
+  color: var(--text);
+  background: color-mix(in srgb, var(--text) 10%, transparent);
 }
 
 .driverInfoRow {
@@ -82,7 +82,7 @@
 }
 
 .driverFlag {
-  font-size: 20px;
+  font-size: var(--letra-4);
 }
 
 .driverNameGroup {
@@ -90,8 +90,8 @@
 }
 
 .driverFullName {
-  font-family: 'Rajdhani', sans-serif;
-  font-size: 16px;
+  font-family: var(--font-ui);
+  font-size: var(--letra-2);
   font-weight: 800;
   color: var(--text);
   display: flex;
@@ -100,28 +100,28 @@
 }
 
 .driverTeam {
-  font-size: 14px;
+  font-size: var(--letra-1);
   color: var(--text-2);
-  font-family: 'Rajdhani', sans-serif;
+  font-family: var(--font-ui);
   font-weight: 600;
 }
 
 .causeBox {
-  background: rgba(239, 68, 68, 0.12);
-  border: 1px solid rgba(239, 68, 68, 0.25);
-  border-radius: 6px;
+  background: color-mix(in srgb, var(--accion) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accion) 25%, transparent);
+  border-radius: var(--radio-m);
   padding: 6px 10px;
-  font-size: 14px;
+  font-size: var(--letra-1);
   font-weight: 700;
-  color: #fca5a5;
+  color: var(--negativo);
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
 .metaInfo {
-  font-size: 14px;
-  color: #cbd5e1;
+  font-size: var(--letra-1);
+  color: var(--text-2);
   font-family: var(--font-ui);
 }
 

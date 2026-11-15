@@ -19,6 +19,8 @@ export interface TireContext {
   wear?: number;
   /** [T3.3] Agua que pisa el neumático (mm): lo enfría, y su falta castiga a intermedios y lluvia. */
   waterMm?: number;
+  /** [VS3] Diferencia del asfalto con su temperatura de referencia (°C): lo calienta o lo enfría. */
+  trackOffsetC?: number;
 }
 
 export class TireModel {
@@ -32,6 +34,12 @@ export class TireModel {
   };
   /** Temperatura de las mantas al montar un juego nuevo (°C). */
   static readonly BLANKET_TEMP_C = 70;
+  /** [VS3] Grados que gana (asfalto caliente) o pierde (frío) el neumático por cada grado de diferencia del asfalto. El
+   *  frío pesa menos: la goma genera su propio calor al rodar; el calor del asfalto, en cambio, se le suma entero. */
+  static readonly TRACK_HEAT_GAIN = { hot: 0.9, cold: 0.2 };
+
+  /** [VS3] Lo que el asfalto le suma o le quita a la temperatura objetivo del neumático (°C). */
+  static trackHeat(offsetC: number): number { return offsetC * (offsetC > 0 ? this.TRACK_HEAT_GAIN.hot : this.TRACK_HEAT_GAIN.cold); }
 
   /** Agarre relativo por temperatura: 1 dentro de la ventana, menos por debajo y por encima. */
   static tempGripFactor(compound: TireCompound, tempC: number): number {
@@ -263,7 +271,7 @@ export class TireModel {
       let gripSum = 0;
       for (const { wheel, temp: tempKey, health: healthKey } of WHEEL_KEYS) {
         const current = tires[tempKey] ?? tires.tempCelsius;
-        const target = 103 + modeHeat + 30 * cornering * (loads[wheel] - 0.7) - airCooling - waterCooling;
+        const target = 103 + modeHeat + 30 * cornering * (loads[wheel] - 0.7) - airCooling - waterCooling + this.trackHeat(context.trackOffsetC ?? 0);
         const temp = current + (target - current) * Math.min(1, dt / 12 * (context.heat ?? 1));
         tires[tempKey] = temp;
         // [R47] Las curvas rápidas (que ya no cuentan como «curva lenta») también cargan la rueda exterior.

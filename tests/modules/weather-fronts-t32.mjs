@@ -73,7 +73,10 @@ export default async function run({ server, assert, test }) {
     assert(cloudy.weather.cloudCoverPct >= 50 && clear.weather.cloudCoverPct === 0 && cloudy.weather.trackTempCelsius <= clear.weather.trackTempCelsius - 3 && cloudy.weather.airTempCelsius < clear.weather.airTempCelsius,
       'T3.2: con nubes la pista y el aire están más fríos', `${cloudy.weather.trackTempCelsius} °C frente a ${clear.weather.trackTempCelsius} °C con ${cloudy.weather.cloudCoverPct} % de nubes`);
     assert(cloudy.weatherModel.meanDepth() === 0 && cloudy.weatherModel.rainNowMmH === 0 && /NUB/i.test(cloudy.weather.conditionLabel) && /SECO/i.test(clear.weather.conditionLabel), 'T3.2: las nubes no mojan la pista y el estado lo dice', cloudy.weather.conditionLabel);
-    const expected = Math.round((38.5 + Math.sin(clear.raceTimeSec * 0.05) * 1.5) * 10) / 10;
+    // [VS3, autorizado por el usuario el 13/11/2026] «La de siempre» es ahora la del circuito: los 38,5 °C de referencia más
+    // la diferencia de Barcelona a esa hora (TrackTemperature.ts). Sin nubes no hay nada más que la mueva.
+    const { trackTempOffset } = await server.ssrLoadModule('/src/simulation/TrackTemperature.ts');
+    const expected = Math.round((38.5 + Math.sin(clear.raceTimeSec * 0.05) * 1.5 + trackTempOffset('barcelona', clear.raceTimeSec, 0)) * 10) / 10;
     assert(clear.weather.trackTempCelsius === expected, 'T3.2: en «Seco» la temperatura de la pista es la de siempre', `${clear.weather.trackTempCelsius} / ${expected}`);
 
     const { RainForecastPanel } = await server.ssrLoadModule('/src/components/RainForecastPanel.tsx');

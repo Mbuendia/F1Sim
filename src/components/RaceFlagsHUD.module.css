@@ -18,93 +18,93 @@
   align-items: center;
   gap: 8px;
   padding: 6px 18px;
-  border-radius: 8px;
+  border-radius: var(--radio-m);
   font-family: var(--font-ui);
-  font-size: 16px;
+  font-size: var(--letra-2);
   font-weight: 700;
   letter-spacing: 0.5px;
   backdrop-filter: blur(8px);
-  transition: all 0.4s ease;
+  transition: all var(--t-lento) ease;
   min-width: 180px;
   justify-content: center;
   text-transform: uppercase;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
 }
 
 .flagIcon {
-  font-size: 16px;
+  font-size: var(--letra-2);
 }
 
 /* ── ESTADOS DE BANDERA ── */
 .greenFlag {
-  background: rgba(34, 197, 94, 0.15);
-  color: #22c55e;
-  border-color: rgba(34, 197, 94, 0.3);
+  background: color-mix(in srgb, var(--positivo) 15%, transparent);
+  color: var(--positivo);
+  border-color: color-mix(in srgb, var(--positivo) 30%, transparent);
   opacity: 0.6;
 }
 
 .yellowFlag {
-  background: rgba(250, 204, 21, 0.25);
-  color: #facc15;
-  border-color: rgba(250, 204, 21, 0.5);
+  background: color-mix(in srgb, var(--aviso) 25%, transparent);
+  color: var(--aviso);
+  border-color: color-mix(in srgb, var(--aviso) 50%, transparent);
   animation: yellowPulse 1.2s ease-in-out infinite;
 }
 
 .doubleYellowFlag {
-  background: rgba(245, 158, 11, 0.3);
-  color: #f59e0b;
-  border-color: rgba(245, 158, 11, 0.6);
-  animation: yellowPulse 0.8s ease-in-out infinite;
+  background: color-mix(in srgb, var(--aviso) 30%, transparent);
+  color: var(--aviso);
+  border-color: color-mix(in srgb, var(--aviso) 60%, transparent);
+  animation: yellowPulse var(--t-pausado) ease-in-out infinite;
 }
 
 .vscFlag {
-  background: rgba(245, 158, 11, 0.3);
-  color: #fbbf24;
-  border-color: rgba(245, 158, 11, 0.5);
-  animation: vscLeds 0.6s steps(2) infinite;
+  background: color-mix(in srgb, var(--aviso) 30%, transparent);
+  color: var(--aviso);
+  border-color: color-mix(in srgb, var(--aviso) 50%, transparent);
+  animation: vscLeds var(--t-lento) steps(2) infinite;
 }
 
 .scFlag {
-  background: rgba(245, 158, 11, 0.35);
-  color: #fbbf24;
-  border-color: rgba(245, 158, 11, 0.6);
+  background: color-mix(in srgb, var(--aviso) 35%, transparent);
+  color: var(--aviso);
+  border-color: color-mix(in srgb, var(--aviso) 60%, transparent);
   animation: scGlow 1.5s ease-in-out infinite;
   min-width: 260px;
 }
 
 .redFlag {
-  background: rgba(239, 68, 68, 0.35);
-  color: #ef4444;
-  border-color: rgba(239, 68, 68, 0.6);
-  animation: redAlert 0.7s ease-in-out infinite;
+  background: color-mix(in srgb, var(--accion) 35%, transparent);
+  color: var(--accion);
+  border-color: color-mix(in srgb, var(--accion) 60%, transparent);
+  animation: redAlert var(--t-pausado) ease-in-out infinite;
   min-width: 280px;
 }
 
 /* ── INFORMACIÓN SECUNDARIA ── */
 .flagSubtext {
-  font-size: 10px;
+  font-size: var(--letra-1);
   font-weight: 500;
-  font-family: 'Segoe UI', sans-serif;
+  font-family: var(--font-ui);
   letter-spacing: 0.3px;
   opacity: 0.85;
   padding: 2px 12px;
-  border-radius: 4px;
+  border-radius: var(--radio-s);
   backdrop-filter: blur(6px);
 }
 
 .yellowSubtext {
-  background: rgba(250, 204, 21, 0.12);
-  color: #fde047;
+  background: color-mix(in srgb, var(--aviso) 12%, transparent);
+  color: var(--aviso);
 }
 
 .scSubtext {
-  background: rgba(245, 158, 11, 0.12);
-  color: #fbbf24;
+  background: color-mix(in srgb, var(--aviso) 12%, transparent);
+  color: var(--aviso);
 }
 
 .redSubtext {
-  background: rgba(239, 68, 68, 0.12);
-  color: #fca5a5;
+  background: color-mix(in srgb, var(--accion) 12%, transparent);
+  color: var(--negativo);
 }
 
 /* ── SECTOR FLAGS (barra de 3 sectores) ── */
@@ -117,22 +117,22 @@
 .sectorDot {
   width: 28px;
   height: 5px;
-  border-radius: 3px;
-  transition: background-color 0.3s ease;
+  border-radius: var(--radio-s);
+  transition: background-color var(--t-medio) ease;
 }
 
 .sectorGreen {
-  background: rgba(34, 197, 94, 0.4);
+  background: color-mix(in srgb, var(--positivo) 40%, transparent);
 }
 
 .sectorYellow {
-  background: #facc15;
-  animation: yellowPulse 1.0s ease-in-out infinite;
+  background: var(--aviso);
+  animation: yellowPulse var(--t-pausado) ease-in-out infinite;
 }
 
 .sectorDoubleYellow {
-  background: #f59e0b;
-  animation: yellowPulse 0.6s ease-in-out infinite;
+  background: var(--aviso);
+  animation: yellowPulse var(--t-lento) ease-in-out infinite;
 }
 
 /* ── ANIMACIONES ── */
@@ -148,22 +148,22 @@
 
 @keyframes scGlow {
   0%, 100% { 
-    box-shadow: 0 0 8px rgba(245, 158, 11, 0.3);
+    box-shadow: 0 0 8px color-mix(in srgb, var(--aviso) 30%, transparent);
     opacity: 1;
   }
   50% { 
-    box-shadow: 0 0 20px rgba(245, 158, 11, 0.5);
+    box-shadow: 0 0 20px color-mix(in srgb, var(--aviso) 50%, transparent);
     opacity: 0.85;
   }
 }
 
 @keyframes redAlert {
   0%, 100% {
-    box-shadow: 0 0 8px rgba(239, 68, 68, 0.3);
+    box-shadow: 0 0 8px color-mix(in srgb, var(--accion) 30%, transparent);
     opacity: 1;
   }
   50% {
-    box-shadow: 0 0 24px rgba(239, 68, 68, 0.6);
+    box-shadow: 0 0 24px color-mix(in srgb, var(--accion) 60%, transparent);
     opacity: 0.75;
   }
 }
@@ -173,15 +173,15 @@
   pointer-events: auto;
   margin-top: 4px;
   padding: 5px 12px;
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  border-radius: 6px;
-  background: rgba(127, 29, 29, 0.85);
-  color: #fff;
-  font: 600 12px 'Segoe UI', sans-serif;
+  border: 1px solid color-mix(in srgb, var(--text) 50%, transparent);
+  border-radius: var(--radio-m);
+  background: color-mix(in srgb, var(--accion-oscuro) 85%, transparent);
+  color: var(--text);
+  font: 600 var(--letra-1) var(--font-ui);
   cursor: pointer;
 }
 
 .endRace:hover,
 .endRace:focus-visible {
-  background: rgba(185, 28, 28, 0.95);
+  background: color-mix(in srgb, var(--accion) 95%, transparent);
 }

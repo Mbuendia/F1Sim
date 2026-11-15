@@ -84,6 +84,7 @@ import type { RaceSnapshot } from '../Snapshot';
 import { overtakingZonesOf, zoneAt } from '../OvertakingZones';
 import type { OvertakingZone } from '../OvertakingZones';
 import { RaceSimulation } from '../RaceSimulation';
+import { trackTempOffset } from '../TrackTemperature';
 
 export function updateWeather(sim: RaceSimulation, dt: number) {
   // Evolución sutil y continua de temperatura de asfalto y viento
@@ -91,7 +92,11 @@ export function updateWeather(sim: RaceSimulation, dt: number) {
   // [T3.2] Las nubes enfrían el asfalto y algo el aire; sin nubes, la temperatura es la de siempre.
   const wm = sim.weatherModel;
   const cloud = wm.cloudCoverAt(sim.raceTimeSec);
-  sim.weather.trackTempCelsius = Math.round((38.5 + tempOscillation - RaceSimulation.CLOUD_TRACK_COOLING_C * cloud) * 10) / 10;
+  // [VS3] Cada circuito con su temperatura: la de siempre más su diferencia (circuito, hora y agua en pista).
+  const water = wm.waterBySegment();
+  const offset = trackTempOffset(sim.circuitId, sim.raceTimeSec, water.length ? water.reduce((s, v) => s + v, 0) / water.length : 0);
+  if (offset) sim.weather.trackOffsetC = offset; else delete sim.weather.trackOffsetC;
+  sim.weather.trackTempCelsius = Math.round((38.5 + tempOscillation - RaceSimulation.CLOUD_TRACK_COOLING_C * cloud + offset) * 10) / 10;
   sim.weather.airTempCelsius = Math.round((24.2 + tempOscillation * 0.4 - RaceSimulation.CLOUD_AIR_COOLING_C * cloud) * 10) / 10;
   sim.weather.windSpeedKmh = Math.round((14.0 + Math.cos(sim.raceTimeSec * 0.08) * 3.5) * 10) / 10;
   // [R22] Agua por tramo, secado y visibilidad; el estado visible sale de la misma fuente.

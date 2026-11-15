@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="es" data-dir="a">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VS1 — Direcciones visuales</title>
+<!-- Maqueta de revisión (VS1, 13/11/2026). Las tipografías se cargan aquí de Google Fonts solo para comparar;
+     la elegida se servirá desde el propio juego. Todas son de licencia abierta (SIL OFL). -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,500;0,600;0,700;1,700;1,800&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&family=Saira+Condensed:wght@500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#17181b;color:#e8e9ec;font:16px/1.5 system-ui,sans-serif;padding:0 16px 64px}
+.page{max-width:1280px;margin:0 auto}
+.top{position:sticky;top:0;z-index:5;background:#17181b;padding:16px 0 12px;border-bottom:1px solid #2c2e33}
+.top h1{font-size:20px;font-weight:600}
+.top p{color:#a3a7b0;font-size:14px;max-width:70ch}
+.pick{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.pick button{font:inherit;font-weight:600;color:#e8e9ec;background:#232529;border:1px solid #3a3d44;border-radius:8px;padding:10px 16px;cursor:pointer;min-height:44px}
+.pick button[aria-pressed=true]{background:#e8e9ec;color:#17181b;border-color:#e8e9ec}
+.spec{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:24px;padding:20px 0}
+.spec h2{font-size:18px;margin-bottom:4px}.spec h3{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#a3a7b0;margin-bottom:8px;font-weight:600}
+.spec p,.spec li{font-size:14px;color:#c9ccd3}.spec ul{padding-left:18px}
+.sw{display:flex;gap:6px;flex-wrap:wrap}.sw i{width:44px;height:44px;border-radius:6px;border:1px solid #0006;display:block}
+.sw span{display:block;font:11px/1.2 ui-monospace,monospace;color:#a3a7b0;margin-top:4px;width:44px;overflow-wrap:anywhere}
+.screen{margin-top:28px}.screen>h2{font-size:15px;font-weight:600;margin-bottom:2px}.screen>p{font-size:13px;color:#a3a7b0;margin-bottom:10px}
+.fit{width:100%;overflow:hidden;border:1px solid #2c2e33;border-radius:6px}
+.frame{width:1280px;height:800px;transform-origin:0 0;position:relative;overflow:hidden;background:var(--bg);color:var(--tx);font-family:var(--f-body);font-size:15px;line-height:1.4}
+@media (max-width:760px){.spec{grid-template-columns:1fr}}
+
+/* ───── Las tres direcciones: lo que cambia entre ellas son estas variables y unas pocas reglas más abajo ───── */
+[data-dir=a]{--bg:#090b0e;--pn:#10141a;--pn2:#171c24;--ln:#232b36;--tx:#e9edf2;--tx2:#98a4b3;--ac:#e10600;--ac-tx:#fff;--hi:#b678ff;--ok:#3ddc84;--wa:#f5c451;
+  --f-disp:'Saira Condensed',sans-serif;--f-body:'IBM Plex Sans',sans-serif;--f-num:'IBM Plex Mono',monospace;--r:2px;--disp-w:600;--disp-st:normal;--disp-tr:uppercase;--disp-ls:.02em}
+[data-dir=b]{--bg:#050505;--pn:#101010;--pn2:#1a1a1a;--ln:#2a2a2a;--tx:#fff;--tx2:#b5b5b5;--ac:#e10600;--ac-tx:#fff;--hi:#ff4d3d;--ok:#57d9a3;--wa:#ffd23f;
+  --f-disp:'Barlow Condensed',sans-serif;--f-body:'Barlow',sans-serif;--f-num:'Barlow Condensed',sans-serif;--r:0px;--disp-w:800;--disp-st:italic;--disp-tr:uppercase;--disp-ls:0}
+[data-dir=c]{--bg:#ece8de;--pn:#f6f3ea;--pn2:#e2ddd0;--ln:#15171a33;--tx:#15171a;--tx2:#585c63;--ac:#c81400;--ac-tx:#fff;--hi:#1d4ea8;--ok:#127a48;--wa:#9a6400;
+  --f-disp:'Space Grotesk',sans-serif;--f-body:'Space Grotesk',sans-serif;--f-num:'JetBrains Mono',monospace;--r:3px;--disp-w:700;--disp-st:normal;--disp-tr:none;--disp-ls:-.02em}
+/* C: la carrera va en oscuro para no deslumbrar, con las mismas letras y las mismas reglas. */
+[data-dir=c] .race{--bg:#14161a;--pn:#1b1e23;--pn2:#262a31;--ln:#ece8de2e;--tx:#ece8de;--tx2:#a4a69f;--ac:#ff4a33;--hi:#7fb0ff;--ok:#5fd39a;--wa:#f0c05a}
+
+.disp{font-family:var(--f-disp);font-weight:var(--disp-w);font-style:var(--disp-st);text-transform:var(--disp-tr);letter-spacing:var(--disp-ls);line-height:.95}
+.lab{font-family:var(--f-num);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--tx2)}
+.num{font-family:var(--f-num);font-variant-numeric:tabular-nums}
+.btn{display:inline-flex;align-items:center;gap:10px;min-height:48px;padding:0 22px;background:var(--ac);color:var(--ac-tx);border:0;border-radius:var(--r);font-family:var(--f-disp);font-weight:700;font-size:18px;text-transform:uppercase;letter-spacing:.04em;font-style:var(--disp-st)}
+.btn.sec{background:transparent;color:var(--tx);box-shadow:inset 0 0 0 1px var(--ln)}
+.pn{background:var(--pn);border:1px solid var(--ln);border-radius:var(--r)}
+[data-dir=b] .btn{clip-path:polygon(10px 0,100% 0,calc(100% - 10px) 100%,0 100%);padding:0 30px}
+[data-dir=b] .lab{font-size:14px;font-weight:600;letter-spacing:.08em;color:var(--ac)}
+[data-dir=c] .frame:not(.race){background-image:linear-gradient(#15171a0d 1px,transparent 1px),linear-gradient(90deg,#15171a0d 1px,transparent 1px);background-size:32px 32px}
+.oa,.ob,.oc{display:none}[data-dir=a] .oa,[data-dir=b] .ob,[data-dir=c] .oc{display:revert}
+
+/* ───── Inicio ───── */
+.home{display:grid;grid-template-rows:auto 1fr auto;height:100%;padding:32px 48px 36px;gap:24px}
+.brand{display:flex;justify-content:space-between;align-items:baseline}
+.brand .disp{font-size:26px}.brand b{color:var(--ac);font-weight:inherit}
+.hero{position:relative;display:grid;grid-template-columns:520px 1fr;align-items:center;min-height:0}
+.hero h1{font-size:104px;margin:10px 0 18px}
+.hero p{font-size:18px;color:var(--tx2);max-width:36ch;margin-bottom:28px}
+.hero .img{height:100%;background:url(../../public/menu/temporada.webp) center/cover;border-radius:var(--r)}
+.modes{display:grid;grid-template-columns:repeat(3,1fr) 150px;gap:12px}
+.mode{padding:16px 18px;display:flex;flex-direction:column;gap:2px;position:relative}
+.mode .disp{font-size:26px}.mode small{color:var(--tx2);font-size:14px}
+.mode.on{border-color:var(--ac);box-shadow:inset 0 -3px 0 var(--ac)}
+.mode .n{position:absolute;right:14px;top:12px}
+[data-dir=a] .hero .img{border:1px solid var(--ln);margin:8px 0 8px 40px}
+[data-dir=a] .hero h1{font-size:96px}
+[data-dir=b] .home{padding:0;grid-template-rows:1fr auto}
+[data-dir=b] .brand{position:absolute;z-index:2;left:48px;right:48px;top:28px}
+[data-dir=b] .hero{grid-template-columns:1fr;padding:0 48px}
+[data-dir=b] .hero .img{position:absolute;inset:0;border-radius:0}
+[data-dir=b] .hero::after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,#050505 34%,#050505cc 46%,#e1060033 70%,transparent)}
+[data-dir=b] .hero .txt{position:relative;z-index:1;margin-top:60px}
+[data-dir=b] .hero h1{font-size:168px;margin:0 0 12px -6px}
+[data-dir=b] .modes{padding:0 48px 36px;gap:0;grid-template-columns:repeat(3,1fr) 130px}
+[data-dir=b] .mode{border:0;background:var(--pn2);transform:skewX(-10deg);margin-right:6px}[data-dir=b] .mode>*{transform:skewX(10deg)}
+[data-dir=b] .mode.on{background:var(--ac);box-shadow:none}[data-dir=b] .mode.on small{color:#fff}
+[data-dir=c] .hero .img{border:1px solid var(--tx);margin-left:40px;filter:grayscale(.35) contrast(1.05);height:calc(100% - 30px)}
+[data-dir=c] .hero h1{font-size:92px}
+[data-dir=c] .cap{position:absolute;right:0;bottom:0}
+[data-dir=c] .mode{background:var(--pn);border-color:var(--tx)}[data-dir=c] .mode.on{box-shadow:6px 6px 0 var(--ac);border-color:var(--tx)}
+
+/* ───── Temporada ───── */
+.season{display:grid;grid-template-rows:auto auto 1fr auto;height:100%;padding:24px 40px 28px;gap:16px}
+.tbar{display:flex;align-items:center;gap:18px}.tbar .team{font-size:34px}.tbar .sp{flex:1}
+.chip{font-family:var(--f-num);font-size:13px;padding:5px 10px;border:1px solid var(--ln);border-radius:99px;color:var(--tx2);white-space:nowrap}
+.kpi{text-align:right}.kpi b{display:block;font-family:var(--f-num);font-size:22px;font-weight:600;line-height:1.1}.kpi span{font-size:12px;color:var(--tx2)}
+.tabs{display:flex;gap:28px;border-bottom:1px solid var(--ln)}
+.tabs a{font-family:var(--f-disp);font-weight:600;font-size:18px;text-transform:uppercase;letter-spacing:.04em;padding:10px 0;color:var(--tx2);font-style:var(--disp-st)}
+.tabs a.on{color:var(--tx);box-shadow:inset 0 -3px 0 var(--ac)}.tabs i{font:600 12px var(--f-num);background:var(--wa);color:#111;border-radius:99px;padding:1px 7px;margin-left:6px;font-style:normal}
+.tgrid{display:grid;grid-template-columns:1.25fr 1fr;gap:16px;min-height:0}
+.next{padding:28px;display:grid;grid-template-columns:1fr 300px;gap:8px;align-content:space-between}
+.next h2{font-size:64px;margin:8px 0 16px}.next .chips{display:flex;gap:8px;margin-bottom:28px}
+.next svg{width:300px;height:200px;grid-row:1/3;grid-column:2;align-self:center}.next path{fill:none;stroke:var(--tx);stroke-width:5;stroke-linejoin:round}
+.todo{padding:24px 24px 8px}.todo .row{display:grid;grid-template-columns:1fr auto;gap:4px 16px;padding:16px 0;border-top:1px solid var(--ln);align-items:center}
+.todo h3{font-size:20px;font-weight:600}.todo p{color:var(--tx2);font-size:14px}.todo .v{font-family:var(--f-num);font-size:14px;color:var(--ok)}
+.todo .btn{min-height:44px;font-size:16px;grid-row:1/3;grid-column:2}
+.tstats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.tstats div{padding:14px 16px}.tstats b{display:block;font-family:var(--f-num);font-size:24px;font-weight:600}.tstats small{color:var(--tx2);font-size:13px}
+[data-dir=a] .next,[data-dir=a] .todo,[data-dir=a] .tstats div{border-width:1px 0 0;border-top-color:var(--tx2);background:transparent;border-radius:0}
+[data-dir=a] .next path{stroke:var(--hi)}
+[data-dir=b] .next{background:linear-gradient(110deg,var(--ac) 0 58%,#8f0400 58%);border:0}[data-dir=b] .next .lab,[data-dir=b] .next .chip{color:#fff;border-color:#fff8}[data-dir=b] .next h2{font-size:92px}
+[data-dir=b] .next .btn{background:#fff;color:#050505}[data-dir=b] .next path{stroke:#fff}
+[data-dir=b] .tbar .team{font-size:44px}
+[data-dir=c] .pn{border-color:var(--tx)}[data-dir=c] .next{box-shadow:6px 6px 0 var(--tx)}[data-dir=c] .next path{stroke-width:3;stroke:var(--hi)}
+
+/* ───── Carrera ───── */
+.race{display:grid;grid-template:56px 1fr 52px/270px 1fr 350px;height:100%}
+.rtop{grid-column:1/-1;display:flex;align-items:center;gap:22px;padding:0 20px;border-bottom:1px solid var(--ln);background:var(--pn)}
+.rtop .gp{font-size:22px}.rtop .lap{font-family:var(--f-num);font-size:22px;font-weight:600}.rtop .lap small{font-size:13px;color:var(--tx2);font-weight:400}
+.flag{display:inline-flex;align-items:center;gap:8px;font-size:14px}.flag::before{content:"";width:12px;height:12px;border-radius:50%;background:var(--ok)}
+.spd{margin-left:auto;display:flex;border:1px solid var(--ln);border-radius:var(--r)}.spd span{font-family:var(--f-num);font-size:13px;padding:7px 11px;color:var(--tx2)}.spd .on{background:var(--tx);color:var(--bg)}
+.board{border-right:1px solid var(--ln);padding:12px 0;background:var(--pn)}.board .lab{padding:0 16px 8px;display:block}
+.board .r{display:grid;grid-template-columns:30px 6px 1fr auto 26px;gap:8px;align-items:center;padding:0 16px;height:34px;font-size:15px}
+.board .r b{font-family:var(--f-num);font-weight:600;text-align:right;color:var(--tx2)}.board .r i{width:4px;height:18px;display:block}
+.board .r .d{font-family:var(--f-disp);font-weight:600;font-size:18px;letter-spacing:.03em;font-style:var(--disp-st)}
+.board .r .g{font-family:var(--f-num);font-size:13px;color:var(--tx2)}
+.board .r .t{width:20px;height:20px;border-radius:50%;border:3px solid;font:700 10px/14px var(--f-num);text-align:center}
+.board .r.me{background:var(--pn2);box-shadow:inset 3px 0 0 var(--ac)}.board .r.me b{color:var(--tx)}
+.S{border-color:#ff3b30;color:#ff3b30}.M{border-color:#f5c451;color:#f5c451}.H{border-color:#e9edf2;color:#e9edf2}
+.view{position:relative;background:radial-gradient(ellipse at 50% 60%,#2a4a2c,#12241a 70%)}
+.view svg{position:absolute;inset:40px 30px}.view path{fill:none;stroke:#3a3d42;stroke-width:26;stroke-linejoin:round}.view .mid{stroke:#ffffff22;stroke-width:1.5;stroke-dasharray:8 10}
+.view .note{position:absolute;left:16px;bottom:12px;font-size:12px;color:#ffffff99}
+.wall{border-left:1px solid var(--ln);padding:12px;display:grid;gap:12px;align-content:start;background:var(--pn)}
+.drv{padding:14px;background:var(--bg)}.drv header{display:flex;align-items:baseline;gap:10px;margin-bottom:10px}
+.drv .p{font-family:var(--f-num);font-size:26px;font-weight:600}.drv .name{font-size:26px}.drv .gap{margin-left:auto;font-family:var(--f-num);font-size:13px;color:var(--ok)}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--ln);border-radius:var(--r);margin:4px 0 12px}.seg span{text-align:center;padding:9px 0;font-size:14px;color:var(--tx2)}.seg .on{background:var(--tx);color:var(--bg);font-weight:600}
+.mt{display:grid;grid-template-columns:86px 1fr 44px;gap:10px;align-items:center;font-size:13px;color:var(--tx2);height:24px}
+.mt u{height:6px;background:var(--pn2);display:block;border-radius:var(--r);overflow:hidden;text-decoration:none}.mt u::after{content:"";display:block;height:100%;width:var(--v);background:var(--c,var(--ok))}
+.mt em{font:500 13px var(--f-num);color:var(--tx);text-align:right;font-style:normal}
+.drv .btn{width:100%;justify-content:center;margin-top:12px;min-height:44px;font-size:16px}
+.radio{grid-column:1/-1;display:flex;align-items:center;gap:14px;padding:0 20px;border-top:1px solid var(--ln);background:var(--pn);font-size:15px}
+.radio b{font-family:var(--f-num);font-size:12px;letter-spacing:.1em;color:var(--ac)}
+[data-dir=a] .board .r:nth-child(2) .g{color:var(--hi)}
+[data-dir=a] .board .r{border-top:1px solid #ffffff0a}
+[data-dir=b] .rtop{background:var(--ac);border:0}[data-dir=b] .rtop .lab,[data-dir=b] .rtop .lap small,[data-dir=b] .spd span{color:#fffc}[data-dir=b] .spd{border-color:#fff8}[data-dir=b] .spd .on{background:#fff;color:#050505}[data-dir=b] .flag::before{background:#fff}
+[data-dir=b] .rtop .gp{font-size:30px}[data-dir=b] .drv .name{font-size:34px}[data-dir=b] .board .r .d{font-size:21px}
+[data-dir=b] .drv{border:0;border-left:4px solid var(--ac);background:var(--pn2)}
+[data-dir=c] .drv{border-color:var(--tx2)}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="top">
+    <h1>VS1 — Tres direcciones visuales</h1>
+    <p>Las mismas tres pantallas, con el mismo contenido, en tres estilos. Son maquetas: el juego no se ha tocado. Elige una, o dime qué mezclarías.</p>
+    <div class="pick" role="group" aria-label="Dirección">
+      <button data-d="a" aria-pressed="true">A · Muro de tiempos</button>
+      <button data-d="b" aria-pressed="false">B · Cartel de carrera</button>
+      <button data-d="c" aria-pressed="false">C · Plano técnico</button>
+    </div>
+  </div>
+
+  <section class="spec" id="spec"></section>
+
+  <section class="screen"><h2>1 · Inicio</h2><p>Una sola acción grande y los tres modos debajo.</p>
+    <div class="fit"><div class="frame"><div class="home">
+      <div class="brand"><span class="disp">F-UNO <b>RACE MANAGER</b></span><span class="lab oa">24 GP · 10 equipos · 20 pilotos · 23 circuitos</span><span class="lab oc">Lámina 01 / Inicio</span></div>
+      <div class="hero">
+        <div class="txt"><span class="lab">Empieza aquí</span><h1 class="disp">Temporada</h1>
+          <p>Eliges equipo y diriges 24 grandes premios: el coche, los pilotos, la sede y el dinero.</p>
+          <span class="btn">Nueva carrera profesional</span></div>
+        <div class="img" role="img" aria-label="Garaje del equipo"></div>
+        <span class="lab cap oc">Fig. 1 — Garaje del equipo</span>
+      </div>
+      <div class="modes">
+        <div class="mode pn on"><span class="lab n oa">01</span><span class="disp">Temporada</span><small>empieza aquí</small></div>
+        <div class="mode pn"><span class="lab n oa">02</span><span class="disp">Carrera libre</span><small>una carrera suelta</small></div>
+        <div class="mode pn"><span class="lab n oa">03</span><span class="disp">Multijugador</span><small>carrera con amigos</small></div>
+        <div class="mode pn"><span class="disp">Ajustes</span><small>sonido y pantalla</small></div>
+      </div>
+    </div></div></div>
+  </section>
+
+  <section class="screen"><h2>2 · Temporada</h2><p>Arriba lo fijo; en el centro la próxima carrera y lo que espera tu decisión; abajo cuatro cifras.</p>
+    <div class="fit"><div class="frame"><div class="season">
+      <div class="tbar"><span class="disp team">Aston Papá</span><span class="chip">Temporada 1 · ronda 1 de 24</span><span class="sp"></span>
+        <div class="kpi"><b>30,5 M</b><span>saldo</span></div><div class="kpi"><b>—</b><span>constructores</span></div><div class="kpi"><b>60</b><span>junta</span></div>
+        <span class="btn sec">Partida</span></div>
+      <nav class="tabs"><a class="on">Inicio</a><a>Coche<i>1</i></a><a>Equipo</a><a>Sede y dinero<i>1</i></a></nav>
+      <div class="tgrid">
+        <div class="next pn"><div><span class="lab">Siguiente · ronda 1 de 24</span><h2 class="disp">Albert Park</h2>
+          <div class="chips"><span class="chip">58 vueltas</span><span class="chip">Lluvia 20 %</span><span class="chip">Sin sprint</span></div></div>
+          <svg viewBox="0 0 600 400" aria-hidden="true"><path class="trk"/></svg>
+          <div><span class="btn">Preparar carrera</span></div></div>
+        <div class="todo pn"><span class="lab">Pendiente de tu decisión · 2</span>
+          <div class="row" style="margin-top:14px"><h3>Hueco de patrocinio libre</h3><span class="btn sec">Decidir</span><p>3 ofertas esperan respuesta · <span class="v">hasta +0,5 M por carrera</span></p></div>
+          <div class="row"><h3>Hueco de desarrollo libre</h3><span class="btn sec">Decidir</span><p>Otra mejora del coche en marcha · <span class="num">2,0 M</span></p></div>
+          <div class="row"><p>Nada de esto impide entrar a pista.</p></div></div>
+      </div>
+      <div class="tstats"><div class="pn"><span class="lab">Campeonato</span><b>—</b><small>sin carreras todavía</small></div><div class="pn"><span class="lab">Finanzas</span><b>30,5 M</b><small>próxima ronda: +0,4 M</small></div>
+        <div class="pn"><span class="lab">Coche</span><b>0</b><small>proyectos en marcha</small></div><div class="pn"><span class="lab">Junta</span><b>60</b><small>objetivo: 5.º</small></div></div>
+    </div></div></div>
+  </section>
+
+  <section class="screen"><h2>3 · Carrera</h2><p>Posiciones a la izquierda, pista en el centro y tus dos pilotos a la derecha. La vista 3D de la pista no cambia en VS1.</p>
+    <div class="fit"><div class="frame race">
+      <div class="rtop"><span class="disp gp">GP de España</span><span class="lap">9<small> / 66 vueltas</small></span><span class="flag">Bandera verde</span><span class="lab">Seco · pista 38 °C</span>
+        <div class="spd"><span>II</span><span class="on">1x</span><span>2x</span><span>4x</span><span>8x</span><span>16x</span><span>32x</span></div></div>
+      <div class="board"><span class="lab">Posiciones</span><div id="rows"></div></div>
+      <div class="view"><svg viewBox="0 0 600 400" id="trk"><path class="trk"/><path class="trk mid"/></svg><span class="note">Vista 3D de la pista (aquí, un esquema)</span></div>
+      <div class="wall">
+        <div class="drv pn"><header><span class="p">P1</span><span class="disp name">Norris</span><span class="gap">+2,4 s sobre VER</span></header>
+          <span class="lab">Ritmo</span><div class="seg"><span>Cuidar</span><span class="on">Normal</span><span>Atacar</span></div>
+          <div class="mt"><span>Medios · 9 v</span><u style="--v:31%;--c:var(--wa)"></u><em>31 %</em></div><div class="mt"><span>Combustible</span><u style="--v:84%"></u><em>84 %</em></div><div class="mt"><span>Batería</span><u style="--v:62%;--c:var(--hi)"></u><em>62 %</em></div>
+          <span class="btn sec">Parar en boxes</span></div>
+        <div class="drv pn"><header><span class="p">P3</span><span class="disp name">Piastri</span><span class="gap" style="color:var(--wa)">−0,8 s de VER</span></header>
+          <span class="lab">Ritmo</span><div class="seg"><span>Cuidar</span><span>Normal</span><span class="on">Atacar</span></div>
+          <div class="mt"><span>Medios · 9 v</span><u style="--v:44%;--c:var(--wa)"></u><em>44 %</em></div><div class="mt"><span>Combustible</span><u style="--v:82%"></u><em>82 %</em></div><div class="mt"><span>Batería</span><u style="--v:28%;--c:var(--hi)"></u><em>28 %</em></div>
+          <span class="btn">Parar en boxes</span></div>
+      </div>
+      <div class="radio"><b>RADIO</b><span>Norris: «Las gomas aguantan. Sigo con este ritmo.»</span></div>
+    </div></div>
+  </section>
+</div>
+<script>
+const SPEC = {
+  a: { name: 'A · Muro de tiempos', idea: 'El juego como la pantalla de tiempos de un muro de boxes: negro, líneas finas, cifras en letra de ancho fijo y color solo donde hay un dato que importa (morado para el mejor, verde para mejora, ámbar para aviso). El rojo queda para la acción.',
+       fonts: ['Saira Condensed — títulos', 'IBM Plex Sans — texto', 'IBM Plex Mono — cifras'], sw: ['--bg', '--pn2', '--tx', '--tx2', '--ac', '--hi', '--ok', '--wa'],
+       pro: ['La más clara para leer datos en carrera', 'Envejece bien y admite mucha información'], con: ['Es la más sobria: menos «espectáculo»', 'La portada actual queda más llamativa que el resto'] },
+  b: { name: 'B · Cartel de carrera', idea: 'Lleva la portada actual a todo el juego: negro y rojo, títulos enormes en cursiva condensada, cortes en diagonal y fotos a sangre. Cada pantalla es un cartel con un solo mensaje.',
+       fonts: ['Barlow Condensed cursiva — títulos y cifras', 'Barlow — texto'], sw: ['--bg', '--pn2', '--tx', '--tx2', '--ac', '--hi', '--ok', '--wa'],
+       pro: ['La más reconocible y la que mejor casa con la portada', 'Mucha energía en inicio y temporada'], con: ['El rojo usado para todo deja de señalar la acción', 'En carrera hay que contenerla para que los datos se lean'] },
+  c: { name: 'C · Plano técnico', idea: 'El juego como la mesa de un ingeniero: papel claro con cuadrícula, tinta oscura, un rojo y un azul de anotación, y cifras como en un plano. La carrera pasa a oscuro con las mismas letras, para no deslumbrar.',
+       fonts: ['Space Grotesk — títulos y texto', 'JetBrains Mono — cifras'], sw: ['--bg', '--pn', '--tx', '--tx2', '--ac', '--hi', '--ok', '--wa'],
+       pro: ['La más distinta de cualquier otro juego de carreras', 'Muy cómoda para leer la gestión'], con: ['Fondo claro: rompe con la portada y con las imágenes oscuras del juego', 'Dos temas (claro y oscuro) que mantener'] } };
+const root = document.documentElement;
+function spec() {
+  const d = root.dataset.dir, s = SPEC[d], cs = getComputedStyle(root);
+  document.getElementById('spec').innerHTML = `<div><h2>${s.name}</h2><p>${s.idea}</p></div>
+    <div><h3>Color y letra</h3><div class="sw">${s.sw.map(v => `<div><i style="background:var(${v})"></i><span>${cs.getPropertyValue(v).trim()}</span></div>`).join('')}</div><ul style="margin-top:10px">${s.fonts.map(f => `<li>${f}</li>`).join('')}</ul></div>
+    <div><h3>Qué gana y qué arriesga</h3><ul>${s.pro.map(t => `<li>${t}</li>`).join('')}${s.con.map(t => `<li style="color:#e0a58f">${t}</li>`).join('')}</ul></div>`;
+}
+document.querySelectorAll('.pick button').forEach(b => b.addEventListener('click', () => {
+  root.dataset.dir = b.dataset.d;
+  document.querySelectorAll('.pick button').forEach(o => o.setAttribute('aria-pressed', String(o === b)));
+  try { localStorage.setItem('vs1-dir', b.dataset.d); } catch {}
+  spec();
+}));
+try { const d = localStorage.getItem('vs1-dir'); if (d && SPEC[d]) document.querySelector(`.pick button[data-d=${d}]`).click(); } catch {}
+spec();
+
+// Trazado de ejemplo (esquemático) y las posiciones.
+const D = 'M90 300C60 240 70 150 130 110C190 70 260 90 300 120C340 150 380 90 440 80C520 66 560 130 540 190C524 240 470 230 440 260C410 290 450 330 400 350C330 378 250 340 200 345C150 350 115 345 90 300Z';
+document.querySelectorAll('path.trk').forEach(p => p.setAttribute('d', D));
+const GRID = [['NOR', '#ff8000', 'Líder', 'M', 1], ['VER', '#3671c6', '+2,4', 'M'], ['PIA', '#ff8000', '+3,2', 'M', 1], ['LEC', '#e8002d', '+6,9', 'H'], ['RUS', '#27f4d2', '+8,1', 'M'], ['HAM', '#e8002d', '+11,0', 'H'],
+  ['ANT', '#27f4d2', '+14,6', 'M'], ['ALO', '#229971', '+17,3', 'S'], ['SAI', '#64c4ff', '+19,8', 'M'], ['ALB', '#64c4ff', '+21,1', 'H'], ['TSU', '#6692ff', '+24,7', 'S'], ['GAS', '#ff87bc', '+27,9', 'M']];
+document.getElementById('rows').innerHTML = GRID.map((g, i) => `<div class="r${g[4] ? ' me' : ''}"><b>${i + 1}</b><i style="background:${g[1]}"></i><span class="d">${g[0]}</span><span class="g">${g[2]}</span><span class="t ${g[3]}">${g[3] === 'S' ? 'B' : g[3] === 'M' ? 'M' : 'D'}</span></div>`).join('');
+const svg = document.getElementById('trk'), path = svg.querySelector('path'), len = path.getTotalLength();
+GRID.forEach((g, i) => { const p = path.getPointAtLength(len * (0.62 - i * 0.045 + 1) % len), c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  c.setAttribute('cx', p.x); c.setAttribute('cy', p.y); c.setAttribute('r', g[4] ? 8 : 6); c.setAttribute('fill', g[1]); c.setAttribute('stroke', g[4] ? '#fff' : '#000'); c.setAttribute('stroke-width', 2); svg.appendChild(c); });
+
+// Cada maqueta mide 1280 × 800 y se encoge para caber en la página.
+const fit = () => document.querySelectorAll('.fit').forEach(f => { const k = f.clientWidth / 1280; f.firstElementChild.style.transform = `scale(${k})`; f.style.height = 800 * k + 'px'; });
+addEventListener('resize', fit); fit();
+</script>
+</body>
+</html>

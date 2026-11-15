@@ -14,7 +14,7 @@
   border-radius: var(--radio-s);
   background: transparent;
   color: var(--text);
-  font-size: 16px;
+  font-size: var(--letra-2);
   font-weight: 600;
   cursor: pointer;
 }
@@ -44,7 +44,7 @@
 
 .section {
   padding: 4px 8px;
-  font-size: 14px;
+  font-size: var(--letra-1);
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -57,7 +57,7 @@
   border-radius: var(--radio-s);
   background: transparent;
   text-align: left;
-  font-size: 16px;
+  font-size: var(--letra-2);
   font-weight: 600;
   cursor: pointer;
 }
@@ -75,7 +75,7 @@
   border-radius: var(--radio-s);
   background: var(--panel);
   color: var(--text);
-  font-size: 16px;
+  font-size: var(--letra-2);
 }
 
 .saveForm .item {
@@ -84,13 +84,13 @@
 }
 
 .itemSc {
-  border: 1px dashed #6b5710;
-  color: #ffe070;
+  border: 1px dashed var(--aviso);
+  color: var(--aviso);
 }
 
 .itemRed {
-  border: 1px dashed #7f1d1d;
-  color: #fca5a5;
+  border: 1px dashed var(--accion-oscuro);
+  color: var(--negativo);
 }
 
 .item:hover {
@@ -104,7 +104,7 @@
 /* [T4.16] Sonido */
 .audioLevels { display: flex; flex-direction: column; }
 .audioLevels [aria-checked='true'] { background: var(--panel-2); box-shadow: inset 3px 0 0 var(--accion); }
-.credits { padding: 4px 10px 8px; font-size: 14px; color: var(--text-2); }
+.credits { padding: 4px 10px 8px; font-size: var(--letra-1); color: var(--text-2); }
 .credits summary { min-height: 32px; display: flex; align-items: center; cursor: pointer; }
 .credits ul { margin: 4px 0 0; padding-left: 16px; display: flex; flex-direction: column; gap: 4px; }
 

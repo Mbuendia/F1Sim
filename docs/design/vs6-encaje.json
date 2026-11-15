@@ -1,0 +1,39 @@
+{
+  "fecha": "2026-11-16",
+  "metodo": "scripts/blender/vs6-fit-check.py: rayos desde cada vértice de lo añadido; asoma si 3 o más escapan sin chocar con la carrocería",
+  "piezas": {
+    "motor": {
+      "vertices": 2118,
+      "asoman": 0
+    },
+    "admision": {
+      "vertices": 1122,
+      "asoman": 0
+    },
+    "turbo": {
+      "vertices": 1579,
+      "asoman": 0
+    },
+    "escape": {
+      "vertices": 2436,
+      "asoman": 38
+    },
+    "hibrido": {
+      "vertices": 1004,
+      "asoman": 0
+    },
+    "caja_cambios": {
+      "vertices": 923,
+      "asoman": 0
+    },
+    "radiadores": {
+      "vertices": 3192,
+      "asoman": 6
+    },
+    "pedales": {
+      "vertices": 420,
+      "asoman": 0
+    }
+  },
+  "nota": "El escape se ve por la boca trasera, donde empalma con el tubo del coche; los radiadores, puntos sueltos en los bordes."
+}
