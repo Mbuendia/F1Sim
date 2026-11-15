@@ -357,3 +357,10 @@
 .dockCompact .mainPilotCard {
   flex-wrap: wrap;
 }
+
+/* [VS4] Tarjeta del piloto con el carácter de «Cartel de carrera»: posición y nombre en letra de titular, cifras en la
+   letra de datos con ancho fijo. */
+.pilotNameTop { gap: 6px; }
+.pilotPosBig { font-family: var(--font-titular); }
+.pilotName { font-family: var(--font-titular); font-size: var(--letra-4); letter-spacing: 0; line-height: 1; }
+.pilotNum, .tireHealthText { font-family: var(--font-datos); font-variant-numeric: tabular-nums; }

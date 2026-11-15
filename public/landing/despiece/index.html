@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>F-Uno Sim · Pieza a pieza</title>
+<meta name="description" content="El monoplaza de F-Uno Sim, desmontado pieza a pieza mientras bajas: cada parte del coche cuenta una parte del juego.">
+<meta name="theme-color" content="#050505">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23050505'/><path d='M6 22 L14 10 H26 L18 22 Z' fill='%23e10600'/></svg>">
+<link rel="stylesheet" href="despiece.css">
+<script type="importmap">
+{ "imports": { "three": "./vendor/three.module.min.js", "three/addons/": "./vendor/addons/" } }
+</script>
+</head>
+<body>
+<a class="salto" href="#cierre">Saltar al final</a>
+
+<header class="barra">
+  <a class="marca" href="#inicio">F-Uno <b>Sim</b></a>
+  <a class="boton boton--barra" data-jugar href="https://f1sim-d5085.web.app/">Jugar</a>
+</header>
+
+<div class="escena" aria-hidden="true">
+  <canvas data-lienzo></canvas>
+  <p class="escena__carga" data-carga>Montando el coche…</p>
+</div>
+
+<main class="recorrido" data-recorrido>
+
+  <section id="inicio" class="paso paso--inicio" data-paso="inicio">
+    <div class="texto texto--abajo">
+      <h1 class="titular">Pieza a pieza</h1>
+      <p class="entrada">F-Uno Sim es un simulador de estrategia de monoplazas que funciona entero en el navegador. No conduces: diriges el muro de tus dos coches. Baja y te lo desmontamos.</p>
+    </div>
+  </section>
+
+  <section id="ala" class="paso paso--ala" data-paso="ala">
+    <p class="fondo-palabra" aria-hidden="true">ALERÓN</p>
+    <div class="texto texto--der">
+      <h2>Cada pieza se gana</h2>
+      <p>En el modo carrera, la fábrica prepara paquetes de mejoras uno detrás de otro: alerones, suelo, pontones, motor. El centro de temporada te señala la pieza que cambia con cada paquete y lo que cuesta.</p>
+      <figure class="captura"><img src="img/temporada.webp" width="1200" height="675" alt="Centro de temporada del juego." loading="lazy" decoding="async"></figure>
+    </div>
+  </section>
+
+  <section id="ruedas" class="paso paso--ruedas" data-paso="ruedas">
+    <p class="fondo-palabra" aria-hidden="true">RUEDAS</p>
+    <div class="texto texto--izq">
+      <h2>Neumáticos que se gastan</h2>
+      <p>Cada compuesto se degrada a su ritmo, y la pista se calienta con el sol y se enfría con las nubes. Desde el muro ves el desgaste vuelta a vuelta y decides cuándo parar y qué poner.</p>
+      <figure class="captura"><img src="img/neumaticos.webp" width="1200" height="675" alt="Telemetría de un piloto con el desgaste de sus neumáticos." loading="lazy" decoding="async"></figure>
+    </div>
+  </section>
+
+  <section id="motor" class="paso paso--motor" data-paso="motor">
+    <p class="fondo-palabra" aria-hidden="true">MOTOR</p>
+    <div class="texto texto--der texto--pico">
+      <h2>Debajo, el motor</h2>
+      <p>Un V6 turbo híbrido, con su motor eléctrico, su batería y su escape. Desde el muro eliges el modo de motor y cuándo gastar la energía, y hablas por radio con tus pilotos mientras la carrera sigue.</p>
+      <figure class="captura"><img src="img/muro.webp" width="1200" height="675" alt="El muro de boxes durante una carrera." loading="lazy" decoding="async"></figure>
+    </div>
+  </section>
+
+  <section id="pontones" class="paso paso--pontones" data-paso="pontones">
+    <p class="fondo-palabra" aria-hidden="true">PONTONES</p>
+    <div class="texto texto--izq">
+      <h2>El tiempo cambia la carrera</h2>
+      <p>Llegan frentes de lluvia, la pista se moja y se seca poco a poco. Parar a tiempo por neumáticos de lluvia, o aguantar una vuelta más, es decisión tuya.</p>
+      <figure class="captura"><img src="img/lluvia.webp" width="1200" height="675" alt="Carrera bajo la lluvia en la vista 3D." loading="lazy" decoding="async"></figure>
+    </div>
+  </section>
+
+  <section id="suelo" class="paso paso--suelo" data-paso="suelo">
+    <p class="fondo-palabra" aria-hidden="true">SUELO</p>
+    <div class="texto texto--der">
+      <h2>La carrera, en 3D</h2>
+      <p>Cada circuito con su ambiente: luz de día, atardecer o noche, gradas con público y el agua que levantan los coches cuando llueve.</p>
+      <figure class="captura"><img src="img/circuito.webp" width="1200" height="675" alt="Un circuito al atardecer en la vista 3D." loading="lazy" decoding="async"></figure>
+    </div>
+  </section>
+
+  <section id="drs" class="paso paso--drs" data-paso="drs">
+    <p class="fondo-palabra" aria-hidden="true">RECTA</p>
+    <p class="rotulo-drs" data-drs>DRS</p>
+    <div class="texto texto--izq">
+      <h2>Ábrelo en la recta</h2>
+      <p>En las zonas de DRS el alerón trasero se abre, el coche gana velocidad punta y adelantar es más fácil. La simulación lo tiene en cuenta en cada recta, vuelta a vuelta.</p>
+      <figure class="captura"><img src="img/carrera.webp" width="1200" height="675" alt="Vista de una carrera con la clasificación en directo." loading="lazy" decoding="async"></figure>
+    </div>
+  </section>
+
+  <section id="cierre" class="paso paso--cierre" data-paso="cierre">
+    <div class="texto texto--centro">
+      <h2 class="titular titular--cierre">Ahora, al muro</h2>
+      <p>Gratis, en el navegador y sin instalar nada. Una vez abierto, también funciona sin conexión.</p>
+      <a class="boton" data-jugar href="https://f1sim-d5085.web.app/">Jugar</a>
+    </div>
+  </section>
+
+</main>
+
+<footer class="pie">
+  <p class="credito" data-credito>Modelo del coche: «2025 F1 CAR», de Abu Saif (Sketchfab), CC BY 4.0, modificado para el juego.</p>
+</footer>
+
+<noscript><p class="aviso">Esta página necesita JavaScript para enseñar el coche en 3D; el texto se lee igual.</p></noscript>
+<script src="../js/config.js"></script>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

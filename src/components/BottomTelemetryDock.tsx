@@ -55,7 +55,7 @@ export const BottomTelemetryDock: React.FC<BottomTelemetryDockProps> = ({
       {/* ── 1. COCHE DE DELANTE ── */}
       <div className={styles.relativeCarCard}>
         <div className={styles.relativeHeader}>
-          <ChevronUp size={14} color="#38bdf8" />
+          <ChevronUp size={14} color="var(--info)" />
           <span>COCHE DELANTE</span>
         </div>
         {aheadInfo ? (
@@ -84,7 +84,7 @@ export const BottomTelemetryDock: React.FC<BottomTelemetryDockProps> = ({
           <div className={styles.pilotPosBig}>P{currentPosition}</div>
           <div className={styles.pilotNameGroup}>
             <div className={styles.pilotNameTop}>
-              <FlagIcon country={driver.country} emoji={driver.countryFlag} size={15} style={{ marginRight: '6px' }} />
+              <FlagIcon country={driver.country} emoji={driver.countryFlag} size={15} />
               <span className={styles.pilotName}>{driver.firstName} {driver.lastName}</span>
               <span className={styles.pilotNum} style={{ color: team.color }}>#{driver.number}</span>
               <button 
@@ -109,7 +109,7 @@ export const BottomTelemetryDock: React.FC<BottomTelemetryDockProps> = ({
               <span>({tires.lapsOnTire} VUELTAS)</span>
             </div>
             {known && (
-            <div className={styles.tireHealthText} style={{ color: tires.health < 25 ? '#ef4444' : '#22c55e' }}>
+            <div className={styles.tireHealthText} style={{ color: tires.health < 25 ? 'var(--accion)' : 'var(--positivo)' }}>
               {Math.round(tires.health)}% VIDA
             </div>
             )}
@@ -139,18 +139,18 @@ export const BottomTelemetryDock: React.FC<BottomTelemetryDockProps> = ({
           </div>
           {known && (<>
           <div className={styles.statItem}>
-            <Gauge size={13} color="#38bdf8" />
+            <Gauge size={13} color="var(--info)" />
             <span>MODO: {telemetry.engineMode.toUpperCase()}</span>
           </div>
           {/* Q16: estado real del almacenamiento de energía (ES) y del despliegue MGU-K */}
           <div className={styles.statItem} data-ers-soc={Math.round(telemetry.batterySoc)} data-ers-deploying={String(telemetry.ersDeploying)}
             title={`Batería ERS: ${Math.round(telemetry.batterySoc)}% (${(telemetry.batterySoc / 25).toFixed(2)} de 4 MJ)${telemetry.ersDeploying ? ' · desplegando' : ''}`}>
-            <Battery size={13} color={telemetry.batterySoc > 50 ? '#22c55e' : telemetry.batterySoc > 20 ? '#eab308' : '#ef4444'} />
+            <Battery size={13} color={telemetry.batterySoc > 50 ? 'var(--positivo)' : telemetry.batterySoc > 20 ? 'var(--aviso)' : 'var(--accion)'} />
             <span>ERS</span>
             <span className={styles.ersBar}>
               <span className={styles.ersFill} style={{
                 width: `${Math.max(0, Math.min(100, telemetry.batterySoc))}%`,
-                backgroundColor: telemetry.batterySoc > 50 ? '#22c55e' : telemetry.batterySoc > 20 ? '#eab308' : '#ef4444',
+                backgroundColor: telemetry.batterySoc > 50 ? 'var(--positivo)' : telemetry.batterySoc > 20 ? 'var(--aviso)' : 'var(--accion)',
               }} />
             </span>
             <span>{Math.round(telemetry.batterySoc)}%</span>
@@ -163,7 +163,7 @@ export const BottomTelemetryDock: React.FC<BottomTelemetryDockProps> = ({
       {/* ── 3. COCHE DE DETRÁS ── */}
       <div className={styles.relativeCarCard}>
         <div className={styles.relativeHeader}>
-          <ChevronDown size={14} color="#f97316" />
+          <ChevronDown size={14} color="var(--aviso)" />
           <span>COCHE DETRÁS</span>
         </div>
         {behindInfo ? (

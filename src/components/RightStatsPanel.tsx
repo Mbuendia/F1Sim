@@ -10,6 +10,8 @@ import { CompoundBadge } from './CompoundBadge';
 import { COMPOUND_STYLES, compoundStyle } from '../utils/compounds';
 import { RainForecastPanel } from './RainForecastPanel';
 import type { RainForecast } from '../simulation/WeatherForecast';
+import { TRACK_TEMP_HINT, trackTempBand } from '../simulation/TrackTemperature';
+import { cssColor } from '../utils/cssColor';
 
 export interface RightStatsPanelProps {
   car: CarState | null;
@@ -93,19 +95,19 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
       ctx.clearRect(0, 0, size, size);
 
       // Radar dark background
-      ctx.fillStyle = '#060a12';
+      ctx.fillStyle = cssColor('var(--panel)');
       ctx.fillRect(0, 0, size, size);
 
       // Distance range rings (5km, 10km, 20km)
-      ctx.strokeStyle = 'rgba(56, 189, 248, 0.18)';
+      ctx.strokeStyle = cssColor('color-mix(in srgb, var(--info) 18%, transparent)');
       ctx.lineWidth = 1;
       [35, 70, 105].forEach((r, idx) => {
         ctx.beginPath();
         ctx.arc(cx, cy, r, 0, Math.PI * 2);
         ctx.stroke();
 
-        ctx.fillStyle = 'rgba(56, 189, 248, 0.45)';
-        ctx.font = '8px Barlow Condensed';
+        ctx.fillStyle = cssColor('color-mix(in srgb, var(--info) 45%, transparent)');
+        ctx.font = '14px Barlow Condensed';
         ctx.fillText(`${(idx + 1) * 5}km`, cx + 3, cy - r + 9);
       });
 
@@ -115,7 +117,7 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
       ctx.lineTo(cx, size - 15);
       ctx.moveTo(15, cy);
       ctx.lineTo(size - 15, cy);
-      ctx.strokeStyle = 'rgba(56, 189, 248, 0.12)';
+      ctx.strokeStyle = cssColor('color-mix(in srgb, var(--info) 12%, transparent)');
       ctx.stroke();
 
       // Draw moving weather clouds
@@ -127,9 +129,9 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
 
         const isWet = (weather?.waterPercentage || 0) > 20;
         const grad = ctx.createRadialGradient(c.x, c.y, 2, c.x, c.y, c.r);
-        grad.addColorStop(0, isWet ? 'rgba(56, 189, 248, 0.65)' : 'rgba(148, 163, 184, 0.35)');
-        grad.addColorStop(0.6, isWet ? 'rgba(2, 132, 199, 0.35)' : 'rgba(100, 116, 139, 0.15)');
-        grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        grad.addColorStop(0, isWet ? cssColor('color-mix(in srgb, var(--info) 65%, transparent)') : cssColor('color-mix(in srgb, var(--text-2) 35%, transparent)'));
+        grad.addColorStop(0.6, isWet ? cssColor('color-mix(in srgb, var(--info) 35%, transparent)') : cssColor('color-mix(in srgb, var(--text-3) 15%, transparent)'));
+        grad.addColorStop(1, cssColor('transparent'));
         ctx.fillStyle = grad;
         ctx.beginPath();
         ctx.arc(c.x, c.y, c.r, 0, Math.PI * 2);
@@ -142,31 +144,31 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
       const sweepY = cy + Math.sin(angle) * 115;
 
       const beamGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 115);
-      beamGrad.addColorStop(0, 'rgba(56, 189, 248, 0.5)');
-      beamGrad.addColorStop(1, 'rgba(56, 189, 248, 0.0)');
+      beamGrad.addColorStop(0, cssColor('color-mix(in srgb, var(--info) 50%, transparent)'));
+      beamGrad.addColorStop(1, cssColor('transparent'));
 
       ctx.save();
       ctx.beginPath();
       ctx.moveTo(cx, cy);
       ctx.arc(cx, cy, 115, angle - 0.45, angle);
       ctx.closePath();
-      ctx.fillStyle = 'rgba(56, 189, 248, 0.15)';
+      ctx.fillStyle = cssColor('color-mix(in srgb, var(--info) 15%, transparent)');
       ctx.fill();
       ctx.restore();
 
       ctx.beginPath();
       ctx.moveTo(cx, cy);
       ctx.lineTo(sweepX, sweepY);
-      ctx.strokeStyle = '#38bdf8';
+      ctx.strokeStyle = cssColor('var(--info)');
       ctx.lineWidth = 1.5;
       ctx.stroke();
 
       // Circuit Center Icon (GPS Beacon)
       ctx.beginPath();
       ctx.arc(cx, cy, 4.5, 0, Math.PI * 2);
-      ctx.fillStyle = '#e10600';
+      ctx.fillStyle = cssColor('var(--accion)');
       ctx.fill();
-      ctx.strokeStyle = '#ffffff';
+      ctx.strokeStyle = cssColor('var(--text)');
       ctx.lineWidth = 1.5;
       ctx.stroke();
 
@@ -189,15 +191,15 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
     personalBest: number | null,
     overallBest: number | null
   ) => {
-    if (!currentSectorVal) return { color: '#94a3b8', bg: 'rgba(255,255,255,0.04)', status: '-' };
+    if (!currentSectorVal) return { color: 'var(--text-2)', bg: 'color-mix(in srgb, var(--text) 4%, transparent)', status: '-' };
 
     if (overallBest && Math.abs(currentSectorVal - overallBest) < 0.005) {
-      return { color: '#c084fc', bg: 'rgba(192, 132, 252, 0.22)', border: '#c084fc', status: 'RÉCORD' };
+      return { color: 'var(--morado)', bg: 'color-mix(in srgb, var(--morado) 22%, transparent)', border: 'var(--morado)', status: 'RÉCORD' };
     }
     if (personalBest && Math.abs(currentSectorVal - personalBest) < 0.005) {
-      return { color: '#22c55e', bg: 'rgba(34, 197, 94, 0.22)', border: '#22c55e', status: 'MEJOR PERSONAL' };
+      return { color: 'var(--positivo)', bg: 'color-mix(in srgb, var(--positivo) 22%, transparent)', border: 'var(--positivo)', status: 'MEJOR PERSONAL' };
     }
-    return { color: '#eab308', bg: 'rgba(234, 179, 8, 0.15)', border: '#eab308', status: 'ESTÁNDAR' };
+    return { color: 'var(--aviso)', bg: 'color-mix(in srgb, var(--aviso) 15%, transparent)', border: 'var(--aviso)', status: 'ESTÁNDAR' };
   };
 
   const s1Style = getSectorStyle(sectors.s1, sectors.personalBestS1, overallBestS1);
@@ -206,11 +208,11 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
 
   // ── GRÁFICA DE DEGRADACIÓN Y PREVISIÓN FIJA ──
   const chartW = 320;
-  const chartH = 95;
-  const padLeft = 26;
+  const chartH = 132;
+  const padLeft = 44;
   const padRight = 10;
   const padTop = 8;
-  const padBottom = 18;
+  const padBottom = 26;
 
   const innerW = chartW - padLeft - padRight;
   const innerH = chartH - padTop - padBottom;
@@ -259,7 +261,7 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
     const depth = weather?.waterDepthMm || 0;
     if (depth > 3.0) return { compound: 'WET (AZUL)', advice: 'Extrema acumulación de agua. Slicks no operativos.', col: COMPOUND_STYLES.wet.color };
     if (depth > 0.5) return { compound: 'INTERMEDIATE (VERDE)', advice: 'Pista húmeda / con spray. Ventana óptima de Inter.', col: COMPOUND_STYLES.intermediate.color };
-    return { compound: 'SLICK (SECO)', advice: 'Asfalto seco. Máximo agarre en compuestos Soft/Med/Hard.', col: '#ffd700' };
+    return { compound: 'SLICK (SECO)', advice: 'Asfalto seco. Máximo agarre en compuestos Soft/Med/Hard.', col: 'var(--aviso)' };
   };
   const rainRec = getRainRecommendation();
 
@@ -293,8 +295,8 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
           {/* 1. SECTORES EN DIRECTO */}
           <div className={styles.sectionCard}>
             <div className={styles.cardHeader}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Timer size={14} color="#e10600" />
+              <div className={styles.titleRow}>
+                <Timer size={14} color="var(--accion)" />
                 <span>SECTORES EN DIRECTO</span>
               </div>
             </div>
@@ -325,7 +327,7 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
               <div className={styles.cardHeader}>
                 <span>DESGASTE Y MECÁNICA</span>
               </div>
-              <span style={{ fontSize: '11px', color: '#94a3b8' }}>
+              <span className={styles.note}>
                 De un rival se ven el compuesto ({tires.compound.toUpperCase()}, {tires.lapsOnTire} vueltas), los sectores y las vueltas. Su desgaste, sus frenos y su motor solo los ve su equipo; el muro los estima.
               </span>
             </div>
@@ -334,29 +336,29 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
           {known && (<>
           <div className={styles.sectionCard}>
             <div className={styles.cardHeader}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <TrendingDown size={14} color="#ffd700" />
+              <div className={styles.titleRow}>
+                <TrendingDown size={14} color="var(--aviso)" />
                 <span>PREVISIÓN FIJA & DEGRADACIÓN</span>
               </div>
             </div>
 
             <div className={styles.chartContainer}>
               <svg className={styles.chartSvg} viewBox={`0 0 ${chartW} ${chartH}`}>
-                <line x1={padLeft} y1={padTop} x2={padLeft} y2={chartH - padBottom} stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
-                <line x1={padLeft} y1={chartH - padBottom} x2={chartW - padRight} y2={chartH - padBottom} stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
+                <line x1={padLeft} y1={padTop} x2={padLeft} y2={chartH - padBottom} stroke="color-mix(in srgb, var(--text) 15%, transparent)" strokeWidth="1" />
+                <line x1={padLeft} y1={chartH - padBottom} x2={chartW - padRight} y2={chartH - padBottom} stroke="color-mix(in srgb, var(--text) 15%, transparent)" strokeWidth="1" />
 
                 {[0, 20, 40, 66].map(l => (
                   <g key={l}>
-                    <line x1={getX(l)} y1={chartH - padBottom} x2={getX(l)} y2={chartH - padBottom + 4} stroke="rgba(255,255,255,0.3)" strokeWidth="1" />
-                    <text x={getX(l)} y={chartH - 4} fill="#64748b" fontSize="8" fontFamily="Barlow Condensed" textAnchor="middle">L{l}</text>
+                    <line x1={getX(l)} y1={chartH - padBottom} x2={getX(l)} y2={chartH - padBottom + 4} stroke="color-mix(in srgb, var(--text) 30%, transparent)" strokeWidth="1" />
+                    <text x={getX(l)} y={chartH - 4} fill="var(--text-3)" fontSize="14" fontFamily="Barlow Condensed" textAnchor="middle">L{l}</text>
                   </g>
                 ))}
 
-                <text x={padLeft - 4} y={getY(100) + 3} fill="#64748b" fontSize="8" fontFamily="Barlow Condensed" textAnchor="end">100%</text>
-                <text x={padLeft - 4} y={getY(50) + 3} fill="#64748b" fontSize="8" fontFamily="Barlow Condensed" textAnchor="end">50%</text>
-                <text x={padLeft - 4} y={getY(0) + 3} fill="#64748b" fontSize="8" fontFamily="Barlow Condensed" textAnchor="end">0%</text>
+                <text x={padLeft - 4} y={getY(100) + 3} fill="var(--text-3)" fontSize="14" fontFamily="Barlow Condensed" textAnchor="end">100%</text>
+                <text x={padLeft - 4} y={getY(50) + 3} fill="var(--text-3)" fontSize="14" fontFamily="Barlow Condensed" textAnchor="end">50%</text>
+                <text x={padLeft - 4} y={getY(0) + 3} fill="var(--text-3)" fontSize="14" fontFamily="Barlow Condensed" textAnchor="end">0%</text>
 
-                <line x1={padLeft} y1={getY(20)} x2={chartW - padRight} y2={getY(20)} stroke="#ef4444" strokeWidth="0.8" strokeDasharray="3,3" opacity="0.5" />
+                <line x1={padLeft} y1={getY(20)} x2={chartW - padRight} y2={getY(20)} stroke="var(--accion)" strokeWidth="0.8" strokeDasharray="3,3" opacity="0.5" />
 
                 <line 
                   x1={stintStartPoint.x} 
@@ -389,7 +391,7 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
                   />
                 )}
 
-                <circle cx={currentPoint.x} cy={currentPoint.y} r="4.5" fill={stintStroke} stroke="#000000" strokeWidth="1.5" />
+                <circle cx={currentPoint.x} cy={currentPoint.y} r="4.5" fill={stintStroke} stroke="var(--negro)" strokeWidth="1.5" />
               </svg>
 
               <div className={styles.chartLegend}>
@@ -415,8 +417,8 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
           {/* 3. DINÁMICA & BALANCE MECÁNICO */}
           <div className={styles.sectionCard}>
             <div className={styles.cardHeader}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Gauge size={14} color="#38bdf8" />
+              <div className={styles.titleRow}>
+                <Gauge size={14} color="var(--info)" />
                 <span>BALANCE MECÁNICO & DINÁMICA</span>
               </div>
             </div>
@@ -431,7 +433,7 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
               <div className={styles.telemetryMiniBox}>
                 <span className={styles.miniBoxLabel}>Brake Bias (Reparto)</span>
                 <span className={styles.miniBoxVal}>{brakeBiasFront}% F</span>
-                <span style={{ fontSize: '9px', color: '#94a3b8' }}>{(100 - brakeBiasFront).toFixed(1)}% Trasero</span>
+                <span className={styles.note}>{(100 - brakeBiasFront).toFixed(1)}% Trasero</span>
               </div>
 
               <div className={styles.telemetryMiniBox}>
@@ -445,18 +447,18 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
               <div className={styles.telemetryMiniBox}>
                 <span className={styles.miniBoxLabel}>Presión Neumáticos</span>
                 <span className={styles.miniBoxVal}>{tirePressurePsi} PSI</span>
-                <span style={{ fontSize: '9px', color: '#38bdf8' }}>Temp: {Math.round(tires.tempCelsius)}°C</span>
+                <span className={styles.noteInfo}>Temp: {Math.round(tires.tempCelsius)}°C</span>
               </div>
             </div>
 
-            <div style={{ marginTop: '2px' }}>
+            <div className={styles.gapTop}>
               <div className={styles.telemetryMiniBox}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <Wind size={11} color="#38bdf8" />
+                <div className={styles.titleRowTight}>
+                  <Wind size={11} color="var(--info)" />
                   <span className={styles.miniBoxLabel}>Carga Aerodinámica & Eficiencia</span>
                 </div>
-                <span className={styles.miniBoxVal} style={{ fontSize: '11.5px' }}>{downforceLevel}</span>
-                <span style={{ fontSize: '8.5px', color: '#22c55e' }}>Aero Rating: {Math.round(team.aerodynamics * 100)}%</span>
+                <span className={styles.miniBoxVal}>{downforceLevel}</span>
+                <span className={styles.notePositive}>Aero Rating: {Math.round(team.aerodynamics * 100)}%</span>
               </div>
             </div>
 
@@ -472,8 +474,8 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
           {/* 4. HISTORIAL DE TODAS LAS VUELTAS */}
           <div className={styles.sectionCard}>
             <div className={styles.cardHeader}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <History size={14} color="#c084fc" />
+              <div className={styles.titleRow}>
+                <History size={14} color="var(--morado)" />
                 <span>HISTORIAL DE VUELTAS ({(lapHistory ?? []).length}/{totalLaps})</span>
               </div>
             </div>
@@ -494,7 +496,7 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
                 <tbody>
                   {(lapHistory ?? []).length === 0 ? (
                     <tr>
-                      <td colSpan={7} style={{ padding: '12px', color: '#64748b', fontStyle: 'italic' }}>
+                      <td colSpan={7} className={styles.emptyRow}>
                         Completando Vuelta 1 en pista...
                       </td>
                     </tr>
@@ -504,7 +506,7 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
                       return (
                         <tr key={h.lap}>
                           <td className={styles.lapNumCell}>L{h.lap}</td>
-                          <td className={styles.lapTimeCell} style={{ color: isBestLap ? '#c084fc' : '#ffffff' }}>
+                          <td className={styles.lapTimeCell} style={{ color: isBestLap ? 'var(--morado)' : 'var(--text)' }}>
                             {h.lapTime.toFixed(3)}s
                           </td>
                           <td>{h.sector1 ? `${h.sector1.toFixed(2)}s` : '-'}</td>
@@ -533,8 +535,8 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
           {/* 1. RADAR GPS METEOROLÓGICO EN VIVO */}
           <div className={styles.sectionCard}>
             <div className={styles.cardHeader}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Radio size={14} color="#38bdf8" />
+              <div className={styles.titleRow}>
+                <Radio size={14} color="var(--info)" />
                 <span>RADAR METEOROLÓGICO GPS</span>
               </div>
               <span className={styles.radarLiveBadge}>● EN VIVO</span>
@@ -543,22 +545,22 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
             <div className={styles.radarContainer}>
               <canvas ref={radarCanvasRef} className={styles.radarCanvas} />
               <div className={styles.radarOverlayGps}>
-                <Compass size={12} color="#38bdf8" />
+                <Compass size={12} color="var(--info)" />
                 <span>GPS: 41°34'12"N 2°15'27"E</span>
               </div>
             </div>
 
             <div className={styles.radarLegendRow}>
               <div className={styles.radarLegendItem}>
-                <span className={styles.radarDot} style={{ background: '#38bdf8' }} />
+                <span className={styles.radarDot} style={{ background: 'var(--info)' }} />
                 <span>Nube Densa</span>
               </div>
               <div className={styles.radarLegendItem}>
-                <span className={styles.radarDot} style={{ background: '#e10600' }} />
+                <span className={styles.radarDot} style={{ background: 'var(--accion)' }} />
                 <span>Baliza Circuito</span>
               </div>
               <div className={styles.radarLegendItem}>
-                <span className={styles.radarDot} style={{ background: 'rgba(56, 189, 248, 0.3)' }} />
+                <span className={styles.radarDot} style={{ background: 'color-mix(in srgb, var(--info) 30%, transparent)' }} />
                 <span>Barrido Doppler</span>
               </div>
             </div>
@@ -567,8 +569,8 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
           {/* 2. NIVEL DE AGUA Y PREVISIÓN DE CANTIDAD DE LLUVIA */}
           <div className={styles.sectionCard}>
             <div className={styles.cardHeader}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Droplets size={14} color="#38bdf8" />
+              <div className={styles.titleRow}>
+                <Droplets size={14} color="var(--info)" />
                 <span>CANTIDAD DE AGUA & LLUVIA</span>
               </div>
               <span className={styles.weatherConditionBadge}>
@@ -591,7 +593,7 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
 
               <div className={styles.weatherMiniBox}>
                 <span className={styles.weatherBoxHeader}>Probabilidad Lluvia</span>
-                <span className={styles.weatherBoxVal} style={{ color: '#38bdf8' }}>
+                <span className={styles.weatherBoxVal} style={{ color: 'var(--info)' }}>
                   {weather.rainProbabilityPct}%
                 </span>
                 <span className={styles.weatherBoxSub}>5 min: {weather.forecast5Min}</span>
@@ -603,8 +605,8 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
             <RainForecastPanel forecast={rainForecast} cloudCoverPct={weather.cloudCoverPct ?? 0} />
 
             {/* Tactical Tire Suggestion */}
-            <div className={styles.strategyRecBox} style={{ borderColor: rainRec.col, background: `${rainRec.col}15` }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <div className={styles.strategyRecBox} style={{ borderColor: rainRec.col, background: `color-mix(in srgb, ${rainRec.col} 8%, transparent)` }}>
+              <div className={styles.titleRow}>
                 <Zap size={13} color={rainRec.col} />
                 <span className={styles.recTitle} style={{ color: rainRec.col }}>NEUMÁTICO RECOMENDADO</span>
               </div>
@@ -615,8 +617,8 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
           {/* 3. ANEMÓMETRO, TEMPERATURA Y GRIP */}
           <div className={styles.sectionCard}>
             <div className={styles.cardHeader}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Wind size={14} color="#a855f7" />
+              <div className={styles.titleRow}>
+                <Wind size={14} color="var(--morado)" />
                 <span>VIENTO & TERMOMETRÍA AMBIENTAL</span>
               </div>
             </div>
@@ -625,10 +627,10 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
               {/* Viento */}
               <div className={styles.weatherMiniBox}>
                 <div className={styles.weatherBoxHeader}>
-                  <Wind size={11} color="#c084fc" />
+                  <Wind size={11} color="var(--morado)" />
                   <span>Anemómetro</span>
                 </div>
-                <span className={styles.weatherBoxVal} style={{ color: '#c084fc' }}>
+                <span className={styles.weatherBoxVal} style={{ color: 'var(--morado)' }}>
                   {weather.windSpeedKmh} km/h
                 </span>
                 <span className={styles.weatherBoxSub}>Dirección: {weather.windDirection} (Ráfagas)</span>
@@ -639,7 +641,7 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
               <div className={styles.weatherCard}>
                 <RaceHeader circuit={circuit} />
                 
-                <div style={{ marginTop: '16px' }}>
+                <div className={styles.gapTopL}>
                   <span className={styles.cardTitle}>RADAR DOPPLER GPS</span>
                 </div>
               </div>
@@ -647,24 +649,26 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
               {/* Temp Pista */}
               <div className={styles.weatherMiniBox}>
                 <div className={styles.weatherBoxHeader}>
-                  <Thermometer size={11} color="#f97316" />
+                  <Thermometer size={11} color="var(--aviso)" />
                   <span>Temp. Pista</span>
                 </div>
-                <span className={styles.weatherBoxVal} style={{ color: '#f97316' }}>
+                <span className={styles.weatherBoxVal} style={{ color: 'var(--aviso)' }}>
                   {weather.trackTempCelsius}°C
                 </span>
+                {/* [VS3] Cómo está el asfalto y qué les supone a los neumáticos. */}
+                <span className={styles.weatherBoxSub} title={TRACK_TEMP_HINT[trackTempBand(weather.trackTempCelsius)].effect}>{TRACK_TEMP_HINT[trackTempBand(weather.trackTempCelsius)].label}</span>
                 <span className={styles.weatherBoxSub}>Ambiente: {weather.airTempCelsius}°C</span>
                 <span className={styles.weatherBoxSub}>Humedad: {weather.humidityPercentage}%</span>
               </div>
 
               {/* Grip Pista */}
-              <div className={styles.weatherMiniBox} style={{ gridColumn: 'span 2' }}>
+              <div className={`${styles.weatherMiniBox} ${styles.span2}`}>
                 <div className={styles.weatherBoxHeader}>
-                  <Gauge size={11} color="#22c55e" />
+                  <Gauge size={11} color="var(--positivo)" />
                   <span>Grip Efectivo en Pista</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span className={styles.weatherBoxVal} style={{ color: '#22c55e' }}>
+                <div className={styles.between}>
+                  <span className={styles.weatherBoxVal} style={{ color: 'var(--positivo)' }}>
                     {Math.round(weather.gripMultiplier * 100)}% ADHERENCIA
                   </span>
                   <span className={styles.weatherBoxSub}>

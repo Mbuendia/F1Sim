@@ -16,10 +16,13 @@ import { raceFingerprints } from '../support/race-fingerprint.mjs';
 // idénticas.
 // [CR2/CR10, autorizado por el usuario el 12/11/2026] El trazado de Spa cambió a propósito (La Source abierta y dos tramos
 // llevados al real en CR2; eje a paso uniforme en CR10): cambia la huella de Spa. Monza y Mónaco siguen idénticas.
+// [VS3, autorizado por el usuario el 13/11/2026] Cada circuito sale con su temperatura de pista y el asfalto calienta o
+// enfría los neumáticos: cambian las tres huellas. Forzando la temperatura de antes (38,5 °C) salen bit a bit las
+// anteriores (3382658b…, 5ac23726… y cb8d7d78…): lo comprueba tests/modules/track-temp-vs3.mjs.
 const BEFORE = {
-  'monza-seco': '3382658b1c9db1acd54b9eb48a29cc79c9ad99212858fcf0edae9e80bcdd05db',
-  'monaco-lluvia-sc': '5ac23726459d2c8ef7f4f172a3e505cb5dec90b28eb2329b65e68fe3718830ab',
-  'spa-vsc-roja-ordenes': 'cb8d7d78028b264eb889daa7bb3a2132caeeab30c02c6a2f61e1fa7899fef016',
+  'monza-seco': '465b6e28f76606f87867681b3f8f791afba70903750f0ef3b65a71a29c83c674',
+  'monaco-lluvia-sc': 'b060bf36cbfebf305fe633d198b4c7912ae914d65974a82def6df410b25a5375',
+  'spa-vsc-roja-ordenes': '567324abe95f97cb025db2c8c6b1da94971f52bed74a92e2a0ff2fdc9d550254',
 };
 const MODULES = ['carStep', 'neutralization', 'weather', 'teamOrders', 'wall', 'startAndResult'];
 

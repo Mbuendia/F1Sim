@@ -333,7 +333,9 @@ export function stepCar(sim: RaceSimulation, car: CarState, ctx: CarStepContext)
     // [R06] Sentido de la curva y velocidad: carga y temperatura de cada rueda.
     { turn: trackPoint.turn ?? 0, speedKmh: car.currentSpeedKmh, heat: car.technical?.tyreHeat, wear: car.technical?.tyreWear,
       // [T3.3] El agua de la trazada enfría el neumático; sin ella, intermedios y lluvia se destrozan.
-      waterMm: sim.weatherModel.depthAt(normalizedT) }
+      waterMm: sim.weatherModel.depthAt(normalizedT),
+      // [VS3] El asfalto más caliente o más frío que la referencia calienta o enfría la goma.
+      trackOffsetC: sim.weather.trackOffsetC }
   );
 
 

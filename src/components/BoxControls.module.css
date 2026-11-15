@@ -146,3 +146,12 @@
 .gauges { gap: 8px; }
 .orderActions button:first-of-type { clip-path: polygon(12px 0, 100% 0, calc(100% - 12px) 100%, 0 100%); font-family: var(--font-titular); font-size: var(--letra-3); letter-spacing: 0.03em; }
 .orderActions button:first-of-type:focus-visible { clip-path: none; }
+
+/* [VS4] Velocímetro con el carácter de «Cartel de carrera»: la velocidad grande en letra de titular, la marcha en una
+   plancha roja cortada en diagonal y las luces más altas. Cada dato conserva su ancho fijo (UX17): la caja no se mueve. */
+.speedLeds { height: 10px; gap: 2px; }
+.speedLeds > span { border-radius: 0; }
+.speedCode { font-family: var(--font-datos); font-size: var(--letra-2); letter-spacing: 0.04em; width: 3.4ch; }
+.speedDigits { font: 800 var(--letra-5)/1 var(--font-titular); width: 3.2ch; font-variant-numeric: tabular-nums; }
+.speedGear { font: 800 var(--letra-4)/1 var(--font-titular); width: 1.9ch; padding: 3px 0; color: var(--text); background: var(--accion); clip-path: polygon(5px 0, 100% 0, calc(100% - 5px) 100%, 0 100%); }
+.speedRpm { font: 600 var(--letra-2) var(--font-datos); width: 6ch; font-variant-numeric: tabular-nums; }

@@ -525,6 +525,8 @@ export interface TrackWeatherState {
   waterDepthMm: number;        // 0.0 mm (Seco) a 6.0 mm (Encharcado)
   waterPercentage: number;     // 0% a 100%
   trackTempCelsius: number;    // Temperatura de asfalto (ej. 32°C - 52°C)
+  /** [VS3] Diferencia con la temperatura de referencia (°C); ausente si es cero (TrackTemperature.ts). */
+  trackOffsetC?: number;
   airTempCelsius: number;      // Temperatura ambiente (ej. 20°C - 30°C)
   humidityPercentage: number;  // 35% a 95%
   gripMultiplier: number;      // 1.0 (óptimo) a 0.65 (pista mojada)

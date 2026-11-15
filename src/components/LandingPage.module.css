@@ -79,6 +79,20 @@
   translate: calc(var(--px) * 10px) calc(var(--py) * 5px);
 }
 
+/* [VS5] Chispas detrás del coche: mismo empuje y desplazamiento que él, y un parpadeo corto. */
+.layerSparks {
+  transform-origin: var(--vp-x) var(--vp-y);
+  translate: calc(var(--px) * 10px) calc(var(--py) * 5px);
+  animation: cameraPush 16s ease-in-out infinite alternate, sparkFlicker var(--t-lento) steps(4, end) infinite;
+}
+
+@keyframes sparkFlicker {
+  0% { opacity: 1; }
+  40% { opacity: 0.72; }
+  70% { opacity: 0.95; }
+  100% { opacity: 0.8; }
+}
+
 /*
  * Ruedas: cuatro fotogramas renderizados (15° cada uno; las marcas se repiten cada 60°, así que el bucle no salta). Van
  * con el coche (mismo empuje y desplazamiento) y se enseña uno cada vez, a saltos de fotograma.
@@ -321,7 +335,7 @@
 
 /* Con «reducir movimiento», la escena queda quieta (y sin la segunda copia de las estelas). */
 @media (prefers-reduced-motion: reduce) {
-  .layerBg, .layerStreaks, .layerCar, .layerFg, .brandGroup, .layerWheels { animation: none; }
+  .layerBg, .layerStreaks, .layerCar, .layerSparks, .layerFg, .brandGroup, .layerWheels { animation: none; }
   .layerStreaks, .layerFg { opacity: 1; transform: none; }
   .streaksB { display: none; }
   /* Ruedas quietas: solo el primer fotograma. */

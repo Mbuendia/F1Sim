@@ -463,3 +463,18 @@
   font-family: var(--font-marca);
   font-weight: 800;
 }
+
+/* [VS4] Telemetría dentro del sistema visual: lo que antes se escribía en línea en el componente son ahora estas clases,
+   y las cifras van en la letra de datos con ancho fijo. */
+.titleRow { display: flex; align-items: center; gap: 6px; }
+.titleRowTight { display: flex; align-items: center; gap: 4px; }
+.note { font-size: var(--letra-1); color: var(--text-2); }
+.noteInfo { font-size: var(--letra-1); color: var(--info); }
+.notePositive { font-size: var(--letra-1); color: var(--positivo); }
+.gapTop { margin-top: 2px; }
+.gapTopL { margin-top: 16px; }
+.emptyRow { padding: 12px; color: var(--text-3); font-style: italic; }
+.span2 { grid-column: span 2; }
+.between { display: flex; justify-content: space-between; align-items: center; }
+.sectionTitle, .tabBtn { font-family: var(--font-titular); letter-spacing: 0.02em; }
+.sectorTime, .miniBoxVal, .weatherBoxVal, .lapTimeCell { font-family: var(--font-datos); font-variant-numeric: tabular-nums; }

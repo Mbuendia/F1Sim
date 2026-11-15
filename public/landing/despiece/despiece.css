@@ -1,0 +1,153 @@
+/* [VS6] Landing del despiece. Sistema visual «Cartel de carrera» (VS1): mismas fuentes, colores y medidas que el juego. */
+@font-face { font-family: 'Barlow'; src: url('../../fonts/barlow-400.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Barlow'; src: url('../../fonts/barlow-600.woff2') format('woff2'); font-weight: 600; font-display: swap; }
+@font-face { font-family: 'Barlow Condensed'; src: url('../../fonts/barlow-condensed-700.woff2') format('woff2'); font-weight: 700; font-display: swap; }
+@font-face { font-family: 'F-Uno Titular'; src: url('../../fonts/barlow-condensed-800i.woff2') format('woff2'); font-weight: 800; font-style: italic; font-display: swap; }
+
+:root {
+  --bg: #050505;
+  --panel: #101010;
+  --line: #2a2a2a;
+  --text: #f4f4f2;
+  --text-2: #b8b8b4;
+  --accion: #e10600;
+  --accion-hover: #ff2a1f;
+  --foco: #ffd23f;
+  --font-ui: 'Barlow', system-ui, sans-serif;
+  --font-datos: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+  --font-titular: 'F-Uno Titular', 'Barlow Condensed', sans-serif;
+  --t-medio: 250ms;
+  --t-lento: 400ms;
+  --gutter: clamp(16px, 4vw, 56px);
+}
+
+* { box-sizing: border-box; }
+html { color: var(--text); scroll-behavior: smooth; overflow-x: clip; }
+body { margin: 0; font: 400 18px/1.55 var(--font-ui); background: transparent; }
+img { display: block; max-width: 100%; height: auto; }
+a { color: inherit; }
+:focus-visible { outline: 3px solid var(--foco); outline-offset: 3px; }
+
+.salto { position: absolute; left: var(--gutter); top: -60px; z-index: 30; background: var(--text); color: var(--bg); padding: 10px 14px; font-weight: 600; }
+.salto:focus { top: 12px; }
+
+.barra { position: fixed; isolation: isolate; inset: 0 0 auto 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; padding: 14px var(--gutter); pointer-events: none; }
+.barra > * { pointer-events: auto; }
+.barra::before { content: ""; position: absolute; inset: 0 0 -28px 0; z-index: -1; background: linear-gradient(var(--bg) 35%, transparent); pointer-events: none; }
+.marca { font: 800 italic 26px/1 var(--font-titular); text-decoration: none; letter-spacing: 0.01em; text-transform: uppercase; }
+.marca b { color: var(--accion); font-weight: 800; }
+
+.boton { display: inline-block; background: var(--accion); color: var(--text); font: 700 20px/1 var(--font-datos); letter-spacing: 0.06em; text-transform: uppercase; text-decoration: none; padding: 16px 30px; clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%); transition: background-color var(--t-medio), transform var(--t-medio); }
+.boton:hover { background: var(--accion-hover); transform: translateY(-1px); }
+.boton--barra { font-size: 17px; padding: 11px 22px; }
+
+/* La escena 3D, fija detrás de todo. */
+/* Fondo de estudio: un foco suave detrás del coche y un brillo rojo bajo, como un box en penumbra. */
+html { background:
+  radial-gradient(ellipse 60% 48% at 54% 56%, #1d1d20 0%, #0d0d0f 52%, transparent 100%),
+  radial-gradient(ellipse 90% 30% at 50% 100%, color-mix(in srgb, var(--accion) 16%, transparent) 0%, transparent 70%),
+  var(--bg) fixed; }
+.escena { position: fixed; inset: 0; z-index: 0; }
+.escena canvas { width: 100%; height: 100%; display: block; opacity: 0; transition: opacity 900ms ease; }
+.escena.lista canvas { opacity: 1; }
+.escena__carga { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); margin: 0; font: 700 16px var(--font-datos); letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-2); }
+.escena.lista .escena__carga { display: none; }
+
+/* El recorrido: cada sección mide lo que dura su momento del despiece; el texto se queda fijo mientras tanto. */
+.recorrido { position: relative; }   /* sin capa propia: las palabras de fondo quedan debajo del coche y las tarjetas encima */
+.paso { position: relative; display: flex; padding: 0 var(--gutter); }
+.paso--inicio { height: 100vh; align-items: flex-end; padding-bottom: 9vh; }
+.paso--ala { height: 120vh; }
+.paso--ruedas { height: 140vh; }
+.paso--motor { height: 200vh; }
+.paso--pontones { height: 150vh; }
+.paso--suelo { height: 150vh; }
+.paso--drs { height: 140vh; }
+.paso--cierre { height: 120vh; align-items: flex-end; padding-bottom: 12vh; }
+
+.texto { position: sticky; top: 16vh; align-self: flex-start; width: min(30rem, 100%); padding: 26px 28px 28px; background: color-mix(in srgb, var(--bg) 78%, transparent); border-left: 4px solid var(--accion); backdrop-filter: blur(6px); }
+.texto--der { margin-left: auto; }
+.texto--izq { margin-right: auto; }
+.texto--abajo { align-self: flex-end; position: static; background: none; border: 0; padding: 0; width: min(46rem, 100%); backdrop-filter: none; }
+.texto--centro { align-self: flex-end; position: static; margin: 0 auto; text-align: center; width: min(40rem, 100%); background: none; border: 0; backdrop-filter: none; }
+.texto--pico { border-left-width: 8px; }
+/* Entrada de las tarjetas: se abren con un corte en diagonal, la barra roja crece y el contenido entra en cascada;
+   una línea de velocidad cruza la tarjeta al abrirse. Al salir de su sección se cierran. */
+.paso:not(.paso--inicio):not(.paso--cierre) .texto {
+  border-left-color: transparent;
+  overflow: hidden;   /* el destello rojo no puede ensanchar la página */
+  clip-path: polygon(0 0, 0 0, -12% 100%, -12% 100%);
+  transition: clip-path 700ms cubic-bezier(.7, 0, .2, 1);
+}
+.paso.activa:not(.paso--inicio):not(.paso--cierre) .texto { clip-path: polygon(-2% 0, 112% 0, 100% 100%, -12% 100%); }
+.paso:not(.paso--inicio):not(.paso--cierre) .texto::before {
+  content: ""; position: absolute; left: 0; top: 0; width: 4px; height: 100%; background: var(--accion);
+  transform: scaleY(0); transform-origin: top; transition: transform 600ms cubic-bezier(.7, 0, .2, 1) 120ms;
+}
+.paso:not(.paso--inicio):not(.paso--cierre) .texto--pico::before { width: 8px; }
+.paso.activa:not(.paso--inicio):not(.paso--cierre) .texto::before { transform: scaleY(1); }
+.paso:not(.paso--inicio):not(.paso--cierre) .texto::after {
+  content: ""; position: absolute; top: 0; bottom: 0; left: -40%; width: 30%; pointer-events: none;
+  background: linear-gradient(100deg, transparent, color-mix(in srgb, var(--accion) 55%, transparent), transparent);
+  transform: skewX(-18deg); opacity: 0;
+}
+.paso.activa:not(.paso--inicio):not(.paso--cierre) .texto::after { animation: barrido 900ms cubic-bezier(.5, 0, .2, 1) 250ms both; }
+@keyframes barrido {
+  0% { opacity: 0; transform: skewX(-18deg) translateX(0); }
+  25% { opacity: 1; }
+  100% { opacity: 0; transform: skewX(-18deg) translateX(560%); }
+}
+.paso:not(.paso--inicio):not(.paso--cierre) .texto > * { opacity: 0; transform: translateY(18px); transition: opacity 500ms ease, transform 600ms cubic-bezier(.2, .8, .2, 1); }
+.paso.activa:not(.paso--inicio):not(.paso--cierre) .texto > * { opacity: 1; transform: none; }
+.paso.activa:not(.paso--inicio):not(.paso--cierre) .texto > h2 { transition-delay: 260ms; }
+.paso.activa:not(.paso--inicio):not(.paso--cierre) .texto > p { transition-delay: 380ms; }
+.paso.activa:not(.paso--inicio):not(.paso--cierre) .texto > .captura { transition-delay: 500ms; }
+.captura { overflow: hidden; }
+.captura img { transform: scale(1.12); transition: transform 1400ms cubic-bezier(.2, .8, .2, 1) 500ms; }
+.paso.activa .captura img { transform: scale(1); }
+
+/* La palabra de la pieza, enorme y solo con el contorno, detrás del coche. */
+.fondo-palabra {
+  position: fixed; left: 0; right: 0; top: 46%; z-index: -1; margin: 0; padding-right: 18vw; overflow: hidden; text-align: center; pointer-events: none; white-space: nowrap;
+  font: 800 italic clamp(120px, 22vw, 380px)/1 var(--font-titular); letter-spacing: -0.02em;
+  color: transparent; -webkit-text-stroke: 2px color-mix(in srgb, var(--text) 24%, transparent);
+  transform: translateY(-50%); opacity: 0; clip-path: inset(0 100% 0 0);
+  transition: opacity 500ms ease, clip-path 1100ms cubic-bezier(.7, 0, .2, 1);
+}
+.paso.activa .fondo-palabra { opacity: 1; clip-path: inset(0 0 0 0); }
+.rotulo-drs { opacity: 0; transition: opacity var(--t-lento) ease; }
+.paso--drs.activa .rotulo-drs { opacity: 1; }
+.texto h2 { margin: 0 0 12px; font: 800 italic clamp(34px, 3.6vw, 52px)/1 var(--font-titular); text-transform: uppercase; }
+.texto p { margin: 0 0 18px; color: var(--text-2); }
+.titular { margin: 0 0 18px; font: 800 italic clamp(56px, 9vw, 128px)/0.92 var(--font-titular); text-transform: uppercase; letter-spacing: -0.01em; }
+.titular--cierre { font-size: clamp(48px, 6.5vw, 96px); }
+.entrada { margin: 0; max-width: 34rem; font-size: clamp(18px, 1.5vw, 22px); color: var(--text); }
+.captura { margin: 0; border: 1px solid var(--line); background: var(--panel); }
+.pie { position: relative; padding: 0 var(--gutter) 18px; }
+.credito { margin: 0; font-size: 14px; color: color-mix(in srgb, var(--text-2) 70%, transparent); }
+
+/* El rótulo del DRS: grande, rojo, fijo mientras el flap se abre. */
+.rotulo-drs { position: sticky; top: 14vh; align-self: flex-start; margin: 0 0 0 auto; order: 2; font: 800 italic clamp(80px, 10vw, 160px)/0.8 var(--font-titular); color: var(--accion); letter-spacing: 0.02em; }
+
+.aviso { position: fixed; left: var(--gutter); bottom: 16px; z-index: 25; background: var(--panel); padding: 12px 16px; }
+
+/* Móvil: el coche arriba y el texto abajo, más compacto. */
+@media (max-width: 760px) {
+  body { font-size: 16px; }
+  .texto { top: auto; bottom: 14px; align-self: flex-end; position: sticky; padding: 18px 18px 20px; margin: 0; }
+  .texto .captura { display: none; }
+  .texto h2 { font-size: 34px; }
+  .paso { padding: 0 16px; }
+  .paso--inicio { padding-bottom: 7vh; }
+  .paso--drs { flex-direction: column; }
+  .rotulo-drs { order: 0; top: 12vh; margin: 12vh 0 0 auto; font-size: 30vw; }
+  .paso--drs .texto { order: 1; margin-top: auto; width: 100%; }
+  .marca { font-size: 22px; }
+  .fondo-palabra { top: 34%; padding-right: 0; font-size: 24vw; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .escena canvas, .boton, .texto, .texto > *, .texto::before, .rotulo-drs, .fondo-palabra, .captura img { transition: none !important; animation: none !important; }
+  .texto::after { display: none; }
+}
