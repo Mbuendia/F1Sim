@@ -1585,7 +1585,7 @@ export const App: React.FC<{ startAt?: 'menu' }> = ({ startAt }) => {
     const signed = carSponsors(management.sponsors, teamId);
     return (
       <div className={styles.liveryScreen}>
-        <h1>Tu librea · {team.name}</h1>
+        <h1>Tu livery · {team.name}</h1>
         <Suspense fallback={null}><LiveryEditor teamId={teamId} year={seasonYear(season)} number={firstDriver?.number ?? 1} sponsors={signed}
           value={management.livery ?? defaultPlayerLivery(team.color, team.accentColor, signed)}
           skipLabel={liveryEditor === 'new' ? 'Saltar' : 'Cancelar'}
