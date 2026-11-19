@@ -57,9 +57,9 @@ function LiveryCompare({ card, year, previousYear, portraits }: { card: Presenta
   return (
     <div className={styles.liveries}>
       {previousYear !== null && card.previousLivery && (
-        <figure><figcaption>{previousYear}</figcaption>{portraits[`${card.teamId}-${previousYear}`] ? <img src={portraits[`${card.teamId}-${previousYear}`]} alt={`Librea de ${previousYear}`} /> : swatch(card.previousLivery)}</figure>
+        <figure><figcaption>{previousYear}</figcaption>{portraits[`${card.teamId}-${previousYear}`] ? <img src={portraits[`${card.teamId}-${previousYear}`]} alt={`Livery de ${previousYear}`} /> : swatch(card.previousLivery)}</figure>
       )}
-      <figure><figcaption>{year}</figcaption>{portraits[`${card.teamId}-${year}`] ? <img src={portraits[`${card.teamId}-${year}`]} alt={`Librea de ${year}`} /> : swatch(card.livery)}</figure>
+      <figure><figcaption>{year}</figcaption>{portraits[`${card.teamId}-${year}`] ? <img src={portraits[`${card.teamId}-${year}`]} alt={`Livery de ${year}`} /> : swatch(card.livery)}</figure>
     </div>
   );
 }

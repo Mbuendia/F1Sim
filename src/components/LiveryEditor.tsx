@@ -37,10 +37,10 @@ export default function LiveryEditor({ teamId, year, number, sponsors, value, on
   });
 
   return (
-    <section className={styles.editor} aria-label="Editor de tu librea">
+    <section className={styles.editor} aria-label="Editor de tu livery">
       <div className={styles.preview}>
         <Car3DViewer teamColor={livery.primary} accentColor={livery.secondary} number={number} compound="medium" teamId={teamId}
-          livery={livery} year={year} label="Tu coche con la librea elegida" />
+          livery={livery} year={year} label="Tu coche con la livery elegida" />
       </div>
       <div className={styles.controls}>
         <fieldset className={styles.group}>
@@ -85,7 +85,7 @@ export default function LiveryEditor({ teamId, year, number, sponsors, value, on
         </fieldset>
         <div className={styles.actions}>
           <button type="button" onClick={onSkip}>{skipLabel}</button>
-          <button type="button" className={styles.primary} onClick={() => onSave(draft)}>Guardar librea</button>
+          <button type="button" className={styles.primary} onClick={() => onSave(draft)}>Guardar livery</button>
         </div>
       </div>
     </section>

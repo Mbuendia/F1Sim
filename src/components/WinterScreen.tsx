@@ -117,7 +117,7 @@ export function WinterScreen({ report, onConfirm, initialStep = 0, onLivery, pre
             {step > 0 ? <button type="button" className={m.button} onClick={() => setStep(step - 1)}><ArrowLeft size={16} aria-hidden /> Atrás</button> : <span />}
             {step < steps.length - 1
               ? <button type="button" className={m.primary} onClick={() => setStep(step + 1)}>Siguiente <ArrowRight size={16} aria-hidden /></button>
-              : <span className={m.row}>{onLivery && <button type="button" className={m.button} onClick={onLivery}>Tu librea</button>}<button type="button" className={m.primary} onClick={onConfirm}>Empezar la temporada {report.nextSeason} <ArrowRight size={16} aria-hidden /></button></span>}
+              : <span className={m.row}>{onLivery && <button type="button" className={m.button} onClick={onLivery}>Tu livery</button>}<button type="button" className={m.primary} onClick={onConfirm}>Empezar la temporada {report.nextSeason} <ArrowRight size={16} aria-hidden /></button></span>}
           </div>
         </div>
       </div>
