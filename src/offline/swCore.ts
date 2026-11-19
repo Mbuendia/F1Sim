@@ -3,7 +3,8 @@
  * las de verdad, desde el arranque que escribe scripts/vite-offline.mjs). Tres cachés propias, todas con el prefijo `f1sim-`:
  *  - `f1sim-core-<versión>`: el juego entero, que se guarda al instalar (una por versión; la vieja se borra al activar).
  *  - `f1sim-ai`: la librería de IA (WebLLM, transformers, onnxruntime), solo cuando la página la pide o se usa.
- *  - `f1sim-runtime`: lo demás que se baja al usarlo (fuentes de Google, onnxruntime de jsDelivr).
+ *  - `f1sim-runtime`: lo demás que se baja al usarlo (fuentes de Google, onnxruntime de jsDelivr) y, [TL7] los coches de
+ *    otros años (lista `lazy`), que no se guardan al instalar pero se conservan de una versión a otra una vez usados.
  * Las cachés de los modelos (WebLLM, transformers, Piper) son de otros y no se tocan nunca.
  * [OF3] La versión nueva espera: solo toma el control cuando la página manda `{ type: 'skip-waiting' }`.
  */
@@ -15,6 +16,8 @@ export interface OfflineManifest {
   core: string[];
   /** Rutas absolutas de la librería de IA. */
   ai: string[];
+  /** [TL7] Rutas que se bajan la primera vez que hacen falta (los coches de otros años) y luego se guardan. */
+  lazy?: string[];
 }
 
 interface CacheLike {
@@ -58,6 +61,7 @@ export function createOfflineWorker(deps: OfflineWorkerDeps) {
   const abs = (path: string) => new URL(path, origin).href;
   const coreUrls = new Set(manifest.core.map(abs));
   const aiUrls = new Set(manifest.ai.map(abs));
+  const lazyUrls = new Set((manifest.lazy ?? []).map(abs));
   const indexUrl = abs(`${manifest.base}index.html`);
   const landing = `${manifest.base}landing/`;
   const hashed = `${manifest.base}assets/`;
@@ -103,7 +107,7 @@ export function createOfflineWorker(deps: OfflineWorkerDeps) {
     if (names.includes(AI_CACHE)) await prune(AI_CACHE, url => aiUrls.has(url));
     // Lo propio que ya no está en ninguna lista sobra; lo ajeno (fuentes, onnxruntime) se queda.
     if (names.includes(RUNTIME_CACHE)) {
-      await prune(RUNTIME_CACHE, url => new URL(url).origin !== new URL(origin).origin || coreUrls.has(url) || aiUrls.has(url));
+      await prune(RUNTIME_CACHE, url => new URL(url).origin !== new URL(origin).origin || coreUrls.has(url) || aiUrls.has(url) || lazyUrls.has(url));
     }
     await deps.clients?.claim();
   }

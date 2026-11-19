@@ -18,6 +18,8 @@ export interface WinterReport {
   /** Temporada que se cierra y temporada que empieza. */
   season: number;
   nextSeason: number;
+  /** [TL1] Año de la temporada que se cierra (ausente en los informes anteriores). */
+  year?: number;
   /** Equipo con el que el jugador ha corrido la temporada que se cierra. */
   teamId: string;
   teamName: string;
@@ -51,7 +53,7 @@ export function buildWinter(input: { before: ManagementState; after: ManagementS
   const stayed = Object.keys(rosterAfter).filter(id => rosterBefore[id]);
   const teams = Object.values(TEAMS).sort((a, b) => b.carPerformance - a.carPerformance);
   return {
-    version: 1, season, nextSeason: after.finance.season, teamId, teamName: shortName(teamId),
+    version: 1, season, nextSeason: after.finance.season, ...(summary.year ? { year: summary.year } : {}), teamId, teamName: shortName(teamId),
     close: {
       champion: summary.championName ?? summary.champion, constructorsChampion: summary.constructorsChampion, races: summary.races,
       position: standing >= 0 ? standing + 1 : null, points: standing >= 0 ? summary.teams?.[standing].points ?? 0 : 0, prize, balance: balanceOf(before.finance, teamId),

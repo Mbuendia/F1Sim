@@ -20,9 +20,9 @@ import { buildScenarioGeometry } from '../utils/scenarioGeometry';
 import { getPitLaneGeometry } from '../utils/pitLaneGeometry';
 import { overpassFor, bridgeSide } from '../renderer/overpass';
 import { bridgeRoadHeight, DECK_HALF_M, DECK_HEIGHT_M, RAMP_M, SIDE_M } from '../renderer/BridgeRenderer';
-import { CAR_MODEL, SAFETY_CAR_MODEL, modelUrl } from '../renderer/carModel3d';
-import { disposeModel, dressCar, dressSafetyCar, loadModel } from '../renderer/modelScene';
-import { liveryFor } from '../data/liveries';
+import { CAR_MODEL, SAFETY_CAR_MODEL, activeCarYear, modelUrl, playerCarUpgrades } from '../renderer/carModel3d';
+import { disposeModel, dressCar, dressSafetyCar, loadCarModel, loadModel, loadUpgradeParts, mountUpgrades } from '../renderer/modelScene';
+import { carLivery } from '../data/liveries';
 import { compoundStyle } from '../utils/compounds';
 import { calculateCarWorldPosition, isCarVisible } from '../utils/carPosition';
 import { KIT_CIRCUIT, runoffZones3d, sceneryFor, type PitBuilding, type SceneBarrier, type SceneItem } from './scenery';
@@ -55,7 +55,6 @@ import { pitTunnelFor, type PitTunnel } from './pitTunnel';
 import { roadTunnelFor, type RoadTunnel } from './roadTunnel';
 
 const W = (x: number, y: number, z = 0) => new THREE.Vector3(x, z, y);
-const LOD_FILE = 'models/f1-car-lod.glb';
 /** [PF2] Capa que solo ve la cámara de la sombra (el coche ligero que da la sombra del completo). */
 const SHADOW_ONLY_LAYER = 1;
 /** [UX16] Puntos a la vez como mucho (uno por coche). */
@@ -151,11 +150,56 @@ function applyPitPose(root: THREE.Object3D, pose: PitPose | null): void {
   if (!pose) data.compound = undefined;
 }
 
+/**
+ * [TL4, 19/11/2026, el usuario: «que haya movimiento en las ruedas y que se vea que el coche está corriendo»] Hace rodar
+ * las ruedas según lo que avanza el coche y orienta las delanteras según lo que gira (la curvatura de su trazada). Vale
+ * para los cuatro coches y para la versión ligera: todos tienen las ruedas como piezas con el centro en el eje.
+ */
+export function rollWheels(root: THREE.Object3D, distanceM: number, headingDelta: number): void {
+  const data = root.userData as { roll?: { node: THREE.Object3D; base: THREE.Quaternion; radius: number; front: boolean }[]; rollAngle?: number; steer?: number };
+  data.roll ??= CAR_MODEL.wheels.flatMap(name => {
+    const node = root.getObjectByName(name);
+    if (!node) return [];
+    return [{ node, base: node.quaternion.clone(), radius: Math.max(0.2, node.position.y), front: name.endsWith('FL') || name.endsWith('FR') }];
+  });
+  if (!data.roll.length) return;
+  const radius = data.roll[0].radius;
+  data.rollAngle = ((data.rollAngle ?? 0) - distanceM / radius) % (Math.PI * 2);
+  // Curvatura de la trazada → ángulo de dirección (batalla de 3,6 m), suavizado y con tope de 20°.
+  const target = distanceM > 0.05 ? Math.max(-0.35, Math.min(0.35, Math.atan(3.6 * headingDelta / distanceM))) : (data.steer ?? 0);
+  data.steer = (data.steer ?? 0) + (target - (data.steer ?? 0)) * 0.3;
+  const spin = new THREE.Quaternion(), steer = new THREE.Quaternion(), zAxis = new THREE.Vector3(0, 0, 1), yAxis = new THREE.Vector3(0, 1, 0);
+  for (const w of data.roll) {
+    spin.setFromAxisAngle(zAxis, data.rollAngle);
+    steer.setFromAxisAngle(yAxis, w.front ? data.steer : 0);
+    w.node.quaternion.copy(steer).multiply(spin).multiply(w.base);
+  }
+}
+
+/**
+ * [TL4, 19/11/2026] Cambio de morro en la parada (si la orden lo pide): el morro viejo sale hacia delante, desaparece y
+ * entra el nuevo; al acabar vuelve a su sitio. Solo se ve: el tiempo de la parada no cambia.
+ */
+export function applyNosePose(root: THREE.Object3D, stop: { start: number; duration: number; nose?: boolean } | null, raceTimeSec: number): void {
+  const data = root.userData as { nose?: { node: THREE.Object3D; base: THREE.Vector3 }[]; noseActive?: boolean };
+  if (!stop?.nose && !data.noseActive) return;
+  if (!data.nose) { data.nose = []; root.traverse(o => { if (o.userData.morro) data.nose!.push({ node: o, base: o.position.clone() }); }); }
+  const f = stop?.nose ? Math.min(1, Math.max(0, (raceTimeSec - stop.start) / Math.max(0.1, stop.duration))) : 1;
+  // 0-35 %: sale 1,2 m hacia delante; 35-55 %: fuera; 55-90 %: entra el nuevo; después, en su sitio.
+  const out = f < 0.35 ? f / 0.35 : f < 0.55 ? 1 : f < 0.9 ? 1 - (f - 0.55) / 0.35 : 0;
+  for (const n of data.nose) {
+    n.node.position.copy(n.base);
+    n.node.position.x += out * 1.2;
+    n.node.visible = !(f >= 0.35 && f < 0.55);
+  }
+  data.noseActive = Boolean(stop?.nose) && f < 1;
+}
+
 /** [CA7] El equipo de mecánicos de un coche: su grupo en el box y cada mecánico con sus animaciones. */
 interface CrewMember { role: CrewRole; root: THREE.Object3D; mixer: THREE.AnimationMixer; actions: Map<string, THREE.AnimationAction>; clip: string; wheel: THREE.Group; band: THREE.MeshLambertMaterial }
 interface CrewTeam { phase: CrewPhase; since: number; group: THREE.Group; members: CrewMember[]; garageSide: number; timeline: PitTimeline | null; from: string; to: string }
 
-interface CarSlot { full: THREE.Object3D | null; lod: THREE.Object3D | null; proxy: THREE.Mesh; release: (() => void) | null; key: string }
+interface CarSlot { full: THREE.Object3D | null; lod: THREE.Object3D | null; proxy: THREE.Mesh; release: (() => void) | null; key: string; upgraded?: boolean }
 
 export class RaceScene3D {
   readonly renderer: THREE.WebGLRenderer;
@@ -175,6 +219,8 @@ export class RaceScene3D {
   private readonly cars = new Map<number, CarSlot>();
   private carModel: GLTF | null = null;
   private lodModel: GLTF | null = null;
+  /** [TL4] Piezas de las mejoras del coche del año (solo se cargan si el jugador tiene alguna montada). */
+  private upgradeParts: THREE.Object3D | null = null;
   /** Materiales que se animan: luces del hotel de Abu Dabi y cabezales de las torres de luz. */
   private ledMaterials: THREE.MeshStandardMaterial[] = [];
   private lampMaterials: THREE.MeshStandardMaterial[] = [];
@@ -310,8 +356,9 @@ export class RaceScene3D {
     const [items, kitGroup, car, lod] = await Promise.all([
       buildScenery([...drawnScenery(kit, scenery), ...portalItems(scenery.portals ?? [])], track, base, circuitId, scenery.water, level !== 'alto').catch(error => { console.error('Escenario 3D', error); return null; }).finally(() => onProgress?.('escenario')),
       (kit ? buildKit(kit, base).catch(error => { console.error('Kit de circuito', error); return null; }) : Promise.resolve(null)).finally(() => onProgress?.('kit')),
-      loadModel(modelUrl(base, CAR_MODEL.file)).catch(() => null).finally(() => onProgress?.('coche')),
-      loadModel(modelUrl(base, LOD_FILE)).catch(() => null).finally(() => onProgress?.('coche-ligero')),
+      // [TL7] El coche del año de la temporada (el de 2025 en la carrera libre y el multijugador).
+      loadCarModel(base, activeCarYear()).catch(() => null).finally(() => onProgress?.('coche')),
+      loadCarModel(base, activeCarYear(), true).catch(() => null).finally(() => onProgress?.('coche-ligero')),
     ]);
     if (this.disposed) { if (items) disposeModel(items); if (kitGroup) disposeModel(kitGroup); return; }
     if (kitGroup) this.world.add(kitGroup);
@@ -333,6 +380,16 @@ export class RaceScene3D {
     }
     this.carModel = car;
     this.lodModel = lod;
+    // [TL4] Los coches del jugador llevan las piezas de sus mejoras: se bajan aparte y se montan cuando llegan.
+    const upgrades = playerCarUpgrades();
+    this.upgradeParts = null;
+    if (upgrades) {
+      loadUpgradeParts(base, activeCarYear()).then(parts => {
+        if (this.disposed || !parts) return;
+        this.upgradeParts = parts;
+        for (const slot of this.cars.values()) slot.upgraded = false;
+      });
+    }
   }
 
   render(frame: Frame3D, width: number, height: number, pixelRatio: number): HTMLCanvasElement {
@@ -523,7 +580,7 @@ export class RaceScene3D {
     for (const p of track.points) { const d = (p.x - at.worldX) ** 2 + (p.y - at.worldY) ** 2; if (d < best) { best = d; near = p; } }
     const garageSide = group.worldToLocal(W(near.x, near.y, 0)).z > 0 ? -1 : 1;
     this.crewWheel ??= { tyre: new THREE.CylinderGeometry(0.34, 0.34, 0.32, 18), band: new THREE.TorusGeometry(0.3, 0.018, 6, 24), rubber: new THREE.MeshLambertMaterial({ color: '#141414' }) };
-    const livery = liveryFor(car.team.id);
+    const livery = carLivery(car.team);
     const members: CrewMember[] = PIT_CREW_ROLES.map(role => {
       const root = cloneSkinned(model.scene);
       root.traverse(o => {
@@ -622,7 +679,7 @@ export class RaceScene3D {
           mesh.material = Array.isArray(mesh.material) ? mesh.material.map(m => m.clone()) : mesh.material.clone();
           mesh.castShadow = true; mesh.receiveShadow = true;
         });
-        slot.release = dressCar(root, liveryFor(car.team.id), car.driver.number, compoundStyle(car.tires.compound).color);
+        slot.release = dressCar(root, carLivery(car.team), car.driver.number, compoundStyle(car.tires.compound).color);
         slot.full = root;
         holder.add(root);
       }
@@ -634,9 +691,15 @@ export class RaceScene3D {
           mesh.material = Array.isArray(mesh.material) ? mesh.material.map(m => m.clone()) : mesh.material.clone();
           mesh.castShadow = true;
         });
-        dressCar(root, liveryFor(car.team.id), car.driver.number, compoundStyle(car.tires.compound).color);
+        dressCar(root, carLivery(car.team), car.driver.number, compoundStyle(car.tires.compound).color);
         slot.lod = root;
         holder.add(root);
+      }
+      // [TL4] Piezas de las mejoras en los coches del jugador (en el completo; de lejos no se distinguen).
+      if (slot.full && !slot.upgraded && this.upgradeParts) {
+        const upgrades = playerCarUpgrades();
+        if (upgrades && car.team.id === upgrades.teamId) mountUpgrades(slot.full, this.upgradeParts, upgrades.byDriver[car.driver.id], carLivery(car.team));
+        slot.upgraded = true;
       }
       // [CA4] Cada coche monta el compuesto que lleva: cambia al salir de boxes.
       if (slot.full) syncCompound(slot.full, car.tires.compound);
@@ -646,6 +709,15 @@ export class RaceScene3D {
       const pitPose = stop ? pitStopPose(pitStopTimeline(stop), this.raceTimeSec - stop.start, stop.from, stop.to) : null;
       if (slot.full) applyPitPose(slot.full, pitPose);
       if (slot.lod) applyPitPose(slot.lod, pitPose);
+      if (slot.full) applyNosePose(slot.full, stop, this.raceTimeSec);
+      if (slot.lod) applyNosePose(slot.lod, stop, this.raceTimeSec);
+      // [TL4] Ruedas que ruedan y delanteras que giran (parado en el box, quietas).
+      const last = (holder.userData as { lastAngle?: number }).lastAngle ?? car.worldAngle;
+      const turn = Math.atan2(Math.sin(last - car.worldAngle), Math.cos(last - car.worldAngle));
+      (holder.userData as { lastAngle?: number }).lastAngle = car.worldAngle;
+      const advance = pitPose ? 0 : Math.max(0, car.currentSpeedKmh) / 3.6 * this.crewDt;
+      if (slot.full && slot.full.visible) rollWheels(slot.full, advance, turn);
+      if (slot.lod && slot.lod.visible) rollWheels(slot.lod, advance, turn);
       // [CA7] Los mecánicos de su box: salen al entrar el coche en el pit lane, hacen la parada y vuelven al garaje.
       this.updateCrew(car, stop);
       const z = this.carHeight(car);

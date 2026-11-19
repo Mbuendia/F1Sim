@@ -12,6 +12,9 @@
 //  5. En la carrera profesional el jugador lleva a los pilotos de su equipo.
 //  6. Renderizado: menú, partidas, elegir equipo y menú «Partida».
 //  7. La carrera libre no toca la partida ni el autoguardado, y el recorrido completo: revisión en el navegador.
+// [16/11/2026] Con autorización del usuario («Si adapta los test»), por TL2: una partida nueva lleva la parrilla del año
+// en que empieza (por defecto 2026, con su parrilla real), no la de drivers.ts. Los casos 2 y 6 comprueban los pilotos de
+// la parrilla de ese año (seasons.ts) en lugar de los de drivers.ts; lo demás no cambia.
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 
@@ -26,6 +29,9 @@ export default async function run({ server, assert, test }) {
   const { SEASON_CALENDAR } = await server.ssrLoadModule('/src/data/calendar.ts');
   const { DRIVERS } = await server.ssrLoadModule('/src/data/drivers.ts');
   const { TEAMS } = await server.ssrLoadModule('/src/data/teams.ts');
+  const seasons = await server.ssrLoadModule('/src/data/seasons.ts');
+  const lineup26 = seasons.lineupFor(2026);
+  const pairOf26 = teamId => Object.keys(lineup26).filter(id => lineup26[id] === teamId);
   const render = async (path, name, props) => renderToStaticMarkup(createElement((await server.ssrLoadModule(path))[name], props));
   const TEAM_IDS = Object.keys(TEAMS);
   const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
@@ -44,8 +50,8 @@ export default async function run({ server, assert, test }) {
       const fresh = career.newCareer(teamId, '  Mi carrera  ', 7);
       const ok = fresh.name === 'Mi carrera' && fresh.career.championship.races.length === 0 && fresh.career.archive.length === 0 && fresh.career.history.length === 0
         && fresh.career.management.playerTeamId === teamId && fresh.career.management.seed === 7 && finance.balanceOf(fresh.career.management.finance, teamId) === finance.startBalance(teamId)
-        && TEAMS[teamId].drivers.includes(fresh.selection.driverId) && fresh.selection.circuitId === SEASON_CALENDAR[0].circuitId
-        && Object.keys(DRIVERS).every(id => fresh.career.components.units.some(unit => unit.driverId === id));
+        && pairOf26(teamId).includes(fresh.selection.driverId) && fresh.selection.circuitId === SEASON_CALENDAR[0].circuitId
+        && Object.keys(lineup26).every(id => fresh.career.components.units.some(unit => unit.driverId === id));
       if (!ok) { assert(false, `T4.19: partida nueva con ${teamId}`, JSON.stringify(fresh.selection)); return; }
     }
     assert(true, 'T4.19: con cualquiera de los diez equipos la partida nace vacía, con los saldos iniciales, ese equipo, uno de sus pilotos y la ronda 1');
@@ -96,7 +102,7 @@ export default async function run({ server, assert, test }) {
     const pick = await render('/src/components/NewCareerScreen.tsx', 'NewCareerScreen', { onStart: noop, onBack: noop });
     assert(TEAM_IDS.every(teamId => pick.includes(TEAMS[teamId].shortName) && pick.includes(finance.formatMoney(finance.startBalance(teamId)))) && (pick.match(/data-team=/g) ?? []).length === 10 && (pick.match(/aria-pressed="true"/g) ?? []).length === 1 && /Empezar/.test(pick) && /Nombre de la partida/.test(pick),
       'T4.19: «Elegir equipo» enseña los diez equipos con su saldo inicial, uno elegido, el nombre de la partida y «Empezar»');
-    assert(TEAM_IDS.every(teamId => TEAMS[teamId].drivers.every(id => pick.includes(DRIVERS[id].code))) && /Dificultad/.test(pick), 'T4.19: cada equipo enseña sus dos pilotos y su dificultad');
+    assert(TEAM_IDS.every(teamId => pairOf26(teamId).every(id => pick.includes(seasons.driverSheetFor(id, 2026).code))) && /Dificultad/.test(pick), 'T4.19: cada equipo enseña sus dos pilotos y su dificultad');
     const gameMenu = await render('/src/components/GameMenu.tsx', 'GameMenu', { savedAt: Date.now() - 12000, now: Date.now(), defaultOpen: true, onSave: noop, onSaveAs: noop, onExport: noop, onExit: noop });
     assert(/Guardado hace 12 s/.test(gameMenu) && /Partida/.test(gameMenu) && ['Guardar', 'Guardar como', 'Exportar', 'Salir al menú'].every(item => gameMenu.includes(item)), 'T4.19: el menú «Partida» dice cuándo se guardó y ofrece guardar, guardar como, exportar y salir al menú', gameMenu.slice(0, 200));
   });

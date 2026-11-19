@@ -6,6 +6,7 @@
 import { SEASON_CALENDAR } from '../data/calendar';
 import { DRIVERS } from '../data/drivers';
 import { TEAMS } from '../data/teams';
+import { EXTRA_DRIVERS, driverSheetFor, lineupFor } from '../data/seasons';
 import type { Driver } from '../types/f1';
 import { mulberry32, streamSeed } from './Random';
 
@@ -84,15 +85,22 @@ export function seasonSalary(salary: number): number {
   return salary * SEASON_CALENDAR.length;
 }
 
-/** Contratos de una partida nueva: la alineación de `drivers.ts`, con el sueldo de cada nivel y plazos sorteados. */
-export function startContracts(season = 1, seed = 0): ContractsState {
+/**
+ * Contratos de una partida nueva: la alineación de `drivers.ts`, con el sueldo de cada nivel y plazos sorteados.
+ * [TL2] Con `year`, la parrilla de ese año; los pilotos que no están en drivers.ts van en `extra` con su ficha de ese año.
+ */
+export function startContracts(season = 1, seed = 0, year?: number): ContractsState {
   const rng = mulberry32(streamSeed(seed, 'contratos'));
   const contracts: ContractsState['contracts'] = {}, history: ContractsState['history'] = {};
-  for (const driver of Object.values(DRIVERS)) {
-    contracts[driver.id] = { teamId: driver.teamId, salary: askingSalary(driver.id), until: season + Math.floor(rng() * CONTRACTS.MAX_SEASONS) };
-    history[driver.id] = [{ season, teamId: driver.teamId }];
+  const lineup = year === undefined ? Object.fromEntries(Object.values(DRIVERS).map(driver => [driver.id, driver.teamId])) : lineupFor(year);
+  const extra: Record<string, Driver> = Object.fromEntries(Object.keys(lineup).filter(id => !DRIVERS[id] && EXTRA_DRIVERS[id])
+    .map(id => [id, { ...driverSheetFor(id, year ?? 2025), teamId: lineup[id] }]));
+  const ids = [...Object.keys(DRIVERS).filter(id => lineup[id]), ...Object.keys(lineup).filter(id => !DRIVERS[id])];
+  for (const id of ids) {
+    contracts[id] = { teamId: lineup[id], salary: askingSalary(id, { extra }), until: season + Math.floor(rng() * CONTRACTS.MAX_SEASONS) };
+    history[id] = [{ season, teamId: lineup[id] }];
   }
-  return { version: 1, contracts, agreed: {}, refusals: {}, history };
+  return { version: 1, contracts, agreed: {}, refusals: {}, history, ...(Object.keys(extra).length ? { extra } : {}) };
 }
 
 const isContract = (data: unknown): data is Contract => {

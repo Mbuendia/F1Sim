@@ -1,9 +1,9 @@
 // [R56] Genera las imágenes cenitales de los modelos 3D para la pista. Se carga bajo demanda al entrar en carrera
 // (usa WebGL y los modelos de R55); si algo falla, la pista sigue con su dibujo vectorial.
 import * as THREE from 'three';
-import { CAR_MODEL, SAFETY_CAR_MODEL, modelUrl } from './carModel3d';
+import { CAR_MODEL, SAFETY_CAR_MODEL, activeCarYear, modelUrl } from './carModel3d';
 import { SpriteImage, TopSprite, carSpriteJobs, getSafetyCarSprite, setCarSprite, setSafetyCarSprite, spriteFrame } from './carSprites';
-import { disposeModel, dressCar, dressSafetyCar, loadModel } from './modelScene';
+import { disposeModel, dressCar, dressSafetyCar, loadCarModel, loadModel } from './modelScene';
 import { liveryFor } from '../data/liveries';
 
 /** Largo de la imagen mayor (px) y del nivel más pequeño que se guarda. */
@@ -94,17 +94,17 @@ function carSprite(stage: Stage, root: THREE.Object3D): TopSprite {
 
 /** Una imagen por coche que aún no la tenga (librea del equipo, patrocinadores y dorsal). Devuelve cuántas ha hecho. */
 export async function buildCarSprites(
-  cars: { team: { id: string }; driver: { number: number } }[], base: string, cancelled: () => boolean = () => false,
+  cars: { team: { id: string; livery?: { primary: string; secondary: string; sponsors: string[] } }; driver: { number: number } }[], base: string, cancelled: () => boolean = () => false,
 ): Promise<number> {
   if (!carSpriteJobs(cars).length) return 0;
-  const gltf = await loadModel(modelUrl(base, CAR_MODEL.file));
+  const gltf = await loadCarModel(base, activeCarYear());
   const stage = createStage();
   try {
     stage.scene.add(gltf.scene);
     let built = 0;
     for (const job of carSpriteJobs(cars)) {
       if (cancelled()) break;
-      const release = dressCar(gltf.scene, liveryFor(job.teamId), job.number, TYRE_COLOR);
+      const release = dressCar(gltf.scene, job.livery ?? liveryFor(job.teamId), job.number, TYRE_COLOR);
       setCarSprite(job.key, carSprite(stage, gltf.scene));
       release();
       built++;

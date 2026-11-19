@@ -1,4 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense } from 'react';
+import { defaultPlayerLivery, withPlayerLivery } from './data/playerLivery';
+import { seasonPresentation } from './data/presentation';
+import { teamFormFor } from './data/seasons';
 import styles from './App.module.css';
 import { RaceTabs, raceLayout, mobileRaceView } from './components/RaceTabs';
 import { LapStrip } from './components/LapStrip';
@@ -47,6 +50,9 @@ import { Leaderboard } from './components/Leaderboard';
 import { BottomTelemetryDock } from './components/BottomTelemetryDock';
 // [UX1] Ajustes fuera del paquete principal.
 const SettingsScreen = lazy(() => import('./components/SettingsScreen'));
+// [TL5, TL6] El editor de tu librea y la presentación de la temporada llevan three.js: se cargan cuando hacen falta.
+const LiveryEditor = lazy(() => import('./components/LiveryEditor'));
+const SeasonPresentation = lazy(() => import('./components/SeasonPresentation'));
 import { BoxControls } from './components/BoxControls';
 import { RightStatsPanel } from './components/RightStatsPanel';
 import { PodiumModal } from './components/PodiumModal';
@@ -93,6 +99,9 @@ import { browserDevStorage, freeRaceWeather, isDevMode } from './dev/devMode';
 import { runQualifying } from './simulation/Qualifying';
 import { activeProjects, emptyProgram, installFirst, parseProgram, upgradesFor, PROGRAM_STORAGE_KEY } from './simulation/Development';
 import type { DevelopmentProgram } from './simulation/Development';
+import { seasonForm, seasonRounds, seasonYear, withLegacyYear } from './simulation/Season';
+import { setActiveCarYear, setPlayerCarUpgrades } from './renderer/carModel3d';
+import { upgradeLevels, UPGRADE_PROJECTS } from './simulation/upgradeParts';
 import { calendarView, emptySeason, grandsPrixRun, isSeasonRace, nextRound, parseArchive, parseSeason, roundWeather, settleRace, settleSkip, sprintPending, withWeatherSeed, practiceFor, withPractice, SEASONS_STORAGE_KEY, SEASON_RACES, SEASON_STATE_KEY } from './simulation/Season';
 import { COMPOUND_LABEL } from './simulation/TireInventory';
 import { carryTyres, isSprintVenue, podiumHomeLabel, sprintWeekendTyres } from './simulation/Weekend';
@@ -112,7 +121,7 @@ import type { RaceResult } from './simulation/RaceResult';
 import { emptyChampionship, parseChampionship, CHAMPIONSHIP_STORAGE_KEY } from './simulation/Championship';
 import type { ChampionshipState } from './simulation/Championship';
 import { createSnapshot, restoreSnapshot } from './simulation/Snapshot';
-import { AUTOSAVE_ID, AUTOSAVE_LABEL, SaveStore, createSave, exportSave, importSave, savedManagement, savedRaceCounts, savedSeason, summarize } from './simulation/SaveGame';
+import { AUTOSAVE_ID, AUTOSAVE_LABEL, SaveStore, createSave, exportSave, importSave, savedManagement, savedRaceCounts, savedSeason, savedSeasonWithYear, summarize } from './simulation/SaveGame';
 import { MANAGEMENT_STORAGE_KEY, parseManagement, startManagement } from './simulation/Management';
 import type { ManagementState } from './simulation/Management';
 import { aiDevelopPaying, aiReplaceComponents, buyComponent, buyProject, componentCost, projectCost, projectLeadTime, projectShortfall, raceDamages, refundComponent } from './simulation/Costs';
@@ -225,6 +234,10 @@ export const App: React.FC<{ startAt?: 'menu' }> = ({ startAt }) => {
     try { if (report) localStorage.setItem(ROUND_REPORT_KEY, JSON.stringify(report)); else localStorage.removeItem(ROUND_REPORT_KEY); } catch (e) { console.error(e); }
   }, []);
   // [T4.11] Informe del invierno: se guarda hasta que se confirma, así que al reabrir el juego se vuelve a ver.
+  // [TL5] Editor de tu librea: al crear la carrera profesional o desde la pretemporada.
+  const [liveryEditor, setLiveryEditor] = useState<'new' | 'winter' | null>(null);
+  // [TL6] Al crear la carrera, después de tu librea, la presentación de la temporada.
+  const [openingPresentation, setOpeningPresentation] = useState(false);
   const [winter, setWinter] = useState<WinterReport | null>(() => { try { return parseWinter(localStorage.getItem(WINTER_KEY)); } catch { return null; } });
   const showWinter = useCallback((report: WinterReport | null) => {
     setWinter(report);
@@ -339,7 +352,8 @@ export const App: React.FC<{ startAt?: 'menu' }> = ({ startAt }) => {
   // [R51] Rondas saltadas de la temporada, si la carrera en curso cuenta para ella, el cierre pendiente de ver y el
   // aviso de sanciones previo a la salida en GP directo.
   const [season, setSeason] = useState<SeasonState>(() => {
-    try { return parseSeason(localStorage.getItem(SEASON_STATE_KEY)); } catch { return emptySeason(); }
+    // [TL1] Una temporada guardada antes de TL1 no tiene año: la partida empezó en 2026 y cada temporada cerrada suma uno.
+    try { return withLegacyYear(parseSeason(localStorage.getItem(SEASON_STATE_KEY)), parseArchive(localStorage.getItem(SEASONS_STORAGE_KEY)).length); } catch { return emptySeason(); }
   });
   const saveSeason = useCallback((next: SeasonState) => {
     setSeason(next);
@@ -372,7 +386,23 @@ export const App: React.FC<{ startAt?: 'menu' }> = ({ startAt }) => {
     if (raceLive || currentView === 'race') return;
     if (mode === 'career') simulation.setLineup(lineupOf(management.contracts), management.contracts.extra ?? {}, standInDrivers(management.academy));
     else simulation.setLineup({});
-  }, [simulation, raceLive, currentView, mode, management.contracts, management.academy]);
+    // [TL2] En la carrera profesional, la fuerza y el motor de cada equipo son los del año de la temporada.
+    // [TL5] Con tu librea en tu equipo.
+    simulation.setTeamForm(mode === 'career' ? withPlayerLivery(seasonForm(season), management.playerTeamId, seasonYear(season), management.livery) : null);
+    // [TL7] Y el coche, el de ese año (el de 2025 en la carrera libre y el multijugador).
+    setActiveCarYear(mode === 'career' ? seasonYear(season) : null);
+  }, [simulation, raceLive, currentView, mode, management.contracts, management.academy, management.playerTeamId, management.livery, season]);
+  // [TL4] Las piezas de las mejoras que lleva cada coche del jugador (solo en la carrera profesional).
+  useEffect(() => {
+    if (mode !== 'career') { setPlayerCarUpgrades(null); return; }
+    const teamId = management.playerTeamId;
+    const raceIndex = grandsPrixRun(championship);
+    const drivers = Object.values(roster).filter(d => d.teamId === teamId);
+    const byDriver = Object.fromEntries(drivers.map(d => [d.id, upgradeLevels(program, teamId, d.id, raceIndex)]));
+    // El coche del inicio: el más evolucionado de los dos en cada pieza.
+    const home = Object.fromEntries(UPGRADE_PROJECTS.map(k => [k, Math.max(0, ...Object.values(byDriver).map(l => l[k]))])) as Record<typeof UPGRADE_PROJECTS[number], number>;
+    setPlayerCarUpgrades({ teamId, byDriver, home });
+  }, [mode, management.playerTeamId, championship, roster, program]);
   // [T4.19] «Guardado hace X»: la partida se guarda sola con cada cambio; aquí queda cuándo fue el último.
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const [clock, setClock] = useState(() => Date.now());
@@ -901,6 +931,7 @@ export const App: React.FC<{ startAt?: 'menu' }> = ({ startAt }) => {
               return keys.length ? [{ code: driver.code, text: keys.map(key => `+1 ${ATTRIBUTE_LABEL[key].toLowerCase()}`).join(', ') }] : [];
             }) : [],
           });
+          report = { ...report, totalRounds: seasonRounds(season) };
         }
       }
 
@@ -1111,7 +1142,7 @@ export const App: React.FC<{ startAt?: 'menu' }> = ({ startAt }) => {
     saveDevelopment(career.development);
     saveComponents(Object.keys(DRIVERS).reduce((s, id) => ensureDriver(s, id), career.components));
     saveProgram(career.program);
-    saveSeason(savedSeason(save));
+    saveSeason(savedSeasonWithYear(save));
     saveManagement(savedManagement(save));
     setRaceCounts(savedRaceCounts(save));
     setSeasonEnd(null);
@@ -1430,13 +1461,22 @@ export const App: React.FC<{ startAt?: 'menu' }> = ({ startAt }) => {
     handleLoadGame(id);
     if (loaded?.save) markCareer(loaded.save.name);
   };
-  const handleNewCareer = (teamId: string, name: string) => {
+  // [TL6] Presentación de la temporada: el coche de ese año de cada equipo (el tuyo con tu librea) y lo que cambia.
+  const presentation = useMemo(() => {
+    if (mode !== 'career') return null;
+    const year = seasonYear(season);
+    const form = withPlayerLivery(seasonForm(season) ?? teamFormFor(year), management.playerTeamId, year, management.livery);
+    return seasonPresentation(year, management.playerTeamId, { form, lineup: lineupOf(management.contracts) });
+  }, [mode, season, management.playerTeamId, management.livery, management.contracts]);
+  const handleNewCareer = (teamId: string, name: string, startYear?: number) => {
     keepCurrentCareer();
-    const fresh = newCareer(teamId, name, newRaceSeed());
+    const fresh = newCareer(teamId, name, newRaceSeed(), startYear);
     if (saveStore) { saveStore.remove(AUTOSAVE_ID); refreshSlots(); }
     showRoundReport(null);
     showWinter(null);
     if (applySave(createSave({ name: fresh.name, savedAt: new Date().toISOString(), career: fresh.career, selection: fresh.selection, race: null })) === null) markCareer(fresh.name);
+    // [TL5] Paso que se puede saltar: tu librea.
+    setLiveryEditor('new');
   };
   const gameMenu = (
     <GameMenu savedAt={savedAt} now={clock} name={careerName}
@@ -1463,11 +1503,11 @@ export const App: React.FC<{ startAt?: 'menu' }> = ({ startAt }) => {
   const sprintDone = Boolean(hubRound && season.weekend?.round === hubRound.round);
   const teamDrivers = pairOf(management.contracts, management.playerTeamId).map(id => roster[id]).filter(Boolean);
   const hub = mode === 'career' && hubTeam ? {
-    teamName: hubTeam.shortName, accent: teamAccent(hubTeam.id), seasonNumber: seasonArchive.length + 1, round: hubRound?.round ?? null,
+    teamName: hubTeam.shortName, accent: teamAccent(hubTeam.id), seasonNumber: seasonArchive.length + 1, seasonYear: seasonYear(season), totalRounds: seasonRounds(season), round: hubRound?.round ?? null,
     kpis: [{ label: hubBalance < 0 ? 'deuda' : 'saldo', value: formatMoney(Math.abs(hubBalance)) }, { label: 'constructores', value: teamStanding >= 0 ? `P${teamStanding + 1}` : '—' }, { label: 'junta', value: String(Math.round(management.board.confidence)) }],
     badges: hubBadges,
     inicio: (go: (section: HubSection) => void) => (
-      <HubHome next={hubNext} pending={hubPending} onGo={go} status={[
+      <HubHome next={hubNext} pending={hubPending} onGo={go} totalRounds={seasonRounds(season)} status={[
         { label: 'Campeonato', value: teamStanding >= 0 ? `P${teamStanding + 1} · ${teamPoints} pts` : 'Sin carreras', detail: `${grandsPrixRun(championship)} Grandes Premios disputados`, section: 'finde' },
         { label: 'Finanzas', value: formatMoney(hubBalance), detail: `Próxima ronda: ${formatMoney(roundForecast(management.finance, management.playerTeamId).net, true)} sin contar puntos`, section: 'sede' },
         { label: 'Coche', value: `${activeProjects(program, management.playerTeamId).length} proyectos`, detail: hubWork ? `Obra en la sede: quedan ${hubWork.remaining} rondas` : 'Sin obras en la sede', section: 'coche' },
@@ -1475,7 +1515,7 @@ export const App: React.FC<{ startAt?: 'menu' }> = ({ startAt }) => {
       ]} />
     ),
     correr: hubNext ? (
-      <RaceWeekendPanel round={hubNext} sessions={weekendSessions(effectiveFormat, sprintDone, Boolean(practiceFor(season, hubNext.round)))}
+      <RaceWeekendPanel round={hubNext} totalRounds={seasonRounds(season)} sessions={weekendSessions(effectiveFormat, sprintDone, Boolean(practiceFor(season, hubNext.round)))}
         drivers={teamDrivers.map(driver => ({ id: driver.id, code: driver.code, name: driver.lastName, number: driver.number }))}
         followedId={selectedDriverId} onFollow={setSelectedDriverId}
         launchLabel={effectiveFormat === 'sprint' ? 'Clasificación sprint y sprint' : effectiveFormat === 'clasificacion' ? 'Clasificación y Gran Premio' : 'Entrar a pista'}
@@ -1538,8 +1578,28 @@ export const App: React.FC<{ startAt?: 'menu' }> = ({ startAt }) => {
     );
   }
   // [T4.11] Tras la última ronda (y su informe), el invierno: cinco pasos antes de volver al centro de gestión.
+  // [TL5] Tu librea: al crear la carrera (se puede saltar) y en la pretemporada.
+  if (currentView === 'home' && mode === 'career' && liveryEditor) {
+    const teamId = management.playerTeamId, team = TEAMS[teamId];
+    const firstDriver = Object.values(roster).find(d => d.teamId === teamId);
+    const signed = carSponsors(management.sponsors, teamId);
+    return (
+      <div className={styles.liveryScreen}>
+        <h1>Tu librea · {team.name}</h1>
+        <Suspense fallback={null}><LiveryEditor teamId={teamId} year={seasonYear(season)} number={firstDriver?.number ?? 1} sponsors={signed}
+          value={management.livery ?? defaultPlayerLivery(team.color, team.accentColor, signed)}
+          skipLabel={liveryEditor === 'new' ? 'Saltar' : 'Cancelar'}
+          onSkip={() => { if (liveryEditor === 'new') setOpeningPresentation(true); setLiveryEditor(null); }}
+          onSave={livery => { saveManagement({ ...management, livery }); if (liveryEditor === 'new') setOpeningPresentation(true); setLiveryEditor(null); }} /></Suspense>
+      </div>
+    );
+  }
+  if (currentView === 'home' && mode === 'career' && openingPresentation && !winter && presentation) {
+    return <div className={styles.presentationScreen}><Suspense fallback={null}><SeasonPresentation presentation={presentation} doneLabel="Empezar la temporada" onDone={() => setOpeningPresentation(false)} /></Suspense></div>;
+  }
   if (currentView === 'home' && mode === 'career' && winter) {
-    return <WinterScreen report={winter} onConfirm={() => showWinter(null)} />;
+    return <WinterScreen report={winter} onConfirm={() => showWinter(null)} onLivery={() => setLiveryEditor('winter')}
+      presentation={presentation ? <Suspense fallback={null}><SeasonPresentation presentation={presentation} embedded onDone={() => {}} /></Suspense> : undefined} />;
   }
   if (currentView === 'report' && roundReport) {
     return <RoundReportScreen report={roundReport} onContinue={() => { showRoundReport(null); setCurrentView('home'); }} />;
@@ -1569,6 +1629,7 @@ export const App: React.FC<{ startAt?: 'menu' }> = ({ startAt }) => {
         key={mode}
         hub={hub}
         mode={mode}
+        teamForm={mode === 'career' ? withPlayerLivery(seasonForm(season), management.playerTeamId, seasonYear(season), management.livery) : null}
         headerExtra={mode === 'career' ? gameMenu : <button type="button" className={styles.barBtn} onClick={() => { setMode('career'); setCurrentView('menu'); }}>← Menú</button>}
         selectedDriverId={selectedDriverId}
         selectedCircuitId={selectedCircuitId}
@@ -1586,7 +1647,7 @@ export const App: React.FC<{ startAt?: 'menu' }> = ({ startAt }) => {
           saveManagement(startManagement(management.playerTeamId, seasonArchive.length + 1, newRaceSeed()));
         }}
         season={{
-          rounds: calendarView(championship, season), seasonNumber: seasonArchive.length + 1, archive: seasonArchive,
+          rounds: calendarView(championship, season), seasonNumber: seasonArchive.length + 1, seasonYear: seasonYear(season), archive: seasonArchive,
           onSelectNext: () => {
             const next = nextRound(championship, season);
             if (!next) return;

@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Desafío · agujero del reglamento</title>
+<!-- [MD13, MD5 y MD20, maqueta del 16/11/2026] Evento del departamento técnico sobre el túnel de viento de Blender: han
+     encontrado un agujero en el artículo 3.5 (el borde del fondo plano, encendido en amarillo) y eliges qué hacer entre
+     tres cartas, como en un roguelike. Las cartas tienen brillo holográfico al pasar por encima y su riesgo a la vista. -->
+<link rel="stylesheet" href="md.css">
+<style>
+  body { overflow: hidden; }
+  .stage { position: fixed; inset: 0; background: #000 url('tunel-escena.webp') 55% 50% / cover; animation: acerca 14s ease-out both; }
+  @keyframes acerca { from { transform: scale(1.1) translateX(2%); filter: brightness(.55); } to { transform: none; filter: none; } }
+  .stage::after { content: ''; position: absolute; inset: 0; background: linear-gradient(0deg, rgba(0,0,0,.94) 0, rgba(0,0,0,.55) 45%, transparent 70%), linear-gradient(90deg, rgba(0,0,0,.85), rgba(0,0,0,.5) 35%, transparent 55%); }
+  /* Marca del agujero sobre el render: un aro amarillo que late donde está el borde del fondo plano */
+  .ping { position: fixed; left: 34%; top: 56%; width: 120px; height: 46px; border: 2px solid var(--aviso); border-radius: 50%; transform: translate(-50%, -50%) rotate(-8deg);
+    box-shadow: 0 0 24px rgba(255,210,63,.6); animation: ping 1.8s ease-out infinite; }
+  @keyframes ping { from { opacity: 1; transform: translate(-50%, -50%) rotate(-8deg) scale(.7); } to { opacity: 0; transform: translate(-50%, -50%) rotate(-8deg) scale(1.6); } }
+  .tag { position: fixed; left: calc(34% + 70px); top: calc(56% - 64px); padding: 4px 10px; background: var(--aviso); color: #000; font: 800 14px var(--font-datos); letter-spacing: .1em; text-transform: uppercase; clip-path: var(--corte); animation: entra .4s 1.2s both; }
+  .ui { position: relative; min-height: 100vh; display: flex; flex-direction: column; padding: 24px clamp(16px, 4vw, 56px); gap: 14px; }
+  .bar { display: flex; align-items: center; gap: 14px; font-family: var(--font-datos); font-weight: 700; letter-spacing: .12em; text-transform: uppercase; font-size: 15px; color: var(--text-2); }
+  .bar .ev { color: #000; background: var(--aviso); padding: 4px 12px; clip-path: var(--corte); }
+  .head { max-width: 640px; }
+  .head h1 { font-size: clamp(46px, 5.4vw, 84px); margin: 6px 0 10px; }
+  .head h1 em { font-style: normal; color: var(--aviso); }
+  .head p { color: #d6d6d6; font-size: 18px; line-height: 1.45; text-shadow: 0 2px 12px #000, 0 0 2px #000; max-width: 52ch; }
+  .head p b { color: #fff; }
+  .cards { margin-top: auto; display: grid; grid-template-columns: repeat(3, minmax(0, 300px)); justify-content: center; gap: 22px; perspective: 1200px; }
+  .card { position: relative; text-align: left; min-height: 340px; padding: 18px; display: flex; flex-direction: column; gap: 10px; background: linear-gradient(160deg, #1b1b1b, #0c0c0c);
+    border: 1px solid var(--line-strong); border-top: 5px solid var(--c); overflow: hidden; transform-style: preserve-3d;
+    opacity: 0; animation: reparte .6s calc(1.4s + var(--i) * 180ms) cubic-bezier(.2,1.2,.3,1) both; transition: transform .25s, box-shadow .25s; }
+  @keyframes reparte { from { opacity: 0; transform: translateY(120px) rotate(calc(var(--r) * 3)) scale(.8); } to { opacity: 1; transform: rotate(var(--r)); } }
+  .card::before { content: ''; position: absolute; inset: -40%; background: linear-gradient(115deg, transparent 38%, rgba(255,255,255,.18) 46%, rgba(120,200,255,.14) 50%, rgba(255,120,220,.12) 54%, transparent 62%);
+    transform: translateX(-60%); transition: transform .8s; pointer-events: none; }
+  .card:hover, .card.hot { transform: translateY(-14px) rotate(0) scale(1.03); box-shadow: 0 0 0 1px var(--c), 0 24px 60px rgba(0,0,0,.7), 0 0 50px color-mix(in srgb, var(--c) 35%, transparent); }
+  .card:hover::before, .card.hot::before { transform: translateX(60%); }
+  .rar { font-family: var(--font-datos); font-weight: 800; font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: var(--c); }
+  .icon { width: 64px; height: 64px; display: grid; place-items: center; font-size: 34px; background: color-mix(in srgb, var(--c) 18%, transparent); border: 1px solid color-mix(in srgb, var(--c) 50%, transparent); clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%); }
+  .card h2 { font-family: var(--font-titular); font-size: 32px; text-transform: uppercase; line-height: .95; }
+  .card p { color: var(--text-2); font-size: 16px; line-height: 1.4; }
+  .gain { font-family: var(--font-datos); font-weight: 800; font-size: 22px; color: var(--positivo); }
+  .risk { margin-top: auto; }
+  .risk small { display: flex; justify-content: space-between; font: 700 13px var(--font-datos); letter-spacing: .1em; text-transform: uppercase; color: var(--text-3); margin-bottom: 5px; }
+  .risk small b { color: #fff; }
+  .risk i { display: block; height: 6px; background: var(--line); position: relative; }
+  .risk i::after { content: ''; position: absolute; inset: 0 auto 0 0; width: var(--p); background: linear-gradient(90deg, var(--aviso), var(--accion)); }
+  @media (max-width: 1023px) { .cards { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; } .card { min-height: 300px; } }
+  @media (max-width: 767px) {
+    body { overflow: auto; }
+    .stage { position: absolute; height: 44vh; }
+    .stage::after { background: linear-gradient(0deg, var(--bg) 0, transparent 70%); }
+    .ping, .tag { position: absolute; top: 30vh; left: 30%; }
+    .tag { left: calc(30% + 60px); top: calc(30vh - 56px); }
+    .ui { padding: 14px 16px; }
+    .bar > span:nth-child(2) { display: none; }
+    .head { margin-top: 30vh; }
+    .head h1 { font-size: 46px; }
+    .cards { grid-template-columns: 1fr; }
+    .card { min-height: 0; --r: 0deg !important; }
+  }
+</style>
+</head>
+<body>
+<div class="stage" aria-hidden="true"></div>
+<div class="ping" aria-hidden="true"></div><div class="tag" aria-hidden="true">Art. 3.5</div>
+<main class="ui">
+  <div class="bar in" style="--i:0"><span class="ev">Evento</span><span>Departamento técnico · Temporada 2023 · después de la ronda 3</span></div>
+  <section class="head">
+    <span class="kicker in" style="--i:1">Túnel de viento · madrugada del martes</span>
+    <h1 class="titular in" style="--i:2">Un <em>agujero</em> en el artículo 3.5</h1>
+    <p class="in" style="--i:3">Tu jefa de aerodinámica no ha dormido. El reglamento no dice nada del borde del fondo plano si va <b>«ligeramente flexionado»</b>. Nadie más lo ha visto… todavía.</p>
+  </section>
+  <section class="cards" aria-label="Elige qué hacer">
+    <button class="card" style="--c:var(--accion);--i:0;--r:-4deg">
+      <span class="rar">Arriesgada</span><span class="icon">🔥</span>
+      <h2>Explotarlo a fondo</h2>
+      <p>Fondo nuevo para Bakú. Si cuela, vuelas; si protestan, la federación mira con lupa.</p>
+      <span class="gain">+0,30 s por vuelta</span>
+      <span class="risk"><small>Riesgo de protesta <b>Alto</b></small><i style="--p:72%"></i></span>
+    </button>
+    <button class="card hot" style="--c:var(--aviso);--i:1;--r:0deg">
+      <span class="rar">Equilibrada</span><span class="icon">🤫</span>
+      <h2>Con disimulo</h2>
+      <p>Solo en las carreras de alta carga y sin presumir en la prensa.</p>
+      <span class="gain">+0,12 s por vuelta</span>
+      <span class="risk"><small>Riesgo de protesta <b>Bajo</b></small><i style="--p:24%"></i></span>
+    </button>
+    <button class="card" style="--c:var(--info);--i:2;--r:4deg">
+      <span class="rar">Política</span><span class="icon">🤝</span>
+      <h2>Vendérselo a Totocedes</h2>
+      <p>Cobras y te deben un favor para la próxima votación. Ellos se llevan la gloria.</p>
+      <span class="gain">+4,0 M y 1 favor</span>
+      <span class="risk"><small>Riesgo de que se filtre <b>Medio</b></small><i style="--p:45%"></i></span>
+    </button>
+  </section>
+</main>
+</body>
+</html>

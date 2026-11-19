@@ -13,9 +13,12 @@ const ICONS: Record<HubSection, typeof Home> = { inicio: Home, coche: CarFront, 
  * de cada pestaña. [UX9] Pestañas Inicio, Coche, Equipo, Sede y dinero y Fin de semana (la última, en rojo), y debajo,
  * qué se decide en la que está abierta.
  */
-export function HubHeader({ teamName, seasonNumber, round, kpis, section, onSection, badges = {}, children }: {
+export function HubHeader({ teamName, seasonNumber, seasonYear, round, totalRounds = SEASON_RACES, kpis, section, onSection, badges = {}, children }: {
   teamName: string;
   seasonNumber: number;
+  /** [TL1] Año de la temporada (si se da, se muestra en lugar del número) y rondas que tiene. */
+  seasonYear?: number;
+  totalRounds?: number;
   /** Ronda que toca, o null con la temporada completa. */
   round: number | null;
   kpis: { label: string; value: string }[];
@@ -28,7 +31,7 @@ export function HubHeader({ teamName, seasonNumber, round, kpis, section, onSect
     <header className={m.hubHeader}>
       <div className={m.hubBar}>
         <span className={m.hubTeam}>{teamName}</span>
-        <span className={m.chip}>Temporada {seasonNumber}{round ? ` · ronda ${round} de ${SEASON_RACES}` : ' · completa'}</span>
+        <span className={m.chip}>Temporada {seasonYear ?? seasonNumber}{round ? ` · ronda ${round} de ${totalRounds}` : ' · completa'}</span>
         <span className={m.hubSpacer} />
         {kpis.map(kpi => <span key={kpi.label} className={m.kpi}><b>{kpi.value}</b><span>{kpi.label}</span></span>)}
         {children}

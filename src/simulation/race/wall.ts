@@ -564,7 +564,7 @@ export function issuePaceOrder(sim: RaceSimulation, carId: number, paceMode: Car
   return true;
 }
 
-export function issueBoxOrder(sim: RaceSimulation, carId: number, compound: TireCompound, issuer: BoxOrderIssuer = 'player'): BoxOrder | null {
+export function issueBoxOrder(sim: RaceSimulation, carId: number, compound: TireCompound, issuer: BoxOrderIssuer = 'player', nose = false): BoxOrder | null {
   const car = sim.getCarById(carId);
   if (!car || car.status !== 'running' || car.isInPitLane || car.pitStop.isPitting ||
     sim.lightState !== 'racing' || sim.isFinished || sim.raceFlagState === 'red' ||
@@ -586,7 +586,7 @@ export function issueBoxOrder(sim: RaceSimulation, carId: number, compound: Tire
   const entryProgress = nextCrossing(commitmentProgress, sim.activeTrack.pitEntryT);
   const deferred = entryProgress > nextCrossing(car.progress, sim.activeTrack.pitEntryT) + 1e-10;
   const order: BoxOrder = {
-    id: 'box_' + carId + '_' + sim.nextBoxOrderId++, carId, issuer, compound,
+    id: 'box_' + carId + '_' + sim.nextBoxOrderId++, carId, issuer, compound, ...(nose ? { nose: true } : {}),
     status: 'accepted', createdAt: sim.raceTimeSec, commitmentProgress, entryProgress,
     message: deferred ? 'Aceptada para la siguiente oportunidad: compromiso ya superado.' : 'Aceptada: puedes cancelar antes del compromiso.',
   };

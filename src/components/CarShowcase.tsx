@@ -1,6 +1,8 @@
 import React, { lazy, Suspense, useEffect, useState } from 'react';
 import { F1CarSilhouette } from './F1CarSilhouette';
 import { ModelCredit } from './ModelCredit';
+import { carCreditKey } from '../data/liveries';
+import { activeCarYear } from '../renderer/carModel3d';
 
 // [R46] El visor 3D es un módulo aparte: solo se descarga al mostrar la vitrina con WebGL disponible.
 const Car3DViewer = lazy(() => import('./Car3DViewer'));
@@ -16,6 +18,8 @@ interface CarShowcaseProps {
   teamId?: string;
   /** [T4.9] Patrocinadores firmados en la partida (sin esto, los de la librea). */
   sponsors?: string[];
+  /** [TL3] Librea del año (carrera profesional); sin ella, la del equipo. */
+  livery?: { primary: string; secondary: string; sponsors: string[] };
 }
 
 /** Comprueba si el navegador puede crear un contexto WebGL, sin lanzar errores. */
@@ -30,17 +34,17 @@ export function supportsWebGL(doc: Pick<Document, 'createElement'> | undefined =
 }
 
 /** Vitrina del monoplaza: visor 3D girable o, sin WebGL (o mientras carga), la silueta 2D. */
-export const CarShowcase: React.FC<CarShowcaseProps> = ({ teamColor, accentColor, number, compound, label = 'Monoplaza', className, teamId, sponsors }) => {
+export const CarShowcase: React.FC<CarShowcaseProps> = ({ teamColor, accentColor, number, compound, label = 'Monoplaza', className, teamId, sponsors, livery }) => {
   const [webgl, setWebgl] = useState(false);
   useEffect(() => { setWebgl(supportsWebGL()); }, []);
   const fallback = <F1CarSilhouette teamColor={teamColor} width={260} label={label} />;
   return (
     <div className={className} data-car-showcase={webgl ? '3d' : '2d'} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: 190 }}>
       {webgl
-        ? <Suspense fallback={fallback}><Car3DViewer teamColor={teamColor} accentColor={accentColor} number={number} compound={compound} label={label} teamId={teamId} sponsors={sponsors} /></Suspense>
+        ? <Suspense fallback={fallback}><Car3DViewer teamColor={teamColor} accentColor={accentColor} number={number} compound={compound} label={label} teamId={teamId} sponsors={sponsors} livery={livery} /></Suspense>
         : fallback}
       {/* [R55] El modelo 3D es de un tercero: su atribución va junto a él. */}
-      {webgl && <ModelCredit model="car" />}
+      {webgl && <ModelCredit model={carCreditKey(activeCarYear())} />}
     </div>
   );
 };

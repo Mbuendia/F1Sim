@@ -25,8 +25,10 @@ const costText = (euros: number) => `${(euros / 1_000_000).toFixed(1).replace('.
  * ronda que toca, el resto de pendientes y las tarjetas de estado. Sin nada pendiente, lo dice y propone ir a correr.
  * Avisa y nunca bloquea la entrada a pista.
  */
-export function HubHome({ next, pending, status, onGo }: {
+export function HubHome({ next, pending, status, onGo, totalRounds = SEASON_RACES }: {
   next: NextRace | null;
+  /** [TL1] Rondas de la temporada (22 en 2023). */
+  totalRounds?: number;
   pending: PendingItem[];
   status: StatusCard[];
   onGo: (section: HubSection) => void;
@@ -64,7 +66,7 @@ export function HubHome({ next, pending, status, onGo }: {
       <section className={`${m.card} ${m.nextRace}`}>
         {next ? (
           <>
-            <span className={m.label}>Siguiente · ronda {next.round} de {SEASON_RACES}</span>
+            <span className={m.label}>Siguiente · ronda {next.round} de {totalRounds}</span>
             <div className={m.title}>{next.circuitName ?? next.name}</div>
             <div className={`${m.row} ${m.wrap}`}>
               {next.laps !== undefined && <span className={m.chip}>{next.laps} vueltas</span>}

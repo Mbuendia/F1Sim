@@ -1,0 +1,42 @@
+/* [TL6] Presentación de la temporada: el escenario 3D grande y, encima a un lado, lo que cambia. Sin 3D, solo el panel. */
+.presentation { display: flex; flex-direction: column; gap: 12px; color: var(--text); font-family: var(--font-ui); }
+.head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.head h1 { margin: 0; font-family: var(--font-marca); font-size: var(--letra-5); text-transform: uppercase; letter-spacing: 0.02em; }
+.count { color: var(--text-3); font-family: var(--font-datos); font-size: var(--letra-3); }
+.stage { position: relative; min-height: max(420px, 72vh); background: var(--negro); border: 1px solid var(--line); border-radius: var(--radio-m); overflow: hidden; }
+.canvas { position: absolute; inset: 0; }
+.canvas canvas { display: block; width: 100%; height: 100%; }
+.panel {
+  position: relative;
+  margin-left: auto;
+  width: min(360px, 100%);
+  min-height: max(420px, 72vh);
+  box-sizing: border-box;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: linear-gradient(90deg, transparent, var(--negro) 22%);
+}
+.liveries { display: flex; gap: 8px; }
+.liveries figure { margin: 0; flex: 1; min-width: 0; }
+.liveries figcaption { color: var(--text-3); font-size: var(--letra-1); font-family: var(--font-datos); }
+.liveries img { width: 100%; display: block; }
+.swatch { display: block; height: 24px; border: 1px solid var(--line-strong); }
+.changes h2 { margin: 0; font-family: var(--font-marca); font-size: var(--letra-4); display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.change { margin: 4px 0 0; color: var(--text-2); font-size: var(--letra-1); }
+.facts, .drivers { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: var(--letra-1); color: var(--text-2); }
+.facts strong { color: var(--text); }
+.drivers li { color: var(--text); }
+.num { display: inline-block; min-width: 28px; font-family: var(--font-datos); color: var(--text-3); }
+.badge { display: inline-block; margin-left: 6px; padding: 0 6px; border: 1px solid var(--accion); color: var(--text); font-size: var(--letra-1); text-transform: uppercase; }
+.nav { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.nav button { min-height: 40px; padding: 8px 16px; display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line-strong); background: var(--panel-2); color: var(--text); cursor: pointer; border-radius: var(--radio-s); }
+.nav button:disabled { opacity: 0.4; cursor: default; }
+.nav .primary { background: var(--accion); border-color: var(--accion); font-weight: 700; }
+
+@media (max-width: 760px) {
+  .stage { min-height: 0; display: flex; flex-direction: column; }
+  .canvas { position: relative; inset: auto; height: 260px; }
+  .panel { margin-left: 0; width: 100%; min-height: 0; background: var(--negro); }
+}

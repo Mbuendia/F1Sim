@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Desafío · votación</title>
+<!-- [MD12 y MD20, maqueta del 16/11/2026] Votación del reglamento de 2027 sobre la sala 3D de Blender. En el juego, la
+     sala es una escena en tiempo real (cámara que avanza hacia el estrado y luces de cada pupitre que cambian al votar);
+     aquí la imagen se acerca despacio y los votos entran uno a uno. -->
+<link rel="stylesheet" href="md.css">
+<style>
+  body { overflow: hidden; }
+  .stage { position: fixed; inset: 0; background: #000 url('voto-escena.webp') 60% 50% / cover; animation: acerca 14s ease-out both; }
+  @keyframes acerca { from { transform: scale(1.12) translate(2%, 1%); filter: brightness(.6); } to { transform: scale(1); filter: none; } }
+  .stage::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(0,0,0,.92) 0, rgba(0,0,0,.75) 30%, transparent 58%), linear-gradient(0deg, rgba(0,0,0,.85), transparent 30%); }
+  .ui { position: relative; min-height: 100vh; display: grid; grid-template-columns: minmax(0, 560px) 1fr; grid-template-rows: auto 1fr auto; padding: 24px clamp(16px, 4vw, 56px); gap: 18px; }
+  .bar { grid-column: 1 / -1; display: flex; align-items: center; gap: 14px; font-family: var(--font-datos); font-weight: 700; letter-spacing: .12em; text-transform: uppercase; font-size: 15px; color: var(--text-2); }
+  .bar .live { display: inline-flex; align-items: center; gap: 8px; color: #fff; background: var(--accion); padding: 4px 12px; clip-path: var(--corte); }
+  .bar .live i { width: 8px; height: 8px; border-radius: 50%; background: #fff; animation: parpadea 1s steps(2) infinite; }
+  @keyframes parpadea { 50% { opacity: 0; } }
+  .bar .spacer { flex: 1; }
+  .clock { font-size: 28px; color: #fff; letter-spacing: .04em; }
+  .panel { align-self: center; display: flex; flex-direction: column; gap: 14px; }
+  .art { display: inline-flex; align-self: flex-start; padding: 4px 12px; border: 1px solid var(--accion); color: var(--accion); font-family: var(--font-datos); font-weight: 800; letter-spacing: .14em; font-size: 15px; text-transform: uppercase; }
+  .panel h1 { font-size: clamp(48px, 5.4vw, 80px); }
+  .panel > p { color: var(--text-2); font-size: 18px; line-height: 1.45; max-width: 46ch; }
+  .effects { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .effect { padding: 12px 14px; background: rgba(16,16,16,.85); border: 1px solid var(--line); border-left: 4px solid var(--c); }
+  .effect b { display: block; font-family: var(--font-datos); font-size: 15px; letter-spacing: .1em; text-transform: uppercase; color: var(--c); margin-bottom: 4px; }
+  .effect span { font-size: 15px; color: var(--text-2); line-height: 1.4; }
+  .you { display: flex; gap: 10px; align-items: stretch; flex-wrap: wrap; }
+  .vote { flex: 1; min-height: 64px; display: flex; flex-direction: column; justify-content: center; padding: 0 26px; clip-path: var(--corte); font-family: var(--font-titular); font-size: 30px; text-transform: uppercase; }
+  .vote small { font-family: var(--font-ui); font-size: 13px; text-transform: none; opacity: .8; }
+  .vote.si { background: #1f7a52; } .vote.no { background: var(--accion); }
+  .vote:hover { filter: brightness(1.15); transform: translateY(-2px); }
+  /* Columna derecha: presidente, recuento y presión a los indecisos */
+  .side { align-self: end; justify-self: end; width: min(420px, 100%); display: flex; flex-direction: column; gap: 12px; }
+  .pres { display: grid; grid-template-columns: 76px 1fr; gap: 12px; align-items: center; padding: 12px; background: rgba(10,10,10,.85); border: 1px solid var(--line); border-top: 2px solid #d9b23f; }
+  .face { width: 76px; height: 76px; background: radial-gradient(circle at 50% 38%, #e3b996 0 26%, transparent 27%), radial-gradient(circle at 50% 100%, #1d2b4a 0 46%, transparent 47%), linear-gradient(#2a2a2a, #111);
+    position: relative; overflow: hidden; }
+  .face::before { content: ''; position: absolute; left: 22px; top: 22px; width: 32px; height: 10px; background: #111; border-radius: 3px; box-shadow: 0 0 0 2px #111; } /* gafas de sol */
+  .face::after { content: '¡!'; position: absolute; right: 4px; top: 2px; font: 800 16px var(--font-datos); color: #d9b23f; }
+  .pres b { font-family: var(--font-datos); font-size: 18px; }
+  .pres q { display: block; color: var(--text-2); font-size: 15px; font-style: italic; margin-top: 2px; }
+  .tally { padding: 14px; background: rgba(10,10,10,.85); border: 1px solid var(--line); }
+  .tally h3 { display: flex; justify-content: space-between; font-family: var(--font-datos); font-size: 16px; letter-spacing: .12em; text-transform: uppercase; color: var(--text-2); margin-bottom: 10px; }
+  .tally h3 b { color: #fff; }
+  .teams { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+  .team { position: relative; padding: 8px 6px 6px; background: var(--panel-2); border-top: 3px solid var(--c); text-align: center; font-family: var(--font-datos); font-weight: 800; font-size: 14px;
+    opacity: 0; animation: voto .45s calc(var(--i) * 420ms + 900ms) cubic-bezier(.2,.8,.2,1) both; }
+  .team em { display: block; font-style: normal; font-size: 13px; margin-top: 3px; }
+  .team[data-v=si] em { color: var(--positivo); } .team[data-v=no] em { color: #ff6b5e; } .team[data-v=pend] em { color: var(--text-3); }
+  .team[data-v=pend] { animation-name: voto, dudando; animation-duration: .45s, 1.4s; animation-iteration-count: 1, infinite; animation-delay: calc(var(--i) * 420ms + 900ms), 0s; }
+  @keyframes voto { from { opacity: 0; transform: translateY(10px) scale(.9); } to { opacity: 1; transform: none; } }
+  @keyframes dudando { 50% { background: #262626; } }
+  .meter { display: flex; height: 10px; margin-top: 12px; background: var(--line); position: relative; }
+  .meter i { display: block; height: 100%; }
+  .meter .s { width: 50%; background: var(--positivo); animation: crece 3.8s 1s ease-out both; }
+  .meter .n { width: 30%; background: var(--accion); margin-left: auto; animation: crece 3.8s 1s ease-out both; }
+  .meter::after { content: 'Mayoría: 6'; position: absolute; left: 60%; top: -4px; bottom: -18px; border-left: 2px solid #fff; padding-left: 4px; font: 700 12px var(--font-datos); letter-spacing: .08em; text-transform: uppercase; color: #fff; display: flex; align-items: flex-end; }
+  @keyframes crece { from { width: 0; } }
+  .lobby { padding: 14px; background: rgba(10,10,10,.85); border: 1px solid var(--line); border-left: 4px solid var(--aviso); }
+  .lobby h3 { font-family: var(--font-datos); font-size: 16px; letter-spacing: .12em; text-transform: uppercase; color: var(--aviso); margin-bottom: 8px; }
+  .lobby button { width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; margin-top: 6px; background: var(--panel-2); border-left: 3px solid var(--c); text-align: left; font-size: 15px; }
+  .lobby button:hover { background: #242424; }
+  .lobby button span { color: var(--text-3); font-size: 14px; }
+  .lobby button b { font-family: var(--font-datos); font-size: 17px; color: var(--aviso); white-space: nowrap; }
+  .foot { grid-column: 1 / -1; display: flex; gap: 18px; align-items: center; color: var(--text-3); font-size: 14px; }
+  .ticker { flex: 1; overflow: hidden; white-space: nowrap; border-top: 1px solid var(--line); padding-top: 10px; }
+  .ticker span { display: inline-block; animation: pasa 26s linear infinite; }
+  @keyframes pasa { from { transform: translateX(30%); } to { transform: translateX(-100%); } }
+  .ticker b { color: #fff; }
+  @media (max-width: 1023px) { .ui { grid-template-columns: 1fr; } .side { justify-self: stretch; width: 100%; } }
+  @media (max-width: 767px) {
+    body { overflow: auto; }
+    .stage { position: absolute; height: 46vh; background-position: 64% 50%; }
+    .stage::after { background: linear-gradient(0deg, var(--bg) 0, transparent 60%); }
+    .ui { padding: 14px 16px; gap: 14px; }
+    .bar { flex-wrap: nowrap; font-size: 13px; }
+    .bar > span:nth-child(2), .bar > span:nth-child(4) { display: none; }
+    .clock { font-size: 22px; }
+    .panel { margin-top: 26vh; }
+    .panel h1 { font-size: 48px; }
+    .effects { grid-template-columns: 1fr; }
+    .foot { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="stage" aria-hidden="true"></div>
+<main class="ui">
+  <div class="bar in" style="--i:0"><span class="live"><i></i>En directo</span><span>Votación del reglamento · Temporada 2027</span><span class="spacer"></span><span>Cierra en</span><span class="clock">00:42</span></div>
+  <section class="panel">
+    <span class="art in" style="--i:1">Propuesta 2 de 3 · Motor y energía</span>
+    <h1 class="titular in" style="--i:2">Límite de energía por vuelta</h1>
+    <p class="in" style="--i:3">La federación propone bajar la energía eléctrica que se puede gastar en cada vuelta. Menos adelantamientos a base de batería y más gestión desde el muro.</p>
+    <div class="effects in" style="--i:4">
+      <div class="effect" style="--c:var(--positivo)"><b>Si sale</b><span>Tu motor gasta poco: <strong>+2 % de ritmo</strong> en carrera. Los de motor Hondamental pierden.</span></div>
+      <div class="effect" style="--c:#ff6b5e"><b>Si no sale</b><span>Todo sigue igual y Red Bulla te debe un favor si votas con ellos.</span></div>
+    </div>
+    <div class="you in" style="--i:5">
+      <button class="vote si">Sí<small>Votar a favor</small></button>
+      <button class="vote no">No<small>Votar en contra</small></button>
+    </div>
+    <div class="lobby in" style="--i:6">
+      <h3>Convencer a los indecisos</h3>
+      <button style="--c:#229971">Aston Papá <span>«nos vendría bien un motor más fiable…»</span><b>2 favores</b></button>
+      <button style="--c:#E8E8E8">Haasta Luego <span>acepta dinero, como siempre</span><b>1,2 M</b></button>
+    </div>
+  </section>
+  <aside class="side">
+    <div class="pres in" style="--i:2">
+      <div class="face" aria-hidden="true"></div>
+      <div><b>Gerardo «el Comunicado» Trigo</b><span style="color:var(--text-3);font-size:14px"> · presidente de la federación</span><q>Es una votación libre. Libre de que yo luego haga lo que quiera.</q></div>
+    </div>
+    <div class="tally in" style="--i:3">
+      <h3>Recuento <b>5 sí · 3 no · 2 dudan</b></h3>
+      <div class="teams">
+        <span class="team" data-v="si" style="--c:#FF8000;--i:0">PAP<em>Sí</em></span>
+        <span class="team" data-v="no" style="--c:#2a4a9a;--i:1">RBU<em>No</em></span>
+        <span class="team" data-v="si" style="--c:#E8002D;--i:2">ERR<em>Sí</em></span>
+        <span class="team" data-v="si" style="--c:#27F4D2;--i:3">TOT<em>Sí</em></span>
+        <span class="team" data-v="pend" style="--c:#229971;--i:4">AST<em>Duda</em></span>
+        <span class="team" data-v="no" style="--c:#005AFF;--i:5">VOW<em>No</em></span>
+        <span class="team" data-v="si" style="--c:#e10600;--i:6">BRA<em>Sí · tú</em></span>
+        <span class="team" data-v="pend" style="--c:#E8E8E8;--i:7">HAA<em>Duda</em></span>
+        <span class="team" data-v="no" style="--c:#FF87BC;--i:8">ALP<em>No</em></span>
+        <span class="team" data-v="si" style="--c:#52E252;--i:9">STK<em>Sí</em></span>
+      </div>
+      <div class="meter"><i class="s"></i><i class="n"></i></div>
+    </div>
+  </aside>
+  <div class="foot">
+    <span class="kicker">Red social</span>
+    <div class="ticker"><span><b>@MuroDeBoxes</b> la federación votando el límite de energía mientras Haasta Luego mira el precio del voto · <b>@AbueloDelPaddock</b> en mis tiempos los motores se votaban con un apretón de manos y un bocadillo · <b>@ElComunicadoOficial</b> comunicado sobre el comunicado de la votación: sin novedad</span></div>
+  </div>
+</main>
+</body>
+</html>

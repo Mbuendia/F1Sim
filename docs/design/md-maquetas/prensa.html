@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Desafío · rueda de prensa</title>
+<!-- [MD19 y MD20, maqueta del 16/11/2026] Rueda de prensa antes del GP de Miami sobre la sala 3D de Blender: la pregunta
+     se escribe como en un rótulo de televisión y eliges tono. Cada respuesta enseña hacia dónde empuja (sin números
+     exactos: el efecto real queda en la partida). -->
+<link rel="stylesheet" href="md.css">
+<style>
+  body { overflow: hidden; }
+  .stage { position: fixed; inset: 0; background: #000 url('prensa-escena.webp') 50% 40% / cover; animation: acerca 16s ease-out both; }
+  @keyframes acerca { from { transform: scale(1.16); filter: brightness(.5) blur(2px); } 20% { filter: none; } to { transform: scale(1.02); } }
+  .stage::after { content: ''; position: absolute; inset: 0; background: linear-gradient(0deg, rgba(0,0,0,.95) 0, rgba(0,0,0,.6) 38%, transparent 62%); }
+  .flashes i { position: fixed; width: 220px; height: 220px; border-radius: 50%; background: radial-gradient(circle, rgba(255,255,255,.95), rgba(255,255,255,0) 60%); opacity: 0; pointer-events: none;
+    animation: flash 5s calc(var(--d) * 1s) infinite; mix-blend-mode: screen; }
+  @keyframes flash { 0%, 6%, 100% { opacity: 0; } 2% { opacity: .9; } }
+  .ui { position: relative; min-height: 100vh; display: flex; flex-direction: column; padding: 24px clamp(16px, 4vw, 56px); }
+  .bar { display: flex; align-items: center; gap: 14px; font-family: var(--font-datos); font-weight: 700; letter-spacing: .12em; text-transform: uppercase; font-size: 15px; color: var(--text-2); }
+  .bar .live { color: #fff; background: var(--accion); padding: 4px 12px; clip-path: var(--corte); }
+  .bar .spacer { flex: 1; }
+  .dots { display: flex; gap: 6px; }
+  .dots i { width: 28px; height: 5px; background: var(--line-strong); }
+  .dots i.on { background: var(--accion); } .dots i.done { background: #fff; }
+  .lower { margin-top: auto; display: flex; flex-direction: column; gap: 16px; }
+  /* Rótulo de la pregunta */
+  .who { display: flex; align-items: stretch; gap: 0; align-self: flex-start; animation: entra .5s .6s both; }
+  .who b { background: #fff; color: #000; padding: 6px 14px; font-family: var(--font-datos); font-weight: 800; font-size: 18px; text-transform: uppercase; letter-spacing: .04em; clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 100%, 0 100%); }
+  .who span { background: var(--accion); padding: 6px 18px 6px 16px; margin-left: -6px; font-family: var(--font-datos); font-weight: 700; font-size: 16px; letter-spacing: .1em; text-transform: uppercase; clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%); }
+  .q { font-family: var(--font-titular); font-size: clamp(32px, 3.6vw, 54px); text-transform: uppercase; line-height: 1;
+    overflow: hidden; white-space: nowrap; width: 0; animation: escribe 2.4s 1s steps(60) forwards; }
+  .q.l2 { animation-delay: 3.4s; }
+  @keyframes escribe { to { width: 100%; } }
+  @keyframes cursor { 50% { border-color: transparent; } }
+  .answers { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  .ans { position: relative; text-align: left; padding: 16px 18px 14px; background: rgba(14,14,14,.92); border: 1px solid var(--line); border-top: 4px solid var(--c); display: flex; flex-direction: column; gap: 8px;
+    opacity: 0; animation: entra .45s calc(5.6s + var(--i) * 140ms) cubic-bezier(.2,.8,.2,1) both; transition: transform .2s, background .2s; }
+  .ans:hover, .ans.hot { transform: translateY(-6px); background: rgba(26,26,26,.96); box-shadow: 0 0 0 1px var(--c), 0 18px 40px rgba(0,0,0,.6); }
+  .tone { display: flex; align-items: center; gap: 10px; font-family: var(--font-titular); font-size: 26px; text-transform: uppercase; color: var(--c); }
+  .tone kbd { font: 700 13px var(--font-datos); color: var(--text-3); border: 1px solid var(--line-strong); padding: 1px 7px; }
+  .ans p { font-size: 17px; line-height: 1.4; color: #fff; }
+  .fx { display: flex; flex-wrap: wrap; gap: 6px; }
+  .fx span { font-family: var(--font-datos); font-weight: 700; font-size: 14px; padding: 2px 8px; border: 1px solid var(--line-strong); color: var(--text-2); }
+  .fx .up { color: var(--positivo); border-color: rgba(87,217,163,.4); } .fx .down { color: #ff8a7a; border-color: rgba(255,138,122,.4); }
+  .hint { color: var(--text-3); font-size: 14px; }
+  @media (max-width: 767px) {
+    body { overflow: auto; }
+    .stage { position: absolute; height: 52vh; background-position: 50% 40%; }
+    .stage::after { background: linear-gradient(0deg, var(--bg) 0, transparent 70%); }
+    .ui { padding: 14px 16px; }
+    .bar > span:nth-child(2) { display: none; }
+    .bar { white-space: nowrap; font-size: 13px; }
+    .dots i { width: 18px; }
+    .lower { margin-top: 30vh; }
+    .q { white-space: normal; width: auto; border: 0; animation: entra .5s 1s both; font-size: 32px; }
+    .q.l2 { animation-delay: 1.2s; }
+    .answers { grid-template-columns: 1fr; }
+    .ans { animation-delay: calc(1.6s + var(--i) * 140ms); }
+  }
+</style>
+</head>
+<body>
+<div class="stage" aria-hidden="true"></div>
+<div class="flashes" aria-hidden="true"><i style="left:8%;top:60%;--d:.3"></i><i style="left:72%;top:52%;--d:1.6"></i><i style="left:40%;top:70%;--d:3.1"></i></div>
+<main class="ui">
+  <div class="bar in" style="--i:0"><span class="live">Rueda de prensa</span><span>Jueves · GP de Miami · Temporada 2023</span><span class="spacer"></span><span>Pregunta 2 de 3</span><span class="dots"><i class="done"></i><i class="on"></i><i></i></span></div>
+  <section class="lower">
+    <div class="who"><b>Lucía Pistón</b><span>El Pit Diario</span></div>
+    <div>
+      <h1 class="q">Red Bulla dice que su fondo plano</h1>
+      <h1 class="q l2">«es un queso». ¿Qué les contesta?</h1>
+    </div>
+    <div class="answers">
+      <button class="ans" style="--c:var(--info);--i:0">
+        <span class="tone">Diplomática <kbd>1</kbd></span>
+        <p>«Respetamos a todos los equipos. La federación ya revisó la pieza y está dentro del reglamento.»</p>
+        <span class="fx"><span class="up">Directiva ▲</span><span class="up">Federación ▲</span><span class="down">Afición ▼</span></span>
+      </button>
+      <button class="ans hot" style="--c:var(--accion);--i:1">
+        <span class="tone">Picante <kbd>2</kbd></span>
+        <p>«Si es un queso, que lo prueben. Les sentará mejor que su alerón.»</p>
+        <span class="fx"><span class="up">Afición ▲▲</span><span class="up">Moral de pilotos ▲</span><span class="down">Red Bulla ▼▼</span><span class="down">Riesgo de protesta</span></span>
+      </button>
+      <button class="ans" style="--c:var(--aviso);--i:2">
+        <span class="tone">Guasa <kbd>3</kbd></span>
+        <p>«¿Queso? Nosotros somos más de jamón. Que se lo pregunten a su catering.»</p>
+        <span class="fx"><span class="up">Afición ▲</span><span class="up">Red social ▲▲</span><span>Directiva =</span></span>
+      </button>
+    </div>
+    <p class="hint">Lo que digas sale en la red social y en el periódico del lunes. Los periodistas se acuerdan.</p>
+  </section>
+</main>
+</body>
+</html>

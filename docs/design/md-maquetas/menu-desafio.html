@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Desafío · menú</title>
+<!-- [MD1, maqueta del 16/11/2026] El menú del juego con la tarjeta nueva «Desafío» elegida: panel grande con el coche
+     de Blender y el infinito en neón, la línea de años 2023 → ∞ y la mejor partida. Mismo esqueleto que GameMenuScreen. -->
+<link rel="stylesheet" href="md.css">
+<style>
+  .menu { position: relative; min-height: 100vh; display: flex; flex-direction: column; gap: 18px; padding: 22px clamp(16px, 4vw, 56px) 24px; overflow: hidden; }
+  .menu::before { content: ''; position: absolute; inset: 0; background: radial-gradient(70% 60% at 72% 38%, rgba(225,6,0,.18), transparent 70%); pointer-events: none; }
+  .top { display: flex; justify-content: space-between; align-items: center; position: relative; }
+  .hero { position: relative; flex: 1; min-height: 560px; overflow: hidden; background: var(--panel); isolation: isolate; }
+  .hero-img { position: absolute; inset: 0 0 0 34%; background: url('coche-desafio.webp') 64% 62% / auto 118% no-repeat #0a0a0a; clip-path: polygon(22% 0, 100% 0, 100% 100%, 0 100%);
+    animation: cortina .9s .05s cubic-bezier(.2,.8,.2,1) both; }
+  .hero-img::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(5,5,5,.55), transparent 35%); }
+  .stripe { position: absolute; top: 0; bottom: 0; left: 34%; width: 66%; clip-path: polygon(calc(22% - 8px) 0, 22% 0, 0 100%, -8px 100%); background: var(--accion); z-index: 1; }
+  .word { position: absolute; left: clamp(12px, 3vw, 40px); bottom: -0.16em; font-family: var(--font-titular); font-size: clamp(90px, 12vw, 190px); line-height: 1;
+    text-transform: uppercase; color: transparent; -webkit-text-stroke: 1px rgba(225,6,0,.45); opacity: .6; white-space: nowrap; z-index: 0; }
+  .text { position: relative; z-index: 2; height: 100%; width: min(46%, 600px); padding: clamp(18px, 3vw, 44px); display: flex; flex-direction: column; justify-content: center; gap: 12px; }
+  .badge { align-self: flex-start; display: inline-flex; align-items: center; gap: 8px; padding: 4px 12px; background: #fff; color: #000; clip-path: var(--corte);
+    font-family: var(--font-datos); font-weight: 800; font-size: 15px; letter-spacing: .12em; text-transform: uppercase; }
+  .text h2 { font-size: clamp(64px, 8vw, 112px); }
+  .text p { color: var(--text-2); font-size: 18px; line-height: 1.45; max-width: 44ch; }
+  /* La línea de los años: cuatro paradas reales y el infinito, que late */
+  .years { display: grid; grid-template-columns: repeat(4, 1fr) 1.2fr; align-items: start; margin: 12px 0 4px; position: relative; max-width: 520px; }
+  .years::before { content: ''; position: absolute; left: 6px; right: 6px; top: 9px; height: 2px; background: linear-gradient(90deg, var(--line-strong) 0 76%, var(--accion)); }
+  .year { position: relative; display: flex; flex-direction: column; gap: 10px; font-family: var(--font-datos); font-weight: 800; font-size: 22px; color: var(--text-2); }
+  .year small { font-size: 13px; font-weight: 700; letter-spacing: .1em; color: var(--text-3); text-transform: uppercase; margin-top: -10px; }
+  .year i { width: 20px; height: 20px; border: 2px solid var(--line-strong); background: var(--bg); transform: rotate(45deg); }
+  .year.first i { background: var(--accion); border-color: var(--accion); box-shadow: 0 0 18px var(--accion); }
+  .year.first { color: #fff; }
+  .year.inf { font-family: 'Segoe UI', 'Arial', sans-serif; font-weight: 700; font-size: 58px; line-height: .5; margin-top: -4px; justify-self: center; color: var(--accion); text-shadow: 0 0 22px rgba(225,6,0,.8); animation: late 2.4s ease-in-out infinite; }
+  .year.inf i { display: none; }
+  @keyframes late { 50% { text-shadow: 0 0 6px rgba(225,6,0,.4); opacity: .75; } }
+  .best { display: flex; gap: 8px; flex-wrap: wrap; }
+  .best span { padding: 7px 12px; background: rgba(26,26,26,.85); border: 1px solid var(--line); border-top: 2px solid var(--accion); font-size: 14px; color: var(--text-3); }
+  .best b { display: block; font-family: var(--font-datos); font-size: 22px; color: #fff; }
+  .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+  /* Fila de tarjetas, con «Desafío» elegida */
+  .cards { display: flex; gap: 14px; position: relative; }
+  .card { position: relative; flex: 1; min-height: 112px; display: flex; align-items: flex-end; clip-path: polygon(16px 0, 100% 0, calc(100% - 16px) 100%, 0 100%);
+    background: var(--panel) var(--img) center / cover; filter: brightness(.55) saturate(.7); transition: filter .25s, transform .25s; }
+  .card::before { content: ''; position: absolute; inset: 0; background: linear-gradient(0deg, rgba(0,0,0,.85), transparent 75%); }
+  .card span { position: relative; padding: 12px 28px; display: flex; flex-direction: column; }
+  .card b { font-family: var(--font-titular); font-size: 26px; text-transform: uppercase; }
+  .card small { color: var(--text-2); font-size: 14px; }
+  .card.on { filter: none; transform: translateY(-6px); }
+  .card.on::after { content: ''; position: absolute; left: 0; right: 16px; bottom: 0; height: 6px; background: var(--accion); }
+  .card .nuevo { position: absolute; top: 10px; right: 26px; padding: 2px 9px; background: var(--accion); font-family: var(--font-datos); font-weight: 800; font-size: 13px; letter-spacing: .12em; }
+  .settings { flex: 0 0 110px; display: grid; place-items: center; background: var(--panel); clip-path: polygon(16px 0, 100% 0, calc(100% - 16px) 100%, 0 100%); color: var(--text-2); font-weight: 600; }
+  @media (max-width: 767px) {
+    .menu { padding: 12px 16px 16px; gap: 12px; }
+    .brand { font-size: 26px; }
+    .hero { min-height: 0; display: flex; flex-direction: column; flex: none; }
+    .hero-img { position: relative; inset: auto; height: 34vh; min-height: 200px; clip-path: polygon(0 0, 100% 0, 100% 80%, 0 100%); background-position: 46% 55%; }
+    .stripe, .word { display: none; }
+    .text { width: 100%; padding: 0 16px 20px; margin-top: -24px; }
+    .text h2 { font-size: 64px; }
+    .years { max-width: none; }
+    .year { font-size: 18px; }
+    .year.inf { font-size: 46px; }
+    .best { flex-wrap: nowrap; }
+    .best span { flex: 1 1 0; min-width: 0; font-size: 13px; padding: 6px 8px; }
+    .best b { font-size: 17px; }
+    .actions > * { flex: 1 1 100%; justify-content: center; }
+    .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .card { min-height: 84px; }
+    .card b { font-size: 20px; }
+    .card.on { grid-column: span 2; transform: none; }
+    .settings { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="menu">
+  <header class="top"><div class="brand">F-UNO <em>RACE</em> MANAGER</div></header>
+  <section class="hero">
+    <div class="hero-img" aria-hidden="true"></div>
+    <div class="stripe" aria-hidden="true"></div>
+    <div class="word" aria-hidden="true">Desafío</div>
+    <div class="text">
+      <span class="badge in" style="--i:0">Nuevo · roguelike</span>
+      <h2 class="titular in" style="--i:1">Desafío</h2>
+      <p class="in" style="--i:2">Coges un equipo en 2023 y la directiva te da dos temporadas de margen. Votaciones, agujeros del reglamento, prensa con mala uva y un mercado que no para. Después de 2026, los años no se acaban.</p>
+      <div class="years in" style="--i:3" aria-label="De 2023 a 2026 y sin fin">
+        <span class="year first"><i></i>2023<small>Empiezas</small></span>
+        <span class="year"><i></i>2024</span>
+        <span class="year"><i></i>2025</span>
+        <span class="year"><i></i>2026<small>Coche nuevo</small></span>
+        <span class="year inf">∞</span>
+      </div>
+      <div class="best in" style="--i:4">
+        <span>Tu mejor partida<b>6 temporadas</b></span>
+        <span>Acabó<b>Despedido en 2028</b></span>
+        <span>Desbloqueos<b>3 de 12</b></span>
+      </div>
+      <div class="actions in" style="--i:5">
+        <button class="primary">▶ Empezar el desafío</button>
+        <button class="ghost">Crónicas · 4 partidas</button>
+      </div>
+    </div>
+  </section>
+  <nav class="cards" aria-label="Modos de juego">
+    <button class="card" style="--img:url('../../../public/menu/temporada.webp')"><span><b>Temporada</b><small>nueva o guardada</small></span></button>
+    <button class="card on" style="--img:url('coche-desafio.webp')"><em class="nuevo">NUEVO</em><span><b>Desafío</b><small>2023 → ∞</small></span></button>
+    <button class="card" style="--img:url('../../../public/menu/libre.webp')"><span><b>Carrera libre</b><small>una carrera suelta</small></span></button>
+    <button class="card" style="--img:url('../../../public/menu/multijugador.webp')"><span><b>Multijugador</b><small>carrera con amigos</small></span></button>
+    <button class="settings">⚙ Ajustes</button>
+  </nav>
+</div>
+</body>
+</html>

@@ -20,7 +20,7 @@ export const SeasonHistory: React.FC<SeasonHistoryProps> = ({ archive }) => {
         <tbody>
           {[...archive].reverse().map(summary => (
             <tr key={summary.season}>
-              <td>Temporada {summary.season}</td>
+              <td>Temporada {summary.year ?? summary.season}</td>
               <td>{withPoints(summary.championName ?? summary.champion, summary.championPoints)}</td>
               <td>{withPoints(summary.constructorsChampion, summary.constructorsPoints)}</td>
               <td>{summary.races}{summary.skipped ? ` (${summary.skipped} ${summary.skipped === 1 ? 'saltada' : 'saltadas'})` : ''}</td>

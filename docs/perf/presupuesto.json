@@ -11,7 +11,7 @@
     "carTriangles": 135000,
     "carLodTriangles": 10500,
     "raceSimulationLines": 1900,
-    "offlineCoreKB": 8870
+    "offlineCoreKB": 9000
   },
   "measured": {
     "fecha": "29/10/2026, al acabar PF2 a PF6; paquete inicial tras la mejora del LCP",
@@ -30,6 +30,9 @@
     "nota": "LCP de la portada en móvil (procesador 4× más lento y 4G lenta), medido con Chrome sin ventana; ver docs/perf/linea-base.md."
   },
   "offline": {
+    "notaTL4": "[19/11/2026] El usuario autoriza subir offlineCoreKB de 8.900 a 9.000 KB («Subir a 9.000 KB»): TL4 añade las libreas dibujadas de 2023, 2024 y 2026 (src/data/liveryArt.ts), las ruedas que ruedan, el morro que se cambia en la parada y la casilla «Morro» del muro; la instalación medida es de 8.910 KB.",
+    "notaTL7": "[18/11/2026] El usuario autoriza subir offlineCoreKB de 8.880 a 8.900 KB (lo justo): TL7 añade los logotipos de los patrocinadores dibujados a mano (src/renderer/logos.ts) y las zonas de rótulos nuevas del coche y su versión lejana; la instalación medida es de 8.897 KB. Los coches de otros años (public/epoca/, unos 4,9 MB, fuera de public/models) no cuentan: se bajan la primera vez que hacen falta (decisión del usuario del mismo día) y perf-size los mide aparte como modelsOnDemand.",
+    "notaTL2": "[16/11/2026] El usuario autoriza subir offlineCoreKB de 8.870 a 8.880 KB: TL2 añade los datos de cada temporada (parrillas, fuerza y motores de 2023 a 2026) y la instalación pasa a 8.871 KB.",
     "notaVS1": "[13/11/2026] El usuario sube offlineCoreKB de 8.690 a 8.870 KB: VS1 sirve las tipografías desde el juego (ocho WOFF2 de Barlow y Barlow Condensed, 181 KB) en vez de pedirlas a Google, y OF1.2 exige que todo archivo de la compilación esté en la instalación. A cambio, el juego instalado tiene sus letras sin conexión desde el primer momento. Medido: 8.867 KB.",
     "nota": "[30/10/2026] El usuario sube offlineCoreKB de 7.200 a 7.900 KB al entrar el kit común de circuitos (CK2/CK3): la instalación pasa a unos 7.630 KB (modelos del kit ~270 KB y atlas WebP ~850 KB). Alternativa descartada: guardar el kit al usarse (sin conexión, un circuito no abierto antes saldría sin kit).",
     "medidoKB": 8058,

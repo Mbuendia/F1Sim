@@ -1,5 +1,6 @@
 // [R56] Imágenes de los modelos 3D vistos desde arriba para pintar los coches en la pista: registro y medidas.
 // Este archivo no usa WebGL: las imágenes las genera, bajo demanda, el módulo que carga los modelos.
+import { activeCarYear } from './carModel3d';
 
 /** Una imagen ya lista para pintar (un lienzo), con su tamaño en píxeles. */
 export interface SpriteImage { width: number; height: number }
@@ -29,16 +30,21 @@ const carSprites = new Map<string, TopSprite>();
 let safetyCarSprite: TopSprite | null = null;
 
 /** Una imagen por coche: la librea es del equipo y el dorsal, del piloto. */
-export function carSpriteKey(car: { team: { id: string }; driver: { number: number } }): string {
-  return `${car.team.id}#${car.driver.number}`;
+export function carSpriteKey(car: { team: { id: string; livery?: { primary: string; sponsors: string[] } }; driver: { number: number } }): string {
+  // [TL3] Con la librea del año, la imagen es otra: la clave la distingue.
+  const livery = car.team.livery;
+  // [TL7] Y con el coche de otro año, también.
+  const year = activeCarYear();
+  return `${car.team.id}#${car.driver.number}${livery ? `#${livery.primary}#${livery.sponsors.join('|')}` : ''}${year != null && year !== 2025 ? `#y${year}` : ''}`;
 }
 
 /** Coches que aún no tienen imagen (sin repetir). */
-export function carSpriteJobs(cars: { team: { id: string }; driver: { number: number } }[]): { key: string; teamId: string; number: number }[] {
-  const jobs = new Map<string, { key: string; teamId: string; number: number }>();
+type SpriteLivery = { primary: string; secondary: string; sponsors: string[] };
+export function carSpriteJobs(cars: { team: { id: string; livery?: SpriteLivery }; driver: { number: number } }[]): { key: string; teamId: string; number: number; livery?: SpriteLivery }[] {
+  const jobs = new Map<string, { key: string; teamId: string; number: number; livery?: SpriteLivery }>();
   for (const car of cars) {
     const key = carSpriteKey(car);
-    if (!carSprites.has(key) && !jobs.has(key)) jobs.set(key, { key, teamId: car.team.id, number: car.driver.number });
+    if (!carSprites.has(key) && !jobs.has(key)) jobs.set(key, { key, teamId: car.team.id, number: car.driver.number, ...(car.team.livery ? { livery: car.team.livery } : {}) });
   }
   return [...jobs.values()];
 }

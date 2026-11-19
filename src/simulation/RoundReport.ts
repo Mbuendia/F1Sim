@@ -13,6 +13,8 @@ export interface ReportCar { code: string; name: string; position: number | null
 export interface RoundReport {
   version: 1;
   season: number; round: number; circuitName: string; format: 'gp' | 'sprint';
+  /** [TL1] Rondas de la temporada (ausente en los informes anteriores). */
+  totalRounds?: number;
   teamId: string; teamName: string;
   cars: ReportCar[];
   /** Puesto y puntos del equipo en constructores tras la ronda (null si aún no figura). */

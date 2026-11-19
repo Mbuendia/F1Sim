@@ -30,16 +30,20 @@ const gz = file => gzipSync(readFileSync(file)).length;
 
 /** Bytes comprimidos con gzip de cada grupo. `mainJs` es el script de entrada que carga index.html. */
 export function measureDist(dir) {
-  const files = walk(dir).map(p => ({ path: p, rel: relative(dir, p).replace(/\\/g, '/') }));
+  // La landing (landing/) se publica aparte y no forma parte de la descarga del juego.
+  const files = walk(dir).map(p => ({ path: p, rel: relative(dir, p).replace(/\\/g, '/') })).filter(f => !f.rel.startsWith('landing/'));
   const html = existsSync(join(dir, 'index.html')) ? readFileSync(join(dir, 'index.html'), 'utf8') : '';
   const entrySrc = html.match(/<script[^>]*type=["']module["'][^>]*src=["']([^"']+)["']/i)?.[1]
     ?? html.match(/<script[^>]*src=["']([^"']+)["'][^>]*type=["']module["']/i)?.[1] ?? null;
   const entry = entrySrc ? files.find(f => entrySrc.split('?')[0].endsWith(f.rel)) : undefined;
-  const result = { mainJs: entry ? gz(entry.path) : 0, totalJs: 0, css: 0, models: 0, textures: 0, audio: 0, other: 0, entry: entry?.rel ?? null };
+  // [TL7] Los coches de otros años (epoca/) no bajan con el juego: se bajan la primera vez que hacen falta
+  // (decisión del usuario, 18/11/2026). Se miden aparte, en `modelsOnDemand`, y no cuentan en `models`.
+  const result = { mainJs: entry ? gz(entry.path) : 0, totalJs: 0, css: 0, models: 0, modelsOnDemand: 0, textures: 0, audio: 0, other: 0, entry: entry?.rel ?? null };
   for (const f of files) {
     const kind = Object.keys(KINDS).find(k => KINDS[k].test(f.rel));
     const size = gz(f.path);
-    if (kind === 'js') result.totalJs += size;
+    if (kind === 'models' && (f.rel.startsWith('epoca/') || f.rel.startsWith('mejoras/') || f.rel.startsWith('presentacion/'))) result.modelsOnDemand += size;
+    else if (kind === 'js') result.totalJs += size;
     else if (kind) result[kind] += size;
     else result.other += size;
   }
@@ -60,6 +64,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   console.log(`  Total de JS        ${kb(r.totalJs)}`);
   console.log(`  CSS                ${kb(r.css)}`);
   console.log(`  Modelos            ${kb(r.models)}`);
+  console.log(`  Modelos por año    ${kb(r.modelsOnDemand)} (bajo demanda)`);
   console.log(`  Texturas           ${kb(r.textures)}`);
   console.log(`  Audio              ${kb(r.audio)}`);
   console.log(`  Otros              ${kb(r.other)}`);

@@ -213,3 +213,45 @@
 .modeCardTitle { font-family: var(--font-titular); font-size: var(--letra-4); letter-spacing: 0; }
 .settingsCard { clip-path: polygon(16px 0, 100% 0, calc(100% - 16px) 100%, 0 100%); border: 0; }
 .settingsCard:focus-visible { clip-path: none; }
+/* [TL1] Nueva partida: año de inicio en cuatro botones, con el color del equipo elegido. */
+.years { margin: 18px 0 0; padding: 0; border: 0; min-width: 0; }
+.years legend { padding: 0; margin-bottom: 10px; }
+.yearList { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.year { position: relative; display: flex; flex-direction: column; gap: 2px; min-width: 0; padding: 12px 16px 14px; cursor: pointer; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--line-strong); border-radius: var(--radio-l); color: var(--text-2); transition: border-color var(--t-rapido) ease, background var(--t-rapido) ease; }
+.year input { position: absolute; opacity: 0; pointer-events: none; }
+.year:hover { border-color: var(--text-3); }
+.year:has(input:checked) { border-color: var(--c); border-left-color: var(--c); background: linear-gradient(90deg, color-mix(in srgb, var(--c) 16%, var(--panel-2)), var(--panel-2) 70%); color: var(--text); }
+.year:has(input:focus-visible) { outline: 2px solid var(--foco); outline-offset: 2px; }
+.yearNumber { display: flex; align-items: baseline; gap: 8px; font-family: var(--font-titular); font-size: var(--letra-6); line-height: 1; color: var(--text); }
+.year:has(input:checked) .yearNumber { color: var(--c); }
+.yearNumber small { font-family: var(--font-datos); font-size: var(--letra-1); letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-3); }
+.yearNote { font-size: var(--letra-1); line-height: 1.35; overflow-wrap: anywhere; }
+.nameRow .field { min-width: 220px; }
+/* Tarjeta de equipo estrecha: las barritas de instalaciones bajan de línea en vez de salirse. */
+.team .kv { flex-wrap: wrap; }
+.team .kv > :last-child { margin-left: auto; }
+@media (max-width: 767px) {
+  .yearList { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .year { padding: 10px 12px 12px; }
+  .yearNumber { font-size: var(--letra-5); }
+  .foot { gap: 10px; padding: 10px 16px; }
+  .foot > .muted { flex: 1 1 100%; font-size: var(--letra-1); }
+  .foot > .spacer { display: none; }
+  .nameRow { flex: 1 1 0; min-width: 0; flex-wrap: nowrap; }
+  .nameRow .label { display: none; }
+  .nameRow .field { min-width: 0; width: 100%; }
+}
+
+/* [TL1] Menú «Continuar»: el estado en bloques y la barra de avance de la temporada. */
+.status { display: flex; flex-direction: column; gap: 10px; margin: 4px 0 2px; }
+.statusChips { display: flex; flex-wrap: wrap; gap: 8px; }
+.statusChip { display: flex; flex-direction: column; gap: 1px; min-width: 92px; padding: 7px 12px 8px; background: color-mix(in srgb, var(--panel-2) 85%, transparent); border: 1px solid var(--line); border-top: 2px solid var(--acento); }
+.statusChip small { font-size: var(--letra-1); color: var(--text-3); white-space: nowrap; }
+.statusChip b { font-family: var(--font-datos); font-size: var(--letra-4); font-weight: 700; line-height: 1.05; color: var(--text); }
+.statusChip b i { font-style: normal; font-size: var(--letra-2); color: var(--text-3); }
+.statusChip[data-debt] b { color: var(--aviso); }
+.srOnly { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.statusChip { position: relative; }
+.statusBar { display: block; height: 4px; width: min(100%, 360px); background: var(--line); overflow: hidden; }
+.statusBar > span { display: block; height: 100%; background: var(--acento); }
+@media (max-width: 767px) { .statusChip { min-width: 0; flex: 1 1 calc(33% - 6px); padding: 6px 10px 7px; } .statusBar { width: 100%; } }

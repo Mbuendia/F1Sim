@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Desafío · decisión entre carreras</title>
+<!-- [MD4, maqueta del 16/11/2026] Dilema entre carreras sobre el garaje 3D de Blender: tus dos pilotos se han peleado en
+     la última vuelta (los cascos en el banco, cada uno mirando a un lado). Los dos cuentan su versión y eliges entre
+     tres salidas; cada una dice a quién contenta y a quién no. -->
+<link rel="stylesheet" href="md.css">
+<style>
+  body { overflow: hidden; }
+  .stage { position: fixed; inset: 0; background: #000 url('garaje-escena.webp') 55% 50% / cover; animation: acerca 16s ease-out both; }
+  @keyframes acerca { from { transform: scale(1.12); filter: brightness(.5); } to { transform: scale(1.02); filter: none; } }
+  .stage::after { content: ''; position: absolute; inset: 0; background: linear-gradient(0deg, rgba(0,0,0,.96) 0, rgba(0,0,0,.6) 45%, rgba(0,0,0,.2) 70%), linear-gradient(90deg, rgba(0,0,0,.7), transparent 50%); }
+  .ui { position: relative; min-height: 100vh; display: flex; flex-direction: column; gap: 16px; padding: 24px clamp(16px, 4vw, 56px); }
+  .bar { display: flex; align-items: center; gap: 14px; font: 700 15px var(--font-datos); letter-spacing: .12em; text-transform: uppercase; color: var(--text-2); }
+  .bar .tag { background: var(--accion); color: #fff; padding: 4px 12px; clip-path: var(--corte); }
+  .head { max-width: 700px; }
+  .head h1 { font-size: clamp(46px, 5.4vw, 84px); margin: 6px 0 8px; }
+  .head p { color: #d6d6d6; font-size: 18px; line-height: 1.45; text-shadow: 0 2px 10px #000; }
+  /* Las dos versiones, como bocadillos de radio enfrentados */
+  .sides { margin-top: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .side { position: relative; padding: 14px 16px 14px 74px; background: rgba(12,12,12,.9); border: 1px solid var(--line); border-top: 3px solid var(--c); opacity: 0; animation: entra .5s calc(.8s + var(--k) * 300ms) both; }
+  .side .av { position: absolute; left: 14px; top: 14px; width: 46px; height: 46px; border-radius: 50%; background: radial-gradient(circle at 50% 40%, var(--c) 0 55%, #000 56%); box-shadow: 0 0 0 2px var(--c); }
+  .side b { font: 800 18px var(--font-datos); letter-spacing: .04em; text-transform: uppercase; }
+  .side b span { color: var(--text-3); font-weight: 600; letter-spacing: .06em; font-size: 14px; margin-left: 6px; }
+  .side q { display: block; margin-top: 4px; font-size: 17px; line-height: 1.4; color: #fff; }
+  .side .mood { display: flex; gap: 6px; align-items: center; margin-top: 8px; font: 700 13px var(--font-datos); letter-spacing: .1em; text-transform: uppercase; color: var(--text-3); }
+  .side .mood i { width: 80px; height: 6px; background: var(--line); position: relative; }
+  .side .mood i::after { content: ''; position: absolute; inset: 0 auto 0 0; width: var(--m); background: var(--c); }
+  .vs { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%) rotate(-8deg); font-family: var(--font-titular); font-size: 40px; color: var(--accion); text-shadow: 0 0 20px rgba(225,6,0,.6); pointer-events: none; animation: entra .4s 1.4s both; }
+  .sides { position: relative; }
+  .options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  .opt { text-align: left; padding: 14px 16px; background: rgba(18,18,18,.95); border: 1px solid var(--line-strong); display: flex; flex-direction: column; gap: 8px; opacity: 0;
+    animation: entra .45s calc(1.6s + var(--k) * 140ms) both; transition: transform .2s, border-color .2s; }
+  .opt:hover, .opt.hot { transform: translateY(-5px); border-color: #fff; }
+  .opt h2 { font-family: var(--font-titular); font-size: 26px; text-transform: uppercase; line-height: 1; }
+  .opt p { color: var(--text-2); font-size: 15px; line-height: 1.4; }
+  .fx { display: flex; flex-wrap: wrap; gap: 6px; }
+  .fx span { font: 700 13px var(--font-datos); padding: 2px 8px; border: 1px solid var(--line-strong); color: var(--text-2); }
+  .fx .up { color: var(--positivo); border-color: rgba(87,217,163,.4); } .fx .down { color: #ff8a7a; border-color: rgba(255,138,122,.4); }
+  @media (max-width: 767px) {
+    body { overflow: auto; }
+    .stage { position: absolute; height: 42vh; }
+    .stage::after { background: linear-gradient(0deg, var(--bg) 0, transparent 70%); }
+    .ui { padding: 14px 16px; }
+    .head { margin-top: 24vh; }
+    .head h1 { font-size: 46px; }
+    .sides, .options { grid-template-columns: 1fr; }
+    .vs { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="stage" aria-hidden="true"></div>
+<main class="ui">
+  <div class="bar in" style="--i:0"><span class="tag">Decisión</span><span>Garaje · después del GP de España · 2024</span></div>
+  <section class="head">
+    <span class="kicker in" style="--i:1">Última vuelta · curva 1 · los dos fuera</span>
+    <h1 class="titular in" style="--i:2">Tus pilotos no se hablan</h1>
+    <p class="in" style="--i:3">Doble abandono por un toque entre compañeros. La prensa ya tiene titular para el lunes. Los dos esperan en el garaje a que digas algo.</p>
+  </section>
+  <section class="sides">
+    <div class="side" style="--c:#ffd23f;--k:0"><span class="av"></span><b>Alonsoplán <span>n.º 14</span></b><q>Yo iba por dentro. Si no sabe frenar, que se compre una bici.</q><span class="mood">Ánimo <i style="--m:35%"></i></span></div>
+    <div class="side" style="--c:#5aa9ff;--k:1"><span class="av"></span><b>Strollercoaster <span>n.º 18</span></b><q>Me ha echado él. Y lo sabe todo el paddock.</q><span class="mood">Ánimo <i style="--m:28%"></i></span></div>
+    <span class="vs">VS</span>
+  </section>
+  <section class="options" aria-label="Qué haces">
+    <button class="opt" style="--k:0"><h2>Culpa a Alonsoplán</h2><p>Lo dices delante de todo el equipo. El veterano no lo olvida.</p><span class="fx"><span class="up">Strollercoaster ▲▲</span><span class="down">Alonsoplán ▼▼</span><span class="down">Puede pedir salir</span></span></button>
+    <button class="opt hot" style="--k:1"><h2>Órdenes de equipo</h2><p>A partir de ahora, quien vaya delante en la vuelta 1 manda. Sin excepciones.</p><span class="fx"><span class="up">Directiva ▲</span><span>Pilotos =</span><span class="down">Afición ▼</span></span></button>
+    <button class="opt" style="--k:2"><h2>Que se peleen</h2><p>«Esto es carreras.» Libertad total. La prensa estará encantada.</p><span class="fx"><span class="up">Afición ▲▲</span><span class="up">Red social ▲</span><span class="down">Riesgo de otro toque</span></span></button>
+  </section>
+</main>
+</body>
+</html>

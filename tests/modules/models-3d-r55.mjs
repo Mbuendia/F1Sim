@@ -160,7 +160,8 @@ export default async function run({ server, assert, test }) {
   await test('R55: los modelos se cargan bajo demanda y hay alternativa si faltan o no hay WebGL', async () => {
     const viewer = source('Car3DViewer.tsx'), safetyViewer = source('SafetyCar3D.tsx'), hud = source('RaceFlagsHUD.tsx');
     const loader = readFileSync(file('src/renderer/modelScene.ts'), 'utf8');
-    assert(/GLTFLoader/.test(loader) && /import\('\.\.\/renderer\/modelScene'\)/.test(viewer) && /loadModel\(/.test(viewer) && /buildCarModelSpec/.test(viewer) && /\.catch\(/.test(viewer),
+    // [TL7, adaptado con autorización del usuario el 18/11/2026] El visor carga el coche del año con loadCarModel (que usa loadModel).
+    assert(/GLTFLoader/.test(loader) && /import\('\.\.\/renderer\/modelScene'\)/.test(viewer) && /load(Car)?Model\(/.test(viewer) && /buildCarModelSpec/.test(viewer) && /\.catch\(/.test(viewer),
       'R55: el visor intenta el modelo y conserva el coche de geometría propia como alternativa');
     assert(/loadModel\(/.test(safetyViewer) && /\.catch\(/.test(safetyViewer), 'R55: el Safety Car 3D carga su modelo y no rompe si falta');
     for (const name of ['CarShowcase.tsx', 'HomeScreen.tsx', 'RaceFlagsHUD.tsx', 'SafetyCarShowcase.tsx']) {

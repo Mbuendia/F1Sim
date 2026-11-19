@@ -63,12 +63,17 @@ export default async function run({ server, assert, test }) {
     assert(pieces && missing.length === 0, 'CA2: f1-car-piezas.glb tiene las seis piezas con nombre y las ruedas', missing.join(', '));
   });
 
-  await test('CA2: el coche de 2026 guardado aparte', () => {
-    const kept = readGlb('assets/epoca-2026/f1-car-2026.glb');
+  // [TL7, adaptado con autorización del usuario el 18/11/2026: «Sí, adáptalos»] El coche de 2026 vuelve al juego como coche
+  // de las temporadas de 2026 en adelante (contrato TL7): pasa a public/epoca/ y solo lo elige carModelFiles para
+  // esos años; por defecto (carrera libre, multijugador, sin año) el juego sigue cargando el de 2025.
+  await test('CA2: el coche de 2026 guardado aparte', async () => {
+    const kept = readGlb('public/epoca/f1-car-2026.glb');
     const src = readdirSync('src', { recursive: true }).filter(f => /\.(ts|tsx)$/.test(f) && !String(f).includes('graphify'));
-    const loads = src.filter(f => /f1-car-2026|epoca-2026/.test(readFileSync(join('src', f), 'utf8')));
-    assert(kept && /Qvist/.test(kept.asset?.extras?.author ?? '') && loads.length === 0,
-      'CA2: el coche de 2026 está en assets/epoca-2026/ (fuera de lo que se publica) y el juego no lo carga', loads.join(', ') || (kept ? 'ok' : 'falta'));
+    const loads = src.filter(f => /f1-car-2026|epoca/.test(readFileSync(join('src', f), 'utf8')) && !/renderer[\\/]carModel3d\.ts$/.test(f));
+    const { carModelFiles } = await server.ssrLoadModule('/src/renderer/carModel3d.ts');
+    const byDefault = carModelFiles(null).file === CAR_MODEL.file && carModelFiles(2025).file === CAR_MODEL.file;
+    assert(kept && /Qvist/.test(kept.asset?.extras?.author ?? '') && loads.length === 0 && byDefault && carModelFiles(2026).file === 'epoca/f1-car-2026.glb',
+      'CA2: el coche de 2026 está en epoca/, solo lo elige carModelFiles para 2026 en adelante y por defecto se carga el de 2025', loads.join(', ') || (kept ? `por defecto ${byDefault}` : 'falta'));
   });
 
   await test('CA2: capturas del viejo y el nuevo', () => {

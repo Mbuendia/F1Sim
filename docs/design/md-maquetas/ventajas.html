@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Desafío · colección de ventajas</title>
+<!-- [MD5 y MD9, maqueta del 16/11/2026] La colección de ventajas y maldiciones de la partida sobre la vitrina 3D de
+     Blender: medallones con el canto del color de su rareza (los que aún no tienes, apagados). A la derecha, la ficha de
+     la elegida y lo que hace ahora mismo en la partida. -->
+<link rel="stylesheet" href="md.css">
+<style>
+  body { overflow: hidden; }
+  .stage { position: fixed; inset: 0; background: #000 url('vitrina-escena.webp') 40% 50% / cover; animation: acerca 16s ease-out both; }
+  @keyframes acerca { from { transform: scale(1.1); filter: brightness(.5); } to { transform: scale(1.02); filter: none; } }
+  .stage::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, transparent 40%, rgba(0,0,0,.92) 66%), linear-gradient(0deg, rgba(0,0,0,.85), transparent 30%); }
+  .ui { position: relative; min-height: 100vh; display: grid; grid-template-columns: 1fr minmax(0, 440px); grid-template-rows: auto 1fr auto; gap: 18px; padding: 24px clamp(16px, 4vw, 56px); }
+  .bar { grid-column: 1 / -1; display: flex; align-items: center; gap: 14px; font: 700 15px var(--font-datos); letter-spacing: .12em; text-transform: uppercase; color: var(--text-2); }
+  .bar .tag { background: var(--morado, #b678ff); color: #000; padding: 4px 12px; clip-path: var(--corte); }
+  .bar .spacer { flex: 1; }
+  .filters { display: flex; gap: 6px; }
+  .filters span { padding: 4px 12px; border: 1px solid var(--line-strong); color: var(--text-3); }
+  .filters span.on { color: #fff; border-color: #fff; }
+  /* Marca de selección sobre el medallón elegido del render */
+  .pick { position: absolute; left: 31.1%; top: 75.6%; width: 110px; height: 110px; transform: translate(-50%, -50%); border: 2px solid #fff; box-shadow: 0 0 30px rgba(255,255,255,.4); animation: elige 1.6s ease-in-out infinite; }
+  @keyframes elige { 50% { transform: translate(-50%, -50%) scale(1.08); box-shadow: 0 0 50px rgba(255,255,255,.6); } }
+  .card { grid-column: 2; grid-row: 2; align-self: center; padding: 22px; background: linear-gradient(160deg, #1d1a24, #0c0b10); border: 1px solid #3a3346; border-top: 5px solid var(--c); position: relative; overflow: hidden; animation: entra .6s .5s both; }
+  .card::before { content: ''; position: absolute; inset: -50%; background: conic-gradient(from 0deg, transparent, rgba(255,210,63,.10), transparent 30%); animation: brilla 6s linear infinite; pointer-events: none; }
+  @keyframes brilla { to { transform: rotate(360deg); } }
+  .rar { font: 800 14px var(--font-datos); letter-spacing: .16em; text-transform: uppercase; color: var(--c); }
+  .card h1 { font-family: var(--font-titular); font-size: 52px; text-transform: uppercase; line-height: .92; margin: 6px 0 10px; }
+  .card p { color: var(--text-2); font-size: 17px; line-height: 1.45; }
+  .eff { display: flex; flex-direction: column; gap: 6px; margin: 14px 0; }
+  .eff span { display: flex; justify-content: space-between; padding: 8px 12px; background: rgba(255,255,255,.04); border-left: 3px solid var(--k); font-size: 15px; }
+  .eff b { font-family: var(--font-datos); font-size: 17px; color: var(--k); }
+  .origin { font-size: 14px; color: var(--text-3); font-style: italic; }
+  .list { grid-column: 1 / -1; grid-row: 3; display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px; }
+  .chip { flex: 0 0 auto; display: flex; align-items: center; gap: 10px; padding: 8px 14px 8px 10px; background: rgba(14,14,14,.92); border: 1px solid var(--line); opacity: 0; animation: entra .4s calc(1s + var(--k) * 90ms) both; }
+  .chip i { width: 22px; height: 22px; clip-path: polygon(25% 5%, 75% 5%, 100% 50%, 75% 95%, 25% 95%, 0 50%); background: var(--c); }
+  .chip b { font: 700 16px var(--font-datos); }
+  .chip small { display: block; color: var(--text-3); font-size: 13px; }
+  .chip.curse { border-color: rgba(225,6,0,.5); }
+  .chip.lock { opacity: .4 !important; }
+  .chip.lock i { background: #333; }
+  @media (max-width: 900px) { .ui { grid-template-columns: 1fr; } .card { grid-column: 1; } .stage::after { background: linear-gradient(0deg, rgba(0,0,0,.95) 30%, transparent 70%); } }
+  @media (max-width: 767px) {
+    body { overflow: auto; }
+    .stage { position: absolute; height: 44vh; background-position: 30% 50%; }
+    .pick { display: none; }
+    .eff span { gap: 12px; } .eff b { white-space: nowrap; }
+    .ui { padding: 14px 16px; grid-template-rows: auto auto auto; }
+    .bar .filters { display: none; }
+    .card { margin-top: 32vh; grid-row: 2; }
+    .card h1 { font-size: 42px; }
+    .list { grid-row: 3; flex-wrap: wrap; }
+  }
+</style>
+</head>
+<body>
+<div class="stage" aria-hidden="true"></div>
+<span class="pick" aria-hidden="true"></span>
+<main class="ui">
+  <div class="bar in" style="--i:0"><span class="tag">Colección</span><span>Ventajas y maldiciones · 11 de 40</span><span class="spacer"></span><span class="filters"><span class="on">Todas</span><span>Ventajas</span><span>Maldiciones</span><span>Bloqueadas</span></span></div>
+  <article class="card" style="--c:#ffd23f">
+    <span class="rar">Rara · ventaja con riesgo</span>
+    <h1>Fondo «interpretativo»</h1>
+    <p>El agujero del artículo 3.5, explotado con disimulo. Nadie lo ha visto todavía. Todavía.</p>
+    <div class="eff">
+      <span style="--k:var(--positivo)">Ritmo en carreras de alta carga <b>−0,12 s/vuelta</b></span>
+      <span style="--k:var(--aviso)">Riesgo de protesta en cada carrera <b>Bajo</b></span>
+      <span style="--k:#ff8a7a">Si la federación lo prohíbe, sanción <b>10 puestos</b></span>
+    </div>
+    <p class="origin">Conseguida en 2023 · evento «Un agujero en el artículo 3.5» · activa desde hace 9 carreras</p>
+  </article>
+  <div class="list">
+    <span class="chip" style="--c:#b678ff;--k:0"><i></i><span><b>Amigo en la federación</b><small>Legendaria</small></span></span>
+    <span class="chip" style="--c:#ffd23f;--k:1"><i></i><span><b>Fondo «interpretativo»</b><small>Rara · −0,12 s/vuelta</small></span></span>
+    <span class="chip" style="--c:#57d9a3;--k:2"><i></i><span><b>Mecánicos de récord</b><small>Común · paradas −0,3 s</small></span></span>
+    <span class="chip" style="--c:#5aa9ff;--k:3"><i></i><span><b>Patrocinador generoso</b><small>Poco común · +6 M/año</small></span></span>
+    <span class="chip curse" style="--c:#e10600;--k:4"><i></i><span><b>Gafe en Mónaco</b><small>Maldición · avería más probable</small></span></span>
+    <span class="chip curse" style="--c:#e10600;--k:5"><i></i><span><b>Prensa en contra</b><small>Maldición · afición −10 %</small></span></span>
+    <span class="chip lock" style="--k:6"><i></i><span><b>???</b><small>Gana un título</small></span></span>
+    <span class="chip lock" style="--k:7"><i></i><span><b>???</b><small>Sobrevive a 3 protestas</small></span></span>
+  </div>
+</main>
+</body>
+</html>

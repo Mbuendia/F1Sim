@@ -4,6 +4,7 @@
 //  · más carga → más paso por curva rápida, más drag;  · más refrigeración → motor más frío, más drag;
 //  · neumático que calienta antes → mejor out-lap, más desgaste.
 import { TEAMS } from './teams';
+import type { TeamForm } from './seasons';
 
 export interface ProfileValue { value: number; origin: 'calibracion'; note: string }
 
@@ -101,9 +102,24 @@ export function chassisGripAt(technical: Pick<CarTechnical, 'fastCornerGrip' | '
   return technical.slowCornerGrip * (1 - w) + technical.fastCornerGrip * w;
 }
 
-/** Perfil técnico de un equipo para un circuito (y paquete, por defecto el del circuito). */
-export function resolveTechnical(teamId: string, circuitId: string, pkg: PackageId = packageFor(circuitId)): CarTechnical {
-  const profile = TEAM_PROFILES[teamId] ?? TEAM_PROFILES.mclaren;
+/** [TL2] Perfil de un equipo con la fuerza y el motor de un año (en lugar de los de teams.ts). */
+export function profileForYear(teamId: string, form: TeamForm): TeamProfile {
+  const base = TEAM_PROFILES[teamId] ?? TEAM_PROFILES.mclaren, year = form[teamId];
+  if (!year) return base;
+  return {
+    ...base,
+    chassis: {
+      ...base.chassis,
+      downforce: value(1 + (year.aerodynamics - AERO_REF), 'Fuerza del año (TL2); sin fuente real.'),
+      mechanicalGrip: value(1 + (year.carPerformance - PERF_REF), 'Fuerza del año (TL2); sin fuente real.'),
+    },
+    pu: { supplier: year.engineManufacturer, iceKw: year.horsepower * 0.7457 - 120 },
+  };
+}
+
+/** Perfil técnico de un equipo para un circuito (y paquete, por defecto el del circuito). [TL2] Con `form`, el de ese año. */
+export function resolveTechnical(teamId: string, circuitId: string, pkg: PackageId = packageFor(circuitId), form: TeamForm | null = null): CarTechnical {
+  const profile = form ? profileForYear(teamId, form) : (TEAM_PROFILES[teamId] ?? TEAM_PROFILES.mclaren);
   const { downforce, mechanicalGrip, cooling, tyreHeat, tyreWear } = profile.chassis;
   const pack = PACKAGES[pkg];
   return {

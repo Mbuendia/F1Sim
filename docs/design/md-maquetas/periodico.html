@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Desafío · periódico</title>
+<!-- [MD21 y MD7, maqueta del 16/11/2026] Tras un momento grande (aquí, la primera victoria) el periódico de Blender entra
+     girando como en las películas, cae un flash de fotógrafo y saltan los avisos del móvil del director. A la derecha,
+     el quiosco con los titulares cortos del resto de la prensa. En el juego el periódico es un objeto 3D con la portada
+     generada de la partida. -->
+<link rel="stylesheet" href="md.css">
+<style>
+  body { overflow: hidden; background: radial-gradient(60% 70% at 42% 45%, #2a0b08 0, #0b0505 55%, #000 100%); }
+  body::before { content: ''; position: fixed; inset: 0; background: repeating-linear-gradient(115deg, rgba(255,255,255,.018) 0 2px, transparent 2px 14px); pointer-events: none; }
+  .flash { position: fixed; inset: 0; background: #fff; opacity: 0; pointer-events: none; animation: flash .7s 1.55s ease-out both; z-index: 5; }
+  @keyframes flash { 0% { opacity: 0; } 8% { opacity: .85; } 100% { opacity: 0; } }
+  .ui { position: relative; min-height: 100vh; display: grid; grid-template-columns: 1fr minmax(0, 400px); gap: 24px; padding: 24px clamp(16px, 4vw, 56px); }
+  .top { grid-column: 1 / -1; display: flex; align-items: center; gap: 14px; }
+  .top .kicker { color: var(--aviso); }
+  .top .spacer { flex: 1; }
+  .round { font-family: var(--font-datos); font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--text-2); font-size: 15px; }
+  /* El periódico: entra dando vueltas desde el fondo y se posa con un pequeño rebote */
+  .stage { position: relative; display: grid; place-items: center; min-height: 72vh; perspective: 1400px; }
+  .paper { width: min(64vh, 92%); aspect-ratio: 1400 / 1600; background: url('periodico-final.webp') 51% 52% / 140% auto no-repeat;
+    filter: drop-shadow(0 40px 60px rgba(0,0,0,.8)) drop-shadow(0 0 80px rgba(225,6,0,.25));
+    animation: gira 1.6s cubic-bezier(.16,.9,.3,1) both; transform-origin: 50% 55%; }
+  @keyframes gira {
+    0% { transform: translateZ(-1600px) rotate(-1080deg) scale(.15); opacity: 0; filter: blur(6px); }
+    20% { opacity: 1; }
+    82% { transform: translateZ(40px) rotate(4deg) scale(1.04); filter: blur(0); }
+    100% { transform: none; }
+  }
+  .sello { position: absolute; left: 2%; top: 58%; transform: rotate(-12deg); padding: 10px 18px; border: 4px solid var(--accion); color: var(--accion);
+    font-family: var(--font-titular); font-size: clamp(28px, 3.4vw, 46px); text-transform: uppercase; line-height: 1; background: rgba(0,0,0,.4);
+    animation: sella .35s 1.75s cubic-bezier(.2,1.6,.4,1) both; }
+  @keyframes sella { from { opacity: 0; transform: rotate(-12deg) scale(2.4); } to { opacity: 1; transform: rotate(-12deg) scale(1); } }
+  .actions { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; animation: entra .5s 2.1s both; white-space: nowrap; }
+  /* Columna derecha: quiosco y avisos de la red social */
+  .side { display: flex; flex-direction: column; gap: 14px; align-self: center; }
+  .kiosk { background: rgba(12,12,12,.9); border: 1px solid var(--line); border-top: 3px solid var(--aviso); padding: 14px; }
+  .kiosk h2 { font-family: var(--font-titular); font-size: 30px; text-transform: uppercase; margin-bottom: 8px; }
+  .clip { display: grid; grid-template-columns: 54px 1fr; gap: 10px; align-items: start; padding: 10px 0; border-top: 1px solid var(--line); opacity: 0; animation: entra .45s calc(2.2s + var(--i) * 160ms) both; }
+  .clip i { font-style: normal; font: 800 12px/1.1 var(--font-datos); letter-spacing: .06em; text-transform: uppercase; padding: 5px 4px; text-align: center; background: var(--bg-c, #efe9dc); color: var(--fg-c, #161412); }
+  .clip b { display: block; font-family: Georgia, serif; font-size: 17px; line-height: 1.25; }
+  .clip small { color: var(--text-3); font-size: 13px; }
+  .feed { display: flex; flex-direction: column; gap: 8px; }
+  .post { display: grid; grid-template-columns: 40px 1fr; gap: 10px; padding: 10px 12px; background: rgba(20,20,20,.95); border: 1px solid var(--line); border-left: 3px solid var(--c, var(--info));
+    opacity: 0; animation: salta .5s calc(2.8s + var(--i) * 450ms) cubic-bezier(.2,1.3,.4,1) both; }
+  @keyframes salta { from { opacity: 0; transform: translateX(40px) scale(.96); } to { opacity: 1; transform: none; } }
+  .post .av { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; font: 800 16px var(--font-datos); background: var(--c, var(--info)); color: #000; }
+  .post b { font-family: var(--font-datos); font-size: 16px; }
+  .post b span { color: var(--text-3); font-weight: 600; font-family: var(--font-ui); font-size: 13px; }
+  .post p { font-size: 15px; line-height: 1.35; color: var(--text-2); }
+  .post small { color: var(--text-3); font-size: 13px; }
+  @media (max-width: 1023px) { .ui { grid-template-columns: 1fr; } body { overflow: auto; } }
+  @media (max-width: 767px) {
+    .ui { padding: 14px 16px; gap: 14px; }
+    .round { display: none; }
+    body { overflow-x: hidden; }
+    .stage { min-height: 0; display: flex; flex-direction: column; gap: 12px; }
+    .paper { width: 100%; }
+    .sello { left: 0; top: 52%; font-size: 24px; }
+    .actions { position: static; transform: none; width: 100%; white-space: normal; }
+    .actions > * { flex: 1; justify-content: center; padding: 0 12px; font-size: 15px; }
+  }
+</style>
+</head>
+<body>
+<div class="flash" aria-hidden="true"></div>
+<main class="ui">
+  <div class="top in" style="--i:0"><span class="kicker">Lunes por la mañana</span><span class="spacer"></span><span class="round">Temporada 2023 · después de la ronda 4 de 22</span></div>
+  <section class="stage">
+    <div class="paper" role="img" aria-label="Portada de El Pit Diario: ¡Pelotazo en Bakú!"></div>
+    <div class="sello">Edición especial</div>
+    <div class="actions"><button class="primary">Seguir</button><button class="ghost">Guardar en la crónica</button></div>
+  </section>
+  <aside class="side">
+    <div class="kiosk">
+      <h2>Quiosco</h2>
+      <div class="clip" style="--i:0"><i>Marcha Atrás</i><span><b>«Lo de Brava no es un milagro, es un agujero»</b><small>Red Bulla pide revisar el fondo plano</small></span></div>
+      <div class="clip" style="--i:1;--bg-c:#e10600;--fg-c:#fff"><i>El Chorizo Deportivo</i><span><b>Verstoppen, tercero y de mal humor: «el coche es una lavadora»</b><small>Su ingeniero pide calma por radio por sexta vez</small></span></div>
+      <div class="clip" style="--i:2;--bg-c:#1d2b4a;--fg-c:#fff"><i>La Federación Informa</i><span><b>Comunicado sobre el comunicado de ayer</b><small>Sin novedades, pero con mucho énfasis</small></span></div>
+    </div>
+    <div class="feed" aria-label="Móvil del director">
+      <div class="post" style="--i:0;--c:#e10600"><span class="av">AP</span><div><b>@AbueloDelPaddock <span>· hace 2 min</span></b><p>He visto ganar a Brava. Ya me puedo morir tranquilo. Bueno, espero a Miami.</p><small>14,2 mil me gusta</small></div></div>
+      <div class="post" style="--i:1;--c:#ffd23f"><span class="av">MB</span><div><b>@MuroDeBoxes <span>· hace 5 min</span></b><p>El fondo plano de Brava tiene más agujeros que el reglamento. Y eso es decir mucho.</p><small>3,1 mil me gusta</small></div></div>
+      <div class="post" style="--i:2;--c:#2a4a9a"><span class="av">RB</span><div><b>@OraculoRedBulla <span>· hace 9 min</span></b><p>Felicitamos a Brava por su victoria. Nuestros abogados también le mandan saludos.</p><small>22,8 mil me gusta</small></div></div>
+    </div>
+  </aside>
+</main>
+</body>
+</html>

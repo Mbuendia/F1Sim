@@ -111,6 +111,8 @@ export function BoxControls({ car, teamCars, team, race, send, slow, focusId }: 
   const crossover = (carId: number) => (own(carId)?.crossover as { recommended: 'slick' | 'intermediate' | 'wet'; depthMm: number; advise: boolean } | undefined) ?? { recommended: 'slick' as const, depthMm: 0, advise: false };
   const [compounds, setCompounds] = useState<Record<number, TireCompound>>({});
   const [feedbacks, setFeedbacks] = useState<Record<number, string>>({});
+  // [TL4] «Cambiar morro» en la próxima parada (solo se ve en el 3D: no cambia el tiempo).
+  const [noses, setNoses] = useState<Record<number, boolean>>({});
   // [V2] En pantallas estrechas se enseña un piloto cada vez; el conmutador elige cuál.
   const [shownId, setShownId] = useState<number | null>(null);
 
@@ -243,8 +245,10 @@ export function BoxControls({ car, teamCars, team, race, send, slow, focusId }: 
                   options={TIRE_COMPOUNDS.map(c => ({ value: c, label: COMPOUND_STYLES[c].name, content: <CompoundBadge compound={c} size={24} detail="selección para la orden" /> }))} />
                 <span className={styles.orderActions}>
                   <button disabled={!available || locked} onClick={() => {
-                    void send({ kind: 'box', carId: p.id, compound }).then(ack => setFeedbackFor(p.id, ack.ok ? '' : 'Rechazada'));
+                    void send({ kind: 'box', carId: p.id, compound, ...(noses[p.id] ? { nose: true } : {}) }).then(ack => setFeedbackFor(p.id, ack.ok ? '' : 'Rechazada'));
                   }}>{order?.status === 'accepted' ? 'Actualizar' : 'BOX'}</button>
+                  <label title="Cambiar también el morro en la parada"><input type="checkbox" disabled={!available || locked} checked={Boolean(noses[p.id])}
+                    onChange={() => setNoses(n => ({ ...n, [p.id]: !n[p.id] }))} />Morro</label>
                   <button disabled={!available || (order?.status !== 'accepted' && !showPlan)} title="Anular la parada y seguir en pista" onClick={() => {
                     void send({ kind: 'cancelBox', carId: p.id }).then(ack => setFeedbackFor(p.id, ack.ok ? '' : 'No cancelable'));
                   }}>Seguir</button>

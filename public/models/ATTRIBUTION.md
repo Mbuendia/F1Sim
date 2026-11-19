@@ -1,6 +1,6 @@
 # Modelos 3D de terceros
 
-Los dos modelos de esta carpeta son obras de otros autores, publicadas en Sketchfab con licencia Creative Commons y
+Los modelos de esta carpeta son obras de otros autores (salvo el coche de 2024, propio del autor del juego), publicadas en Sketchfab con licencia Creative Commons y
 **modificadas** para F1Sim. Cada archivo conserva su licencia; el resto del repositorio no queda bajo ellas.
 
 ## `f1-car.glb`
@@ -31,9 +31,7 @@ Los dos modelos de esta carpeta son obras de otros autores, publicadas en Sketch
   `ala_trasera`, `suelo`, `pontones`, `tapa_motor` y `chasis`), las ruedas cuelgan de `ruedas`, sin superficies de
   rótulos y con unos 54 000 triángulos. Lo usa el centro de temporada para resaltar la pieza que cambia cada mejora.
 
-El coche de 2026 que usaba el juego hasta el 07/11/2026 («F1 2026 concept (polygon model)», de Qvist_designs,
-https://sketchfab.com/Qvist_Designs, CC BY 4.0) se guarda en `assets/epoca-2026/`, fuera de lo que se publica, para la
-época 2026 de las temporadas largas.
+El coche de 2026 que usaba el juego hasta el 07/11/2026 vuelve como coche de 2026 en adelante (TL7): ver más abajo.
 ## `safety-car.glb`
 
 - **Obra original:** «2019 Mercedes-Benz AMG GTR Safety Car»
@@ -97,3 +95,34 @@ ajena y sin marcas reales (los rótulos que llevan son de patrocinadores de paro
 `tunel.webp`, `simulador.webp`, `produccion.webp`, `banco.webp` y `sede.webp` están hechas para F1Sim en Blender
 (28/10/2026), con estilo propio y sin marcas reales; el coche que aparece en ellas es `f1-car.glb` sin librea. Son del
 proyecto, sin licencia de terceros.
+
+## `epoca/f1-car-2023.glb` y `epoca/f1-car-2023-lod.glb` (coche de 2023)
+
+- **Obra original:** «Mercedes F1 W14 [FREE!!]»
+- **Autor:** 3dblenderlol — https://sketchfab.com/3dblenderlol
+- **Origen:** https://sketchfab.com/3d-models/mercedes-f1-w14-free-26fda66f3e8a48d5a636056f8a64e299
+- **Licencia:** CC BY 4.0 — https://creativecommons.org/licenses/by/4.0/
+- **Cambios (TL7, 16/11/2026):** sin logotipos ni texturas de marcas (todas las caras con imagen fuera); girado con el
+  morro hacia +X y escalado a 5,7 m; reducido de 232 000 a unos 97 000 triángulos (la versión lejana, a unos 8 500);
+  zonas de pintura por material, ruedas separadas con animación de giro, banda del compuesto y superficies para el
+  dorsal y los patrocinadores (ficticios, los pone el juego).
+
+## `epoca/f1-car-2024.glb` y `epoca/f1-car-2024-lod.glb` (coche de 2024)
+
+- **Obra:** modelo propio del autor del juego, hecho en Blender para F1Sim (no es de terceros).
+- **Cambios (TL7, 18/11/2026):** sin calcas, dorsales, luces ni texturas; girado con el morro hacia +X y escalado a
+  5,7 m; unos 99 000 triángulos (la versión lejana, unos 8 200); zonas de pintura por material, ruedas separadas con
+  animación de giro, banda del compuesto nueva y superficies para el dorsal y los patrocinadores.
+
+## `epoca/f1-car-2026.glb` y `epoca/f1-car-2026-lod.glb` (coche de 2026 en adelante)
+
+- **Obra original:** «F1 2026 concept (polygon model)»
+- **Autor:** Qvist_designs — https://sketchfab.com/Qvist_Designs
+- **Origen:** https://sketchfab.com/3d-models/f1-2026-concept-polygon-model-ea3bde709b1e4dc9b0ec8557d106ed42
+- **Licencia:** CC BY 4.0 — https://creativecommons.org/licenses/by/4.0/
+- **Cambios:** reducido de 1,16 millones a unos 127 000 triángulos (la versión lejana, a unos 9 700); ruedas separadas
+  con animación de giro, zonas de pintura por material, banda del compuesto y superficies para el dorsal y los
+  patrocinadores (TL7, 16/11/2026: las mismas que el coche de 2025).
+
+Los coches de otros años están en `public/epoca/` (fuera de esta carpeta de modelos, que baja con el juego): se bajan la
+primera vez que se juega una temporada de ese año.

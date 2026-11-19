@@ -35,7 +35,7 @@ export const SeasonCalendar: React.FC<SeasonCalendarProps> = ({ rounds, seasonNu
       {next && nextCircuit && (
         <div className={styles.next}>
           <p className={styles.nextTitle}>
-            Temporada {seasonNumber} · Ronda {next.round} de {SEASON_RACES}: <FlagIcon country={nextCircuit.country} emoji={nextCircuit.countryFlag} size={15} /> {nextCircuit.officialGpName}
+            Temporada {seasonNumber} · Ronda {next.round} de {rounds.length || SEASON_RACES}: <FlagIcon country={nextCircuit.country} emoji={nextCircuit.countryFlag} size={15} /> {nextCircuit.officialGpName}
             <span className={styles.nextSub}>
               {nextCircuit.name}{next.substitutes ? ` · sustituye a ${next.substitutes}` : ''}
               {next.sprint ? (next.sprintDone ? ' · Sprint disputado: falta el Gran Premio (clasificación y carrera)' : ' · Fin de semana sprint') : ''}

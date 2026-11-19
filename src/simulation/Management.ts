@@ -1,6 +1,7 @@
 // [Sprint 4] Gestión del equipo entre carreras: lo que el director decide fuera de la pista. Reúne en un solo estado,
 // que va con la carrera profesional y se guarda con ella, las piezas de cada tarea (T4.1: dinero; T4.4: instalaciones; T4.6: equipo de boxes; T4.9: patrocinio; T4.10: junta; T4.7: contratos de pilotos; T4.8: reserva y cantera; T4.11: edades).
 // Todo son funciones puras: la temporada (Season.ts) las llama al anotar una carrera, un salto de ronda o el cierre.
+import { isPlayerLivery, type PlayerLivery } from '../data/playerLivery';
 import { TEAMS } from '../data/teams';
 import { advanceStaff, closeStaffSeason, isStaff, roundStaffSalaries, startStaff } from './Staff';
 import type { StaffState } from './Staff';
@@ -44,17 +45,19 @@ export interface ManagementState {
   ages: Ages;
   /** [T4.5] Personal técnico fichado y mercado de la temporada (ausente en las partidas anteriores). */
   staff?: StaffState;
+  /** [TL5] Tu librea (ausente en las partidas anteriores o si no la has hecho: la de tu equipo). */
+  livery?: PlayerLivery;
 }
 
 export const MANAGEMENT_STORAGE_KEY = 'f1_management';
 
 /** Gestión de una partida nueva (o de una partida anterior que no la tenía): saldos iniciales. */
-export function startManagement(playerTeamId: string, season = 1, seed = 0): ManagementState {
+export function startManagement(playerTeamId: string, season = 1, seed = 0, year?: number): ManagementState {
   const teamId = TEAMS[playerTeamId] ? playerTeamId : Object.keys(TEAMS)[0];
   return {
     version: 1, playerTeamId: teamId, seed,
     finance: startFinance(Object.keys(TEAMS), season), facilities: startFacilities(), pitCrews: startPitCrews(), sponsors: startSponsors(season, seed),
-    board: startBoard(teamId), contracts: startContracts(season, seed), academy: startAcademy(seed), ages: startAges(),
+    board: startBoard(teamId), contracts: startContracts(season, seed, year), academy: startAcademy(seed), ages: startAges(year),
     staff: startStaff(season, seed),
   };
 }
@@ -74,6 +77,9 @@ export function isManagement(data: unknown): boolean {
     && (state.ages === undefined || isAges(state.ages));
 }
 
+
+const withoutLivery = <T extends { livery?: unknown }>(state: T): Omit<T, 'livery'> => { const { livery: _drop, ...rest } = state; void _drop; return rest; };
+
 /** La gestión de un objeto guardado, con sus piezas ausentes en su estado inicial; null si no es legible. */
 export function readManagement(data: unknown): ManagementState | null {
   if (!isManagement(data)) return null;
@@ -81,10 +87,12 @@ export function readManagement(data: unknown): ManagementState | null {
   const seed = state.seed ?? 0;
   const contracts = state.contracts ?? startContracts(state.finance.season, seed);
   return {
-    ...state, seed, facilities: state.facilities ?? startFacilities(), pitCrews: state.pitCrews ?? startPitCrews(),
+    ...withoutLivery(state), seed, facilities: state.facilities ?? startFacilities(), pitCrews: state.pitCrews ?? startPitCrews(),
     sponsors: state.sponsors ?? startSponsors(state.finance.season, seed), board: state.board ?? startBoard(state.playerTeamId),
     contracts, academy: state.academy ?? startAcademy(seed), ages: state.ages ?? agesFor(contracts),
     staff: isStaff(state.staff) ? state.staff : startStaff(state.finance.season, seed),
+    // [TL5] Una librea que no se entiende se descarta (el coche vuelve a la de su equipo).
+    ...(isPlayerLivery(state.livery) ? { livery: state.livery } : {}),
   };
 }
 

@@ -10,8 +10,10 @@ import m from './Management.module.css';
  * como pasos, el piloto que se sigue en pista (los dos son tuyos), los ajustes de la carrera (`children`: formato y
  * setup) y un solo botón rojo, que lleva a la sesión siguiente.
  */
-export function RaceWeekendPanel({ round, sessions, drivers, followedId, onFollow, launchLabel, launchNote, onStart, children }: {
+export function RaceWeekendPanel({ round, sessions, drivers, followedId, onFollow, launchLabel, launchNote, onStart, children, totalRounds = SEASON_RACES }: {
   round: NextRace;
+  /** [TL1] Rondas de la temporada. */
+  totalRounds?: number;
   sessions: WeekendSession[];
   drivers: { id: string; code: string; name: string; number: number }[];
   followedId: string;
@@ -25,7 +27,7 @@ export function RaceWeekendPanel({ round, sessions, drivers, followedId, onFollo
     <div className={m.weekend}>
       <section className={`${m.card} ${m.row} ${m.between} ${m.wrap}`}>
         <div>
-          <span className={m.label}>Ronda {round.round} de {SEASON_RACES}</span>
+          <span className={m.label}>Ronda {round.round} de {totalRounds}</span>
           <div className={m.title}>{round.circuitName}</div>
         </div>
         <ol className={m.steps} aria-label="Sesiones del fin de semana">
