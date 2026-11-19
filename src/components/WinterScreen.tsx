@@ -25,7 +25,7 @@ export function WinterScreen({ report, onConfirm, initialStep = 0 }: { report: W
   return (
     <div className={s.screen}>
       <header className={s.head} style={{ boxShadow: 'inset 0 3px 0 var(--equipo)' }}>
-        <h1>Invierno · de la temporada {report.season} a la {report.nextSeason}</h1>
+        <h1>Invierno · de la temporada {report.year ?? report.season} a la {report.year ? report.year + 1 : report.nextSeason}</h1>
         <span className={s.spacer} />
         <span className={m.chip}>Paso {step + 1} de {STEPS.length} · {STEPS[step]}</span>
       </header>
@@ -38,7 +38,7 @@ export function WinterScreen({ report, onConfirm, initialStep = 0 }: { report: W
 
           {step === 0 && (
             <section className={m.card}>
-              <span className={m.label}>Temporada {report.season} · {report.teamName}</span>
+              <span className={m.label}>Temporada {report.year ?? report.season} · {report.teamName}</span>
               <div className={m.lines}>
                 <Row label="Campeón de pilotos" value={close.champion ?? 'sin carreras'} />
                 <Row label="Campeón de constructores" value={close.constructorsChampion ?? 'sin carreras'} />

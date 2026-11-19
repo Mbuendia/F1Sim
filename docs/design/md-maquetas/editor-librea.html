@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Desafío · editor de libreas</title>
+<!-- [MD17 y MD18, maqueta del 16/11/2026] Editor de libreas en la pretemporada de 2024: el coche del juego girando (aquí,
+     dos renders de Blender con las zonas de pintura que ya tiene el modelo) y un barrido que pasa de la librea del año
+     pasado a la nueva. A la izquierda las zonas, a la derecha color, dibujo, acabado, piezas y patrocinadores ganados. -->
+<link rel="stylesheet" href="md.css">
+<style>
+  body { overflow: hidden; }
+  .app { height: 100vh; display: grid; grid-template-columns: 260px 1fr 340px; grid-template-rows: auto 1fr auto; }
+  .top { grid-column: 1 / -1; display: flex; align-items: center; gap: 16px; padding: 14px 24px; border-bottom: 1px solid var(--line); background: var(--panel); }
+  .top h1 { font-family: var(--font-titular); font-size: 30px; text-transform: uppercase; }
+  .top h1 em { font-style: normal; color: var(--accion); }
+  .top .spacer { flex: 1; }
+  .chip { font: 700 14px var(--font-datos); letter-spacing: .1em; text-transform: uppercase; color: var(--text-2); border: 1px solid var(--line-strong); padding: 4px 10px; }
+  /* Zonas */
+  .zones { padding: 18px 16px; border-right: 1px solid var(--line); background: var(--panel); display: flex; flex-direction: column; gap: 6px; overflow: auto; }
+  .zones h2, .tools h2 { font: 800 14px var(--font-datos); letter-spacing: .14em; text-transform: uppercase; color: var(--text-3); margin: 6px 0 4px; }
+  .zone { display: grid; grid-template-columns: 34px 1fr auto; align-items: center; gap: 10px; padding: 10px; text-align: left; background: var(--panel-2); border-left: 3px solid transparent; font-weight: 600; }
+  .zone i { width: 34px; height: 22px; background: var(--z); box-shadow: inset 0 0 0 1px rgba(255,255,255,.15); }
+  .zone small { color: var(--text-3); font-weight: 400; font-size: 13px; }
+  .zone.on { border-left-color: var(--accion); background: #232323; }
+  .templates { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .tpl { aspect-ratio: 1.4; background: var(--t); border: 1px solid var(--line-strong); }
+  .tpl.on { outline: 2px solid var(--accion); outline-offset: 1px; }
+  /* Coche en el centro, con la plataforma que gira y el barrido de una librea a otra */
+  .view { position: relative; overflow: hidden; background: radial-gradient(60% 60% at 50% 55%, #1a1a1a, #070707 70%); }
+  .car, .car-new { position: absolute; inset: 0; background: url('editor-a.webp') 40% 64% / 128% auto no-repeat; -webkit-mask-image: linear-gradient(transparent 18%, #000 30%, #000 80%, transparent 92%); mask-image: linear-gradient(transparent 18%, #000 30%, #000 80%, transparent 92%); }
+  .car-new { background-image: url('editor-b.webp'); clip-path: inset(0 100% 0 0); animation: barre 2.2s 1.2s cubic-bezier(.7,0,.3,1) forwards; }
+  @keyframes barre { to { clip-path: inset(0 0 0 0); } }
+  .sweep { position: absolute; top: 0; bottom: 0; width: 3px; left: 0; background: #fff; box-shadow: 0 0 30px 8px rgba(255,255,255,.6); opacity: 0; animation: linea 2.2s 1.2s cubic-bezier(.7,0,.3,1) forwards; }
+  @keyframes linea { 0% { left: 0; opacity: 1; } 96% { opacity: 1; } 100% { left: 100%; opacity: 0; } }
+  .ring { position: absolute; left: 50%; bottom: 17%; width: 70%; height: 14%; transform: translateX(-50%); border: 2px solid rgba(225,6,0,.45); border-radius: 50%; box-shadow: 0 0 40px rgba(225,6,0,.25), inset 0 0 40px rgba(225,6,0,.15); }
+  .ring::after { content: ''; position: absolute; inset: 14%; border: 1px dashed rgba(255,255,255,.18); border-radius: 50%; }
+  @keyframes gira { to { transform: rotate(360deg); } }
+  .label { position: absolute; padding: 4px 10px; background: rgba(0,0,0,.75); border: 1px solid var(--line-strong); font: 700 14px var(--font-datos); letter-spacing: .08em; text-transform: uppercase; }
+  .label::before { content: ''; position: absolute; width: 60px; height: 1px; background: rgba(255,255,255,.4); top: 50%; }
+  .l1 { left: 62%; top: 30%; } .l1::before { right: 100%; transform: rotate(25deg); transform-origin: right; }
+  .l2 { left: 8%; top: 64%; } .l2::before { left: 100%; transform: rotate(-20deg); transform-origin: left; }
+  .rotate { position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; }
+  .rotate button { width: 44px; height: 44px; border: 1px solid var(--line-strong); background: rgba(16,16,16,.85); font-size: 18px; }
+  .years { position: absolute; top: 16px; left: 16px; display: flex; gap: 6px; }
+  .years span { font: 800 15px var(--font-datos); padding: 4px 10px; background: rgba(0,0,0,.6); color: var(--text-3); border: 1px solid var(--line); }
+  .years span.on { color: #fff; border-color: var(--accion); background: rgba(225,6,0,.25); }
+  /* Herramientas */
+  .tools { padding: 14px 16px; border-left: 1px solid var(--line); background: var(--panel); overflow: auto; display: flex; flex-direction: column; gap: 10px; }
+  .tabs { display: flex; gap: 2px; }
+  .tabs button { flex: 1; padding: 8px 4px; background: var(--panel-2); font: 700 14px var(--font-datos); letter-spacing: .06em; text-transform: uppercase; color: var(--text-3); }
+  .tabs button.on { background: var(--accion); color: #fff; }
+  .swatches { display: grid; grid-template-columns: repeat(8, 1fr); gap: 5px; }
+  .swatches i { aspect-ratio: 1; background: var(--s); box-shadow: inset 0 0 0 1px rgba(255,255,255,.12); }
+  .swatches i.on { outline: 2px solid #fff; outline-offset: 2px; }
+  .patterns { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .pat { display: flex; flex-direction: column; gap: 3px; font: 600 14px var(--font-datos); color: var(--text-3); text-align: center; }
+  .pat i { aspect-ratio: 1; border: 1px solid var(--line-strong); background: var(--p); transition: transform .15s; }
+  .pat:hover i { transform: scale(1.06); }
+  .pat.on i { outline: 2px solid var(--accion); outline-offset: 1px; }
+  .pat.on { color: #fff; }
+  .finish { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .finish button { padding: 8px 2px; border: 1px solid var(--line-strong); font: 700 13px var(--font-datos); text-transform: uppercase; background: var(--f); color: #fff; text-shadow: 0 1px 2px #000; }
+  .finish button.on { outline: 2px solid var(--accion); outline-offset: 1px; }
+  .parts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .part { padding: 8px; background: var(--panel-2); border: 1px solid var(--line); font-size: 13px; color: var(--text-2); text-align: center; }
+  .part svg { display: block; margin: 0 auto 4px; }
+  .part.on { border-color: var(--accion); color: #fff; }
+  .sponsors { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .sp { padding: 8px; background: var(--panel-2); border: 1px solid var(--line); font: 800 14px var(--font-datos); letter-spacing: .04em; text-transform: uppercase; text-align: center; }
+  .sp small { display: block; font: 400 12px var(--font-ui); text-transform: none; color: var(--text-3); letter-spacing: 0; }
+  .sp.lock { opacity: .45; }
+  .foot { grid-column: 1 / -1; display: flex; align-items: center; gap: 12px; padding: 12px 24px; border-top: 1px solid var(--line); background: var(--panel); }
+  .foot p { color: var(--text-3); font-size: 14px; }
+  .foot .spacer { flex: 1; }
+  @media (max-width: 1100px) { .app { grid-template-columns: 210px 1fr 300px; } }
+  @media (max-width: 767px) {
+    body { overflow: auto; }
+    .app { height: auto; grid-template-columns: 1fr; grid-template-rows: auto; }
+    .top { padding: 12px 16px; flex-wrap: wrap; }
+    .top .chip { display: none; }
+    .view { order: 1; height: 42vh; min-height: 260px; }
+    .zones { order: 2; flex-direction: row; overflow-x: auto; border-right: 0; padding: 10px 16px; }
+    .zones h2, .zones .templates { display: none; }
+    .zone { flex: 0 0 auto; display: flex; align-items: center; gap: 8px; }
+    .zone i { width: 26px; height: 18px; }
+    .zone > span:last-child { display: none; }
+    .zone small { display: none; }
+    .tools { order: 3; border-left: 0; }
+    .label { display: none; }
+    .foot { order: 4; flex-wrap: wrap; }
+    .foot p { flex: 1 1 100%; }
+    .foot .spacer { display: none; }
+    .foot > button { flex: 1; justify-content: center; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <h1>Librea <em>2024</em> · Brava Racing</h1>
+    <span class="chip">Pretemporada</span><span class="chip">Plantilla: Flecha</span>
+    <span class="spacer"></span>
+    <button class="ghost">Deshacer</button>
+  </header>
+  <aside class="zones">
+    <h2>Zonas</h2>
+    <button class="zone on" style="--z:#0b2a6f"><i></i><span>Carrocería<br><small>Color principal</small></span><span>›</span></button>
+    <button class="zone" style="--z:#ffd23f"><i></i><span>Alerones y detalles<br><small>Color secundario</small></span><span>›</span></button>
+    <button class="zone" style="--z:#1b1b1b"><i></i><span>Fibra a la vista<br><small>Fondo plano y halo</small></span><span>›</span></button>
+    <button class="zone" style="--z:linear-gradient(90deg,#0b2a6f,#ffd23f)"><i></i><span>Pontones<br><small>Dibujo: degradado</small></span><span>›</span></button>
+    <button class="zone" style="--z:#ffffff"><i></i><span>Números<br><small>Tipografía de la plantilla</small></span><span>›</span></button>
+    <h2>Plantillas</h2>
+    <div class="templates">
+      <i class="tpl on" style="--t:linear-gradient(120deg,#0b2a6f 55%,#ffd23f 55%)"></i>
+      <i class="tpl" style="--t:linear-gradient(90deg,#e10600 50%,#fff 50%)"></i>
+      <i class="tpl" style="--t:repeating-linear-gradient(45deg,#111 0 8px,#2a2a2a 8px 16px)"></i>
+      <i class="tpl" style="--t:linear-gradient(180deg,#ff87bc,#5aa9ff)"></i>
+      <i class="tpl" style="--t:linear-gradient(120deg,#0a0a0a 40%,#57d9a3 40% 48%,#0a0a0a 48%)"></i>
+      <i class="tpl" style="--t:radial-gradient(circle at 30% 50%,#ff8000 0 30%,#111 31%)"></i>
+    </div>
+  </aside>
+  <section class="view">
+    <div class="car" role="img" aria-label="Librea de 2023: rojo y blanco"></div>
+    <div class="car-new" role="img" aria-label="Librea nueva de 2024: azul metalizado y amarillo"></div>
+    <div class="sweep" aria-hidden="true"></div>
+    <div class="ring" aria-hidden="true"></div>
+    <div class="years"><span>2023</span><span class="on">2024</span></div>
+    <span class="label l1">Carrocería · azul medianoche, cromado</span>
+    <span class="label l2">Alerón delantero · amarillo, brillo</span>
+    <div class="rotate"><button aria-label="Girar a la izquierda">⟲</button><button aria-label="Vista de frente">◎</button><button aria-label="Girar a la derecha">⟳</button></div>
+  </section>
+  <aside class="tools">
+    <div class="tabs"><button class="on">Color</button><button>Dibujo</button><button>Acabado</button><button>Piezas</button></div>
+    <h2>Color de la carrocería</h2>
+    <div class="swatches">
+      <i style="--s:#0b2a6f" class="on"></i><i style="--s:#e10600"></i><i style="--s:#ffffff"></i><i style="--s:#111111"></i><i style="--s:#ffd23f"></i><i style="--s:#57d9a3"></i><i style="--s:#ff87bc"></i><i style="--s:#ff8000"></i>
+      <i style="--s:#5aa9ff"></i><i style="--s:#b678ff"></i><i style="--s:#7a1d1d"></i><i style="--s:#c0c0c0"></i><i style="--s:#1f7a52"></i><i style="--s:#2a2a2a"></i><i style="--s:#d9b23f"></i><i style="--s:#00b3b3"></i>
+    </div>
+    <h2>Dibujo · <span style="color:#fff">Degradado</span></h2>
+    <div class="patterns">
+      <button class="pat" title="Liso"><i style="--p:#0b2a6f"></i><span>Liso</span></button>
+      <button class="pat on" title="Degradado"><i style="--p:linear-gradient(90deg,#0b2a6f,#ffd23f)"></i><span>Degradado</span></button>
+      <button class="pat" title="Rayas"><i style="--p:repeating-linear-gradient(90deg,#0b2a6f 0 6px,#ffd23f 6px 9px)"></i><span>Rayas</span></button>
+      <button class="pat" title="Franjas"><i style="--p:linear-gradient(90deg,#0b2a6f 0 34%,#ffd23f 34% 42%,#0b2a6f 42% 58%,#ffd23f 58% 66%,#0b2a6f 66%)"></i><span>Franjas</span></button>
+      <button class="pat" title="Flecha"><i style="--p:linear-gradient(135deg,#0b2a6f 0 42%,#ffd23f 42% 58%,#0b2a6f 58%)"></i><span>Flecha</span></button>
+      <button class="pat" title="Zigzag"><i style="--p:linear-gradient(135deg,#ffd23f 25%,transparent 25%) -7px 0/14px 14px,linear-gradient(225deg,#ffd23f 25%,transparent 25%) -7px 0/14px 14px,linear-gradient(315deg,#ffd23f 25%,transparent 25%) 0 0/14px 14px,linear-gradient(45deg,#ffd23f 25%,#0b2a6f 25%) 0 0/14px 14px"></i><span>Zigzag</span></button>
+      <button class="pat" title="Damero"><i style="--p:conic-gradient(from 45deg,#0b2a6f 25%,#ffd23f 0 50%,#0b2a6f 0 75%,#ffd23f 0) 0 0/14px 14px"></i><span>Damero</span></button>
+      <button class="pat" title="Puntos"><i style="--p:radial-gradient(circle,#ffd23f 2.5px,transparent 3px) 0 0/10px 10px,#0b2a6f"></i><span>Puntos</span></button>
+      <button class="pat" title="Escamas"><i style="--p:radial-gradient(circle at 50% 0,transparent 5px,#ffd23f 5px 7px,transparent 7px) 0 0/14px 9px,#0b2a6f"></i><span>Escamas</span></button>
+      <button class="pat" title="Olas"><i style="--p:radial-gradient(circle at 50% 100%,transparent 4px,#ffd23f 4px 6px,transparent 6px) 0 0/16px 8px,#0b2a6f"></i><span>Olas</span></button>
+      <button class="pat" title="Rayos"><i style="--p:repeating-conic-gradient(from 0deg at 0% 100%,#0b2a6f 0 6deg,#ffd23f 6deg 10deg)"></i><span>Rayos</span></button>
+      <button class="pat" title="Camuflaje"><i style="--p:url('dibujo-camuflaje.svg') center / cover"></i><span>Camuflaje</span></button>
+      <button class="pat" title="Píxeles"><i style="--p:linear-gradient(90deg,#0b2a6f 30%,transparent 85%),conic-gradient(#ffd23f 25%,#0b2a6f 0 50%,#ffd23f 0 75%,#0b2a6f 0) 0 0/10px 10px"></i><span>Píxeles</span></button>
+      <button class="pat" title="Salpicado"><i style="--p:radial-gradient(circle at 20% 30%,#ffd23f 0 4px,transparent 5px),radial-gradient(circle at 70% 20%,#ffd23f 0 2px,transparent 3px),radial-gradient(circle at 60% 70%,#ffd23f 0 6px,transparent 7px),radial-gradient(circle at 30% 80%,#ffd23f 0 2.5px,transparent 3.5px),radial-gradient(circle at 85% 55%,#ffd23f 0 3px,transparent 4px),#0b2a6f"></i><span>Salpicado</span></button>
+      <button class="pat" title="Llamas"><i style="--p:url('dibujo-llamas.svg') center / cover"></i><span>Llamas</span></button>
+      <button class="pat" title="Cuadros"><i style="--p:repeating-linear-gradient(0deg,rgba(255,210,63,.55) 0 3px,transparent 3px 12px),repeating-linear-gradient(90deg,rgba(255,210,63,.55) 0 3px,transparent 3px 12px),#0b2a6f"></i><span>Cuadros</span></button>
+    </div>
+    <h2>Acabado</h2>
+    <div class="finish">
+      <button style="--f:#20232b">Mate</button>
+      <button style="--f:linear-gradient(160deg,#2c3a66,#0b2a6f 60%)">Brillo</button>
+      <button class="on" style="--f:linear-gradient(160deg,#cfd6e6,#3b4a72 45%,#0b1530)">Cromado</button>
+      <button style="--f:repeating-linear-gradient(45deg,#111 0 3px,#262626 3px 6px)">Carbono</button>
+    </div>
+    <h2>Piezas · reglamento 2024</h2>
+    <div class="parts">
+      <button class="part on"><svg width="60" height="22" viewBox="0 0 60 22"><path d="M2 16 L40 12 L58 11 L58 13 L40 16 Z M10 18 L52 18" stroke="#e10600" stroke-width="2" fill="none"/></svg>Morro fino</button>
+      <button class="part"><svg width="60" height="22" viewBox="0 0 60 22"><path d="M2 15 L36 10 L58 9 L58 15 L36 17 Z" stroke="#8f8f8f" stroke-width="2" fill="none"/></svg>Morro ancho</button>
+      <button class="part"><svg width="60" height="22" viewBox="0 0 60 22"><path d="M4 18 Q30 2 56 18" stroke="#8f8f8f" stroke-width="2" fill="none"/></svg>Pontón rampa</button>
+    </div>
+    <h2>Patrocinadores ganados</h2>
+    <div class="sponsors">
+      <span class="sp">Gomas Perpetuas<small>morro y alerón</small></span>
+      <span class="sp">Aceites El Muro<small>pontones</small></span>
+      <span class="sp lock">🔒 Seguros Trompo<small>acaba entre los 6 primeros</small></span>
+      <span class="sp lock">🔒 Bebidas Rebufo<small>gana una carrera</small></span>
+    </div>
+  </aside>
+  <footer class="foot">
+    <p>Lo que eliges aquí es solo estético: el rendimiento sale del desarrollo. La puedes cambiar en cada pretemporada.</p>
+    <span class="spacer"></span>
+    <button class="ghost">Ver en pista</button>
+    <button class="primary">Presentar el coche</button>
+  </footer>
+</div>
+</body>
+</html>

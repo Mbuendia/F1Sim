@@ -28,7 +28,7 @@ export default function DecisionVisual({ visual, accent }: { visual: Visual; acc
   }
   return (
     <Suspense fallback={<div className={m.decisionImage} aria-busy="true" />}>
-      <PartViewer highlight={shown.parts} label={`Coche en 3D con ${shown.label.toLowerCase()} resaltado`} accent={accent} />
+      <PartViewer highlight={shown.parts} label={`Coche en 3D con ${shown.label.toLowerCase()} resaltado`} accent={accent} project={visual.kind === 'pieza' ? visual.id : undefined} />
     </Suspense>
   );
 }

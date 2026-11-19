@@ -18,7 +18,8 @@ import {
   D20BenefitKind,
   D20BenefitCategory,
 } from '../types/f1';
-import type { Driver } from '../types/f1';
+import type { Driver, Team } from '../types/f1';
+import type { TeamForm } from '../data/seasons';
 import { DRIVERS } from '../data/drivers';
 import { TEAMS, STARTING_GRID_ORDER } from '../data/teams';
 import { OFFICIAL_CIRCUITS, CircuitSpec } from '../data/circuits';
@@ -272,7 +273,23 @@ export class RaceSimulation {
   /** Perfil con las mejoras montadas y, si su equipo tiene un jefe de aerodinámica distinto del de la casa, su contrapartida escalada (T4.5). */
   private upgradedTechnical(car: Pick<CarState, 'team' | 'driver'>): CarTechnical {
     const keys = this.technicalUpgrades[car.driver.id] ?? [];
-    return withTradeoff(technicalWith(resolveTechnical(car.team.id, this.circuitId), keys), keys, this.upgradeTradeoffs[car.driver.teamId] ?? 1);
+    return withTradeoff(technicalWith(resolveTechnical(car.team.id, this.circuitId, undefined, this.teamForm), keys), keys, this.upgradeTradeoffs[car.driver.teamId] ?? 1);
+  }
+
+  /** [TL2] Fuerza y motor de cada equipo en el año de la temporada (null: los de teams.ts, como en la carrera libre). */
+  /** @internal [PF5] lo usan los módulos de race/. */ teamForm: TeamForm | null = null;
+
+  /** [TL2] Equipo de un coche: el de teams.ts con la fuerza y el motor del año, si los hay. */
+  /** @internal [PF5] lo usan los módulos de race/. */ teamFor(teamId: string): Team {
+    const base = TEAMS[teamId], year = this.teamForm?.[teamId];
+    return year ? { ...base, ...year } : base;
+  }
+
+  setTeamForm(form: TeamForm | null) {
+    const next = form ?? null;
+    if (JSON.stringify(next) === JSON.stringify(this.teamForm)) return;
+    this.teamForm = next;
+    for (const car of this.cars) { car.team = this.teamFor(car.team.id); car.technical = this.technicalFor(car); }
   }
 
   /** [T4.5] Factor de la contrapartida de las mejoras por equipo (1 o ausente: la de siempre). */
@@ -626,6 +643,8 @@ export class RaceSimulation {
         pitCrews: this.pitCrews,
         // [T4.7] Ausente en los guardados anteriores: cada piloto en su equipo de partida.
         grid: this.grid,
+        // [TL2] Solo en la carrera profesional: fuerza y motor del año de la temporada.
+        ...(this.teamForm ? { teamForm: this.teamForm } : {}),
       },
     };
   }
@@ -714,6 +733,7 @@ export class RaceSimulation {
     this.teamOrders = (setup as { teamOrders?: Record<string, TeamOrder> }).teamOrders ?? {};
     this.pitCrews = setup.pitCrews ?? {};
     this.grid = setup.grid ?? { lineup: {}, extra: {}, standIns: {} };
+    this.teamForm = (setup as { teamForm?: TeamForm }).teamForm ?? null;
 
     // Datos de pintado: se reconstruyen en el siguiente paso.
     this.previousPoses.clear();
@@ -1686,7 +1706,7 @@ export class RaceSimulation {
 
   issuePaceOrder(carId: number, paceMode: CarState['paceMode']): boolean { return wall.issuePaceOrder(this, carId, paceMode); }
 
-  issueBoxOrder(carId: number, compound: TireCompound, issuer: BoxOrderIssuer = 'player'): BoxOrder | null { return wall.issueBoxOrder(this, carId, compound, issuer); }
+  issueBoxOrder(carId: number, compound: TireCompound, issuer: BoxOrderIssuer = 'player', nose = false): BoxOrder | null { return wall.issueBoxOrder(this, carId, compound, issuer, nose); }
 
   cancelBoxOrder(carId: number): boolean { return wall.cancelBoxOrder(this, carId); }
 

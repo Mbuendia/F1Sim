@@ -13,13 +13,16 @@ import { buildWinter } from './Winter';
 import type { WinterReport } from './Winter';
 import type { DevelopmentProgram } from './Development';
 import type { RaceResult } from './RaceResult';
+import { constructorStandings } from './RaceResult';
 import type { TireSet } from './TireInventory';
-import { SEASON_CALENDAR } from '../data/calendar';
+import { calendarFor, DEFAULT_SEASON_YEAR, fastestLapPoint } from '../data/calendar';
 import type { CalendarRound } from '../data/calendar';
 import { OFFICIAL_CIRCUITS } from '../data/circuits';
 import { drawWeatherScenario } from '../data/weatherScenarios';
 import type { WeatherScenarioId } from '../data/weatherScenarios';
 import { streamSeed } from './Random';
+import { evolveForm, isTeamForm } from '../data/seasons';
+import type { TeamForm } from '../data/seasons';
 import { closeManagementSeason, settleManagementRound } from './Management';
 import type { ManagementState, RoundSettlement } from './Management';
 
@@ -30,6 +33,8 @@ export const SEASON_STATE_KEY = 'f1_season';
 /** Resumen de una temporada cerrada. Los campos de R51 faltan en las temporadas archivadas antes. */
 export interface SeasonSummary {
   season: number;
+  /** [TL1] Año de la temporada (ausente en las archivadas antes de TL1). */
+  year?: number;
   races: number;
   champion: string | null;
   constructorsChampion: string | null;
@@ -52,10 +57,44 @@ export interface WeekendState { round: number; tyres: Record<string, TireSet[]> 
  * Lo que la temporada recuerda además del campeonato: las rondas del calendario que se saltaron. [T4.12] Y la semilla
  * de su tiempo: con ella cada ronda tiene un tiempo fijo (ausente en las partidas anteriores y al empezar la temporada).
  */
-export interface SeasonState { version: 1; skipped: number[]; weekend?: WeekendState; weatherSeed?: number; /** [T4.13] Libres de la ronda que toca. */ practice?: PracticeResult }
+export interface SeasonState {
+  version: 1; skipped: number[]; weekend?: WeekendState; weatherSeed?: number; /** [T4.13] Libres de la ronda que toca. */ practice?: PracticeResult;
+  /** [TL1] Año de la temporada; sin él (partidas de antes de TL1), 2026. */
+  year?: number;
+  /** [TL2] Fuerza y motor de cada equipo este año; sin ella (partidas de antes de TL2), los de teams.ts. */
+  form?: TeamForm;
+}
 
-/** [T4.12] La semilla del tiempo pasa de un estado de la temporada al siguiente. */
-const keepSeed = (season: SeasonState): { weatherSeed?: number } => (season.weatherSeed === undefined ? {} : { weatherSeed: season.weatherSeed });
+/** [T4.12] La semilla del tiempo (y [TL1] el año) pasan de un estado de la temporada al siguiente. */
+const keepSeed = (season: SeasonState): { weatherSeed?: number; year?: number; form?: TeamForm } => ({
+  ...(season.weatherSeed === undefined ? {} : { weatherSeed: season.weatherSeed }), ...(season.year === undefined ? {} : { year: season.year }),
+  ...(season.form === undefined ? {} : { form: season.form }),
+});
+
+/** [TL2] Fuerza y motor de cada equipo en la temporada; null en las partidas de antes de TL2 (los de teams.ts). */
+export function seasonForm(season: SeasonState = emptySeason()): TeamForm | null {
+  return season.form ?? null;
+}
+
+/** [TL1] Año de la temporada. */
+export function seasonYear(season: SeasonState = emptySeason()): number {
+  return season.year ?? DEFAULT_SEASON_YEAR;
+}
+
+/** [TL1] Calendario de la temporada: el de su año. */
+export function seasonCalendar(season: SeasonState = emptySeason()): CalendarRound[] {
+  return calendarFor(seasonYear(season));
+}
+
+/** [TL1] Rondas de la temporada (22 en 2023, 24 en las demás). */
+export function seasonRounds(season: SeasonState = emptySeason()): number {
+  return seasonCalendar(season).length;
+}
+
+/** [TL1] A una temporada sin año (de antes de TL1) le pone el que le toca contando desde 2026. */
+export function withLegacyYear(season: SeasonState, archivedSeasons: number): SeasonState {
+  return season.year === undefined ? { ...season, year: DEFAULT_SEASON_YEAR + archivedSeasons } : season;
+}
 
 /** [T4.12] Da a la temporada su semilla del tiempo; si ya la tiene, la conserva. */
 export function withWeatherSeed(season: SeasonState, seed: number): SeasonState {
@@ -83,8 +122,9 @@ export function practiceFor(season: SeasonState, round: number | null | undefine
   return season.practice && season.practice.round === round ? season.practice : null;
 }
 
-export function emptySeason(): SeasonState {
-  return { version: 1, skipped: [] };
+export function emptySeason(year?: number, form?: TeamForm): SeasonState {
+  const base: SeasonState = year === undefined ? { version: 1, skipped: [] } : { version: 1, skipped: [], year: Math.floor(year) };
+  return form ? { ...base, form } : base;
 }
 
 const validRounds = (rounds: unknown[]): number[] =>
@@ -99,7 +139,7 @@ export function parseSeason(text: string | null): SeasonState {
       const valid = weekend && typeof weekend === 'object' && Number.isInteger(weekend.round) && weekend.round >= 1 && weekend.round <= SEASON_RACES
         && weekend.tyres && typeof weekend.tyres === 'object' && !Array.isArray(weekend.tyres);
       const practice = readPractice(data.practice);
-      const seed = { ...(Number.isInteger(data.weatherSeed) ? { weatherSeed: data.weatherSeed as number } : {}), ...(practice ? { practice } : {}) };
+      const seed = { ...(Number.isInteger(data.weatherSeed) ? { weatherSeed: data.weatherSeed as number } : {}), ...(practice ? { practice } : {}), ...(Number.isInteger(data.year) ? { year: data.year as number } : {}), ...(isTeamForm(data.form) ? { form: data.form as TeamForm } : {}) };
       return valid ? { version: 1, skipped: validRounds(data.skipped), weekend: { round: weekend.round, tyres: weekend.tyres }, ...seed } : { version: 1, skipped: validRounds(data.skipped), ...seed };
     }
   } catch { /* guardado ilegible */ }
@@ -127,7 +167,7 @@ export function grandsPrixRun(championship: ChampionshipState): number {
 export function calendarView(championship: ChampionshipState, season: SeasonState = emptySeason()): RoundView[] {
   const skipped = new Set(season.skipped), races = grandsPrix(championship);
   let raced = 0, nextFound = false;
-  return SEASON_CALENDAR.map(entry => {
+  return seasonCalendar(season).map(entry => {
     if (skipped.has(entry.round)) return { ...entry, status: 'saltada' as const };
     const race = races[raced];
     if (race) {
@@ -146,7 +186,7 @@ export function calendarView(championship: ChampionshipState, season: SeasonStat
 /** Ronda que toca disputar, o null si la temporada está completa. */
 export function nextRound(championship: ChampionshipState, season: SeasonState = emptySeason()): CalendarRound | null {
   const next = calendarView(championship, season).find(round => round.status === 'siguiente');
-  return next ? SEASON_CALENDAR[next.round - 1] : null;
+  return next ? seasonCalendar(season)[next.round - 1] : null;
 }
 
 export function seasonComplete(championship: ChampionshipState, season: SeasonState = emptySeason()): boolean {
@@ -155,7 +195,7 @@ export function seasonComplete(championship: ChampionshipState, season: SeasonSt
 
 /** Ronda actual dentro de la temporada (1..24). */
 export function seasonRaceNumber(championship: ChampionshipState, season: SeasonState = emptySeason()): number {
-  return nextRound(championship, season)?.round ?? SEASON_RACES;
+  return nextRound(championship, season)?.round ?? seasonRounds(season);
 }
 
 /** ¿Cuenta para la temporada una carrera en ese circuito? Solo si es el de la ronda que toca. */
@@ -189,7 +229,7 @@ export function closeSeason({ championship, components, program, archive, season
 }): { championship: ChampionshipState; components: ComponentState; program: DevelopmentProgram; archive: SeasonSummary[]; season: SeasonState; summary: SeasonSummary } {
   const drivers = driverStandings(championship), teams = constructorsChampionship(championship);
   const summary: SeasonSummary = {
-    season: archive.length + 1, races: grandsPrixRun(championship),
+    season: archive.length + 1, year: seasonYear(season), races: grandsPrixRun(championship),
     champion: drivers[0]?.driverCode ?? null, constructorsChampion: teams[0]?.teamName ?? null,
     championName: drivers[0]?.driverName, championPoints: drivers[0]?.points, constructorsPoints: teams[0]?.points,
     skipped: season.skipped.length,
@@ -207,7 +247,9 @@ export function closeSeason({ championship, components, program, archive, season
     // [T4.11] El coche nuevo conserva la mitad de cada mejora montada.
     program: carryOver(program),
     archive: [...archive, summary],
-    season: emptySeason(),
+    // [TL1] La temporada siguiente es la del año siguiente, con su calendario. [TL2] Y con el coche nuevo de cada
+    // equipo, hecho con el de este año y su desarrollo (antes de que el coche nuevo herede la mitad).
+    season: emptySeason(seasonYear(season) + 1, season.form ? evolveForm(season.form, seasonYear(season) + 1, program, season.weatherSeed ?? archive.length + 1) : undefined),
     summary,
   };
 }
@@ -243,6 +285,19 @@ function settledManagement(career: CareerProgress, round: number | undefined, fo
   return { management: settleManagementRound(career.management, { round, format, points, ...extra }) };
 }
 
+/**
+ * [TL1] Reglamento del año: en 2023 y 2024 quien marca la vuelta rápida suma un punto si acaba entre los diez primeros
+ * (nunca en el sprint). Desde 2025, el resultado no cambia.
+ */
+export function withFastestLapPoint(result: RaceResult, format: 'gp' | 'sprint', year: number): RaceResult {
+  if (format !== 'gp' || !fastestLapPoint(year) || !result.fastestLap) return result;
+  const name = result.fastestLap.driverName;
+  const row = result.rows.find(r => r.driverName === name);
+  if (!row || row.position === null || row.position > 10 || row.status !== 'clasificado') return result;
+  const rows = result.rows.map(r => (r === row ? { ...r, points: r.points + 1 } : r));
+  return { ...result, rows, constructors: constructorStandings(rows) };
+}
+
 function closeIfComplete(career: CareerProgress, playerCodes: string[]): SettledCareer {
   if (!seasonComplete(career.championship, career.season)) return { ...career, closed: null };
   const { summary, ...next } = closeSeason({ ...career, playerCodes });
@@ -270,6 +325,7 @@ export function settleRace(career: CareerProgress, race: {
   stops?: RoundSettlement['stops'];
 }): SettledCareer {
   if (!race.counts || race.result.status !== 'final') return { ...career, closed: null };
+  race = { ...race, result: withFastestLapPoint(race.result, race.format, seasonYear(career.season)) };
   const championship = addRace(career.championship, race.id, race.circuitId, race.result, race.format);
   const round = nextRound(career.championship, career.season)?.round;
   // [T4.1] El dinero de la ronda se liquida con el resultado: una sola vez por ronda y formato.

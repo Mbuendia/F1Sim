@@ -2,7 +2,8 @@
 //  - manifest.webmanifest (nombre, base, iconos) y sus enlaces en index.html;
 //  - sw.js: el service worker (arranque de aquí abajo + src/offline/swCore.ts) con las dos listas de esta compilación
 //    entre marcas /*OF1-MANIFEST*/:
-//    «core» (el juego, se guarda al instalar) y «ai» (la librería de IA, se guarda cuando se usa).
+//    «core» (el juego, se guarda al instalar) y «ai» (la librería de IA, se guarda cuando se usa); [TL7] y «lazy»: los
+//    coches de otros años (epoca/) y [TL4] las piezas de las mejoras (mejoras/), que se bajan la primera vez que hacen falta (decisión del usuario, 18/11/2026).
 // Fuera de las listas: la portada aparte (landing/), los .map y el propio sw.js.
 import { createHash } from 'node:crypto';
 import { readdirSync, readFileSync, statSync, writeFileSync, existsSync } from 'node:fs';
@@ -49,14 +50,14 @@ function walk(dir, root = dir, out = []) {
 /** Las dos listas y la versión (huella del contenido) de una compilación ya escrita en `outDir`. */
 export function offlineLists(outDir, base, aiChunks = new Set()) {
   const files = walk(outDir).filter(f => !f.startsWith('landing/') && !f.endsWith('.map') && f !== 'sw.js').sort();
-  const core = [], ai = [];
+  const core = [], ai = [], lazy = [];
   const hash = createHash('sha256');
   for (const f of files) {
     const isAi = f.endsWith('.wasm') || aiChunks.has(f) || AI_NAME.test(f.split('/').pop());
-    (isAi ? ai : core).push(base + f);
+    (isAi ? ai : (f.startsWith('epoca/') || f.startsWith('mejoras/')) ? lazy : core).push(base + f);
     hash.update(f).update('\0').update(readFileSync(join(outDir, f))).update('\0');
   }
-  return { version: hash.digest('hex').slice(0, 16), base, core, ai };
+  return { version: hash.digest('hex').slice(0, 16), base, core, ai, lazy };
 }
 
 /** Arranque del service worker: los eventos del navegador van a la lógica de swCore.ts (que se prueba con los tests). */

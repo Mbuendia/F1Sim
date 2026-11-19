@@ -5,14 +5,32 @@ import { menuOptions } from '../simulation/Career';
 import { formatMoney } from '../simulation/Finance';
 import type { SlotSummary } from '../simulation/SaveGame';
 import { SEASON_RACES } from '../simulation/Season';
+import { SEASON_YEARS } from '../data/calendar';
 import s from './Screens.module.css';
 
 /** Estado de una partida en una línea: ronda, puesto en constructores y saldo. */
 export function slotStatus(slot: SlotSummary): string {
-  const parts = [`Ronda ${slot.raceNumber} de ${SEASON_RACES}`];
+  const parts = [`${slot.year ? `Temporada ${slot.year} · ` : ''}Ronda ${slot.raceNumber} de ${slot.totalRounds ?? SEASON_RACES}`];
   if (slot.position) parts.push(`P${slot.position} en constructores`);
   if (slot.balance !== undefined) parts.push(`${slot.balance < 0 ? 'deuda' : 'saldo'} ${formatMoney(Math.abs(slot.balance))}`);
   return parts.join(' · ');
+}
+
+/** [TL1] Estado de la partida en curso en bloques (temporada y año, ronda, saldo, puesto) y una barra con el avance. */
+function CurrentStatus({ slot }: { slot: SlotSummary }) {
+  const total = slot.totalRounds ?? SEASON_RACES;
+  const done = Math.max(0, Math.min(total, slot.raceNumber - 1));
+  return (
+    <span className={s.status}>
+      <span className={s.statusChips}>
+        <span className={s.statusChip}><small>Temporada {slot.season ?? 1}</small><b>{slot.year ?? ''}</b></span>
+        <span className={s.statusChip}><span className={s.srOnly}>Ronda {slot.raceNumber} de {total}</span><small aria-hidden="true">Ronda</small><b aria-hidden="true">{slot.raceNumber}<i>/{total}</i></b></span>
+        {slot.balance !== undefined && <span className={s.statusChip} data-debt={slot.balance < 0 || undefined}><small>{slot.balance < 0 ? 'Deuda' : 'Saldo'}</small><b>{formatMoney(Math.abs(slot.balance))}</b></span>}
+        {slot.position ? <span className={s.statusChip}><small>Constructores</small><b>P{slot.position}</b></span> : null}
+      </span>
+      <span className={s.statusBar} role="img" aria-label={`${done} de ${total} rondas corridas`}><span style={{ width: `${(done / total) * 100}%` }} /></span>
+    </span>
+  );
 }
 
 type Mode = 'continuar' | 'temporada' | 'libre' | 'multijugador';
@@ -62,10 +80,7 @@ export function GameMenuScreen({ current = null, slots = [], onContinue, onNew, 
   if (hasCurrent && current) panels.push({
     id: 'continuar', card: 'Continuar', cardNote: current.team?.name ?? 'Partida en curso', icon: <Play size={18} aria-hidden="true" />,
     kicker: 'Partida en curso', title: current.team?.name ?? 'Tu equipo', accent: teamColor,
-    lines: [
-      `Temporada ${current.season ?? 1} · ${slotStatus(current)}`,
-      `«${current.name}»${inRace ? ` · en carrera: vuelta ${inRace.lap} de ${inRace.totalLaps}` : ''}`,
-    ],
+    lines: [<CurrentStatus key="estado" slot={current} />, `«${current.name}»${inRace ? ` · en carrera: vuelta ${inRace.lap} de ${inRace.totalLaps}` : ''}`],
     actions: (
       <>
         <button type="button" className={s.primary} onClick={onContinue} data-main><Play size={16} fill="#fff" aria-hidden="true" />Continuar</button>
@@ -77,7 +92,7 @@ export function GameMenuScreen({ current = null, slots = [], onContinue, onNew, 
     id: 'temporada', card: 'Temporada', cardNote: hasCurrent ? 'nueva o guardada' : 'empieza aquí', icon: <Trophy size={18} aria-hidden="true" />,
     kicker: hasCurrent ? 'Carrera profesional' : 'Empieza aquí', title: 'Temporada', accent: ACCENT.temporada,
     lines: [
-      `Eliges equipo y diriges ${SEASON_RACES} grandes premios: el coche, los pilotos, la sede y el dinero.`,
+      `Eliges equipo y año, de ${SEASON_YEARS[0]} a ${SEASON_YEARS[SEASON_YEARS.length - 1]}, y diriges la temporada entera: el coche, los pilotos, la sede y el dinero.`,
       hasCurrent ? 'Tu partida en curso sigue guardada.' : 'La carrera libre sirve para probar el muro sin jugarte nada.',
     ],
     actions: (

@@ -17,9 +17,14 @@ import { MeshoptDecoder } from 'meshoptimizer/decoder';
 const ORIGINAL = {
   // [CA2, autorizado por el usuario el 07/11/2026] El coche de 2025 sustituye al de 2026: triángulos y vértices son los del coche
   // nuevo; los KB siguen siendo los del coche antes de PF3, así que el nuevo pesa como mucho la mitad que el de antes.
-  'public/models/f1-car.glb': { kb: 3187, triangles: 93762, vertices: 71489 },
+  // [TL7, autorizado por el usuario el 16/11/2026: «si, adelante»] Las zonas de rótulos nuevas (alerones, morro, halo,
+  // pontón, tapa motor) suman triángulos y vértices al coche y a su versión lejana; los KB de referencia no cambian.
+  // [TL7, 16/11/2026, a petición del usuario: «aligera el coche»] Las zonas se añaden ya sin reexportar el coche (una malla
+  // compacta, scripts/glb-pack-decals.mjs y glb-lod-plates.mjs), para no pasar del presupuesto de modelos (PF8).
+  // [TL7, 18/11/2026] Las zonas, un poco más ligeras: los tests de los kits (CK2-CK4, CR3) miden public/models y se pasaban 313 bytes.
+  'public/models/f1-car.glb': { kb: 3187, triangles: 93950, vertices: 73262 },
   'public/models/f1-car-piezas.glb': { kb: 2091, triangles: 54133, vertices: 54425 },
-  'public/models/f1-car-lod.glb': { kb: 344, triangles: 8014, vertices: 9732 },
+  'public/models/f1-car-lod.glb': { kb: 344, triangles: 8044, vertices: 10272 },
   'public/models/safety-car.glb': { kb: 1871, triangles: 52122, vertices: 50739 },
   // [CA1, autorizado por el usuario el 07/11/2026] El toro de Spielberg pasa de scenery/red-bull.glb a scenery/toro.glb (sin marcas reales en los nombres).
   'public/models/scenery/toro.glb': { kb: 588, triangles: 8524, vertices: 17080 },

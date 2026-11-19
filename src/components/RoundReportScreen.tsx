@@ -15,7 +15,7 @@ export function RoundReportScreen({ report, onContinue }: { report: RoundReport;
   return (
     <div className={s.screen}>
       <header className={s.head} style={{ boxShadow: 'inset 0 3px 0 var(--equipo)' }}>
-        <h1>Informe · ronda {report.round} de {SEASON_RACES} · {report.circuitName}{report.format === 'sprint' ? ' · sprint' : ''}</h1>
+        <h1>Informe · ronda {report.round} de {report.totalRounds ?? SEASON_RACES} · {report.circuitName}{report.format === 'sprint' ? ' · sprint' : ''}</h1>
         <span className={s.spacer} />
         <span className={m.chip}>{report.teamName}</span>
       </header>

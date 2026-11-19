@@ -93,6 +93,9 @@ import { browserDevStorage, freeRaceWeather, isDevMode } from './dev/devMode';
 import { runQualifying } from './simulation/Qualifying';
 import { activeProjects, emptyProgram, installFirst, parseProgram, upgradesFor, PROGRAM_STORAGE_KEY } from './simulation/Development';
 import type { DevelopmentProgram } from './simulation/Development';
+import { seasonForm, seasonRounds, seasonYear, withLegacyYear } from './simulation/Season';
+import { setActiveCarYear, setPlayerCarUpgrades } from './renderer/carModel3d';
+import { upgradeLevels, UPGRADE_PROJECTS } from './simulation/upgradeParts';
 import { calendarView, emptySeason, grandsPrixRun, isSeasonRace, nextRound, parseArchive, parseSeason, roundWeather, settleRace, settleSkip, sprintPending, withWeatherSeed, practiceFor, withPractice, SEASONS_STORAGE_KEY, SEASON_RACES, SEASON_STATE_KEY } from './simulation/Season';
 import { COMPOUND_LABEL } from './simulation/TireInventory';
 import { carryTyres, isSprintVenue, podiumHomeLabel, sprintWeekendTyres } from './simulation/Weekend';
@@ -112,7 +115,7 @@ import type { RaceResult } from './simulation/RaceResult';
 import { emptyChampionship, parseChampionship, CHAMPIONSHIP_STORAGE_KEY } from './simulation/Championship';
 import type { ChampionshipState } from './simulation/Championship';
 import { createSnapshot, restoreSnapshot } from './simulation/Snapshot';
-import { AUTOSAVE_ID, AUTOSAVE_LABEL, SaveStore, createSave, exportSave, importSave, savedManagement, savedRaceCounts, savedSeason, summarize } from './simulation/SaveGame';
+import { AUTOSAVE_ID, AUTOSAVE_LABEL, SaveStore, createSave, exportSave, importSave, savedManagement, savedRaceCounts, savedSeason, savedSeasonWithYear, summarize } from './simulation/SaveGame';
 import { MANAGEMENT_STORAGE_KEY, parseManagement, startManagement } from './simulation/Management';
 import type { ManagementState } from './simulation/Management';
 import { aiDevelopPaying, aiReplaceComponents, buyComponent, buyProject, componentCost, projectCost, projectLeadTime, projectShortfall, raceDamages, refundComponent } from './simulation/Costs';
@@ -339,7 +342,8 @@ export const App: React.FC<{ startAt?: 'menu' }> = ({ startAt }) => {
   // [R51] Rondas saltadas de la temporada, si la carrera en curso cuenta para ella, el cierre pendiente de ver y el
   // aviso de sanciones previo a la salida en GP directo.
   const [season, setSeason] = useState<SeasonState>(() => {
-    try { return parseSeason(localStorage.getItem(SEASON_STATE_KEY)); } catch { return emptySeason(); }
+    // [TL1] Una temporada guardada antes de TL1 no tiene año: la partida empezó en 2026 y cada temporada cerrada suma uno.
+    try { return withLegacyYear(parseSeason(localStorage.getItem(SEASON_STATE_KEY)), parseArchive(localStorage.getItem(SEASONS_STORAGE_KEY)).length); } catch { return emptySeason(); }
   });
   const saveSeason = useCallback((next: SeasonState) => {
     setSeason(next);
@@ -372,7 +376,22 @@ export const App: React.FC<{ startAt?: 'menu' }> = ({ startAt }) => {
     if (raceLive || currentView === 'race') return;
     if (mode === 'career') simulation.setLineup(lineupOf(management.contracts), management.contracts.extra ?? {}, standInDrivers(management.academy));
     else simulation.setLineup({});
-  }, [simulation, raceLive, currentView, mode, management.contracts, management.academy]);
+    // [TL2] En la carrera profesional, la fuerza y el motor de cada equipo son los del año de la temporada.
+    simulation.setTeamForm(mode === 'career' ? seasonForm(season) : null);
+    // [TL7] Y el coche, el de ese año (el de 2025 en la carrera libre y el multijugador).
+    setActiveCarYear(mode === 'career' ? seasonYear(season) : null);
+  }, [simulation, raceLive, currentView, mode, management.contracts, management.academy, season]);
+  // [TL4] Las piezas de las mejoras que lleva cada coche del jugador (solo en la carrera profesional).
+  useEffect(() => {
+    if (mode !== 'career') { setPlayerCarUpgrades(null); return; }
+    const teamId = management.playerTeamId;
+    const raceIndex = grandsPrixRun(championship);
+    const drivers = Object.values(roster).filter(d => d.teamId === teamId);
+    const byDriver = Object.fromEntries(drivers.map(d => [d.id, upgradeLevels(program, teamId, d.id, raceIndex)]));
+    // El coche del inicio: el más evolucionado de los dos en cada pieza.
+    const home = Object.fromEntries(UPGRADE_PROJECTS.map(k => [k, Math.max(0, ...Object.values(byDriver).map(l => l[k]))])) as Record<typeof UPGRADE_PROJECTS[number], number>;
+    setPlayerCarUpgrades({ teamId, byDriver, home });
+  }, [mode, management.playerTeamId, championship, roster, program]);
   // [T4.19] «Guardado hace X»: la partida se guarda sola con cada cambio; aquí queda cuándo fue el último.
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const [clock, setClock] = useState(() => Date.now());
@@ -901,6 +920,7 @@ export const App: React.FC<{ startAt?: 'menu' }> = ({ startAt }) => {
               return keys.length ? [{ code: driver.code, text: keys.map(key => `+1 ${ATTRIBUTE_LABEL[key].toLowerCase()}`).join(', ') }] : [];
             }) : [],
           });
+          report = { ...report, totalRounds: seasonRounds(season) };
         }
       }
 
@@ -1111,7 +1131,7 @@ export const App: React.FC<{ startAt?: 'menu' }> = ({ startAt }) => {
     saveDevelopment(career.development);
     saveComponents(Object.keys(DRIVERS).reduce((s, id) => ensureDriver(s, id), career.components));
     saveProgram(career.program);
-    saveSeason(savedSeason(save));
+    saveSeason(savedSeasonWithYear(save));
     saveManagement(savedManagement(save));
     setRaceCounts(savedRaceCounts(save));
     setSeasonEnd(null);
@@ -1430,9 +1450,9 @@ export const App: React.FC<{ startAt?: 'menu' }> = ({ startAt }) => {
     handleLoadGame(id);
     if (loaded?.save) markCareer(loaded.save.name);
   };
-  const handleNewCareer = (teamId: string, name: string) => {
+  const handleNewCareer = (teamId: string, name: string, startYear?: number) => {
     keepCurrentCareer();
-    const fresh = newCareer(teamId, name, newRaceSeed());
+    const fresh = newCareer(teamId, name, newRaceSeed(), startYear);
     if (saveStore) { saveStore.remove(AUTOSAVE_ID); refreshSlots(); }
     showRoundReport(null);
     showWinter(null);
@@ -1463,11 +1483,11 @@ export const App: React.FC<{ startAt?: 'menu' }> = ({ startAt }) => {
   const sprintDone = Boolean(hubRound && season.weekend?.round === hubRound.round);
   const teamDrivers = pairOf(management.contracts, management.playerTeamId).map(id => roster[id]).filter(Boolean);
   const hub = mode === 'career' && hubTeam ? {
-    teamName: hubTeam.shortName, accent: teamAccent(hubTeam.id), seasonNumber: seasonArchive.length + 1, round: hubRound?.round ?? null,
+    teamName: hubTeam.shortName, accent: teamAccent(hubTeam.id), seasonNumber: seasonArchive.length + 1, seasonYear: seasonYear(season), totalRounds: seasonRounds(season), round: hubRound?.round ?? null,
     kpis: [{ label: hubBalance < 0 ? 'deuda' : 'saldo', value: formatMoney(Math.abs(hubBalance)) }, { label: 'constructores', value: teamStanding >= 0 ? `P${teamStanding + 1}` : '—' }, { label: 'junta', value: String(Math.round(management.board.confidence)) }],
     badges: hubBadges,
     inicio: (go: (section: HubSection) => void) => (
-      <HubHome next={hubNext} pending={hubPending} onGo={go} status={[
+      <HubHome next={hubNext} pending={hubPending} onGo={go} totalRounds={seasonRounds(season)} status={[
         { label: 'Campeonato', value: teamStanding >= 0 ? `P${teamStanding + 1} · ${teamPoints} pts` : 'Sin carreras', detail: `${grandsPrixRun(championship)} Grandes Premios disputados`, section: 'finde' },
         { label: 'Finanzas', value: formatMoney(hubBalance), detail: `Próxima ronda: ${formatMoney(roundForecast(management.finance, management.playerTeamId).net, true)} sin contar puntos`, section: 'sede' },
         { label: 'Coche', value: `${activeProjects(program, management.playerTeamId).length} proyectos`, detail: hubWork ? `Obra en la sede: quedan ${hubWork.remaining} rondas` : 'Sin obras en la sede', section: 'coche' },
@@ -1475,7 +1495,7 @@ export const App: React.FC<{ startAt?: 'menu' }> = ({ startAt }) => {
       ]} />
     ),
     correr: hubNext ? (
-      <RaceWeekendPanel round={hubNext} sessions={weekendSessions(effectiveFormat, sprintDone, Boolean(practiceFor(season, hubNext.round)))}
+      <RaceWeekendPanel round={hubNext} totalRounds={seasonRounds(season)} sessions={weekendSessions(effectiveFormat, sprintDone, Boolean(practiceFor(season, hubNext.round)))}
         drivers={teamDrivers.map(driver => ({ id: driver.id, code: driver.code, name: driver.lastName, number: driver.number }))}
         followedId={selectedDriverId} onFollow={setSelectedDriverId}
         launchLabel={effectiveFormat === 'sprint' ? 'Clasificación sprint y sprint' : effectiveFormat === 'clasificacion' ? 'Clasificación y Gran Premio' : 'Entrar a pista'}
@@ -1569,6 +1589,7 @@ export const App: React.FC<{ startAt?: 'menu' }> = ({ startAt }) => {
         key={mode}
         hub={hub}
         mode={mode}
+        teamForm={mode === 'career' ? seasonForm(season) : null}
         headerExtra={mode === 'career' ? gameMenu : <button type="button" className={styles.barBtn} onClick={() => { setMode('career'); setCurrentView('menu'); }}>← Menú</button>}
         selectedDriverId={selectedDriverId}
         selectedCircuitId={selectedCircuitId}
@@ -1586,7 +1607,7 @@ export const App: React.FC<{ startAt?: 'menu' }> = ({ startAt }) => {
           saveManagement(startManagement(management.playerTeamId, seasonArchive.length + 1, newRaceSeed()));
         }}
         season={{
-          rounds: calendarView(championship, season), seasonNumber: seasonArchive.length + 1, archive: seasonArchive,
+          rounds: calendarView(championship, season), seasonNumber: seasonArchive.length + 1, seasonYear: seasonYear(season), archive: seasonArchive,
           onSelectNext: () => {
             const next = nextRound(championship, season);
             if (!next) return;

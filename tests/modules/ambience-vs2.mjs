@@ -90,7 +90,10 @@ export default async function run({ server, assert, test }) {
     assert(made === 4 && added === 5, 'VS2: cada objeto del ambiente es una sola malla o nube de puntos', `${made} constructores, ${added} objetos en la escena`);
     assert(budget.limits.sceneryDrawCallsPerCircuit === 250, 'VS2: el límite de llamadas de dibujo no se toca', String(budget.limits.sceneryDrawCallsPerCircuit));
     assert(!/TextureLoader|\.glb|\.png|\.webp|\.jpg|url\(|fetch\(/.test(rules + meshes), 'VS2: el ambiente se genera por código, sin archivos nuevos');
-    assert(budget.limits.offlineCoreKB === 8870, 'VS2: el límite de la instalación sin conexión no se toca', String(budget.limits.offlineCoreKB));
+    // [16/11/2026] TL2 sube el límite a 8.880 KB con autorización del usuario («Si adapta los test»); VS2 sigue sin subirlo.
+    // [18/11/2026] TL7 lo sube a 8.900 KB con autorización del usuario («Subir a 8.900 KB»): logotipos a mano y zonas de rótulos.
+    // [19/11/2026] TL4 lo sube a 9.000 KB con autorización del usuario («Subir a 9.000 KB»): libreas de 2023, 2024 y 2026, ruedas y morro.
+    assert(budget.limits.offlineCoreKB === 9000 && /notaTL2/.test(JSON.stringify(budget)) && /notaTL7/.test(JSON.stringify(budget)) && /notaTL4/.test(JSON.stringify(budget)), 'VS2: el límite de la instalación sin conexión no se toca (solo lo suben TL2, TL7 y TL4, con su nota)', String(budget.limits.offlineCoreKB));
     assert(/if \(this\.quality !== QUALITY_PROFILES\.bajo\) for \(const car of frame\.cars\)/.test(scene), 'VS2: en calidad baja no hay partículas');
   });
 

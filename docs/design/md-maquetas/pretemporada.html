@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Desafío · pretemporada</title>
+<!-- [MD16, maqueta del 16/11/2026] Test de pretemporada sobre la recta nocturna de Blender: repartes los seis medios días
+     entre fiabilidad, rendimiento, neumáticos y correlación del túnel; la torre de tiempos enseña los de todos (que
+     engañan: gasolina, neumático y vueltas no se ven) y los rumores del paddock. El efecto real no se dice. -->
+<link rel="stylesheet" href="md.css">
+<style>
+  body { overflow: hidden; }
+  .stage { position: fixed; inset: 0; background: #000 url('pista-escena.webp') 45% 50% / cover; }
+  .stage::before { content: ''; position: absolute; inset: 0; background: url('pista-escena.webp') 45% 50% / cover; filter: blur(3px); opacity: .5; animation: pasa .9s linear infinite; mix-blend-mode: screen; }
+  @keyframes pasa { from { transform: translateX(0); } to { transform: translateX(-24px); } }
+  .stage::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(0,0,0,.94) 0, rgba(0,0,0,.7) 34%, transparent 58%, rgba(0,0,0,.85) 82%); }
+  .ui { position: relative; min-height: 100vh; display: grid; grid-template-columns: minmax(0, 500px) 1fr minmax(0, 380px); grid-template-rows: auto 1fr auto; gap: 18px; padding: 24px clamp(16px, 4vw, 56px); }
+  .bar { grid-column: 1 / -1; display: flex; align-items: center; gap: 14px; font: 700 15px var(--font-datos); letter-spacing: .12em; text-transform: uppercase; color: var(--text-2); }
+  .bar .tag { color: #000; background: #fff; padding: 4px 12px; clip-path: var(--corte); }
+  .bar .spacer { flex: 1; }
+  .days { display: flex; gap: 4px; } .days i { width: 34px; height: 8px; background: var(--line-strong); } .days i.on { background: var(--accion); }
+  .plan { align-self: center; display: flex; flex-direction: column; gap: 14px; }
+  .plan h1 { font-size: clamp(46px, 5vw, 76px); }
+  .plan > p { color: var(--text-2); font-size: 17px; line-height: 1.45; }
+  .left { font: 700 15px var(--font-datos); letter-spacing: .1em; text-transform: uppercase; color: var(--text-3); }
+  .left b { color: var(--aviso); font-size: 20px; }
+  .prog { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; align-items: center; padding: 12px 14px; background: rgba(14,14,14,.88); border: 1px solid var(--line); border-left: 4px solid var(--c); }
+  .prog b { font-family: var(--font-titular); font-size: 24px; text-transform: uppercase; }
+  .prog small { grid-column: 1 / -1; color: var(--text-3); font-size: 14px; }
+  .blocks { display: flex; gap: 4px; }
+  .blocks i { width: 30px; height: 30px; border: 1px solid var(--line-strong); background: rgba(255,255,255,.03); }
+  .blocks i.on { background: var(--c); border-color: var(--c); box-shadow: 0 0 12px color-mix(in srgb, var(--c) 50%, transparent); animation: pon .3s calc(var(--k) * 120ms + 600ms) both; }
+  @keyframes pon { from { transform: scale(.4); opacity: 0; } }
+  .go { display: flex; gap: 10px; margin-top: 4px; }
+  /* Torre de tiempos */
+  .tower { grid-column: 3; grid-row: 2; align-self: start; margin-top: 4vh; background: rgba(8,8,8,.9); border: 1px solid var(--line); }
+  .tower h2 { display: flex; justify-content: space-between; align-items: baseline; padding: 10px 14px; border-bottom: 2px solid var(--accion); font-family: var(--font-titular); font-size: 26px; text-transform: uppercase; }
+  .tower h2 small { font: 700 13px var(--font-datos); letter-spacing: .1em; color: var(--text-3); }
+  .t { display: grid; grid-template-columns: 26px 6px 1fr auto auto; gap: 8px; align-items: center; padding: 7px 14px; border-bottom: 1px solid #1c1c1c; font: 700 17px var(--font-datos);
+    animation: fila .4s calc(var(--k) * 110ms + 400ms) both; }
+  @keyframes fila { from { opacity: 0; transform: translateX(30px); } }
+  .t i { height: 22px; background: var(--c); }
+  .t .pos { color: var(--text-3); }
+  .t .time { font-variant-numeric: tabular-nums; }
+  .t .note { font: 600 12px var(--font-ui); color: var(--text-3); text-align: right; min-width: 82px; }
+  .t.you { background: rgba(225,6,0,.16); } .t.you .time { color: #fff; }
+  .t .sus { color: var(--aviso); }
+  .rumors { grid-column: 3; grid-row: 2; display: flex; flex-direction: column; gap: 8px; align-self: end; }
+  .rumor { padding: 10px 12px; background: rgba(14,14,14,.92); border: 1px solid var(--line); border-left: 3px solid var(--aviso); font-size: 15px; color: var(--text-2); line-height: 1.35;
+    opacity: 0; animation: entra .45s calc(1.8s + var(--k) * 400ms) both; }
+  .rumor b { color: #fff; font-family: var(--font-datos); }
+  .foot { grid-column: 1 / -1; color: var(--text-3); font-size: 14px; font-style: italic; }
+  @media (max-width: 1100px) { .ui { grid-template-columns: minmax(0, 1fr) minmax(0, 360px); } .tower, .rumors { grid-column: 2; } .plan { grid-row: 2 / span 2; } }
+  @media (max-width: 767px) {
+    body { overflow: auto; }
+    .stage { position: absolute; height: 38vh; }
+    .stage::after { background: linear-gradient(0deg, var(--bg) 0, transparent 70%); }
+    .ui { grid-template-columns: 1fr; padding: 14px 16px; }
+    .bar > span:nth-child(2) { display: none; }
+    .plan { grid-row: auto; margin-top: 22vh; }
+    .plan h1 { font-size: 46px; }
+    .tower, .rumors { grid-column: 1; grid-row: auto; margin-top: 0; }
+    .blocks i { width: 24px; height: 24px; }
+    .go > * { flex: 1; justify-content: center; }
+  }
+</style>
+</head>
+<body>
+<div class="stage" aria-hidden="true"></div>
+<main class="ui">
+  <div class="bar in" style="--i:0"><span class="tag">Pretemporada</span><span>Test de Barcelona · febrero de 2024</span><span class="spacer"></span><span>Día 2 de 3</span><span class="days"><i class="on"></i><i class="on"></i><i></i></span></div>
+  <section class="plan">
+    <span class="kicker in" style="--i:1">Brava BR24 · primera salida</span>
+    <h1 class="titular in" style="--i:2">¿A qué dedicas el test?</h1>
+    <p class="in" style="--i:3">Seis medios días y ni uno más. Lo que no aprendas aquí lo aprenderás en Baréin, delante de todo el mundo.</p>
+    <span class="left in" style="--i:4">Quedan por repartir: <b>1 medio día</b></span>
+    <div class="prog in" style="--i:5;--c:var(--positivo)"><b>Fiabilidad</b><span class="blocks"><i class="on" style="--k:0"></i><i class="on" style="--k:1"></i><i></i><i></i></span><small>Muchas vueltas seguidas: menos averías al empezar</small></div>
+    <div class="prog in" style="--i:6;--c:var(--accion)"><b>Rendimiento</b><span class="blocks"><i class="on" style="--k:2"></i><i></i><i></i><i></i></span><small>Tandas cortas con poca gasolina: el coche al límite</small></div>
+    <div class="prog in" style="--i:7;--c:var(--aviso)"><b>Neumáticos</b><span class="blocks"><i class="on" style="--k:3"></i><i></i><i></i><i></i></span><small>Entender el desgaste antes de que cueste carreras</small></div>
+    <div class="prog in" style="--i:8;--c:var(--info)"><b>Correlación del túnel</b><span class="blocks"><i class="on" style="--k:4"></i><i></i><i></i><i></i></span><small>Que lo que dice el túnel sea lo que pasa en pista</small></div>
+    <div class="go in" style="--i:9"><button class="primary">Salir a pista</button><button class="ghost">Esconder el ritmo</button></div>
+  </section>
+  <aside class="tower">
+    <h2>Tiempos del día <small>Día 2 · 14:32</small></h2>
+    <div class="t" style="--k:0;--c:#E8002D"><span class="pos">1</span><i></i><span>Errari</span><span class="time">1:15.882</span><span class="note sus">¿sin gasolina?</span></div>
+    <div class="t you" style="--k:1;--c:#e10600"><span class="pos">2</span><i></i><span>Brava</span><span class="time">1:16.104</span><span class="note">tanda media</span></div>
+    <div class="t" style="--k:2;--c:#27F4D2"><span class="pos">3</span><i></i><span>Totocedes</span><span class="time">1:16.233</span><span class="note">blandos</span></div>
+    <div class="t" style="--k:3;--c:#FF8000"><span class="pos">4</span><i></i><span>McPapaya</span><span class="time">1:16.410</span><span class="note">—</span></div>
+    <div class="t" style="--k:4;--c:#2a4a9a"><span class="pos">5</span><i></i><span>Red Bulla</span><span class="time">1:16.958</span><span class="note sus">142 vueltas</span></div>
+    <div class="t" style="--k:5;--c:#229971"><span class="pos">6</span><i></i><span>Aston Papá</span><span class="time">1:17.201</span><span class="note">—</span></div>
+    <div class="t" style="--k:6;--c:#E8E8E8"><span class="pos">7</span><i></i><span>Haasta Luego</span><span class="time">1:17.640</span><span class="note">paró 3 h</span></div>
+  </aside>
+  <div class="rumors">
+    <p class="rumor" style="--k:0"><b>Paddock:</b> los de Red Bulla ruedan con el depósito lleno a propósito. O eso dicen ellos.</p>
+    <p class="rumor" style="--k:1"><b>Tu ingeniero:</b> «El coche gira mejor que el del año pasado. No sé si eso es bueno o es que el del año pasado era una nevera.»</p>
+  </div>
+  <p class="foot">Los tiempos de test no dicen la verdad. La temporada, sí.</p>
+</main>
+</body>
+</html>

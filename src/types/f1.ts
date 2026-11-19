@@ -11,6 +11,8 @@ export interface BoxOrder {
   carId: number;
   issuer: BoxOrderIssuer;
   compound: TireCompound;
+  /** [TL4, 19/11/2026] Cambiar también el morro en la parada (solo se ve: no cambia el tiempo). */
+  nose?: boolean;
   status: BoxOrderStatus;
   rejectionReason?: string;
   createdAt: number;         // raceTimeSec when the order was created
@@ -116,6 +118,8 @@ export interface Team {
   engineModel: string;
   horsepower: number;
   drivers: string[];
+  /** [TL3] Librea del año en la carrera profesional (sin ella, la de liveries.ts). */
+  livery?: { primary: string; secondary: string; sponsors: string[] };
 }
 
 export interface TireState {
@@ -261,7 +265,7 @@ export interface PitInfraction {
 
 /** [R08] Parada registrada: la pérdida sale de tránsito, servicio, cola y retención, no de una cifra fija. */
 /** [CA5] Parada en curso: inicio (tiempo de carrera), duración, motivo, rueda atascada y compuesto que sale y que entra. */
-export interface ServiceStop { start: number; duration: number; cause: StopCause; wheel?: number; from: TireCompound; to: TireCompound }
+export interface ServiceStop { start: number; duration: number; cause: StopCause; wheel?: number; from: TireCompound; to: TireCompound; /** [TL4, 19/11/2026] Se cambia el morro. */ nose?: boolean }
 
 /** [CA6] Cómo fue el servicio: rápido, normal, lento por un error del equipo o por una rueda que se atasca. */
 export type StopCause = 'rapida' | 'normal' | 'error' | 'rueda-atascada';

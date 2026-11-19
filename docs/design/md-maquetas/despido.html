@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Desafío · fin de la partida</title>
+<!-- [MD2, MD8 y MD9, maqueta del 16/11/2026] Fin de la partida: la sala de juntas vacía de Blender, tu silla girada y la
+     carta sobre la mesa. La carta de despido, la puntuación que sube, la crónica de los seis años y lo que se
+     desbloquea para la siguiente partida. -->
+<link rel="stylesheet" href="md.css">
+<style>
+  body { overflow: hidden; }
+  .stage { position: fixed; inset: 0; background: #000 url('despido-escena.webp') 50% 50% / cover; animation: acerca 18s ease-out both; filter: saturate(.8); }
+  @keyframes acerca { from { transform: scale(1.18); filter: brightness(.3) saturate(.5); } to { transform: scale(1.03); filter: saturate(.8); } }
+  .stage::after { content: ''; position: absolute; inset: 0; background: radial-gradient(60% 70% at 50% 45%, transparent, rgba(0,0,0,.85)), linear-gradient(90deg, rgba(0,0,0,.85), transparent 45%, rgba(0,0,0,.85)); }
+  .ui { position: relative; min-height: 100vh; display: grid; grid-template-columns: minmax(0, 420px) 1fr minmax(0, 420px); gap: 26px; padding: 26px clamp(16px, 4vw, 56px); align-items: center; }
+  /* La carta */
+  .letter { background: #efe9dc; color: #161412; padding: 26px 26px 20px; box-shadow: 0 30px 80px rgba(0,0,0,.8); transform: rotate(-2deg); font: 17px/1.5 Georgia, serif; position: relative;
+    animation: carta 1s .4s cubic-bezier(.2,1,.3,1) both; }
+  @keyframes carta { from { opacity: 0; transform: translateY(-60px) rotate(-14deg); } to { opacity: 1; transform: rotate(-2deg); } }
+  .letter h1 { font: 800 15px var(--font-datos); letter-spacing: .16em; text-transform: uppercase; color: #8a1d14; margin-bottom: 10px; }
+  .letter p + p { margin-top: 10px; }
+  .letter .firma { margin-top: 16px; font: italic 22px Georgia, serif; color: #0b2a6f; }
+  .letter .seal { position: absolute; right: -14px; bottom: -18px; width: 64px; height: 64px; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #c41a1a, #7a0000); box-shadow: 0 3px 8px rgba(0,0,0,.4);
+    display: grid; place-items: center; color: rgba(255,255,255,.8); font: 800 14px var(--font-datos); letter-spacing: .06em; animation: sello .3s 1.5s cubic-bezier(.2,1.8,.4,1) both; }
+  @keyframes sello { from { transform: scale(2.6) rotate(-20deg); opacity: 0; } }
+  /* Centro: el titular de la partida y la puntuación */
+  .center { text-align: center; align-self: end; padding-bottom: 6vh; }
+  .center .kicker { color: var(--text-2); }
+  .center h2 { font-size: clamp(64px, 8vw, 120px); margin: 6px 0; text-shadow: 0 4px 30px rgba(0,0,0,.8); }
+  .score { font: 800 clamp(48px, 5vw, 76px) var(--font-datos); color: var(--aviso); font-variant-numeric: tabular-nums; text-shadow: 0 0 30px rgba(255,210,63,.4); }
+  .score::after { content: ' puntos'; font-size: .38em; color: var(--text-2); letter-spacing: .1em; text-transform: uppercase; }
+  .stats { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  .stats span { padding: 7px 14px; background: rgba(16,16,16,.85); border: 1px solid var(--line); border-top: 2px solid var(--accion); color: var(--text-3); font-size: 14px; }
+  .stats b { display: block; font: 800 24px var(--font-datos); color: #fff; }
+  .actions { display: flex; justify-content: center; gap: 10px; margin-top: 18px; }
+  /* Crónica */
+  .chron { background: rgba(10,10,10,.9); border: 1px solid var(--line); padding: 16px 18px; max-height: 82vh; overflow: auto; }
+  .chron h3 { font-family: var(--font-titular); font-size: 30px; text-transform: uppercase; margin-bottom: 4px; }
+  .chron > p { color: var(--text-3); font-size: 14px; margin-bottom: 10px; }
+  .hito { display: grid; grid-template-columns: 54px 1fr; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); opacity: 0; animation: entra .45s calc(1s + var(--k) * 220ms) both; }
+  .hito time { font: 800 22px var(--font-datos); color: var(--c, var(--text-2)); }
+  .hito b { display: block; font: 700 17px var(--font-datos); letter-spacing: .02em; }
+  .hito span { color: var(--text-2); font-size: 15px; line-height: 1.35; }
+  .unlock { margin-top: 12px; padding: 12px; background: linear-gradient(120deg, rgba(255,210,63,.16), rgba(255,210,63,.04)); border: 1px solid rgba(255,210,63,.5); }
+  .unlock small { font: 800 13px var(--font-datos); letter-spacing: .14em; text-transform: uppercase; color: var(--aviso); }
+  .unlock b { display: block; font-family: var(--font-titular); font-size: 24px; text-transform: uppercase; margin: 2px 0; }
+  .unlock span { color: var(--text-2); font-size: 15px; }
+  @media (max-width: 1100px) { .ui { grid-template-columns: 1fr 1fr; } .center { grid-column: 1 / -1; grid-row: 1; padding: 0; } }
+  @media (max-width: 767px) {
+    body { overflow: auto; }
+    .stage { position: absolute; height: 46vh; }
+    .stage::after { background: linear-gradient(0deg, var(--bg) 0, transparent 70%); }
+    .ui { grid-template-columns: 1fr; padding: 14px 16px; }
+    .center { margin-top: 24vh; }
+    .center h2 { font-size: 60px; }
+    .letter { transform: none; animation: none; }
+    .chron { max-height: none; }
+    .actions > * { flex: 1; justify-content: center; }
+  }
+</style>
+</head>
+<body>
+<div class="stage" aria-hidden="true"></div>
+<main class="ui">
+  <article class="letter">
+    <h1>De la directiva de Brava Racing</h1>
+    <p>Estimado director:</p>
+    <p>Le agradecemos seis temporadas inolvidables. Algunas, por desgracia, también para la federación.</p>
+    <p>Tras no alcanzar los objetivos de 2027 y 2028, el consejo ha decidido prescindir de sus servicios con efecto inmediato. Puede quedarse la taza.</p>
+    <p class="firma">El consejo</p>
+    <span class="seal">BR</span>
+  </article>
+  <section class="center">
+    <span class="kicker in" style="--i:1">Fin de la partida · 2023 – 2028</span>
+    <h2 class="titular in" style="--i:2">Despedido</h2>
+    <div class="score in" style="--i:3">48.250</div>
+    <div class="stats in" style="--i:4">
+      <span>Temporadas<b>6</b></span><span>Victorias<b>3</b></span><span>Podios<b>14</b></span><span>Mejor año<b>P3 · 2026</b></span>
+    </div>
+    <div class="actions in" style="--i:5"><button class="primary">Nueva partida</button><button class="ghost">Guardar la crónica</button></div>
+  </section>
+  <aside class="chron">
+    <h3>Tu crónica</h3>
+    <p>Semilla BRV-7Q2-PALOMA · Brava Racing (antes Vowlliams)</p>
+    <div class="hito" style="--k:0;--c:var(--positivo)"><time>2023</time><div><b>¡Pelotazo en Bakú!</b><span>Primera victoria con un fondo plano «interpretativo». El Pit Diario sacó edición especial.</span></div></div>
+    <div class="hito" style="--k:1;--c:var(--aviso)"><time>2024</time><div><b>Sancionados en Mónaco</b><span>La federación cerró el agujero del artículo 3.5. Diez puestos en parrilla y un comunicado muy largo.</span></div></div>
+    <div class="hito" style="--k:2;--c:var(--info)"><time>2025</time><div><b>Fichaje sonado</b><span>Verstoppen «no descartaba nada». Acabó en Brava. Duró un año y medio.</span></div></div>
+    <div class="hito" style="--k:3;--c:var(--positivo)"><time>2026</time><div><b>El coche nuevo funciona</b><span>Tercero en constructores con el reglamento de 2026. Tu mejor año.</span></div></div>
+    <div class="hito" style="--k:4;--c:var(--accion)"><time>2027</time><div><b>Perdiste la votación de la energía</b><span>Tu motor sufrió con el límite nuevo. Objetivo fallado.</span></div></div>
+    <div class="hito" style="--k:5;--c:var(--accion)"><time>2028</time><div><b>Segundo año sin objetivos</b><span>La directiva cumplió su palabra.</span></div></div>
+    <div class="unlock"><small>Desbloqueado para la próxima partida</small><b>Ingeniera astuta</b><span>Empiezas con un agujero del reglamento ya localizado. Riesgo de protesta, el de siempre.</span></div>
+  </aside>
+</main>
+<script>
+  // La puntuación sube desde cero (en el juego, con sonido de contador).
+  const el = document.querySelector('.score'); const end = 48250; const t0 = performance.now() + 900;
+  const fmt = n => n.toLocaleString('es-ES');
+  const step = t => { const p = Math.min(1, Math.max(0, (t - t0) / 1800)); el.textContent = fmt(Math.round(end * (1 - Math.pow(1 - p, 3)))); if (p < 1) requestAnimationFrame(step); };
+  el.textContent = '0'; requestAnimationFrame(step);
+</script>
+</body>
+</html>

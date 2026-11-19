@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Desafío · móvil del director</title>
+<!-- [MD7, maqueta del 16/11/2026] El móvil del director con la red social de parodia: se abre sobre la sede (el garaje
+     3D de Blender, desenfocado) y se inclina en 3D. Pestañas Para ti / Menciones / Prensa, publicaciones con perfiles,
+     me gusta y respuestas, y una encuesta. En el móvil de verdad ocupa la pantalla entera. -->
+<link rel="stylesheet" href="md.css">
+<style>
+  body { overflow: hidden; }
+  .stage { position: fixed; inset: -20px; background: #000 url('garaje-escena.webp') 50% 50% / cover; filter: blur(10px) brightness(.45) saturate(.8); }
+  .ui { position: relative; min-height: 100vh; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 40px; padding: 24px clamp(16px, 4vw, 56px); perspective: 1600px; }
+  .left { justify-self: end; max-width: 380px; display: flex; flex-direction: column; gap: 12px; }
+  .left h1 { font-size: clamp(44px, 4.6vw, 72px); }
+  .left p { color: var(--text-2); font-size: 17px; line-height: 1.45; }
+  .stat { display: flex; gap: 8px; }
+  .stat span { flex: 1; padding: 8px 12px; background: rgba(16,16,16,.85); border: 1px solid var(--line); border-top: 2px solid var(--c); color: var(--text-3); font-size: 14px; }
+  .stat b { display: block; font: 800 24px var(--font-datos); color: #fff; }
+  /* El teléfono */
+  .phone { width: 380px; height: min(780px, 88vh); border-radius: 46px; padding: 12px; background: linear-gradient(145deg, #2a2a2a, #0a0a0a); box-shadow: 0 0 0 2px #3a3a3a, 0 40px 90px rgba(0,0,0,.8), 0 0 60px rgba(225,6,0,.15);
+    transform: rotateY(-14deg) rotateX(4deg); animation: saca 1s .1s cubic-bezier(.2,1,.3,1) both; }
+  @keyframes saca { from { transform: translateY(80px) rotateY(-30deg) rotateX(18deg); opacity: 0; } to { transform: rotateY(-14deg) rotateX(4deg); opacity: 1; } }
+  .screen { height: 100%; border-radius: 36px; overflow: hidden; background: #0b0b0d; position: relative; display: flex; flex-direction: column; }
+  .notch { position: absolute; left: 50%; top: 10px; transform: translateX(-50%); width: 110px; height: 30px; border-radius: 20px; background: #000; z-index: 3; }
+  .status { display: flex; justify-content: space-between; padding: 14px 26px 6px; font: 700 14px var(--font-ui); }
+  .app { display: flex; align-items: center; gap: 10px; padding: 8px 16px; border-bottom: 1px solid #1f1f22; }
+  .app b { font-family: var(--font-titular); font-size: 26px; text-transform: uppercase; }
+  .app b em { color: var(--accion); font-style: normal; }
+  .app .bell { margin-left: auto; position: relative; font-size: 20px; }
+  .app .bell i { position: absolute; top: -4px; right: -8px; min-width: 18px; height: 18px; border-radius: 9px; background: var(--accion); font: 800 12px/18px var(--font-datos); font-style: normal; text-align: center; padding: 0 4px; }
+  .tabs { display: flex; border-bottom: 1px solid #1f1f22; }
+  .tabs span { flex: 1; text-align: center; padding: 10px 0; font: 700 14px var(--font-datos); letter-spacing: .06em; text-transform: uppercase; color: var(--text-3); }
+  .tabs span.on { color: #fff; box-shadow: inset 0 -3px var(--accion); }
+  .feed { flex: 1; overflow: hidden; }
+  .post { display: grid; grid-template-columns: 40px 1fr; gap: 10px; padding: 12px 14px; border-bottom: 1px solid #1a1a1d; opacity: 0; animation: cae .45s calc(1s + var(--k) * 260ms) cubic-bezier(.2,1.2,.4,1) both; }
+  @keyframes cae { from { opacity: 0; transform: translateY(-16px); } to { opacity: 1; transform: none; } }
+  .av { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; font: 800 15px var(--font-datos); color: #000; background: var(--c); }
+  .post b { font-size: 15px; } .post b small { color: var(--text-3); font-weight: 400; font-size: 14px; }
+  .post .ok { color: var(--info); font-size: 13px; }
+  .post p { font-size: 15px; line-height: 1.35; margin: 2px 0 6px; }
+  .post .img { height: 110px; border-radius: 12px; background: url('coche-desafio.webp') 50% 60% / cover; margin-bottom: 6px; }
+  .acts { display: flex; gap: 18px; color: var(--text-3); font-size: 14px; }
+  .acts .liked { color: #ff5a7a; }
+  .poll { border: 1px solid #2a2a2e; border-radius: 12px; padding: 8px; display: flex; flex-direction: column; gap: 5px; margin-bottom: 6px; }
+  .poll div { position: relative; padding: 5px 10px; font-size: 14px; border-radius: 8px; overflow: hidden; display: flex; justify-content: space-between; }
+  .poll div::before { content: ''; position: absolute; inset: 0 auto 0 0; width: var(--p); background: rgba(225,6,0,.25); animation: crece 1.4s 2.4s ease-out both; z-index: -1; }
+  @keyframes crece { from { width: 0; } }
+  .poll div { isolation: isolate; }
+  .right { justify-self: start; max-width: 320px; display: flex; flex-direction: column; gap: 10px; }
+  .toast { padding: 10px 12px; background: rgba(20,20,22,.95); border: 1px solid var(--line); border-left: 3px solid var(--c); font-size: 15px; color: var(--text-2); opacity: 0; animation: entra .5s calc(2.6s + var(--k) * 500ms) both; }
+  .toast b { color: #fff; }
+  @media (max-width: 1100px) { .ui { grid-template-columns: auto 1fr; } .left { display: none; } }
+  @media (max-width: 767px) {
+    .ui { display: block; padding: 0; }
+    .right { display: none; }
+    .phone { width: 100%; height: 100vh; border-radius: 0; padding: 0; transform: none; animation: none; box-shadow: none; background: none; }
+    .screen { border-radius: 0; }
+    .notch { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="stage" aria-hidden="true"></div>
+<main class="ui">
+  <section class="left">
+    <span class="kicker in" style="--i:0">Lunes, 9:14 · después de Bakú</span>
+    <h1 class="titular in" style="--i:1">Tu móvil no para</h1>
+    <p class="in" style="--i:2">Lo que pasa en pista y lo que dices en la prensa acaba aquí. La afición recuerda, los rivales también.</p>
+    <div class="stat in" style="--i:3"><span style="--c:var(--positivo)">Afición<b>72 %</b></span><span style="--c:var(--aviso)">Seguidores<b>+18 mil</b></span></div>
+  </section>
+  <div class="phone">
+    <div class="screen">
+      <span class="notch"></span>
+      <div class="status"><span>9:14</span><span>📶 🔋 81 %</span></div>
+      <div class="app"><b>Rebu<em>fo</em></b><span class="bell">🔔<i>27</i></span></div>
+      <div class="tabs"><span class="on">Para ti</span><span>Menciones</span><span>Prensa</span></div>
+      <div class="feed">
+        <div class="post" style="--k:0"><span class="av" style="--c:#e10600">BR</span><div><b>Brava Racing <span class="ok">✔</span> <small>@BravaRacing · 2 h</small></b><p>Primera victoria. Gracias a todos. Y no, no os vamos a enseñar el fondo plano. 🤫</p><div class="img"></div><span class="acts"><span class="liked">♥ 41,2 mil</span><span>↻ 9,8 mil</span><span>💬 3,1 mil</span></span></div></div>
+        <div class="post" style="--k:1"><span class="av" style="--c:#ffd23f">MB</span><div><b>MuroDeBoxes <small>@MuroDeBoxes · 1 h</small></b><p>¿Quién gana la próxima protesta contra Brava?</p><div class="poll"><div style="--p:58%"><span>Red Bulla</span><b>58 %</b></div><div style="--p:27%"><span>Errari</span><b>27 %</b></div><div style="--p:15%"><span>La federación, por cansancio</span><b>15 %</b></div></div><span class="acts"><span>♥ 6,4 mil</span><span>💬 812</span></span></div></div>
+        <div class="post" style="--k:2"><span class="av" style="--c:#1d2b4a;color:#fff">FD</span><div><b>Federación <span class="ok">✔</span> <small>@ElComunicado · 40 min</small></b><p>Comunicado: estamos estudiando el comunicado de Red Bulla sobre el fondo de Brava.</p><span class="acts"><span>♥ 1,1 mil</span><span>💬 4,9 mil</span></span></div></div>
+      </div>
+    </div>
+  </div>
+  <aside class="right" aria-label="Avisos">
+    <div class="toast" style="--k:0;--c:var(--accion)"><b>@OraculoRedBulla</b> te ha mencionado: «Nuestros abogados también le mandan saludos.»</div>
+    <div class="toast" style="--k:1;--c:var(--aviso)"><b>Lucía Pistón</b> (El Pit Diario) quiere una entrevista antes de Miami.</div>
+    <div class="toast" style="--k:2;--c:var(--positivo)"><b>Tendencia:</b> #FondoInterpretativo · 88 mil publicaciones</div>
+  </aside>
+</main>
+</body>
+</html>

@@ -49,12 +49,12 @@ export interface ManagementState {
 export const MANAGEMENT_STORAGE_KEY = 'f1_management';
 
 /** Gestión de una partida nueva (o de una partida anterior que no la tenía): saldos iniciales. */
-export function startManagement(playerTeamId: string, season = 1, seed = 0): ManagementState {
+export function startManagement(playerTeamId: string, season = 1, seed = 0, year?: number): ManagementState {
   const teamId = TEAMS[playerTeamId] ? playerTeamId : Object.keys(TEAMS)[0];
   return {
     version: 1, playerTeamId: teamId, seed,
     finance: startFinance(Object.keys(TEAMS), season), facilities: startFacilities(), pitCrews: startPitCrews(), sponsors: startSponsors(season, seed),
-    board: startBoard(teamId), contracts: startContracts(season, seed), academy: startAcademy(seed), ages: startAges(),
+    board: startBoard(teamId), contracts: startContracts(season, seed, year), academy: startAcademy(seed), ages: startAges(year),
     staff: startStaff(season, seed),
   };
 }

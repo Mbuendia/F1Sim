@@ -173,14 +173,16 @@ export default async function run({ server, assert, test }) {
     swManifest = JSON.parse(m[1]);
     assert(typeof swManifest.version === 'string' && swManifest.version.length >= 8, 'OF1.2: la lista lleva versión', swManifest.version);
     assert(swManifest.base === BASE, 'OF1.2: la lista lleva la base', swManifest.base);
-    const coreSet = new Set(swManifest.core), aiSet = new Set(swManifest.ai);
+    // [TL7, adaptado con autorización del usuario el 18/11/2026: «Sí, adáptalos»] Tercera lista, «lazy»: los coches de otros
+    // años (epoca/), que no se guardan al instalar y se bajan la primera vez que hacen falta.
+    const coreSet = new Set(swManifest.core), aiSet = new Set(swManifest.ai), lazySet = new Set(swManifest.lazy ?? []);
     const files = walk(outDir).filter(f => !f.startsWith('landing/') && f !== 'sw.js' && !f.endsWith('.map'));
     const missing = files.filter(f => {
       const url = BASE + (f === 'index.html' ? 'index.html' : f);
-      return (coreSet.has(url) ? 1 : 0) + (aiSet.has(url) ? 1 : 0) !== 1;
+      return (coreSet.has(url) ? 1 : 0) + (aiSet.has(url) ? 1 : 0) + (lazySet.has(url) ? 1 : 0) !== 1;
     });
     assert(missing.length === 0, 'OF1.2: cada archivo de la compilación está en una sola lista', missing.slice(0, 8).join(', '));
-    const listed = [...coreSet, ...aiSet];
+    const listed = [...coreSet, ...aiSet, ...lazySet];
     const ghost = listed.filter(u => !u.startsWith(BASE) || !existsSync(join(outDir, u.slice(BASE.length))));
     assert(ghost.length === 0, 'OF1.2: todo lo listado existe en la compilación', ghost.slice(0, 5).join(', '));
     assert(!listed.some(u => u.includes('/landing/') || u.endsWith('.map') || u.endsWith('/sw.js')), 'OF1.2: ni la portada aparte, ni .map, ni sw.js');

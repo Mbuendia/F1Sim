@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Portada · El Pit Diario</title>
+<!-- [MD21, maqueta del 16/11/2026] Portada generada del periódico de parodia. Se captura a 1200×1700 y se usa como
+     textura del periódico 3D de Blender. En el juego, los huecos (titular, equipo, foto, columnas) salen de la partida. -->
+<style>
+  @font-face { font-family: 'Titular'; src: url('../../../public/fonts/barlow-condensed-800i.woff2') format('woff2'); }
+  @font-face { font-family: 'Cond'; font-weight: 700; src: url('../../../public/fonts/barlow-condensed-700.woff2') format('woff2'); }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1200px; height: 1700px; background: #efe9dc; }
+  body { font-family: Georgia, 'Times New Roman', serif; color: #161412; padding: 46px 54px; position: relative; overflow: hidden;
+    background-image: radial-gradient(rgba(0,0,0,.035) 1px, transparent 1px), linear-gradient(180deg, #f3eee2, #e8e0cf);
+    background-size: 4px 4px, 100% 100%; }
+  .top { display: flex; justify-content: space-between; font: 700 17px 'Cond', sans-serif; letter-spacing: .12em; text-transform: uppercase; border-bottom: 2px solid #161412; padding-bottom: 10px; }
+  .mast { text-align: center; padding: 16px 0 6px; border-bottom: 6px double #161412; }
+  .mast h1 { white-space: nowrap; font: 900 124px/0.95 Georgia, serif; letter-spacing: -0.03em; }
+  .mast h1 em { font-style: normal; color: #c40500; }
+  .mast p { font: italic 22px Georgia, serif; margin-top: 8px; }
+  .kicker { margin-top: 26px; display: inline-block; background: #c40500; color: #fff; font: 700 24px 'Cond', sans-serif; letter-spacing: .14em; text-transform: uppercase; padding: 6px 14px; }
+  .headline { font: 132px/0.88 'Titular', sans-serif; text-transform: uppercase; letter-spacing: -0.01em; margin-top: 12px; }
+  .deck { font: 31px/1.25 Georgia, serif; margin-top: 16px; max-width: 980px; }
+  .photo { margin-top: 22px; height: 470px; background: #111 url('coche-desafio.webp') 46% 58% / 128% auto no-repeat; filter: grayscale(.15) contrast(1.05); position: relative; }
+  .photo span { position: absolute; left: 0; bottom: 0; background: #161412; color: #efe9dc; font: italic 19px Georgia, serif; padding: 8px 14px; }
+  .cols { display: grid; grid-template-columns: 1.35fr 1fr 1fr; gap: 26px; margin-top: 24px; }
+  .cols h3 { font: 700 30px/1 'Cond', sans-serif; text-transform: uppercase; margin-bottom: 8px; border-top: 3px solid #161412; padding-top: 8px; }
+  .cols p { font: 19px/1.4 Georgia, serif; text-align: left; }
+  .cols p + p { margin-top: 8px; }
+  .vote { display: flex; gap: 4px; margin: 10px 0 8px; }
+  .vote i { flex: 1; height: 20px; background: #2e8b57; }
+  .vote i.no { background: #c40500; }
+  .tweet { border: 2px solid #161412; padding: 12px; font: 19px/1.35 Georgia, serif; background: #f7f3ea; }
+  .tweet b { font: 700 20px 'Cond', sans-serif; display: block; }
+  .tweet small { font: 16px 'Cond', sans-serif; color: #555; }
+  .foot { position: absolute; left: 54px; right: 54px; bottom: 40px; border-top: 2px solid #161412; padding-top: 10px; display: flex; justify-content: space-between; font: 700 18px 'Cond', sans-serif; letter-spacing: .1em; text-transform: uppercase; }
+</style>
+</head>
+<body>
+  <div class="top"><span>Lunes, 1 de mayo de 2023</span><span>Año I · Número 4</span><span>1,50 € · con la pegatina de regalo</span></div>
+  <div class="mast"><h1>EL <em>PIT</em> DIARIO</h1><p>El periódico que nunca entra en boxes</p></div>
+  <span class="kicker">Exclusiva · GP de Bakú</span>
+  <h2 class="headline">¡Pelotazo en Bakú!</h2>
+  <p class="deck">Brava Racing, último el año pasado, gana su primera carrera con un fondo plano «interpretativo» y el paddock pide explicaciones a la federación.</p>
+  <div class="photo"><span>El Brava BR23 celebra en la recta de meta. Nadie sabe todavía qué lleva debajo.</span></div>
+  <div class="cols">
+    <div>
+      <h3>«Está dentro del reglamento», jura el jefe</h3>
+      <p>El director de Brava Racing compareció con gafas de sol en interior y una sonrisa que los rivales describieron como «de agujero del artículo 3.5». Preguntado por el fondo plano, respondió que es «una pieza muy bonita» y se marchó a por un bocadillo.</p>
+      <p>Red Bulla y Errari ya han pedido a la federación que lo revise antes de Miami. Totocedes prefirió no opinar: estaba ocupado diciendo que el año que viene será el suyo.</p>
+    </div>
+    <div>
+      <h3>La votación</h3>
+      <p>El límite de energía por vuelta sale adelante por seis votos a cuatro.</p>
+      <div class="vote"><i></i><i></i><i></i><i></i><i></i><i></i><i class="no"></i><i class="no"></i><i class="no"></i><i class="no"></i></div>
+      <p>El presidente Gerardo «el Comunicado» Trigo lo celebró con un comunicado sobre el comunicado.</p>
+    </div>
+    <div>
+      <h3>Lo más comentado</h3>
+      <div class="tweet"><b>@AbueloDelPaddock</b>He visto ganar a Brava. Ya me puedo morir tranquilo. Bueno, espero a Miami.<br><small>14,2 mil me gusta</small></div>
+    </div>
+  </div>
+  <div class="foot"><span>Mercado: Verstoppen «no descarta nada» (lo ha dicho 14 veces)</span><span>Próxima: GP de Miami</span></div>
+</body>
+</html>

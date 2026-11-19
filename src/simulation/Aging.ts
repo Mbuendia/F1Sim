@@ -2,6 +2,7 @@
 // año en cada invierno. Con la edad cambian los atributos de R45 (suben hasta una edad, se mantienen y bajan después)
 // y llegan las retiradas: un veterano que acaba contrato sin haber renovado puede dejarlo. Todo es diseño del juego.
 import { DRIVERS } from '../data/drivers';
+import { driverSheetFor, lineupFor } from '../data/seasons';
 import type { Driver } from '../types/f1';
 import type { AcademyState } from './Academy';
 import type { ContractsState } from './Contracts';
@@ -24,8 +25,9 @@ export const AGING = {
 
 export type Ages = Record<string, number>;
 
-/** Edad de los 20 pilotos de la parrilla de partida. */
-export function startAges(): Ages {
+/** Edad de los 20 pilotos de la parrilla de partida. [TL2] Con `year`, la de los pilotos de ese año, con la edad de entonces. */
+export function startAges(year?: number): Ages {
+  if (year !== undefined) return Object.fromEntries(Object.keys(lineupFor(year)).map(id => [id, driverSheetFor(id, year)?.age ?? AGING.DEFAULT_AGE]));
   return Object.fromEntries(Object.values(DRIVERS).map(driver => [driver.id, driver.age ?? AGING.DEFAULT_AGE]));
 }
 

@@ -14,7 +14,7 @@ const points = (value: number | undefined) => (value === undefined ? null : `${v
 /** [R51] Cierre de temporada: campeones, clasificación final y puesto de los pilotos del jugador. */
 export const SeasonEndScreen: React.FC<SeasonEndScreenProps> = ({ summary, onContinue }) => (
   <section className={panel.panel} aria-label="Fin de temporada">
-    <h2 className={panel.title}>Fin de la temporada {summary.season}</h2>
+    <h2 className={panel.title}>Fin de la temporada {summary.year ?? summary.season}</h2>
     <p className={panel.pole}>
       {summary.races} {summary.races === 1 ? 'carrera disputada' : 'carreras disputadas'}
       {summary.skipped ? ` · ${summary.skipped} ${summary.skipped === 1 ? 'ronda saltada' : 'rondas saltadas'}` : ''}
@@ -49,6 +49,6 @@ export const SeasonEndScreen: React.FC<SeasonEndScreenProps> = ({ summary, onCon
         </table>
       </div>
     )}
-    <button type="button" className={panel.continue} onClick={onContinue}>Empezar la temporada {summary.season + 1}</button>
+    <button type="button" className={panel.continue} onClick={onContinue}>Empezar la temporada {summary.season + 1}{summary.year ? ` · ${summary.year + 1}` : ''}</button>
   </section>
 );

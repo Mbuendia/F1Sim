@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { buildCarModelSpec } from '../renderer/carModelSpec';
-import { CAR_MODEL, modelUrl } from '../renderer/carModel3d';
+import { CAR_MODEL, activeCarYear, playerCarUpgrades } from '../renderer/carModel3d';
 import { liveryFor } from '../data/liveries';
 import { compoundStyle } from '../utils/compounds';
 
@@ -15,6 +15,10 @@ interface Car3DViewerProps {
   teamId?: string;
   /** [T4.9] Patrocinadores firmados en la partida (uno por superficie; vacío = sin rótulo). Sin esto, los de la librea. */
   sponsors?: string[];
+  /** [TL3] Librea del año (carrera profesional); sin ella, la del equipo. */
+  livery?: { primary: string; secondary: string; sponsors: string[] };
+  /** [TL7] Año del coche; sin él, el de la partida en curso. */
+  year?: number | null;
 }
 
 /**
@@ -22,7 +26,7 @@ interface Car3DViewerProps {
  * geometría propia y, en cuanto carga, lo sustituye el modelo 3D con la librea del equipo y las ruedas girando; si el
  * modelo falta o falla, se queda el de geometría propia.
  */
-const Car3DViewer: React.FC<Car3DViewerProps> = ({ teamColor, accentColor, number, compound, label = 'Monoplaza en 3D', teamId, sponsors }) => {
+const Car3DViewer: React.FC<Car3DViewerProps> = ({ teamColor, accentColor, number, compound, label = 'Monoplaza en 3D', teamId, sponsors, livery: yearLivery, year }) => {
   const hostRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -98,12 +102,18 @@ const Car3DViewer: React.FC<Car3DViewerProps> = ({ teamColor, accentColor, numbe
     let cancelled = false;
     let releaseModel: (() => void) | null = null;
     host.dataset.carModel = 'geometria';
-    import('../renderer/modelScene').then(async ({ loadModel, dressCar, disposeModel }) => {
-      const gltf = await loadModel(modelUrl(import.meta.env.BASE_URL, CAR_MODEL.file));
+    import('../renderer/modelScene').then(async ({ loadCarModel, dressCar, disposeModel, loadUpgradeParts, mountUpgrades }) => {
+      // [TL7] El coche del año (el de la partida si no se dice otro).
+      const gltf = await loadCarModel(import.meta.env.BASE_URL, year === undefined ? activeCarYear() : year);
       if (cancelled) { disposeModel(gltf.scene); return; }
-      const base = teamId ? liveryFor(teamId) : { primary: teamColor, secondary: accentColor, sponsors: [] as string[] };
+      const base = yearLivery ?? (teamId ? liveryFor(teamId) : { primary: teamColor, secondary: accentColor, sponsors: [] as string[] });
       const livery = sponsors ? { ...base, sponsors } : base;
       dressCar(gltf.scene, livery, number, compoundStyle(compound).color);
+      // [TL4] El coche del equipo del jugador en el inicio lleva sus mejoras (el más evolucionado de los dos en cada pieza).
+      const upgrades = playerCarUpgrades();
+      if (upgrades && teamId === upgrades.teamId && year === undefined) {
+        loadUpgradeParts(import.meta.env.BASE_URL, activeCarYear()).then(parts => { if (!cancelled) mountUpgrades(gltf.scene, parts, upgrades.home, livery); });
+      }
       const clip = gltf.animations.find(animation => animation.name === CAR_MODEL.animation);
       if (clip) { mixer = new THREE.AnimationMixer(gltf.scene); mixer.clipAction(clip).play(); }
       gltf.scene.rotation.y = car.rotation.y;
@@ -148,7 +158,7 @@ const Car3DViewer: React.FC<Car3DViewerProps> = ({ teamColor, accentColor, numbe
       renderer.domElement.remove();
     };
     // Los patrocinadores llegan como lista nueva en cada pintado: se comparan por su contenido.
-  }, [teamColor, accentColor, number, compound, teamId, sponsors?.join('|')]);
+  }, [teamColor, accentColor, number, compound, teamId, sponsors?.join('|'), yearLivery ? JSON.stringify(yearLivery) : '', year]);
 
   return <div ref={hostRef} role="img" aria-label={label} style={{ width: '100%', height: 190 }} />;
 };

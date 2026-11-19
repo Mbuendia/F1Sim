@@ -6,7 +6,7 @@ import type { ComponentState } from './ComponentPool';
 import type { DevelopmentProgram } from './Development';
 import type { SeasonState, SeasonSummary } from './Season';
 import type { RaceResultHistory } from '../types/f1';
-import { emptySeason, parseSeason, seasonRaceNumber } from './Season';
+import { emptySeason, parseSeason, seasonRaceNumber, seasonRounds, seasonYear, withLegacyYear } from './Season';
 import { migrateSnapshot, validateSnapshot } from './Snapshot';
 import type { RaceSnapshot } from './Snapshot';
 import { DRIVERS } from '../data/drivers';
@@ -73,6 +73,9 @@ export interface SlotSummary {
   /** [T4.19] Equipo del jugador, temporada, puesto en constructores (null sin carreras) y saldo. Ausentes en los resúmenes anteriores. */
   team?: { id: string; name: string };
   season?: number;
+  /** [TL1] Año de la temporada y rondas que tiene (ausentes en los resúmenes anteriores). */
+  year?: number;
+  totalRounds?: number;
   position?: number | null;
   balance?: number;
 }
@@ -159,6 +162,11 @@ export function savedSeason(save: SaveGame): SeasonState {
   return save.career.season ? parseSeason(JSON.stringify(save.career.season)) : emptySeason();
 }
 
+/** [TL1] La temporada guardada con su año: una partida de antes de TL1 empezó en 2026 y cada temporada cerrada suma uno. */
+export function savedSeasonWithYear(save: SaveGame): SeasonState {
+  return withLegacyYear(savedSeason(save), save.career.archive.length);
+}
+
 /** [T4.1] Gestión que guarda la partida; las anteriores empiezan con los saldos iniciales y el equipo de su piloto. */
 export function savedManagement(save: SaveGame): ManagementState {
   const teamId = DRIVERS[save.selection.driverId]?.teamId ?? '';
@@ -186,6 +194,7 @@ export function summarize(save: SaveGame, id: string, auto: boolean, sizeChars: 
   return {
     id, name: auto ? AUTOSAVE_LABEL : save.name, savedAt: save.savedAt, auto,
     raceNumber: seasonRaceNumber(save.career.championship, savedSeason(save)),
+    year: seasonYear(savedSeasonWithYear(save)), totalRounds: seasonRounds(savedSeasonWithYear(save)),
     raceInProgress: race ? { circuitId: race.circuitId, lap: race.state.flags.leaderLap, totalLaps: race.state.flags.totalLaps, finished: race.state.flags.isFinished } : null,
     sizeChars,
     ...careerStatus(save),

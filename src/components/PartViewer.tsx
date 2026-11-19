@@ -1,6 +1,8 @@
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { MENU_CAR_MODEL } from '../scene3d/partVisuals';
+import { playerCarUpgrades } from '../renderer/carModel3d';
+import { BASE_LEVELS, isUpgradeProject, nextLevels, upgradeNodeNames } from '../simulation/upgradeParts';
 import type { CarPart } from '../scene3d/partVisuals';
 import m from './Management.module.css';
 
@@ -14,7 +16,7 @@ const inPart = (o: THREE.Object3D, parts: readonly string[]) => {
  * [UX10] Coche del menú en 3D, girando despacio (se puede arrastrar), con las piezas de `highlight` en el color de
  * acento y el resto en gris neutro. Se carga aparte (con import()) solo cuando se pide ver la pieza.
  */
-export default function PartViewer({ highlight, label, accent = '#00bfa0' }: { highlight: CarPart[]; label: string; accent?: string }) {
+export default function PartViewer({ highlight, label, accent = '#00bfa0', project }: { highlight: CarPart[]; label: string; accent?: string; project?: string }) {
   const hostRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const host = hostRef.current;
@@ -50,6 +52,22 @@ export default function PartViewer({ highlight, label, accent = '#00bfa0' }: { h
       root = gltf.scene;
       scene.add(root);
       host.dataset.partModel = 'listo';
+      // [TL4] Una mejora con pieza a la vista: se ve, resaltada, la versión siguiente (la que se montará). El coche del menú
+      // es el de 2025: sus piezas son las de ese coche.
+      if (project && isUpgradeProject(project)) {
+        const { loadUpgradeParts } = await import('../renderer/modelScene');
+        const parts = await loadUpgradeParts(import.meta.env.BASE_URL, 2025);
+        if (cancelled || !parts || !root) return;
+        const now = playerCarUpgrades()?.home ?? BASE_LEVELS;
+        const next = nextLevels(now, project);
+        const names = new Set(upgradeNodeNames({ ...BASE_LEVELS, [project]: next[project] }));
+        const group = new THREE.Group();
+        group.name = 'mejoras';
+        parts.traverse(o => { if (names.has(o.name)) group.add(o.clone(true)); });
+        group.traverse(o => { const mesh = o as THREE.Mesh; if (mesh.isMesh) mesh.material = lit; });
+        root.add(group);
+        host.dataset.upgradeLevel = String(next[project]);
+      }
     }).catch(() => { host.dataset.partModel = 'sin-modelo'; });
 
     let dragging = false, lastX = 0, frame = 0, previous = performance.now();
@@ -72,10 +90,10 @@ export default function PartViewer({ highlight, label, accent = '#00bfa0' }: { h
     return () => {
       cancelled = true;
       cancelAnimationFrame(frame);
-      if (root) root.traverse(o => { const mesh = o as THREE.Mesh; if (mesh.isMesh) mesh.geometry.dispose(); });
+      if (root) { root.getObjectByName('mejoras')?.removeFromParent(); root.traverse(o => { const mesh = o as THREE.Mesh; if (mesh.isMesh) mesh.geometry.dispose(); }); }
       base.dispose(); lit.dispose();
       renderer.dispose(); renderer.domElement.remove();
     };
-  }, [highlight.join('|'), accent]);
+  }, [highlight.join('|'), accent, project]);
   return <div ref={hostRef} className={m.decisionImage} role="img" aria-label={label} data-part-viewer={highlight.join(' ')} />;
 }

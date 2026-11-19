@@ -7,6 +7,8 @@ import { ReservePanel } from './ReservePanel';
 import type { AcademyState } from '../simulation/Academy';
 import type { ContractsState } from '../simulation/Contracts';
 import { TEAMS, STARTING_GRID_ORDER } from '../data/teams';
+import { DATA_YEARS, driverSheetFor } from '../data/seasons';
+import type { TeamForm } from '../data/seasons';
 import { OFFICIAL_CIRCUITS, CircuitSpec } from '../data/circuits';
 import { buildTrackFromSvg } from '../utils/svgTrackParser';
 import { RaceResultHistory } from '../types/f1';
@@ -65,7 +67,7 @@ interface HomeScreenProps {
    * página de Inicio (recibe cómo cambiar de pestaña) y la de Correr. Sin esto (carrera libre), el paddock de siempre.
    */
   hub?: {
-    teamName: string; accent: string; seasonNumber: number; round: number | null; kpis: { label: string; value: string }[];
+    teamName: string; accent: string; seasonNumber: number; seasonYear?: number; totalRounds?: number; round: number | null; kpis: { label: string; value: string }[];
     badges: Partial<Record<HubSection, number>>; inicio: (go: (section: HubSection) => void) => React.ReactNode; correr: React.ReactNode;
   };
   selectedDriverId: string;
@@ -109,9 +111,11 @@ interface HomeScreenProps {
     onImport: (text: string) => void; onDelete: (id: string) => void;
   };
   /** [R51] Temporada: calendario, Gran Premio que toca, salto de ronda e historial de temporadas cerradas. */
-  season?: { rounds: RoundView[]; seasonNumber: number; archive: SeasonSummary[]; onSelectNext: () => void; onSkip: () => void; onSimulate?: () => void };
+  season?: { rounds: RoundView[]; seasonNumber: number; seasonYear?: number; archive: SeasonSummary[]; onSelectNext: () => void; onSkip: () => void; onSimulate?: () => void };
   /** [R51] Atributos actuales de un piloto (R45), para su ficha. */
   driverAttributes?: (driver: Driver) => DriverAttributes;
+  /** [TL2] Fuerza y motor de cada equipo el año de la temporada (carrera profesional); sin ella, los de teams.ts. */
+  teamForm?: TeamForm | null;
   /** [T4.1] Dinero del equipo del jugador. */
   finance?: { state: FinanceState; teamId: string };
   /** [T4.4] Instalaciones de la fábrica del equipo del jugador. */
@@ -158,6 +162,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   setup,
   season,
   driverAttributes,
+  teamForm = null,
   sprintAvailable,
   finance,
   facilities,
@@ -193,8 +198,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     setInspectedCircuitId(selectedCircuitId);
   }, [selectedCircuitId]);
 
-  const inspectedDriver = roster[inspectedDriverId] || roster[selectedDriverId] || Object.values(roster)[0];
-  const inspectedTeam = TEAMS[inspectedDriver.teamId];
+  // [TL2] La ficha enseña el palmarés del año de la temporada (de 2023 a 2026) y el coche y el motor de ese año.
+  const sheetYear = season?.seasonYear ?? DATA_YEARS[DATA_YEARS.length - 1];
+  const inspectedBase = roster[inspectedDriverId] || roster[selectedDriverId] || Object.values(roster)[0];
+  // Solo en una partida con datos del año (TL2): la carrera libre y las partidas antiguas enseñan la ficha de siempre.
+  const yearSheet = teamForm && sheetYear <= DATA_YEARS[DATA_YEARS.length - 1] ? driverSheetFor(inspectedBase.id, sheetYear) : undefined;
+  const inspectedDriver = yearSheet ? { ...inspectedBase, worldChampionships: yearSheet.worldChampionships, careerWins: yearSheet.careerWins, careerPodiums: yearSheet.careerPodiums } : inspectedBase;
+  const inspectedTeam = teamForm?.[inspectedDriver.teamId] ? { ...TEAMS[inspectedDriver.teamId], ...teamForm[inspectedDriver.teamId] } : TEAMS[inspectedDriver.teamId];
   const inspectedCircuit = OFFICIAL_CIRCUITS[inspectedCircuitId] || OFFICIAL_CIRCUITS[selectedCircuitId] || OFFICIAL_CIRCUITS['barcelona'];
 
   const selectedDriver = roster[selectedDriverId] || Object.values(roster)[0];
@@ -287,7 +297,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   return (
     <div className={styles.homeContainer} style={hub ? { ['--equipo' as string]: hub.accent } : undefined}>
       {hub && (
-        <HubHeader teamName={hub.teamName} seasonNumber={hub.seasonNumber} round={hub.round} kpis={hub.kpis} badges={hub.badges} section={section} onSection={setSection}>
+        <HubHeader teamName={hub.teamName} seasonNumber={hub.seasonNumber} seasonYear={hub.seasonYear} totalRounds={hub.totalRounds} round={hub.round} kpis={hub.kpis} badges={hub.badges} section={section} onSection={setSection}>
           {headerExtra}
         </HubHeader>
       )}
@@ -338,9 +348,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         <section className={styles.sectionBlock}>
           <SeasonStrip rounds={season.rounds} />
           <h2 className={styles.sectionHeading}>
-            <span>Temporada {season.seasonNumber}{nextRound ? ` · ronda ${nextRound.round} de ${SEASON_RACES}` : ''}</span>
+            <span>Temporada {season.seasonYear ?? season.seasonNumber}{nextRound ? ` · ronda ${nextRound.round} de ${season.rounds.length || SEASON_RACES}` : ''}</span>
           </h2>
-          <SeasonCalendar rounds={season.rounds} seasonNumber={season.seasonNumber} selectedCircuitId={selectedCircuitId}
+          <SeasonCalendar rounds={season.rounds} seasonNumber={season.seasonYear ?? season.seasonNumber} selectedCircuitId={selectedCircuitId}
             onSelectNext={season.onSelectNext} onSkip={season.onSkip} onSimulate={season.onSimulate} />
         </section>
       )}
@@ -570,7 +580,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                     <span>{inspectedDriver.firstName} {inspectedDriver.lastName}</span>
                   </div>
                   <div className={styles.detailSubtitle}>
-                    {inspectedTeam.name} · Piloto Oficial F-Uno 2026
+                    {inspectedTeam.name} · Piloto Oficial F-Uno {sheetYear}
                   </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -608,7 +618,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                   onClick={() => setDriverSubTab('records')}
                 >
                   <Activity size={11} />
-                  <span>RENDIMIENTO 2026</span>
+                  <span>RENDIMIENTO {sheetYear}</span>
                 </button>
               </div>
 
@@ -616,7 +626,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 <div className={styles.detailContentGrid}>
                   {/* [R46] Monoplaza del piloto en 3D (silueta 2D sin WebGL) */}
                   <div className={styles.detailCardBox} style={{ gridColumn: '1 / -1' }}>
-                    <CarShowcase teamId={inspectedTeam.id} sponsors={sponsors?.carOf(inspectedTeam.id)} teamColor={inspectedTeam.color} accentColor={inspectedTeam.accentColor} number={inspectedDriver.number}
+                    <CarShowcase teamId={inspectedTeam.id} livery={inspectedTeam.livery} sponsors={sponsors?.carOf(inspectedTeam.id)} teamColor={inspectedTeam.color} accentColor={inspectedTeam.accentColor} number={inspectedDriver.number}
                       compound="medium" label={`Monoplaza de ${inspectedTeam.name} · ${inspectedDriver.code}`} />
                   </div>
                   <div className={styles.detailCardBox}>

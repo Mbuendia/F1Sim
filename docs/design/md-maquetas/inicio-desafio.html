@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Desafío · inicio</title>
+<!-- [MD1, MD2 y MD17, maqueta del 16/11/2026] Inicio del Desafío en la sala de juntas 3D de Blender: el equipo elegido
+     (Vowlliams) pasa a llamarse Brava Racing con sus tres colores, la directiva enseña los objetivos de 2023 y la
+     confianza con la que empiezas, y la partida se firma (la firma se dibuja sola). -->
+<link rel="stylesheet" href="md.css">
+<style>
+  body { overflow: hidden; }
+  .stage { position: fixed; inset: 0; background: #000 url('juntas-escena.webp') 70% 50% / cover; animation: acerca 16s ease-out both; }
+  @keyframes acerca { from { transform: scale(1.12); filter: brightness(.5); } to { transform: scale(1.02); filter: none; } }
+  .stage::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(0,0,0,.95) 0, rgba(0,0,0,.82) 38%, rgba(0,0,0,.2) 70%); }
+  .ui { position: relative; min-height: 100vh; display: grid; grid-template-columns: minmax(0, 520px) minmax(0, 440px); justify-content: space-between; gap: 28px; padding: 24px clamp(16px, 4vw, 56px); align-items: center; }
+  .steps { grid-column: 1 / -1; align-self: start; display: flex; gap: 6px; }
+  .step { display: flex; align-items: center; gap: 8px; padding: 6px 16px 6px 12px; background: var(--panel-2); clip-path: var(--corte); font: 700 15px var(--font-datos); letter-spacing: .1em; text-transform: uppercase; color: var(--text-3); }
+  .step b { display: grid; place-items: center; width: 22px; height: 22px; background: var(--line-strong); color: #fff; font-size: 13px; }
+  .step.done { color: var(--text-2); } .step.done b { background: var(--positivo); color: #000; }
+  .step.on { background: var(--accion); color: #fff; } .step.on b { background: #fff; color: var(--accion); }
+  .id { display: flex; flex-direction: column; gap: 14px; }
+  .from { color: var(--text-3); font-size: 15px; }
+  .from s { color: var(--text-2); }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field label { font: 700 14px var(--font-datos); letter-spacing: .14em; text-transform: uppercase; color: var(--text-3); }
+  .name { font-family: var(--font-titular); font-size: clamp(54px, 6vw, 88px); text-transform: uppercase; line-height: .9; border-bottom: 3px solid var(--accion); padding-bottom: 6px; position: relative; }
+  .name::after { content: ''; display: inline-block; width: 4px; height: .8em; background: #fff; margin-left: 6px; vertical-align: -0.05em; animation: parpadea 1s steps(2) infinite; }
+  @keyframes parpadea { 50% { opacity: 0; } }
+  .row { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+  .short { font: 800 30px var(--font-datos); padding: 4px 12px; border: 1px solid var(--line-strong); background: rgba(16,16,16,.8); letter-spacing: .06em; }
+  .colors { display: flex; gap: 8px; }
+  .color { width: 58px; height: 58px; position: relative; background: var(--c); clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%); }
+  .color span { position: absolute; bottom: 3px; left: 0; right: 0; text-align: center; font: 700 12px var(--font-datos); color: rgba(0,0,0,.65); letter-spacing: .06em; }
+  .color.c3 span { color: rgba(255,255,255,.7); }
+  .preview { position: relative; height: 170px; background: url('editor-a.webp') 45% 62% / 140% auto no-repeat; border: 1px solid var(--line); -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent); mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent); }
+  .preview em { position: absolute; left: 14px; bottom: 10px; background: rgba(0,0,0,.75); padding: 3px 8px; font: 700 13px var(--font-datos); letter-spacing: .1em; text-transform: uppercase; color: var(--text-2); font-style: normal; }
+  .seed { display: flex; align-items: center; gap: 10px; color: var(--text-3); font-size: 15px; }
+  .seed code { font: 800 18px var(--font-datos); color: #fff; letter-spacing: .1em; padding: 3px 10px; border: 1px dashed var(--line-strong); }
+  .seed button { width: 40px; height: 40px; border: 1px solid var(--line-strong); font-size: 20px; }
+  /* Dosier de la directiva */
+  .dossier { background: #efe9dc; color: #161412; padding: 22px 24px 18px; box-shadow: 0 30px 70px rgba(0,0,0,.7); transform: rotate(1.2deg); position: relative; animation: dosier .7s .5s cubic-bezier(.2,1,.3,1) both; }
+  @keyframes dosier { from { opacity: 0; transform: translateY(40px) rotate(6deg); } to { opacity: 1; transform: rotate(1.2deg); } }
+  .dossier::before { content: 'CONFIDENCIAL'; position: absolute; right: 18px; top: -14px; background: #efe9dc; border: 2px solid #c40500; color: #c40500; font: 800 13px var(--font-datos); letter-spacing: .14em; padding: 2px 8px; transform: rotate(6deg); }
+  .dossier h2 { font: 800 30px var(--font-datos); text-transform: uppercase; line-height: 1; }
+  .dossier .sub { font: italic 16px Georgia, serif; color: #555; margin: 4px 0 14px; }
+  .goal { display: grid; grid-template-columns: 26px 1fr auto; gap: 10px; align-items: center; padding: 9px 0; border-top: 1px solid #cfc6b4; font: 17px Georgia, serif; }
+  .goal i { width: 22px; height: 22px; border: 2px solid #161412; }
+  .goal b { font: 800 15px var(--font-datos); letter-spacing: .06em; text-transform: uppercase; color: #8a1d14; }
+  .goal small { display: block; font: 14px var(--font-ui); color: #6b645a; }
+  .trust { display: flex; align-items: center; gap: 10px; margin-top: 12px; padding-top: 12px; border-top: 2px solid #161412; font: 700 15px var(--font-datos); letter-spacing: .08em; text-transform: uppercase; }
+  .trust span { display: flex; gap: 4px; }
+  .trust span i { width: 26px; height: 12px; background: #2e8b57; }
+  .trust span i.off { background: #cfc6b4; }
+  .trust em { margin-left: auto; font: italic 15px Georgia, serif; text-transform: none; letter-spacing: 0; color: #555; }
+  .sign { margin-top: 16px; display: flex; align-items: flex-end; gap: 16px; }
+  .sign svg { flex: 1; height: 64px; border-bottom: 1px solid #161412; }
+  .sign path { fill: none; stroke: #0b2a6f; stroke-width: 3; stroke-linecap: round; stroke-dasharray: 600; stroke-dashoffset: 600; animation: firma 2s 1.6s ease-in-out forwards; }
+  @keyframes firma { to { stroke-dashoffset: 0; } }
+  .sign small { font: 13px var(--font-ui); color: #6b645a; }
+  .go { margin-top: 18px; display: flex; gap: 10px; }
+  @media (max-width: 1023px) { .ui { grid-template-columns: 1fr; } body { overflow: auto; } }
+  @media (max-width: 767px) {
+    .stage { position: absolute; height: 40vh; background-position: 72% 50%; }
+    .stage::after { background: linear-gradient(0deg, var(--bg) 0, rgba(0,0,0,.4) 60%); }
+    .ui { padding: 14px 16px; }
+    .steps { overflow-x: auto; }
+    .step { white-space: nowrap; font-size: 13px; }
+    .id { margin-top: 16vh; }
+    .name { font-size: 52px; }
+    .dossier { transform: none; animation: none; }
+    .go > * { flex: 1; justify-content: center; }
+  }
+</style>
+</head>
+<body>
+<div class="stage" aria-hidden="true"></div>
+<main class="ui">
+  <nav class="steps in" style="--i:0"><span class="step done"><b>✓</b>Equipo</span><span class="step on"><b>2</b>Identidad</span><span class="step"><b>3</b>Directiva</span></nav>
+  <section class="id">
+    <p class="from in" style="--i:1">Antes: <s>Vowlliams</s> · 9.º en 2022 · presupuesto 26,5 M</p>
+    <div class="field in" style="--i:2"><label>Nombre del equipo</label><div class="name">Brava Racing</div></div>
+    <div class="row in" style="--i:3">
+      <div class="field"><label>Corto</label><span class="short">BRA</span></div>
+      <div class="field"><label>Colores</label><div class="colors"><span class="color" style="--c:#e10600"><span>1</span></span><span class="color" style="--c:#f2f2f2"><span>2</span></span><span class="color c3" style="--c:#111"><span>3</span></span></div></div>
+    </div>
+    <div class="preview in" style="--i:4"><em>Así sale a pista · la librea se cambia en el editor</em></div>
+    <div class="seed in" style="--i:5">Semilla de la partida <code>BRV-7Q2-PALOMA</code><button aria-label="Otra semilla">🎲</button></div>
+  </section>
+  <aside>
+    <div class="dossier">
+      <h2>Objetivos de la directiva · 2023</h2>
+      <p class="sub">«Nadie espera milagros. Pero tampoco ridículos.»</p>
+      <div class="goal"><i></i><span>Acabar 8.º o mejor en constructores<small>El año pasado, 9.º</small></span><b>Obligatorio</b></div>
+      <div class="goal"><i></i><span>Puntuar en 6 carreras<small>Con cualquier piloto</small></span><b>Deseable</b></div>
+      <div class="goal"><i></i><span>No pasar de 140 M de gasto<small>El límite real es 135 M; ellos lo saben</small></span><b>Obligatorio</b></div>
+      <div class="trust">Confianza <span><i></i><i></i><i></i><i class="off"></i><i class="off"></i></span><em>Dos temporadas de margen</em></div>
+      <div class="sign">
+        <svg viewBox="0 0 300 64" aria-hidden="true"><path d="M8 44 C 30 10, 44 10, 40 40 S 70 52, 84 28 C 92 14, 100 46, 112 34 S 140 18, 150 38 C 158 52, 176 20, 190 30 S 222 50, 240 26 C 250 14, 262 40, 292 22"/></svg>
+        <small>Firma del director</small>
+      </div>
+      <div class="go"><button class="primary">Firmar y empezar 2023</button><button class="ghost" style="color:#161412;border-color:#161412;background:transparent">Negociar</button></div>
+    </div>
+  </aside>
+</main>
+</body>
+</html>

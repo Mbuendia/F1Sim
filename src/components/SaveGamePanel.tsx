@@ -70,7 +70,7 @@ export const SaveGamePanel: React.FC<SaveGamePanelProps> = ({ slots, currentName
               <li key={slot.id} className={styles.slot}>
                 <div className={styles.info}>
                   <span className={styles.name}>{slot.name}{slot.auto && <span className={styles.badge}>automático</span>}</span>
-                  <span className={styles.meta}>{formatSavedAt(slot.savedAt)} · Carrera {slot.raceNumber} de {SEASON_RACES}</span>
+                  <span className={styles.meta}>{formatSavedAt(slot.savedAt)} · {slot.year ? `Temporada ${slot.year} · ` : ''}Carrera {slot.raceNumber} de {slot.totalRounds ?? SEASON_RACES}</span>
                   <span className={styles.meta}>
                     {race
                       ? `Carrera en curso: ${circuit}, ${race.finished ? 'terminada' : `vuelta ${Math.min(race.totalLaps, Math.max(1, race.lap))} de ${race.totalLaps}`}`

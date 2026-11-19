@@ -108,7 +108,7 @@ export function serviceStop(sim: RaceSimulation, car: CarState): ServiceStop | n
   if (pit.pitLaneProgress < PitStopModel.getBoxProgress(car, sim.activeTrack) || pit.currentStopTimer <= 0 || pit.currentStopTimer >= pit.stopDuration) return null;
   const to = pit.activeBoxOrder?.compound ?? pit.targetCompound ?? car.tires.compound;
   return { start: round(sim.raceTimeSec - pit.currentStopTimer, 3), duration: pit.stopDuration, cause: pit.stopCause ?? 'normal',
-    ...(pit.stopWheel !== undefined ? { wheel: pit.stopWheel } : {}), from: car.tires.compound, to };
+    ...(pit.stopWheel !== undefined ? { wheel: pit.stopWheel } : {}), from: car.tires.compound, to, ...(pit.activeBoxOrder?.nose ? { nose: true } : {}) };
 }
 
 export function slowView(sim: RaceSimulation, notices: string[] = [], { privateTeams = false } = {}): SlowView {

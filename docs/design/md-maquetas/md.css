@@ -1,0 +1,40 @@
+/* [MD, maquetas del 16/11/2026] Estilo común de las maquetas del modo Desafío: el sistema «Cartel de carrera» del juego
+   (negro y rojo, condensada cursiva, esquinas rectas, cortes en diagonal) con los tokens de src/index.css. */
+@font-face { font-family: 'Barlow'; font-weight: 400; src: url('../../../public/fonts/barlow-400.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow'; font-weight: 600; src: url('../../../public/fonts/barlow-600.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow'; font-weight: 700; src: url('../../../public/fonts/barlow-700.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow Condensed'; font-weight: 700; src: url('../../../public/fonts/barlow-condensed-700.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow Condensed'; font-weight: 800; src: url('../../../public/fonts/barlow-condensed-800.woff2') format('woff2'); }
+@font-face { font-family: 'F-Uno Titular'; src: url('../../../public/fonts/barlow-condensed-800i.woff2') format('woff2'); }
+
+:root {
+  --bg: #050505; --panel: #101010; --panel-2: #1a1a1a; --line: #2a2a2a; --line-strong: #3d3d3d;
+  --text: #fff; --text-2: #b5b5b5; --text-3: #8f8f8f;
+  --accion: #e10600; --accion-oscuro: #8f0400; --positivo: #57d9a3; --aviso: #ffd23f; --info: #5aa9ff;
+  --font-ui: 'Barlow', system-ui, sans-serif; --font-datos: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+  --font-titular: 'F-Uno Titular', 'Barlow Condensed', sans-serif;
+  --corte: polygon(12px 0, 100% 0, calc(100% - 12px) 100%, 0 100%);
+  --equipo: #e10600;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--font-ui); font-size: 16px; }
+body { overflow-x: hidden; }
+button { font: inherit; color: inherit; border: 0; background: none; cursor: pointer; }
+
+.brand { font-family: var(--font-titular); font-size: 34px; text-transform: uppercase; letter-spacing: 0; }
+.brand em { color: var(--accion); font-style: normal; }
+.kicker { font-family: var(--font-datos); font-weight: 700; font-size: 16px; letter-spacing: .14em; text-transform: uppercase; color: var(--accion); }
+.titular { font-family: var(--font-titular); text-transform: uppercase; line-height: .9; letter-spacing: 0; }
+.datos { font-family: var(--font-datos); font-weight: 700; }
+
+.primary { display: inline-flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 30px; background: var(--accion); color: #fff;
+  clip-path: var(--corte); font-family: var(--font-titular); font-size: 20px; text-transform: uppercase; letter-spacing: .03em; }
+.primary:hover { filter: brightness(1.12); }
+.ghost { display: inline-flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 22px; border: 1px solid var(--line-strong);
+  background: rgba(16,16,16,.7); font-family: var(--font-datos); font-weight: 700; font-size: 17px; letter-spacing: .04em; text-transform: uppercase; }
+
+/* Entradas con retraso, como el panel del menú */
+@keyframes entra { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes cortina { from { clip-path: polygon(0 0, 0 0, 0 100%, 0 100%); } to { clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); } }
+.in { animation: entra .55s calc(var(--i, 0) * 90ms + 150ms) cubic-bezier(.2,.8,.2,1) both; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 1ms !important; animation-delay: 0ms !important; transition: none !important; } }

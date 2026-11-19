@@ -15,7 +15,7 @@ import { WEATHER_TESTS } from '../data/weatherScenarios';
 import type { FastView, SlowView, TeamView } from './RaceView';
 
 export type EngineOrder =
-  | { kind: 'box'; carId: number; compound: TireCompound }
+  | { kind: 'box'; carId: number; compound: TireCompound; nose?: boolean }
   | { kind: 'cancelBox'; carId: number }
   /** [OF4] Parada programada: en la vuelta `lap` o dentro de `inLaps` vueltas; sin compuesto, lo elige el muro. */
   | { kind: 'schedulePit'; carId: number; lap?: number; inLaps?: number; compound?: TireCompound }
@@ -307,7 +307,7 @@ export class EngineHost {
     switch (o.kind) {
       case 'box': {
         if (!COMPOUNDS.includes(String(o.compound))) return reject('Compuesto desconocido');
-        const result = sim.issueBoxOrder(car!.id, o.compound as TireCompound, 'player');
+        const result = sim.issueBoxOrder(car!.id, o.compound as TireCompound, 'player', o.nose === true);
         return done(result !== null, car!.pitStop.lastOrderRejection || 'El motor no acepta la parada ahora');
       }
       case 'schedulePit': {

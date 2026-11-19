@@ -197,7 +197,7 @@ export function prepareRace(sim: RaceSimulation) {
   sim.cars = gridOrder.map((driverId, idx) => {
     // [R45] Piloto con sus atributos actuales (idéntico al de siempre si no hay mejoras).
     const driver = applyAttributes(sim.baseDriver(driverId), sim.attributesFor(driverId));
-    const team = TEAMS[driver.teamId];
+    const team = sim.teamFor(driver.teamId);
 
     const gridSpacing = sim.gridSpacing();
     const initialProgress = -((idx + 1) * gridSpacing);
