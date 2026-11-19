@@ -8,7 +8,7 @@ import { liveryArt } from './liveryArt';
 import type { LiveryArt } from './liveryArt';
 import { mulberry32, streamSeed } from '../simulation/Random';
 
-export interface SeasonLivery { primary: string; secondary: string; sponsors: string[]; zones?: Partial<Record<string, string>>; emblem?: string; art?: LiveryArt; artKey?: string }
+export interface SeasonLivery { primary: string; secondary: string; sponsors: string[]; zones?: Partial<Record<string, string>>; emblem?: string; art?: LiveryArt; artKey?: string; /** [TL5] Color del dorsal (tu librea). */ numberColor?: string; /** [TL5] Rótulos que se ven aunque haya librea dibujada (material → patrocinador). */ decalSlots?: Partial<Record<string, string>> }
 
 /**
  * [TL4, 19/11/2026] Disposición de los colores de cada coche, como la librea real de ese año (sin marcas): qué color va en

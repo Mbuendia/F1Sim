@@ -1,0 +1,53 @@
+/* [TL5] Editor de tu librea: coche a la izquierda y opciones a la derecha; en móvil, uno debajo del otro. */
+.editor {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+  color: var(--text);
+  font-family: var(--font-ui);
+}
+.preview {
+  min-height: 200px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radio-m);
+  overflow: hidden;
+}
+.controls { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.group {
+  border: 1px solid var(--line);
+  border-radius: var(--radio-m);
+  padding: 10px 12px;
+  margin: 0;
+  background: var(--panel);
+  min-width: 0;
+}
+.group legend { padding: 0 6px; color: var(--text-2); font-size: var(--letra-1); text-transform: uppercase; letter-spacing: 0.04em; }
+.templates { display: flex; flex-wrap: wrap; gap: 6px; }
+.template {
+  min-height: 36px;
+  padding: 6px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radio-s);
+  background: var(--panel-2);
+  color: var(--text);
+  cursor: pointer;
+}
+.template[aria-checked='true'] { border-color: var(--accion); box-shadow: inset 0 0 0 1px var(--accion); }
+.colors { display: flex; flex-wrap: wrap; gap: 12px; }
+.color { display: flex; align-items: center; gap: 6px; font-size: var(--letra-1); }
+.color input { width: 40px; height: 32px; padding: 0; border: 1px solid var(--line-strong); border-radius: var(--radio-s); background: none; cursor: pointer; }
+.warning { margin: 8px 0 0; color: var(--aviso); font-size: var(--letra-1); }
+.hint { margin: 0 0 8px; color: var(--text-3); font-size: var(--letra-1); }
+.slots { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.slot { display: flex; flex-direction: column; gap: 4px; font-size: var(--letra-1); color: var(--text-2); min-width: 0; }
+.slot select { min-height: 36px; background: var(--panel-2); color: var(--text); border: 1px solid var(--line-strong); border-radius: var(--radio-s); padding: 4px 8px; }
+.actions { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+.actions button { min-height: 40px; padding: 8px 16px; border-radius: var(--radio-s); border: 1px solid var(--line-strong); background: var(--panel-2); color: var(--text); cursor: pointer; }
+.actions .primary { background: var(--accion); border-color: var(--accion); color: var(--text); font-weight: 700; }
+
+@media (max-width: 760px) {
+  .editor { grid-template-columns: 1fr; }
+  .slots { grid-template-columns: 1fr; }
+}

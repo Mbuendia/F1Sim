@@ -17,6 +17,9 @@ export interface Livery {
   /** [TL4] Librea dibujada (vista de lado y de arriba, con sus patrocinadores a escala real). */
   art?: import('./liveryArt').LiveryArt;
   artKey?: string;
+  /** [TL5] Color del dorsal y rótulos que se ven aunque haya librea dibujada (tu librea). */
+  numberColor?: string;
+  decalSlots?: Partial<Record<string, string>>;
 }
 
 /** [TL4] Zonas de pintura de la carrocería (las clasifica paintZones al cargar el coche). */

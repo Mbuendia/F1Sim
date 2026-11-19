@@ -41,6 +41,12 @@ function drawShapes(ctx: CanvasRenderingContext2D, shapes: ArtShape[], X: (u: nu
       } else {
         const draw = 'logo' in s ? LOGOS[s.logo] : EMBLEMS[s.emblem];
         if (draw) draw(ctx, w, h, luminance(under) < 0.45);
+        else if ('logo' in s) {
+          // [TL5] Patrocinador sin logotipo dibujado (los que firma la gestión): su nombre, en letra clara u oscura.
+          ctx.fillStyle = luminance(under) < 0.45 ? '#ffffff' : '#141414'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.font = `900 ${h * 0.8}px "Arial Black", "Barlow", sans-serif`;
+          const tw = ctx.measureText(s.logo).width; ctx.translate(w / 2, h / 2); ctx.scale(Math.min(1.4, w / Math.max(1, tw)), 1); ctx.fillText(s.logo, 0, 0);
+        }
       }
       ctx.restore();
     }

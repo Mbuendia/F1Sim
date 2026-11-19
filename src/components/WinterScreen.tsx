@@ -17,7 +17,7 @@ const Row = ({ label, value, tone }: { label: string; value: string; tone?: stri
  * completa con barra de progreso: cierre y premios, junta, mercado, parrilla y coche nuevo con su objetivo. Se puede
  * volver atrás hasta confirmar; al confirmar empieza la temporada nueva.
  */
-export function WinterScreen({ report, onConfirm, initialStep = 0 }: { report: WinterReport; onConfirm: () => void; initialStep?: number }) {
+export function WinterScreen({ report, onConfirm, initialStep = 0, onLivery }: { report: WinterReport; onConfirm: () => void; initialStep?: number; /** [TL5] Abre el editor de tu librea (solo en la pretemporada). */ onLivery?: () => void }) {
   const [step, setStep] = useState(Math.max(0, Math.min(STEPS.length - 1, initialStep)));
   const tone = (amount: number) => (amount > 0 ? m.pos : amount < 0 ? m.neg : '');
   const { close, board, market, grid, car } = report;
@@ -114,7 +114,7 @@ export function WinterScreen({ report, onConfirm, initialStep = 0 }: { report: W
             {step > 0 ? <button type="button" className={m.button} onClick={() => setStep(step - 1)}><ArrowLeft size={16} aria-hidden /> Atrás</button> : <span />}
             {step < STEPS.length - 1
               ? <button type="button" className={m.primary} onClick={() => setStep(step + 1)}>Siguiente <ArrowRight size={16} aria-hidden /></button>
-              : <button type="button" className={m.primary} onClick={onConfirm}>Empezar la temporada {report.nextSeason} <ArrowRight size={16} aria-hidden /></button>}
+              : <span className={m.row}>{onLivery && <button type="button" className={m.button} onClick={onLivery}>Tu librea</button>}<button type="button" className={m.primary} onClick={onConfirm}>Empezar la temporada {report.nextSeason} <ArrowRight size={16} aria-hidden /></button></span>}
           </div>
         </div>
       </div>

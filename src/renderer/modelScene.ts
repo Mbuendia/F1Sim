@@ -595,7 +595,7 @@ const CARBON_BACKGROUND = '#111111';
  * las texturas de los rótulos (para vestir después el mismo modelo con otra librea).
  */
 export function dressCar(
-  root: THREE.Object3D, livery: { primary: string; secondary: string; sponsors: string[]; zones?: Partial<Record<string, string>>; emblem?: string; art?: LiveryArt; artKey?: string }, number: number, compoundColor: string,
+  root: THREE.Object3D, livery: { primary: string; secondary: string; sponsors: string[]; zones?: Partial<Record<string, string>>; emblem?: string; art?: LiveryArt; artKey?: string; numberColor?: string; decalSlots?: Partial<Record<string, string>> }, number: number, compoundColor: string,
 ): () => void {
   applyLivery(root, liveryColors(livery, compoundColor));
   // [TL4] Librea dibujada: la carrocería lee el dibujo proyectado y los rótulos sueltos se apagan (salvo los dorsales).
@@ -616,13 +616,14 @@ export function dressCar(
   }
   const textures: THREE.Texture[] = [];
   for (const [material, rawText] of Object.entries(decalTexts(livery, number))) {
-    const text = livery.art && !NUMBER_DECALS.has(material) ? '' : rawText;
+    // [TL5] Con librea dibujada solo quedan los dorsales y los rótulos que la librea pide (las placas del alerón de tu librea).
+    const text = livery.art && !NUMBER_DECALS.has(material) ? livery.decalSlots?.[material] ?? '' : rawText;
     const background = DECAL_BACKGROUND[material] ?? 'primary';
     // [TL4] Lo que hay debajo de cada rótulo: el color de su zona, si la librea lo dice.
     const zone = DECAL_ZONE[material];
     const under = background === 'carbon' ? CARBON_BACKGROUND : (zone && livery.zones?.[zone]) || livery[background];
     const aspect = DECAL_ASPECT[material] ?? 4;
-    const texture = NUMBER_DECALS.has(material) ? textTexture(text, textColorOn(under), aspect) : brandTexture(text, under, aspect);
+    const texture = NUMBER_DECALS.has(material) ? textTexture(text, livery.numberColor ?? textColorOn(under), aspect) : brandTexture(text, under, aspect);
     // [TL7] El plano del alerón trasero tiene sus coordenadas de textura al revés: sin esto, el rótulo sale en espejo.
     if (material === CAR_MODEL.decals.rearwing) { texture.wrapS = THREE.RepeatWrapping; texture.repeat.x = -1; texture.offset.x = 1; }
     setDecal(root, material, texture);
@@ -635,7 +636,7 @@ export function dressCar(
     const mesh = o as THREE.Mesh;
     if (!mesh.isMesh) return;
     for (const m of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) {
-      if (decalNames.has(m.name)) m.visible = !livery.art || NUMBER_DECALS.has(m.name);
+      if (decalNames.has(m.name)) m.visible = !livery.art || NUMBER_DECALS.has(m.name) || Boolean(livery.decalSlots?.[m.name]);
     }
   });
   return () => { for (const texture of textures) texture.dispose(); };
