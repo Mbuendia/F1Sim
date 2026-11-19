@@ -285,3 +285,6 @@
   color: var(--text);
 }
 .liveryScreen h1 { margin: 0 0 16px; font-family: var(--font-marca, var(--font-ui)); font-size: var(--letra-4); }
+
+/* [TL6] Presentación de la temporada a pantalla completa. */
+.presentationScreen { min-height: 100vh; box-sizing: border-box; padding: 16px; background: var(--negro); color: var(--text); }

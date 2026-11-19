@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense } from 'react';
 import { defaultPlayerLivery, withPlayerLivery } from './data/playerLivery';
-import LiveryEditor from './components/LiveryEditor';
+import { seasonPresentation } from './data/presentation';
+import { teamFormFor } from './data/seasons';
 import styles from './App.module.css';
 import { RaceTabs, raceLayout, mobileRaceView } from './components/RaceTabs';
 import { LapStrip } from './components/LapStrip';
@@ -49,6 +50,9 @@ import { Leaderboard } from './components/Leaderboard';
 import { BottomTelemetryDock } from './components/BottomTelemetryDock';
 // [UX1] Ajustes fuera del paquete principal.
 const SettingsScreen = lazy(() => import('./components/SettingsScreen'));
+// [TL5, TL6] El editor de tu librea y la presentación de la temporada llevan three.js: se cargan cuando hacen falta.
+const LiveryEditor = lazy(() => import('./components/LiveryEditor'));
+const SeasonPresentation = lazy(() => import('./components/SeasonPresentation'));
 import { BoxControls } from './components/BoxControls';
 import { RightStatsPanel } from './components/RightStatsPanel';
 import { PodiumModal } from './components/PodiumModal';
@@ -232,6 +236,8 @@ export const App: React.FC<{ startAt?: 'menu' }> = ({ startAt }) => {
   // [T4.11] Informe del invierno: se guarda hasta que se confirma, así que al reabrir el juego se vuelve a ver.
   // [TL5] Editor de tu librea: al crear la carrera profesional o desde la pretemporada.
   const [liveryEditor, setLiveryEditor] = useState<'new' | 'winter' | null>(null);
+  // [TL6] Al crear la carrera, después de tu librea, la presentación de la temporada.
+  const [openingPresentation, setOpeningPresentation] = useState(false);
   const [winter, setWinter] = useState<WinterReport | null>(() => { try { return parseWinter(localStorage.getItem(WINTER_KEY)); } catch { return null; } });
   const showWinter = useCallback((report: WinterReport | null) => {
     setWinter(report);
@@ -1455,6 +1461,13 @@ export const App: React.FC<{ startAt?: 'menu' }> = ({ startAt }) => {
     handleLoadGame(id);
     if (loaded?.save) markCareer(loaded.save.name);
   };
+  // [TL6] Presentación de la temporada: el coche de ese año de cada equipo (el tuyo con tu librea) y lo que cambia.
+  const presentation = useMemo(() => {
+    if (mode !== 'career') return null;
+    const year = seasonYear(season);
+    const form = withPlayerLivery(seasonForm(season) ?? teamFormFor(year), management.playerTeamId, year, management.livery);
+    return seasonPresentation(year, management.playerTeamId, { form, lineup: lineupOf(management.contracts) });
+  }, [mode, season, management.playerTeamId, management.livery, management.contracts]);
   const handleNewCareer = (teamId: string, name: string, startYear?: number) => {
     keepCurrentCareer();
     const fresh = newCareer(teamId, name, newRaceSeed(), startYear);
@@ -1573,16 +1586,20 @@ export const App: React.FC<{ startAt?: 'menu' }> = ({ startAt }) => {
     return (
       <div className={styles.liveryScreen}>
         <h1>Tu librea · {team.name}</h1>
-        <LiveryEditor teamId={teamId} year={seasonYear(season)} number={firstDriver?.number ?? 1} sponsors={signed}
+        <Suspense fallback={null}><LiveryEditor teamId={teamId} year={seasonYear(season)} number={firstDriver?.number ?? 1} sponsors={signed}
           value={management.livery ?? defaultPlayerLivery(team.color, team.accentColor, signed)}
           skipLabel={liveryEditor === 'new' ? 'Saltar' : 'Cancelar'}
-          onSkip={() => setLiveryEditor(null)}
-          onSave={livery => { saveManagement({ ...management, livery }); setLiveryEditor(null); }} />
+          onSkip={() => { if (liveryEditor === 'new') setOpeningPresentation(true); setLiveryEditor(null); }}
+          onSave={livery => { saveManagement({ ...management, livery }); if (liveryEditor === 'new') setOpeningPresentation(true); setLiveryEditor(null); }} /></Suspense>
       </div>
     );
   }
+  if (currentView === 'home' && mode === 'career' && openingPresentation && !winter && presentation) {
+    return <div className={styles.presentationScreen}><Suspense fallback={null}><SeasonPresentation presentation={presentation} doneLabel="Empezar la temporada" onDone={() => setOpeningPresentation(false)} /></Suspense></div>;
+  }
   if (currentView === 'home' && mode === 'career' && winter) {
-    return <WinterScreen report={winter} onConfirm={() => showWinter(null)} onLivery={() => setLiveryEditor('winter')} />;
+    return <WinterScreen report={winter} onConfirm={() => showWinter(null)} onLivery={() => setLiveryEditor('winter')}
+      presentation={presentation ? <Suspense fallback={null}><SeasonPresentation presentation={presentation} embedded onDone={() => {}} /></Suspense> : undefined} />;
   }
   if (currentView === 'report' && roundReport) {
     return <RoundReportScreen report={roundReport} onContinue={() => { showRoundReport(null); setCurrentView('home'); }} />;

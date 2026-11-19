@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { formatMoney } from '../simulation/Finance';
 import type { WinterReport } from '../simulation/Winter';
@@ -17,8 +17,10 @@ const Row = ({ label, value, tone }: { label: string; value: string; tone?: stri
  * completa con barra de progreso: cierre y premios, junta, mercado, parrilla y coche nuevo con su objetivo. Se puede
  * volver atrás hasta confirmar; al confirmar empieza la temporada nueva.
  */
-export function WinterScreen({ report, onConfirm, initialStep = 0, onLivery }: { report: WinterReport; onConfirm: () => void; initialStep?: number; /** [TL5] Abre el editor de tu librea (solo en la pretemporada). */ onLivery?: () => void }) {
-  const [step, setStep] = useState(Math.max(0, Math.min(STEPS.length - 1, initialStep)));
+export function WinterScreen({ report, onConfirm, initialStep = 0, onLivery, presentation }: { report: WinterReport; onConfirm: () => void; initialStep?: number; /** [TL5] Abre el editor de tu librea (solo en la pretemporada). */ onLivery?: () => void; /** [TL6] Presentación de la temporada: con ella, un paso más antes del coche nuevo. */ presentation?: ReactNode }) {
+  const steps: readonly string[] = presentation ? [...STEPS.slice(0, 4), 'Presentación', STEPS[4]] : STEPS;
+  const [step, setStep] = useState(Math.max(0, Math.min(steps.length - 1, initialStep)));
+  const current = steps[step];
   const tone = (amount: number) => (amount > 0 ? m.pos : amount < 0 ? m.neg : '');
   const { close, board, market, grid, car } = report;
   const quiet = market.retired.length + market.moves.length + market.promoted.length + market.left.length === 0;
@@ -27,14 +29,14 @@ export function WinterScreen({ report, onConfirm, initialStep = 0, onLivery }: {
       <header className={s.head} style={{ boxShadow: 'inset 0 3px 0 var(--equipo)' }}>
         <h1>Invierno · de la temporada {report.year ?? report.season} a la {report.year ? report.year + 1 : report.nextSeason}</h1>
         <span className={s.spacer} />
-        <span className={m.chip}>Paso {step + 1} de {STEPS.length} · {STEPS[step]}</span>
+        <span className={m.chip}>Paso {step + 1} de {steps.length} · {current}</span>
       </header>
-      <div className={m.bar} role="progressbar" aria-valuemin={1} aria-valuemax={STEPS.length} aria-valuenow={step + 1} aria-label="Pasos del invierno">
-        <i style={{ width: `${((step + 1) / STEPS.length) * 100}%` }} />
+      <div className={m.bar} role="progressbar" aria-valuemin={1} aria-valuemax={steps.length} aria-valuenow={step + 1} aria-label="Pasos del invierno">
+        <i style={{ width: `${((step + 1) / steps.length) * 100}%` }} />
       </div>
       <div className={s.body}>
         <div className={m.stack} style={{ gap: 14, maxWidth: 980, margin: '0 auto', width: '100%' }}>
-          <h2 className={m.title} style={{ fontSize: 22 }}>{STEPS[step]}</h2>
+          <h2 className={m.title} style={{ fontSize: 22 }}>{current}</h2>
 
           {step === 0 && (
             <section className={m.card}>
@@ -96,7 +98,8 @@ export function WinterScreen({ report, onConfirm, initialStep = 0, onLivery }: {
             </section>
           )}
 
-          {step === 4 && (
+          {current === 'Presentación' && presentation}
+          {current === STEPS[4] && (
             <section className={`${m.card} ${m.stack}`}>
               <span className={m.label}>Coche nuevo de {car.teamName}</span>
               <p className={m.count}>El coche de la temporada {report.nextSeason} conserva la mitad de cada mejora montada en el anterior; los proyectos a medias se pierden.</p>
@@ -112,7 +115,7 @@ export function WinterScreen({ report, onConfirm, initialStep = 0, onLivery }: {
 
           <div className={`${m.row} ${m.between}`}>
             {step > 0 ? <button type="button" className={m.button} onClick={() => setStep(step - 1)}><ArrowLeft size={16} aria-hidden /> Atrás</button> : <span />}
-            {step < STEPS.length - 1
+            {step < steps.length - 1
               ? <button type="button" className={m.primary} onClick={() => setStep(step + 1)}>Siguiente <ArrowRight size={16} aria-hidden /></button>
               : <span className={m.row}>{onLivery && <button type="button" className={m.button} onClick={onLivery}>Tu librea</button>}<button type="button" className={m.primary} onClick={onConfirm}>Empezar la temporada {report.nextSeason} <ArrowRight size={16} aria-hidden /></button></span>}
           </div>

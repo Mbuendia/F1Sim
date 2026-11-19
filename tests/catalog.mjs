@@ -653,6 +653,7 @@ export const modules = [
   { "id": "car-models-tl7", "tasks": ["TL7"], "sprint": "12", "kind": "contract" },
   { "id": "car-upgrades-tl4", "tasks": ["TL4"], "sprint": "12", "kind": "contract" },
   { "id": "player-livery-tl5", "tasks": ["TL5"], "sprint": "12", "kind": "contract" },
+  { "id": "season-presentation-tl6", "tasks": ["TL6"], "sprint": "12", "kind": "contract" },
   { "id": "offline-of1", "tasks": ["OF1"], "sprint": "13", "kind": "contract" },
   { "id": "storage-of2", "tasks": ["OF2"], "sprint": "13", "kind": "contract" },
   { "id": "updates-of3", "tasks": ["OF3"], "sprint": "13", "kind": "contract" },

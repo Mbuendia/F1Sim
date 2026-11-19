@@ -42,7 +42,7 @@ export function measureDist(dir) {
   for (const f of files) {
     const kind = Object.keys(KINDS).find(k => KINDS[k].test(f.rel));
     const size = gz(f.path);
-    if (kind === 'models' && (f.rel.startsWith('epoca/') || f.rel.startsWith('mejoras/'))) result.modelsOnDemand += size;
+    if (kind === 'models' && (f.rel.startsWith('epoca/') || f.rel.startsWith('mejoras/') || f.rel.startsWith('presentacion/'))) result.modelsOnDemand += size;
     else if (kind === 'js') result.totalJs += size;
     else if (kind) result[kind] += size;
     else result.other += size;
