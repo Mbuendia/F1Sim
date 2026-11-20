@@ -101,8 +101,11 @@ export default async function run({ server, assert, test }) {
     const { RaceMenu } = await server.ssrLoadModule('/src/components/RaceMenu.tsx');
     const html = renderToStaticMarkup(createElement(RaceMenu, { safetyCarDeployed: false, onToggleSafetyCarTest() {}, onRedFlagTest() {}, defaultOpen: true,
       audio: { level: 1, labels: AUDIO_LEVEL_LABEL, onLevel() {}, credits } }));
-    assert(AUDIO_LEVEL_LABEL.every(label => html.includes(label)) && (html.match(/role="menuitemradio"/g) ?? []).length === 3 && /aria-checked="true"[^>]*>Sonido bajo/.test(html) && /Créditos de los sonidos/.test(html) && /Bandera a cuadros/.test(html),
-      'T4.16: el menú de carrera tiene el volumen (apagado, bajo, alto) y los créditos de los sonidos');
+    assert(AUDIO_LEVEL_LABEL.every(label => html.includes(label)) && (html.match(/role="menuitemradio"/g) ?? []).length === 3 && /aria-checked="true"[^>]*>Sonido bajo/.test(html) && !/Créditos de los sonidos/.test(html)
+      && /Créditos de los sonidos/.test(readFileSync(new URL('../../src/components/SettingsScreen.tsx', import.meta.url), 'utf8')),
+      // [MJ8, 20/11/2026] Cambiado con autorización del usuario («Sí, cámbialo»): los créditos de los sonidos salen del menú de
+      // carrera y quedan en Ajustes (antes este caso los pedía en el menú).
+      'T4.16: el menú de carrera tiene el volumen (apagado, bajo, alto); los créditos de los sonidos están en Ajustes');
     const app = readFileSync(new URL('../../src/App.tsx', import.meta.url), 'utf8');
     assert(/audio\.unlock\(\)/.test(app) && /audio\.setPaused\(document\.hidden \|\| isPaused \|\| currentView !== 'race'\)/.test(app) && /audio\.dispose\(\)/.test(app) && /soundsBetween\(audioSeen\.current, heard\)/.test(app),
       'T4.16: la aplicación desbloquea el audio con la primera interacción, lo calla en pausa o con la página oculta y lo libera al salir');

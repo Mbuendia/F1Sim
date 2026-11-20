@@ -30,6 +30,8 @@ export interface SharedInit {
   hostUid: string;
   hostTeamId: string;
   players: ({ uid: string; teamId: string } | { uid: string; spectator: true })[];
+  /** [MJ2, 19/11/2026] Nombre de cada jugador, para decir quién ha pausado. */
+  names?: Record<string, string>;
 }
 
 export function createEngine(init: EngineInit): { host: EngineHost; replies: EngineMessage[] } {
@@ -51,5 +53,6 @@ export function createEngine(init: EngineInit): { host: EngineHost; replies: Eng
   if (typeof config?.luckVariantEnabled === 'boolean') sim.luckVariantEnabled = config.luckVariantEnabled;
   // [N8] Los demás jugadores entran después de cargar la carrera (cargar no toca los dueños, pero sí los coches).
   if (shared) for (const p of shared.players ?? []) host.join(p.uid, 'spectator' in p ? { spectator: true } : { teamId: p.teamId });
+  if (shared?.names) host.setNames(shared.names);
   return { host, replies };
 }

@@ -10,7 +10,7 @@ import type { RaceConfig } from '../engine/engineCore';
 import type { RosterEntry } from '../engine/raceCars';
 import { raceStore, useRace } from '../state/raceStore';
 import type { LinkStore } from '../state/linkStore';
-import { PAUSE_REQUEST_COOLDOWN_MS, RemoteLink, requestPause } from '../net/SharedRace';
+import { PAUSE_REQUEST_COOLDOWN_MS, RemoteLink, requestPause, resumePause } from '../net/SharedRace';
 import { ClientRaceScreen } from './ClientRace';
 import { QualifyingLive } from './QualifyingLive';
 import { QualifyingResults } from './QualifyingResults';
@@ -83,7 +83,7 @@ export interface HostStart {
 const GUEST_CONFIG: RaceConfig = { fixedStepSec: 0.02, autoStartTyres: false, seededPreparation: false, autoTeamOrders: false, upgradeTradeoffs: {}, luckVariantEnabled: false };
 
 /** [N8] Carrera en el dispositivo del invitado: la sesión de N3 sobre el enlace remoto, en el almacén de la aplicación. */
-function GuestRace({ transport, race, lobby, myUid, linkStore, closed, onLeave }: {
+function GuestRace({ transport, race, lobby, myUid, linkStore, closed, onLeave, roomCode = null }: {
   transport: GuestTransport;
   race: SharedRaceRecord;
   /** [N9] La sala se ha cerrado (el anfitrión la cerró o se cayó). */
@@ -92,6 +92,8 @@ function GuestRace({ transport, race, lobby, myUid, linkStore, closed, onLeave }
   myUid: string;
   linkStore: LinkStore;
   onLeave: () => void;
+  /** [MJ9, 20/11/2026] Para decir cómo volver a la sala. */
+  roomCode?: string | null;
 }) {
   const sessionRef = useRef<RaceSession | null>(null);
   const [selected, setSelected] = useState<number | null>(null);
@@ -136,8 +138,11 @@ function GuestRace({ transport, race, lobby, myUid, linkStore, closed, onLeave }
       link={peer === 'none' ? 'none' : peer} pauseRequested={pauseRequested} closed={closed}
       track={<RaceCanvas track={track} circuitId={race.circuitId} roster={race.roster} camera={camera} selectedCarId={selected} onSelectCar={setSelected} />}
       onOrder={order => sessionRef.current?.order(order) ?? Promise.resolve({ ok: false, reason: 'Sin carrera' })}
-      onRequestPause={() => { const session = sessionRef.current; if (!session) return; setPauseRequested(true); void requestPause(session); }}
-      onLeave={onLeave} />
+      // [MJ2, 19/11/2026] Mientras llega la respuesta, el botón espera; si el motor la rechaza (sin pausas o ya en pausa), vuelve.
+      onRequestPause={() => { const session = sessionRef.current; if (!session) return; setPauseRequested(true); void requestPause(session).then(() => setPauseRequested(false)); }}
+      selectedCarId={selected} onSelectCar={setSelected}
+      myUid={myUid} onResumePause={() => { const session = sessionRef.current; if (session) void resumePause(session); }}
+      onLeave={onLeave} roomCode={roomCode} />
   );
 }
 
@@ -336,7 +341,7 @@ export function RoomFlow({ intent, initialCode, onExit, onHostStart, resume, bac
   if (lobby.race) lastRace.current = lobby.race;
   else if (status === 'lobby') lastRace.current = null;
   if ((status === 'race' || status === 'closed') && lastRace.current && guestTransport.current) {
-    return <GuestRace transport={guestTransport.current} race={lastRace.current} lobby={lobby} myUid={db.uid} linkStore={linkStore} closed={status === 'closed'} onLeave={exit} />;
+    return <GuestRace transport={guestTransport.current} race={lastRace.current} lobby={lobby} myUid={db.uid} linkStore={linkStore} closed={status === 'closed'} onLeave={exit} roomCode={code} />;
   }
   if (lobby.phase === 'equipos') return selection(false);
   return <GuestWaiting code={code} players={playersOf(lobby, links)} settings={lobby.settings} status={status} onLeave={exit} />;

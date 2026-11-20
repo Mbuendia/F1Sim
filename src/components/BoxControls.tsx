@@ -91,7 +91,7 @@ export function WallSpeedometer({ car, selected, onSelect }: { car: CarState; se
 // [Q11] Panel dual de pilotos del equipo — controles independientes de boxes para ambos coches.
 // [V3] Sin desplegables: el ritmo y el compuesto son controles segmentados, el estado del coche son medidores y los
 // avisos, fichas en una sola línea. Cada tarjeta mide siempre lo mismo, así que el muro no le cambia el alto al circuito.
-export function BoxControls({ car, teamCars, team, race, send, slow, focusId }: {
+export function BoxControls({ car, teamCars, team, race, send, slow, focusId, onSelectCar }: {
   car: CarState;
   /** [UX7] Coche que el jugador ha seleccionado: si es suyo, el muro (y su velocímetro) pasa a ese piloto. */
   focusId?: number | null;
@@ -104,6 +104,8 @@ export function BoxControls({ car, teamCars, team, race, send, slow, focusId }: 
   send: (order: EngineOrder) => Promise<Ack>;
   /** [IA2] Última vista lenta de la carrera: hora, vuelta, tiempo y avisos para las llamadas de los pilotos. */
   slow?: SlowView | null;
+  /** [MJ6, 19/11/2026] Tocar el nombre del piloto lo selecciona (se remarca en la pista). */
+  onSelectCar?: (carId: number) => void;
 }) {
   const own = (carId: number) => team?.cars.find(c => c.id === carId);
   // State is keyed per car id so toggling between pilots doesn't lose compound selection
@@ -210,7 +212,8 @@ export function BoxControls({ car, teamCars, team, race, send, slow, focusId }: 
           return (
             <div key={p.id} className={styles.pilotCard} data-shown={p.id === shown ? 'true' : undefined}>
               <div className={styles.pilotIdentity}>
-                <span className={styles.pilotCode}>{p.driver.code} #{p.driver.number}</span>
+                <span className={styles.pilotCode} {...(onSelectCar ? { role: 'button', tabIndex: 0, 'data-select-car': p.id, title: `Remarcar a ${p.driver.code} en la pista`,
+                  onClick: () => onSelectCar(p.id), onKeyDown: (e: React.KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelectCar(p.id); } } } : {})}>{p.driver.code} #{p.driver.number}</span>
                 <span className={styles.pilotPos}>P{p.currentPosition}</span>
                 {statusBadge && <span className={`${styles.badge} ${statusClass}`}>{statusBadge}</span>}
                 <button type="button" data-radio className={styles.radioButton} onClick={() => setRadioCar(p.id)} title="Hablar por radio con el piloto (tecla R)"

@@ -1,12 +1,11 @@
 import React from 'react';
 import styles from './SpeedControls.module.css';
-import { Pause, Play, FastForward, RotateCcw } from 'lucide-react';
+import { Pause, Play, FastForward } from 'lucide-react';
 
 interface SpeedControlsProps {
   currentSpeed: number;
   isPaused: boolean;
   onSpeedChange: (speed: number) => void;
-  onReset: () => void;
   raceTimeFormatted: string;
   leaderLap: number;
   totalLaps: number;
@@ -16,7 +15,6 @@ export const SpeedControls: React.FC<SpeedControlsProps> = ({
   currentSpeed,
   isPaused,
   onSpeedChange,
-  onReset,
   raceTimeFormatted,
   leaderLap,
   totalLaps
@@ -35,7 +33,8 @@ export const SpeedControls: React.FC<SpeedControlsProps> = ({
       <div className={styles.buttonGroup}>
         <button
           className={`${styles.btn} ${isPaused ? styles.active : ''}`}
-          onClick={() => onSpeedChange(0)}
+          // [MJ2, 19/11/2026] Alterna: en pausa, sigue a la velocidad que llevaba (antes siempre pausaba y no se podía reanudar).
+          onClick={() => onSpeedChange(isPaused ? currentSpeed : 0)}
           title={isPaused ? 'Reanudar simulación (Espacio)' : 'Pausar simulación (Espacio)'}
           aria-label={isPaused ? 'Reanudar (Espacio)' : 'Pausar (Espacio)'}
         >
@@ -65,10 +64,7 @@ export const SpeedControls: React.FC<SpeedControlsProps> = ({
         <span className={styles.timeValue}>{raceTimeFormatted}</span>
       </div>
 
-      {/* Botón de reinicio */}
-      <button className={styles.resetBtn} onClick={onReset} title="Reiniciar carrera" aria-label="Reiniciar carrera">
-        <RotateCcw size={14} />
-      </button>
+      {/* [MJ8, 19/11/2026] Sin botón de reinicio en la barra: se pulsaba sin querer. «Repetir carrera» sigue en la pantalla de resultados. */}
     </div>
   );
 };

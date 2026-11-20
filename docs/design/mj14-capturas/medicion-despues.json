@@ -1,0 +1,70 @@
+{
+  "2023-mclaren": {
+    "suspension": {
+      "faces": 6108,
+      "painted": 0
+    },
+    "floor": {
+      "faces": 5657,
+      "painted": 0
+    },
+    "haloZone": 0,
+    "islands": 0,
+    "islandFaces": 0,
+    "sideCarbon": {
+      "faces": 4078,
+      "carbon": 58
+    }
+  },
+  "2024-mclaren": {
+    "suspension": {
+      "faces": 10248,
+      "painted": 0
+    },
+    "floor": {
+      "faces": 2458,
+      "painted": 0
+    },
+    "haloZone": 0,
+    "islands": 0,
+    "islandFaces": 0,
+    "sideCarbon": {
+      "faces": 4772,
+      "carbon": 118
+    }
+  },
+  "2025-mclaren": {
+    "suspension": {
+      "faces": 4352,
+      "painted": 0
+    },
+    "floor": {
+      "faces": 14490,
+      "painted": 0
+    },
+    "haloZone": 0,
+    "islands": 0,
+    "islandFaces": 0,
+    "sideCarbon": {
+      "faces": 6874,
+      "carbon": 306
+    }
+  },
+  "2026-mclaren": {
+    "suspension": {
+      "faces": 8753,
+      "painted": 0
+    },
+    "floor": {
+      "faces": 9285,
+      "painted": 0
+    },
+    "haloZone": 0,
+    "islands": 0,
+    "islandFaces": 0,
+    "sideCarbon": {
+      "faces": 4444,
+      "carbon": 0
+    }
+  }
+}

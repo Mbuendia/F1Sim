@@ -148,7 +148,8 @@ export default async function run({ server, assert, test }) {
     const chase = chaseView(car);
     const back = rel(chase.position), backDist = Math.hypot(back.x, back.y);
     // [CA8, autorizado por el usuario el 07/11/2026] La persecución va más cerca: de «a 8-20 m» a «a 5-20 m» detrás del coche.
-    assert(dot(back, fwd) < 0 && backDist >= 5 && backDist <= 20 && chase.position.z >= 2 && chase.position.z <= 6, 'Cámaras: persecución detrás del coche, a 5-20 m y algo elevada', JSON.stringify(chase.position));
+    // [19/11/2026, autorizado por el usuario («Cámbialo a 4 m»)] De «a 5-20 m» a «a 4-20 m»: la persecución va a 4,5 m.
+    assert(dot(back, fwd) < 0 && backDist >= 4 && backDist <= 20 && chase.position.z >= 2 && chase.position.z <= 6, 'Cámaras: persecución detrás del coche, a 4-20 m y algo elevada', JSON.stringify(chase.position));
     assert(Math.hypot(chase.target.x - car.x, chase.target.y - car.y) <= 3, 'Cámaras: la persecución mira al coche');
 
     const onboard = onboardView(car);

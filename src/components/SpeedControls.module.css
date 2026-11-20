@@ -101,25 +101,6 @@
   color: var(--text);
 }
 
-.resetBtn {
-  background: color-mix(in srgb, var(--text) 6%, transparent);
-  color: var(--text-2);
-  border: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
-  padding: 8px;
-  border-radius: var(--radio-m);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all var(--t-rapido) ease;
-}
-
-.resetBtn:hover {
-  background: color-mix(in srgb, var(--accion) 20%, transparent);
-  color: var(--accion);
-  border-color: color-mix(in srgb, var(--accion) 40%, transparent);
-}
-
 /* R32: controles integrados en la barra de carrera (una sola línea, cifras en Rajdhani). */
 .container { gap: 10px; padding: 0; background: transparent; backdrop-filter: none; border: none; box-shadow: none; }
 .lapBadge, .timeBadge { flex-direction: row; align-items: baseline; gap: 6px; min-width: 0; padding: 0; background: transparent; border: none; }
@@ -129,7 +110,6 @@
 .buttonGroup { gap: 0; padding: 0; border: 1px solid var(--line-strong); border-radius: var(--radio-s); background: transparent; overflow: hidden; }
 .btn { height: 34px; min-width: 40px; padding: 0 8px; border-radius: 0; font-family: var(--font-ui); font-size: var(--letra-2); font-weight: 700; color: var(--text-2); }
 .btn.active { background: var(--text); color: var(--bg); box-shadow: none; }
-.resetBtn { height: 36px; width: 36px; padding: 0; border: 1px solid var(--line-strong); border-radius: var(--radio-s); background: transparent; color: var(--text); }
 
 @media (max-width: 1279px) {
   .lapLabel, .timeLabel { display: none; }
@@ -146,13 +126,17 @@
 /* [V2] Controles de 44 px. Por debajo de 1280 px un solo botón recorre las velocidades y el reloj sale de la barra; en
    móvil tampoco está el reinicio. */
 .btn { height: var(--toque); min-width: var(--toque); }
-.resetBtn { height: var(--toque); width: var(--toque); }
 .buttonGroup { flex-shrink: 0; }
 .cycle { display: none; }
 @media (max-width: 1279px) {
   .step, .timeBadge { display: none; }
   .cycle { display: flex; min-width: 52px; }
 }
+
+/* [MJ4] En el móvil las vueltas van en el contador grande de la pista: sin repetirlas en la barra. */
 @media (max-width: 767px) {
-  .resetBtn { display: none; }
+  .lapBadge { display: none; }
 }
+
+/* [MJ5] La vuelta ya está en el contador grande de la pista (MJ4): fuera de la barra en todos los anchos. */
+.lapBadge { display: none; }

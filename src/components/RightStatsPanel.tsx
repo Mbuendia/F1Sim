@@ -24,6 +24,8 @@ export interface RightStatsPanelProps {
   /** [R53] Previsión del radar por tramos de tiempo y por sector. */
   rainForecast?: RainForecast | null;
   circuit?: CircuitSpec;
+  /** [MJ3, 19/11/2026] Pestaña con la que se abre (la pantalla del invitado lo usa para el tiempo). */
+  initialTab?: RightPanelTab;
 }
 
 export type RightPanelTab = 'car_telemetry' | 'track_weather';
@@ -38,8 +40,9 @@ export const RightStatsPanel: React.FC<RightStatsPanelProps> = ({
   weather,
   circuit,
   rainForecast,
+  initialTab = 'car_telemetry',
 }) => {
-  const [activeTab, setActiveTab] = useState<RightPanelTab>('car_telemetry');
+  const [activeTab, setActiveTab] = useState<RightPanelTab>(initialTab);
   const panelRef = useRef<HTMLDivElement>(null);
   const pitBannerRef = useRef<HTMLDivElement>(null);
   const radarCanvasRef = useRef<HTMLCanvasElement>(null);

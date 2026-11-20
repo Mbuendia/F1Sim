@@ -1,0 +1,38 @@
+/* [MJ4] Contador de vueltas sobre la pista, arriba a la izquierda (los botones de cámara y zoom van a la derecha y el
+   aviso de banderas abajo). */
+.counter {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 25;
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: baseline;
+  column-gap: 10px;
+  row-gap: 4px;
+  padding: 6px 12px 8px;
+  background: color-mix(in srgb, var(--negro) 82%, transparent);
+  border-left: 4px solid var(--accion);
+  color: var(--text);
+  pointer-events: none;
+}
+.main { font-family: var(--font-marca); font-size: var(--letra-4); font-weight: 800; text-transform: uppercase; letter-spacing: 0.02em; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.detail { font-family: var(--font-datos); font-size: var(--letra-2); color: var(--text-2); white-space: nowrap; }
+.bar { grid-column: 1 / -1; height: 3px; background: var(--line-strong); }
+.bar i { display: block; height: 100%; background: var(--accion); transition: width var(--t-medio) ease; }
+.counter[data-lap-counter='ultima'] { border-left-color: var(--aviso); }
+.counter[data-lap-counter='ultima'] .main { color: var(--aviso); }
+.flag {
+  display: inline-block;
+  width: 18px;
+  height: 14px;
+  margin-right: 8px;
+  vertical-align: -1px;
+  background: repeating-conic-gradient(var(--text) 0 25%, var(--negro) 0 50%) 0 0 / 7px 7px;
+}
+
+@media (max-width: 767px) {
+  .counter { padding: 4px 10px 6px; }
+  .main { font-size: var(--letra-3); }
+  .detail { font-size: var(--letra-1); }
+}

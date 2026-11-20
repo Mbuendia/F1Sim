@@ -56,6 +56,8 @@
   padding: 0 12px;
   border-radius: var(--radio-s);
   background: transparent;
+  /* [MJ8, 19/11/2026] Con color propio: el D20 y el volumen salían oscuros sobre el panel y casi no se leían. */
+  color: var(--text);
   text-align: left;
   font-size: var(--letra-2);
   font-weight: 600;
@@ -101,12 +103,35 @@
   .label { display: none; }
 }
 
+/* [MJ8, 19/11/2026] Explicación del D20, cabecera de la hoja (solo en el móvil) y velo. */
+.hint { margin: 0; padding: 0 10px 4px; font-size: var(--letra-1); line-height: 1.4; color: var(--text-2); }
+.sheetHead { display: none; }
+.backdrop { display: none; }
+
+@media (max-width: 767px) {
+  .backdrop { display: block; position: fixed; inset: 0; z-index: 79; background: color-mix(in srgb, var(--negro) 55%, transparent); }
+  .menu {
+    position: fixed;
+    top: auto;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: auto;
+    max-height: 82dvh;
+    padding: 8px 16px calc(16px + env(safe-area-inset-bottom));
+    border-radius: var(--radio-l) var(--radio-l) 0 0;
+    border-bottom: none;
+    z-index: 90;
+  }
+  .sheetHead { display: flex; align-items: center; justify-content: space-between; gap: 8px; position: sticky; top: -8px; margin: -8px -16px 0; padding: 8px 8px 8px 16px; background: var(--panel-2); border-bottom: 1px solid var(--line); z-index: 1; }
+  .sheetTitle { font-size: var(--letra-3); font-weight: 700; color: var(--text); }
+  .close { display: inline-flex; align-items: center; justify-content: center; width: var(--toque); height: var(--toque); border: 1px solid var(--line-strong); border-radius: var(--radio-s); background: transparent; color: var(--text); cursor: pointer; }
+  .item { min-height: var(--toque); }
+}
+
 /* [T4.16] Sonido */
 .audioLevels { display: flex; flex-direction: column; }
 .audioLevels [aria-checked='true'] { background: var(--panel-2); box-shadow: inset 3px 0 0 var(--accion); }
-.credits { padding: 4px 10px 8px; font-size: var(--letra-1); color: var(--text-2); }
-.credits summary { min-height: 32px; display: flex; align-items: center; cursor: pointer; }
-.credits ul { margin: 4px 0 0; padding-left: 16px; display: flex; flex-direction: column; gap: 4px; }
 
 /* [UX8] Estado de la IA dentro del menú de carrera. */
 .aiStatus { margin: 6px 8px; }

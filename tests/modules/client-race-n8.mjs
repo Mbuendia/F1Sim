@@ -9,6 +9,8 @@
 //  3. Órdenes del invitado: llegan al motor con quién las manda (N6). Una parada propia se cumple y el invitado la ve;
 //     sobre otro equipo, velocidad o pausa, se rechazan. Con invitados, la carrera no pasa de x4.
 //  4. Pedir pausa: avisa al anfitrión con el nombre; no se repite antes de 10 s.
+//     [19/11/2026, MJ2, autorizado por el usuario («Sí, cámbialas»)] Ahora pedir pausa pausa la carrera para todos (con
+//     el límite de MJ2); para volver a pedirla, la carrera tiene que haber seguido.
 //  5. Suavizado: con conexión directa y con respaldo, ningún coche salta ni retrocede entre fotogramas.
 //  6. Pantalla del invitado (src/components/ClientRace.tsx): tiempos, muro de su equipo, «Pedir pausa» y estado del
 //     enlace; sin herramientas, velocidad ni pausa. El espectador: tiempos sin muro. Aviso de pausa en el anfitrión.
@@ -155,11 +157,16 @@ export default async function run({ server, assert, test }) {
     for (let i = 0; i < 10; i++) await r.step();
     assert((await first).ok && r.pauses.length === 1 && r.pauses[0].name === 'Bea', 'N8: el anfitrión recibe el aviso con el nombre de quien la pide', JSON.stringify(r.pauses));
     assert(r.host.pauseRequests.some(p => p.uid === 'g1' && p.name === 'Bea'), 'N8: y queda en su lista de peticiones');
-    assert(!engine(r).isPaused, 'N8: pedir pausa no pausa: decide el anfitrión');
+    // [19/11/2026, MJ2] Antes: «pedir pausa no pausa: decide el anfitrión». Ahora pausa de verdad.
+    assert(engine(r).isPaused, 'N8: pedir pausa pausa la carrera para todos (MJ2)');
     const again = shared.requestPause(g1.session);
     for (let i = 0; i < 10; i++) await r.step();
     assert(!(await again).ok && r.pauses.length === 1, 'N8: antes de 10 s no se repite el aviso');
     for (let i = 0; i < 10; i++) await r.step(1000);
+    // [19/11/2026, MJ2] Para volver a pedirla, la carrera tiene que seguir (quien la pidió puede reanudar).
+    const resumed = shared.resumePause(g1.session);
+    for (let i = 0; i < 5; i++) await r.step();
+    await resumed;
     const later = shared.requestPause(g1.session);
     for (let i = 0; i < 10; i++) await r.step();
     assert((await later).ok && r.pauses.length === 2, 'N8: pasados 10 s, se puede volver a pedir');

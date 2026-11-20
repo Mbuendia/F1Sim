@@ -26,6 +26,8 @@
   border-bottom: 1px solid var(--line);
   z-index: 40;
 }
+/* [MJ8, 19/11/2026] Con el menú de carrera abierto, la barra (y su hoja en el móvil) queda por encima de las pestañas. */
+.raceBar:has([data-race-menu]) { z-index: 95; }
 
 .barGroup {
   display: flex;
@@ -257,7 +259,7 @@
   .raceBar > .barGroup:first-child { flex: 0 1 auto; min-width: 0; }
   .flagChip { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
   /* Bajo la brújula y a la izquierda de las herramientas de cámara, sin pisarlas. */
-  .formationBanner { top: 52px; left: 8px; right: 60px; transform: none; max-width: none; font-size: var(--letra-1); padding: 6px 10px; white-space: normal; }
+  .formationBanner { top: 64px; left: 8px; right: 60px; transform: none; max-width: none; font-size: var(--letra-1); padding: 6px 10px; white-space: normal; }
 }
 
 /* ── [V8] Carrera simulada sin verla: cubre la pantalla mientras el motor la corre ── */

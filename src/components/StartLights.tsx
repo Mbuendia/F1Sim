@@ -1,116 +1,77 @@
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 import styles from './StartLights.module.css';
 import { StartLightState, CarState } from '../types/f1';
-import { Play, Flag, CarFront, Wind } from 'lucide-react';
-import { animate } from 'animejs';
+import { Play, Flag } from 'lucide-react';
 
 interface StartLightsProps {
   lightState: StartLightState;
   cars: CarState[];
   favoriteCarId: number;
   onSelectFavoriteCar: (carId: number) => void;
-  onStartClick: () => void;
+  /** Sin esto (el invitado), el semáforo solo se mira: la salida la confirma el anfitrión. */
+  onStartClick?: () => void;
 }
 
-export const StartLights: React.FC<StartLightsProps> = ({
-  lightState,
-  onStartClick
-}) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const bannerRef = useRef<HTMLDivElement>(null);
+/** [MJ12, 20/11/2026] Luces rojas encendidas en cada estado del semáforo del motor (en «lights-out», todas apagadas). */
+export function litColumns(state: StartLightState): number {
+  const m = /^lights-([1-5])$/.exec(state);
+  return m ? Number(m[1]) : 0;
+}
 
-  useEffect(() => {
-    if (containerRef.current) {
-      animate(containerRef.current, {
-        scale: [0.92, 1],
-        opacity: [0, 1],
-        ease: 'outElastic(1, .6)',
-        duration: 800
-      });
-    }
-  }, []);
+/**
+ * [MJ12] Recorte de la capa encendida para enseñar las primeras `lit` columnas: el pórtico se renderizó con la cámara
+ * ortográfica centrada y las cinco columnas a quintos de un ancho de 6 m (x = -2..2), así que la columna N acaba en
+ * (N + 0,5) / 6 del ancho de la imagen (scripts/blender/mj12-semaforo.py).
+ */
+export function litClip(lit: number): string {
+  if (lit <= 0) return 'inset(0 100% 0 0)';
+  const right = 100 - ((Math.min(lit, 5) + 0.5) / 6) * 100;
+  return `inset(0 ${right.toFixed(3)}% 0 0)`;
+}
 
-  useEffect(() => {
-    if (lightState === 'lights-out' && bannerRef.current) {
-      animate(bannerRef.current, {
-        scale: [0.8, 1.15, 1],
-        opacity: [0, 1],
-        ease: 'outBack',
-        duration: 600
-      });
-    }
-  }, [lightState]);
+const ART = `${import.meta.env.BASE_URL ?? '/'}semaforo/`;
 
-  if (
-    lightState === 'idle' ||
-    lightState === 'racing' ||
-    lightState === 'finished' ||
-    lightState === 'formation-lap' ||
-    lightState === 'grid-parking'
-  ) {
+function Gantry({ layer, style }: { layer: 'apagado' | 'encendido'; style?: React.CSSProperties }) {
+  return (
+    <picture className={styles.layer} style={style}>
+      <img src={`${ART}semaforo-${layer}.webp`} alt="" draggable={false} data-gantry={layer} />
+    </picture>
+  );
+}
+
+/**
+ * Semáforo de salida. [MJ12, 20/11/2026] El pórtico está hecho en Blender (cinco cajas con cuatro luces cada una, sin
+ * marcas) en dos capas, apagado y encendido; la encendida se recorta para enseñar tantas columnas como luces diga el
+ * motor (lights-1 a lights-5) y se apagan todas a la vez en «lights-out». Antes era un recuadro de CSS con «FORMULA 1».
+ */
+export const StartLights: React.FC<StartLightsProps> = ({ lightState, onStartClick }) => {
+  if (lightState === 'idle' || lightState === 'racing' || lightState === 'finished' || lightState === 'formation-lap' || lightState === 'grid-parking') {
     return null;
   }
-
   const isGridReady = lightState === 'grid-ready';
-
-  const getLightCount = (): number => {
-    switch (lightState) {
-      case 'lights-1': return 1;
-      case 'lights-2': return 2;
-      case 'lights-3': return 3;
-      case 'lights-4': return 4;
-      case 'lights-5': return 5;
-      case 'lights-out': return 0;
-      default: return 0;
-    }
-  };
-
-  const activeLights = getLightCount();
-  const isCountdown = ['lights-1', 'lights-2', 'lights-3', 'lights-4', 'lights-5', 'lights-out'].includes(lightState);
+  const lit = litColumns(lightState);
+  const out = lightState === 'lights-out';
+  const title = out ? 'Se apagan los semáforos' : isGridReady ? 'Coches en parrilla' : 'Procedimiento de salida';
 
   return (
-    <div className={styles.overlay}>
-      <div ref={containerRef} className={styles.gantryContainer}>
-        <div className={styles.gantryHeader}>
-          <span className={styles.f1Brand}>FORMULA 1</span>
-          <span className={styles.gantryTitle}>
-            {isCountdown ? 'PROCEDIMIENTO DE SALIDA' : isGridReady ? 'COCHES EN PARRILLA · LISTOS' : 'GRAN PREMIO LISTO'}
-          </span>
+    <div className={styles.overlay} data-start-lights={lightState}>
+      <div className={styles.gantryContainer}>
+        <p className={styles.gantryTitle}>{title}</p>
+        <div className={styles.gantry} role="img" aria-label={out ? 'Semáforo apagado: salida' : `Semáforo: ${lit} de 5 luces encendidas`}>
+          <Gantry layer="apagado" />
+          <Gantry layer="encendido" style={{ clipPath: litClip(lit) }} />
         </div>
 
-        <div className={styles.lightsGantry}>
-          {[1, 2, 3, 4, 5].map((lightIdx) => {
-            const isRedOn = activeLights >= lightIdx;
-            return (
-              <div key={lightIdx} className={styles.lightColumn}>
-                <div className={styles.housingTop}></div>
-                <div className={`${styles.lightBulb} ${isRedOn ? styles.redActive : styles.off}`} />
-                <div className={`${styles.lightBulb} ${isRedOn ? styles.redActive : styles.off}`} />
-                <div className={`${styles.lightBulb} ${isRedOn ? styles.redActive : styles.off}`} />
-                <div className={`${styles.lightBulb} ${isRedOn ? styles.redActive : styles.off}`} />
-              </div>
-            );
-          })}
-        </div>
-
-        {isGridReady && (
-          <button className={styles.startButton} onClick={onStartClick} style={{ background: 'linear-gradient(135deg, #16a34a, #15803d)' }}>
-            <Play size={18} fill="#ffffff" />
-            <span><Flag size={14} aria-hidden="true" /> CONFIRMAR INICIO DE CARRERA</span>
+        {isGridReady && onStartClick && (
+          <button className={styles.startButton} onClick={onStartClick}>
+            <Play size={18} fill="#ffffff" aria-hidden="true" />
+            <span><Flag size={14} aria-hidden="true" /> Confirmar la salida</span>
           </button>
         )}
+        {isGridReady && !onStartClick && <p className={styles.statusText}>El anfitrión da la salida</p>}
 
-        {lightState === 'lights-out' && (
-          <div ref={bannerRef} className={styles.lightsOutBanner}>
-            ¡LIGHTS OUT AND AWAY WE GO! <CarFront size={14} aria-hidden="true" /><Wind size={14} aria-hidden="true" />
-          </div>
-        )}
-
-        {isCountdown && lightState !== 'lights-out' && (
-          <div className={styles.statusText}>
-            MOTORES A REVOLUCIONES DE SALIDA...
-          </div>
-        )}
+        {out && <p className={styles.lightsOutBanner} role="status">¡Arranca la carrera!</p>}
+        {!out && !isGridReady && <p className={styles.statusText}>Motores a revoluciones de salida…</p>}
       </div>
     </div>
   );

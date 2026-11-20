@@ -1,0 +1,83 @@
+/* [MJ9, 20/11/2026] Aviso de salida de la carrera. */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: color-mix(in srgb, var(--negro) 60%, transparent);
+}
+
+.dialog {
+  width: min(440px, 100%);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border: 1px solid var(--line-strong);
+  border-top: 3px solid var(--accion);
+  border-radius: var(--radio-l);
+  background: var(--panel-2);
+  color: var(--text);
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-titular);
+  font-size: var(--letra-5);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.body {
+  margin: 0;
+  font-size: var(--letra-3);
+  line-height: 1.45;
+  color: var(--text-2);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.stay,
+.leave {
+  min-height: var(--toque);
+  padding: 0 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: var(--radio-s);
+  font-size: var(--letra-3);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.stay {
+  border: 1px solid var(--accion);
+  background: var(--accion);
+  color: var(--text);
+}
+
+.leave {
+  border: 1px solid var(--line-strong);
+  background: transparent;
+  color: var(--text);
+}
+
+.stay:hover { background: var(--accion-hover); }
+.leave:hover { background: var(--panel); }
+
+@media (max-width: 767px) {
+  .backdrop { align-items: flex-end; padding: 0; }
+  .dialog { width: 100%; border-radius: var(--radio-l) var(--radio-l) 0 0; padding: 20px 16px calc(16px + env(safe-area-inset-bottom)); }
+  .actions { flex-direction: column-reverse; }
+  .stay, .leave { width: 100%; }
+}

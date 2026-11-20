@@ -76,6 +76,9 @@ export interface SlowCar {
 }
 export interface SlowView {
   t: number; lap: number; totalLaps: number; light: string; flag: string; paused: boolean; finished: boolean; speed: number;
+  /** [MJ2, 19/11/2026] Pausa de un invitado en curso (quién, su nombre y los segundos que quedan) y las pausas que le quedan a cada jugador. */
+  guestPause?: { uid: string; name: string; remainingSec: number } | null;
+  pausesLeft?: Record<string, number>;
   raceFormat: string; sectorFlags: string[]; bestSectors: (number | null)[];
   safetyCar: { isDeployed: boolean; mode: string; phase: string | null; lapCount: number; targetLaps: number; reason: string };
   weather: { condition: string; label: string; waterMm: number; trackTemp: number; airTemp: number; rainProbability: number };

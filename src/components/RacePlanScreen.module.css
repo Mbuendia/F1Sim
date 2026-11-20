@@ -1,0 +1,100 @@
+/* [MJ11, 20/11/2026] Plan de carrera: la escena del garaje en capas y el panel de cristal. */
+.screen {
+  position: fixed;
+  inset: 0;
+  z-index: 150;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 24px 16px 24px clamp(16px, 4vw, 64px);
+  background: var(--negro);
+  color: var(--text);
+  font-family: var(--font-ui);
+  overflow: hidden;
+  isolation: isolate;
+}
+
+/* Tres capas de la escena con movimientos distintos (profundidad): el fondo casi quieto, el coche algo más y las personas
+   con un leve balanceo. */
+.scene { position: absolute; inset: 0; z-index: -2; }
+.layer { position: absolute; inset: 0; }
+.layer img, .layer canvas { width: 100%; height: 100%; object-fit: cover; object-position: 92% 50%; display: block; }
+.fondo img { animation: plan-fondo 26s ease-in-out infinite alternate; }
+.coche img, .coche canvas { animation: plan-coche 26s ease-in-out infinite alternate; }
+.personas img { animation: plan-personas 9s ease-in-out infinite alternate; }
+@keyframes plan-fondo { from { transform: scale(1.03); } to { transform: scale(1.06) translateX(-0.6%); } }
+@keyframes plan-coche { from { transform: scale(1.03); } to { transform: scale(1.08) translateX(-1.4%); } }
+@keyframes plan-personas { from { transform: scale(1.03) translateY(0); } to { transform: scale(1.035) translateY(-0.3%); } }
+
+.shade { position: absolute; inset: 0; z-index: -1; background: linear-gradient(90deg, color-mix(in srgb, var(--negro) 85%, transparent) 0%, color-mix(in srgb, var(--negro) 55%, transparent) 40%, transparent 65%); }
+
+.panel {
+  width: min(620px, 100%);
+  max-height: calc(100dvh - 48px);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 22px;
+  border: 1px solid color-mix(in srgb, var(--text) 14%, transparent);
+  border-top: 3px solid var(--accion);
+  border-radius: var(--radio-l);
+  background: color-mix(in srgb, var(--panel) 74%, transparent);
+  backdrop-filter: blur(14px) saturate(1.2);
+  box-shadow: 0 24px 60px color-mix(in srgb, var(--negro) 60%, transparent);
+  animation: plan-entra var(--t-pausado) ease-out both;
+  min-width: 0;
+}
+@keyframes plan-entra { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+
+.head { display: flex; flex-direction: column; gap: 4px; }
+.brand { margin: 0; font-family: var(--font-marca); font-size: var(--letra-2); letter-spacing: 0.14em; text-transform: uppercase; color: var(--accion); }
+.title { margin: 0; font-family: var(--font-titular); font-size: var(--letra-6); text-transform: uppercase; }
+.dim { margin: 0; font-size: var(--letra-2); color: var(--text-2); line-height: 1.4; }
+
+.cars { display: flex; flex-direction: column; gap: 10px; overflow-y: auto; min-height: 0; padding-right: 2px; }
+.car { display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; border: 1px solid var(--line); border-left: 4px solid var(--accion); border-radius: var(--radio-m); background: color-mix(in srgb, var(--panel-2) 70%, transparent); }
+.carHead { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.code { font-family: var(--font-titular); font-size: var(--letra-4); }
+.code span { font-size: var(--letra-2); color: var(--text-2); }
+.toggle { min-height: var(--toque); padding: 0 12px; border: 1px solid var(--line-strong); border-radius: var(--radio-s); background: transparent; color: var(--text); font-size: var(--letra-2); font-weight: 700; cursor: pointer; }
+.toggle[aria-pressed='true'] { border-color: var(--accion); background: color-mix(in srgb, var(--accion) 22%, transparent); }
+
+.row { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.label { font-size: var(--letra-1); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-2); }
+
+.compounds { display: flex; gap: 6px; flex-wrap: wrap; }
+.compound { min-height: var(--toque); min-width: var(--toque); padding: 0 10px 0 6px; display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line-strong); border-radius: var(--radio-pill); background: transparent; color: var(--text); cursor: pointer; }
+.compound span { width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; border: 3px solid var(--tyre); border-radius: var(--radio-pill); background: var(--negro); font-size: var(--letra-1); font-weight: 800; color: var(--tyre); }
+.compound em { font-style: normal; font-size: var(--letra-2); font-weight: 700; }
+.compound[aria-checked='true'] { border-color: var(--tyre); background: color-mix(in srgb, var(--tyre) 16%, transparent); }
+.small .compound em { display: none; }
+.small .compound { padding: 0 6px; }
+
+.stop { display: grid; grid-template-columns: auto auto 1fr; align-items: center; gap: 8px 12px; padding: 6px 0 0; border-top: 1px dashed var(--line); }
+.stopName { font-size: var(--letra-2); font-weight: 700; }
+.stepper { display: inline-flex; align-items: center; gap: 4px; font-size: var(--letra-2); }
+.stepper button { width: var(--toque); height: var(--toque); display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--line-strong); border-radius: var(--radio-s); background: transparent; color: var(--text); cursor: pointer; }
+.stepper span { min-width: 78px; text-align: center; }
+.stop .compounds { justify-content: flex-end; }
+
+.actions { display: flex; align-items: center; justify-content: flex-end; gap: 12px; flex-wrap: wrap; }
+.sent { margin: 0; display: inline-flex; align-items: center; gap: 6px; font-size: var(--letra-2); color: var(--positivo); }
+.primary { min-height: var(--toque); padding: 0 22px; display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--accion); border-radius: var(--radio-s); background: var(--accion); color: var(--text); font-size: var(--letra-3); font-weight: 800; cursor: pointer; }
+.primary:hover { background: var(--accion-hover); }
+.primary:disabled { opacity: 0.6; cursor: default; }
+
+@media (max-width: 767px) {
+  .screen { align-items: flex-end; padding: 0; }
+  /* La escena sube para que el coche quede encima del panel. */
+  .layer { transform: translateY(-16%); }
+  .layer img, .layer canvas { object-position: 45% 50%; }
+  .shade { background: linear-gradient(180deg, transparent 0%, transparent 22%, color-mix(in srgb, var(--negro) 70%, transparent) 45%, color-mix(in srgb, var(--negro) 90%, transparent) 100%); }
+  .panel { width: 100%; max-height: 64dvh; border-radius: var(--radio-l) var(--radio-l) 0 0; border-left: none; border-right: none; border-bottom: none; padding: 16px 16px calc(14px + env(safe-area-inset-bottom)); }
+  .stop { grid-template-columns: 1fr auto; }
+  .stop .compounds { grid-column: 1 / -1; justify-content: flex-start; }
+  .primary { flex: 1; justify-content: center; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fondo img, .coche img, .coche canvas, .personas img, .panel { animation: none; }
+}

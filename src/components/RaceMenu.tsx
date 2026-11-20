@@ -1,5 +1,5 @@
 import React, { Suspense, lazy, useEffect, useRef, useState } from 'react';
-import { Menu } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import styles from './RaceMenu.module.css';
 import { LiveAiStatusBadge } from './AiStatusBadge';
 
@@ -20,7 +20,7 @@ interface RaceMenuProps {
   onSaveGame?: (name: string) => void;
   saveName?: string;
   /** [T4.16] Sonido: nivel elegido (índice), sus nombres, cómo cambiarlo y la atribución de cada sonido. */
-  audio?: { level: number; labels: string[]; onLevel: (level: number) => void; credits: { id: string; label: string; text: string }[] };
+  audio?: { level: number; labels: string[]; onLevel: (level: number) => void; /** [MJ8, 19/11/2026] Ya no se enseñan en carrera: están en Ajustes. */ credits?: { id: string; label: string; text: string }[] };
   /** [IA4] Mostrar los ajustes de la radio (radio básica o con IA y la descarga del modelo). */
   radioSettings?: boolean;
 }
@@ -78,8 +78,14 @@ export const RaceMenu: React.FC<RaceMenuProps> = ({
         <Menu size={16} aria-hidden="true" />
         <span className={styles.label}>Menú</span>
       </button>
+      {/* [MJ8, 19/11/2026] En el móvil el menú es una hoja que sale desde abajo; tocar fuera (el velo) o la × la cierra. */}
+      {open && <div className={styles.backdrop} aria-hidden="true" onClick={() => setOpen(false)} />}
       {open && (
-        <div className={styles.menu} role="menu" aria-label="Menú de carrera">
+        <div className={styles.menu} role="menu" aria-label="Menú de carrera" data-race-menu>
+          <div className={styles.sheetHead}>
+            <span className={styles.sheetTitle}>Menú de carrera</span>
+            <button type="button" className={styles.close} aria-label="Cerrar el menú" onClick={() => setOpen(false)}><X size={18} aria-hidden="true" /></button>
+          </div>
           {onSaveGame && (
             <>
               <div className={styles.section}>Partida</div>
@@ -95,6 +101,7 @@ export const RaceMenu: React.FC<RaceMenuProps> = ({
               <button type="button" role="menuitemcheckbox" aria-checked={luckVariantEnabled} className={styles.item} onClick={run(onToggleLuckVariant)}>
                 {luckVariantEnabled ? 'D20 de suerte: activado' : 'D20 de suerte: desactivado'}
               </button>
+              <p className={styles.hint}>Con Safety Car o bandera roja se tira un dado: puede acortar tu próxima parada o dar información al muro. No cambia el coche.</p>
             </>
           )}
           {audio && (
@@ -105,10 +112,6 @@ export const RaceMenu: React.FC<RaceMenuProps> = ({
                   <button key={label} type="button" role="menuitemradio" aria-checked={audio.level === level} className={styles.item} onClick={() => audio.onLevel(level)}>{label}</button>
                 ))}
               </div>
-              <details className={styles.credits}>
-                <summary>Créditos de los sonidos</summary>
-                <ul>{audio.credits.map(credit => <li key={credit.id}><b>{credit.label}:</b> {credit.text}</li>)}</ul>
-              </details>
             </>
           )}
           {/* [UX2] En carrera, la radio solo enseña el estado y se enciende o apaga: las descargas van en Ajustes. */}

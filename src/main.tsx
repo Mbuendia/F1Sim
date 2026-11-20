@@ -38,6 +38,10 @@ const REVIEWS: Record<string, () => Promise<{ default: React.ComponentType }>> =
   puente: () => import('./dev/BridgeReview'),
   // [UX15] Prueba a ciegas de voces (Piper frente a Kokoro).
   voces: () => import('./dev/VoiceBlindTest'),
+  // [MJ14] Piezas pintadas de los coches (y sus zonas con colores fijos).
+  coches: () => import('./dev/CarPartsReview'),
+  // [MJ12] El semáforo de salida en cada estado.
+  semaforo: () => import('./dev/StartLightsReview'),
 }
 const revision = params.get('revision')
 const wantsTools = Boolean(revision && REVIEWS[revision]) || params.has('rendimiento')
