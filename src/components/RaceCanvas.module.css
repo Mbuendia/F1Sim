@@ -10,6 +10,8 @@
   height: 100%;
   display: block;
   cursor: grab;
+  /* [MJ7, 19/11/2026] Los gestos sobre la pista son del juego (pellizcar y arrastrar), no zoom de la página. */
+  touch-action: none;
 }
 
 .canvas:active {
@@ -18,7 +20,7 @@
 
 .orbitBadge {
   position: absolute;
-  top: 14px;
+  top: 64px; /* [MJ6] Debajo del contador de vueltas de MJ4, que va arriba a la izquierda. */
   left: 16px;
   background: color-mix(in srgb, var(--panel) 88%, transparent);
   backdrop-filter: blur(8px);
@@ -137,3 +139,11 @@
   .weatherTestLead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   .weatherTest[data-default] .weatherTestText { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 }
+
+/* [MJ6] Piloto seleccionado: «Seguir» / «Dejar de seguir» y quitar la selección, abajo a la izquierda (las banderas van
+   abajo en el centro y la prueba del tiempo abajo a la derecha). */
+.selection { position: absolute; left: 12px; bottom: 12px; z-index: 27; display: flex; align-items: stretch; gap: 0; background: var(--negro); border: 1px solid var(--line-strong); }
+.selectionName { display: inline-flex; align-items: center; padding: 0 10px; border-left: 4px solid var(--accion); color: var(--text); font-family: var(--font-datos); font-size: var(--letra-2); font-weight: 700; }
+.selectionFollow, .selectionClose { min-height: var(--toque); min-width: var(--toque); padding: 0 14px; border: 0; border-left: 1px solid var(--line-strong); background: var(--panel-2); color: var(--text); font-family: var(--font-ui); font-size: var(--letra-2); font-weight: 700; cursor: pointer; }
+.selectionFollow[aria-pressed="true"] { background: var(--accion); }
+@media (max-width: 767px) { .selection { bottom: 124px; left: 8px; } } /* encima del minimapa al seguir */

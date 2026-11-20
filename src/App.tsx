@@ -1,5 +1,13 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense } from 'react';
+import { RacePlanScreen } from './components/RacePlanScreen';
+import { planOrders, type CarPlan } from './utils/racePlan';
+import { isFirstRunDone } from './settings/firstRun';
+import { browserSettingsStorage } from './settings/graphics';
+import { LeaveRaceDialog } from './components/LeaveRaceDialog';
+import { useLeaveGuard } from './utils/leaveRace';
+import { LapCounter } from './components/LapCounter';
 import { defaultPlayerLivery, withPlayerLivery } from './data/playerLivery';
+import { RotateNotice } from './components/RotateNotice';
 import { seasonPresentation } from './data/presentation';
 import { teamFormFor } from './data/seasons';
 import styles from './App.module.css';
@@ -50,6 +58,8 @@ import { Leaderboard } from './components/Leaderboard';
 import { BottomTelemetryDock } from './components/BottomTelemetryDock';
 // [UX1] Ajustes fuera del paquete principal.
 const SettingsScreen = lazy(() => import('./components/SettingsScreen'));
+// [MJ10, 20/11/2026] La primera configuración (gráficos y radio) solo se carga la primera vez.
+const FirstRunScreen = lazy(() => import('./components/FirstRunScreen'));
 // [TL5, TL6] El editor de tu librea y la presentación de la temporada llevan three.js: se cargan cuando hacen falta.
 const LiveryEditor = lazy(() => import('./components/LiveryEditor'));
 const SeasonPresentation = lazy(() => import('./components/SeasonPresentation'));
@@ -61,10 +71,9 @@ import { LandingPage } from './components/LandingPage';
 import { GameMenuScreen } from './components/GameMenuScreen';
 import { RoomFlow } from './components/RoomFlow';
 import type { HostStart } from './components/RoomFlow';
-import { PauseRequestBanner, SharedRaceEnd } from './components/ClientRace';
+import { PauseStatus, SharedRaceEnd } from './components/ClientRace';
 import { publishQualifying, SharedRaceHost } from './net/SharedRace';
 import { returnToLobby } from './net/Lobby';
-import type { PauseRequest } from './net/SharedRace';
 import { leaveRoom } from './net/RoomService';
 import { codeFromLink } from './net/roomCode';
 import { SavesScreen } from './components/SavesScreen';
@@ -218,13 +227,13 @@ export const App: React.FC<{ startAt?: 'menu' }> = ({ startAt }) => {
   // [T4.19] Tras la portada va el menú de partidas; de él salen la carrera profesional y la carrera libre.
   // [N7] Un enlace de invitación (?sala=CÓDIGO) abre directamente la pantalla de unirse a esa sala.
   const [linkedRoom, setLinkedRoom] = useState<string | null>(() => (typeof location === 'undefined' ? null : codeFromLink(location.href)));
+  const [firstRunDone, setFirstRunDone] = useState(() => isFirstRunDone(browserSettingsStorage()));
   const [currentView, setCurrentView] = useState<'landing' | 'menu' | 'settings' | 'saves' | 'new' | 'home' | 'race' | 'report' | 'room'>(() => (linkedRoom ? 'room' : startAt ?? 'landing'));
   const [roomIntent, setRoomIntent] = useState<'create' | 'join'>('join');
   // [N8] Carrera compartida del anfitrión: la sala y su transporte (desde «Empezar» hasta salir de la carrera).
   const sharedRef = useRef<HostStart | null>(null);
   const sharedHostRef = useRef<SharedRaceHost | null>(null);
   const [sharedPending, setSharedPending] = useState<HostStart | null>(null);
-  const [pauseRequests, setPauseRequests] = useState<PauseRequest[]>([]);
   /** [N9] «Otra carrera»: la sala abierta a la que vuelve el anfitrión. */
   const [resumeRoom, setResumeRoom] = useState<HostStart | null>(null);
   // [T4.20] Informe de la última ronda: se guarda hasta que se pulsa «Continuar», así que al reabrir se ve de nuevo.
@@ -602,15 +611,14 @@ export const App: React.FC<{ startAt?: 'menu' }> = ({ startAt }) => {
 
   const handleSelectCar = useCallback((carId: number | null) => {
     setSelectedCarId(carId);
+    // [MJ6, 19/11/2026] Seleccionar solo remarca y abre el detalle: la cámara sigue al piloto si se pulsa «Seguir» (RaceCanvas).
     if (carId !== null) {
-      camera.followCar(carId);
       setDetailOpen(true);
       setRaceTab(tab => (tab === 'tiempos' ? 'detalle' : tab));
     } else {
-      camera.resetToFullTrack();
       setDetailOpen(false);
     }
-  }, [camera]);
+  }, []);
 
   // R32: herramientas de prueba (menú de carrera). Conservan su efecto anterior.
   const handleSafetyCarTest = useCallback(() => {
@@ -660,6 +668,11 @@ export const App: React.FC<{ startAt?: 'menu' }> = ({ startAt }) => {
     setActiveLuckEvent(null);
   }, [sendOrder]);
 
+  // [MJ11, 20/11/2026] El plan de carrera se abre antes de la vuelta de formación (no al simular el Gran Premio): «A la parrilla»
+  // manda el plan de cada coche al motor y da la salida.
+  const [planOpen, setPlanOpen] = useState(false);
+  const autoStartingRef = useRef(false);
+
   const handleResetRace = useCallback(() => {
     // [R48] Carrera nueva, semilla nueva: reiniciar no repite la anterior.
     simulation.setSeed(newRaceSeed());
@@ -670,7 +683,8 @@ export const App: React.FC<{ startAt?: 'menu' }> = ({ startAt }) => {
     clearNotices();
     setLightState('idle');
     setIsFinished(false);
-    simulation.startRaceSequence();
+    // [MJ11, 20/11/2026] Antes de la salida, el plan de carrera.
+    setPlanOpen(true);
     // [N3] Carrera nueva: el motor arranca otra vez desde la copia preparada.
     restartEngine();
   }, [simulation, camera, restartEngine]);
@@ -774,7 +788,8 @@ export const App: React.FC<{ startAt?: 'menu' }> = ({ startAt }) => {
     clearNotices();
     setIsFinished(false);
     setCurrentView('race');
-    if (gate === 'directo') simulation.startRaceSequence();
+    // [MJ11, 20/11/2026] En GP directo, primero el plan de carrera (al simular, la salida va sola).
+    if (gate === 'directo') { if (autoRequested.current) simulation.startRaceSequence(); else setPlanOpen(true); }
     // [N3] El motor arranca con la carrera ya preparada.
     restartEngine();
   }, [restartEngine, simulation, camera, selectedCircuitId, weatherScenarioId, development, raceFormat, components, saveComponents, selectedDriverId, program, saveProgram, championship, constructorsPosition, saveStore, playerSetups, season, saveSeason, effectiveFormat, management, saveManagement, mode, roster]);
@@ -822,7 +837,8 @@ export const App: React.FC<{ startAt?: 'menu' }> = ({ startAt }) => {
   /** [R51] Visto el aviso de sanciones, empieza la carrera. */
   const handleContinueFromPenalties = useCallback(() => {
     setPenaltyNotice([]);
-    simulation.startRaceSequence();
+    // [MJ11, 20/11/2026] Tras el aviso de sanciones, el plan de carrera (al simular, la salida va sola).
+    if (autoStartingRef.current) simulation.startRaceSequence(); else setPlanOpen(true);
     // [N3] Antes de la salida el motor no ha avanzado: arranca otra vez desde la copia con la salida dada.
     if (sessionRef.current) restartEngine();
   }, [simulation, restartEngine]);
@@ -859,6 +875,13 @@ export const App: React.FC<{ startAt?: 'menu' }> = ({ startAt }) => {
     if (settled.winter && settled.management) saveDevelopment(ageAttributes(development, Object.values(rosterOf(settled.management.contracts)), settled.management.ages));
     applyCareer(settled);
   }, [applyCareer, championship, components, program, season, seasonArchive, management, playerCodes, development, saveDevelopment]);
+
+  // [MJ11, 20/11/2026] «A la parrilla»: el plan de cada coche (neumático de salida, paradas, ritmo o estratega) y la salida.
+  const handlePlanConfirm = useCallback(async (plans: Record<number, CarPlan>) => {
+    for (const [id, plan] of Object.entries(plans)) for (const order of planOrders(Number(id), plan)) await sendOrder(order);
+    setPlanOpen(false);
+    await sendOrder({ kind: 'startSequence' });
+  }, [sendOrder]);
 
   const handleStartFormationLap = useCallback(() => {
     void sendOrder({ kind: lightState === 'grid-ready' ? 'confirmStart' : 'startSequence' });
@@ -1279,7 +1302,8 @@ export const App: React.FC<{ startAt?: 'menu' }> = ({ startAt }) => {
     if (parcFermeStarts.length) simulation.setPitLaneStarters(parcFermeStarts.map(start => start.driverId));
     setQualifying(null);
     for (const start of parcFermeStarts) pushNotice('warning', 'Salida', `${DRIVERS[start.driverId]?.code ?? start.driverId} sale desde el pit lane: ${start.reason.toLowerCase()}`);
-    simulation.startRaceSequence();
+    // [MJ11, 20/11/2026] Tras la clasificación, el plan de carrera (al simular, la salida va sola).
+    if (autoStartingRef.current) simulation.startRaceSequence(); else setPlanOpen(true);
     if (sessionRef.current) restartEngine();
   }, [restartEngine, simulation, playerSetups, parcFermeStarts, pushNotice, raceCounts, season, championship]);
 
@@ -1296,8 +1320,9 @@ export const App: React.FC<{ startAt?: 'menu' }> = ({ startAt }) => {
     const link = typeof Worker !== 'undefined' ? new WorkerLink() : (() => { const local = new LocalLink(); local.run(); return local; })();
     // [N8] En una carrera compartida, la pantalla habla con el motor a través del anfitrión que la reparte.
     const shared = sharedRef.current;
+    // [MJ9, 20/11/2026] Si un invitado se va de la sala (o vuelve), el anfitrión lo ve con su nombre.
     const sharedHost = shared ? new SharedRaceHost({ link, transport: shared.transport, store: raceStore, linkStore, names: shared.names,
-      onPauseRequest: () => setPauseRequests([...(sharedHostRef.current?.pauseRequests ?? [])]) }) : null;
+      onPresence: (_uid, name, op) => presenceNoticeRef.current(name, op) }) : null;
     sharedHostRef.current = sharedHost;
     const session = sharedHost ? sharedHost.session : new RaceSession({ link, store: raceStore, linkStore });
     sessionRef.current = session;
@@ -1335,7 +1360,6 @@ export const App: React.FC<{ startAt?: 'menu' }> = ({ startAt }) => {
     if (!shared) return;
     sharedRef.current = null;
     sharedHostRef.current = null;
-    setPauseRequests([]);
     shared.transport.stop();
     void leaveRoom(shared.db, shared.code).catch(() => {});
   }, [currentView, sharedPending]);
@@ -1349,8 +1373,10 @@ export const App: React.FC<{ startAt?: 'menu' }> = ({ startAt }) => {
     autoRequested.current = false;
     const latest = autoLatest.current;
     setQualifyingLive(false);
+    autoStartingRef.current = true;
     if (latest.qualifying) latest.fromQualifying();
     else if (latest.penalties) latest.fromPenalties();
+    autoStartingRef.current = false;
     startAutoRace(simulation, simulation.cars.filter(car => latest.playerIds.includes(car.driver.id)).map(car => car.id));
     setAutoRace({ lap: 0, total: simulation.totalLaps });
     let timer = 0;
@@ -1382,6 +1408,17 @@ export const App: React.FC<{ startAt?: 'menu' }> = ({ startAt }) => {
       setCurrentView('home');
     });
   }, []);
+
+  // [MJ9, 20/11/2026] Salir de una carrera en curso pide confirmación (con lo que se pierde); «atrás» del móvil y recargar o cerrar la
+  // pestaña también. Con la carrera terminada se sale sin preguntar.
+  const [leaveAsk, setLeaveAsk] = useState(false);
+  const leaveGuarded = currentView === 'race' && !isFinished;
+  useLeaveGuard(leaveGuarded, () => setLeaveAsk(true));
+  useEffect(() => { if (!leaveGuarded) setLeaveAsk(false); }, [leaveGuarded]);
+  const requestLeaveRace = useCallback(() => { if (leaveGuarded) setLeaveAsk(true); else handleLeaveRace(); }, [leaveGuarded, handleLeaveRace]);
+  const presenceNoticeRef = useRef<(name: string, op: 'dropped' | 'returned') => void>(() => {});
+  presenceNoticeRef.current = (name, op) => pushNotice(op === 'dropped' ? 'warning' : 'ok', 'Sala',
+    op === 'dropped' ? `${name} se ha ido de la sala: el estratega lleva sus coches` : `${name} ha vuelto a la sala y recupera sus coches`);
 
   useEffect(() => {
     if (currentView !== 'race' || raceFlagState === lastFlag.current) return;
@@ -1540,6 +1577,11 @@ export const App: React.FC<{ startAt?: 'menu' }> = ({ startAt }) => {
   if (currentView === 'settings') {
     return <Suspense fallback={null}><SettingsScreen onBack={() => setCurrentView('menu')}
       audio={{ level: audioLevel, labels: AUDIO_LEVEL_LABEL, onLevel: setAudioLevel, credits: soundCredits() }} /></Suspense>;
+  }
+
+  // [MJ10, 20/11/2026] La primera vez que se entra al juego, antes del menú: gráficos y radio (no vuelve a salir).
+  if (currentView === 'menu' && !firstRunDone) {
+    return <Suspense fallback={null}><FirstRunScreen onDone={() => setFirstRunDone(true)} /></Suspense>;
   }
 
   // ── [T4.19] Menú de partidas, partidas guardadas y partida nueva ──
@@ -1788,6 +1830,8 @@ export const App: React.FC<{ startAt?: 'menu' }> = ({ startAt }) => {
 
   return (
     <div className={styles.appContainer}>
+      {/* [MJ1] En el móvil, la carrera en vertical: si está en horizontal, aviso para girarlo (la carrera sigue). */}
+      <RotateNotice inRace />
       {autoRace && (
         <div className={styles.autoRace} role="status" aria-live="polite">
           <strong>Simulando el Gran Premio</strong>
@@ -1802,7 +1846,7 @@ export const App: React.FC<{ startAt?: 'menu' }> = ({ startAt }) => {
         <div className={styles.barGroup}>
           <button
             className={styles.homeBtn}
-            onClick={handleLeaveRace}
+            onClick={requestLeaveRace}
             title="Volver a la selección"
           >
             <ArrowLeft size={14} />
@@ -1817,7 +1861,6 @@ export const App: React.FC<{ startAt?: 'menu' }> = ({ startAt }) => {
           currentSpeed={speedMultiplier}
           isPaused={isPaused}
           onSpeedChange={handleSpeedChange}
-          onReset={handleResetRace}
           raceTimeFormatted={formatRaceTime(raceTimeSec)}
           leaderLap={leaderLap}
           totalLaps={simulation.totalLaps}
@@ -1882,6 +1925,16 @@ export const App: React.FC<{ startAt?: 'menu' }> = ({ startAt }) => {
         </div>
       </header>
 
+      {planOpen && !autoRace && (
+        <RacePlanScreen role={sharedRef.current ? 'anfitrion' : 'solo'} totalLaps={simulation.totalLaps} onConfirm={handlePlanConfirm}
+          look={teamCars[0] ? { team: teamCars[0].team, number: teamCars[0].driver.number, compound: teamCars[0].tires.compound } : undefined}
+          cars={teamCars.map(c => ({ id: c.id, code: c.driver.code, number: c.driver.number, color: c.team.color, compound: c.tires.compound, inventory: c.tireInventory ?? null }))} />
+      )}
+      {leaveAsk && (
+        <LeaveRaceDialog kind={sharedRef.current ? 'anfitrion' : mode === 'career' ? 'profesional' : 'libre'} saved={Boolean(saveStore)}
+          onStay={() => setLeaveAsk(false)} onLeave={() => { setLeaveAsk(false); handleLeaveRace(); }} />
+      )}
+
       <div className={styles.raceShell} style={shellLayout} data-layout={layout} data-side={shellSide} data-tab={raceTab} data-track={mobileView.track ? 'on' : 'off'}>
         {mobileView.strip && (
           <div className={styles.stripArea}>
@@ -1904,6 +1957,8 @@ export const App: React.FC<{ startAt?: 'menu' }> = ({ startAt }) => {
         {/* ── 2. CIRCUITO LIBRE + MURO EN SU FRANJA ── */}
         <main className={styles.centerArea}>
           <div className={styles.canvasArea} data-formation={lightState === 'formation-lap' ? 'true' : undefined}>
+            {/* [MJ4] Las vueltas, a la vista: el mismo contador que el invitado. */}
+            <LapCounter lap={leaderLap} total={simulation.totalLaps} light={lightState} finished={isFinished} />
             <RaceCanvas
               track={simulation.activeTrack}
               circuitId={simulation.circuitId}
@@ -1933,15 +1988,16 @@ export const App: React.FC<{ startAt?: 'menu' }> = ({ startAt }) => {
                     const room = sharedRef.current;
                     if (!room) return;
                     sharedRef.current = null;
-                    setPauseRequests([]);
-                    void returnToLobby(room.db, room.code).catch(() => {});
+                                    void returnToLobby(room.db, room.code).catch(() => {});
                     setResumeRoom(room);
                     setRoomIntent('create');
                     setCurrentView('room');
                   }} />
               </div>
             )}
-            <PauseRequestBanner requests={pauseRequests} onDismiss={uid => { sharedHostRef.current?.dismissPause(uid); setPauseRequests([...(sharedHostRef.current?.pauseRequests ?? [])]); }} />
+            {/* [MJ2] La pausa de un invitado: el anfitrión la ve con su cuenta atrás y puede seguir. */}
+            {/* En desarrollo, `window.__guestPause` finge una pausa de invitado (para las capturas de revisión). */}
+            <PauseStatus pause={slowView?.guestPause ?? (import.meta.env.DEV ? (globalThis as { __guestPause?: { name: string; remainingSec: number } }).__guestPause : undefined)} canResume onResume={() => { void sendOrder({ kind: 'guestResume' }); }} />
 
             {lightState === 'formation-lap' && (
               <div className={styles.formationBanner}>
@@ -2025,7 +2081,7 @@ export const App: React.FC<{ startAt?: 'menu' }> = ({ startAt }) => {
 
           <section className={`${styles.wallArea} ${showWall ? '' : styles.isHidden}`}>
             <BoxControls key={teamCars.map(c => c.id).join(':') + ':' + selectedCircuitId} car={favoriteCar} teamCars={teamCars}
-              team={teamViews[favoriteCar.team.id]} race={{ lightState, isFinished, raceFlagState }} send={sendOrder} slow={slowView} focusId={selectedCarId} />
+              team={teamViews[favoriteCar.team.id]} race={{ lightState, isFinished, raceFlagState }} send={sendOrder} slow={slowView} focusId={selectedCarId} onSelectCar={handleSelectCar} />
           </section>
         </main>
 

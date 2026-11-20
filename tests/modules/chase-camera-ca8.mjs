@@ -4,6 +4,8 @@
 //  3. Sigue igual de suave en las curvas (mismo seguimiento que hoy) y la cámara de boxes de CA5 no cambia.
 //  4. Captura para el visto bueno (en `docs/design/ca8-persecucion/`).
 //  [Autorizado al aprobar el contrato] `scenery-3d` pasa de «a 8-20 m» a «a 5-20 m» detrás del coche.
+//  [19/11/2026, autorizado por el usuario («4,5 m detrás y 3 m de alto»)] El punto 1 pasa a 4-5 m detrás y 2,8-3,2 m de alto:
+//  a 6,5 m el coche de detrás, si iba pegado, se metía entre la cámara y el coche seguido.
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
 
 export default async function run({ server, assert, test }) {
@@ -17,12 +19,12 @@ export default async function run({ server, assert, test }) {
       const dx = v.position.x - car.x, dy = v.position.y - car.y, back = Math.hypot(dx, dy);
       const behind = dx * Math.cos(heading) + dy * Math.sin(heading) < 0;
       const high = v.position.z - car.z;
-      if (!behind || back < 6 || back > 7) bad.push(`detrás ${back.toFixed(2)} m`);
-      if (high < 2 || high > 2.5) bad.push(`altura ${high.toFixed(2)} m`);
+      if (!behind || back < 4 || back > 5) bad.push(`detrás ${back.toFixed(2)} m`);
+      if (high < 2.8 || high > 3.2) bad.push(`altura ${high.toFixed(2)} m`);
       if (Math.hypot(v.target.x - car.x, v.target.y - car.y) > 3) bad.push('no mira al coche');
       if (Math.hypot(dx, dy, high) <= 4) bad.push('demasiado cerca del coche');
     }
-    assert(bad.length === 0, 'CA8: 6-7 m detrás, 2-2,5 m de alto, mirando al coche y a más de 4 m de su centro', [...new Set(bad)].join(' | '));
+    assert(bad.length === 0, 'CA8: 4-5 m detrás, 2,8-3,2 m de alto (19/11/2026), mirando al coche y a más de 4 m de su centro', [...new Set(bad)].join(' | '));
   });
 
   await test('CA8: el resto de la realización no cambia', () => {

@@ -80,6 +80,11 @@ const realStores: Record<RadioVariant, ModelStore> = {
   q0f16: upgradingStore(revisionsOf('q0f16')[0].store, revisionsOf('q0f16').slice(1).map(r => r.store)),
   q4: upgradingStore(revisionsOf('q4')[0].store, revisionsOf('q4').slice(1).map(r => r.store)),
 };
+/** [MJ10, 20/11/2026] La descarga del modelo de la radio de esta versión: la misma que enseña Ajustes (una sola en toda la página). */
+export function radioModelDownload(variant: RadioVariant) {
+  const model = RADIO_MODELS[variant];
+  return browserModelDownload(`radio-${model.modelId}`, { store: realStores[variant], totalBytes: model.bytes, estimate: browserEstimate(), persist: persistAndKeepAi });
+}
 const previousStores: Record<RadioVariant, ModelStore[]> = { q0f16: revisionsOf('q0f16').slice(1).map(r => r.store), q4: revisionsOf('q4').slice(1).map(r => r.store) };
 
 export default function RadioSettings({ store: givenStore, device: givenDevice, choice: givenChoice, estimate: givenEstimate, saveData = browserSaveData(), initialMode, remember = true, voiceStore, kokoroStore, webgpu: givenWebgpu, whisperStore, place = 'ajustes' }: RadioSettingsProps) {

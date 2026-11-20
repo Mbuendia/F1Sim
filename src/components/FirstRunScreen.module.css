@@ -1,0 +1,169 @@
+/* [MJ10, 20/11/2026] Primera configuración. */
+.screen {
+  position: relative;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 24px 16px 24px clamp(16px, 6vw, 96px);
+  background: var(--negro);
+  color: var(--text);
+  font-family: var(--font-ui);
+  overflow: hidden;
+  isolation: isolate;
+}
+
+/* La escena de Blender, a pantalla completa, con un acercamiento lento y continuo. */
+.scene { position: absolute; inset: 0; z-index: -2; }
+.scene img { width: 100%; height: 100%; object-fit: cover; object-position: 70% 50%; animation: drift 24s ease-in-out infinite alternate; transform-origin: 72% 55%; }
+@keyframes drift { from { transform: scale(1.02); } to { transform: scale(1.1) translateX(-1.5%); } }
+
+/* Sombra a la izquierda para que el panel se lea; la derecha (el coche) queda limpia. */
+.shade { position: absolute; inset: 0; z-index: -1; background: linear-gradient(90deg, color-mix(in srgb, var(--negro) 82%, transparent) 0%, color-mix(in srgb, var(--negro) 45%, transparent) 42%, transparent 70%); }
+
+.card {
+  width: min(560px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px;
+  border: 1px solid color-mix(in srgb, var(--text) 14%, transparent);
+  border-top: 3px solid var(--accion);
+  border-radius: var(--radio-l);
+  background: color-mix(in srgb, var(--panel) 72%, transparent);
+  backdrop-filter: blur(14px) saturate(1.2);
+  box-shadow: 0 24px 60px color-mix(in srgb, var(--negro) 60%, transparent);
+  min-width: 0;
+  animation: rise var(--t-pausado) ease-out both;
+}
+@keyframes rise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+
+.brand { margin: 0; font-family: var(--font-marca); font-size: var(--letra-2); letter-spacing: 0.14em; text-transform: uppercase; color: var(--accion); }
+.progress { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.progress span { height: 4px; border-radius: var(--radio-pill); background: color-mix(in srgb, var(--text) 16%, transparent); transition: background var(--t-medio) ease; }
+.progress span[data-on='true'] { background: var(--accion); }
+
+.head {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 4px 12px;
+}
+
+.step {
+  margin: 0;
+  grid-column: 1;
+  font-size: var(--letra-1);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+.title {
+  margin: 0;
+  grid-column: 1;
+  font-family: var(--font-titular);
+  font-size: var(--letra-6);
+  text-transform: uppercase;
+}
+
+.skip {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  min-height: var(--toque);
+  padding: 0 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radio-s);
+  background: transparent;
+  color: var(--text);
+  font-size: var(--letra-2);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  animation: slide var(--t-medio) ease-out both;
+}
+@keyframes slide { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: none; } }
+
+.lead {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--letra-3);
+  color: var(--text);
+}
+
+.dim {
+  margin: 0;
+  font-size: var(--letra-2);
+  color: var(--text-2);
+}
+
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.option {
+  min-height: var(--toque);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  text-align: left;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radio-m);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.option b { font-size: var(--letra-3); }
+.option span { font-size: var(--letra-2); color: var(--text-2); line-height: 1.4; }
+.option[aria-checked='true'] { border-color: var(--accion); box-shadow: inset 3px 0 0 var(--accion); background: var(--panel-2); }
+.option:disabled { cursor: not-allowed; opacity: 0.6; }
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.primary,
+.secondary {
+  min-height: var(--toque);
+  padding: 0 18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: var(--radio-s);
+  font-size: var(--letra-3);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.primary { border: 1px solid var(--accion); background: var(--accion); color: var(--text); }
+.primary:hover { background: var(--accion-hover); }
+.secondary { border: 1px solid var(--line-strong); background: transparent; color: var(--text); }
+
+@media (max-width: 767px) {
+  /* En el móvil, el coche arriba y el panel abajo, como una hoja. */
+  .screen { align-items: flex-end; padding: 0; }
+  .scene img { object-position: 22% 30%; transform-origin: 30% 35%; }
+  .shade { background: linear-gradient(180deg, transparent 0%, transparent 30%, color-mix(in srgb, var(--negro) 70%, transparent) 55%, color-mix(in srgb, var(--negro) 88%, transparent) 100%); }
+  .card { width: 100%; border-radius: var(--radio-l) var(--radio-l) 0 0; border-left: none; border-right: none; border-bottom: none; padding: 18px 16px calc(16px + env(safe-area-inset-bottom)); max-height: 72dvh; overflow-y: auto; }
+  .primary, .secondary { flex: 1; justify-content: center; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scene img, .card, .section { animation: none; }
+}

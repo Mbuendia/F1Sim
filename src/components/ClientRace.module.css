@@ -19,7 +19,7 @@
 .layout { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .track { position: relative; flex: none; height: 36vh; min-height: 200px; overflow: hidden; background: var(--panel-2); border-bottom: 1px solid var(--line); }
 .panels { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 0 8px 12px; }
-.tabs { position: sticky; top: 0; z-index: 2; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 8px 0; background: var(--bg); }
+.tabs { position: sticky; top: 0; z-index: 2; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; padding: 8px 0; background: var(--bg); }
 .tab { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; border-radius: var(--radio-s); border: 1px solid var(--line-strong); background: var(--panel); color: var(--text-2); font-family: var(--font-ui); font-size: var(--letra-2); font-weight: 700; cursor: pointer; }
 .tab[aria-selected="true"] { background: var(--panel-2); color: var(--text); border-color: var(--foco); }
 .timing { min-width: 0; }
@@ -48,4 +48,24 @@
   .layout { flex-direction: row; }
   .track { flex: 1.4; height: auto; border-bottom: 0; border-right: 1px solid var(--line); }
   .panels { flex: 1; min-width: 360px; max-width: 520px; }
+}
+
+/* [MJ2] Pausa de un invitado: una franja que todos ven, con quién la pidió, la cuenta atrás y «Seguir». */
+.pauseStatus { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 8px 12px; padding: 8px 16px; background: var(--panel-2); border-bottom: 2px solid var(--aviso); color: var(--text); font-family: var(--font-ui); font-size: var(--letra-1); }
+.pauseStatus svg { color: var(--aviso); }
+.pauseStatus .primary { min-height: 36px; padding: 4px 16px; }
+
+/* [MJ3] Detalle de un coche (propio o rival) y el panel del tiempo. */
+.detail { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border: 1px solid var(--line); background: var(--panel); min-width: 0; }
+.detailHead { display: flex; align-items: center; gap: 8px; }
+.detailHead b { font-family: var(--font-datos); font-size: var(--letra-3); }
+.detailHead button { margin-left: auto; }
+.facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 12px; margin: 0; font-size: var(--letra-1); }
+.facts dt { color: var(--text-3); }
+.facts dd { margin: 0; color: var(--text); font-family: var(--font-datos); }
+.weather { min-width: 0; overflow-x: hidden; }
+
+/* [MJ4] En el móvil la vuelta va en el contador grande de la pista: no se repite en la barra. */
+@media (max-width: 767px) {
+  .lap { display: none; }
 }

@@ -142,6 +142,10 @@ function carbonShells(mesh: THREE.Mesh, f: { xf: number; xr: number; top: number
     else if (n >= 900) k = 'paint';
     else if (!nearWheel && n >= 30 && mn.y > 0.3 && mx.y < 0.82 && az < 0.5) k = 'paint';            // paneles pequeños del costado                                                     // paneles grandes: pontón, bajos del morro
     else if (dz < 0.12 && mx.y > 0.8 * f.top && n >= 200) k = 'paint';                  // aleta de la tapa motor
+    // [MJ14, 20/11/2026, el usuario: «esos parches negros no tienen sentido»] Los trozos sueltos que el modelo traía en
+    // carbono en mitad de la carrocería (manchas negras en pontones y costados) van pintados; siguen de carbono los
+    // retrovisores (pequeños, altos y hacia fuera).
+    else if (!nearWheel && ((mn.y > 0.18 && az < 0.62 && !(mn.y > 0.5 && az > 0.3 && dx < 0.45)) || mn.x > f.xf + 0.3)) k = 'paint';   // y en el morro y el ala
     kind.set(r, k);
   }
   // Una pieza gigante (todo el coche soldado, como el de 2024): se reparte cara a cara por dónde está cada una. El aro del
@@ -178,6 +182,7 @@ export function paintZones(root: THREE.Object3D): number {
   };
   const painted = new Set<string>([CAR_MODEL.materials.primary, CAR_MODEL.materials.secondary]);
   let top = 0, front = -Infinity;
+  const pending: { mesh: THREE.Mesh; faceZone: string[]; faceX: number[]; faceAz: number[]; faceY: number[]; faceHalo: boolean[]; faceOut: number[]; faceUp: number[] }[] = [];
   const a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3(), n = new THREE.Vector3(), e1 = new THREE.Vector3(), e2 = new THREE.Vector3();
   const meshes: THREE.Mesh[] = [];
   root.traverse(o => {
@@ -200,6 +205,9 @@ export function paintZones(root: THREE.Object3D): number {
   for (const mesh of meshes) mesh.geometry = splitAtHeight(mesh.geometry, mesh.matrixWorld, splitY);
   // [19/11/2026] Y el borde del fondo plano, también recto (antes salía en sierra por los triángulos).
   for (const mesh of meshes) mesh.geometry = splitAtHeight(mesh.geometry, mesh.matrixWorld, FLOOR_TOP);
+  // [MJ14] Y el del suelo de carbono (0,17 m), recto también.
+  for (const mesh of meshes) mesh.geometry = splitAtHeight(mesh.geometry, mesh.matrixWorld, 0.17);
+  for (const mesh of meshes) mesh.geometry = splitAtHeight(mesh.geometry, mesh.matrixWorld, 0.62);
   for (const mesh of meshes) {
     const geo = mesh.geometry, pos = geo.attributes.position, idx = geo.index;
     if (!idx) continue;
@@ -209,7 +217,7 @@ export function paintZones(root: THREE.Object3D): number {
     // pieza se decide entera: carbono, halo, alerón o carrocería pintada. Así no quedan piezas pintadas a medias, en sierra.
     const shellOf = carbonShells(mesh, { xf, xr, top }, wasCarbon);
     const faceZone: string[] = [];
-    const faceX: number[] = [], faceAz: number[] = [], faceNy: number[] = [];
+    const faceX: number[] = [], faceAz: number[] = [], faceNy: number[] = [], faceYs: number[] = [], faceHalo: boolean[] = [], faceOut: number[] = [], faceUp: number[] = [];
     for (let i = 0; i < idx.count; i += 3) {
       const i0 = idx.getX(i), i1 = idx.getX(i + 1), i2 = idx.getX(i + 2);
       a.fromBufferAttribute(pos, i0).applyMatrix4(mesh.matrixWorld);
@@ -221,15 +229,27 @@ export function paintZones(root: THREE.Object3D): number {
       let zone: string;
       // El ala delantera, menos el morro que pasa por encima de su centro.
       const frontWing = x > xf + 0.35 && (y < 0.36 || (az > 0.5 && y < 0.6)) && !(az < 0.17 && y > 0.11 && !(Math.abs(n.y) > 0.75 && az > 0.08 && y < 0.2));
-      const rearWing = x < xr - 0.15 && y > 0.36;
+      // [MJ14, 20/11/2026] El alerón trasero empieza más arriba: por debajo (viga, brazos de la suspensión trasera) es carbono.
+      const rearWing = x < xr - 0.15 && (y > 0.62 || (az > 0.4 && y > 0.36));   // las placas bajan más
       // [19/11/2026, el usuario: «revisa la parte de atrás»] Detrás del eje trasero y por debajo del alerón (difusor, viga y
       // estructura de choque) todo es carbono: antes salía pintado a trozos.
-      const rearLow = x < xr - 0.1 && y <= 0.36;
+      // [MJ14] Hasta la altura del alerón (antes 0,36 m): la viga y la estructura de detrás del eje, de carbono.
+      const rearLow = x < xr - 0.1 && y <= 0.62;
       // Placas: las caras de los extremos que miran de lado.
       // Las piezas sueltas que son carbono (tomas de freno, suspensión) lo son entero, estén donde estén.
+      // [MJ14, 20/11/2026] (el usuario: «¿por qué los coches tienen la suspensión pintada, el halo pintado, el asiento pintado?…
+      // Hay partes del suelo que evidentemente no tienen que estar pintado») Sin livery: la suspensión y las tomas de freno
+      // junto a las ruedas (lo que sale de la carrocería hacia ellas), el suelo y sus bordes, y detrás del eje trasero por
+      // debajo del alerón. El halo, el asiento y la cabina se deciden abajo, con la caja del halo.
+      const suspFront = x > xf - 0.55 && x < xf + 0.3 && az > 0.27 && y > 0.1 && y < 0.7;
+      const suspRear = Math.abs(x - xr) < 0.55 && (az > 0.42 || x < xr - 0.1) && az > 0.12 && y > 0.1 && y < 0.62;
+      const floor = y < 0.17 && !(x > xf + 0.35);
       if (shellOf && shellOf[i / 3] === 'carbon') zone = 'carbon';
+      else if (suspFront || suspRear || floor) zone = 'carbon';
       else if (frontWing) zone = az > 0.6 && Math.abs(n.z) > 0.6 ? 'zona_placas' : 'zona_alerones';
       else if (rearLow) zone = 'carbon';
+      // [MJ14] El pilar del alerón trasero (vertical, en el centro), de carbono.
+      else if (x < xr + 0.1 && y > 0.62 && y < 0.88 && az < 0.12 && Math.abs(n.y) < 0.35) zone = 'carbon';
       // Placas del alerón trasero: las caras de los extremos que miran de lado; los planos (casi horizontales) son alerón.
       else if (rearWing) zone = az > 0.3 && Math.abs(n.z) > 0.6 ? 'zona_placas' : 'zona_alerones';
       // [19/11/2026, el usuario: «el suelo es una parte más pequeña»] Solo el borde fino del fondo plano y su cara de arriba,
@@ -238,7 +258,7 @@ export function paintZones(root: THREE.Object3D): number {
       else {
         const piece = shellOf ? shellOf[i / 3] : 'paint';
         if (piece === 'carbon') zone = 'carbon';
-        else if (piece === 'halo') zone = 'zona_halo';
+        else if (piece === 'halo') zone = 'carbon';   // [MJ14, 20/11/2026] el halo no lleva livery
         else if (x > front - 0.45 && az < 0.25) zone = 'zona_punta';
         else if (x > xf - 0.05) zone = y > 0.42 * top || n.y > 0.5 ? 'zona_cuerpo' : 'zona_lateral';
         else if (az < 0.05 && y > 0.75 * top && u < 0.55) zone = 'zona_aleta';
@@ -248,7 +268,9 @@ export function paintZones(root: THREE.Object3D): number {
         // Los costados, partidos en alto y bajo (casi todas las libreas los parten así).
         else zone = y > 0.42 * top ? 'zona_costado' : 'zona_lateral';
       }
-      faceZone.push(zone); faceX.push(x); faceAz.push(az); faceNy.push(Math.abs(n.y));
+      faceZone.push(zone); faceX.push(x); faceAz.push(az); faceNy.push(Math.abs(n.y)); faceYs.push(y);
+      faceHalo.push(Boolean(shellOf && shellOf[i / 3] === 'halo'));
+      faceOut.push(z === 0 ? 0 : n.z * Math.sign(z)); faceUp.push(n.y);
     }
     // Fronteras sin dientes: dos pasadas en las que cada cara pintada toma la zona que más tienen ella y sus vecinas
     // (las que comparten vértice). El carbono no se mueve.
@@ -298,6 +320,21 @@ export function paintZones(root: THREE.Object3D): number {
       // pegadas a la punta del morro son morro, no alerón: los elementos del ala son láminas casi horizontales.
       for (const f of ahead) if (faceZone[f] === 'zona_alerones' && faceAz[f] < 0.17 && faceNy[f] < 0.6) faceZone[f] = 'zona_punta';
     }
+    pending.push({ mesh, faceZone, faceX, faceAz, faceY: faceYs, faceHalo, faceOut, faceUp });
+  }
+  // [MJ14, 20/11/2026] El asiento y el interior de la cabina, de carbono: las caras dentro de la planta del halo (con un poco de margen
+  // hacia atrás, el reposacabezas) y por debajo de su base. La caja del halo sale de sus caras.
+  const halo = { x0: Infinity, x1: -Infinity, y0: Infinity, az: 0 };
+  for (const p of pending) p.faceHalo.forEach((h, f) => { if (!h) return; halo.x0 = Math.min(halo.x0, p.faceX[f]); halo.x1 = Math.max(halo.x1, p.faceX[f]); halo.y0 = Math.min(halo.y0, p.faceY[f]); halo.az = Math.max(halo.az, p.faceAz[f]); });
+  const cockpit = Number.isFinite(halo.x0) ? { x0: halo.x0 - 0.12, x1: halo.x1 - 0.35, az: halo.az * 0.82, y1: halo.y0 + 0.04 } : null;
+  for (const { mesh, faceZone, faceX, faceAz, faceY, faceOut, faceUp } of pending) {
+    if (cockpit) for (let f = 0; f < faceZone.length; f++) {
+      // Solo lo de dentro: caras que no miran hacia fuera (el costado del monocasco sí va pintado) y, las que miran hacia
+      // arriba (asiento, fondo de la cabina), más cerca del centro que el borde de la cabina.
+      const inside = faceOut[f] < 0.3 && (faceUp[f] < 0.5 || faceAz[f] < cockpit.az * 0.8);
+      if (inside && faceZone[f] !== 'carbon' && faceX[f] > cockpit.x0 && faceX[f] < cockpit.x1 && faceAz[f] < cockpit.az && faceY[f] < cockpit.y1 && faceY[f] > 0.3) faceZone[f] = 'carbon';
+    }
+    const geo = mesh.geometry, pos = geo.attributes.position, idx = geo.index!;
     const buckets = new Map<string, number[]>();
     for (let f = 0; f < faceZone.length; f++) {
       const zone = faceZone[f];

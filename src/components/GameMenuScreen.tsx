@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from 'react';
-import { Flag, FolderOpen, LogIn, Play, PlusCircle, Settings, Trophy, Users } from 'lucide-react';
+import { Flag, FolderOpen, Infinity as InfinityIcon, LogIn, Play, PlusCircle, Settings, Trophy, Users } from 'lucide-react';
 import { TEAMS } from '../data/teams';
 import { menuOptions } from '../simulation/Career';
 import { formatMoney } from '../simulation/Finance';
@@ -33,10 +33,10 @@ function CurrentStatus({ slot }: { slot: SlotSummary }) {
   );
 }
 
-type Mode = 'continuar' | 'temporada' | 'libre' | 'multijugador';
+type Mode = 'continuar' | 'temporada' | 'libre' | 'multijugador' | 'desafio';
 
 /** Color de cada modo: tiñe la franja del corte, el brillo del panel y la tarjeta elegida. */
-const ACCENT: Record<Exclude<Mode, 'continuar'>, string> = { temporada: '#e10600', libre: '#38bdf8', multijugador: '#a78bfa' };
+const ACCENT: Record<Exclude<Mode, 'continuar'>, string> = { temporada: '#e10600', libre: '#38bdf8', multijugador: '#a78bfa', desafio: '#ff2d55' };
 const image = (mode: Mode) => `${import.meta.env.BASE_URL ?? '/'}menu/${mode}.webp`;
 
 interface Panel {
@@ -118,6 +118,15 @@ export function GameMenuScreen({ current = null, slots = [], onContinue, onNew, 
         {onJoinRoom && <button type="button" className={s.heroSecondary} onClick={onJoinRoom}><LogIn size={16} aria-hidden="true" />Unirse a una sala</button>}
       </>
     ),
+  });
+
+  // [MJ13, 20/11/2026, el usuario: «Me falta el modo infinito… Para mí es un menú diferente»] El Desafío tiene su propia
+  // tarjeta; hasta que el modo exista (MD1, Sprint 17) dice que llega pronto y su botón no lleva a ninguna parte.
+  panels.push({
+    id: 'desafio', card: 'Desafío', cardNote: 'próximamente', icon: <InfinityIcon size={18} aria-hidden="true" />,
+    kicker: 'Modo infinito', title: 'Desafío', accent: ACCENT.desafio,
+    lines: ['Empiezas en 2023 con un equipo y los años siguen sin fin: votaciones del reglamento, prensa, fichajes y un despido si fallas.', 'Llega pronto.'],
+    actions: <button type="button" className={s.primary} disabled aria-disabled="true" data-main data-soon><InfinityIcon size={16} aria-hidden="true" />Próximamente</button>,
   });
 
   const ids = panels.map(p => p.id);

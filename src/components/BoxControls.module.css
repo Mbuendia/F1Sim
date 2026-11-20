@@ -155,3 +155,14 @@
 .speedDigits { font: 800 var(--letra-5)/1 var(--font-titular); width: 3.2ch; font-variant-numeric: tabular-nums; }
 .speedGear { font: 800 var(--letra-4)/1 var(--font-titular); width: 1.9ch; padding: 3px 0; color: var(--text); background: var(--accion); clip-path: polygon(5px 0, 100% 0, calc(100% - 5px) 100%, 0 100%); }
 .speedRpm { font: 600 var(--letra-2) var(--font-datos); width: 6ch; font-variant-numeric: tabular-nums; }
+
+/* [MJ5, 19/11/2026] Muro muy estrecho (la columna del invitado en escritorio): los dos coches, uno debajo del otro, para
+   que no haya desplazamiento horizontal ni controles cortados. Las órdenes de equipo, en una fila encima. */
+@container (max-width:640px) {
+  .pilotsGrid,.pilotsGrid[data-orders] { grid-template-columns:minmax(0, 1fr); }
+  .pilotsGrid[data-orders] > .teamOrders { order:-2; grid-column:1 / -1; }
+  .pilotsGrid[data-orders] > .pilotCard:last-child { order:0; }
+  /* Sin sitio para las revoluciones en cifras: las dicen las luces (como en el móvil). */
+  .speedometer { grid-template-columns:max-content max-content max-content 1fr; }
+  .speedRpm, .rpmUnit { display:none; }
+}

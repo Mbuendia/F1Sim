@@ -23,7 +23,7 @@ import { toDb } from './dbSafe';
 import type { LobbyState } from './Lobby';
 import type { QualifyingResult } from '../simulation/Qualifying';
 
-/** Pedir pausa: avisa al anfitrión, que decide. No se repite antes de este tiempo. */
+/** Pedir pausa: no se repite antes de este tiempo. [MJ2, 19/11/2026] Ahora la pausa es real (la lleva el motor, con su límite). */
 export const PAUSE_REQUEST_COOLDOWN_MS = 10000;
 const PAUSE_KIND = 'pedirPausa';
 /** Números de las órdenes de los invitados ante el motor: aparte de los de la pantalla del anfitrión. */
@@ -53,9 +53,14 @@ export async function publishQualifying(db: RoomDb, code: string, race: { result
   await setRoomStatus(db, code, 'race');
 }
 
-/** El invitado pide pausa (el anfitrión la ve y decide). */
+/** El invitado pide pausa. [MJ2, 19/11/2026] La carrera se pausa para todos si le quedan pausas. */
 export function requestPause(session: RaceSession): Promise<Ack> {
   return session.order({ kind: PAUSE_KIND } as unknown as EngineOrder);
+}
+
+/** [MJ2, 19/11/2026] Seguir tras la pausa de un invitado (quien la pidió o el anfitrión). */
+export function resumePause(session: RaceSession): Promise<Ack> {
+  return session.order({ kind: 'guestResume' });
 }
 
 /** Enlace intermedio del anfitrión: deja pasar lo de su pantalla, publica las vistas y atiende a los invitados. */
@@ -120,21 +125,25 @@ export class SharedRaceHost {
   private names: Record<string, string>;
   private lastPause = new Map<string, number>();
   private onPauseRequest?: (uid: string, name: string) => void;
+  /** [MJ9, 20/11/2026] Un jugador se ha ido de la sala (o ha vuelto): la pantalla del anfitrión lo avisa con su nombre. */
+  private onPresence?: (uid: string, name: string, op: 'dropped' | 'returned') => void;
   /** [N9] Jugadores de la carrera y quién se ha caído (según la presencia de la sala). */
   private playerUids = new Set<string>();
   private dropped = new Set<string>();
   private offPresence: () => void = () => {};
   get droppedPlayers(): string[] { return [...this.dropped]; }
 
-  constructor({ link, transport, store, linkStore, clock, names = {}, onPauseRequest }: {
+  constructor({ link, transport, store, linkStore, clock, names = {}, onPauseRequest, onPresence }: {
     link: EngineLink; transport: HostTransport; store: RaceStore; linkStore?: LinkStore; clock?: Clock;
     names?: Record<string, string>; onPauseRequest?: (uid: string, name: string) => void;
+    onPresence?: (uid: string, name: string, op: 'dropped' | 'returned') => void;
   }) {
     this.tee = new TeeLink(link, transport);
     this.session = new RaceSession({ link: this.tee, store, linkStore });
     this.clock = clock ?? realClock;
     this.names = names;
     this.onPauseRequest = onPauseRequest;
+    this.onPresence = onPresence;
     transport.setOrderHandler((uid, order) => this.guestOrder(uid, order));
     this.transport = transport;
   }
@@ -147,9 +156,13 @@ export class SharedRaceHost {
       if (last !== undefined && now - last < PAUSE_REQUEST_COOLDOWN_MS) return { ok: false, reason: 'Ya has pedido pausa hace poco' };
       this.lastPause.set(uid, now);
       const name = this.names[uid] ?? uid;
-      this.pauseRequests.push({ uid, name, at: now });
-      this.onPauseRequest?.(uid, name);
-      return { ok: true };
+      // [MJ2, 19/11/2026] La petición pausa la carrera: el motor comprueba que le quedan pausas y cuenta el minuto.
+      return this.tee.guestOrder(uid, { kind: 'guestPause' }).then(result => {
+        if (!result.ok) { this.lastPause.delete(uid); return result; }
+        this.pauseRequests.push({ uid, name, at: now });
+        this.onPauseRequest?.(uid, name);
+        return result;
+      });
     }
     return this.tee.guestOrder(uid, order);
   }
@@ -165,7 +178,7 @@ export class SharedRaceHost {
     publish?: boolean;
     hostUid: string; hostTeamId: string; players: SharedInit['players'];
   }): Promise<StartOutcome> {
-    this.tee.shared = { hostUid, hostTeamId, players };
+    this.tee.shared = { hostUid, hostTeamId, players, names: this.names };
     for (const p of players) this.transport.setTeam(p.uid, 'teamId' in p ? p.teamId : '');
     const engine = this.session.start({ snapshot, config, roster, fastHz: 60 });
     // [N9] Caídas y vueltas: la presencia de la sala dice quién falta; el motor pasa su equipo al estratega y se lo devuelve.
@@ -186,8 +199,8 @@ export class SharedRaceHost {
     if (lobby.closed) return;
     const here = new Set(lobby.members.map(m => m.uid));
     for (const uid of this.playerUids) {
-      if (!here.has(uid) && !this.dropped.has(uid)) { this.dropped.add(uid); this.tee.post({ type: 'owners', op: 'dropped', uid }); }
-      else if (here.has(uid) && this.dropped.has(uid)) { this.dropped.delete(uid); this.tee.post({ type: 'owners', op: 'returned', uid }); }
+      if (!here.has(uid) && !this.dropped.has(uid)) { this.dropped.add(uid); this.tee.post({ type: 'owners', op: 'dropped', uid }); this.onPresence?.(uid, this.names[uid] ?? 'Un jugador', 'dropped'); }
+      else if (here.has(uid) && this.dropped.has(uid)) { this.dropped.delete(uid); this.tee.post({ type: 'owners', op: 'returned', uid }); this.onPresence?.(uid, this.names[uid] ?? 'Un jugador', 'returned'); }
     }
   }
 

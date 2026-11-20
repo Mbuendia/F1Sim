@@ -1,4 +1,6 @@
 import React, { useRef, useEffect, useMemo, useState } from 'react';
+import { isDoubleTap, isTap, pinchFactor, TAP_MAX_PX, touchDistance, touchMid, type Pt } from '../utils/touchGestures';
+import { drawSelectionMarker, markerLabel } from '../renderer/selectionMarker';
 import styles from './RaceCanvas.module.css';
 import { Camera } from '../renderer/Camera';
 import { TrackRenderer } from '../renderer/TrackRenderer';
@@ -110,7 +112,7 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
   // El modo de la cámara 3D vive en `camera` (la compartida con la barra de arriba, cuyo botón lo cambia).
   const director = useMemo(() => {
     const d = new CameraDirector3D(track, circuitId, camera);
-    d.mode = initialCameraMode ?? (selectedCarId !== null ? 'persecucion' : 'vista');
+    d.mode = initialCameraMode ?? 'vista';
     return d;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [track, circuitId, camera]);
@@ -124,10 +126,21 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
     w.__camera3d = { director, setMode: setMode3d };
     return () => { delete w.__camera3d; };
   });
+  // [MJ6, 19/11/2026] Seleccionar solo remarca al piloto; la cámara lo sigue si se pulsa «Seguir» (y vuelve a la vista general al dejarlo).
+  const [followId, setFollowId] = useState<number | null>(null);
+  const followRef = useRef<number | null>(null);
+  followRef.current = followId;
   useEffect(() => {
-    // Al elegir un coche desde la vista general, la cámara se va con él.
-    if (selectedCarId !== null && director.mode === 'vista') director.mode = 'persecucion';
-  }, [selectedCarId, director]);
+    // Quitar la selección deja de seguir; elegir otro piloto mientras se sigue pasa a seguirlo a él.
+    setFollowId(prev => (prev === null ? null : selectedCarId));
+  }, [selectedCarId]);
+  useEffect(() => {
+    if (followId !== null) {
+      if (director.mode === 'vista' || director.mode === 'libre') director.mode = 'persecucion';
+    } else if (director.mode === 'persecucion' || director.mode === 'a-bordo') director.mode = 'vista';
+  }, [followId, director]);
+  const reducedMotion = useMemo(() => typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true, []);
+  const selectedEntry = selectedCarId === null ? null : roster.find(entry => entry.id === selectedCarId) ?? null;
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     // [UX2] La vista 2D también se elige en Ajustes (se guarda en el dispositivo).
@@ -162,14 +175,14 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
     return () => { cancelled = true; clearTimeout(slowTimer); setLoading3d(null); scene3dRef.current = null; camera.view3d = false; setView3d(false); created?.destroy(); };
   }, [track, circuitId, camera]);
 
-  // Sincronizar el seguimiento de la cámara cuando cambia selectedCarId
+  // [MJ6, 19/11/2026] La cámara sigue al piloto solo con «Seguir».
   useEffect(() => {
-    if (selectedCarId !== null) {
-      camera.followCar(selectedCarId);
+    if (followId !== null) {
+      camera.followCar(followId);
     } else {
       camera.resetToFullTrack(track);
     }
-  }, [selectedCarId, camera, track]);
+  }, [followId, camera, track]);
 
   // [R56] Imágenes de los modelos 3D vistos desde arriba para los coches de pista. Se generan aparte al entrar en
   // carrera; hasta que están (o si no hay WebGL o falla la carga) la pista sigue con su dibujo vectorial.
@@ -243,7 +256,7 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
     }
 
     handleResize();
-    if (selectedCarId === null) {
+    if (followRef.current === null) {
       camera.resetToFullTrack(track);
     }
     window.addEventListener('resize', handleResize);
@@ -320,7 +333,7 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
         const w = camera.screenWidth, h = camera.screenHeight;
         const sun3 = sunAt({ circuitId, raceTimeSec: frame.raceTimeSec, cloudCover: frame.cloudCover });
         // [PF12] En pausa la cámara tampoco se mueve (la de persecución seguía acercándose y el coche parecía ir hacia atrás).
-        const shot = director.view(frame.cars, selectedCarId, frame.raceTimeSec, dtRaw, w / h, car => scene3d.carHeight(car), Boolean(raceStore.getState().slow?.paused));
+        const shot = director.view(frame.cars, followRef.current, frame.raceTimeSec, dtRaw, w / h, car => scene3d.carHeight(car), Boolean(raceStore.getState().slow?.paused));
         const finished = Boolean(raceStore.getState().slow?.finished);
         if (finished && finishedAt === null) finishedAt = performance.now();
         if (!finished) finishedAt = null;
@@ -341,10 +354,11 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
           // [VS2] Nubosidad para el cielo y agua para el asfalto mojado y la estela de los coches.
           cloudCover: frame.cloudCover, wet: frame.layers ? { rainMmH: frame.layers.rain, waterMm: frame.layers.water, depthAt: frame.depthAt } : null,
           // [PF2.7] Con las cámaras pegadas al coche, él y los cercanos van con el modelo completo.
-          focusCarId: director.mode === 'persecucion' || director.mode === 'a-bordo' ? selectedCarId : null }, w, h, Math.min(dpr, pixelRatioMax));
+          focusCarId: director.mode === 'persecucion' || director.mode === 'a-bordo' ? followRef.current : null }, w, h, Math.min(dpr, pixelRatioMax));
         ctx.drawImage(image, 0, 0, w, h);
         const eye = shot.view.position;
-        drawLabels3D(ctx, frame.cars, selectedCarId, director.mode === 'vista', car => {
+        // [MJ6, 19/11/2026] Las etiquetas de los demás; el seleccionado lleva el marcador (encima de todo, más abajo).
+        drawLabels3D(ctx, frame.cars.filter(car => car.id !== selectedCarId), null, director.mode === 'vista', car => {
           const z = scene3d.carHeight(car) + 1.8;
           const p = scene3d.project(car.worldX, car.worldY, z, w, h);
           return { ...p, distance: Math.hypot(car.worldX - eye.x, car.worldY - eye.y, z - eye.z) };
@@ -352,6 +366,12 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
         const rendered = performance.now();
         WeatherRenderer.renderClouds(ctx, camera, skyCover(frame.cloudCover, frame.rain));
         if (frame.layers) WeatherRenderer.renderDrops(ctx, track, camera, frame.rain, frame.raceTimeSec);
+        // [MJ6, 19/11/2026] El marcador del seleccionado (en 3D, sobre el coche o sobre su punto de lejos).
+        const marked = selectedCarId === null ? null : frame.cars.find(car => car.id === selectedCarId);
+        if (marked) {
+          const p = scene3d.project(marked.worldX, marked.worldY, scene3d.carHeight(marked) + 1.6, w, h);
+          if (p.visible && p.x > -40 && p.x < w + 40 && p.y > 0 && p.y < h + 40) drawSelectionMarker(ctx, p.x, p.y, markerLabel(marked), performance.now() / 1000, reducedMotion);
+        }
         if (camera.followingCarId !== null) {
           const followed = camera.followingCarId;
           const ownCar = Object.values(raceStore.getState().teams).flatMap(team => team.cars).find(car => car.id === followed);
@@ -449,6 +469,12 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
       // [G9] El cielo se cubre también donde llueve: con lluvia en el radar no puede verse despejado.
       WeatherRenderer.renderClouds(ctx, camera, skyCover(frame.cloudCover, frame.rain));
       if (weatherView) WeatherRenderer.renderDrops(ctx, track, camera, frame.rain, frame.raceTimeSec);
+      // [MJ6, 19/11/2026] El marcador del seleccionado (en 2D), por encima de coches y etiquetas.
+      const marked2d = selectedCarId === null ? null : frame.cars.find(car => car.id === selectedCarId);
+      if (marked2d) {
+        const p = camera.worldToScreen(marked2d.worldX, marked2d.worldY);
+        drawSelectionMarker(ctx, p.x, p.y - Math.max(10, 14 * camera.zoom), markerLabel(marked2d), performance.now() / 1000, reducedMotion);
+      }
 
       // ── MINIMAPA A LA IZQUIERDA DEL TODO (visible al seguir un coche) ──
       if (camera.followingCarId !== null) {
@@ -524,13 +550,18 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
     isDraggingRef.current = false;
 
     // Si fue un click rápido casi sin arrastrar (< 6px), seleccionar monoplaza
-    if (totalDragDistanceRef.current < 6 && e.button === 0) {
+    if (totalDragDistanceRef.current < 6 && e.button === 0) selectAt(e.clientX, e.clientY);
+  };
+
+  // [MJ7, 19/11/2026] Seleccionar el coche bajo un punto de la pantalla (clic o toque); fuera de los coches quita la selección.
+  const selectAt = (clientX: number, clientY: number) => {
+    {
       const canvas = canvasRef.current;
       if (!canvas) return;
 
       const rect = canvas.getBoundingClientRect();
-      const clickX = e.clientX - rect.left;
-      const clickY = e.clientY - rect.top;
+      const clickX = clientX - rect.left;
+      const clickY = clientY - rect.top;
 
       const scene3d = scene3dRef.current;
       let clickedCarId: number | null;
@@ -547,10 +578,9 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
         clickedCarId = CarRenderer.pickCarAtScreen(paintedRef.current, camera, clickX, clickY);
       }
 
-      if (clickedCarId !== null) {
-        onSelectCar(clickedCarId);
-        camera.followCar(clickedCarId);
-      }
+      // [MJ6, 19/11/2026] Tocar un coche lo selecciona (sin mover la cámara); tocar fuera quita la selección.
+      if (clickedCarId !== null) onSelectCar(clickedCarId);
+      else if (selectedCarId !== null) onSelectCar(null);
     }
   };
 
@@ -568,10 +598,92 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
   };
 
   const handleDoubleClick = () => {
-    if (scene3dRef.current) setMode3d('vista');
+    if (scene3dRef.current) { setMode3d('vista'); director.resetTouch(); }
     camera.resetToFullTrack(track);
     setCurrentRotationDeg(0);
     onSelectCar(null);
+  };
+
+  // [MJ7, 19/11/2026] Gestos en el móvil: un dedo mueve la pista, dos dedos acercan y alejan (centrado entre ellos) y la mueven, un
+  // toque corto selecciona y un doble toque vuelve a la pista entera.
+  const touchRef = useRef<{ mode: 'none' | 'pan' | 'pinch'; last: Pt; dist: number; start: Pt; startT: number; moved: number }>(
+    { mode: 'none', last: { x: 0, y: 0 }, dist: 0, start: { x: 0, y: 0 }, startT: 0, moved: 0 });
+  const lastTapRef = useRef<{ t: number; x: number; y: number } | null>(null);
+  const pointOf = (t: React.Touch): Pt => ({ x: t.clientX, y: t.clientY });
+
+  const panView = (from: Pt, to: Pt) => {
+    const scene3d = scene3dRef.current, canvas = canvasRef.current;
+    if (scene3d && canvas) {
+      // 3D: la cámara puesta se mueve lo que se ha movido el punto del suelo bajo el dedo (sin pasar a la libre).
+      const rect = canvas.getBoundingClientRect();
+      const a = scene3d.groundAt(from.x - rect.left, from.y - rect.top, rect.width, rect.height);
+      const b = scene3d.groundAt(to.x - rect.left, to.y - rect.top, rect.width, rect.height);
+      if (a && b) director.touchPan(b.x - a.x, b.y - a.y);
+      return;
+    }
+    camera.panBy(to.x - from.x, to.y - from.y);
+  };
+
+  const pinchView = (factor: number, mid: Pt) => {
+    const canvas = canvasRef.current;
+    if (!canvas || factor === 1) return;
+    const rect = canvas.getBoundingClientRect();
+    const sx = mid.x - rect.left, sy = mid.y - rect.top;
+    const scene3d = scene3dRef.current;
+    if (scene3d) {
+      // La cámara puesta se acerca o se aleja (hacia el punto bajo los dedos), sin pasar a la libre.
+      director.touchZoom(factor, scene3d.groundAt(sx, sy, rect.width, rect.height));
+      return;
+    }
+    camera.zoomAt(factor, sx, sy);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    const s = touchRef.current;
+    if (e.touches.length >= 2) {
+      const a = pointOf(e.touches[0]), b = pointOf(e.touches[1]);
+      s.mode = 'pinch'; s.dist = touchDistance(a, b); s.last = touchMid(a, b); s.moved = Infinity;
+    } else if (e.touches.length === 1) {
+      const p = pointOf(e.touches[0]);
+      s.mode = 'pan'; s.last = p; s.start = p; s.startT = performance.now(); s.moved = 0;
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    const s = touchRef.current;
+    if (s.mode === 'pinch' && e.touches.length >= 2) {
+      const a = pointOf(e.touches[0]), b = pointOf(e.touches[1]);
+      const dist = touchDistance(a, b), mid = touchMid(a, b);
+      pinchView(pinchFactor(s.dist, dist), mid);
+      // Mover los dos dedos juntos también desplaza (salvo siguiendo a un coche en 2D, que se queda en el centro).
+      if (scene3dRef.current || camera.followingCarId === null) panView(s.last, mid);
+      s.dist = dist; s.last = mid;
+    } else if (s.mode === 'pan' && e.touches.length === 1) {
+      const p = pointOf(e.touches[0]);
+      s.moved = Math.max(s.moved, Math.hypot(p.x - s.start.x, p.y - s.start.y));
+      if (s.moved >= TAP_MAX_PX) panView(s.last, p);
+      s.last = p;
+    }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    // Sin los clics de ratón que el navegador simula tras un toque: el toque ya se trata aquí.
+    e.preventDefault();
+    const s = touchRef.current;
+    if (e.touches.length === 1 && s.mode === 'pinch') {
+      // Al levantar un dedo del pellizco, el otro sigue moviendo la pista.
+      const p = pointOf(e.touches[0]);
+      s.mode = 'pan'; s.last = p; s.start = p; s.startT = performance.now(); s.moved = TAP_MAX_PX;
+      return;
+    }
+    if (e.touches.length > 0) return;
+    const wasTap = s.mode === 'pan' && isTap(s.moved, performance.now() - s.startT);
+    s.mode = 'none';
+    if (!wasTap) return;
+    const tap = { t: performance.now(), x: s.start.x, y: s.start.y };
+    if (isDoubleTap(lastTapRef.current, tap)) { lastTapRef.current = null; handleDoubleClick(); return; }
+    lastTapRef.current = tap;
+    selectAt(tap.x, tap.y);
   };
 
   return (
@@ -584,6 +696,10 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
         onMouseUp={handleMouseUp}
         onWheel={handleWheel}
         onDoubleClick={handleDoubleClick}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onTouchCancel={() => { touchRef.current.mode = 'none'; }}
         onContextMenu={(e) => e.preventDefault()}
       />
 
@@ -610,6 +726,18 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
         <div className={styles.orbitBadge} onClick={handleDoubleClick} title="Haz doble click para resetear vista">
           <Compass size={13} style={{ transform: `rotate(${-currentRotationDeg}deg)`, transition: 'transform 0.1s' }} />
           <span>{currentRotationDeg}° {currentRotationDeg !== 0 ? '(Click para reset)' : 'NORTE'}</span>
+        </div>
+      )}
+
+      {/* [MJ6, 19/11/2026] Con un piloto seleccionado: «Seguir» (la cámara va con él) o «Dejar de seguir», y quitar la selección. */}
+      {selectedEntry && (
+        <div className={styles.selection} data-selection>
+          <span className={styles.selectionName} style={{ borderLeftColor: selectedEntry.team.color }}>{selectedEntry.driver.code}</span>
+          <button type="button" className={styles.selectionFollow} aria-pressed={followId !== null}
+            onClick={() => setFollowId(id => (id === null ? selectedEntry.id : null))}>
+            {followId !== null ? 'Dejar de seguir' : 'Seguir'}
+          </button>
+          <button type="button" className={styles.selectionClose} aria-label="Quitar la selección" onClick={() => { setFollowId(null); onSelectCar(null); }}>×</button>
         </div>
       )}
 

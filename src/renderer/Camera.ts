@@ -1,4 +1,5 @@
 import { CAMERA_MODES, type CameraMode3D } from '../scene3d/cameras';
+import { zoomAt2D } from '../utils/touchGestures';
 import { TrackDefinition } from '../data/barcelonaTrack';
 import { CarState } from '../types/f1';
 import { isCarVisible } from '../utils/carPosition';
@@ -134,6 +135,18 @@ export class Camera {
       return;
     }
     this.zoomLevel = Math.max(Camera.MIN_ZOOM_LEVEL, Math.min(Camera.MAX_ZOOM_LEVEL, this.zoomLevel * factor));
+  }
+
+  /** [MJ7, 19/11/2026] Zoom del pellizco, centrado en el punto (sx, sy) de la pantalla. Siguiendo a un coche, el coche sigue en el
+   *  centro y cambia el zoom pedido (como la rueda); si no, pasa a la vista libre y el punto bajo los dedos no se mueve. */
+  zoomAt(factor: number, sx: number, sy: number) {
+    if (this.view3d || (this.followingCarId !== null && this.currentMode !== 'free')) { this.zoomBy(factor); return; }
+    this.followingCarId = null;
+    this.currentMode = 'free';
+    const next = zoomAt2D(this, factor, sx, sy);
+    this.x = this.targetX = next.x;
+    this.y = this.targetY = next.y;
+    this.zoom = this.targetZoom = next.zoom;
   }
 
   update(cars: CarState[], dt: number, track?: TrackDefinition) {

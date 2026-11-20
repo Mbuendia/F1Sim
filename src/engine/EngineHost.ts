@@ -20,12 +20,18 @@ export type EngineOrder =
   /** [OF4] Parada programada: en la vuelta `lap` o dentro de `inLaps` vueltas; sin compuesto, lo elige el muro. */
   | { kind: 'schedulePit'; carId: number; lap?: number; inLaps?: number; compound?: TireCompound }
   | { kind: 'pace'; carId: number; mode: 'push' | 'balanced' | 'save' }
+  /** [MJ11, 20/11/2026] Plan de carrera: el neumático de salida (solo antes del semáforo) y el programa de paradas (una o dos). */
+  | { kind: 'startTyre'; carId: number; compound: TireCompound }
+  | { kind: 'planStops'; carId: number; stops: { lap: number; compound: TireCompound }[] }
   | { kind: 'teamOrder'; teamId: string; mode: TeamOrderMode; favouredCarId?: number }
   | { kind: 'acceptProposal'; carId: number; proposalId: string }
   | { kind: 'discardProposal'; carId: number; proposalId: string }
   | { kind: 'delegate'; carId: number; delegated: boolean }
   | { kind: 'speed'; value: number }
   | { kind: 'pause'; paused: boolean }
+  /** [MJ2, 19/11/2026] Pausa de un invitado y seguir. */
+  | { kind: 'guestPause' }
+  | { kind: 'guestResume' }
   | { kind: 'startSequence' } | { kind: 'confirmStart' } | { kind: 'endSuspended' } | { kind: 'confirmResult' }
   | { kind: 'luckVariant'; enabled: boolean } | { kind: 'luckReward'; eventId: string } | { kind: 'luckClear' } | { kind: 'dnfClear' }
   | { kind: 'weatherTest'; index: number } | { kind: 'devSafetyCar' } | { kind: 'devRedFlag'; crashCarId?: number; reason?: string };
@@ -78,8 +84,13 @@ const TEAM_ORDERS = ['libre', 'mantener', 'dejar-pasar'];
 type Compliance = import('../simulation/TeamRadio').Compliance;
 const isId = (v: unknown): v is number => typeof v === 'number' && Number.isInteger(v);
 /** Órdenes sobre un coche, sobre un equipo o sobre la tirada de suerte (las demás son generales, del anfitrión). */
-const CAR_ORDERS = ['box', 'cancelBox', 'schedulePit', 'pace', 'acceptProposal', 'discardProposal', 'delegate'];
+const CAR_ORDERS = ['box', 'cancelBox', 'schedulePit', 'pace', 'acceptProposal', 'discardProposal', 'delegate', 'startTyre', 'planStops'];
 const LUCK_ORDERS = ['luckReward', 'luckClear'];
+/** [MJ2, 19/11/2026] Pausas de los invitados: cada jugador tiene unas pocas por carrera, de un minuto como mucho (decisión del usuario:
+ *  «Pausa sola, con límite»). Seguir puede quien la pidió o el anfitrión; si nadie lo hace, sigue sola. */
+export const GUEST_PAUSES = 2;
+export const GUEST_PAUSE_SEC = 60;
+const PAUSE_ORDERS = ['guestPause', 'guestResume'];
 
 export class EngineHost {
   readonly sim: RaceSimulation;
@@ -92,6 +103,10 @@ export class EngineHost {
   /** [N8] Equipos con una orden aceptada desde la última vista: su vista sale en el paso siguiente, sin esperar al segundo. */
   private dirtyTeams = new Set<string>();
   private readonly hostUid: string | null;
+  /** [MJ2, 19/11/2026] La pausa de un invitado en curso (con los segundos reales que lleva) y las que ha gastado cada jugador. */
+  private guestPause: { uid: string; elapsed: number } | null = null;
+  private readonly pausesUsed = new Map<string, number>();
+  private readonly names = new Map<string, string>();
   private members = new Map<string, Member>();
   /** [N6] Órdenes rechazadas por permisos: quién, qué y por qué. */
   readonly rejections: { uid: string; kind: string; code: PermissionCode; reason: string; t: number }[] = [];
@@ -192,6 +207,8 @@ export class EngineHost {
       return car && car.team.id !== m.teamId ? foreign : null;
     }
     if (kind === 'teamOrder') return o.teamId !== m.teamId ? foreign : null;
+    // [MJ2, 19/11/2026] Pedir pausa y seguir: cualquier jugador (el motor decide si le quedan o si es suya).
+    if (PAUSE_ORDERS.includes(kind)) return null;
     if (LUCK_ORDERS.includes(kind)) {
       const event = this.sim.activeLuckEvent;
       const lucky = event ? this.sim.getCarById(event.luckyCarId)?.team.id : undefined;
@@ -206,6 +223,11 @@ export class EngineHost {
 
   /** Avanza el motor `dtRealSec` segundos reales (como el bucle de RaceCanvas) y devuelve las vistas que tocan. */
   advance(dtRealSec: number): EngineMessage[] {
+    // [MJ2, 19/11/2026] La pausa de un invitado dura un minuto real como mucho: después la carrera sigue sola.
+    if (this.guestPause) {
+      this.guestPause.elapsed += dtRealSec;
+      if (this.guestPause.elapsed >= GUEST_PAUSE_SEC || !this.sim.isPaused) this.endGuestPause();
+    }
     this.sim.update(dtRealSec);
     const out: EngineMessage[] = [];
     this.fastClock += dtRealSec;
@@ -225,7 +247,7 @@ export class EngineHost {
       if (pending) this.sim.teamOrderNotices = [];
       if (this.isShared) {
         // [N6] Cada aviso y la tirada van solo en la vista de su equipo; los de la IA no van a nadie.
-        out.push({ type: 'slow', view: slowView(this.sim, [], { privateTeams: true }) });
+        out.push({ type: 'slow', view: { ...slowView(this.sim, [], { privateTeams: true }), ...this.pauseInfo() } });
         for (const teamId of this.teams) {
           const notices = raw.filter(notice => notice.teamId === teamId).map(notice => notice.text);
           out.push({ type: 'team', teamId, view: teamView(this.sim, teamId, { notices }) });
@@ -256,7 +278,25 @@ export class EngineHost {
   /** Lo que, al cambiar, merece una vista lenta inmediata: bandera, semáforo, Safety Car, pausa y final. */
   private slowKey(): string {
     const s = this.sim;
-    return [s.raceFlagState, s.lightState, s.safetyCar.mode, s.isPaused, s.isFinished, s.latestDnf?.id ?? '', s.activeLuckEvent?.id ?? '', s.speedMultiplier].join('|');
+    // [MJ2, 19/11/2026] Con una pausa de invitado, cada segundo de la cuenta atrás manda una vista nueva.
+    const countdown = this.guestPause ? Math.ceil(GUEST_PAUSE_SEC - this.guestPause.elapsed) : '';
+    return [s.raceFlagState, s.lightState, s.safetyCar.mode, s.isPaused, s.isFinished, s.latestDnf?.id ?? '', s.activeLuckEvent?.id ?? '', s.speedMultiplier, countdown].join('|');
+  }
+
+  /** [MJ2, 19/11/2026] Lo que todos ven de las pausas: quién ha pausado, cuánto le queda y cuántas le quedan a cada jugador. */
+  pauseInfo(): Pick<SlowView, 'guestPause' | 'pausesLeft'> {
+    const pausesLeft: Record<string, number> = {};
+    for (const [uid, m] of this.members) if (m.role === 'player' && uid !== this.hostUid) pausesLeft[uid] = GUEST_PAUSES - (this.pausesUsed.get(uid) ?? 0);
+    const p = this.guestPause;
+    return { guestPause: p ? { uid: p.uid, name: this.names.get(p.uid) ?? 'Un invitado', remainingSec: Math.max(0, Math.ceil(GUEST_PAUSE_SEC - p.elapsed)) } : null, pausesLeft };
+  }
+
+  /** [MJ2, 19/11/2026] Nombre de cada jugador (lo pone el anfitrión) para decir quién ha pausado. */
+  setNames(names: Record<string, string>) { for (const [uid, name] of Object.entries(names)) this.names.set(uid, name); }
+
+  private endGuestPause() {
+    this.guestPause = null;
+    this.sim.isPaused = false;
   }
 
   /** Atiende un mensaje. [N6] En una partida compartida, `from` es quién lo manda (sin él, el anfitrión). */
@@ -317,8 +357,29 @@ export class EngineHost {
         return done(result.ok, result.reason ?? 'El motor no acepta la parada programada');
       }
       case 'cancelBox': return done(sim.cancelBoxOrder(car!.id), 'No hay una orden de boxes que se pueda cancelar');
+      // [MJ11, 20/11/2026] El neumático de salida del plan de carrera: solo antes del semáforo y con un juego que quede.
+      case 'startTyre':
+        if (!COMPOUNDS.includes(String(o.compound))) return reject('Compuesto desconocido');
+        if (!sim.beforeLights()) return reject('El neumático de salida solo se elige antes del semáforo');
+        return done(sim.mountStartTyre(car!, o.compound as TireCompound), 'No quedan juegos de ese compuesto');
+      // [MJ11, 20/11/2026] Las paradas previstas del plan de carrera (una o dos, con su vuelta y su compuesto).
+      case 'planStops': {
+        const stops = Array.isArray(o.stops) ? o.stops as { lap: unknown; compound: unknown }[] : null;
+        if (!stops || stops.length < 1 || stops.length > 2) return reject('El plan lleva una o dos paradas');
+        if (!stops.every(stop => isId(stop.lap) && (stop.lap as number) >= 1 && (stop.lap as number) < sim.totalLaps && COMPOUNDS.includes(String(stop.compound)))) return reject('Parada no válida');
+        const ok = sim.programPitStops(car!.id, stops.map(stop => ({ lap: stop.lap as number, compound: stop.compound as TireCompound })));
+        if (ok) { car!.pitStop.playerControlled = true; if (car!.wallDelegated) car!.wallDelegated = false; }
+        return done(ok, car!.pitStop.lastOrderRejection || 'El motor no acepta el plan de paradas');
+      }
       case 'pace':
         if (!PACES.includes(String(o.mode))) return reject('Ritmo desconocido');
+        // [MJ11, 20/11/2026] Antes del semáforo, el ritmo de salida del plan de carrera (en carrera, como siempre).
+        if (sim.beforeLights() && (car!.status === 'running' || car!.status === 'pit')) {
+          car!.paceMode = o.mode as 'push' | 'balanced' | 'save';
+          car!.paceByPlayer = true;
+          if (car!.wallDelegated) car!.wallDelegated = false;
+          return done(true, '');
+        }
         return done(sim.issuePaceOrder(car!.id, o.mode as 'push' | 'balanced' | 'save'), 'El ritmo no se puede cambiar ahora');
       case 'acceptProposal':
         return done(typeof o.proposalId === 'string' && sim.acceptWallProposal(car!.id, o.proposalId), 'La propuesta no existe o ya no se puede aplicar');
@@ -343,6 +404,23 @@ export class EngineHost {
       case 'pause':
         if (typeof o.paused !== 'boolean') return reject('Falta si se pausa o no');
         sim.isPaused = o.paused;
+        // [MJ2, 19/11/2026] El anfitrión pausa sin límite; si reanuda, también acaba la pausa del invitado.
+        if (!o.paused) this.guestPause = null;
+        return done(true, '');
+      case 'guestPause': {
+        if (!this.isShared || uid === null || uid === this.hostUid) return reject('Solo los invitados piden pausa');
+        if (sim.isPaused) return reject('La carrera ya está en pausa');
+        const used = this.pausesUsed.get(uid) ?? 0;
+        if (used >= GUEST_PAUSES) return reject(`Ya has usado tus ${GUEST_PAUSES} pausas`);
+        this.pausesUsed.set(uid, used + 1);
+        this.guestPause = { uid, elapsed: 0 };
+        sim.isPaused = true;
+        return done(true, '');
+      }
+      case 'guestResume':
+        if (!this.guestPause) return reject('No hay ninguna pausa que seguir');
+        if (uid !== null && uid !== this.hostUid && uid !== this.guestPause.uid) return reject('Solo puede seguir quien la pidió o el anfitrión');
+        this.endGuestPause();
         return done(true, '');
       // [N3] Órdenes de la pantalla de carrera además del muro.
       case 'startSequence': sim.startRaceSequence(); return done(true, '');

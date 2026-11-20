@@ -1,0 +1,23 @@
+/* [MJ1] Aviso para girar el móvil: encima de todo, a pantalla completa. */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px 16px;
+  box-sizing: border-box;
+  background: var(--negro);
+  color: var(--text);
+  font-family: var(--font-ui);
+  text-align: center;
+}
+.icon { color: var(--accion); transform: rotate(90deg); animation: girar 1.6s ease-in-out infinite; }
+.title { margin: 0; font-family: var(--font-marca); font-size: var(--letra-5); text-transform: uppercase; }
+.text { margin: 0; max-width: 360px; color: var(--text-2); font-size: var(--letra-2); }
+
+@keyframes girar { 0%, 30% { transform: rotate(90deg); } 60%, 100% { transform: rotate(0deg); } }
+@media (prefers-reduced-motion: reduce) { .icon { animation: none; transform: none; } }

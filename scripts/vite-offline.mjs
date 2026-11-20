@@ -3,7 +3,9 @@
 //  - sw.js: el service worker (arranque de aquí abajo + src/offline/swCore.ts) con las dos listas de esta compilación
 //    entre marcas /*OF1-MANIFEST*/:
 //    «core» (el juego, se guarda al instalar) y «ai» (la librería de IA, se guarda cuando se usa); [TL7] y «lazy»: los
-//    coches de otros años (epoca/) y [TL4] las piezas de las mejoras (mejoras/) y [TL6] el escenario de la presentación (presentacion/), que se bajan la primera vez que hacen falta (decisión del usuario, 18/11/2026).
+//    coches de otros años (epoca/) y [TL4] las piezas de las mejoras (mejoras/) y [TL6] el escenario de la presentación (presentacion/), que se bajan la primera vez que hacen falta (decisión del usuario, 18/11/2026);
+//    [MJ10, MJ11, 20/11/2026] también las escenas de Blender de la primera configuración (primera/) y del plan de carrera (plan/);
+
 // Fuera de las listas: la portada aparte (landing/), los .map y el propio sw.js.
 import { createHash } from 'node:crypto';
 import { readdirSync, readFileSync, statSync, writeFileSync, existsSync } from 'node:fs';
@@ -54,7 +56,7 @@ export function offlineLists(outDir, base, aiChunks = new Set()) {
   const hash = createHash('sha256');
   for (const f of files) {
     const isAi = f.endsWith('.wasm') || aiChunks.has(f) || AI_NAME.test(f.split('/').pop());
-    (isAi ? ai : (f.startsWith('epoca/') || f.startsWith('mejoras/') || f.startsWith('presentacion/')) ? lazy : core).push(base + f);
+    (isAi ? ai : (f.startsWith('epoca/') || f.startsWith('mejoras/') || f.startsWith('presentacion/') || f.startsWith('primera/') || f.startsWith('plan/')) ? lazy : core).push(base + f);
     hash.update(f).update('\0').update(readFileSync(join(outDir, f))).update('\0');
   }
   return { version: hash.digest('hex').slice(0, 16), base, core, ai, lazy };
