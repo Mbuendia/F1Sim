@@ -61,7 +61,7 @@ export default async function run({ server, assert, test }) {
     const lazy = lists.lazy?.includes('/F1Sim/presentacion/escenario.glb') && !lists.core.some(u => u.includes('/presentacion/'));
     const { measureDist } = await import(pathToFileURL(join(process.cwd(), 'scripts/perf-size.mjs')).href);
     const apart = measureDist(dir).modelsOnDemand > 0 && measureDist(dir).models === 0;
-    assert(exists && size <= 400 * 1024 && parts && clean && script && lazy && apart && budget.limits.modelsKB === 3660 && budget.limits.offlineCoreKB === 9000,
+    assert(exists && size <= 400 * 1024 && parts && clean && script && lazy && apart && budget.limits.modelsKB === 3660 && budget.limits.offlineCoreKB === 9010, // [ES3, autorizado por el usuario el 20/11/2026 («Sí, a 9.010 KB» y «Sí, cámbialos»)] ES3 sube el límite de 9.000 a 9.010 KB
       'TL6: escenario.glb hecho con scripts/blender/tl6-escenario.py (suelo, fondo, plataforma y focos), sin texturas, ≤ 400 KB, en la lista «lazy» y medido aparte; los presupuestos no suben',
       `${Math.round(size / 1024)} KB | piezas ${parts} | sin texturas ${clean} | lazy ${lazy} | aparte ${apart}`);
   });

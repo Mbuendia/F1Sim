@@ -23,6 +23,10 @@ export interface TrackDefinition {
   pitLanePoints: Point2D[];
   /** [G6] El carril de boxes cruza la pista por un túnel. */
   pitTunnel?: boolean;
+  /** [ES2, 20/11/2026] Distancia (m) de cada línea del limitador al extremo del carril, calibrada (data/pitLaneCalibration.json). */
+  pitLimitLineM?: number;
+  /** [ES2, 20/11/2026] Límite de velocidad del pit lane en este circuito (km/h); sin él, el del reglamento. */
+  pitSpeedKmh?: number;
   pitEntryT: number;
   pitCommitmentT?: number;
   pitCommitmentSource?: 'calibrated';

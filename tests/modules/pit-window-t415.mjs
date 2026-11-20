@@ -94,9 +94,11 @@ export default async function run({ server, assert, test }) {
     const ordered = [...sim.cars].sort((x, y) => x.currentPosition - y.currentPosition);
     const car = ordered[7], ahead = ordered[6], behind = ordered[8];
     const reading = sim.getWallReading(car.id);
+    // [ES1, 20/11/2026] Cambiado con autorización del usuario («Sí, cámbialo»): la vida del coche de detrás es la medida en
+    // el circuito de la carrera (ES1), así que se calcula con él (antes, sin circuito: la tabla fija).
     assert(JSON.stringify(reading.pitWindow) === JSON.stringify(sim.getPitWindow(car.id)) && reading.pitWindow.position >= car.currentPosition, 'T4.15: la lectura del muro lleva la ventana de parada');
     assert(reading.rivalTyres.own.compound === car.tires.compound && reading.rivalTyres.own.laps === car.tires.lapsOnTire && reading.rivalTyres.ahead.code === ahead.driver.code && reading.rivalTyres.ahead.laps === ahead.tires.lapsOnTire
-      && reading.rivalTyres.behind.code === behind.driver.code && reading.rivalTyres.behind.compound === behind.tires.compound && reading.rivalTyres.behind.lifeLaps === pw.tyreInfo({ code: 'x', compound: behind.tires.compound, laps: behind.tires.lapsOnTire }).lifeLaps,
+      && reading.rivalTyres.behind.code === behind.driver.code && reading.rivalTyres.behind.compound === behind.tires.compound && reading.rivalTyres.behind.lifeLaps === pw.tyreInfo({ code: 'x', compound: behind.tires.compound, laps: behind.tires.lapsOnTire }, sim.circuitId).lifeLaps,
       'T4.15: y los neumáticos propios, los del coche de delante y los del de detrás, con lo que se ve de cada uno');
     assert(reading.undercut === null || typeof reading.undercut === 'string', 'T4.15: y el aviso de undercut, si lo hay');
     const leader = sim.getWallReading(ordered[0].id), tail = sim.getWallReading(ordered.at(-1).id);

@@ -3,6 +3,7 @@
 // frente a los propios; (3) aviso de riesgo de undercut. Todo sale de lo que se ve en pista ahora mismo (dónde está
 // cada coche, qué compuesto lleva y cuántas vueltas): no usa el futuro ni el desgaste interno de los rivales.
 // Márgenes, umbrales y vidas de referencia son diseño del juego.
+import { tyreLifeLaps, tyreLifeTable } from '../data/tyreCurves';
 import type { TireCompound } from '../types/f1';
 
 export const PIT_WINDOW = {
@@ -15,7 +16,8 @@ export const PIT_WINDOW = {
 };
 
 /** Vueltas que suele durar un juego de cada compuesto: referencia para comparar, no el desgaste de ningún coche. */
-export const TYRE_LIFE_LAPS: Record<TireCompound, number> = { soft: 16, medium: 26, hard: 38, intermediate: 28, wet: 28 };
+// [ES1, 20/11/2026] Una sola tabla de vida: la medida con el motor (data/tyreCurves.ts). Sin circuito, la media de los 23.
+export const TYRE_LIFE_LAPS: Record<TireCompound, number> = tyreLifeTable();
 
 export interface TrackCar { id: number; code: string; progress: number; running: boolean }
 export interface PitWindow {
@@ -55,8 +57,8 @@ export function pitWindowText(window: PitWindow | null): string | null {
 export interface TyreInfo { code: string; compound: TireCompound; laps: number; /** Vueltas que le quedan según la vida de referencia de su compuesto. */ lifeLaps: number }
 
 /** Lo que se ve de los neumáticos de un coche: compuesto, vueltas que llevan y vida estimada. */
-export function tyreInfo(car: { code: string; compound: TireCompound; laps: number }): TyreInfo {
-  return { code: car.code, compound: car.compound, laps: car.laps, lifeLaps: Math.max(0, (TYRE_LIFE_LAPS[car.compound] ?? 0) - car.laps) };
+export function tyreInfo(car: { code: string; compound: TireCompound; laps: number }, circuitId?: string | null): TyreInfo {
+  return { code: car.code, compound: car.compound, laps: car.laps, lifeLaps: Math.max(0, tyreLifeLaps(car.compound, circuitId) - car.laps) };
 }
 
 /**

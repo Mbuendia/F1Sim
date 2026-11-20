@@ -45,10 +45,12 @@ export default async function run({ server, assert, test }) {
     assert(zones.limitEnd > zones.boxTo && zones.limitEnd <= rampStart + 1e-9, 'CR2: el limitador acaba después del último cajón y antes de la rampa de bajada', `fin ${(zones.limitEnd * cum.at(-1)).toFixed(0)} m, rampa ${(rampStart * cum.at(-1)).toFixed(0)} m`);
     const changed = [];
     for (const id of ids.filter(i => i !== 'yas-marina')) {
-      const t = new RaceSimulation(id).activeTrack, z = Z.pitLaneZones(t), f = Math.min(0.3, PitStopModel.LIMIT_LINE_M / Math.max(1, PitStopModel.laneLengthMeters(t)));
-      if (Math.abs(z.boxFrom - 0.3) > 1e-9 || Math.abs(z.boxTo - 0.7) > 1e-9 || Math.abs(z.limitStart - f) > 1e-9 || Math.abs(z.limitEnd - (1 - f)) > 1e-9) changed.push(id);
+      // [ES2, autorizado por el usuario el 20/11/2026 («Sí, cámbialos»)] Cada circuito tiene sus líneas del limitador calibradas (pitLimitLineM): se comprueba que las zonas
+      // salen de esa distancia (antes, 60 m en todos) y que los cajones quedan dentro del tramo limitado.
+      const t = new RaceSimulation(id).activeTrack, z = Z.pitLaneZones(t), f = Math.min(Z.MAX_CALIBRATED_FRACTION, (t.pitLimitLineM ?? PitStopModel.LIMIT_LINE_M) / Math.max(1, PitStopModel.laneLengthMeters(t)));
+      if (t.pitLimitLineM === undefined || z.boxFrom <= z.limitStart || z.boxTo >= z.limitEnd || Math.abs(z.limitStart - f) > 1e-9 || Math.abs(z.limitEnd - (1 - f)) > 1e-9) changed.push(id);
     }
-    assert(changed.length === 0, 'CR2: los demás circuitos, con las zonas de siempre', changed.join(', ') || 'ok');
+    assert(changed.length === 0, 'CR2: los demás circuitos, con sus líneas calibradas (ES2) y los cajones dentro del tramo limitado', changed.join(', ') || 'ok');
     const src = ['src/simulation/PitStopModel.ts', 'src/utils/pitLaneGeometry.ts', 'src/simulation/RejoinModel.ts'].map(f => readFileSync(f, 'utf8'));
     assert(src.every(s => /pitLaneZones/.test(s)), 'CR2: el motor, el dibujo y la previsión leen pitLaneZones');
   });

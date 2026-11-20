@@ -6,13 +6,13 @@
 // todos). Los rivales también los hacen y afinan su setup: dejan de correr con el setup neutro (decisión de R49).
 // Todas las cifras son diseño del juego. Reproducible con semilla; lo aprendido sale de vueltas de referencia del motor
 // (`lapTable`), no del resultado de la carrera.
+import { tyreLifeLaps } from '../data/tyreCurves';
 import { mulberry32, streamSeed } from './Random';
 import { NEUTRAL_SETUP, SETUP_RANGE } from './Setup';
 import type { CarSetup } from './Setup';
 import { ALLOCATION, allocationSets } from './TireInventory';
 import type { TireSet } from './TireInventory';
 import { TireModel } from './TireModel';
-import { TYRE_LIFE_LAPS } from './PitWindow';
 import type { TireCompound } from '../types/f1';
 import type { SpyReport } from './Spy';
 
@@ -95,6 +95,8 @@ export interface PracticeInput {
   seed: number;
   sprintWeekend: boolean;
   lapLengthMeters: number;
+  /** [ES1] Circuito: la vida de los neumáticos es la medida en él (sin él, la media). */
+  circuitId?: string;
   drivers: PracticeDriver[];
   /** Programa de cada piloto del jugador; los demás son rivales y buscan el setup. */
   programs: Record<string, PracticeProgram>;
@@ -148,7 +150,7 @@ export function runPractice(input: PracticeInput): PracticeResult {
       entry.tyreLifeMargin = margin;
       // La estimación se desvía de la vida real del coche, siempre dentro del margen que se anuncia.
       entry.tyreLife = Object.fromEntries(SLICKS.map(compound => {
-        const real = TYRE_LIFE_LAPS[compound] / Math.max(0.5, driver.tyreWear);
+        const real = tyreLifeLaps(compound, input.circuitId) / Math.max(0.5, driver.tyreWear);
         return [compound, Math.max(1, Math.round(real + (rng() * 2 - 1) * margin))];
       })) as Record<SlickCompound, number>;
     } else {
@@ -175,7 +177,7 @@ export function practiceTyres(circuitId: string, tyreUse: PracticeResult['tyreUs
       for (const set of sets.filter(candidate => candidate.compound === compound).slice(0, used[compound] ?? 0)) {
         set.state = 'usado';
         set.laps = PRACTICE.SET_LAPS;
-        set.tires = usedPracticeTyre(compound);
+        set.tires = usedPracticeTyre(compound, circuitId);
       }
     }
     return [driverId, sets];
@@ -183,9 +185,9 @@ export function practiceTyres(circuitId: string, tyreUse: PracticeResult['tyreUs
 }
 
 /** Desgaste de una tanda de libres con un neumático (diseño del juego: proporcional a su vida de referencia). */
-function usedPracticeTyre(compound: TireCompound) {
+function usedPracticeTyre(compound: TireCompound, circuitId?: string) {
   const tires = TireModel.createFreshTire(compound);
-  const worn = 100 * PRACTICE.SET_LAPS / ((TYRE_LIFE_LAPS[compound] ?? 30) * 1.6);
+  const worn = 100 * PRACTICE.SET_LAPS / (tyreLifeLaps(compound, circuitId) * 1.6);
   const health = Math.max(40, Math.round((100 - worn) * 10) / 10);
   return { ...tires, health, healthFL: health, healthFR: health, healthRL: health, healthRR: health };
 }

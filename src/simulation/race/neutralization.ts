@@ -431,7 +431,7 @@ export function updateRedFlagLane(sim: RaceSimulation, car: CarState, dt: number
   const laneM = len * lapDistanceMeters;
   pit.pitLaneProgress = Math.min(1, Math.max(0, (car.progress - (pit.entryProgress ?? car.progress)) / len));
   const { start, end } = PitStopModel.limitFractions(laneM, track);
-  const limit = PitStopModel.PIT_SPEED_LIMIT_KMH;
+  const limit = PitStopModel.speedLimit(track);
   let v = car.currentSpeedKmh;
   if (car.redFlagRelease) {
     v = pit.pitLaneProgress >= end ? PitStopModel.exitSpeed(v, dt, sim.raceFlagState, sim.safetyCar.mode) : Math.min(limit, v + dt * 100);
@@ -473,7 +473,7 @@ export function restartReport(sim: RaceSimulation, car: CarState): RestartReport
   const neighbour = (c: CarState | undefined) => c ? { code: c.driver.code, compound: c.tires.compound, health: c.tires.health } : null;
   const changeAdvised = car.tires.health < RaceSimulation.RED_FLAG_CHANGE_HEALTH;
   const recommended = changeAdvised
-    ? chooseCompound(sim.totalLaps - car.currentLap, car.tireInventory, sim.getTireCompliance(car.id), sim.weatherModel.meanDepth())
+    ? chooseCompound(sim.totalLaps - car.currentLap, car.tireInventory, sim.getTireCompliance(car.id), sim.weatherModel.meanDepth(), sim.circuitId)
     : null;
   return {
     queuePos: index + 1, own: { compound: car.tires.compound, health: car.tires.health },

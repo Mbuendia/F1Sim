@@ -49,7 +49,7 @@ function startNotice(light: string | undefined): { text: string; lights?: number
   return null;
 }
 
-export function ClientRaceScreen({ role, myTeamId, roster, fast, slow, teams, link, pauseRequested, closed = false, track, onOrder, onRequestPause, onLeave, myUid, onResumePause, selectedCarId = null, onSelectCar, roomCode = null }: {
+export function ClientRaceScreen({ role, myTeamId, roster, fast, slow, teams, link, pauseRequested, closed = false, track, circuitId, onOrder, onRequestPause, onLeave, myUid, onResumePause, selectedCarId = null, onSelectCar, roomCode = null }: {
   role: 'player' | 'spectator';
   myTeamId: string | null;
   roster: RosterEntry[];
@@ -69,6 +69,8 @@ export function ClientRaceScreen({ role, myTeamId, roster, fast, slow, teams, li
   closed?: boolean;
   /** La pista (un lienzo en la aplicación; nada en los tests). */
   track?: ReactNode;
+  /** [ES3] Circuito de la carrera, para el optimizador del plan. */
+  circuitId?: string;
   onOrder: (order: EngineOrder) => Promise<Ack>;
   onRequestPause: () => void;
   onLeave: () => void;
@@ -132,7 +134,7 @@ export function ClientRaceScreen({ role, myTeamId, roster, fast, slow, teams, li
       </header>
       {/* [MJ11, 20/11/2026] Antes de la salida, el invitado planifica sus coches; la salida la da el anfitrión. */}
       {player && slow?.light === 'idle' && own.length > 0 && (
-        <RacePlanScreen role="invitado" totalLaps={slow.totalLaps} look={{ team: own[0].team, number: own[0].driver.number, compound: own[0].tires.compound }}
+        <RacePlanScreen role="invitado" totalLaps={slow.totalLaps} circuitId={circuitId} look={{ team: own[0].team, number: own[0].driver.number, compound: own[0].tires.compound }}
           cars={own.map(c => ({ id: c.id, code: c.driver.code, number: c.driver.number, color: c.team.color, compound: c.tires.compound, inventory: null }))}
           onConfirm={async plans => { for (const [id, plan] of Object.entries(plans)) for (const order of planOrders(Number(id), plan)) await onOrder(order); }} />
       )}

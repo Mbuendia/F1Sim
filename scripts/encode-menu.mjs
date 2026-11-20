@@ -8,8 +8,8 @@ import { join } from 'node:path';
 
 const src = process.argv[2];
 if (!src) { console.error('Falta la carpeta de los renders'); process.exit(1); }
-// 150 KB es el tope del contrato; se apunta a 25 para que lo que se guarda al instalar siga dentro del presupuesto (OF1).
-const LIMIT_KB = 25;
+// 150 KB es el tope del contrato; se apunta a 24 ([ES2] antes 25, para hacer sitio a la calibración del pit lane) para que lo que se guarda al instalar siga dentro del presupuesto (OF1).
+const LIMIT_KB = 24;
 for (const name of ['temporada', 'multijugador', 'desafio']) {
   const out = join('public/menu', `${name}.webp`);
   let quality = 82;

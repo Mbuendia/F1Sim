@@ -98,3 +98,16 @@
 @media (prefers-reduced-motion: reduce) {
   .fondo img, .coche img, .coche canvas, .personas img, .panel { animation: none; }
 }
+
+/* [ES3] Mejores estrategias del optimizador. */
+.strategies { display: grid; gap: 6px; }
+.strategyList { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; }
+.strategy { display: grid; grid-template-columns: 64px 1fr auto; align-items: center; gap: 10px; padding: 6px 8px; border: 1px solid var(--line); border-radius: var(--radio-s); }
+.strategy.optimal { border-color: var(--accion); background: color-mix(in srgb, var(--accion) 14%, transparent); }
+.tyres { display: flex; gap: 2px; height: 18px; }
+.tyres i { display: grid; place-items: center; min-width: 12px; border-radius: var(--radio-s); background: var(--tyre); color: var(--negro); font-style: normal; font-size: var(--letra-1); font-weight: 800; }
+.strategyText { font-size: var(--letra-2); line-height: 1.3; min-width: 0; }
+.strategyText em { margin-left: 6px; font-style: normal; color: var(--text-2); white-space: nowrap; }
+.use { min-height: var(--toque); padding: 0 10px; border: 1px solid var(--line-strong); border-radius: var(--radio-s); background: transparent; color: var(--text); font-size: var(--letra-1); font-weight: 700; cursor: pointer; white-space: nowrap; }
+.use[aria-pressed='true'] { border-color: var(--accion); background: color-mix(in srgb, var(--accion) 22%, transparent); }
+@media (max-width: 480px) { .strategy { grid-template-columns: 1fr auto; } .tyres { grid-column: 1 / -1; } }

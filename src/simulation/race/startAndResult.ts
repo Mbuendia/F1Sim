@@ -120,7 +120,7 @@ export function updatePitLaneStart(sim: RaceSimulation, car: CarState, dt: numbe
   }
   const { end } = PitStopModel.limitFractions(laneM, sim.activeTrack);
   const lane = Math.min(1, Math.max(0, (car.progress - entry) / len));
-  const v = lane >= end ? PitStopModel.exitSpeed(car.currentSpeedKmh, dt, sim.raceFlagState, sim.safetyCar.mode) : Math.min(PitStopModel.PIT_SPEED_LIMIT_KMH, car.currentSpeedKmh + dt * 100);
+  const v = lane >= end ? PitStopModel.exitSpeed(car.currentSpeedKmh, dt, sim.raceFlagState, sim.safetyCar.mode) : Math.min(PitStopModel.speedLimit(sim.activeTrack), car.currentSpeedKmh + dt * 100);
   car.currentSpeedKmh = v;
   car.speed = v / 3.6 / lapDistanceMeters;
   car.progress += car.speed * dt;
@@ -485,7 +485,7 @@ export function chooseStartTyres(sim: RaceSimulation) {
   const reason = standing > RaceSimulation.WET_START_DEPTH_MM ? `Pista mojada: ${decimal(standing)} mm de agua en la salida`
     : `Lluvia inminente: se esperan ${decimal(depth)} mm de agua en la primera vuelta`;
   for (const car of sim.cars) {
-    const compound = chooseCompound(sim.totalLaps, car.tireInventory, sim.getTireCompliance(car.id), depth);
+    const compound = chooseCompound(sim.totalLaps, car.tireInventory, sim.getTireCompliance(car.id), depth, sim.circuitId);
     if (!compound || compound === car.tires.compound || tyreWaterGrip(compound, depth) <= tyreWaterGrip(car.tires.compound, depth) + 0.05) continue;
     if (!sim.wallProposing(car)) { sim.mountStartTyre(car, compound); continue; }
     const key = `salida:${compound}`;

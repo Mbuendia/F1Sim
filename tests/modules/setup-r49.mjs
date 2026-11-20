@@ -191,7 +191,8 @@ export default async function run({ server, assert, test }) {
   /** Corre hasta que el coche se incorpora a la pista; devuelve lo observado por el camino. */
   const runToJoin = (sim, driverId, maxSteps = 6000) => {
     const car = carOf(sim, driverId), exit = exitProgressOf(sim.activeTrack), lane = laneOf(sim.activeTrack);
-    const limitEnd = PitStopModel.limitFractions(lane.meters).end;
+    // [ES2, autorizado por el usuario el 20/11/2026 («Sí, cámbialos»)] La línea final del circuito (calibrada), no la de 60 m de antes.
+    const limitEnd = PitStopModel.limitFractions(lane.meters, sim.activeTrack).end;
     const seen = { joined: false, movedOnRed: false, greenStep: null, fieldPassedAtGreen: null, worstPosition: Infinity, maxLimitedKmh: 0, othersAhead: null, joinStep: null };
     const start = car.progress;
     sim.lightState = 'racing';

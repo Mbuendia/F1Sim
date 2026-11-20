@@ -27,23 +27,41 @@ const BOXES_BEFORE_CROSSING_M = 110;
 /** Metros entre la línea final del limitador y el comienzo de la rampa de bajada. */
 const LIMIT_BEFORE_RAMP_M = 5;
 
+/** [ES2] Calibrado, la primera línea puede ir hasta el 42 % del carril (el tramo limitado, al menos el 16 %). */
+export const MAX_CALIBRATED_FRACTION = 0.42;
+/** [ES2] Con las líneas más adentro que esto, la zona de trabajo y los cajones se meten en el tramo limitado. */
+const SERVICE_MARGIN = 0.2;
+
 const cache = new WeakMap<TrackDefinition, PitLaneZones>();
 
 /** Longitud del pit lane para el motor (m): la del tramo de vuelta entre la entrada y la salida. */
 const laneMetersOf = (track: Pick<TrackDefinition, 'pitEntryT' | 'pitExitT' | 'lapLengthMeters'>) =>
   (track.pitExitT > track.pitEntryT ? track.pitExitT - track.pitEntryT : 1 - track.pitEntryT + track.pitExitT) * track.lapLengthMeters;
 
-/** Líneas del limitador de siempre: a 60 m de cada extremo (30 % como mucho). */
-export function defaultLimitFractions(laneMeters: number): { start: number; end: number } {
-  const f = Math.min(0.3, LIMIT_LINE_M / Math.max(1, laneMeters));
+/** Fracción máxima del carril antes de la primera línea (y después de la última). */
+export const MAX_LIMIT_FRACTION = 0.3;
+
+/** Líneas del limitador: a `lineM` de cada extremo (60 m si no se calibra; 30 % como mucho, o `max`). */
+export function defaultLimitFractions(laneMeters: number, lineM = LIMIT_LINE_M, max = MAX_LIMIT_FRACTION): { start: number; end: number } {
+  const f = Math.min(max, lineM / Math.max(1, laneMeters));
   return { start: f, end: 1 - f };
 }
 
 export function pitLaneZones(track: TrackDefinition): PitLaneZones {
   const hit = cache.get(track);
   if (hit) return hit;
-  const { start, end } = defaultLimitFractions(laneMetersOf(track));
+  // [ES2, 20/11/2026] Con la distancia calibrada de cada circuito (pitLimitLineM), si la tiene. En los carriles largos
+  // (la vía de entrada y la de salida largas, como en Barcelona o Interlagos) las líneas quedan más adentro que la zona
+  // de trabajo de siempre: entonces la zona de trabajo y los cajones se meten dentro del tramo limitado, en las mismas
+  // proporciones, porque en la realidad los garajes solo están a lo largo de ese tramo.
+  const calibrated = track.pitLimitLineM !== undefined && !track.pitTunnel;
+  const { start, end } = defaultLimitFractions(laneMetersOf(track), track.pitLimitLineM ?? LIMIT_LINE_M, calibrated ? MAX_CALIBRATED_FRACTION : MAX_LIMIT_FRACTION);
   let zones: PitLaneZones = { serviceFrom: 0.22, serviceTo: 0.78, boxFrom: 0.3, boxTo: 0.7, boxSpan: 0.4, limitStart: start, limitEnd: end };
+  if (calibrated && start > SERVICE_MARGIN) {
+    const fit = (x: number) => start + (x - SERVICE_MARGIN) / (1 - 2 * SERVICE_MARGIN) * (end - start);
+    const boxFrom = fit(0.3), boxTo = fit(0.7);
+    zones = { serviceFrom: fit(0.22), serviceTo: fit(0.78), boxFrom, boxTo, boxSpan: boxTo - boxFrom, limitStart: start, limitEnd: end };
+  }
   const tunnel = track.pitTunnel ? tunnelLayout(track) : null;
   if (tunnel) {
     const serviceFrom = 0.22, serviceTo = Math.max(0.4, Math.min(0.78, tunnel.boxesEndFrac));

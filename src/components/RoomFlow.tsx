@@ -135,7 +135,7 @@ function GuestRace({ transport, race, lobby, myUid, linkStore, closed, onLeave, 
   }
   return (
     <ClientRaceScreen role={myTeamId ? 'player' : 'spectator'} myTeamId={myTeamId} roster={race.roster} fast={null} slow={slow} teams={teams}
-      link={peer === 'none' ? 'none' : peer} pauseRequested={pauseRequested} closed={closed}
+      link={peer === 'none' ? 'none' : peer} pauseRequested={pauseRequested} closed={closed} circuitId={race.circuitId}
       track={<RaceCanvas track={track} circuitId={race.circuitId} roster={race.roster} camera={camera} selectedCarId={selected} onSelectCar={setSelected} />}
       onOrder={order => sessionRef.current?.order(order) ?? Promise.resolve({ ok: false, reason: 'Sin carrera' })}
       // [MJ2, 19/11/2026] Mientras llega la respuesta, el botón espera; si el motor la rechaza (sin pausas o ya en pausa), vuelve.

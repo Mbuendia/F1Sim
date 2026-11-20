@@ -11,6 +11,7 @@ import circuitReferences from '../data/circuitReferences.json';
 import { pitLaneClearance } from './pitLaneGeometry';
 import { AXIS_CORRECTIONS, correctAxis } from './axisCorrections';
 import { BRAKE_LOOKAHEAD_M, DEFAULT_CURVATURE_GAIN, LAP_REFERENCES } from '../data/lapReferences';
+import pitLaneCalibration from '../data/pitLaneCalibration.json';
 
 const svgPathsMap: Record<string, string> = svgPathsJson as any;
 
@@ -381,6 +382,9 @@ export function buildTrackFromSvg(circuit: CircuitSpec, _sampleCount?: number): 
     points: splinePoints,
     pitLanePoints,
     pitTunnel: circuit.pitTunnel,
+    // [ES2, 20/11/2026] Limitador calibrado para que la pérdida en boxes del motor cuadre con la real.
+    pitLimitLineM: (pitLaneCalibration as Record<string, { limitLineM?: number }>)[circuit.id]?.limitLineM,
+    pitSpeedKmh: (pitLaneCalibration as Record<string, { speedKmh?: number }>)[circuit.id]?.speedKmh,
     pitEntryT,
     // Fallback de decisión táctica a 120 m nominales de la entrada, no línea FIA.
     pitCommitmentT: circuit.pitCommitmentT !== undefined ? mapT(circuit.pitCommitmentT) : ((pitEntryT - 120 / circuit.lapLengthMeters + 1) % 1),

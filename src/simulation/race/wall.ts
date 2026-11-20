@@ -4,6 +4,7 @@
  * llama desde un método de una línea con el mismo nombre. Misma semilla, misma carrera (tests/modules/race-split-pf5.mjs).
  */
 /* eslint-disable @typescript-eslint/no-unused-vars */
+import { tyreLifeLaps } from '../../data/tyreCurves';
 import { 
   CarState, 
   StartLightState, 
@@ -84,6 +85,7 @@ import type { RaceSnapshot } from '../Snapshot';
 import { overtakingZonesOf, zoneAt } from '../OvertakingZones';
 import type { OvertakingZone } from '../OvertakingZones';
 import { RaceSimulation } from '../RaceSimulation';
+import { pitLossSecFor } from '../../data/pitLoss';
 
 export function rejoinContext(sim: RaceSimulation, car: CarState) {
   const { capKmh, neutralization } = sim.rejoinSpeedCap();
@@ -145,9 +147,10 @@ export function getRejoinEstimate(sim: RaceSimulation, carId: number): RejoinEst
   const uncertaintySec = neutralization === 'SC' ? RaceSimulation.REJOIN_UNCERTAINTY_SC_SEC : RaceSimulation.REJOIN_UNCERTAINTY_SEC;
   const posAt = (lossSec: number) => sim.rejoinPositionAt(car, RejoinModel.progressBefore(profile, car.progress, Math.max(0, lossSec)));
   const rejoinProgress = RejoinModel.progressBefore(profile, car.progress, timeLossSec);
-  const cardLoss = sim.activeTrack.pitLaneTimeLossSec;
+  // [ES2] La ficha enseña la pérdida que mide el motor (data/pitLoss.ts).
+  const cardLoss = pitLossSecFor(sim.circuitId, sim.activeTrack.pitLaneTimeLossSec ?? 0);
   const fmt = (v: number) => v.toFixed(1).replace('.', ',');
-  const source = `Modelo de boxes del simulador: pit lane a ${PitStopModel.PIT_SPEED_LIMIT_KMH} km/h + servicio ${context.benefitLabel ? `${context.benefitLabel.toLowerCase()} ` : 'medio '}${fmt(context.serviceSec)} s = ${fmt(context.pitLossSec)} s` +
+  const source = `Modelo de boxes del simulador: pit lane a ${PitStopModel.speedLimit(sim.activeTrack)} km/h + servicio ${context.benefitLabel ? `${context.benefitLabel.toLowerCase()} ` : 'medio '}${fmt(context.serviceSec)} s = ${fmt(context.pitLossSec)} s` +
     (context.queueSec > 0 ? ` + espera double stack ${fmt(context.queueSec)} s` : '') +
     (neutralization === 'SC' ? ` · bajo Safety Car (${capKmh} km/h; compactación no modelada)` : '') +
     (neutralization === 'VSC' ? ` · bajo VSC (${capKmh} km/h)` : '') +
@@ -241,7 +244,7 @@ export function issuePlannedStop(sim: RaceSimulation, car: CarState) {
   if (orderIsActive(pit.activeBoxOrder)) return;
   const delegated = car.wallDelegated === true;
   const compound = plan.compound
-    ?? chooseCompound(sim.totalLaps - car.currentLap, car.tireInventory, sim.getTireCompliance(car.id), sim.weatherModel.meanDepth())
+    ?? chooseCompound(sim.totalLaps - car.currentLap, car.tireInventory, sim.getTireCompliance(car.id), sim.weatherModel.meanDepth(), sim.circuitId)
     ?? car.tires.compound;
   issuingPlan = true;
   const order = sim.issueBoxOrder(car.id, compound, 'player');
@@ -273,7 +276,7 @@ export function getWallReading(sim: RaceSimulation, carId: number): WallReading 
     : compliance.slickSpecs.length < 2 && !compliance.usedWetWeather ? 'Aún tiene que usar otro compuesto de seco'
     : `Aún tiene que usar ${compliance.setsRequired - compliance.setsUsed} juego(s) más`;
   // [T4.15] De cada coche se usa lo que se ve: compuesto y vueltas del juego.
-  const tyresOf = (other: CarState) => tyreInfo({ code: other.driver.code, compound: other.tires.compound, laps: other.tires.lapsOnTire });
+  const tyresOf = (other: CarState) => tyreInfo({ code: other.driver.code, compound: other.tires.compound, laps: other.tires.lapsOnTire }, sim.circuitId);
   const rivalTyres = { own: tyresOf(car), ahead: ahead ? tyresOf(ahead) : null, behind: behind ? tyresOf(behind) : null };
   return {
     carId: car.id, code: car.driver.code, position: car.currentPosition,
@@ -367,14 +370,15 @@ export function stopDecision(sim: RaceSimulation, car: CarState, st: StrategySta
   const compliance = car.tireInventory ? tireCompliance(car.tireInventory, sim.circuitId, sim.raceFormat !== 'sprint') : { satisfied: true, slickSpecs: [], usedWetWeather: false, setsUsed: 0, setsRequired: 0, warning: null };
   // Agua actual: compuesto claramente mejor para la pista de ahora.
   const current = tyreWaterGrip(car.tires.compound, depth);
-  const weatherChoice = chooseCompound(lapsToEnd, car.tireInventory, compliance, depth);
+  const weatherChoice = chooseCompound(lapsToEnd, car.tireInventory, compliance, depth, sim.circuitId);
   let reason: string | null = null;
   if (weatherChoice && tyreWaterGrip(weatherChoice, depth) > current + 0.05) reason = depth > 0.3 ? 'lluvia' : 'pista seca';
   // [R54] Lo que en un coche de la IA es una entrada forzada, en uno del jugador es una propuesta urgente.
   if (urgentToo && (car.hasPuncture || car.tires.health <= 5)) reason = car.hasPuncture ? 'pinchazo' : 'neumático destrozado';
   if (lapsToEnd <= 1 && reason === null) return null;
   // Desgaste por vuelta: el medido; sin medida, el histórico del juego si lleva al menos 3 vueltas o el nominal del compuesto.
-  const nominalWear = (100 - STRATEGY.TARGET_HEALTH) / TireModel.getCompoundProperties(car.tires.compound).nominalLaps;
+  // [ES1, 20/11/2026] Con la vida medida en el circuito.
+  const nominalWear = (100 - STRATEGY.TARGET_HEALTH) / tyreLifeLaps(car.tires.compound, sim.circuitId);
   const historyWear = car.tires.lapsOnTire >= 3 ? (100 - car.tires.health) / car.tires.lapsOnTire : nominalWear;
   const wearPerLap = Math.max(1.5, st.lastLapWear !== undefined && st.lastLapWear > 0 ? st.lastLapWear : historyWear);
   const lapsLeftOnTyre = (car.tires.health - STRATEGY.TARGET_HEALTH) / wearPerLap;
@@ -405,7 +409,7 @@ export function stopDecision(sim: RaceSimulation, car: CarState, st: StrategySta
       }
     }
   }
-  let compound = reason === 'lluvia' || reason === 'pista seca' ? weatherChoice : chooseCompound(lapsToEnd, car.tireInventory, compliance, depth);
+  let compound = reason === 'lluvia' || reason === 'pista seca' ? weatherChoice : chooseCompound(lapsToEnd, car.tireInventory, compliance, depth, sim.circuitId);
   // [R53] Con la lluvia encima no se monta seco: se espera para ir directo a intermedios; si el neumático ya no
   // aguanta, se montan los intermedios en esta parada.
   if (rainForecast && compound && (reason === 'desgaste' || reason === 'pista seca')

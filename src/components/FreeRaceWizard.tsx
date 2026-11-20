@@ -131,7 +131,7 @@ export function FreeRaceWizard(p: FreeRaceWizardProps) {
                       <img className={s.trackImg} src={`${import.meta.env.BASE_URL}circuits/minimal/${c.svgFile}`} alt="" loading="lazy" />
                       <dl className={s.attrs}>
                         <div><dt>Carrera</dt><dd>{info.laps} vueltas</dd></div>
-                        <div><dt>Safety Car</dt><dd>{info.safetyCarPercent} %</dd></div>
+                        <div><dt>Safety Car</dt><dd>{info.safetyCarPercent} % · VSC {info.vscPercent} %</dd></div>
                         <div><dt>Paso por el pit lane</dt><dd>{info.pitLossSec.toLocaleString('es-ES')} s</dd></div>
                         <div><dt>Zonas DRS</dt><dd>{info.drsZones}</dd></div>
                         <div className={s.wide}><dt>Estrategia</dt><dd>{info.strategy}</dd></div>

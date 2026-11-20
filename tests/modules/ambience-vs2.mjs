@@ -93,7 +93,8 @@ export default async function run({ server, assert, test }) {
     // [16/11/2026] TL2 sube el límite a 8.880 KB con autorización del usuario («Si adapta los test»); VS2 sigue sin subirlo.
     // [18/11/2026] TL7 lo sube a 8.900 KB con autorización del usuario («Subir a 8.900 KB»): logotipos a mano y zonas de rótulos.
     // [19/11/2026] TL4 lo sube a 9.000 KB con autorización del usuario («Subir a 9.000 KB»): libreas de 2023, 2024 y 2026, ruedas y morro.
-    assert(budget.limits.offlineCoreKB === 9000 && /notaTL2/.test(JSON.stringify(budget)) && /notaTL7/.test(JSON.stringify(budget)) && /notaTL4/.test(JSON.stringify(budget)), 'VS2: el límite de la instalación sin conexión no se toca (solo lo suben TL2, TL7 y TL4, con su nota)', String(budget.limits.offlineCoreKB));
+    // [ES3, autorizado por el usuario el 20/11/2026 («Sí, a 9.010 KB» y «Sí, cámbialos»)] ES3 sube el límite a 9.010 KB, con su nota (notaES3).
+    assert(budget.limits.offlineCoreKB === 9010 && /notaTL2/.test(JSON.stringify(budget)) && /notaTL7/.test(JSON.stringify(budget)) && /notaTL4/.test(JSON.stringify(budget)) && /notaES3/.test(JSON.stringify(budget)), 'VS2: el límite de la instalación sin conexión no se toca (solo lo suben TL2, TL7 y TL4, con su nota)', String(budget.limits.offlineCoreKB));
     assert(/if \(this\.quality !== QUALITY_PROFILES\.bajo\) for \(const car of frame\.cars\)/.test(scene), 'VS2: en calidad baja no hay partículas');
   });
 
