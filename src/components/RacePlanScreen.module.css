@@ -118,3 +118,16 @@
 /* [ES6] Ventana de una parada y planes de reserva. */
 .window { font-style: normal; color: var(--text-2); }
 .strategyText em.backupNote { margin-left: 0; white-space: normal; }
+/* [ES10] Pestañas de cada coche, barra de tandas y tiempo del plan. */
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); }
+.tab { flex: 1 1 0; min-height: var(--toque); padding: 0 6px; border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--text-2); font-size: var(--letra-2); font-weight: 700; cursor: pointer; }
+.tab[aria-selected='true'] { color: var(--text); border-bottom-color: var(--accion); }
+.stintBar { position: relative; display: flex; height: 26px; border-radius: var(--radio-s); overflow: hidden; background: var(--line); }
+.stint { display: flex; align-items: center; justify-content: center; gap: 4px; min-width: 0; background: var(--tyre); color: var(--negro); font-size: var(--letra-1); font-weight: 800; border-right: 2px solid var(--bg); overflow: hidden; }
+.stint:last-of-type { border-right: 0; }
+.stint small { font-weight: 600; opacity: 0.8; }
+.stintWindow { position: absolute; top: 0; bottom: 0; background: color-mix(in srgb, var(--text) 25%, transparent); border-left: 1px dashed var(--text); border-right: 1px dashed var(--text); pointer-events: none; }
+.planTime { margin: 0; font-size: var(--letra-2); color: var(--text-2); }
+.planTime b { color: var(--text); }
+.planWarn { margin: 0; font-size: var(--letra-2); color: var(--accion); font-weight: 700; }
+.tabPanel { display: flex; flex-direction: column; gap: 10px; }

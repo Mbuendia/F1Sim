@@ -288,6 +288,47 @@ export function optimizeStrategy(input: OptimizerInput): OptimizerResult {
   return { circuitId, totalLaps, pitLossSec, strategies, best: strategies[0] ?? null, crossovers, expectedBest, risk };
 }
 
+/** [ES10] Lo que da un plan concreto (el del jugador), con el mismo cálculo que el optimizador. */
+export interface PlanEvaluation {
+  /** Tiempo total y esperado (s); Infinity si alguna tanda pasa de la caída. */
+  totalSec: number;
+  expectedSec: number;
+  /** Diferencia con la óptima (s, con las mismas opciones). */
+  deltaSec: number;
+  /** La primera tanda que pasa de la caída de su neumático: compuesto, vuelta en la que acaba y vida. */
+  overCliff: { compound: DryCompound; lap: number; life: number } | null;
+  /** No hay juegos para todas las tandas. */
+  missingSets: boolean;
+  best: Strategy | null;
+}
+
+/**
+ * [ES10] Tiempo de un plan (neumático de salida y paradas) con el cálculo del optimizador: curvas, paradas, combustible,
+ * el efecto de la salida (con posición) y el riesgo de Safety Car. Cada tanda con el juego que le daría el optimizador.
+ */
+export function evaluatePlan(input: OptimizerInput & { compound: TireCompound; stops: { lap: number; compound: TireCompound }[] }): PlanEvaluation | null {
+  const { circuitId, totalLaps } = input;
+  const curves = input.curves ?? TYRE_CURVES[circuitId]?.compounds;
+  const st = planStints(input.compound, input.stops, totalLaps);
+  if (!curves || !st) return null;
+  const result = optimizeStrategy(input);
+  const ages = stintAges(st.stints.map(s => s.compound), setAges(input.inventory));
+  const stints = st.stints.map((s, i) => ({ ...s, startAge: ages?.[i] ?? 0 }));
+  let tyres = 0, overCliff: PlanEvaluation['overCliff'] = null;
+  for (const s of stints) {
+    const t = stintSec(curves[s.compound], s.startAge, s.laps);
+    if (!Number.isFinite(t) && !overCliff) overCliff = { compound: s.compound, lap: s.toLap, life: Math.max(0, curves[s.compound].cliffLap - s.startAge) };
+    tyres += t;
+  }
+  const fuel = fuelSec(totalLaps, input.fuelSecPerKg ?? TYRE_CURVES[circuitId]?.fuelSecPerKg ?? 0);
+  const startSec = input.gridPosition !== undefined ? (startEffect(circuitId, stints[0].compound, input.gridPosition)?.trafficSec ?? 0) : 0;
+  const stops = st.stopLaps.length;
+  const totalSec = tyres + stops * result.pitLossSec + fuel + startSec;
+  const plan = { stints, stopLaps: st.stopLaps, totalSec };
+  const expectedSec = Number.isFinite(totalSec) ? expectedSecOf(plan, result.risk, result.pitLossSec, curves, totalLaps) : Infinity;
+  return { totalSec, expectedSec, deltaSec: result.best ? totalSec - result.best.totalSec : 0, overCliff, missingSets: ages === null, best: result.best };
+}
+
 const NAME: Record<DryCompound, string> = { soft: 'blando', medium: 'medio', hard: 'duro' };
 export const compoundName = (c: DryCompound) => NAME[c];
 const fmt = (v: number) => v.toFixed(1).replace('.', ',');

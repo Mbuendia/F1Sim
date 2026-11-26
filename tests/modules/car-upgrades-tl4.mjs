@@ -137,7 +137,7 @@ export default async function run({ server, assert, test }) {
     const { measureDist } = await import(pathToFileURL(join(process.cwd(), 'scripts/perf-size.mjs')).href);
     const apart = measureDist(dir).modelsOnDemand > 0;
     const outside = !existsSync('public/models/mejoras');
-    assert(lazy && apart && outside && budget.limits.modelsKB === 3660 && budget.limits.offlineCoreKB === 9020, // [ES6, autorizado por el usuario el 26/11/2026 («Sí, a 9.020 KB»)] 9.020; [19/11/2026] 9.000 con autorización del usuario («Subir a 9.000 KB»); [ES3, autorizado por el usuario el 20/11/2026 («Sí, a 9.010 KB» y «Sí, cámbialos»)] 9.010
+    assert(lazy && apart && outside && budget.limits.modelsKB === 3660 && budget.limits.offlineCoreKB === 9030, // [ES10, autorizado por el usuario el 26/11/2026 («Sí, a 9.030 KB»)] 9.030; [ES6, autorizado por el usuario el 26/11/2026 («Sí, a 9.020 KB»)] 9.020; [19/11/2026] 9.000 con autorización del usuario («Subir a 9.000 KB»); [ES3, autorizado por el usuario el 20/11/2026 («Sí, a 9.010 KB» y «Sí, cámbialos»)] 9.010
       'TL4: mejoras/ va en la lista «lazy», se mide aparte, está fuera de public/models y modelsKB y offlineCoreKB no suben',
       `lazy ${lazy} | aparte ${apart} | fuera ${outside} | ${budget.limits.modelsKB} / ${budget.limits.offlineCoreKB}`);
   });

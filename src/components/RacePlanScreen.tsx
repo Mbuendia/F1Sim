@@ -12,7 +12,7 @@ import { applyStrategy, availableCompounds, defaultPlan, moveStop, rivalOf, stop
 import { bestUndercut, gainText, offsetText, undercutTable } from '../simulation/Undercut';
 import { backupPlansFor, planWindows } from '../simulation/BackupPlans';
 import type { DryCompound } from '../simulation/StrategyOptimizer';
-import { compoundName, crossoverText, optimizeStrategy, riskText, startText, type Strategy } from '../simulation/StrategyOptimizer';
+import { compoundName, crossoverText, evaluatePlan, optimizeStrategy, riskText, startText, type PlanEvaluation, type Strategy, type StopWindow } from '../simulation/StrategyOptimizer';
 import { formatDuration } from '../freeRace/freeRace';
 import { Segmented } from './ui/Segmented';
 import { PlanCar3D, type PlanCarLook } from './PlanCar3D';
@@ -118,6 +118,9 @@ function CarCard({ car, plan, totalLaps, circuitId, field, weather, onChange }: 
     return rainPlanText(p, plan.compound);
   }, [circuitId, weather, plan.compound, totalLaps, car.wetPoints]);
   const backups = useMemo(() => (circuitId ? backupPlansFor(circuitId, totalLaps, plan.compound, plan.stops, car.inventory) : []), [circuitId, totalLaps, plan.compound, plan.stops, car.inventory]);
+  // [ES10] Tiempo del plan al momento, con el cálculo del optimizador.
+  const evaluation = useMemo(() => (circuitId ? evaluatePlan({ circuitId, totalLaps, inventory: car.inventory, gridPosition: car.grid, compound: plan.compound, stops: plan.stops }) : null), [circuitId, totalLaps, car.inventory, car.grid, plan.compound, plan.stops]);
+  const [tab, setTab] = useState<PlanTab>('plan');
   const off = plan.delegated;
   return (
     <section className={s.car} style={{ borderLeftColor: car.color }} aria-label={`Plan de ${car.code}`} data-plan-car={car.id}>
@@ -131,52 +134,112 @@ function CarCard({ car, plan, totalLaps, circuitId, field, weather, onChange }: 
         <p className={s.dim}>El estratega elige el neumático, las paradas y el ritmo de este coche durante la carrera.</p>
       ) : (
         <>
-          {optimized && optimized.strategies.length > 0 && <Strategies result={optimized} plan={plan} code={car.code} onUse={st => onChange(p => applyStrategy(p, st))} />}
-          {start && <p className={s.dim} data-plan-start>{start}</p>}
-          {rain && <p className={s.dim} data-plan-rain>{rain}</p>}
-          {backups.length > 0 && (
-            <div className={s.strategies} data-plan-backups>
-              <span className={s.label}>Planes de reserva</span>
-              <ul className={s.strategyList} aria-label={`Planes de reserva de ${car.code}`}>
-                {backups.map(b => (
-                  <li key={b.id} className={`${s.strategy} ${s.ucRow}`} data-plan-backup={b.id}>
-                    <span className={s.strategyText}><b>{b.title}</b><br />{b.trigger}{b.example && <><br /><em className={s.backupNote}>{b.example}</em></>}</span>
-                  </li>
-                ))}
-              </ul>
-              <p className={s.dim}>En carrera, el muro te propone el plan cuando se cumpla lo que lo dispara.</p>
-            </div>
-          )}
-          {circuitId && field.length > 0 && <Undercut circuitId={circuitId} car={car} plan={plan} totalLaps={totalLaps} field={field} onChange={onChange} />}
-          <div className={s.row}>
-            <span className={s.label}>Neumático de salida</span>
-            <Compounds value={plan.compound} options={options} onPick={c => onChange(p => ({ ...p, compound: c }))} name={`salida-${car.id}`} />
+          {/* [ES10] Pestañas: el plan con su barra y su tiempo, las mejores estrategias, los planes de reserva y el rival. */}
+          <div className={s.tabs} role="tablist" aria-label={`Secciones del plan de ${car.code}`}>
+            {TABS.filter(t => t.id !== 'rival' || (circuitId && field.length > 0)).map(t => (
+              <button key={t.id} type="button" role="tab" aria-selected={tab === t.id} className={s.tab} onClick={() => setTab(t.id)} data-plan-tab={t.id}>{t.label}</button>
+            ))}
           </div>
-          <div className={s.row}>
-            <span className={s.label}>Paradas</span>
-            <Segmented label={`Paradas de ${car.code}`} name={`paradas-${car.id}`} value={String(plan.stops.length)}
-              onChange={v => onChange(p => withStopCount(p, Number(v) as StopCount, totalLaps))}
-              options={[{ value: '0', label: 'Ninguna' }, { value: '1', label: 'Una' }, { value: '2', label: 'Dos' }, { value: '3', label: 'Tres' }]} />
-          </div>
-          {plan.stops.map((stop, i) => (
-            <div key={i} className={s.stop}>
-              <span className={s.stopName}>Parada {i + 1}</span>
-              <div className={s.stepper} role="group" aria-label={`Vuelta de la parada ${i + 1}`}>
-                <button type="button" aria-label="Una vuelta antes" onClick={() => onChange(p => moveStop(p, i, p.stops[i].lap - 1, totalLaps))}><Minus size={14} aria-hidden="true" /></button>
-                <span>Vuelta <b>{stop.lap}</b>{windows[i] && windows[i].from < windows[i].to && <em className={s.window} data-plan-window={i}> ({windows[i].from}–{windows[i].to})</em>}</span>
-                <button type="button" aria-label="Una vuelta después" onClick={() => onChange(p => moveStop(p, i, p.stops[i].lap + 1, totalLaps))}><Plus size={14} aria-hidden="true" /></button>
+          <div role="tabpanel" className={s.tabPanel} data-plan-panel={tab}>
+          {tab === 'plan' && (
+            <>
+              <StintBar plan={plan} totalLaps={totalLaps} windows={windows} code={car.code} />
+              {evaluation && <PlanTime evaluation={evaluation} />}
+              <div className={s.row}>
+                <span className={s.label}>Neumático de salida</span>
+                <Compounds value={plan.compound} options={options} onPick={c => onChange(p => ({ ...p, compound: c }))} name={`salida-${car.id}`} />
               </div>
-              <Compounds value={stop.compound} options={options.length ? options : DRY} small name={`parada-${car.id}-${i}`}
-                onPick={c => onChange(p => ({ ...p, stops: p.stops.map((x, k) => (k === i ? { ...x, compound: c } : x)) }))} />
-            </div>
-          ))}
-          <div className={s.row}>
-            <span className={s.label}>Ritmo de salida</span>
-            <Segmented label={`Ritmo de salida de ${car.code}`} name={`ritmo-${car.id}`} value={plan.pace} onChange={v => onChange(p => ({ ...p, pace: v as PlanPace }))} options={PACES} />
+              <div className={s.row}>
+                <span className={s.label}>Paradas</span>
+                <Segmented label={`Paradas de ${car.code}`} name={`paradas-${car.id}`} value={String(plan.stops.length)}
+                  onChange={v => onChange(p => withStopCount(p, Number(v) as StopCount, totalLaps))}
+                  options={[{ value: '0', label: 'Ninguna' }, { value: '1', label: 'Una' }, { value: '2', label: 'Dos' }, { value: '3', label: 'Tres' }]} />
+              </div>
+              {plan.stops.map((stop, i) => (
+                <div key={i} className={s.stop}>
+                  <span className={s.stopName}>Parada {i + 1}</span>
+                  <div className={s.stepper} role="group" aria-label={`Vuelta de la parada ${i + 1}`}>
+                    <button type="button" aria-label="Una vuelta antes" onClick={() => onChange(p => moveStop(p, i, p.stops[i].lap - 1, totalLaps))}><Minus size={14} aria-hidden="true" /></button>
+                    <span>Vuelta <b>{stop.lap}</b>{windows[i] && windows[i].from < windows[i].to && <em className={s.window} data-plan-window={i}> ({windows[i].from}–{windows[i].to})</em>}</span>
+                    <button type="button" aria-label="Una vuelta después" onClick={() => onChange(p => moveStop(p, i, p.stops[i].lap + 1, totalLaps))}><Plus size={14} aria-hidden="true" /></button>
+                  </div>
+                  <Compounds value={stop.compound} options={options.length ? options : DRY} small name={`parada-${car.id}-${i}`}
+                    onPick={c => onChange(p => ({ ...p, stops: p.stops.map((x, k) => (k === i ? { ...x, compound: c } : x)) }))} />
+                </div>
+              ))}
+              <div className={s.row}>
+                <span className={s.label}>Ritmo de salida</span>
+                <Segmented label={`Ritmo de salida de ${car.code}`} name={`ritmo-${car.id}`} value={plan.pace} onChange={v => onChange(p => ({ ...p, pace: v as PlanPace }))} options={PACES} />
+              </div>
+            </>
+          )}
+          {tab === 'estrategias' && (
+            <>
+              {optimized && optimized.strategies.length > 0 && <Strategies result={optimized} plan={plan} code={car.code} onUse={st => onChange(p => applyStrategy(p, st))} />}
+              {start && <p className={s.dim} data-plan-start>{start}</p>}
+            </>
+          )}
+          {tab === 'reserva' && (
+            <>
+              {rain && <p className={s.dim} data-plan-rain>{rain}</p>}
+              {backups.length > 0 && (
+                <div className={s.strategies} data-plan-backups>
+                  <span className={s.label}>Planes de reserva</span>
+                  <ul className={s.strategyList} aria-label={`Planes de reserva de ${car.code}`}>
+                    {backups.map(b => (
+                      <li key={b.id} className={`${s.strategy} ${s.ucRow}`} data-plan-backup={b.id}>
+                        <span className={s.strategyText}><b>{b.title}</b><br />{b.trigger}{b.example && <><br /><em className={s.backupNote}>{b.example}</em></>}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <p className={s.dim}>En carrera, el muro te propone el plan cuando se cumpla lo que lo dispara.</p>
+                </div>
+              )}
+            </>
+          )}
+          {tab === 'rival' && circuitId && field.length > 0 && <Undercut circuitId={circuitId} car={car} plan={plan} totalLaps={totalLaps} field={field} onChange={onChange} />}
           </div>
         </>
       )}
     </section>
+  );
+}
+
+/** [ES10] Pestañas de cada coche. */
+type PlanTab = 'plan' | 'estrategias' | 'reserva' | 'rival';
+export const TABS: { id: PlanTab; label: string }[] = [{ id: 'plan', label: 'Plan' }, { id: 'estrategias', label: 'Estrategias' }, { id: 'reserva', label: 'Reserva' }, { id: 'rival', label: 'Rival' }];
+
+/** [ES10] Barra de tandas: un tramo por tanda, de ancho proporcional a sus vueltas y del color de su compuesto, con la ventana de cada parada. */
+export function StintBar({ plan, totalLaps, windows, code }: { plan: Pick<CarPlan, 'compound' | 'stops'>; totalLaps: number; windows: StopWindow[]; code: string }) {
+  const laps = [0, ...plan.stops.map(st => st.lap), totalLaps];
+  const tyres = [plan.compound, ...plan.stops.map(st => st.compound)];
+  const pct = (lap: number) => `${(100 * lap / totalLaps).toFixed(3)}%`;
+  return (
+    <div className={s.stintBar} role="img" aria-label={`Tandas de ${code}: ${tyres.map((t, i) => `${compoundStyle(t).name} ${laps[i + 1] - laps[i]} vueltas`).join(', ')}`} data-stint-bar>
+      {tyres.map((t, i) => (
+        <span key={i} className={s.stint} style={{ width: pct(laps[i + 1] - laps[i]), ['--tyre' as string]: compoundStyle(t).color }} data-stint={t} data-laps={laps[i + 1] - laps[i]}>
+          {compoundStyle(t).letter}<small>{laps[i + 1] - laps[i]}</small>
+        </span>
+      ))}
+      {windows.map((w, i) => (w.to > w.from ? <i key={`w${i}`} className={s.stintWindow} style={{ left: pct(w.from - 1), width: pct(w.to - w.from + 1) }} data-stint-window={i} aria-hidden="true" /> : null))}
+    </div>
+  );
+}
+
+const fmtSec = (v: number) => v.toFixed(1).replace('.', ',');
+
+/** [ES10] Tiempo del plan y diferencia con la óptima; aviso si una tanda pasa de la vida de su neumático. */
+function PlanTime({ evaluation }: { evaluation: PlanEvaluation }) {
+  if (evaluation.overCliff) {
+    const o = evaluation.overCliff;
+    return <p className={s.planWarn} role="status" data-plan-time="over">El {compoundName(o.compound)} no llega a la vuelta {o.lap}: dura unas {o.life} vueltas.</p>;
+  }
+  if (evaluation.missingSets) return <p className={s.planWarn} role="status" data-plan-time="sets">No hay juegos para todas las tandas de este plan.</p>;
+  const d = evaluation.deltaSec;
+  return (
+    <p className={s.planTime} role="status" data-plan-time="ok">
+      Tiempo previsto <b>{formatDuration(evaluation.totalSec)}</b> · {Math.abs(d) < 0.05 ? 'es la óptima' : `+${fmtSec(d)} s sobre la óptima`}
+    </p>
   );
 }
 
