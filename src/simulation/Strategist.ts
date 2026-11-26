@@ -46,6 +46,13 @@ export interface StrategyState {
   lastLapWear?: number;
   healthAtLapStart?: number;
   setAtLapStart?: string;
+  /** [ES6, 26/11/2026] Planes de reserva: vueltas seguidas atascado detrás del mismo coche, y planes ya propuestos. */
+  stuckLaps?: number;
+  stuckAheadId?: number | null;
+  stuckPosition?: number;
+  backupBDone?: boolean;
+  backupCStop?: number | null;
+  backupDSet?: string | null;
 }
 
 /** Compuesto para el siguiente stint: el más blando que llega al final; si ninguno, el más duro (otra parada). */

@@ -114,3 +114,7 @@
 
 /* [ES9] Filas del undercut: texto y botón. */
 .strategy.ucRow { grid-template-columns: 1fr auto; }
+
+/* [ES6] Ventana de una parada y planes de reserva. */
+.window { font-style: normal; color: var(--text-2); }
+.strategyText em.backupNote { margin-left: 0; white-space: normal; }

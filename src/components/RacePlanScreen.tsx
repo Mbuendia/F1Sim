@@ -10,6 +10,7 @@ import type { TireCompound } from '../types/f1';
 import { compoundStyle } from '../utils/compounds';
 import { applyStrategy, availableCompounds, defaultPlan, moveStop, rivalOf, stopRelativeTo, withStopCount, DRY, type CarPlan, type PlanPace, type StopCount } from '../utils/racePlan';
 import { bestUndercut, gainText, offsetText, undercutTable } from '../simulation/Undercut';
+import { backupPlansFor, planWindows } from '../simulation/BackupPlans';
 import type { DryCompound } from '../simulation/StrategyOptimizer';
 import { compoundName, crossoverText, optimizeStrategy, riskText, startText, type Strategy } from '../simulation/StrategyOptimizer';
 import { formatDuration } from '../freeRace/freeRace';
@@ -100,6 +101,9 @@ function CarCard({ car, plan, totalLaps, circuitId, field, onChange }: { car: Pl
   // [ES5] Con su posición de salida: el neumático de salida suma lo que gana o pierde en el tráfico de las primeras vueltas.
   const optimized = useMemo(() => (circuitId ? optimizeStrategy({ circuitId, totalLaps, inventory: car.inventory, gridPosition: car.grid }) : null), [circuitId, totalLaps, car.inventory, car.grid]);
   const start = useMemo(() => (circuitId && car.grid ? startText(circuitId, car.grid) : null), [circuitId, car.grid]);
+  // [ES6] Ventana de cada parada y planes B, C y D del plan de este coche.
+  const windows = useMemo(() => (circuitId ? planWindows(circuitId, plan.compound, plan.stops, totalLaps) : []), [circuitId, plan.compound, plan.stops, totalLaps]);
+  const backups = useMemo(() => (circuitId ? backupPlansFor(circuitId, totalLaps, plan.compound, plan.stops, car.inventory) : []), [circuitId, totalLaps, plan.compound, plan.stops, car.inventory]);
   const off = plan.delegated;
   return (
     <section className={s.car} style={{ borderLeftColor: car.color }} aria-label={`Plan de ${car.code}`} data-plan-car={car.id}>
@@ -115,6 +119,19 @@ function CarCard({ car, plan, totalLaps, circuitId, field, onChange }: { car: Pl
         <>
           {optimized && optimized.strategies.length > 0 && <Strategies result={optimized} plan={plan} code={car.code} onUse={st => onChange(p => applyStrategy(p, st))} />}
           {start && <p className={s.dim} data-plan-start>{start}</p>}
+          {backups.length > 0 && (
+            <div className={s.strategies} data-plan-backups>
+              <span className={s.label}>Planes de reserva</span>
+              <ul className={s.strategyList} aria-label={`Planes de reserva de ${car.code}`}>
+                {backups.map(b => (
+                  <li key={b.id} className={`${s.strategy} ${s.ucRow}`} data-plan-backup={b.id}>
+                    <span className={s.strategyText}><b>{b.title}</b><br />{b.trigger}{b.example && <><br /><em className={s.backupNote}>{b.example}</em></>}</span>
+                  </li>
+                ))}
+              </ul>
+              <p className={s.dim}>En carrera, el muro te propone el plan cuando se cumpla lo que lo dispara.</p>
+            </div>
+          )}
           {circuitId && field.length > 0 && <Undercut circuitId={circuitId} car={car} plan={plan} totalLaps={totalLaps} field={field} onChange={onChange} />}
           <div className={s.row}>
             <span className={s.label}>Neumático de salida</span>
@@ -131,7 +148,7 @@ function CarCard({ car, plan, totalLaps, circuitId, field, onChange }: { car: Pl
               <span className={s.stopName}>Parada {i + 1}</span>
               <div className={s.stepper} role="group" aria-label={`Vuelta de la parada ${i + 1}`}>
                 <button type="button" aria-label="Una vuelta antes" onClick={() => onChange(p => moveStop(p, i, p.stops[i].lap - 1, totalLaps))}><Minus size={14} aria-hidden="true" /></button>
-                <span>Vuelta <b>{stop.lap}</b></span>
+                <span>Vuelta <b>{stop.lap}</b>{windows[i] && windows[i].from < windows[i].to && <em className={s.window} data-plan-window={i}> ({windows[i].from}–{windows[i].to})</em>}</span>
                 <button type="button" aria-label="Una vuelta después" onClick={() => onChange(p => moveStop(p, i, p.stops[i].lap + 1, totalLaps))}><Plus size={14} aria-hidden="true" /></button>
               </div>
               <Compounds value={stop.compound} options={options.length ? options : DRY} small name={`parada-${car.id}-${i}`}

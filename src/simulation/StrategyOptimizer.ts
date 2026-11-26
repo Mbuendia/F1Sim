@@ -80,6 +80,15 @@ export interface OptimizerInput {
   vscLossSec?: number;
   /** [ES5] Posición de salida del coche; con ella se suma el efecto medido del neumático de salida (data/startGains.ts). */
   gridPosition?: number;
+  /**
+   * [ES6] A mitad de carrera: el neumático montado y sus vueltas. La primera tanda es la de ese juego (`totalLaps` son
+   * las vueltas que quedan) y el juego montado no cuenta entre los que hay para cambiar.
+   */
+  current?: { compound: DryCompound; age: number };
+  /** [ES6] Compuestos de seco ya usados en la carrera (cuentan para la regla de los dos compuestos). */
+  usedCompounds?: DryCompound[];
+  /** [ES6] Paradas como mínimo (por ejemplo, una más que las que quedan en el plan). */
+  minStops?: number;
 }
 
 /** Tiempo de una vuelta con un neumático de `age` vueltas (1 = la primera), sin combustible; Infinity pasada la caída. */
@@ -96,13 +105,14 @@ export function fuelSec(totalLaps: number, fuelSecPerKg: number, kgPerLap = Fuel
 }
 
 /** Edades de los juegos de seco de cada compuesto, de más nuevo a más usado. */
-export function setAges(inventory: OptimizerInput['inventory']): Record<DryCompound, number[]> {
+export function setAges(inventory: OptimizerInput['inventory'], skipMounted = false): Record<DryCompound, number[]> {
   const out = { soft: [], medium: [], hard: [] } as Record<DryCompound, number[]>;
   if (!inventory) {
     for (const c of DRY_ORDER) out[c] = Array(ALLOCATION[c]).fill(0);
     return out;
   }
-  for (const set of inventory.sets) if ((DRY_ORDER as string[]).includes(set.compound)) out[set.compound as DryCompound].push(Math.max(0, set.laps ?? 0));
+  // [ES6] A mitad de carrera, el juego montado es la tanda en curso: no cuenta para cambiar.
+  for (const set of inventory.sets) if ((DRY_ORDER as string[]).includes(set.compound) && !(skipMounted && set.state === 'montado')) out[set.compound as DryCompound].push(Math.max(0, set.laps ?? 0));
   for (const c of DRY_ORDER) out[c].sort((a, b) => a - b);
   return out;
 }
@@ -172,6 +182,37 @@ export function neutralizationGain(st: Pick<Strategy, 'stints' | 'stopLaps'>, la
   return best;
 }
 
+/** [ES6] Ventana de una parada: primera y última vuelta a las que se puede mover. */
+export interface StopWindow { from: number; to: number }
+
+/**
+ * [ES6] Ventana de cada parada: las vueltas a las que se puede adelantar o retrasar (sola, sin mover las demás) perdiendo
+ * menos de `tolSec` en neumáticos y sin pasar de la caída.
+ */
+export function stopWindows(st: Pick<Strategy, 'stints' | 'stopLaps'>, curves: Record<DryCompound, CompoundCurve>, totalLaps: number, tolSec = TIE_SEC): StopWindow[] {
+  return st.stopLaps.map((stop, i) => {
+    const prev = i === 0 ? 0 : st.stopLaps[i - 1], next = i + 1 < st.stopLaps.length ? st.stopLaps[i + 1] : totalLaps;
+    const a = st.stints[i], b = st.stints[i + 1];
+    const cost = (lap: number) => stintSec(curves[a.compound], a.startAge, lap - prev) + stintSec(curves[b.compound], b.startAge, next - lap);
+    const base = cost(stop);
+    if (!Number.isFinite(base)) return { from: stop, to: stop };
+    const ok = (lap: number) => { const c = cost(lap); return Number.isFinite(c) && c - base < tolSec; };
+    let from = stop, to = stop;
+    while (from - 1 > prev && ok(from - 1)) from--;
+    while (to + 1 < next && ok(to + 1)) to++;
+    return { from, to };
+  });
+}
+
+/** [ES6] Un plan (neumático de salida y paradas con su vuelta) como tandas, para sus ventanas. Null si no es de seco. */
+export function planStints(compound: TireCompound, stops: { lap: number; compound: TireCompound }[], totalLaps: number, startAge = 0, fromLap = 0): Pick<Strategy, 'stints' | 'stopLaps'> | null {
+  const seq = [compound, ...stops.map(s => s.compound)];
+  if (!seq.every(c => (DRY_ORDER as string[]).includes(c))) return null;
+  const laps = [fromLap, ...stops.map(s => s.lap), totalLaps];
+  const stints = seq.map((c, i) => ({ compound: c as DryCompound, fromLap: laps[i] + 1, toLap: laps[i + 1], laps: laps[i + 1] - laps[i], startAge: i === 0 ? startAge : 0 }));
+  return stints.every(t => t.laps >= 1) ? { stints, stopLaps: stops.map(s => s.lap - fromLap) } : null;
+}
+
 /** [ES4] Tiempo esperado de una estrategia con el riesgo de Safety Car y VSC (una neutralización por carrera como mucho). */
 export function expectedSecOf(st: Pick<Strategy, 'stints' | 'stopLaps' | 'totalSec'>, risk: RiskInfo, greenLossSec: number, curves: Record<DryCompound, CompoundCurve>, totalLaps: number): number {
   const mean = (save: number) => {
@@ -200,19 +241,26 @@ export function optimizeStrategy(input: OptimizerInput): OptimizerResult {
   const empty: OptimizerResult = { circuitId, totalLaps, pitLossSec, strategies: [], best: null, crossovers: [], expectedBest: null, risk };
   if (!curves || totalLaps < 2) return empty;
   const fuel = fuelSec(totalLaps, input.fuelSecPerKg ?? TYRE_CURVES[circuitId]?.fuelSecPerKg ?? 0);
-  const pool = setAges(input.inventory);
+  const cur = input.current, used = input.usedCompounds ?? [];
+  const pool = setAges(input.inventory, Boolean(cur));
+  // [ES6] A mitad de carrera, sin paradas si ya se han usado dos compuestos; si no, como al principio.
+  // Sin juego montado pero con compuestos ya usados (se acaba de parar): la regla la cumple el resto, y puede no haber más paradas.
+  const ruleStops = cur ? (new Set<DryCompound>([...used, cur.compound]).size >= 2 ? 0 : 1) : used.length ? 0 : minStopsFor(circuitId);
+  const fromStops = Math.max(ruleStops, input.minStops ?? 0);
   const found: Omit<Strategy, 'deltaSec' | 'optimal' | 'tied' | 'expectedSec'>[] = [];
-  for (let stops = minStopsFor(circuitId); stops <= Math.min(input.maxStops ?? MAX_STOPS, totalLaps - 1); stops++) {
+  for (let stops = fromStops; stops <= Math.min(input.maxStops ?? MAX_STOPS, totalLaps - 1); stops++) {
     for (const seq of compoundSequences(stops + 1)) {
-      if (new Set(seq).size < 2) continue;
-      const ages = stintAges(seq, pool);
+      if (cur && seq[0] !== cur.compound) continue;
+      if (new Set<DryCompound>([...seq, ...used]).size < 2) continue;
+      const rest = cur ? stintAges(seq.slice(1), pool) : null;
+      const ages = cur ? (rest ? [cur.age, ...rest] : null) : stintAges(seq, pool);
       if (!ages) continue;
       const split = bestSplit(seq, ages, curves, totalLaps);
       if (!split) continue;
       let lap = 0;
       const stints = seq.map((compound, i) => { const s = { compound, fromLap: lap + 1, toLap: lap + split.laps[i], laps: split.laps[i], startAge: ages[i] }; lap += split.laps[i]; return s; });
       // [ES5] Con la posición de salida, lo que el neumático de salida gana o pierde en el tráfico de las primeras vueltas.
-      const startSec = input.gridPosition !== undefined ? (startEffect(circuitId, seq[0], input.gridPosition)?.trafficSec ?? 0) : 0;
+      const startSec = input.gridPosition !== undefined && !cur ? (startEffect(circuitId, seq[0], input.gridPosition)?.trafficSec ?? 0) : 0;
       found.push({ stops, stints, stopLaps: stints.slice(0, -1).map(s => s.toLap), pitSec: stops * pitLossSec, startSec, totalSec: split.cost + stops * pitLossSec + fuel + startSec });
     }
   }

@@ -674,6 +674,7 @@ export const modules = [
   { "id": "sc-risk-es4", "tasks": ["ES4"], "sprint": "16", "kind": "contract" },
   { "id": "start-tyre-es5", "tasks": ["ES5"], "sprint": "16", "kind": "contract" },
   { "id": "undercut-es9", "tasks": ["ES9"], "sprint": "16", "kind": "contract" },
+  { "id": "backup-plans-es6", "tasks": ["ES6"], "sprint": "16", "kind": "contract" },
   { "id": "offline-of1", "tasks": ["OF1"], "sprint": "13", "kind": "contract" },
   { "id": "storage-of2", "tasks": ["OF2"], "sprint": "13", "kind": "contract" },
   { "id": "updates-of3", "tasks": ["OF3"], "sprint": "13", "kind": "contract" },

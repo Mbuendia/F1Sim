@@ -86,6 +86,8 @@ import { overtakingZonesOf, zoneAt } from '../OvertakingZones';
 import type { OvertakingZone } from '../OvertakingZones';
 import { RaceSimulation } from '../RaceSimulation';
 import { pitLossSecFor } from '../../data/pitLoss';
+import { BACKUP, moveNextStopTo, planMoreStops, planStopNow, planWindows, stopsText } from '../BackupPlans';
+import type { DryCompound } from '../StrategyOptimizer';
 
 export function rejoinContext(sim: RaceSimulation, car: CarState) {
   const { capKmh, neutralization } = sim.rejoinSpeedCap();
@@ -325,6 +327,7 @@ export function runStrategist(sim: RaceSimulation, car: CarState) {
   }
   const st = (car.strategy ??= { log: [], postponeStartLap: null, lastLogKey: '' });
   // Combustible: consumo de la última vuelta medida (o la estimación por distancia antes de tenerla).
+  const lapChanged = st.lapOfFuelMark !== car.currentLap;
   if (st.lapOfFuelMark !== car.currentLap) {
     if (st.lapOfFuelMark !== undefined && st.fuelAtLapStart !== undefined && car.currentLap === st.lapOfFuelMark + 1) st.lastLapBurnKg = st.fuelAtLapStart - car.fuelKg;
     // Desgaste de la última vuelta completa con el mismo juego (el contador de vueltas del juego no sirve: vuelve a 0
@@ -348,6 +351,8 @@ export function runStrategist(sim: RaceSimulation, car: CarState) {
     else if (need > car.fuelKg && recoverable && car.paceMode !== 'save') { car.paceMode = 'save'; sim.strategyLog(car, 'ahorro', `Combustible: necesita ${need.toFixed(1)} kg, lleva ${car.fuelKg.toFixed(1)} kg`); }
     else if (car.paceMode === 'save' && need < car.fuelKg * 0.9) { car.paceMode = 'balanced'; sim.strategyLog(car, 'ritmo', 'Combustible suficiente: ritmo normal'); }
   }
+  // [ES6, 26/11/2026] Planes B, C y D: el muro los propone cuando se cumple lo que los dispara.
+  if (proposing) proposeBackupPlans(sim, car, st, lapChanged);
   if (orderIsActive(pit.activeBoxOrder)) {
     if (proposing) sim.proposeStop(car, null);
     return;
@@ -485,6 +490,69 @@ export function getWallProposals(sim: RaceSimulation, carId: number): WallPropos
   return sim.getCarById(carId)?.wallProposals ?? [];
 }
 
+const isDryTyre = (c: TireCompound | null | undefined): c is DryCompound => c === 'soft' || c === 'medium' || c === 'hard';
+
+/** [ES6, 26/11/2026] Compuestos de seco usados en la carrera (los juegos montados), con el de ahora. */
+function usedDry(car: CarState): DryCompound[] {
+  const inv = car.tireInventory;
+  const fromSets = inv ? inv.usedIds.map(id => inv.sets.find(s => s.id === id)?.compound).filter(isDryTyre) : [];
+  return [...new Set<DryCompound>([...fromSets, ...(isDryTyre(car.tires.compound) ? [car.tires.compound] : [])])];
+}
+
+/**
+ * [ES6, 26/11/2026] Planes de reserva de un coche del jugador. B: Safety Car o VSC antes de la ventana de la próxima parada → parar ya
+ * y rehacer. C: BACKUP.STUCK_LAPS vueltas seguidas a menos de BACKUP.STUCK_GAP_SEC del mismo coche sin pasarlo, dentro de
+ * la ventana → adelantar la parada a esta vuelta. D: el neumático va a durar menos de BACKUP.WEAR_FASTER de lo medido →
+ * una parada más. Cada uno se propone una vez por ocasión; descartado, no vuelve hasta la vuelta siguiente.
+ */
+export function proposeBackupPlans(sim: RaceSimulation, car: CarState, st: StrategyState, lapChanged: boolean) {
+  const lap = car.currentLap, cur = car.tires.compound;
+  if (!isDryTyre(cur) || sim.raceFormat === 'sprint' && !car.pitStop.plannedStops?.length) return;
+  const stops = (car.pitStop.plannedStops ?? []).filter((s): s is { lap: number; compound: TireCompound } => s.lap >= lap && s.compound !== null);
+  const next = stops[0];
+  const window = next ? planWindows(sim.circuitId, cur, stops, sim.totalLaps, car.tires.lapsOnTire, lap - 1)[0] : null;
+  const used = usedDry(car), inv = car.tireInventory ?? undefined;
+  const propose = (id: 'B' | 'C' | 'D', planned: { lap: number; compound: TireCompound }[] | null, why: string) => {
+    if (!planned || !planned.length) return false;
+    const key = `plan:${id}`;
+    if (car.wallProposals?.some(p => p.key === key)) return false;
+    const discarded = car.wallDiscarded?.[key];
+    if (discarded !== undefined && lap <= discarded) return false;
+    sim.addWallProposal(car, { key, kind: 'plan', stops: planned, reason: `Plan ${id}: ${why}. Nuevo plan: ${stopsText(planned)}` });
+    return true;
+  };
+  // B: neutralización antes de que se abra la ventana de la próxima parada.
+  const neutral = sim.raceFlagState === 'sc' || sim.raceFlagState === 'vsc';
+  if (!neutral) st.backupBDone = false;
+  else if (!st.backupBDone && next && window && lap < window.from) {
+    if (propose('B', planStopNow(sim.circuitId, sim.totalLaps, lap, used, inv), `${sim.raceFlagState === 'sc' ? 'Safety Car' : 'VSC'} en la vuelta ${lap}, antes de la ventana de la parada (vuelta ${window.from})`)) st.backupBDone = true;
+  }
+  // C: atascado detrás del mismo coche, contando por vuelta.
+  if (lapChanged) {
+    const ahead = car.carAheadId !== null ? sim.getCarById(car.carAheadId) : undefined;
+    const close = Boolean(ahead && ahead.status === 'running' && !ahead.isInPitLane && car.gapToCarAheadSec < BACKUP.STUCK_GAP_SEC && !neutral);
+    st.stuckLaps = close && st.stuckAheadId === ahead!.id && car.currentPosition >= (st.stuckPosition ?? car.currentPosition) ? (st.stuckLaps ?? 0) + 1 : close ? 1 : 0;
+    st.stuckAheadId = close ? ahead!.id : null;
+    st.stuckPosition = car.currentPosition;
+  }
+  if ((st.stuckLaps ?? 0) >= BACKUP.STUCK_LAPS && next && window && lap >= window.from && lap < next.lap && st.backupCStop !== next.lap) {
+    const ahead = st.stuckAheadId != null ? sim.getCarById(st.stuckAheadId) : undefined;
+    if (propose('C', moveNextStopTo(stops, lap), `${st.stuckLaps} vueltas atascado detrás de ${ahead?.driver.code ?? 'un coche'}; adelantar la parada (ventana ${window.from}–${window.to}) para salir a aire limpio`)) st.backupCStop = next.lap;
+  }
+  // D: desgaste más rápido de lo previsto.
+  const setId = car.tireInventory?.mountedId ?? cur;
+  if (car.tires.lapsOnTire >= BACKUP.WEAR_MIN_LAPS && st.backupDSet !== setId) {
+    const wearPerLap = Math.max(0.1, st.lastLapWear !== undefined && st.lastLapWear > 0 ? st.lastLapWear : (100 - car.tires.health) / car.tires.lapsOnTire);
+    const life = car.tires.lapsOnTire + Math.max(0, car.tires.health - STRATEGY.TARGET_HEALTH) / wearPerLap;
+    const ratio = life / tyreLifeLaps(cur, sim.circuitId);
+    const needs = (next ? next.lap : sim.totalLaps) - lap + car.tires.lapsOnTire;
+    if (ratio < BACKUP.WEAR_FASTER && needs > life) {
+      const planned = planMoreStops(sim.circuitId, sim.totalLaps, lap, { compound: cur, age: car.tires.lapsOnTire }, ratio, stops.length + 1, used, inv);
+      if (propose('D', planned, `el neumático va a durar unas ${Math.round(life)} vueltas, el ${Math.round(ratio * 100)} % de lo previsto; una parada más`)) st.backupDSet = setId;
+    }
+  }
+}
+
 /** [R54] Aceptar una propuesta la ejecuta como una orden del jugador. */
 export function acceptWallProposal(sim: RaceSimulation, carId: number, proposalId: string): boolean {
   const car = sim.getCarById(carId);
@@ -495,12 +563,15 @@ export function acceptWallProposal(sim: RaceSimulation, carId: number, proposalI
     ? Boolean(proposal.compound && sim.beforeLights() && sim.mountStartTyre(car, proposal.compound))
     : proposal.kind === 'parada'
     ? Boolean(proposal.compound && sim.issueBoxOrder(car.id, proposal.compound, 'player'))
+    // [ES6, 26/11/2026] Un plan de reserva entra como el plan de paradas del jugador.
+    : proposal.kind === 'plan'
+    ? Boolean(proposal.stops?.length && sim.programPitStops(car.id, proposal.stops) && (car.pitStop.playerControlled = true))
     : Boolean(proposal.paceMode && sim.issuePaceOrder(car.id, proposal.paceMode));
   if (!done) return false;
   car.wallProposals = (car.wallProposals ?? []).filter(candidate => candidate.id !== proposalId);
   if (car.strategy && proposal.kind !== 'salida') {
     if (proposal.kind === 'parada') car.strategy.postponeStartLap = null;
-    sim.strategyLog(car, proposal.kind === 'parada' ? 'parada' : 'ritmo', `Propuesta aceptada: ${proposal.reason}`);
+    sim.strategyLog(car, proposal.kind === 'parada' || proposal.kind === 'plan' ? 'parada' : 'ritmo', `Propuesta aceptada: ${proposal.reason}`);
   }
   return true;
 }

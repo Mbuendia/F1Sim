@@ -365,7 +365,8 @@ export class EngineHost {
       // [MJ11, 20/11/2026] Las paradas previstas del plan de carrera (una o dos, con su vuelta y su compuesto).
       case 'planStops': {
         const stops = Array.isArray(o.stops) ? o.stops as { lap: unknown; compound: unknown }[] : null;
-        if (!stops || stops.length < 1 || stops.length > 2) return reject('El plan lleva una o dos paradas');
+        // [ES6, 26/11/2026] Hasta tres paradas, las que planea el optimizador (antes dos: «Usar esta» con tres se rechazaba).
+        if (!stops || stops.length < 1 || stops.length > 3) return reject('El plan lleva de una a tres paradas');
         if (!stops.every(stop => isId(stop.lap) && (stop.lap as number) >= 1 && (stop.lap as number) < sim.totalLaps && COMPOUNDS.includes(String(stop.compound)))) return reject('Parada no válida');
         const ok = sim.programPitStops(car!.id, stops.map(stop => ({ lap: stop.lap as number, compound: stop.compound as TireCompound })));
         if (ok) { car!.pitStop.playerControlled = true; if (car!.wallDelegated) car!.wallDelegated = false; }

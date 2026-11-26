@@ -120,8 +120,10 @@ export interface WallProposal {
   id: string;
   /** Qué se propone, sin el motivo: mientras siga pendiente no se añade otra igual. */
   key: string;
-  kind: 'parada' | 'ritmo' | 'salida';
+  kind: 'parada' | 'ritmo' | 'salida' | 'plan';
   compound?: TireCompound;
+  /** [ES6, 26/11/2026] Plan B, C o D: las paradas que quedan con su vuelta y su compuesto. */
+  stops?: { lap: number; compound: TireCompound }[];
   paceMode?: WallPace;
   reason: string;
   lap: number;
