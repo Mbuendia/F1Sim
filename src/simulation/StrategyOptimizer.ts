@@ -18,6 +18,7 @@
 import { TYRE_CURVES } from '../data/tyreCurves';
 import { pitLossFor, pitLossSecFor } from '../data/pitLoss';
 import { safetyCarOdds } from '../data/safetyCarOdds';
+import { startEffect } from '../data/startGains';
 import { FuelModel } from './FuelModel';
 import { ALLOCATION, MONACO_SETS_REQUIRED } from './TireInventory';
 import type { CompoundCurve } from './TyreCurves';
@@ -46,6 +47,8 @@ export interface Strategy {
   tied: boolean;
   /** [ES4] Tiempo esperado (s) contando con el riesgo de Safety Car y VSC. */
   expectedSec: number;
+  /** [ES5] Lo que suma (o resta) el tráfico de las primeras vueltas con su neumático de salida (0 sin posición de salida). */
+  startSec: number;
 }
 /** Punto de cruce: con `more` paradas se gana a `fewer` si cada parada cuesta menos de `lossBelowSec`. */
 export interface Crossover { fewer: number; more: number; lossBelowSec: number }
@@ -75,6 +78,8 @@ export interface OptimizerInput {
   /** [ES4] Pérdida de parar con Safety Car y con VSC (s); sin ellas, las medidas en el circuito (ES2). */
   scLossSec?: number;
   vscLossSec?: number;
+  /** [ES5] Posición de salida del coche; con ella se suma el efecto medido del neumático de salida (data/startGains.ts). */
+  gridPosition?: number;
 }
 
 /** Tiempo de una vuelta con un neumático de `age` vueltas (1 = la primera), sin combustible; Infinity pasada la caída. */
@@ -206,14 +211,17 @@ export function optimizeStrategy(input: OptimizerInput): OptimizerResult {
       if (!split) continue;
       let lap = 0;
       const stints = seq.map((compound, i) => { const s = { compound, fromLap: lap + 1, toLap: lap + split.laps[i], laps: split.laps[i], startAge: ages[i] }; lap += split.laps[i]; return s; });
-      found.push({ stops, stints, stopLaps: stints.slice(0, -1).map(s => s.toLap), pitSec: stops * pitLossSec, totalSec: split.cost + stops * pitLossSec + fuel });
+      // [ES5] Con la posición de salida, lo que el neumático de salida gana o pierde en el tráfico de las primeras vueltas.
+      const startSec = input.gridPosition !== undefined ? (startEffect(circuitId, seq[0], input.gridPosition)?.trafficSec ?? 0) : 0;
+      found.push({ stops, stints, stopLaps: stints.slice(0, -1).map(s => s.toLap), pitSec: stops * pitLossSec, startSec, totalSec: split.cost + stops * pitLossSec + fuel + startSec });
     }
   }
   found.sort((a, b) => a.totalSec - b.totalSec);
   // Las mismas tandas en otro orden cuestan lo mismo (la curva no depende de la vuelta de carrera): se deja la primera.
+  // [ES5] Con posición de salida, el neumático de salida sí cuenta: no se juntan las que empiezan con otro.
   const seen = new Set<string>();
   const distinct = found.filter(s => {
-    const key = s.stints.map(t => `${t.compound}:${t.laps}:${t.startAge}`).sort().join('|');
+    const key = (input.gridPosition !== undefined ? `${s.stints[0].compound}>` : '') + s.stints.map(t => `${t.compound}:${t.laps}:${t.startAge}`).sort().join('|');
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
@@ -252,6 +260,28 @@ export function crossoverText(result: OptimizerResult): string | null {
     : `${c.more} paradas compensan frente a ${c.fewer === 1 ? 'una' : c.fewer} si la parada cuesta menos de ${fmt(c.lossBelowSec)} s (aquí, ${fmt(result.pitLossSec)} s)`;
   const parts = [down, up].filter((c): c is Crossover => Boolean(c)).map(says);
   return parts.length ? parts.join('; ') : null;
+}
+
+/**
+ * [ES5] La frase de la salida desde una posición: puestos que gana o pierde cada compuesto en la primera vuelta y lo que
+ * le cuesta (o le ahorra) el tráfico de las primeras vueltas frente al medio. Null sin medida.
+ */
+export function startText(circuitId: string, gridPosition: number): string | null {
+  const fx = DRY_ORDER.map(c => ({ c, e: startEffect(circuitId, c, gridPosition) }));
+  if (fx.some(x => !x.e)) return null;
+  const places = (n: number) => {
+    const r = Math.round(n);
+    return r === 0 ? 'ni gana ni pierde puestos' : r > 0 ? `gana ${r} ${r === 1 ? 'puesto' : 'puestos'}` : `pierde ${-r} ${r === -1 ? 'puesto' : 'puestos'}`;
+  };
+  const mid = fx.find(x => x.c === 'medium')!.e!;
+  const parts = fx.map(({ c, e }) => {
+    const vs = c === 'medium' ? '' : (() => {
+      const d = e!.trafficSec - mid.trafficSec;
+      return Math.abs(d) < 0.05 ? '' : `, y el tráfico le cuesta ${fmt(Math.abs(d))} s ${d > 0 ? 'más' : 'menos'} que al medio`;
+    })();
+    return `con ${NAME[c]} ${places(e!.gainLap1)}${vs}`;
+  });
+  return `Saliendo desde P${Math.round(gridPosition)}, en la primera vuelta: ${parts.join('; ')}.`;
 }
 
 /** «6 de cada 10» a partir de un porcentaje. */

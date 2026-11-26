@@ -135,7 +135,7 @@ export function ClientRaceScreen({ role, myTeamId, roster, fast, slow, teams, li
       {/* [MJ11, 20/11/2026] Antes de la salida, el invitado planifica sus coches; la salida la da el anfitrión. */}
       {player && slow?.light === 'idle' && own.length > 0 && (
         <RacePlanScreen role="invitado" totalLaps={slow.totalLaps} circuitId={circuitId} look={{ team: own[0].team, number: own[0].driver.number, compound: own[0].tires.compound }}
-          cars={own.map(c => ({ id: c.id, code: c.driver.code, number: c.driver.number, color: c.team.color, compound: c.tires.compound, inventory: null }))}
+          cars={own.map(c => ({ id: c.id, code: c.driver.code, number: c.driver.number, color: c.team.color, compound: c.tires.compound, inventory: null, grid: c.currentPosition || undefined }))}
           onConfirm={async plans => { for (const [id, plan] of Object.entries(plans)) for (const order of planOrders(Number(id), plan)) await onOrder(order); }} />
       )}
       {leaveAsk && <LeaveRaceDialog kind={player ? 'invitado' : 'espectador'} roomCode={roomCode} onStay={() => setLeaveAsk(false)} onLeave={() => { setLeaveAsk(false); onLeave(); }} />}

@@ -111,3 +111,6 @@
 .use { min-height: var(--toque); padding: 0 10px; border: 1px solid var(--line-strong); border-radius: var(--radio-s); background: transparent; color: var(--text); font-size: var(--letra-1); font-weight: 700; cursor: pointer; white-space: nowrap; }
 .use[aria-pressed='true'] { border-color: var(--accion); background: color-mix(in srgb, var(--accion) 22%, transparent); }
 @media (max-width: 480px) { .strategy { grid-template-columns: 1fr auto; } .tyres { grid-column: 1 / -1; } }
+
+/* [ES9] Filas del undercut: texto y botón. */
+.strategy.ucRow { grid-template-columns: 1fr auto; }

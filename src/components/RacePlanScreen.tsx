@@ -8,8 +8,10 @@ import { useMemo, useState } from 'react';
 import { ArrowRight, Check, Minus, Plus } from 'lucide-react';
 import type { TireCompound } from '../types/f1';
 import { compoundStyle } from '../utils/compounds';
-import { applyStrategy, availableCompounds, defaultPlan, moveStop, withStopCount, DRY, type CarPlan, type PlanPace, type StopCount } from '../utils/racePlan';
-import { compoundName, crossoverText, optimizeStrategy, riskText, type Strategy } from '../simulation/StrategyOptimizer';
+import { applyStrategy, availableCompounds, defaultPlan, moveStop, rivalOf, stopRelativeTo, withStopCount, DRY, type CarPlan, type PlanPace, type StopCount } from '../utils/racePlan';
+import { bestUndercut, gainText, offsetText, undercutTable } from '../simulation/Undercut';
+import type { DryCompound } from '../simulation/StrategyOptimizer';
+import { compoundName, crossoverText, optimizeStrategy, riskText, startText, type Strategy } from '../simulation/StrategyOptimizer';
 import { formatDuration } from '../freeRace/freeRace';
 import { Segmented } from './ui/Segmented';
 import { PlanCar3D, type PlanCarLook } from './PlanCar3D';
@@ -22,6 +24,8 @@ export interface PlanCar {
   color: string;
   compound: TireCompound;
   inventory?: { sets: { compound: TireCompound; state: string; laps?: number }[] } | null;
+  /** [ES5] Posición de salida (para el efecto del neumático de salida). */
+  grid?: number;
 }
 
 /** [ES3] Cuántas estrategias se enseñan. */
@@ -32,8 +36,10 @@ const BG = `${import.meta.env.BASE_URL ?? '/'}plan/`;
 const LAYERS = ['fondo', 'personas', 'coche'] as const;
 const PACES: { value: PlanPace; label: string }[] = [{ value: 'save', label: 'Ahorro' }, { value: 'balanced', label: 'Normal' }, { value: 'push', label: 'Ataque' }];
 
-export function RacePlanScreen({ cars, totalLaps, role, onConfirm, look, circuitId }: {
+export function RacePlanScreen({ cars, totalLaps, role, onConfirm, look, circuitId, field = [] }: {
   cars: PlanCar[];
+  /** [ES9] Toda la parrilla (código y posición de salida), para elegir el rival del undercut. */
+  field?: { code: string; grid: number }[];
   /** [ES3] Circuito de la carrera, para el optimizador de estrategia. */
   circuitId?: string;
   /** [20/11/2026] El coche del garaje: el del jugador, con su livery y su dorsal (sin esto, el de carbono del render). */
@@ -76,7 +82,7 @@ export function RacePlanScreen({ cars, totalLaps, role, onConfirm, look, circuit
           <p className={s.dim}>{totalLaps} vueltas. Lo puedes cambiar en carrera desde el muro.</p>
         </header>
         <div className={s.cars}>
-          {cars.map(car => <CarCard key={car.id} car={car} plan={plans[car.id]} totalLaps={totalLaps} circuitId={circuitId} onChange={change => update(car.id, change)} />)}
+          {cars.map(car => <CarCard key={car.id} car={car} plan={plans[car.id]} totalLaps={totalLaps} circuitId={circuitId} field={field.filter(f => !cars.some(c => c.code === f.code))} onChange={change => update(car.id, change)} />)}
         </div>
         <footer className={s.actions}>
           {guest && sent && <p className={s.sent} role="status"><Check size={16} aria-hidden="true" />Plan enviado. Esperando la salida del anfitrión.</p>}
@@ -89,9 +95,11 @@ export function RacePlanScreen({ cars, totalLaps, role, onConfirm, look, circuit
   );
 }
 
-function CarCard({ car, plan, totalLaps, circuitId, onChange }: { car: PlanCar; plan: CarPlan; totalLaps: number; circuitId?: string; onChange: (change: (plan: CarPlan) => CarPlan) => void }) {
+function CarCard({ car, plan, totalLaps, circuitId, field, onChange }: { car: PlanCar; plan: CarPlan; totalLaps: number; circuitId?: string; field: { code: string; grid: number }[]; onChange: (change: (plan: CarPlan) => CarPlan) => void }) {
   const options = useMemo(() => availableCompounds(car.inventory), [car.inventory]);
-  const optimized = useMemo(() => (circuitId ? optimizeStrategy({ circuitId, totalLaps, inventory: car.inventory }) : null), [circuitId, totalLaps, car.inventory]);
+  // [ES5] Con su posición de salida: el neumático de salida suma lo que gana o pierde en el tráfico de las primeras vueltas.
+  const optimized = useMemo(() => (circuitId ? optimizeStrategy({ circuitId, totalLaps, inventory: car.inventory, gridPosition: car.grid }) : null), [circuitId, totalLaps, car.inventory, car.grid]);
+  const start = useMemo(() => (circuitId && car.grid ? startText(circuitId, car.grid) : null), [circuitId, car.grid]);
   const off = plan.delegated;
   return (
     <section className={s.car} style={{ borderLeftColor: car.color }} aria-label={`Plan de ${car.code}`} data-plan-car={car.id}>
@@ -106,6 +114,8 @@ function CarCard({ car, plan, totalLaps, circuitId, onChange }: { car: PlanCar; 
       ) : (
         <>
           {optimized && optimized.strategies.length > 0 && <Strategies result={optimized} plan={plan} code={car.code} onUse={st => onChange(p => applyStrategy(p, st))} />}
+          {start && <p className={s.dim} data-plan-start>{start}</p>}
+          {circuitId && field.length > 0 && <Undercut circuitId={circuitId} car={car} plan={plan} totalLaps={totalLaps} field={field} onChange={onChange} />}
           <div className={s.row}>
             <span className={s.label}>Neumático de salida</span>
             <Compounds value={plan.compound} options={options} onPick={c => onChange(p => ({ ...p, compound: c }))} name={`salida-${car.id}`} />
@@ -172,6 +182,44 @@ function Strategies({ result, plan, code, onUse }: { result: ReturnType<typeof o
       </ol>
       {cross && <p className={s.dim} data-plan-crossover>{cross.charAt(0).toUpperCase() + cross.slice(1)}.</p>}
       {risk && <p className={s.dim} data-plan-risk>{risk}</p>}
+    </div>
+  );
+}
+
+const isDry = (c: TireCompound): c is DryCompound => c === 'soft' || c === 'medium' || c === 'hard';
+
+/**
+ * [ES9] Undercut y overcut contra un rival (por defecto, el de delante en parrilla, que se supone con la estrategia
+ * óptima): lo que se gana parando de 1 a 5 vueltas antes o después que él, y un botón para dejar el plan así.
+ */
+function Undercut({ circuitId, car, plan, totalLaps, field, onChange }: { circuitId: string; car: PlanCar; plan: CarPlan; totalLaps: number; field: { code: string; grid: number }[]; onChange: (change: (plan: CarPlan) => CarPlan) => void }) {
+  const [rivalCode, setRivalCode] = useState<string | null>(() => (car.grid ? rivalOf(field, car.grid)?.code ?? null : null) ?? field[0]?.code ?? null);
+  const rival = field.find(f => f.code === rivalCode) ?? null;
+  const rivalBest = useMemo(() => (rival ? optimizeStrategy({ circuitId, totalLaps, gridPosition: rival.grid }).best : null), [circuitId, totalLaps, rival]);
+  const next = plan.stops[0]?.compound ?? (plan.compound === 'hard' ? 'medium' : 'hard');
+  if (!rival || !rivalBest || rivalBest.stops < 1 || !isDry(plan.compound) || !isDry(next)) return null;
+  const rivalPlan = { compound: rivalBest.stints[0].compound, stopLap: rivalBest.stopLaps[0], next: rivalBest.stints[1].compound };
+  const options = undercutTable(circuitId, { compound: plan.compound, next }, rivalPlan, totalLaps);
+  const best = bestUndercut(options);
+  return (
+    <div className={s.strategies} data-plan-undercut>
+      <div className={s.row}>
+        <span className={s.label}>Undercut contra</span>
+        <select className={s.use} value={rival.code} onChange={e => setRivalCode(e.target.value)} aria-label={`Rival de referencia de ${car.code}`}>
+          {[...field].sort((a, b) => a.grid - b.grid).map(f => <option key={f.code} value={f.code}>P{f.grid} {f.code}</option>)}
+        </select>
+      </div>
+      <p className={s.dim}>{rival.code} para en la vuelta {rivalPlan.stopLap} ({compoundName(rivalPlan.compound)} → {compoundName(rivalPlan.next)}). Parando tú, hasta que sale de boxes:</p>
+      <ol className={s.strategyList} aria-label={`Undercut y overcut de ${car.code} contra ${rival.code}`}>
+        {options.map(o => (
+          <li key={o.offset} className={`${s.strategy} ${s.ucRow} ${o === best ? s.optimal : ''}`} data-best={o === best || undefined}>
+            <span className={s.strategyText}><b>{offsetText(o.offset)}</b> (vuelta {o.lap}) <em>{gainText(o.gainSec)}</em></span>
+            <button type="button" className={s.use} disabled={o.gainSec === null} aria-label={`Parar ${offsetText(o.offset)} que ${rival.code}`} onClick={() => onChange(p => stopRelativeTo(p, rivalPlan.stopLap, o.offset, totalLaps))}>
+              Parar ahí
+            </button>
+          </li>
+        ))}
+      </ol>
     </div>
   );
 }

@@ -108,6 +108,7 @@ export function CircuitSheet({ circuit: c, onBack, onChoose, chosen = false, ini
               <h2>Estrategia</h2>
               <p className={s.lead}>{info.strategy}</p>
               {info.riskText && <p data-sheet-risk>{info.riskText}</p>}
+              {info.startText && <p data-sheet-start>{info.startText}</p>}
               <Facts rows={[['Paso por el pit lane', `${info.pitLossSec.toLocaleString('es-ES')} s`], ['Safety Car', `${info.safetyCarPercent} %`], ['VSC', `${info.vscPercent} %`],
                 ['Adelantar', overtaking], ['Tiempo previsto', `≈ ${formatDuration(info.predictedSec)}`]]} />
             </section>

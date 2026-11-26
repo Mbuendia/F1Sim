@@ -41,6 +41,21 @@ export function applyStrategy(plan: CarPlan, strategy: Pick<Strategy, 'stints' |
   return { ...plan, delegated: false, compound: strategy.stints[0].compound, stops: strategy.stopLaps.map((lap, i) => ({ lap, compound: strategy.stints[i + 1].compound })) };
 }
 
+/** [ES9, 26/11/2026] El rival de referencia: el de delante en parrilla (el de detrás si se sale primero). */
+export function rivalOf<T extends { grid: number }>(field: T[], grid: number): T | null {
+  const want = grid <= 1 ? 2 : grid - 1;
+  return field.find(c => c.grid === want) ?? null;
+}
+
+/**
+ * [ES9, 26/11/2026] «Parar N vueltas antes (offset negativo) o después que el rival»: la primera parada en la vuelta de la suya más
+ * `offset`, sin cruzarse con la siguiente. Sin paradas, se añade una (al compuesto que sigue al de salida).
+ */
+export function stopRelativeTo(plan: CarPlan, rivalStopLap: number, offset: number, totalLaps: number): CarPlan {
+  const base = plan.stops.length ? plan : { ...plan, stops: [{ lap: rivalStopLap, compound: nextDry(plan.compound) }] };
+  return { ...moveStop(base, 0, rivalStopLap + offset, totalLaps), delegated: false };
+}
+
 /** Mueve la vuelta de una parada sin salirse de la carrera ni cruzarse con la otra. */
 export function moveStop(plan: CarPlan, index: number, lap: number, totalLaps: number): CarPlan {
   const prev = plan.stops[index - 1]?.lap ?? 0;

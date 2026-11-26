@@ -110,7 +110,8 @@ export default async function run({ server, assert, test }) {
 
   await test('ES3.4: el plan enseña las cinco mejores y «Usar esta» las pasa', () => {
     const screen = src('src/components/RacePlanScreen.tsx');
-    const shows = screen.includes('optimizeStrategy({ circuitId, totalLaps, inventory: car.inventory })') && screen.includes('result.strategies.slice(0, PLAN_STRATEGIES)')
+    // [ES5, autorizado por el usuario el 26/11/2026 («Sí, cámbialo»)] La llamada lleva además la posición de salida del coche (gridPosition).
+    const shows = screen.includes('optimizeStrategy({ circuitId, totalLaps, inventory: car.inventory, gridPosition: car.grid })') && screen.includes('result.strategies.slice(0, PLAN_STRATEGIES)')
       && /export const PLAN_STRATEGIES = 5;/.test(screen) && screen.includes('data-optimal={st.optimal || undefined}') && screen.includes('onUse={st => onChange(p => applyStrategy(p, st))}')
       && screen.includes("{ value: '3', label: 'Tres' }") && src('src/App.tsx').includes('circuitId={simulation.circuitId}');
     const r = run1('silverstone');

@@ -296,7 +296,7 @@ export function getWallReading(sim: RaceSimulation, carId: number): WallReading 
     moves: car.moves ?? emptyMoves(), paceLaps: car.paceLaps ?? { push: 0, balanced: 0, save: 0 },
     pit: car.isInPitLane || car.pitStop.isPitting,
     pitWindow: sim.getPitWindow(car.id), rivalTyres,
-    undercut: undercutRisk({ gapBehindSec: behind ? behind.gapToCarAheadSec : null, own: rivalTyres.own, behind: rivalTyres.behind, behindInPit: Boolean(behind && (behind.isInPitLane || behind.pitStop.isPitting)) }),
+    undercut: undercutRisk({ gapBehindSec: behind ? behind.gapToCarAheadSec : null, own: rivalTyres.own, behind: rivalTyres.behind, behindInPit: Boolean(behind && (behind.isInPitLane || behind.pitStop.isPitting)), circuitId: sim.circuitId, nextCompound: car.pitStop.plannedStops?.[0]?.compound ?? undefined }),
   };
 }
 
