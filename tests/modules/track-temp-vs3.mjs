@@ -17,9 +17,11 @@ import { raceFingerprints } from '../support/race-fingerprint.mjs';
 // Huellas de antes de VS3 (las que guardaba race-split-pf5 hasta el 13/11/2026): con la referencia forzada tienen que salir.
 // [ES2, autorizado por el usuario el 20/11/2026 («Sí, cámbialos»)] Con el pit lane calibrado cambian, forzando 38,5 °C, las de Mónaco y Spa (antes 5ac23726… y cb8d7d78…):
 // son las de antes de VS3 con el pit lane de ES2. Monza, sin paradas, sigue idéntica.
+// [ES7, autorizado por el usuario el 26/11/2026 («Sí, cámbialas»)] Con las propuestas «Plan lluvia» en el estado, cambia la de Mónaco forzando 38,5 °C (antes 16a3bcf8…); la
+// carrera es la misma.
 const BEFORE_VS3 = {
   'monza-seco': '3382658b1c9db1acd54b9eb48a29cc79c9ad99212858fcf0edae9e80bcdd05db',
-  'monaco-lluvia-sc': '16a3bcf86a21171367ab72beb04822fd6c4b623ea1fa4a240334f71730c43b29',
+  'monaco-lluvia-sc': 'c7b7692a094d2e8d5ca4979feb1501da1f8686b99aab053767440ad14807c67a',
   'spa-vsc-roja-ordenes': '9561b0909a04f29c418ffa336aee529eff232991c1f43e50ccd759f37b6b5730',
 };
 const LAP_S = 90, DT = 0.25;

@@ -17,6 +17,10 @@ import { formatDuration } from '../freeRace/freeRace';
 import { Segmented } from './ui/Segmented';
 import { PlanCar3D, type PlanCarLook } from './PlanCar3D';
 import s from './RacePlanScreen.module.css';
+import { rainPlan, rainPlanText } from '../simulation/RainPlan';
+import type { RainForecast } from '../simulation/WeatherForecast';
+import { TYRE_CURVES } from '../data/tyreCurves';
+import { pitLossSecFor } from '../data/pitLoss';
 
 export interface PlanCar {
   id: number;
@@ -27,6 +31,8 @@ export interface PlanCar {
   inventory?: { sets: { compound: TireCompound; state: string; laps?: number }[] } | null;
   /** [ES5] Posición de salida (para el efecto del neumático de salida). */
   grid?: number;
+  /** [ES7] Puntos de lluvia del piloto. */
+  wetPoints?: number;
 }
 
 /** [ES3] Cuántas estrategias se enseñan. */
@@ -37,8 +43,10 @@ const BG = `${import.meta.env.BASE_URL ?? '/'}plan/`;
 const LAYERS = ['fondo', 'personas', 'coche'] as const;
 const PACES: { value: PlanPace; label: string }[] = [{ value: 'save', label: 'Ahorro' }, { value: 'balanced', label: 'Normal' }, { value: 'push', label: 'Ataque' }];
 
-export function RacePlanScreen({ cars, totalLaps, role, onConfirm, look, circuitId, field = [] }: {
+export function RacePlanScreen({ cars, totalLaps, role, onConfirm, look, circuitId, field = [], weather }: {
   cars: PlanCar[];
+  /** [ES7] Previsión del radar, agua en pista y temperatura del asfalto, para el plan de lluvia. */
+  weather?: { forecast: RainForecast; waterMm: number; trackTempC: number } | null;
   /** [ES9] Toda la parrilla (código y posición de salida), para elegir el rival del undercut. */
   field?: { code: string; grid: number }[];
   /** [ES3] Circuito de la carrera, para el optimizador de estrategia. */
@@ -83,7 +91,7 @@ export function RacePlanScreen({ cars, totalLaps, role, onConfirm, look, circuit
           <p className={s.dim}>{totalLaps} vueltas. Lo puedes cambiar en carrera desde el muro.</p>
         </header>
         <div className={s.cars}>
-          {cars.map(car => <CarCard key={car.id} car={car} plan={plans[car.id]} totalLaps={totalLaps} circuitId={circuitId} field={field.filter(f => !cars.some(c => c.code === f.code))} onChange={change => update(car.id, change)} />)}
+          {cars.map(car => <CarCard key={car.id} car={car} plan={plans[car.id]} totalLaps={totalLaps} circuitId={circuitId} field={field.filter(f => !cars.some(c => c.code === f.code))} weather={weather ?? null} onChange={change => update(car.id, change)} />)}
         </div>
         <footer className={s.actions}>
           {guest && sent && <p className={s.sent} role="status"><Check size={16} aria-hidden="true" />Plan enviado. Esperando la salida del anfitrión.</p>}
@@ -96,13 +104,19 @@ export function RacePlanScreen({ cars, totalLaps, role, onConfirm, look, circuit
   );
 }
 
-function CarCard({ car, plan, totalLaps, circuitId, field, onChange }: { car: PlanCar; plan: CarPlan; totalLaps: number; circuitId?: string; field: { code: string; grid: number }[]; onChange: (change: (plan: CarPlan) => CarPlan) => void }) {
+function CarCard({ car, plan, totalLaps, circuitId, field, weather, onChange }: { car: PlanCar; plan: CarPlan; totalLaps: number; circuitId?: string; field: { code: string; grid: number }[]; weather: { forecast: RainForecast; waterMm: number; trackTempC: number } | null; onChange: (change: (plan: CarPlan) => CarPlan) => void }) {
   const options = useMemo(() => availableCompounds(car.inventory), [car.inventory]);
   // [ES5] Con su posición de salida: el neumático de salida suma lo que gana o pierde en el tráfico de las primeras vueltas.
   const optimized = useMemo(() => (circuitId ? optimizeStrategy({ circuitId, totalLaps, inventory: car.inventory, gridPosition: car.grid }) : null), [circuitId, totalLaps, car.inventory, car.grid]);
   const start = useMemo(() => (circuitId && car.grid ? startText(circuitId, car.grid) : null), [circuitId, car.grid]);
   // [ES6] Ventana de cada parada y planes B, C y D del plan de este coche.
   const windows = useMemo(() => (circuitId ? planWindows(circuitId, plan.compound, plan.stops, totalLaps) : []), [circuitId, plan.compound, plan.stops, totalLaps]);
+  // [ES7] Plan de lluvia con la previsión de la salida (solo si la lluvia cambia algo).
+  const rain = useMemo(() => {
+    if (!circuitId || !weather) return null;
+    const p = rainPlan({ current: plan.compound, depthNowMm: weather.waterMm, forecast: weather.forecast, lap: 1, lapsLeft: totalLaps, lapSec: TYRE_CURVES[circuitId]?.compounds.medium.bestLapSec ?? 90, pitLossSec: pitLossSecFor(circuitId, 22), wetPoints: car.wetPoints ?? 0, trackTempC: weather.trackTempC });
+    return rainPlanText(p, plan.compound);
+  }, [circuitId, weather, plan.compound, totalLaps, car.wetPoints]);
   const backups = useMemo(() => (circuitId ? backupPlansFor(circuitId, totalLaps, plan.compound, plan.stops, car.inventory) : []), [circuitId, totalLaps, plan.compound, plan.stops, car.inventory]);
   const off = plan.delegated;
   return (
@@ -119,6 +133,7 @@ function CarCard({ car, plan, totalLaps, circuitId, field, onChange }: { car: Pl
         <>
           {optimized && optimized.strategies.length > 0 && <Strategies result={optimized} plan={plan} code={car.code} onUse={st => onChange(p => applyStrategy(p, st))} />}
           {start && <p className={s.dim} data-plan-start>{start}</p>}
+          {rain && <p className={s.dim} data-plan-rain>{rain}</p>}
           {backups.length > 0 && (
             <div className={s.strategies} data-plan-backups>
               <span className={s.label}>Planes de reserva</span>

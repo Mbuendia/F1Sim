@@ -22,9 +22,11 @@ import { raceFingerprints } from '../support/race-fingerprint.mjs';
 // [ES2, autorizado por el usuario el 20/11/2026 («Sí, cámbialos»)] El pit lane de cada circuito se calibra con la realidad (líneas del limitador propias y vía de entrada a
 // fondo hasta la línea): cambian las huellas de Mónaco y Spa, que paran en boxes (antes b060bf36… y 567324ab…). Monza,
 // sin paradas, sigue idéntica.
+// [ES7, autorizado por el usuario el 26/11/2026 («Sí, cámbialas»)] En la carrera con lluvia el muro propone «Plan lluvia» a los coches del jugador y esas propuestas van en el
+// estado: cambia la huella de Mónaco (antes b3afbbef…). Sin las propuestas la carrera sale idéntica (comprobado). Monza y Spa, igual.
 const BEFORE = {
   'monza-seco': '465b6e28f76606f87867681b3f8f791afba70903750f0ef3b65a71a29c83c674',
-  'monaco-lluvia-sc': 'b3afbbefd89d639b50ad297ee3c872237e1911e2b62862000e4600633ec2ada6',
+  'monaco-lluvia-sc': 'b8c8c890ae6853296ec899701db7d2956b7c3f6600c75d42f77a174350809045',
   'spa-vsc-roja-ordenes': '51788a0cccfa0877a0c7e495e349ce67c42c4fa705c121a2315bffb0a6c414be',
 };
 const MODULES = ['carStep', 'neutralization', 'weather', 'teamOrders', 'wall', 'startAndResult'];

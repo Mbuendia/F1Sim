@@ -88,6 +88,8 @@ import { RaceSimulation } from '../RaceSimulation';
 import { pitLossSecFor } from '../../data/pitLoss';
 import { BACKUP, moveNextStopTo, planMoreStops, planStopNow, planWindows, stopsText } from '../BackupPlans';
 import type { DryCompound } from '../StrategyOptimizer';
+import { rainPlan, rainPlanText } from '../RainPlan';
+import { TYRE_CURVES } from '../../data/tyreCurves';
 
 export function rejoinContext(sim: RaceSimulation, car: CarState) {
   const { capKmh, neutralization } = sim.rejoinSpeedCap();
@@ -353,6 +355,8 @@ export function runStrategist(sim: RaceSimulation, car: CarState) {
   }
   // [ES6, 26/11/2026] Planes B, C y D: el muro los propone cuando se cumple lo que los dispara.
   if (proposing) proposeBackupPlans(sim, car, st, lapChanged);
+  // [ES7, 26/11/2026] Plan de lluvia con la previsión del radar, en cada vuelta.
+  if (proposing && lapChanged) proposeRainPlan(sim, car);
   if (orderIsActive(pit.activeBoxOrder)) {
     if (proposing) sim.proposeStop(car, null);
     return;
@@ -551,6 +555,37 @@ export function proposeBackupPlans(sim: RaceSimulation, car: CarState, st: Strat
       if (propose('D', planned, `el neumático va a durar unas ${Math.round(life)} vueltas, el ${Math.round(ratio * 100)} % de lo previsto; una parada más`)) st.backupDSet = setId;
     }
   }
+}
+
+/**
+ * [ES7, 26/11/2026] Plan de lluvia de un coche del jugador: con la previsión del radar, el agua de ahora y sus puntos de lluvia, si
+ * conviene cambiar de neumático en las próximas vueltas se propone (paradas por lluvia y, después, las de seco que tenía
+ * el plan). Si deja de convenir, la propuesta se retira.
+ */
+export function proposeRainPlan(sim: RaceSimulation, car: CarState) {
+  const lapsLeft = sim.totalLaps - car.currentLap;
+  const stale = (keep: string | null) => { if (car.wallProposals?.some(p => p.key.startsWith('plan:L') && p.key !== keep)) car.wallProposals = car.wallProposals!.filter(p => !p.key.startsWith('plan:L') || p.key === keep); };
+  if (lapsLeft < 2 || !sim.strategyUsesForecast) { stale(null); return; }
+  const lapSec = car.lapHistory?.length ? car.lapHistory[car.lapHistory.length - 1].lapTime : (TYRE_CURVES[sim.circuitId]?.compounds.medium.bestLapSec ?? 90);
+  const plan = rainPlan({
+    current: car.tires.compound, depthNowMm: sim.weatherModel.meanDepth(), forecast: sim.getRainForecast(), lap: car.currentLap, lapsLeft,
+    lapSec: Math.max(50, Math.min(200, lapSec)), pitLossSec: pitLossSecFor(sim.circuitId, 22), wetPoints: car.driver.development?.wet ?? 0, trackTempC: sim.weather.trackTempCelsius,
+  });
+  if (!plan.stops.length || !plan.rainMatters) { stale(null); return; }
+  const lastRain = plan.stops[plan.stops.length - 1].lap;
+  const dryLater = (car.pitStop.plannedStops ?? []).filter((s): s is { lap: number; compound: TireCompound } => s.lap > lastRain && s.compound !== null && !['intermediate', 'wet'].includes(s.compound));
+  // Si la lluvia acaba volviendo a seco, se vuelve con el compuesto de la siguiente parada de seco y esa parada sobra.
+  const back = plan.stops[plan.stops.length - 1];
+  const merged = dryLater.length && !['intermediate', 'wet'].includes(back.compound)
+    ? [...plan.stops.slice(0, -1), { ...back, compound: dryLater[0].compound }, ...dryLater.slice(1)] : [...plan.stops, ...dryLater];
+  const stops = merged;
+  const same = JSON.stringify((car.pitStop.plannedStops ?? []).filter(s => s.lap >= car.currentLap)) === JSON.stringify(stops);
+  const key = `plan:L:${plan.stops.map(s => `${s.lap}${s.compound}`).join(',')}`;
+  stale(same ? null : key);
+  if (same || car.wallProposals?.some(p => p.key === key)) return;
+  const discarded = car.wallDiscarded?.[key];
+  if (discarded !== undefined && car.currentLap <= discarded) return;
+  sim.addWallProposal(car, { key, kind: 'plan', stops, reason: `Plan lluvia: ${rainPlanText(plan, car.tires.compound) ?? 'cambio por lluvia'} Nuevo plan: ${stopsText(stops)}` });
 }
 
 /** [R54] Aceptar una propuesta la ejecuta como una orden del jugador. */

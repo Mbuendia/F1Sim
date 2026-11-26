@@ -9,7 +9,7 @@ const PACE_LABEL: Record<WallPace, string> = { push: 'Ataque', balanced: 'Ritmo 
 
 /** Lo que se propone, sin el motivo: «Parar: DURO», «Ritmo: Ataque» o, en la parrilla, «Salida: INTERMEDIO». */
 // [ES6] «Plan B», «Plan C» o «Plan D»: las paradas van en el motivo.
-const title = (proposal: WallProposal) => proposal.kind === 'plan' ? `Plan ${proposal.key.split(':')[1] ?? ''}`
+const title = (proposal: WallProposal) => proposal.kind === 'plan' ? (proposal.key.startsWith('plan:L') ? 'Plan lluvia' : `Plan ${proposal.key.split(':')[1] ?? ''}`)
   : proposal.kind === 'ritmo'
   ? `Ritmo: ${proposal.paceMode ? PACE_LABEL[proposal.paceMode] : '—'}`
   : `${proposal.kind === 'salida' ? 'Salida' : 'Parar'}: ${proposal.compound ? COMPOUND_LABEL[proposal.compound] : '—'}`;

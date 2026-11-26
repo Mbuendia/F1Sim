@@ -1926,9 +1926,9 @@ export const App: React.FC<{ startAt?: 'menu' }> = ({ startAt }) => {
       </header>
 
       {planOpen && !autoRace && (
-        <RacePlanScreen role={sharedRef.current ? 'anfitrion' : 'solo'} totalLaps={simulation.totalLaps} circuitId={simulation.circuitId} field={simulation.cars.map(c => ({ code: c.driver.code, grid: c.currentPosition }))} onConfirm={handlePlanConfirm}
+        <RacePlanScreen role={sharedRef.current ? 'anfitrion' : 'solo'} totalLaps={simulation.totalLaps} circuitId={simulation.circuitId} field={simulation.cars.map(c => ({ code: c.driver.code, grid: c.currentPosition }))} weather={{ forecast: simulation.getRainForecast(), waterMm: simulation.weatherModel.meanDepth(), trackTempC: simulation.weather.trackTempCelsius }} onConfirm={handlePlanConfirm}
           look={teamCars[0] ? { team: teamCars[0].team, number: teamCars[0].driver.number, compound: teamCars[0].tires.compound } : undefined}
-          cars={teamCars.map(c => ({ id: c.id, code: c.driver.code, number: c.driver.number, color: c.team.color, compound: c.tires.compound, inventory: c.tireInventory ?? null, grid: c.currentPosition || undefined }))} />
+          cars={teamCars.map(c => ({ id: c.id, code: c.driver.code, number: c.driver.number, color: c.team.color, compound: c.tires.compound, inventory: c.tireInventory ?? null, grid: c.currentPosition || undefined, wetPoints: c.driver.development?.wet ?? 0 }))} />
       )}
       {leaveAsk && (
         <LeaveRaceDialog kind={sharedRef.current ? 'anfitrion' : mode === 'career' ? 'profesional' : 'libre'} saved={Boolean(saveStore)}
