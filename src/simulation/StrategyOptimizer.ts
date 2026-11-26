@@ -89,6 +89,14 @@ export interface OptimizerInput {
   usedCompounds?: DryCompound[];
   /** [ES6] Paradas como mínimo (por ejemplo, una más que las que quedan en el plan). */
   minStops?: number;
+  /**
+   * [ES12] Lo que el modelo no cuenta, medido en el motor para un coche (StrategyBench.calibrate): su ritmo frente al coche
+   * con el que se midieron las curvas (s por vuelta), la salida parada (s, una vez) y la vuelta de salida de boxes con el
+   * neumático frío (s por parada). Sin ellos, 0 (como hasta ahora).
+   */
+  paceOffsetSec?: number;
+  startLossSec?: number;
+  outLapSec?: number;
 }
 
 /** Tiempo de una vuelta con un neumático de `age` vueltas (1 = la primera), sin combustible; Infinity pasada la caída. */
@@ -248,6 +256,8 @@ export function optimizeStrategy(input: OptimizerInput): OptimizerResult {
   const ruleStops = cur ? (new Set<DryCompound>([...used, cur.compound]).size >= 2 ? 0 : 1) : used.length ? 0 : minStopsFor(circuitId);
   const fromStops = Math.max(ruleStops, input.minStops ?? 0);
   const found: Omit<Strategy, 'deltaSec' | 'optimal' | 'tied' | 'expectedSec'>[] = [];
+  // [ES12] Ritmo del coche, salida parada y vuelta de salida fría (si se dan).
+  const extra = (stops: number) => (input.paceOffsetSec ?? 0) * totalLaps + (input.startLossSec ?? 0) + stops * (input.outLapSec ?? 0);
   for (let stops = fromStops; stops <= Math.min(input.maxStops ?? MAX_STOPS, totalLaps - 1); stops++) {
     for (const seq of compoundSequences(stops + 1)) {
       if (cur && seq[0] !== cur.compound) continue;
@@ -261,7 +271,7 @@ export function optimizeStrategy(input: OptimizerInput): OptimizerResult {
       const stints = seq.map((compound, i) => { const s = { compound, fromLap: lap + 1, toLap: lap + split.laps[i], laps: split.laps[i], startAge: ages[i] }; lap += split.laps[i]; return s; });
       // [ES5] Con la posición de salida, lo que el neumático de salida gana o pierde en el tráfico de las primeras vueltas.
       const startSec = input.gridPosition !== undefined && !cur ? (startEffect(circuitId, seq[0], input.gridPosition)?.trafficSec ?? 0) : 0;
-      found.push({ stops, stints, stopLaps: stints.slice(0, -1).map(s => s.toLap), pitSec: stops * pitLossSec, startSec, totalSec: split.cost + stops * pitLossSec + fuel + startSec });
+      found.push({ stops, stints, stopLaps: stints.slice(0, -1).map(s => s.toLap), pitSec: stops * pitLossSec, startSec, totalSec: split.cost + stops * pitLossSec + fuel + startSec + extra(stops) });
     }
   }
   found.sort((a, b) => a.totalSec - b.totalSec);
@@ -323,7 +333,7 @@ export function evaluatePlan(input: OptimizerInput & { compound: TireCompound; s
   const fuel = fuelSec(totalLaps, input.fuelSecPerKg ?? TYRE_CURVES[circuitId]?.fuelSecPerKg ?? 0);
   const startSec = input.gridPosition !== undefined ? (startEffect(circuitId, stints[0].compound, input.gridPosition)?.trafficSec ?? 0) : 0;
   const stops = st.stopLaps.length;
-  const totalSec = tyres + stops * result.pitLossSec + fuel + startSec;
+  const totalSec = tyres + stops * result.pitLossSec + fuel + startSec + (input.paceOffsetSec ?? 0) * totalLaps + (input.startLossSec ?? 0) + stops * (input.outLapSec ?? 0);
   const plan = { stints, stopLaps: st.stopLaps, totalSec };
   const expectedSec = Number.isFinite(totalSec) ? expectedSecOf(plan, result.risk, result.pitLossSec, curves, totalLaps) : Infinity;
   return { totalSec, expectedSec, deltaSec: result.best ? totalSec - result.best.totalSec : 0, overCliff, missingSets: ages === null, best: result.best };
