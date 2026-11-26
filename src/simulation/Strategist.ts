@@ -1,6 +1,7 @@
 // [R25] Estratega de la IA: solo información observable (desgaste medido, combustible, vueltas restantes, estimación de
 // reincorporación, compañero, banderas y agua actual). Propone órdenes por la misma API que el jugador.
 // Umbrales: calibración del juego.
+import { tyreLifeLaps } from '../data/tyreCurves';
 import type { TireCompound } from '../types/f1';
 import type { TireInventory, TireCompliance } from './TireInventory';
 import { availableSets } from './TireInventory';
@@ -45,10 +46,17 @@ export interface StrategyState {
   lastLapWear?: number;
   healthAtLapStart?: number;
   setAtLapStart?: string;
+  /** [ES6, 26/11/2026] Planes de reserva: vueltas seguidas atascado detrás del mismo coche, y planes ya propuestos. */
+  stuckLaps?: number;
+  stuckAheadId?: number | null;
+  stuckPosition?: number;
+  backupBDone?: boolean;
+  backupCStop?: number | null;
+  backupDSet?: string | null;
 }
 
 /** Compuesto para el siguiente stint: el más blando que llega al final; si ninguno, el más duro (otra parada). */
-export function chooseCompound(lapsToEnd: number, inventory: TireInventory | undefined, compliance: TireCompliance, waterMm: number): TireCompound | null {
+export function chooseCompound(lapsToEnd: number, inventory: TireInventory | undefined, compliance: TireCompliance, waterMm: number, circuitId?: string | null): TireCompound | null {
   const has = (c: TireCompound) => !inventory || availableSets(inventory, c) > 0;
   if (waterMm > 0.3) {
     const wetOptions = (['intermediate', 'wet', 'medium'] as TireCompound[]).filter(has);
@@ -59,6 +67,7 @@ export function chooseCompound(lapsToEnd: number, inventory: TireInventory | und
   const needsSpec = !compliance.satisfied && !compliance.usedWetWeather;
   const preferred = needsSpec ? slicks.filter(c => !compliance.slickSpecs.includes(c)) : slicks;
   const pool = preferred.length ? preferred : slicks;
-  const lasting = pool.find(c => TireModel.getCompoundProperties(c).nominalLaps * 0.9 >= lapsToEnd);
+  // [ES1, 20/11/2026] La vida medida en ese circuito (antes, la nominal del compuesto, igual en todos).
+  const lasting = pool.find(c => tyreLifeLaps(c, circuitId) * 0.9 >= lapsToEnd);
   return lasting ?? pool[pool.length - 1];
 }

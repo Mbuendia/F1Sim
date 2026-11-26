@@ -6,6 +6,11 @@ import type { Driver } from '../types/f1';
 import type { CircuitSpec } from '../data/circuits';
 import { TEAMS, STARTING_GRID_ORDER } from '../data/teams';
 import { LAP_REFERENCES } from '../data/lapReferences';
+import { pitLossSecFor } from '../data/pitLoss';
+import { optimizeStrategy, riskText, startText, strategyText } from '../simulation/StrategyOptimizer';
+
+/** [ES5] Posición media de la parrilla para la ficha del circuito. */
+export const MID_GRID = 10;
 
 export const FREE_RACE_STEPS = ['equipo', 'circuito', 'resumen'] as const;
 export type FreeRaceStep = typeof FREE_RACE_STEPS[number];
@@ -82,11 +87,10 @@ export function teamCards(roster: Record<string, Driver>): TeamCard[] {
   }));
 }
 
-/** Estrategia óptima según el desgaste del asfalto (la misma regla del paddock de antes). */
-export function circuitStrategy(c: CircuitSpec): { stops: number; text: string } {
-  return c.asphaltAbrasion === 'Muy Alta' || c.asphaltAbrasion === 'Alta'
-    ? { stops: 2, text: '2 paradas (blando, medio, duro)' }
-    : { stops: 1, text: '1 parada (medio, duro)' };
+/** [ES3, 20/11/2026] Estrategia óptima del optimizador (curvas de ES1 y pérdida en boxes de ES2), con su tiempo total. */
+export function circuitStrategy(c: CircuitSpec): { stops: number; text: string; totalSec: number | null; risk: string | null } {
+  const result = optimizeStrategy({ circuitId: c.id, totalLaps: c.totalLaps }), best = result.best;
+  return best ? { stops: best.stops, text: strategyText(best), totalSec: best.totalSec, risk: riskText(result) } : { stops: 1, text: '1 parada', totalSec: null, risk: null };
 }
 
 /** Ritmo de carrera frente a la vuelta rápida (gasolina, neumáticos y tráfico). */
@@ -99,16 +103,19 @@ export const FIRST_GRAND_PRIX: Record<string, number> = {
   'marina-bay': 2008, lusail: 2021, 'yas-marina': 2009, hungaroring: 1986, 'mexico-city': 1963, montreal: 1978, austin: 2012,
 };
 
-export interface CircuitCard { laps: number; safetyCarPercent: number; pitLossSec: number; drsZones: number; strategy: string; predictedSec: number; fastestLapSec: number | null }
+export interface CircuitCard { laps: number; safetyCarPercent: number; /** [ES4] Carreras con VSC (%). */ vscPercent: number; /** [ES4] Frase del riesgo de Safety Car. */ riskText: string | null; /** [ES5] Frase de la salida desde una posición media. */ startText: string | null; pitLossSec: number; drsZones: number; strategy: string; predictedSec: number; fastestLapSec: number | null }
 
 /** Lo que sirve para decidir en el paso Circuito. El tiempo previsto: vueltas a ritmo de carrera y las paradas. */
 export function circuitCard(c: CircuitSpec): CircuitCard {
   const ref = LAP_REFERENCES[c.id]?.referenceLapSec ?? null;
   const lap = ref ?? c.lapLengthMeters / 60; // sin referencia, a unos 216 km/h de media
   const strategy = circuitStrategy(c);
+  // [ES2] La pérdida que mide el motor (la misma que usa el muro en carrera).
+  const pitLossSec = pitLossSecFor(c.id, c.pitLaneTimeLossSec);
   return {
-    laps: c.totalLaps, safetyCarPercent: c.safetyCarProbabilityPercent, pitLossSec: c.pitLaneTimeLossSec, drsZones: c.drsZones,
-    strategy: strategy.text, predictedSec: Math.round(c.totalLaps * lap * RACE_PACE + strategy.stops * c.pitLaneTimeLossSec), fastestLapSec: ref,
+    laps: c.totalLaps, safetyCarPercent: c.safetyCarProbabilityPercent, vscPercent: c.virtualSafetyCarProbabilityPercent, riskText: strategy.risk, startText: startText(c.id, MID_GRID), pitLossSec, drsZones: c.drsZones,
+    // [ES3] El tiempo previsto, el de la estrategia óptima; sin curvas, la cuenta de antes.
+    strategy: strategy.text, predictedSec: Math.round(strategy.totalSec ?? c.totalLaps * lap * RACE_PACE + strategy.stops * pitLossSec), fastestLapSec: ref,
   };
 }
 

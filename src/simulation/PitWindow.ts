@@ -3,7 +3,11 @@
 // frente a los propios; (3) aviso de riesgo de undercut. Todo sale de lo que se ve en pista ahora mismo (dónde está
 // cada coche, qué compuesto lleva y cuántas vueltas): no usa el futuro ni el desgaste interno de los rivales.
 // Márgenes, umbrales y vidas de referencia son diseño del juego.
+import { tyreLifeLaps, tyreLifeTable } from '../data/tyreCurves';
 import type { TireCompound } from '../types/f1';
+import { TYRE_CURVES } from '../data/tyreCurves';
+import { undercutGain } from './Undercut';
+import type { DryCompound } from './StrategyOptimizer';
 
 export const PIT_WINDOW = {
   /** Puestos de diferencia admitidos entre la predicción y el puesto real tras la parada, en carrera en verde. */
@@ -15,7 +19,8 @@ export const PIT_WINDOW = {
 };
 
 /** Vueltas que suele durar un juego de cada compuesto: referencia para comparar, no el desgaste de ningún coche. */
-export const TYRE_LIFE_LAPS: Record<TireCompound, number> = { soft: 16, medium: 26, hard: 38, intermediate: 28, wet: 28 };
+// [ES1, 20/11/2026] Una sola tabla de vida: la medida con el motor (data/tyreCurves.ts). Sin circuito, la media de los 23.
+export const TYRE_LIFE_LAPS: Record<TireCompound, number> = tyreLifeTable();
 
 export interface TrackCar { id: number; code: string; progress: number; running: boolean }
 export interface PitWindow {
@@ -55,18 +60,25 @@ export function pitWindowText(window: PitWindow | null): string | null {
 export interface TyreInfo { code: string; compound: TireCompound; laps: number; /** Vueltas que le quedan según la vida de referencia de su compuesto. */ lifeLaps: number }
 
 /** Lo que se ve de los neumáticos de un coche: compuesto, vueltas que llevan y vida estimada. */
-export function tyreInfo(car: { code: string; compound: TireCompound; laps: number }): TyreInfo {
-  return { code: car.code, compound: car.compound, laps: car.laps, lifeLaps: Math.max(0, (TYRE_LIFE_LAPS[car.compound] ?? 0) - car.laps) };
+export function tyreInfo(car: { code: string; compound: TireCompound; laps: number }, circuitId?: string | null): TyreInfo {
+  return { code: car.code, compound: car.compound, laps: car.laps, lifeLaps: Math.max(0, tyreLifeLaps(car.compound, circuitId) - car.laps) };
 }
 
 /**
  * Aviso de undercut, o null si no hay riesgo: el coche de detrás está cerca y las dos gomas ya tienen vueltas, así que
  * si para antes puede salir por delante; si ya ha entrado a boxes, toca cubrir su parada.
  */
-export function undercutRisk(input: { gapBehindSec: number | null; own: TyreInfo; behind: TyreInfo | null; behindInPit: boolean }): string | null {
+export function undercutRisk(input: { gapBehindSec: number | null; own: TyreInfo; behind: TyreInfo | null; behindInPit: boolean; /** [ES9, 26/11/2026] Para decir cuánto gana. */ circuitId?: string | null; nextCompound?: TireCompound }): string | null {
   const { gapBehindSec, own, behind } = input;
   if (!behind || gapBehindSec === null || gapBehindSec > PIT_WINDOW.UNDERCUT_GAP_SEC || own.laps < PIT_WINDOW.UNDERCUT_MIN_LAPS) return null;
   if (input.behindInPit) return `${behind.code} ha parado: cubre su parada o puede salir por delante`;
   if (behind.laps < PIT_WINDOW.UNDERCUT_MIN_LAPS) return null;
-  return `Riesgo de undercut: ${behind.code} a ${decimal(gapBehindSec)} s con gomas de ${behind.laps} vueltas`;
+  const base = `Riesgo de undercut: ${behind.code} a ${decimal(gapBehindSec)} s con gomas de ${behind.laps} vueltas`;
+  // [ES9, 26/11/2026] Cuánto ganaría si para ahora y tú a la vuelta siguiente (curvas de ES1; los dos con el neumático que te toca).
+  const curves = input.circuitId ? TYRE_CURVES[input.circuitId]?.compounds : undefined;
+  const dry = (c: TireCompound | undefined): c is DryCompound => c === 'soft' || c === 'medium' || c === 'hard';
+  const next = input.nextCompound ?? own.compound;
+  if (!curves || !dry(own.compound) || !dry(next)) return base;
+  const gain = undercutGain({ waiterCompound: own.compound, waiterAge: own.laps, stopperNew: next, waiterNew: next, laps: 1 }, curves);
+  return gain === null ? base : `${base} (si para ahora y tú a la siguiente, te gana ${decimal(Math.max(0, gain))} s)`;
 }

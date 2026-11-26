@@ -181,20 +181,21 @@ export class RejoinModel {
     const ghost = { p: from, v: startSpeed };
     const pit = { p: from, v: startSpeed };
     const box = PitStopModel.getBoxProgress(car as CarState, track);
-    const limit = PitStopModel.PIT_SPEED_LIMIT_KMH, limitMs = limit / 3.6;
+    const limit = PitStopModel.speedLimit(track);
     let stopped = 0, served = false, inLane = false, done = false, t = 0, ghostAt: number | null = null, pitAt: number | null = null;
     while ((ghostAt === null || pitAt === null) && t < 600) {
       this.stepOnTrack(track, aero, pace, capKmh, ghost);
       if (!inLane && !done) {
         const toLimitM = (entry - pit.p) * L + limitStart * laneMeters;
-        const preCap = Math.sqrt(limitMs * limitMs + 2 * 45 * Math.max(0, toLimitM - 5)) * 3.6;
+        const preCap = PitStopModel.lineBrakeKmh(toLimitM, limit);
         this.stepOnTrack(track, aero, pace, capKmh === null ? preCap : Math.min(capKmh, preCap), pit);
         if (pit.p >= entry) inLane = true;
       } else if (inLane) {
         const laneProgress = Math.min(1, (pit.p - entry) / len);
         if (laneProgress >= 1) { inLane = false; done = true; }
         else if (laneProgress < box) {
-          if (laneProgress < limitStart) pit.v = Math.max(limit, pit.v - DT * PitStopModel.MAX_BRAKE_KMH_S);
+          // [ES2] Como el motor: en la vía de entrada acelera y frena a tiempo para la línea (PitStopModel.approachSpeed).
+          if (laneProgress < limitStart) pit.v = PitStopModel.approachSpeed(pit.v, DT, (limitStart - laneProgress) * laneMeters, limit, capKmh);
           else pit.v = Math.max(Math.min(limit, pit.v), Math.min(limit, pit.v - DT * PitStopModel.MAX_BRAKE_KMH_S));
           const toBox = Math.max(3, Math.sqrt(2 * PitStopModel.BOX_BRAKE_MS2 * Math.max(0, (box - laneProgress) * laneMeters)) * 3.6);
           pit.v = Math.min(pit.v, Math.max(toBox, pit.v - DT * PitStopModel.MAX_BRAKE_KMH_S));

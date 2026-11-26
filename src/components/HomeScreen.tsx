@@ -55,6 +55,7 @@ import { FlagIcon } from './FlagIcon';
 import { F1WheelSvg } from './F1WheelSvg';
 import { Play, MapPin, History, Sparkles, Wrench, Users, ExternalLink, Flag, CheckCircle2, Zap, RotateCw, RotateCcw, Globe, Disc, Gauge, Award, Flame, Target, Activity, TrendingUp, Compass, Layers, ShieldAlert, Trophy, Rocket, Wind, Settings, CircleDot, Medal, TrendingDown, Timer, CloudRain, AlertTriangle, CarFront, BarChart3, Shield, Ruler, RefreshCw, Siren, FlaskConical, Mountain } from 'lucide-react';
 import { animate } from 'animejs';
+import { pitLossSecFor, pitSpeedKmhFor } from '../data/pitLoss';
 
 
 interface HomeScreenProps {
@@ -1072,7 +1073,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                       <div className={styles.specs2ColGrid}>
                         <div className={styles.specItem}>
                           <span className={styles.specItemLabel}><Timer size={14} aria-hidden="true" /> Pérdida en Pit Lane</span>
-                          <span className={styles.specItemVal} style={{ color: '#ffd700' }}>{inspectedCircuit.pitLaneTimeLossSec || 22.5}s</span>
+                          <span className={styles.specItemVal} style={{ color: '#ffd700' }}>{pitLossSecFor(inspectedCircuit.id, inspectedCircuit.pitLaneTimeLossSec || 22.5)}s</span>
                         </div>
                         <div className={styles.specItem}>
                           <span className={styles.specItemLabel}><Flag size={14} aria-hidden="true" /> Distancia Total</span>
@@ -1080,7 +1081,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                         </div>
                         <div className={styles.specItem}>
                           <span className={styles.specItemLabel}><Siren size={14} aria-hidden="true" /> Probabilidad SC</span>
-                          <span className={styles.specItemVal} style={{ color: '#f97316' }}>{inspectedCircuit.safetyCarProbabilityPercent || 50}%</span>
+                          <span className={styles.specItemVal} style={{ color: '#f97316' }}>{inspectedCircuit.safetyCarProbabilityPercent}% · VSC {inspectedCircuit.virtualSafetyCarProbabilityPercent}%</span>
                         </div>
                         <div className={styles.specItem}>
                           <span className={styles.specItemLabel}><Users size={14} aria-hidden="true" /> Espectadores</span>
@@ -1136,7 +1137,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                       <div className={styles.strategyHighlightBox} style={{ background: 'rgba(56,189,248,0.08)', borderColor: 'rgba(56,189,248,0.3)' }}>
                         <span className={styles.strategyHighlightTitle} style={{ color: '#38bdf8' }}>PÉRDIDA ESTIMADA EN PIT LANE</span>
                         <span className={styles.strategyHighlightVal}>
-                          <Timer size={14} aria-hidden="true" /> ~{inspectedCircuit.pitLaneTimeLossSec || 22.5} segundos totales (Límite: 80 km/h)
+                          <Timer size={14} aria-hidden="true" /> ~{pitLossSecFor(inspectedCircuit.id, inspectedCircuit.pitLaneTimeLossSec || 22.5)} segundos totales (Límite: {pitSpeedKmhFor(inspectedCircuit.id)} km/h)
                         </span>
                       </div>
                       <div className={styles.strategyHighlightBox} style={{ background: 'rgba(34,197,94,0.08)', borderColor: 'rgba(34,197,94,0.3)' }}>
@@ -1183,7 +1184,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
                       <div className={styles.specItem}>
                         <span className={styles.specItemLabel}><Siren size={14} aria-hidden="true" /> Prob. Safety Car</span>
-                        <span className={styles.specItemVal} style={{ color: '#f97316' }}>{inspectedCircuit.safetyCarProbabilityPercent || 50}%</span>
+                        <span className={styles.specItemVal} style={{ color: '#f97316' }}>{inspectedCircuit.safetyCarProbabilityPercent}% · VSC {inspectedCircuit.virtualSafetyCarProbabilityPercent}%</span>
                       </div>
 
                       <div className={styles.specItem}>

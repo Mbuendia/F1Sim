@@ -807,7 +807,7 @@ export const App: React.FC<{ startAt?: 'menu' }> = ({ startAt }) => {
     const setups = allSetups();
     const mine = playerDriverIds(roster, selectedDriverId);
     const result = runPractice({
-      round: round.round, seed: newRaceSeed(), sprintWeekend: isSprintVenue(round.circuitId), lapLengthMeters: simulation.activeTrack.lapLengthMeters,
+      round: round.round, seed: newRaceSeed(), sprintWeekend: isSprintVenue(round.circuitId), lapLengthMeters: simulation.activeTrack.lapLengthMeters, circuitId: round.circuitId,
       programs: Object.fromEntries(mine.map(id => [id, practicePrograms[id] ?? 'setup'])),
       drivers: simulation.cars.map(car => ({
         driverId: car.driver.id, code: car.driver.code, teamId: car.driver.teamId, simulatorLevel: levelOf(management.facilities, car.driver.teamId, 'simulador'),
@@ -1926,9 +1926,9 @@ export const App: React.FC<{ startAt?: 'menu' }> = ({ startAt }) => {
       </header>
 
       {planOpen && !autoRace && (
-        <RacePlanScreen role={sharedRef.current ? 'anfitrion' : 'solo'} totalLaps={simulation.totalLaps} onConfirm={handlePlanConfirm}
+        <RacePlanScreen role={sharedRef.current ? 'anfitrion' : 'solo'} totalLaps={simulation.totalLaps} circuitId={simulation.circuitId} field={simulation.cars.map(c => ({ code: c.driver.code, grid: c.currentPosition }))} weather={{ forecast: simulation.getRainForecast(), waterMm: simulation.weatherModel.meanDepth(), trackTempC: simulation.weather.trackTempCelsius }} onConfirm={handlePlanConfirm}
           look={teamCars[0] ? { team: teamCars[0].team, number: teamCars[0].driver.number, compound: teamCars[0].tires.compound } : undefined}
-          cars={teamCars.map(c => ({ id: c.id, code: c.driver.code, number: c.driver.number, color: c.team.color, compound: c.tires.compound, inventory: c.tireInventory ?? null }))} />
+          cars={teamCars.map(c => ({ id: c.id, code: c.driver.code, number: c.driver.number, color: c.team.color, compound: c.tires.compound, inventory: c.tireInventory ?? null, grid: c.currentPosition || undefined, wetPoints: c.driver.development?.wet ?? 0 }))} />
       )}
       {leaveAsk && (
         <LeaveRaceDialog kind={sharedRef.current ? 'anfitrion' : mode === 'career' ? 'profesional' : 'libre'} saved={Boolean(saveStore)}

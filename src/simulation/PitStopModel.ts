@@ -28,6 +28,33 @@ export class PitStopModel {
     return currentKmh > cap ? Math.max(cap, currentKmh - dt * this.MAX_BRAKE_KMH_S) : Math.min(cap, currentKmh + dt * 200);
   }
 
+  /** [ES2, 20/11/2026] Límite del pit lane en un circuito: el suyo si lo tiene (Mónaco, 60 km/h), si no el del reglamento. */
+  static speedLimit(track?: Pick<TrackDefinition, 'pitSpeedKmh'>): number {
+    return track?.pitSpeedKmh ?? this.PIT_SPEED_LIMIT_KMH;
+  }
+
+  /** Deceleración (m/s²) con la que se llega a la primera línea del limitador justo a la velocidad límite. */
+  static readonly LINE_BRAKE_MS2 = 30;
+
+  /** Velocidad máxima a `toLineM` metros de la primera línea para cruzarla al límite. */
+  static lineBrakeKmh(toLineM: number, limitKmh: number): number {
+    const limitMs = limitKmh / 3.6;
+    return Math.sqrt(limitMs * limitMs + 2 * this.LINE_BRAKE_MS2 * Math.max(0, toLineM - 5)) * 3.6;
+  }
+
+  /**
+   * [ES2, 20/11/2026] En la vía de entrada, antes de la primera línea: el coche puede acelerar como a la salida (sin pasar de la
+   * velocidad del VSC o el Safety Car, `capKmh`) y frena a tiempo para cruzar la línea al límite. Antes frenaba al
+   * límite nada más entrar, y en los carriles con la vía de entrada larga (Barcelona, Interlagos) perdía de más.
+   */
+  static approachSpeed(currentKmh: number, dt: number, toLineM: number, limitKmh: number, capKmh: number | null): number {
+    const cap = capKmh ?? 260;
+    const free = currentKmh > cap ? Math.max(cap, currentKmh - dt * this.MAX_BRAKE_KMH_S) : Math.min(cap, currentKmh + dt * 200);
+    // Sin frenar más de lo que puede (MAX_BRAKE_KMH_S): si entra demasiado rápido, cruza la línea con exceso.
+    const brakeTo = Math.max(limitKmh, this.lineBrakeKmh(toLineM, limitKmh));
+    return Math.min(free, Math.max(brakeTo, currentKmh - dt * this.MAX_BRAKE_KMH_S));
+  }
+
   /** Longitud del pit lane medida sobre el trazado (m). */
   static laneLengthMeters(track: Pick<TrackDefinition, 'pitEntryT' | 'pitExitT' | 'lapLengthMeters'>): number {
     const len = track.pitExitT > track.pitEntryT ? track.pitExitT - track.pitEntryT : 1 - track.pitEntryT + track.pitExitT;
@@ -186,8 +213,9 @@ export class PitStopModel {
         let dtDistance = pit.entryProgress !== undefined ? Math.max(0, car.progress - pit.entryProgress) : 0;
         pit.pitLaneProgress = Math.min(1, dtDistance / pitLength);
         const { start: dtStart, end: dtEnd } = this.limitFractions(dtLaneMeters, track);
-        if (pit.pitLaneProgress < dtStart) car.currentSpeedKmh = Math.max(this.PIT_SPEED_LIMIT_KMH, car.currentSpeedKmh - dt * this.MAX_BRAKE_KMH_S);
-        else if (pit.pitLaneProgress < dtEnd) car.currentSpeedKmh = Math.min(this.PIT_SPEED_LIMIT_KMH, Math.max(car.currentSpeedKmh, 20));
+        const scCap = SafetyCarModel.getMaxAllowedSpeed((raceFlagState ?? 'green') as never, (scMode ?? 'idle') as never);
+        if (pit.pitLaneProgress < dtStart) car.currentSpeedKmh = this.approachSpeed(car.currentSpeedKmh, dt, (dtStart - pit.pitLaneProgress) * dtLaneMeters, this.speedLimit(track), scCap ?? null);
+        else if (pit.pitLaneProgress < dtEnd) car.currentSpeedKmh = Math.min(this.speedLimit(track), Math.max(car.currentSpeedKmh, 20));
         else car.currentSpeedKmh = this.exitSpeed(car.currentSpeedKmh, dt, raceFlagState, scMode);
         return true;
       }
@@ -216,9 +244,10 @@ export class PitStopModel {
         // [R08] Entrando al cajón: frenada real hasta la línea del limitador, limitador hasta el cajón y frenada final.
         const laneMeters = pitLength * lapDistanceMeters;
         const { start } = this.limitFractions(laneMeters, track);
-        const limit = this.PIT_SPEED_LIMIT_KMH;
+        const limit = this.speedLimit(track);
         if (pit.pitLaneProgress < start) {
-          car.currentSpeedKmh = Math.max(limit, car.currentSpeedKmh - dt * this.MAX_BRAKE_KMH_S);
+          const scCap = SafetyCarModel.getMaxAllowedSpeed((raceFlagState ?? 'green') as never, (scMode ?? 'idle') as never);
+          car.currentSpeedKmh = this.approachSpeed(car.currentSpeedKmh, dt, (start - pit.pitLaneProgress) * laneMeters, limit, scCap ?? null);
         } else {
           if (!pit.limitStartChecked) {
             pit.limitStartChecked = true;
@@ -367,12 +396,12 @@ export class PitStopModel {
         if (pit.pitLaneProgress >= end) {
           car.currentSpeedKmh = this.exitSpeed(car.currentSpeedKmh, dt, raceFlagState, scMode);
         } else {
-          if (car.currentSpeedKmh > this.PIT_SPEED_LIMIT_KMH + 0.5 && !pit.limitEndFlagged) {
+          if (car.currentSpeedKmh > this.speedLimit(track) + 0.5 && !pit.limitEndFlagged) {
             pit.limitEndFlagged = true;
-            (pit.infractions ??= []).push({ type: 'exceso-velocidad', line: 'fin', overKmh: car.currentSpeedKmh - this.PIT_SPEED_LIMIT_KMH, lap: car.currentLap });
+            (pit.infractions ??= []).push({ type: 'exceso-velocidad', line: 'fin', overKmh: car.currentSpeedKmh - this.speedLimit(track), lap: car.currentLap });
           }
           // Aceleración hasta el limitador (80 km/h)
-          car.currentSpeedKmh = Math.min(this.PIT_SPEED_LIMIT_KMH, car.currentSpeedKmh + dt * 100);
+          car.currentSpeedKmh = Math.min(this.speedLimit(track), car.currentSpeedKmh + dt * 100);
         }
 
         if (pit.pitLaneProgress >= 1.0) {

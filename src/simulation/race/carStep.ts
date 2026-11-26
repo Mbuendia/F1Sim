@@ -518,8 +518,7 @@ export function stepCar(sim: RaceSimulation, car: CarState, ctx: CarStepContext)
     const laneMeters = PitStopModel.laneLengthMeters(sim.activeTrack);
     const toLimitM = lapsToPitEntry(sim.activeTrack, car.progress) * lapDistanceMeters + PitStopModel.limitFractions(laneMeters, sim.activeTrack).start * laneMeters;
     if (toLimitM < 600) {
-      const limitMs = PitStopModel.PIT_SPEED_LIMIT_KMH / 3.6;
-      targetKmh = Math.min(targetKmh, Math.sqrt(limitMs * limitMs + 2 * 45 * Math.max(0, toLimitM - 5)) * 3.6);
+      targetKmh = Math.min(targetKmh, PitStopModel.lineBrakeKmh(toLimitM, PitStopModel.speedLimit(sim.activeTrack)));
     }
   }
 

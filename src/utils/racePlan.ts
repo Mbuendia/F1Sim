@@ -3,6 +3,7 @@
 // propuesta inicial es sencilla (no es la estrategia óptima, que es del Sprint 16): una parada hacia el 45 % de la carrera.
 import type { TireCompound } from '../types/f1';
 import type { EngineOrder } from '../engine/EngineHost';
+import type { Strategy } from '../simulation/StrategyOptimizer';
 
 export type PlanPace = 'save' | 'balanced' | 'push';
 export interface PlannedStop { lap: number; compound: TireCompound }
@@ -11,10 +12,13 @@ export interface CarPlan { compound: TireCompound; stops: PlannedStop[]; pace: P
 export const DRY: TireCompound[] = ['soft', 'medium', 'hard'];
 export const ALL_COMPOUNDS: TireCompound[] = ['soft', 'medium', 'hard', 'intermediate', 'wet'];
 
-/** Vueltas de las paradas repartidas a lo largo de la carrera (una: 45 %; dos: 33 % y 66 %). */
-export function stopLaps(count: 0 | 1 | 2, totalLaps: number): number[] {
+/** Número de paradas que se pueden planear ([ES3, 20/11/2026] hasta tres, las que prueba el optimizador). */
+export type StopCount = 0 | 1 | 2 | 3;
+
+/** Vueltas de las paradas repartidas a lo largo de la carrera (una: 45 %; dos: 33 % y 66 %; tres: 25 %, 50 % y 75 %). */
+export function stopLaps(count: StopCount, totalLaps: number): number[] {
   const at = (f: number) => Math.min(totalLaps - 1, Math.max(1, Math.round(totalLaps * f)));
-  return count === 0 ? [] : count === 1 ? [at(0.45)] : [at(0.33), at(0.66)];
+  return count === 0 ? [] : count === 1 ? [at(0.45)] : count === 2 ? [at(0.33), at(0.66)] : [at(0.25), at(0.5), at(0.75)];
 }
 
 /** El compuesto de seco que sigue al de salida (para variar, como piden las reglas en seco). */
@@ -27,9 +31,29 @@ export function defaultPlan(current: TireCompound, totalLaps: number): CarPlan {
 }
 
 /** Cambia el número de paradas conservando los compuestos que ya hubiera. */
-export function withStopCount(plan: CarPlan, count: 0 | 1 | 2, totalLaps: number): CarPlan {
+export function withStopCount(plan: CarPlan, count: StopCount, totalLaps: number): CarPlan {
   const laps = stopLaps(count, totalLaps);
   return { ...plan, stops: laps.map((lap, i) => ({ lap, compound: plan.stops[i]?.compound ?? nextDry(plan.compound) })) };
+}
+
+/** [ES3, 20/11/2026] Pasa una estrategia del optimizador al plan: neumático de salida, vuelta y compuesto de cada parada. */
+export function applyStrategy(plan: CarPlan, strategy: Pick<Strategy, 'stints' | 'stopLaps'>): CarPlan {
+  return { ...plan, delegated: false, compound: strategy.stints[0].compound, stops: strategy.stopLaps.map((lap, i) => ({ lap, compound: strategy.stints[i + 1].compound })) };
+}
+
+/** [ES9, 26/11/2026] El rival de referencia: el de delante en parrilla (el de detrás si se sale primero). */
+export function rivalOf<T extends { grid: number }>(field: T[], grid: number): T | null {
+  const want = grid <= 1 ? 2 : grid - 1;
+  return field.find(c => c.grid === want) ?? null;
+}
+
+/**
+ * [ES9, 26/11/2026] «Parar N vueltas antes (offset negativo) o después que el rival»: la primera parada en la vuelta de la suya más
+ * `offset`, sin cruzarse con la siguiente. Sin paradas, se añade una (al compuesto que sigue al de salida).
+ */
+export function stopRelativeTo(plan: CarPlan, rivalStopLap: number, offset: number, totalLaps: number): CarPlan {
+  const base = plan.stops.length ? plan : { ...plan, stops: [{ lap: rivalStopLap, compound: nextDry(plan.compound) }] };
+  return { ...moveStop(base, 0, rivalStopLap + offset, totalLaps), delegated: false };
 }
 
 /** Mueve la vuelta de una parada sin salirse de la carrera ni cruzarse con la otra. */

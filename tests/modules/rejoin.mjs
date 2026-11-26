@@ -26,7 +26,9 @@ export default async function run({assert, server}) {
             // autorización del usuario el 01/10/2026; validación predicción/medida en tests/modules/rejoin-loss.mjs).
             // R47 (07/10/2026, autorizado por el usuario): con los coches al ritmo real en pista, parar cuesta 35,6 s; el pit
             // lane no cambia. Rango 34,5–36,5 s.
-            assert(projection.timeLossSec >= 34.5 && projection.timeLossSec <= 36.5, 'Q13: El predictor base usa la pérdida simulada de boxes y el servicio medio', `${projection.timeLossSec.toFixed(2)} s`);
+            // [ES2, autorizado por el usuario el 20/11/2026 («Sí, cámbialos»)] Con el pit lane calibrado (líneas a 278 m), parar en Barcelona cuesta 22,4 s, la cifra real.
+            // Rango 21,5–23,5 s.
+            assert(projection.timeLossSec >= 21.5 && projection.timeLossSec <= 23.5, 'Q13: El predictor base usa la pérdida simulada de boxes y el servicio medio', `${projection.timeLossSec.toFixed(2)} s`);
           }
         }
 

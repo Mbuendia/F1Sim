@@ -1,0 +1,165 @@
+{
+ "austin": {
+  "limitLineM": 165,
+  "targetSec": 21.6,
+  "lossSec": 21.6,
+  "vscLossSec": 18.2,
+  "scLossSec": 13.9
+ },
+ "bahrain": {
+  "limitLineM": 105,
+  "targetSec": 23.9,
+  "lossSec": 23.9,
+  "vscLossSec": 17,
+  "scLossSec": 12.6
+ },
+ "baku": {
+  "limitLineM": 106,
+  "targetSec": 21.2,
+  "lossSec": 21.2,
+  "vscLossSec": 16,
+  "scLossSec": 12.2
+ },
+ "barcelona": {
+  "limitLineM": 278,
+  "targetSec": 22.4,
+  "lossSec": 22.4,
+  "vscLossSec": 15.8,
+  "scLossSec": 11.8
+ },
+ "hungaroring": {
+  "limitLineM": 242,
+  "targetSec": 21.4,
+  "lossSec": 21.4,
+  "vscLossSec": 18.3,
+  "scLossSec": 13.7
+ },
+ "interlagos": {
+  "limitLineM": 382,
+  "targetSec": 23.5,
+  "lossSec": 23.5,
+  "vscLossSec": 17.8,
+  "scLossSec": 13.7
+ },
+ "jeddah": {
+  "limitLineM": 135,
+  "targetSec": 20.8,
+  "lossSec": 20.8,
+  "vscLossSec": 16,
+  "scLossSec": 12.3
+ },
+ "las-vegas": {
+  "limitLineM": 0,
+  "targetSec": 21.5,
+  "lossSec": 21,
+  "vscLossSec": 15.6,
+  "scLossSec": 11.9
+ },
+ "lusail": {
+  "limitLineM": 367,
+  "targetSec": 22,
+  "lossSec": 22,
+  "vscLossSec": 16.3,
+  "scLossSec": 12.2
+ },
+ "marina-bay": {
+  "limitLineM": 124,
+  "speedKmh": 60,
+  "targetSec": 29.5,
+  "lossSec": 29.5,
+  "vscLossSec": 26.1,
+  "scLossSec": 22
+ },
+ "melbourne": {
+  "limitLineM": 110,
+  "targetSec": 21,
+  "lossSec": 21,
+  "vscLossSec": 15.9,
+  "scLossSec": 11.9
+ },
+ "mexico-city": {
+  "limitLineM": 130,
+  "targetSec": 22.5,
+  "lossSec": 22.5,
+  "vscLossSec": 16.7,
+  "scLossSec": 12.4
+ },
+ "miami": {
+  "limitLineM": 86,
+  "targetSec": 22.1,
+  "lossSec": 22.1,
+  "vscLossSec": 17.5,
+  "scLossSec": 13.3
+ },
+ "monaco": {
+  "limitLineM": 0,
+  "speedKmh": 60,
+  "targetSec": 22,
+  "lossSec": 21,
+  "vscLossSec": 18.2,
+  "scLossSec": 15.6
+ },
+ "montreal": {
+  "limitLineM": 130,
+  "targetSec": 18.5,
+  "lossSec": 18.5,
+  "vscLossSec": 16,
+  "scLossSec": 12.7
+ },
+ "monza": {
+  "limitLineM": 104,
+  "targetSec": 24.1,
+  "lossSec": 24.1,
+  "vscLossSec": 16.5,
+  "scLossSec": 12.3
+ },
+ "shanghai": {
+  "limitLineM": 109,
+  "targetSec": 22.9,
+  "lossSec": 22.9,
+  "vscLossSec": 17,
+  "scLossSec": 12.6
+ },
+ "silverstone": {
+  "limitLineM": 367,
+  "targetSec": 20.5,
+  "lossSec": 20.5,
+  "vscLossSec": 16.1,
+  "scLossSec": 12.5
+ },
+ "spa": {
+  "limitLineM": 33,
+  "targetSec": 21.8,
+  "lossSec": 21.8,
+  "vscLossSec": 18.1,
+  "scLossSec": 13.7
+ },
+ "spielberg": {
+  "limitLineM": 234,
+  "targetSec": 20.2,
+  "lossSec": 20.2,
+  "vscLossSec": 17.2,
+  "scLossSec": 13.2
+ },
+ "suzuka": {
+  "limitLineM": 180,
+  "targetSec": 22.8,
+  "lossSec": 22.8,
+  "vscLossSec": 16.6,
+  "scLossSec": 12.3
+ },
+ "yas-marina": {
+  "limitLineM": 0,
+  "targetSec": 22.6,
+  "lossSec": 21,
+  "vscLossSec": 17.9,
+  "scLossSec": 13.5
+ },
+ "zandvoort": {
+  "limitLineM": 112,
+  "targetSec": 21,
+  "lossSec": 21,
+  "vscLossSec": 16.4,
+  "scLossSec": 12.7
+ }
+}

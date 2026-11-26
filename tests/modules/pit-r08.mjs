@@ -37,7 +37,9 @@ export default async function run({ server, assert, test }) {
     assert(normal.maxDecel <= 50 + 1e-6, 'R08: deceleración ≤ 50 m/s² al entrar', `${normal.maxDecel.toFixed(2)} m/s²`);
     // Fixture corregido con autorización del usuario (01/10/2026): la orden se compromete 400 m antes y, en esa misma
     // vuelta, el coche aparece 0,5 m antes de la entrada a 330 km/h, sin margen para frenar.
-    const fastSim = make('barcelona', 1), fastCar = fastSim.cars[0];
+    // [ES2, autorizado por el usuario el 20/11/2026 («Sí, cámbialos»)] En Barcelona la línea está ahora a 278 m de la entrada y al coche le da tiempo a frenar; el caso se hace
+    // en Las Vegas, con la línea calibrada en la misma entrada del carril.
+    const fastSim = make('las-vegas', 1), fastCar = fastSim.cars[0];
     const pf = before(fastSim, 400);
     Object.assign(fastCar, { progress: pf, trackT: pf % 1, currentLap: 2, currentSpeedKmh: 250 });
     fastSim.setSeed(8); fastSim.setFixedStep(0.02);

@@ -4,6 +4,8 @@
 //  2. Mismas métricas a 30/144 FPS y x1/x16 que a 60 FPS x1.
 //  3. Precisión de cruce ≤ 1 ms en un fixture analítico de frenada.
 //  4. Métricas iguales a la baseline (exactas las discretas; 1e-6 relativo las continuas).
+// [ES2, autorizado por el usuario el 20/11/2026 («Sí, cámbialos»)] Baseline reescrita con --update: el pit lane calibrado
+// cambia la parada de Barcelona y Mónaco (en Barcelona el paso por el carril baja de 50,1 s a 43,3 s).
 import { readFileSync } from 'node:fs';
 import { createBench, REFERENCE_SCENARIOS, OVERTAKE_SCENARIOS, ALL_SCENARIOS, compareToBaseline, BASELINE_PATH } from '../support/bench.mjs';
 

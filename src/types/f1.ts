@@ -238,6 +238,9 @@ export interface PitStopState {
   plannedStops?: { lap: number; compound: TireCompound | null }[];
   /** [OF4] Orden de boxes que ha salido del programa (para saber si una parada era la programada). */
   planOrderId?: string;
+  /** [ES11, 26/11/2026] Plan de la IA hecho con el optimizador antes de la salida, y su estilo. */
+  aiPlan?: boolean;
+  planStyle?: 'optima' | 'alternativa' | 'desfase' | 'conservadora';
   /** [R08] Contadores de la parada en curso. */
   laneTimer?: number;
   releaseHoldSec?: number;

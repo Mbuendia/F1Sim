@@ -1,0 +1,1566 @@
+{
+ "version": 1,
+ "grid": 10,
+ "circuits": {
+  "monaco": {
+   "totalLaps": 78,
+   "calibration": {
+    "paceOffsetSec": 0.195,
+    "startLossSec": 3.698,
+    "outLapSec": 0.591
+   },
+   "strategies": [
+    {
+     "rank": 1,
+     "text": "3 paradas (medio → medio → blando → blando, vueltas 24, 48, 63)",
+     "plan": {
+      "compound": "medium",
+      "stops": [
+       {
+        "lap": 24,
+        "compound": "medium"
+       },
+       {
+        "lap": 48,
+        "compound": "soft"
+       },
+       {
+        "lap": 63,
+        "compound": "soft"
+       }
+      ]
+     },
+     "alone": {
+      "predictedSec": 5790.45,
+      "raceSec": 5794.45,
+      "diffSec": 4,
+      "position": 1,
+      "stopLaps": [
+       24,
+       48,
+       63
+      ],
+      "finished": true
+     },
+     "field": [
+      {
+       "seed": 11,
+       "predictedSec": 5789.11,
+       "raceSec": 5749.7,
+       "diffSec": -39.41,
+       "position": 9,
+       "stopLaps": [
+        24,
+        48,
+        63
+       ],
+       "finished": true
+      },
+      {
+       "seed": 23,
+       "predictedSec": 5789.11,
+       "raceSec": 5750.65,
+       "diffSec": -38.46,
+       "position": 9,
+       "stopLaps": [
+        24,
+        48,
+        63
+       ],
+       "finished": true
+      },
+      {
+       "seed": 37,
+       "predictedSec": 5789.11,
+       "raceSec": 5806.9,
+       "diffSec": 17.79,
+       "position": 10,
+       "stopLaps": [
+        24,
+        48,
+        63
+       ],
+       "finished": true
+      },
+      {
+       "seed": 51,
+       "predictedSec": 5789.11,
+       "raceSec": 6390.55,
+       "diffSec": 601.44,
+       "position": 1,
+       "stopLaps": [
+        24,
+        48,
+        63
+       ],
+       "finished": true
+      },
+      {
+       "seed": 61,
+       "predictedSec": 5789.11,
+       "raceSec": 6296.5,
+       "diffSec": 507.39,
+       "position": 2,
+       "stopLaps": [
+        24,
+        48,
+        63
+       ],
+       "finished": true
+      },
+      {
+       "seed": 73,
+       "predictedSec": 5789.11,
+       "raceSec": 5744.7,
+       "diffSec": -44.41,
+       "position": 9,
+       "stopLaps": [
+        24,
+        48,
+        63
+       ],
+       "finished": true
+      },
+      {
+       "seed": 89,
+       "predictedSec": 5789.11,
+       "raceSec": 5697.45,
+       "diffSec": -91.66,
+       "position": 20,
+       "stopLaps": [
+        24,
+        48,
+        63
+       ],
+       "finished": false
+      },
+      {
+       "seed": 97,
+       "predictedSec": 5789.11,
+       "raceSec": 6007.2,
+       "diffSec": 218.09,
+       "position": 4,
+       "stopLaps": [
+        24,
+        48,
+        63
+       ],
+       "finished": true
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "text": "3 paradas (blando → blando → medio → medio, vueltas 15, 30, 54)",
+     "plan": {
+      "compound": "soft",
+      "stops": [
+       {
+        "lap": 15,
+        "compound": "soft"
+       },
+       {
+        "lap": 30,
+        "compound": "medium"
+       },
+       {
+        "lap": 54,
+        "compound": "medium"
+       }
+      ]
+     },
+     "alone": {
+      "predictedSec": 5790.45,
+      "raceSec": 5789.5,
+      "diffSec": -0.95,
+      "position": 1,
+      "stopLaps": [
+       15,
+       30,
+       54
+      ],
+      "finished": true
+     },
+     "field": [
+      {
+       "seed": 11,
+       "predictedSec": 5794.76,
+       "raceSec": 5760.15,
+       "diffSec": -34.61,
+       "position": 9,
+       "stopLaps": [
+        15,
+        30,
+        54
+       ],
+       "finished": true
+      },
+      {
+       "seed": 23,
+       "predictedSec": 5794.76,
+       "raceSec": 5693.2,
+       "diffSec": -101.56,
+       "position": 20,
+       "stopLaps": [
+        15,
+        30,
+        54
+       ],
+       "finished": false
+      },
+      {
+       "seed": 37,
+       "predictedSec": 5794.76,
+       "raceSec": 5762,
+       "diffSec": -32.76,
+       "position": 9,
+       "stopLaps": [
+        15,
+        30,
+        54
+       ],
+       "finished": true
+      },
+      {
+       "seed": 51,
+       "predictedSec": 5794.76,
+       "raceSec": 5773.3,
+       "diffSec": -21.46,
+       "position": 10,
+       "stopLaps": [
+        15,
+        30,
+        54
+       ],
+       "finished": true
+      },
+      {
+       "seed": 61,
+       "predictedSec": 5794.76,
+       "raceSec": 6298.8,
+       "diffSec": 504.04,
+       "position": 1,
+       "stopLaps": [
+        15,
+        30,
+        54
+       ],
+       "finished": true
+      },
+      {
+       "seed": 73,
+       "predictedSec": 5794.76,
+       "raceSec": 5646.2,
+       "diffSec": -148.56,
+       "position": 20,
+       "stopLaps": [
+        15,
+        30,
+        54
+       ],
+       "finished": false
+      },
+      {
+       "seed": 89,
+       "predictedSec": 5794.76,
+       "raceSec": 5767.8,
+       "diffSec": -26.96,
+       "position": 20,
+       "stopLaps": [
+        15,
+        30,
+        54
+       ],
+       "finished": false
+      },
+      {
+       "seed": 97,
+       "predictedSec": 5794.76,
+       "raceSec": 6004.05,
+       "diffSec": 209.29,
+       "position": 10,
+       "stopLaps": [
+        15,
+        30,
+        54
+       ],
+       "finished": true
+      }
+     ]
+    },
+    {
+     "rank": 3,
+     "text": "3 paradas (duro → blando → blando → blando, vueltas 33, 48, 63)",
+     "plan": {
+      "compound": "hard",
+      "stops": [
+       {
+        "lap": 33,
+        "compound": "soft"
+       },
+       {
+        "lap": 48,
+        "compound": "soft"
+       },
+       {
+        "lap": 63,
+        "compound": "soft"
+       }
+      ]
+     },
+     "alone": {
+      "predictedSec": 5802.18,
+      "raceSec": 5804.05,
+      "diffSec": 1.87,
+      "position": 1,
+      "stopLaps": [
+       33,
+       48,
+       63
+      ],
+      "finished": true
+     },
+     "field": [
+      {
+       "seed": 11,
+       "predictedSec": 5800.47,
+       "raceSec": 5751.6,
+       "diffSec": -48.87,
+       "position": 9,
+       "stopLaps": [
+        33,
+        48,
+        63
+       ],
+       "finished": true
+      },
+      {
+       "seed": 23,
+       "predictedSec": 5800.47,
+       "raceSec": 6114.85,
+       "diffSec": 314.38,
+       "position": 8,
+       "stopLaps": [
+        33,
+        48,
+        63
+       ],
+       "finished": true
+      },
+      {
+       "seed": 37,
+       "predictedSec": 5800.47,
+       "raceSec": 5793.4,
+       "diffSec": -7.07,
+       "position": 11,
+       "stopLaps": [
+        33,
+        48,
+        63
+       ],
+       "finished": true
+      },
+      {
+       "seed": 51,
+       "predictedSec": 5800.47,
+       "raceSec": 6387.95,
+       "diffSec": 587.48,
+       "position": 1,
+       "stopLaps": [
+        33,
+        48,
+        63
+       ],
+       "finished": true
+      },
+      {
+       "seed": 61,
+       "predictedSec": 5800.47,
+       "raceSec": 6297.2,
+       "diffSec": 496.73,
+       "position": 1,
+       "stopLaps": [
+        33,
+        48,
+        63
+       ],
+       "finished": true
+      },
+      {
+       "seed": 73,
+       "predictedSec": 5800.47,
+       "raceSec": 5758.7,
+       "diffSec": -41.77,
+       "position": 9,
+       "stopLaps": [
+        33,
+        48,
+        63
+       ],
+       "finished": true
+      },
+      {
+       "seed": 89,
+       "predictedSec": 5800.47,
+       "raceSec": 5786,
+       "diffSec": -14.47,
+       "position": 12,
+       "stopLaps": [
+        33,
+        48,
+        63
+       ],
+       "finished": true
+      },
+      {
+       "seed": 97,
+       "predictedSec": 5800.47,
+       "raceSec": 5730.5,
+       "diffSec": -69.97,
+       "position": 9,
+       "stopLaps": [
+        33,
+        48,
+        63
+       ],
+       "finished": true
+      }
+     ]
+    },
+    {
+     "rank": 4,
+     "text": "3 paradas (medio → medio → blando → medio, vueltas 21, 42, 57)",
+     "plan": {
+      "compound": "medium",
+      "stops": [
+       {
+        "lap": 21,
+        "compound": "medium"
+       },
+       {
+        "lap": 42,
+        "compound": "soft"
+       },
+       {
+        "lap": 57,
+        "compound": "medium"
+       }
+      ]
+     },
+     "alone": {
+      "predictedSec": 5804.69,
+      "raceSec": 5799.4,
+      "diffSec": -5.29,
+      "position": 1,
+      "stopLaps": [
+       21,
+       42,
+       57
+      ],
+      "finished": true
+     },
+     "field": [
+      {
+       "seed": 11,
+       "predictedSec": 5803.35,
+       "raceSec": 5761.85,
+       "diffSec": -41.5,
+       "position": 9,
+       "stopLaps": [
+        21,
+        42,
+        57
+       ],
+       "finished": true
+      },
+      {
+       "seed": 23,
+       "predictedSec": 5803.35,
+       "raceSec": 5768.2,
+       "diffSec": -35.15,
+       "position": 10,
+       "stopLaps": [
+        21,
+        42,
+        57
+       ],
+       "finished": true
+      },
+      {
+       "seed": 37,
+       "predictedSec": 5803.35,
+       "raceSec": 5765.6,
+       "diffSec": -37.75,
+       "position": 12,
+       "stopLaps": [
+        21,
+        42,
+        57
+       ],
+       "finished": true
+      },
+      {
+       "seed": 51,
+       "predictedSec": 5803.35,
+       "raceSec": 6391.95,
+       "diffSec": 588.6,
+       "position": 1,
+       "stopLaps": [
+        21,
+        42,
+        57
+       ],
+       "finished": true
+      },
+      {
+       "seed": 61,
+       "predictedSec": 5803.35,
+       "raceSec": 6317.15,
+       "diffSec": 513.8,
+       "position": 3,
+       "stopLaps": [
+        21,
+        42,
+        57
+       ],
+       "finished": true
+      },
+      {
+       "seed": 73,
+       "predictedSec": 5803.35,
+       "raceSec": 5748.55,
+       "diffSec": -54.8,
+       "position": 9,
+       "stopLaps": [
+        21,
+        42,
+        57
+       ],
+       "finished": true
+      },
+      {
+       "seed": 89,
+       "predictedSec": 5803.35,
+       "raceSec": 5705.8,
+       "diffSec": -97.55,
+       "position": 11,
+       "stopLaps": [
+        21,
+        42,
+        57
+       ],
+       "finished": true
+      },
+      {
+       "seed": 97,
+       "predictedSec": 5803.35,
+       "raceSec": 5479.9,
+       "diffSec": -323.45,
+       "position": 20,
+       "stopLaps": [
+        21,
+        42,
+        57
+       ],
+       "finished": false
+      }
+     ]
+    }
+   ]
+  },
+  "monza": {
+   "totalLaps": 53,
+   "calibration": {
+    "paceOffsetSec": 0.727,
+    "startLossSec": 4.4,
+    "outLapSec": 0.007
+   },
+   "strategies": [
+    {
+     "rank": 1,
+     "text": "2 paradas (blando → blando → medio, vueltas 14, 28)",
+     "plan": {
+      "compound": "soft",
+      "stops": [
+       {
+        "lap": 14,
+        "compound": "soft"
+       },
+       {
+        "lap": 28,
+        "compound": "medium"
+       }
+      ]
+     },
+     "alone": {
+      "predictedSec": 4380.89,
+      "raceSec": 4387.9,
+      "diffSec": 7.01,
+      "position": 1,
+      "stopLaps": [
+       15,
+       29
+      ],
+      "finished": true
+     },
+     "field": [
+      {
+       "seed": 11,
+       "predictedSec": 4377.64,
+       "raceSec": 4371,
+       "diffSec": -6.64,
+       "position": 8,
+       "stopLaps": [
+        15,
+        29
+       ],
+       "finished": true
+      },
+      {
+       "seed": 23,
+       "predictedSec": 4377.64,
+       "raceSec": 4317.25,
+       "diffSec": -60.39,
+       "position": 14,
+       "stopLaps": [
+        15,
+        29
+       ],
+       "finished": true
+      },
+      {
+       "seed": 37,
+       "predictedSec": 4377.64,
+       "raceSec": 4396.45,
+       "diffSec": 18.81,
+       "position": 14,
+       "stopLaps": [
+        15,
+        29
+       ],
+       "finished": true
+      },
+      {
+       "seed": 51,
+       "predictedSec": 4377.64,
+       "raceSec": 4720.95,
+       "diffSec": 343.31,
+       "position": 12,
+       "stopLaps": [
+        15,
+        29
+       ],
+       "finished": true
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "text": "2 paradas (medio → blando → blando, vueltas 25, 39)",
+     "plan": {
+      "compound": "medium",
+      "stops": [
+       {
+        "lap": 25,
+        "compound": "soft"
+       },
+       {
+        "lap": 39,
+        "compound": "soft"
+       }
+      ]
+     },
+     "alone": {
+      "predictedSec": 4380.89,
+      "raceSec": 4387.5,
+      "diffSec": 6.61,
+      "position": 1,
+      "stopLaps": [
+       26,
+       40
+      ],
+      "finished": true
+     },
+     "field": [
+      {
+       "seed": 11,
+       "predictedSec": 4378.84,
+       "raceSec": 4377.05,
+       "diffSec": -1.79,
+       "position": 9,
+       "stopLaps": [
+        26,
+        40
+       ],
+       "finished": true
+      },
+      {
+       "seed": 23,
+       "predictedSec": 4378.84,
+       "raceSec": 4330.25,
+       "diffSec": -48.59,
+       "position": 17,
+       "stopLaps": [
+        26,
+        40
+       ],
+       "finished": true
+      },
+      {
+       "seed": 37,
+       "predictedSec": 4378.84,
+       "raceSec": 4409.4,
+       "diffSec": 30.56,
+       "position": 17,
+       "stopLaps": [
+        26,
+        40
+       ],
+       "finished": true
+      },
+      {
+       "seed": 51,
+       "predictedSec": 4378.84,
+       "raceSec": 4730.65,
+       "diffSec": 351.81,
+       "position": 16,
+       "stopLaps": [
+        26,
+        40
+       ],
+       "finished": true
+      }
+     ]
+    },
+    {
+     "rank": 3,
+     "text": "1 parada (blando → duro, vuelta 14)",
+     "plan": {
+      "compound": "soft",
+      "stops": [
+       {
+        "lap": 14,
+        "compound": "hard"
+       }
+      ]
+     },
+     "alone": {
+      "predictedSec": 4385.67,
+      "raceSec": 4391.9,
+      "diffSec": 6.23,
+      "position": 1,
+      "stopLaps": [
+       15
+      ],
+      "finished": true
+     },
+     "field": [
+      {
+       "seed": 11,
+       "predictedSec": 4382.42,
+       "raceSec": 4381.4,
+       "diffSec": -1.02,
+       "position": 9,
+       "stopLaps": [
+        15
+       ],
+       "finished": true
+      },
+      {
+       "seed": 23,
+       "predictedSec": 4382.42,
+       "raceSec": 4328.45,
+       "diffSec": -53.97,
+       "position": 16,
+       "stopLaps": [
+        15
+       ],
+       "finished": true
+      },
+      {
+       "seed": 37,
+       "predictedSec": 4382.42,
+       "raceSec": 4401.8,
+       "diffSec": 19.38,
+       "position": 14,
+       "stopLaps": [
+        15
+       ],
+       "finished": true
+      },
+      {
+       "seed": 51,
+       "predictedSec": 4382.42,
+       "raceSec": 4725.95,
+       "diffSec": 343.53,
+       "position": 13,
+       "stopLaps": [
+        15
+       ],
+       "finished": true
+      }
+     ]
+    },
+    {
+     "rank": 4,
+     "text": "1 parada (duro → blando, vuelta 39)",
+     "plan": {
+      "compound": "hard",
+      "stops": [
+       {
+        "lap": 39,
+        "compound": "soft"
+       }
+      ]
+     },
+     "alone": {
+      "predictedSec": 4385.67,
+      "raceSec": 4391.6,
+      "diffSec": 5.93,
+      "position": 1,
+      "stopLaps": [
+       40
+      ],
+      "finished": true
+     },
+     "field": [
+      {
+       "seed": 11,
+       "predictedSec": 4383.02,
+       "raceSec": 4378.6,
+       "diffSec": -4.42,
+       "position": 10,
+       "stopLaps": [
+        40
+       ],
+       "finished": true
+      },
+      {
+       "seed": 23,
+       "predictedSec": 4383.02,
+       "raceSec": 4330.6,
+       "diffSec": -52.42,
+       "position": 17,
+       "stopLaps": [
+        40
+       ],
+       "finished": true
+      },
+      {
+       "seed": 37,
+       "predictedSec": 4383.02,
+       "raceSec": 4401.55,
+       "diffSec": 18.53,
+       "position": 15,
+       "stopLaps": [
+        40
+       ],
+       "finished": true
+      },
+      {
+       "seed": 51,
+       "predictedSec": 4383.02,
+       "raceSec": 4383.85,
+       "diffSec": 0.83,
+       "position": 13,
+       "stopLaps": [
+        40
+       ],
+       "finished": true
+      }
+     ]
+    }
+   ]
+  },
+  "silverstone": {
+   "totalLaps": 52,
+   "calibration": {
+    "paceOffsetSec": 0.712,
+    "startLossSec": 4.521,
+    "outLapSec": 1.173
+   },
+   "strategies": [
+    {
+     "rank": 1,
+     "text": "3 paradas (medio → blando → blando → blando, vueltas 13, 26, 39)",
+     "plan": {
+      "compound": "medium",
+      "stops": [
+       {
+        "lap": 13,
+        "compound": "soft"
+       },
+       {
+        "lap": 26,
+        "compound": "soft"
+       },
+       {
+        "lap": 39,
+        "compound": "soft"
+       }
+      ]
+     },
+     "alone": {
+      "predictedSec": 4716.7,
+      "raceSec": 4717.8,
+      "diffSec": 1.1,
+      "position": 1,
+      "stopLaps": [
+       13,
+       26,
+       39
+      ],
+      "finished": true
+     },
+     "field": [
+      {
+       "seed": 11,
+       "predictedSec": 4714.26,
+       "raceSec": 4699.9,
+       "diffSec": -14.36,
+       "position": 9,
+       "stopLaps": [
+        13,
+        26,
+        39
+       ],
+       "finished": true
+      },
+      {
+       "seed": 23,
+       "predictedSec": 4714.26,
+       "raceSec": 4651.2,
+       "diffSec": -63.06,
+       "position": 11,
+       "stopLaps": [
+        13,
+        26,
+        39
+       ],
+       "finished": true
+      },
+      {
+       "seed": 37,
+       "predictedSec": 4714.26,
+       "raceSec": 4727.75,
+       "diffSec": 13.49,
+       "position": 12,
+       "stopLaps": [
+        13,
+        26,
+        39
+       ],
+       "finished": true
+      },
+      {
+       "seed": 51,
+       "predictedSec": 4714.26,
+       "raceSec": 5030.55,
+       "diffSec": 316.29,
+       "position": 5,
+       "stopLaps": [
+        13,
+        26,
+        39
+       ],
+       "finished": true
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "text": "3 paradas (blando → blando → blando → medio, vueltas 13, 26, 39)",
+     "plan": {
+      "compound": "soft",
+      "stops": [
+       {
+        "lap": 13,
+        "compound": "soft"
+       },
+       {
+        "lap": 26,
+        "compound": "soft"
+       },
+       {
+        "lap": 39,
+        "compound": "medium"
+       }
+      ]
+     },
+     "alone": {
+      "predictedSec": 4716.7,
+      "raceSec": 4719.6,
+      "diffSec": 2.9,
+      "position": 1,
+      "stopLaps": [
+       13,
+       26,
+       39
+      ],
+      "finished": true
+     },
+     "field": [
+      {
+       "seed": 11,
+       "predictedSec": 4714.64,
+       "raceSec": 4692.9,
+       "diffSec": -21.74,
+       "position": 8,
+       "stopLaps": [
+        13,
+        26,
+        39
+       ],
+       "finished": true
+      },
+      {
+       "seed": 23,
+       "predictedSec": 4714.64,
+       "raceSec": 4662.6,
+       "diffSec": -52.04,
+       "position": 15,
+       "stopLaps": [
+        13,
+        26,
+        39
+       ],
+       "finished": true
+      },
+      {
+       "seed": 37,
+       "predictedSec": 4714.64,
+       "raceSec": 4727.8,
+       "diffSec": 13.16,
+       "position": 12,
+       "stopLaps": [
+        13,
+        26,
+        39
+       ],
+       "finished": true
+      },
+      {
+       "seed": 51,
+       "predictedSec": 4714.64,
+       "raceSec": 4716.15,
+       "diffSec": 1.51,
+       "position": 10,
+       "stopLaps": [
+        13,
+        26,
+        39
+       ],
+       "finished": true
+      }
+     ]
+    },
+    {
+     "rank": 3,
+     "text": "2 paradas (medio → blando → medio, vueltas 20, 33)",
+     "plan": {
+      "compound": "medium",
+      "stops": [
+       {
+        "lap": 20,
+        "compound": "soft"
+       },
+       {
+        "lap": 33,
+        "compound": "medium"
+       }
+      ]
+     },
+     "alone": {
+      "predictedSec": 4722.34,
+      "raceSec": 4723.05,
+      "diffSec": 0.71,
+      "position": 1,
+      "stopLaps": [
+       20,
+       33
+      ],
+      "finished": true
+     },
+     "field": [
+      {
+       "seed": 11,
+       "predictedSec": 4719.9,
+       "raceSec": 4702.3,
+       "diffSec": -17.6,
+       "position": 9,
+       "stopLaps": [
+        20,
+        33
+       ],
+       "finished": true
+      },
+      {
+       "seed": 23,
+       "predictedSec": 4719.9,
+       "raceSec": 4654.1,
+       "diffSec": -65.8,
+       "position": 13,
+       "stopLaps": [
+        20,
+        33
+       ],
+       "finished": true
+      },
+      {
+       "seed": 37,
+       "predictedSec": 4719.9,
+       "raceSec": 4730.9,
+       "diffSec": 11,
+       "position": 13,
+       "stopLaps": [
+        20,
+        33
+       ],
+       "finished": true
+      },
+      {
+       "seed": 51,
+       "predictedSec": 4719.9,
+       "raceSec": 5033.85,
+       "diffSec": 313.95,
+       "position": 6,
+       "stopLaps": [
+        20,
+        33
+       ],
+       "finished": true
+      }
+     ]
+    },
+    {
+     "rank": 4,
+     "text": "2 paradas (blando → medio → medio, vueltas 13, 33)",
+     "plan": {
+      "compound": "soft",
+      "stops": [
+       {
+        "lap": 13,
+        "compound": "medium"
+       },
+       {
+        "lap": 33,
+        "compound": "medium"
+       }
+      ]
+     },
+     "alone": {
+      "predictedSec": 4722.34,
+      "raceSec": 4725.25,
+      "diffSec": 2.91,
+      "position": 1,
+      "stopLaps": [
+       13,
+       33
+      ],
+      "finished": true
+     },
+     "field": [
+      {
+       "seed": 11,
+       "predictedSec": 4720.28,
+       "raceSec": 4696.9,
+       "diffSec": -23.38,
+       "position": 9,
+       "stopLaps": [
+        13,
+        33
+       ],
+       "finished": true
+      },
+      {
+       "seed": 23,
+       "predictedSec": 4720.28,
+       "raceSec": 4658.35,
+       "diffSec": -61.93,
+       "position": 15,
+       "stopLaps": [
+        13,
+        33
+       ],
+       "finished": true
+      },
+      {
+       "seed": 37,
+       "predictedSec": 4720.28,
+       "raceSec": 4727.7,
+       "diffSec": 7.42,
+       "position": 13,
+       "stopLaps": [
+        13,
+        33
+       ],
+       "finished": true
+      },
+      {
+       "seed": 51,
+       "predictedSec": 4720.28,
+       "raceSec": 5034.4,
+       "diffSec": 314.12,
+       "position": 6,
+       "stopLaps": [
+        13,
+        33
+       ],
+       "finished": true
+      }
+     ]
+    }
+   ]
+  },
+  "barcelona": {
+   "totalLaps": 66,
+   "calibration": {
+    "paceOffsetSec": 0.53,
+    "startLossSec": 4.556,
+    "outLapSec": 1.745
+   },
+   "strategies": [
+    {
+     "rank": 1,
+     "text": "3 paradas (medio → blando → blando → blando, vueltas 21, 36, 51)",
+     "plan": {
+      "compound": "medium",
+      "stops": [
+       {
+        "lap": 21,
+        "compound": "soft"
+       },
+       {
+        "lap": 36,
+        "compound": "soft"
+       },
+       {
+        "lap": 51,
+        "compound": "soft"
+       }
+      ]
+     },
+     "alone": {
+      "predictedSec": 5076.86,
+      "raceSec": 5079.05,
+      "diffSec": 2.19,
+      "position": 1,
+      "stopLaps": [
+       21,
+       36,
+       51
+      ],
+      "finished": true
+     },
+     "field": [
+      {
+       "seed": 11,
+       "predictedSec": 5074.43,
+       "raceSec": 5004.7,
+       "diffSec": -69.73,
+       "position": 8,
+       "stopLaps": [
+        21,
+        36,
+        51
+       ],
+       "finished": true
+      },
+      {
+       "seed": 23,
+       "predictedSec": 5074.43,
+       "raceSec": 5031.65,
+       "diffSec": -42.78,
+       "position": 12,
+       "stopLaps": [
+        21,
+        36,
+        51
+       ],
+       "finished": true
+      },
+      {
+       "seed": 37,
+       "predictedSec": 5074.43,
+       "raceSec": 5028.75,
+       "diffSec": -45.68,
+       "position": 12,
+       "stopLaps": [
+        21,
+        36,
+        51
+       ],
+       "finished": true
+      },
+      {
+       "seed": 51,
+       "predictedSec": 5074.43,
+       "raceSec": 5004.6,
+       "diffSec": -69.83,
+       "position": 9,
+       "stopLaps": [
+        21,
+        36,
+        51
+       ],
+       "finished": true
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "text": "3 paradas (blando → blando → blando → medio, vueltas 15, 30, 45)",
+     "plan": {
+      "compound": "soft",
+      "stops": [
+       {
+        "lap": 15,
+        "compound": "soft"
+       },
+       {
+        "lap": 30,
+        "compound": "soft"
+       },
+       {
+        "lap": 45,
+        "compound": "medium"
+       }
+      ]
+     },
+     "alone": {
+      "predictedSec": 5076.86,
+      "raceSec": 5086.7,
+      "diffSec": 9.84,
+      "position": 1,
+      "stopLaps": [
+       15,
+       30,
+       45
+      ],
+      "finished": true
+     },
+     "field": [
+      {
+       "seed": 11,
+       "predictedSec": 5076.12,
+       "raceSec": 4990.5,
+       "diffSec": -85.62,
+       "position": 8,
+       "stopLaps": [
+        15,
+        30,
+        45
+       ],
+       "finished": true
+      },
+      {
+       "seed": 23,
+       "predictedSec": 5076.12,
+       "raceSec": 5032.7,
+       "diffSec": -43.42,
+       "position": 11,
+       "stopLaps": [
+        15,
+        30,
+        45
+       ],
+       "finished": true
+      },
+      {
+       "seed": 37,
+       "predictedSec": 5076.12,
+       "raceSec": 5029.7,
+       "diffSec": -46.42,
+       "position": 12,
+       "stopLaps": [
+        15,
+        30,
+        45
+       ],
+       "finished": true
+      },
+      {
+       "seed": 51,
+       "predictedSec": 5076.12,
+       "raceSec": 5309.3,
+       "diffSec": 233.18,
+       "position": 11,
+       "stopLaps": [
+        15,
+        30,
+        45
+       ],
+       "finished": true
+      }
+     ]
+    },
+    {
+     "rank": 3,
+     "text": "2 paradas (medio → blando → medio, vueltas 26, 41)",
+     "plan": {
+      "compound": "medium",
+      "stops": [
+       {
+        "lap": 26,
+        "compound": "soft"
+       },
+       {
+        "lap": 41,
+        "compound": "medium"
+       }
+      ]
+     },
+     "alone": {
+      "predictedSec": 5088.29,
+      "raceSec": 5098.2,
+      "diffSec": 9.91,
+      "position": 1,
+      "stopLaps": [
+       26,
+       41
+      ],
+      "finished": true
+     },
+     "field": [
+      {
+       "seed": 11,
+       "predictedSec": 5085.86,
+       "raceSec": 5004.55,
+       "diffSec": -81.31,
+       "position": 9,
+       "stopLaps": [
+        26,
+        41
+       ],
+       "finished": true
+      },
+      {
+       "seed": 23,
+       "predictedSec": 5085.86,
+       "raceSec": 5041.75,
+       "diffSec": -44.11,
+       "position": 12,
+       "stopLaps": [
+        26,
+        41
+       ],
+       "finished": true
+      },
+      {
+       "seed": 37,
+       "predictedSec": 5085.86,
+       "raceSec": 5059.35,
+       "diffSec": -26.51,
+       "position": 14,
+       "stopLaps": [
+        26,
+        41
+       ],
+       "finished": true
+      },
+      {
+       "seed": 51,
+       "predictedSec": 5085.86,
+       "raceSec": 5308.9,
+       "diffSec": 223.04,
+       "position": 12,
+       "stopLaps": [
+        26,
+        41
+       ],
+       "finished": true
+      }
+     ]
+    },
+    {
+     "rank": 4,
+     "text": "3 paradas (medio → blando → blando → medio, vueltas 18, 33, 48)",
+     "plan": {
+      "compound": "medium",
+      "stops": [
+       {
+        "lap": 18,
+        "compound": "soft"
+       },
+       {
+        "lap": 33,
+        "compound": "soft"
+       },
+       {
+        "lap": 48,
+        "compound": "medium"
+       }
+      ]
+     },
+     "alone": {
+      "predictedSec": 5090.13,
+      "raceSec": 5089.5,
+      "diffSec": -0.63,
+      "position": 1,
+      "stopLaps": [
+       18,
+       33,
+       48
+      ],
+      "finished": true
+     },
+     "field": [
+      {
+       "seed": 11,
+       "predictedSec": 5087.7,
+       "raceSec": 5008.1,
+       "diffSec": -79.6,
+       "position": 9,
+       "stopLaps": [
+        18,
+        33,
+        48
+       ],
+       "finished": true
+      },
+      {
+       "seed": 23,
+       "predictedSec": 5087.7,
+       "raceSec": 5039.45,
+       "diffSec": -48.25,
+       "position": 12,
+       "stopLaps": [
+        18,
+        33,
+        48
+       ],
+       "finished": true
+      },
+      {
+       "seed": 37,
+       "predictedSec": 5087.7,
+       "raceSec": 5031.2,
+       "diffSec": -56.5,
+       "position": 12,
+       "stopLaps": [
+        18,
+        33,
+        48
+       ],
+       "finished": true
+      },
+      {
+       "seed": 51,
+       "predictedSec": 5087.7,
+       "raceSec": 5306.7,
+       "diffSec": 219,
+       "position": 12,
+       "stopLaps": [
+        18,
+        33,
+        48
+       ],
+       "finished": true
+      }
+     ]
+    }
+   ]
+  }
+ },
+ "generated": "2026-11-26"
+}
