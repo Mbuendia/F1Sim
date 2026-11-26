@@ -239,7 +239,13 @@ export function issuePlannedStop(sim: RaceSimulation, car: CarState) {
   // [OF4] La orden del programa ya se cumplió: la próxima parada ya no es suya.
   if (pit.planOrderId && !pit.isPitting && pit.activeBoxOrder?.id === pit.planOrderId && pit.activeBoxOrder.status === 'consumed') delete pit.planOrderId;
   // [OF4] Ha parado antes por otro motivo (pinchazo, desgaste): la programada se anula.
+  // [ES11, 26/11/2026] En la IA con plan y en seco, se rehace el resto con el optimizador (desde esta parada).
   if (pit.isPitting && car.currentLap < plan.lap && !(pit.planOrderId && pit.activeBoxOrder?.id === pit.planOrderId)) {
+    if (pit.aiPlan && sim.weatherModel.meanDepth() <= 0.3) {
+      const redo = planStopNow(sim.circuitId, sim.totalLaps, car.currentLap, usedDry(car), car.tireInventory ?? undefined);
+      pit.plannedStops = redo ? redo.slice(1) : [];
+      return;
+    }
     pit.plannedStops = [];
     pit.lastOrderRejection = `Parada programada de la vuelta ${plan.lap} anulada: ya ha parado en la vuelta ${car.currentLap}`;
     return;
@@ -251,7 +257,8 @@ export function issuePlannedStop(sim: RaceSimulation, car: CarState) {
     ?? chooseCompound(sim.totalLaps - car.currentLap, car.tireInventory, sim.getTireCompliance(car.id), sim.weatherModel.meanDepth(), sim.circuitId)
     ?? car.tires.compound;
   issuingPlan = true;
-  const order = sim.issueBoxOrder(car.id, compound, 'player');
+  // [ES11, 26/11/2026] La parada del plan de la IA es una orden de la IA (no convierte el coche en uno del jugador).
+  const order = sim.issueBoxOrder(car.id, compound, pit.aiPlan ? 'ai' : 'player');
   issuingPlan = false;
   if (order) { pit.plannedStops!.shift(); pit.planOrderId = order.id; }
   // [R54] Cumplir el programa del jugador no es una orden nueva: la delegación sigue como estaba.
@@ -369,6 +376,12 @@ export function runStrategist(sim: RaceSimulation, car: CarState) {
   }
 }
 
+/** [ES11, 26/11/2026] La próxima parada del plan de la IA llega antes de que se acabe el neumático (con una vuelta de margen). */
+function planReaches(car: CarState, lapsLeftOnTyre: number): boolean {
+  const next = car.pitStop.aiPlan ? car.pitStop.plannedStops?.[0] : undefined;
+  return Boolean(next && next.lap - car.currentLap <= Math.max(0, lapsLeftOnTyre) + 1);
+}
+
 /** [R25] Parada que el estratega quiere ahora (compuesto y motivo), o null si no hay que parar o conviene esperar. */
 export function stopDecision(sim: RaceSimulation, car: CarState, st: StrategyState, urgentToo = false): { compound: TireCompound; reason: string; text: string } | null {
   const L = sim.activeTrack.lapLengthMeters;
@@ -393,8 +406,9 @@ export function stopDecision(sim: RaceSimulation, car: CarState, st: StrategySta
   const lapsLeftOnTyre = (car.tires.health - STRATEGY.TARGET_HEALTH) / wearPerLap;
   const underSc = sim.raceFlagState === 'sc' && sim.safetyCar.mode === 'leading';
   if (!reason && underSc && car.tires.health < STRATEGY.SC_PIT_HEALTH && lapsToEnd > STRATEGY.SC_MIN_LAPS_LEFT) reason = 'safety car';
+  // [ES11, 26/11/2026] La IA con plan no para por desgaste si su parada programada llega antes de que se acabe el neumático.
   else if (!reason && lapsLeftOnTyre <= STRATEGY.PIT_LAPS_MARGIN && lapsLeftOnTyre < lapsToEnd
-    && (lapsToEnd > STRATEGY.FINAL_LAPS || car.tires.health < STRATEGY.FINAL_LAPS_HEALTH)) reason = 'desgaste';
+    && (lapsToEnd > STRATEGY.FINAL_LAPS || car.tires.health < STRATEGY.FINAL_LAPS_HEALTH) && !planReaches(car, lapsLeftOnTyre)) reason = 'desgaste';
   else if (!reason && !compliance.satisfied && lapsToEnd <= 3) reason = 'reglamento S30.5m';
   if (!reason) return null;
   const critical = car.tires.health <= STRATEGY.CRITICAL_HEALTH;

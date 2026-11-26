@@ -84,6 +84,10 @@ import type { RaceSnapshot } from '../Snapshot';
 import { overtakingZonesOf, zoneAt } from '../OvertakingZones';
 import type { OvertakingZone } from '../OvertakingZones';
 import { RaceSimulation } from '../RaceSimulation';
+import { gridThird, rivalPlanFor, styleFor, RIVAL_PLAN, type RivalStyle } from '../RivalPlans';
+import { fasterWear } from '../BackupPlans';
+import { TYRE_CURVES } from '../../data/tyreCurves';
+import { optimizeStrategy } from '../StrategyOptimizer';
 
 /** Coloca en el pit lane, en fila ante el semáforo, a los coches que salen desde boxes (ya al final de `cars`). */
 export function placePitLaneStarters(sim: RaceSimulation) {
@@ -361,9 +365,39 @@ export function prepareRace(sim: RaceSimulation) {
   sim.updateWorldPositions();
 }
 
+/**
+ * [ES11, 26/11/2026] Planes de los rivales: en seco, cada coche de la IA (no los del jugador) elige su plan con el optimizador según el
+ * estilo de su equipo (RivalPlans.ts), monta su neumático de salida y deja programadas sus paradas. En carrera de sprint o
+ * con la pista mojada no hay plan (como antes).
+ */
+export function assignRivalPlans(sim: RaceSimulation) {
+  if (sim.raceFormat === 'sprint' || sim.weatherModel.meanDepth() > RaceSimulation.WET_START_DEPTH_MM) return;
+  const rng = sim.stream('planes-rivales') ?? Math.random;
+  const grid = new Map(sim.cars.map((car, i) => [car.id, i + 1]));
+  const styles = new Map<string, RivalStyle>();
+  for (const car of sim.cars) {
+    if (sim.playerCars.includes(car.driver.id) || car.pitLaneStart) continue;
+    const teamId = car.driver.teamId;
+    if (!styles.has(teamId)) {
+      const best = Math.min(...sim.cars.filter(c => c.driver.teamId === teamId).map(c => grid.get(c.id) ?? 99));
+      styles.set(teamId, styleFor(gridThird(best, sim.cars.length), rng()));
+    }
+    // Con tráfico el neumático dura menos que en las curvas (medidas con el coche solo): los de atrás planean con margen.
+    const third = gridThird(grid.get(car.id) ?? 1, sim.cars.length), base = TYRE_CURVES[sim.circuitId]?.compounds;
+    const curves = base && RIVAL_PLAN.TRAFFIC_LIFE[third] < 1 ? fasterWear(base, RIVAL_PLAN.TRAFFIC_LIFE[third]) : undefined;
+    const result = optimizeStrategy({ circuitId: sim.circuitId, totalLaps: sim.totalLaps, inventory: car.tireInventory ?? null, gridPosition: grid.get(car.id), curves });
+    const plan = rivalPlanFor(styles.get(teamId)!, result, rng);
+    if (!plan) continue;
+    if (plan.compound !== car.tires.compound && !sim.mountStartTyre(car, plan.compound)) continue;
+    car.pitStop.plannedStops = plan.stops.map(s => ({ ...s }));
+    car.pitStop.aiPlan = true;
+    car.pitStop.planStyle = plan.style;
+  }
+}
+
 export function startRaceSequence(sim: RaceSimulation) {
   if (sim.lightState === 'idle') {
-    if (sim.autoStartTyres) sim.chooseStartTyres();
+    if (sim.autoStartTyres) { assignRivalPlans(sim); sim.chooseStartTyres(); }
     sim.lightState = 'formation-lap';
     sim.lightsTimer = 0;
     sim.cars.forEach((car, idx) => {

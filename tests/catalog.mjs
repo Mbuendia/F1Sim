@@ -677,6 +677,7 @@ export const modules = [
   { "id": "backup-plans-es6", "tasks": ["ES6"], "sprint": "16", "kind": "contract" },
   { "id": "rain-plan-es7", "tasks": ["ES7"], "sprint": "16", "kind": "contract" },
   { "id": "strategy-screen-es10", "tasks": ["ES10"], "sprint": "16", "kind": "contract" },
+  { "id": "rival-plans-es11", "tasks": ["ES11"], "sprint": "16", "kind": "contract" },
   { "id": "offline-of1", "tasks": ["OF1"], "sprint": "13", "kind": "contract" },
   { "id": "storage-of2", "tasks": ["OF2"], "sprint": "13", "kind": "contract" },
   { "id": "updates-of3", "tasks": ["OF3"], "sprint": "13", "kind": "contract" },
